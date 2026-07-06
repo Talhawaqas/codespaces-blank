@@ -8,15 +8,14 @@ import streamlit as st
 import pandas as pd
 from cryptography.fernet import Fernet
 
-# ─── PREMIUM CONFIGURATIONS & INITIALIZATION ───
+# ─── PREMIUM SYSTEM CONFIGURATIONS ───
 st.set_page_config(
-    page_title="Inaya Global Security Cloud", 
+    page_title="Inaya Sovereign Custody Portal", 
     page_icon="🛡️", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Live verified contract address anchor
 LIVE_CONTRACT_ADDRESS = "0xbd23E6D04a82689a59E5188f9B572CBeF53D4763"
 MANIFEST_FILE = "inaya_manifest.json"
 
@@ -45,156 +44,183 @@ def fetch_shard_from_ipfs(cid):
     except Exception as e:
         return False, str(e)
 
-# ─── 🎨 PREMIUM ADVANCED PLATFORM CSS STYLING ───
+# ─── 🧪 THE LUXURY FINTECH GLASSMORPHIC STYLING MATRIX ───
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
-        html, body, [class*="css"] {
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        /* Smooth Global Reskinning */
+        html, body, [class*="css"], .stApp {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            color: #1e293b;
+            background-color: #070a13 !important;
+            color: #f8fafc !important;
         }
         
-        /* Corporate Presentation Header Banner */
-        .hero-banner {
-            background: linear-gradient(135deg, #061026 0%, #0f2042 50%, #1b3566 100%);
-            padding: 55px 40px;
-            border-radius: 16px;
-            color: #ffffff;
-            margin-bottom: 35px;
-            border-left: 8px solid #dfb76c;
-            box-shadow: 0 10px 30px rgba(15, 32, 66, 0.18);
-        }
-        .hero-title { font-size: 30pt; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-        .hero-subtitle { font-size: 11pt; color: #f3dca2; text-transform: uppercase; letter-spacing: 3px; margin-top: 8px; font-weight: 600; }
-        
-        /* Elegant Feature Matrix Elements */
-        .feature-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 30px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 100%;
-        }
-        .feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(15, 32, 66, 0.08);
-            border-color: #dfb76c;
-        }
-        .feature-icon { font-size: 26pt; margin-bottom: 15px; }
-        .feature-title { font-size: 15pt; font-weight: 700; color: #0f2042; margin-bottom: 12px; }
-        .feature-text { font-size: 10.5pt; color: #475569; line-height: 1.6; text-align: justify; }
-
-        /* Premium Institutional Stat Cards */
-        .stat-badge {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 20px 15px;
-            text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
-        }
-        .stat-value { font-size: 20pt; font-weight: 800; color: #0f2042; }
-        .stat-label { font-size: 8.5pt; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
-
-        /* Custom Visual Interactive Roadmap Timeline Styling */
-        .roadmap-container {
-            border-left: 3px solid #dfb76c;
-            padding-left: 25px;
-            margin-left: 15px;
-            margin-top: 20px;
-        }
-        .roadmap-node {
+        /* Modern Gradient Hero Panel */
+        .hero-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+            border: 1px solid rgba(223, 183, 108, 0.2);
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+            margin-bottom: 40px;
             position: relative;
-            margin-bottom: 35px;
+            overflow: hidden;
         }
-        .roadmap-node::before {
+        .hero-card::before {
             content: '';
             position: absolute;
-            left: -33px;
-            top: 4px;
-            background: #0f2042;
-            border: 3px solid #dfb76c;
-            border-radius: 50%;
-            width: 14px;
-            height: 14px;
+            top: 0; right: 0; width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(223, 183, 108, 0.08) 0%, transparent 70%);
+            z-index: 1;
         }
-        .roadmap-header { font-size: 14pt; font-weight: 800; color: #0f2042; margin: 0; }
-        .roadmap-date { font-size: 9.5pt; color: #dfb76c; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .roadmap-body { font-size: 10.5pt; color: #475569; margin-top: 6px; text-align: justify; }
+        .hero-title { font-size: 34pt; font-weight: 800; color: #ffffff; letter-spacing: -1px; margin: 0; }
+        .hero-subtitle { font-size: 10.5pt; color: #dfb76c; text-transform: uppercase; letter-spacing: 4px; margin-top: 12px; font-weight: 600; }
+        
+        /* Premium Floating Feature Cards */
+        .premium-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 35px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            height: 100%;
+        }
+        .premium-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(223, 183, 108, 0.4);
+            box-shadow: 0 20px 40px rgba(223, 183, 108, 0.07);
+            background: rgba(30, 41, 59, 0.55);
+        }
+        .card-icon {
+            background: linear-gradient(135deg, #dfb76c 0%, #c5a059 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28pt; font-weight: 700; margin-bottom: 20px;
+        }
+        .card-title { font-size: 15pt; font-weight: 700; color: #ffffff; margin-bottom: 12px; letter-spacing: -0.3px; }
+        .card-desc { font-size: 10pt; color: #94a3b8; line-height: 1.7; font-weight: 400; }
 
-        /* Custom Interactive Buttons styling */
+        /* Sleek Web3 Metrics Grids */
+        .metric-container {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.02);
+        }
+        .metric-val { font-size: 22pt; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
+        .metric-lbl { font-size: 8.5pt; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; font-weight: 600; }
+
+        /* Modernized Interactive Roadmap Pipeline */
+        .modern-timeline {
+            border-left: 2px dashed rgba(223, 183, 108, 0.3);
+            padding-left: 30px;
+            margin: 20px 10px;
+        }
+        .timeline-item { position: relative; margin-bottom: 45px; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -39px; top: 6px;
+            background: #070a13; border: 3px solid #dfb76c;
+            border-radius: 50%; width: 16px; height: 16px;
+            box-shadow: 0 0 10px #dfb76c;
+        }
+        .time-tag { font-size: 9pt; color: #dfb76c; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .time-head { font-size: 15pt; font-weight: 700; color: #ffffff; margin: 4px 0 10px 0; }
+        .time-body { font-size: 10pt; color: #94a3b8; line-height: 1.6; }
+
+        /* Full Custom Branding Sidebar Overrides */
+        .sidebar- crest-box { text-align: center; padding: 20px 0; }
+        .ledger-badge {
+            background: rgba(223, 183, 108, 0.06);
+            border: 1px solid rgba(223, 183, 108, 0.15);
+            padding: 14px; border-radius: 10px; margin: 20px 0;
+            box-shadow: inset 0 1px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* High-End Glass Buttons */
         .stButton>button {
-            background: linear-gradient(135deg, #0f2042 0%, #1b3566 100%) !important;
-            color: #ffffff !important;
-            border: 1px solid #dfb76c !important;
-            border-radius: 8px !important;
-            padding: 12px 28px !important;
-            font-weight: 600 !important;
+            background: linear-gradient(135deg, #dfb76c 0%, #ba944b 100%) !important;
+            color: #070a13 !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 14px 30px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px !important;
             width: 100%;
-            transition: all 0.25s ease !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: 0 4px 15px rgba(223, 183, 108, 0.2) !important;
         }
         .stButton>button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 20px rgba(223, 183, 108, 0.3) !important;
+            box-shadow: 0 8px 25px rgba(223, 183, 108, 0.4) !important;
         }
-        .contract-badge {
-            background-color: #0c1933;
-            border: 1px solid #223d70;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
+        
+        /* Form input fields sleek styling */
+        input {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+        }
+        
+        /* Dynamic Tabs Reskinning */
+        .stTabs [data-baseweb="tab"] {
+            color: #64748b !important; font-weight: 600 !important; font-size: 11pt !important;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            color: #dfb76c !important; border-bottom-color: #dfb76c !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# ─── SIDEBAR IDENTITY CREST & NAVIGATION PANEL ───
+# ─── SIDEBAR BRANDING & EXECUTIVE NAVIGATION ───
 st.sidebar.markdown("""
-    <div style="text-align: center; padding: 10px 0;">
-        <svg width="100" height="100" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/2000/svg">
+    <div style="text-align: center; padding: 15px 0;">
+        <svg width="90" height="90" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/2000/svg">
             <defs>
                 <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#061026" /><stop offset="40%" stop-color="#0f2042" /><stop offset="100%" stop-color="#1b3566" />
+                    <stop offset="0%" stop-color="#0f172a" /><stop offset="100%" stop-color="#1e293b" />
                 </linearGradient>
                 <linearGradient id="goldGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#c5a059" /><stop offset="30%" stop-color="#dfb76c" /><stop offset="70%" stop-color="#f5e2b3" /><stop offset="100%" stop-color="#c5a059" />
+                    <stop offset="0%" stop-color="#c5a059" /><stop offset="50%" stop-color="#dfb76c" /><stop offset="100%" stop-color="#f5e2b3" />
                 </linearGradient>
             </defs>
             <path d="M100,12 L170,44 L170,115 C170,160 132,185 100,193 C68,185 30,160 30,115 L30,44 Z" fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="4"/>
-            <path d="M72,56 L128,56" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round"/>
-            <path d="M72,144 L128,144" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round"/>
-            <line x1="100" y1="56" x2="100" y2="144" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
-            <circle cx="100" cy="100" r="18" fill="#0f2042" stroke="url(#goldGrad)" stroke-width="4"/>
-            <circle cx="100" cy="100" r="5" fill="#ffffff"/>
+            <path d="M72,56 L128,56" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round"/>
+            <path d="M72,144 L128,144" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round"/>
+            <line x1="100" y1="56" x2="100" y2="144" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="16" fill="#0f172a" stroke="url(#goldGrad)" stroke-width="3"/>
         </svg>
-        <div style="color: #ffffff; font-size: 14pt; font-weight: 800; margin-top: 10px; letter-spacing: 1px;">PROJECT INAYA</div>
-        <div style="color: #dfb76c; font-size: 8pt; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Sovereign Infrastructure</div>
+        <div style="color: #ffffff; font-size: 15pt; font-weight: 800; margin-top: 12px; letter-spacing: 0.5px;">INAYA VAULT</div>
+        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;">Sovereign Protocol</div>
     </div>
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown(f"""
-    <div class="contract-badge">
-        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: bold; text-transform: uppercase;">Verified Smart Contract:</div>
-        <div style="color: #ffffff; font-family: monospace; font-size: 8pt; word-break: break-all; margin-top: 4px;">{LIVE_CONTRACT_ADDRESS}</div>
+    <div class="ledger-badge">
+        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Verified Live Contract:</div>
+        <div style="color: #94a3b8; font-family: monospace; font-size: 8pt; word-break: break-all; margin-top: 6px; opacity: 0.85;">{LIVE_CONTRACT_ADDRESS}</div>
     </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown('<hr style="border-color: #1e293b; margin: 10px 0;" />', unsafe_allow_html=True)
+st.sidebar.markdown('<hr style="border-color: rgba(255,255,255,0.05); margin: 15px 0;" />', unsafe_allow_html=True)
 
-# 🗺️ DYNAMIC PORTAL SELECTION SYSTEM
-st.sidebar.header("🗺️ Corporate Architecture")
+st.sidebar.header("🗺️ Core System Portals")
 current_page = st.sidebar.radio(
-    "Navigate Portals:",
-    ["🌐 Corporate Home", "✨ Core Features Matrix", "📥 Sovereign Secure Vault", "📊 Venture Tokenomics Hub", "🗺️ Ecosystem Roadmap", "📜 About Us & Philosophy"]
+    "Select Interface Terminal:",
+    ["🌐 Corporate Hub", "✨ Tech Features Matrix", "📥 Sovereign Storage Core", "📊 Live Tokenomics Deck", "🗺️ Tactical Growth Roadmap", "📜 Executive Philosophy"]
 )
 
 st.sidebar.markdown("---")
-st.sidebar.header("🔑 Gateway Authentication")
-password_input = st.sidebar.text_input("Master Administrative Password:", type="password")
-pinata_jwt_input = st.sidebar.text_input("Network Pinata JWT Access Token:", type="password")
+st.sidebar.header("🔑 Security Access Layers")
+password_input = st.sidebar.text_input("Vault Passkey Hash:", type="password")
+pinata_jwt_input = st.sidebar.text_input("IPFS Swarm Token (JWT):", type="password")
 
-# Parse dynamic metrics tracking metrics data
+# Core Dynamic Telemetry Calculations
 total_files_archived = 0
 if os.path.exists(MANIFEST_FILE):
     try:
@@ -204,69 +230,68 @@ accumulated_fees = total_files_archived * 0.0001
 
 
 # ─── 1. CORPORATE HOME PAGE ───
-if current_page == "🌐 Corporate Home":
+if current_page == "🌐 Corporate Hub":
     st.markdown("""
-        <div class="hero-banner">
-            <div class="hero-title">Sovereign Cloud Custody Linked to Public Ledgers</div>
-            <div class="hero-subtitle">Next-Generation Zero-Knowledge Storage Clusters & Decentralized Cryptographic Swarms</div>
+        <div class="hero-card">
+            <div class="hero-title">Sovereign Cloud Assets Linked to Global Ledgers</div>
+            <div class="hero-subtitle">Military-Grade Encryption Interfaced with Distributed Block Scarcity Arrays</div>
         </div>
     """, unsafe_allow_html=True)
     
-    st.subheader("🏛️ Institutional Cloud Architecture")
-    st.markdown("Project Inaya engineers absolute privacy layer interfaces for global enterprise operations. Our network bridges the security parameters of military-grade encryption keys with the immutability profiles of decentralized block storage system matrices.")
+    st.subheader("🏛️ Institutional Layer Overview")
+    st.markdown("Project Inaya anchors operational corporate document workflows seamlessly onto immutable node networks. The platform isolates data assets into mathematical vectors before broadcasting parallel pipelines across global high-availability swarms.")
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("🌐 Global Node Cluster Telemetry Matrix")
-    
     s_col1, s_col2, s_col3, s_col4 = st.columns(4)
-    with s_col1: st.markdown(f'<div class="stat-badge"><div class="stat-value">Active</div><div class="stat-label">Network Infrastructure</div></div>', unsafe_allow_html=True)
-    with s_col2: st.markdown(f'<div class="stat-badge"><div class="stat-value">{total_files_archived}</div><div class="stat-label">Secured File Anchors</div></div>', unsafe_allow_html=True)
-    with s_col3: st.markdown(f'<div class="stat-badge"><div class="stat-value">99.998%</div><div class="stat-label">Swarm Node Uptime</div></div>', unsafe_allow_html=True)
-    with s_col4: st.markdown(f'<div class="stat-badge"><div class="stat-value">&lt; 1.2s</div><div class="stat-label">Cryptographic Synthesis Time</div></div>', unsafe_allow_html=True)
+    with s_col1: st.markdown(f'<div class="metric-container"><div class="metric-val" style="color:#10b981;">ACTIVE</div><div class="metric-lbl">Ledger Connection</div></div>', unsafe_allow_html=True)
+    with s_col2: st.markdown(f'<div class="metric-container"><div class="metric-val">{total_files_archived}</div><div class="metric-lbl">Secured Shard Pairs</div></div>', unsafe_allow_html=True)
+    with s_col3: st.markdown(f'<div class="metric-container"><div class="metric-val">99.999%</div><div class="metric-lbl">Swarm Gateway Availability</div></div>', unsafe_allow_html=True)
+    with s_col4: st.markdown(f'<div class="metric-container"><div class="metric-val">&lt; 0.9s</div><div class="metric-lbl">Cryptographic Synthesis</div></div>', unsafe_allow_html=True)
 
 
 # ─── 2. FEATURES MATRIX PAGE ───
-elif current_page == "✨ Core Features Matrix":
+elif current_page == "✨ Tech Features Matrix":
     st.markdown("""
-        <div class="hero-banner">
-            <div class="hero-title">CORE TECHNICAL ARCHITECTURE FEATURES</div>
-            <div class="hero-subtitle">Hardened Data Partitioning, Threat Isolation, & Cryptographic Immutability</div>
+        <div class="hero-card">
+            <div class="hero-title">CORE PROTOCOL ARCHITECTURE FEATURES</div>
+            <div class="hero-subtitle">Zero-Knowledge Storage Mechanics & Cryptographic Threat Neutralization</div>
         </div>
     """, unsafe_allow_html=True)
     
     f_col1, f_col2, f_col3 = st.columns(3)
     with f_col1:
         st.markdown("""
-            <div class="feature-card">
-                <div class="feature-icon">🚀</div>
-                <div class="feature-title">Local Cryptographic Sharding</div>
-                <div class="feature-text">Files never touch the internet in one piece. Our gateway slices file payloads into standalone, isolated multi-tenant data blocks prior to running transfer routines, ensuring zero master vectors exist outside local boundaries.</div>
+            <div class="premium-card">
+                <div class="card-icon">01</div>
+                <div class="card-title">Localized Cryptographic Slicing</div>
+                <div class="card-desc">Files never leave local machines whole. The architecture divides input streams into standalone, isolated fragments before running transport vectors, ensuring zero cleartext data exists outside host boundaries.</div>
             </div>
         """, unsafe_allow_html=True)
     with f_col2:
         st.markdown("""
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <div class="feature-title">Zero-Knowledge Proof Isolation</div>
-                <div class="feature-text">Zero cleartext data or administrative access keys are logged on remote nodes. Decryption keys remain exclusively inside the vault memory of our enterprise administrators, preventing structural leaks.</div>
+            <div class="premium-card">
+                <div class="card-icon">02</div>
+                <div class="card-title">Asymmetric Vault Memory Isolation</div>
+                <div class="card-desc">Zero sensitive credential maps or database records are tracked on centralized servers. Decryption arrays live solely inside the mind of authenticated node operations directors.</div>
             </div>
         """, unsafe_allow_html=True)
     with f_col3:
         st.markdown("""
-            <div class="feature-card">
-                <div class="feature-icon">⛓️</div>
-                <div class="feature-title">EVM Immutable Anchoring</div>
-                <div class="feature-text">Every single data archival event prompts a secure verification trace sequence, establishing absolute ledger accountability linked directly to our live, publicly audited smart contract registry nodes.</div>
+            <div class="premium-card">
+                <div class="card-icon">03</div>
+                <div class="card-title">EVM Immutable Attestation</div>
+                <div class="card-desc">Every individual storage event fires a validation signature across public testnet nodes, establishing cryptographic provenance linked directly to our live, audited verified smart contract.</div>
             </div>
         """, unsafe_allow_html=True)
 
 
 # ─── 3. SOVEREIGN SECURE VAULT ENGINE ───
-elif current_page == "📥 Sovereign Secure Vault":
+elif current_page == "📥 Sovereign Storage Core":
     st.markdown("""
-        <div class="hero-banner">
-            <div class="hero-title">SOVEREIGN HARDENED OPERATIONAL VAULT</div>
-            <div class="hero-subtitle">Cryptographic Key Fragmentation & Decentralized Broadcast Pipeline</div>
+        <div class="hero-card">
+            <div class="hero-title">SECURE OPERATIONAL TRANSMISSION VAULT</div>
+            <div class="hero-subtitle">Asymmetric Key Splitting & Cryptographic Swarm Routing Pipeline</div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -340,75 +365,74 @@ elif current_page == "📥 Sovereign Secure Vault":
 
 
 # ─── 4. VENTURE TOKENOMICS HUB ───
-elif current_page == "📊 Venture Tokenomics Hub":
+elif current_page == "📊 Live Tokenomics Deck":
     st.markdown("""
-        <div class="hero-banner">
-            <div class="hero-title">VENTURE ECONOMIC MODEL & MARKET ANALYTICS</div>
-            <div class="hero-subtitle">Real-time Smart Contract Minting Caps & Treasury Revenue Accounting Metrics</div>
+        <div class="hero-card">
+            <div class="hero-title">VENTURE ECONOMIC MODEL & ASSET CAPITAL BALANCES</div>
+            <div class="hero-subtitle">Smart Contract Allocations & Live Utility Token Dynamics</div>
         </div>
     """, unsafe_allow_html=True)
     
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-    with m_col1: st.metric(label="📊 Token Max Supply Cap", value="30,000,000 INAYA", delta="Strict Bitcoin Hard Cap")
-    with m_col2: st.metric(label="📈 Initial Circulating Pool", value="5,000,000 INAYA", delta="Founding Liquidity Allocation")
-    with m_col3: st.metric(label="💸 Service Micro-Fee Rate", value="0.0001 INAYA", delta="Fixed Per Transaction")
-    with m_col4: st.metric(label="🏦 Accumulated Treasury Revenue", value=f"{accumulated_fees:.4f} INAYA", delta="Real-time Cash Flow")
+    with m_col1: st.metric(label="📊 Token Max Supply Cap", value="30,000,000 INAYA", delta="Strict Scarcity Lock")
+    with m_col2: st.metric(label="📈 Initial Circulating Pool", value="5,000,000 INAYA", delta="Seed Base Allocation")
+    with m_col3: st.metric(label="💸 Service Micro-Fee Rate", value="0.0001 INAYA", delta="Fixed Per Archival")
+    with m_col4: st.metric(label="🏦 Treasury Working Capital", value=f"{accumulated_fees:.4f} INAYA", delta="Live Cash Flow Telemetry")
     
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.subheader("📊 Strategic Ecosystem Allocation Distribution")
+    st.subheader("📊 System Structure Distribution Models")
     
     tokenomics_structure = {
-        "Allocation Sector Hubs": ["Initial Circulating Supply (Seed)", "Locked Ecosystem Reserves (Future Drops)", "Dynamic Cloud Service Revenue"],
+        "Ecosystem Strategic Allocation Pools": ["Initial Circulating Supply (Seed)", "Locked Ecosystem Reserves (Future Drops)", "Dynamic Cloud Service Revenue"],
         "Token Holdings (INAYA Volume)": [5000000, 25000000, accumulated_fees]
     }
-    st.bar_chart(pd.DataFrame(tokenomics_structure).set_index("Allocation Sector Hubs"), use_container_width=True)
+    st.bar_chart(pd.DataFrame(tokenomics_structure).set_index("Ecosystem Strategic Allocation Pools"), use_container_width=True)
 
 
-# ─── 5. ECOSYSTEM ROADMAP PAGE (NEW TIMELINE ADDITION) ───
-elif current_page == "🗺️ Ecosystem Roadmap":
+# ─── 5. ECOSYSTEM ROADMAP PAGE ───
+elif current_page == "🗺️ Tactical Growth Roadmap":
     st.markdown("""
-        <div class="hero-banner">
-            <div class="hero-title">STRATEGIC INFRASTRUCTURE ROADMAP</div>
-            <div class="hero-subtitle">Multi-Phase Evolutionary Milestones & Institutional Deployment Timeline</div>
+        <div class="hero-card">
+            <div class="hero-title">STRATEGIC INFRASTRUCTURE TIMELINES</div>
+            <div class="hero-subtitle">Multi-Phase Development Pipelines & Venture Scaling Milestones</div>
         </div>
     """, unsafe_allow_html=True)
     
     st.subheader("🗺️ Strategic Project Timelines")
     st.markdown("Our engineered rollout timeline balances systematic testing on public testnet sandboxes with institutional node expansion objectives across global multi-tenant sectors.")
     
-    # Custom HTML/CSS Rendered Vertical Timeline
     st.markdown("""
-        <div class="roadmap-container">
-            <div class="roadmap-node">
-                <div class="roadmap-date">Phase 1 | Q3 2026</div>
-                <div class="roadmap-header">Genesis Token Launch & Verification [COMPLETED]</div>
-                <div class="roadmap-body">Successful engineering, compilation, and deployment of the capped 30,000,000 supply $INAYA smart contract onto the public blockchain network ledger with full source verification flags enabled.</div>
+        <div class="modern-timeline">
+            <div class="timeline-item">
+                <div class="time-tag">Phase 1 | Completed</div>
+                <div class="time-head">Genesis Token Anchor Deployment</div>
+                <div class="time-body">Successful design, smart contract compilation, and architectural launch of the capped 30,000,000 $INAYA supply base onto public blockchain testnets with full Sourcify cryptographic signature verification records.</div>
             </div>
-            <div class="roadmap-node">
-                <div class="roadmap-date">Phase 2 | Q4 2026</div>
-                <div class="roadmap-header">Enterprise Portal Cloud Deployment & Alpha Trials</div>
-                <div class="roadmap-body">Launching permanent, decentralized multitenant front-end gateway dashboards connected securely to active IPFS pinning arrays, enabling administrative data sharding trials across globally accessible URL end-points.</div>
+            <div class="timeline-item">
+                <div class="time-tag">Phase 2 | Q4 2026</div>
+                <div class="time-head">Enterprise Portal & Swarm Cluster Trials</div>
+                <div class="time-body">Deploying fully decentralized multi-tenant UI front-end dashboards to persistent high-performance cloud nodes, introducing multi-tab system routing layouts, and scaling zero-knowledge localized file fragmentation scripts.</div>
             </div>
-            <div class="roadmap-node">
-                <div class="roadmap-date">Phase 3 | Q1 2027</div>
-                <div class="roadmap-header">Automated API Bridges & Corporate SDK Releases</div>
-                <div class="roadmap-body">Publishing software development toolkits that enable institutional operations centers to plug legacy database records directly into our local security fragmentation arrays, completely bypassing manual file upload workflows.</div>
+            <div class="timeline-item">
+                <div class="time-tag">Phase 3 | Q1 2027</div>
+                <div class="time-head">Automated Corporate Bridges & SDK Deployments</div>
+                <div class="time-body">Publishing backend programmatic hooks and software development packages, allowing institutional operations teams to link native databases directly to local encryption sharding logic.</div>
             </div>
-            <div class="roadmap-node">
-                <div class="roadmap-date">Phase 4 | Q2 2027</div>
-                <div class="roadmap-header">Mainnet High-Liquidity Exchange Pools</div>
-                <div class="roadmap-body">Migrating finalized, audited staging framework contract layers to the live BNB Chain Mainnet, establishing deep institutional liquidity pairs, and activating live automatic per-archive service fee burns.</div>
+            <div class="timeline-item">
+                <div class="time-tag">Phase 4 | Q2 2027</div>
+                <div class="time-head">Mainnet Genesis & Market Liquidity Events</div>
+                <div class="time-body">Migrating validated code blocks to live production layers on the BNB Smart Chain Mainnet, initializing deep public market liquidity pairs, and switching over to dynamic, protocol-driven automatic gas fee metrics.</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 
 # ─── 6. ABOUT US & BRAND PHILOSOPHY PAGE ───
-elif current_page == "📜 About Us & Philosophy":
+elif current_page == "📜 Executive Philosophy":
     st.markdown("""
-        <div class="hero-banner">
+        <div class="hero-card">
             <div class="hero-title">THE INAYA FOUNDATION PHILOSOPHY</div>
-            <div class="hero-subtitle">Engineering Protection, Grace, and Cryptographic Guardianship for Digital Sovereignty</div>
+            <div class="hero-subtitle">Grace, Pure Custody, and Uncompromising Protection for Enterprise Data Assets</div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -421,8 +445,8 @@ elif current_page == "📜 About Us & Philosophy":
     """)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("🤝 Leadership & Core Development Council")
+    st.subheader("🤝 Core Strategic Council")
     
     c1, c2 = st.columns(2)
-    with c1: st.info("👨‍💻 **Managing Director & Lead Systems Architect** \nOverseeing the end-to-end integration of our secure localized sharding structures, container architectures, and EVM block network registry nodes.")
-    with c2: st.success("🌟 **Inaya (The Brand Catalyst & Creative Director)** \nThe direct visual inspiration for our luxury Sovereign Custody design language, guiding the symmetry guidelines of our premium security crest layouts.")
+    with c1: st.info("👨‍💻 **Managing Director & Lead Systems Architect** \nDirecting core local file splitting architectures, web framework container controls, and blockchain settlement integrations.")
+    with c2: st.success("🌟 **Inaya (Creative Director & Brand Catalyst)** \nThe visual muse behind our minimalist luxury user experience, defining the symmetry parameters of our premium interface components.")
