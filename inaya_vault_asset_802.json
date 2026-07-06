@@ -1,0 +1,11 @@
+{
+    "metadata": {
+        "node": "Inaya Core Node 01",
+        "asset_id": "802",
+        "timestamp": 1783297306.1394506
+    },
+    "security_layer": {
+        "identity_fingerprint": "171dbb03a48e9a6b686985243748dbcb42de8de13d8d1fa5e0f29ded13d34357",
+        "encrypted_garbage_data": "gAAAAABqSvUaiAyG220QS5R8LpxhvnCEtwTXCus9qjYe_dVVeHVhwSLtijZXcYNHUm2hZKmJrThFqAedAG4g_H4AjnvSnGNCQ5OwZYD3_OaHteRNsSZfrx7Ssz5wwTn2XfV7lFY70Bgm"
+    }
+}

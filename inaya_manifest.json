@@ -1,0 +1,93 @@
+[
+    {
+        "asset_id": "801",
+        "sha256_fingerprint": "5719929181fa4212765076305050112fe6a1e336eae9d8683bb7dc4f99cc4b81",
+        "logged_at": "2026-07-06 00:21:23"
+    },
+    {
+        "asset_id": "802",
+        "sha256_fingerprint": "171dbb03a48e9a6b686985243748dbcb42de8de13d8d1fa5e0f29ded13d34357",
+        "logged_at": "2026-07-06 00:21:46"
+    },
+    {
+        "Asset ID": "909",
+        "Original Name": "GTC_White_Paper.pdf",
+        "Timestamp Logged": "2026-07-06 00:38:37",
+        "SHA-256 Fingerprint": "6e17927f5b9f7511d6d5948cfa8b4abafcc746a5e4112096dc2ec4dfc46a0540"
+    },
+    {
+        "Asset ID": "999",
+        "Filename": "GTC_White_Paper.pdf",
+        "SHA-256 Signature": "6e17927f5b9f7511d6d5948cfa8b4abafcc746a5e4112096dc2ec4dfc46a0540",
+        "Distribution Cluster": "Alpha Core Network, Beta Vault Network, Gamma Ledger Network",
+        "Network Status": "SECURE & REPLICATED",
+        "Timestamp Logged": "2026-07-06 00:46:55"
+    },
+    {
+        "Asset ID": "888",
+        "Filename": "Is my strategy of Market sell 12240 in four chunk... - Is my strategy of Market sell 12240 in four chunk.pdf",
+        "SHA-256 Root Sig": "365a541c4417b3e1aa3e802323a128a8f5356e8b4530aa46831520483d7935e5",
+        "Shard Alpha Size": "20786 bytes",
+        "Shard Beta Size": "20786 bytes",
+        "Security State": "SHARDED & FRAGMENTED",
+        "Timestamp Logged": "2026-07-06 00:55:55"
+    },
+    {
+        "Tenant ID": "GOOGLE",
+        "Asset ID": "101",
+        "Filename": "oxinchain-whitepaper.pdf",
+        "SHA-256 Root Sig": "044b5879d61ce22dc69f440d37540d6f12b52556f793eafc341658d01cb1159f",
+        "Shard Alpha Size": "2014502 bytes",
+        "Shard Beta Size": "2014502 bytes",
+        "Timestamp Logged": "2026-07-06 01:05:47"
+    },
+    {
+        "Tenant ID": "HBL",
+        "Asset ID": "1",
+        "Filename": "oxinchain-whitepaper.pdf",
+        "SHA-256 Root Sig": "044b5879d61ce22dc69f440d37540d6f12b52556f793eafc341658d01cb1159f",
+        "Shard Alpha Size": "2014502 bytes",
+        "Shard Beta Size": "2014502 bytes",
+        "Previous Block Hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "Timestamp Logged": "2026-07-06 01:13:33",
+        "Current Block Hash": "1d1aa649351dabe7f00eba2ae86c4cadee528e45c1065b498ebe87e3214ab608"
+    },
+    {
+        "Tenant ID": "HBL",
+        "Asset ID": "2",
+        "Filename": "test.pdf",
+        "SHA-256 Root Sig": "6999a83e086db72c6b1bfad6b66b1c89232d5c792861b36371e97be551a4f194",
+        "Shard Alpha Size": "8210 bytes",
+        "Shard Beta Size": "8210 bytes",
+        "Previous Block Hash": "1d1aa649351dabe7f00eba2ae86c4cadee528e45c1065b498ebe87e3214ab608",
+        "Timestamp Logged": "2026-07-06 01:15:05",
+        "Current Block Hash": "389fb4d31e0952725754d29d8b85ddb21064f39877908b332432f33548bb5a31"
+    },
+    {
+        "Tenant ID": "HBL",
+        "Asset ID": "1",
+        "Filename": "oxinchain-whitepaper.pdf",
+        "SHA-256 Root Sig": "044b5879d61ce22dc69f440d37540d6f12b52556f793eafc341658d01cb1159f",
+        "Shard Alpha Size": "2014502 bytes",
+        "Shard Beta Size": "2014502 bytes",
+        "Previous Block Hash": "389fb4d31e0952725754d29d8b85ddb21064f39877908b332432f33548bb5a31",
+        "Timestamp Logged": "2026-07-06 01:22:24",
+        "Current Block Hash": "f0630f363b01f635e370fb542baecb0ceb7db26ced08bb205795d956d0680799"
+    },
+    {
+        "Tenant ID": "HBL",
+        "Asset ID": "555",
+        "Filename": "Oxin_Chain_Due_Diligence_Bybit_2026.pdf",
+        "SHA-256 Root Sig": "120cbc8d3cb7e559dc0f30961e1c40840e18d5559712c8eb56af08fc42518a5a",
+        "Shard Alpha Size": "226194 bytes",
+        "Shard Beta Size": "226194 bytes",
+        "Previous Block Hash": "f0630f363b01f635e370fb542baecb0ceb7db26ced08bb205795d956d0680799",
+        "Timestamp Logged": "2026-07-06 01:30:31",
+        "Current Block Hash": "52aea2f311be0423b822f429ad98110d8b3257a9fc648294593f04488b61d8d7"
+    },
+    {
+        "Asset ID": "1",
+        "Filename": "Is my strategy of Market sell 12240 in four chunk... - Is my strategy of Market sell 12240 in four chunk.pdf",
+        "Timestamp": 1783317422.423797
+    }
+]

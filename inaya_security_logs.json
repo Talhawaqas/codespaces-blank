@@ -1,0 +1,34 @@
+[
+    {
+        "Timestamp": "2026-07-06 01:33:11",
+        "Tenant Partition": "HBL",
+        "Action Type": "SELF_HEALING_ENGAGED",
+        "Target Asset": "555",
+        "Severity Level": "WARNING",
+        "Status Message": "Primary Sector Alpha missing. Automatic restoration script triggered."
+    },
+    {
+        "Timestamp": "2026-07-06 01:30:31",
+        "Tenant Partition": "HBL",
+        "Action Type": "WRITE_SUCCESS",
+        "Target Asset": "555",
+        "Severity Level": "INFO",
+        "Status Message": "File 'Oxin_Chain_Due_Diligence_Bybit_2026.pdf' successfully sharded with dual failover mirrors."
+    },
+    {
+        "Timestamp": "2026-07-06 01:22:45",
+        "Tenant Partition": "HBL",
+        "Action Type": "READ_ACCESS_DENIED",
+        "Target Asset": "1",
+        "Severity Level": "CRITICAL",
+        "Status Message": "INTRUSION DETECTION: Invalid key verification check matching failed!"
+    },
+    {
+        "Timestamp": "2026-07-06 01:22:24",
+        "Tenant Partition": "HBL",
+        "Action Type": "WRITE_OPERATION",
+        "Target Asset": "1",
+        "Severity Level": "INFO",
+        "Status Message": "File 'oxinchain-whitepaper.pdf' successfully sharded and chained."
+    }
+]

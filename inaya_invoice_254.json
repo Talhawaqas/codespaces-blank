@@ -1,0 +1,10 @@
+{
+    "metadata": {
+        "node": "Inaya Core Node 01",
+        "timestamp": 1783295281.3724363
+    },
+    "security_layer": {
+        "identity_fingerprint": "aa4414e6f742b7511a5ecc4a70813792f28218dae485b30f9a360d649b9c14f8",
+        "encrypted_garbage_data": "gAAAAABqSu0xmOSRjqJ0OnhlTSYP92KEjP1eycOkdUY1upoiJzMjRssM3CpLvmEQ-P9jiHjfELS82MGkZesK04o-8WNZyxG60YVX2XLfXdV-Ro6NWnT0biPsQKfC-WLiVGm24NiOHjxDYkLm47HmFmlRWO4bNQmyww=="
+    }
+}
