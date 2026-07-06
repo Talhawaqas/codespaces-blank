@@ -31,7 +31,7 @@ export default function Home() {
   ];
 
   const connectWallet = async () => {
-    if (typeof window !== 'undefined' && window.ethereum !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         setWalletAddress(accounts[0]);
@@ -42,8 +42,9 @@ export default function Home() {
     } else { alert("Please install MetaMask extension to interface with the ledger layer!"); }
   };
 
+  // ✨ FIXED: Added explicit typeof to prevent client hydration crashes
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.ethereum !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', (accs) => {
         if (accs.length > 0) { setWalletAddress(accs[0]); setIsConnected(true); }
         else { setWalletAddress(''); setIsConnected(false); }
@@ -103,7 +104,6 @@ export default function Home() {
     return data.IpfsHash;
   };
 
-  // 📥 Function 1: Secure Sharding + MetaMask Blockchain Broadcast
   const handleUploadSequence = async () => {
     if (!assetId || !selectedFile || !masterPasskey || !pinataJwt) {
       alert("Handshake Error: Ensure Passkey, Pinata JWT, and Asset ID parameters are filled."); return;
@@ -144,7 +144,6 @@ export default function Home() {
     } catch (err) { setStatusLog(`❌ Execution Fault: ${err.message}`); }
   };
 
-  // 🔓 Function 2: On-Chain Read + Decentralized Synthesis & Download
   const handleRetrievalSequence = async () => {
     if (!queryAssetId || !masterPasskey) { alert("Missing target blockchain indexing maps."); return; }
     try {
@@ -229,9 +228,9 @@ export default function Home() {
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Scaling Networks</h2>
               <p className="text-[#94a3b8] text-sm mb-8">Next-generation client-side runtime parameters reskinned onto pure modular Tailwind DOM layouts.</p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "ACTIVE_NODE" : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">Wallet Core Status</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">Verified Supply Cap</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "99.999%" : "0.000%"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">EVM Sync Confidence</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "ACTIVE_NODE" : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-wildest mt-1">Wallet Core Status</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] tracking-wildest mt-1">Verified Supply Cap</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "99.999%" : "0.000%"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-wildest mt-1">EVM Sync Confidence</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">&lt; 0.05s</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">Reactive DOM Latency</div></div>
               </div>
             </div>
