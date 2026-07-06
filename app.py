@@ -187,8 +187,6 @@ elif current_page == "Sovereign Vault":
                     
                     if success_a and success_b:
                         try:
-                            if success_a and success_b:
-                        try:
                             st.info("⛓️ Upload successful. Preparing on-chain transaction package for BNB Chain ledger...")
                             operator_account = w3.eth.account.from_key(operator_private_key)
                             operator_address = operator_account.address
@@ -212,8 +210,10 @@ elif current_page == "Sovereign Vault":
                             st.code(f"Shard Alpha Address Matrix: {cid_a}\nShard Beta Address Matrix: {cid_b}")
                         except Exception as error_msg:
                             st.error(f"❌ Blockchain Write Failed: Check your private key or gas funds. Details: {error_msg}")
-                    else: st.error("❌ IPFS broadcast channel reject fault.")
-                else: st.error("❌ Missing unique tracking IDs, upload files, or operator wallet verification keys.")
+                    else:
+                        st.error("❌ IPFS broadcast channel reject fault.")
+                else:
+                    st.error("❌ Missing unique tracking IDs, upload files, or operator wallet verification keys.")
 
         with tab2:
             query_id = st.text_input("Enter On-Chain Registered Asset ID:")
