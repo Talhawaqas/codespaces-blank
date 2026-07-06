@@ -425,4 +425,4 @@ elif current_page == "📜 About Us & Philosophy":
     
     c1, c2 = st.columns(2)
     with c1: st.info("👨‍💻 **Managing Director & Lead Systems Architect** \nOverseeing the end-to-end integration of our secure localized sharding structures, container architectures, and EVM block network registry nodes.")
-    with c2: st.success("🌟 **Inaya (The Brand Catalyst & Creative Director)** \nThe direct visual inspiration for our luxury Sovereign Custody design language, guiding the symmetry guidelines of our premium security crest layouts.")
+    with c2: st.success("🌟 **Inaya (The Brand Catalyst & Creative Director)** \nThe direct visual inspiration for our luxury Sovereign Custody design language, guiding the symmetry guidelines of our premium security crest layouts.")cd..
