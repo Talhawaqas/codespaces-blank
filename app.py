@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # 🚀 STEP 1: ENTER YOUR FRESH DEPLOYED TESTNET CONTRACT ADDRESS RIGHT HERE
-LIVE_CONTRACT_ADDRESS = "0xbd23E6D04a82689a59E5188f9B572CBeF53D4763"
+LIVE_CONTRACT_ADDRESS = "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3"
 
 # Public RPC Endpoint node gateway routing channel
 BSC_TESTNET_RPC = "https://data-seed-prebsc-1-s1.binance.org:8545/"
