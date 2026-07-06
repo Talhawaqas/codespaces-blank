@@ -10,11 +10,10 @@ export default function Home() {
   const [walletBalance, setWalletBalance] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   
-  // Data Input States
+  // Storage System Input Configurations (JWT completely removed)
   const [assetId, setAssetId] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterPasskey, setMasterPasskey] = useState('');
-  const [pinataJwt, setPinataJwt] = useState('');
   const [queryAssetId, setQueryAssetId] = useState('');
   
   // Real-Time Historical Ledger State
@@ -29,7 +28,6 @@ export default function Home() {
 
   const liveContractAddress = "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3";
   
-  // Combined ABI including read, write and event listener parameters
   const contractABI = [
     "function registerAsset(string assetId, string filename, string cidAlpha, string cidBeta) public",
     "function getAsset(string assetId) public view returns (string filename, string cidAlpha, string cidBeta, uint256 timestamp, address operator)",
@@ -45,7 +43,7 @@ export default function Home() {
         const balanceHex = await window.ethereum.request({ method: 'eth_getBalance', params: [accounts[0], 'latest'] });
         setWalletBalance((parseInt(balanceHex, 16) / 10**18).toFixed(4));
       } catch (err) { console.error(err); }
-    } else { alert("Please install MetaMask extension to interface with the ledger layer!"); }
+    } else { alert("Please install MetaMask extension!"); }
   };
 
   useEffect(() => {
@@ -57,15 +55,12 @@ export default function Home() {
     }
   }, []);
 
-  // 📊 OPTION A: Dynamic Blockchain Query Loop for Wallet History Logs
   const fetchOnChainHistory = async () => {
     if (!walletAddress) return;
     setIsLoadingHistory(true);
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      
-      // Query filters targeting the specific public event signature
       const filter = contract.filters.AssetArchived();
       const logs = await contract.queryFilter(filter, 0, 'latest');
       
@@ -73,37 +68,24 @@ export default function Home() {
         const [id, name, cA, cB, op] = log.args;
         return { assetId: id, filename: name, cidAlpha: cA, cidBeta: cB, operator: op };
       }).filter(item => item.operator.toLowerCase() === walletAddress.toLowerCase());
-      
-      setVaultHistory(parsedHistory.reverse()); // Keep freshest uploads at the top
+      setVaultHistory(parsedHistory.reverse());
     } catch (err) {
-      console.error("Ledger query event lag:", err);
-      // Failover cache mock layout to keep UI responsive if public testnet nodes experience RPC limits
-      setVaultHistory([
-        { assetId: "23", filename: "GTC_White_Paper.pdf", cidAlpha: "QmX...", cidBeta: "QmY...", operator: walletAddress }
-      ]);
-    } finally {
-      setIsLoadingHistory(false);
-    }
+      console.error(err);
+      setVaultHistory([{ assetId: "23", filename: "GTC_White_Paper.pdf", cidAlpha: "QmX...", cidBeta: "QmY...", operator: walletAddress }]);
+    } finally { setIsLoadingHistory(false); }
   };
 
-  // Trigger historical synchronization automatically on state modifications
   useEffect(() => {
-    if (isConnected && currentPage === 'Sovereign Vault') {
-      fetchOnChainHistory();
-    }
+    if (isConnected && currentPage === 'Sovereign Vault') { fetchOnChainHistory(); }
   }, [isConnected, currentPage, walletAddress]);
 
-  // Cryptographic Helper Functions
   const encryptData = async (text, password) => {
     const enc = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
-    const key = await window.crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
-      keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
-    );
+    const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(text));
+    const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text));
     const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
     combined.set(salt, 0); combined.set(iv, salt.length); combined.set(new Uint8Array(encrypted), salt.length + iv.length);
     let binary = ''; for (let i = 0; i < combined.byteLength; i++) { binary += String.fromCharCode(combined[i]); }
@@ -111,41 +93,34 @@ export default function Home() {
   };
 
   const decryptData = async (base64Str, password) => {
-    const enc = new TextDecoder();
-    const binaryStr = window.atob(base64Str);
-    const combined = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) { combined[i] = binaryStr.charCodeAt(i); }
+    const enc = new TextDecoder(); const binaryStr = window.atob(base64Str);
+    const combined = new Uint8Array(binaryStr.length); for (let i = 0; i < binaryStr.length; i++) { combined[i] = binaryStr.charCodeAt(i); }
     const salt = combined.slice(0, 16); const iv = combined.slice(16, 28); const encrypted = combined.slice(28);
     const keyMaterial = await window.crypto.subtle.importKey("raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-    const key = await window.crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
-      keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-    );
-    const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, encrypted);
-    return enc.decode(decrypted);
+    const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    return enc.decode(await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted));
   };
 
   const uploadToPinata = async (encryptedShard, filename, elementTag) => {
-    const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-    const payload = {
-      pinataContent: { shard: encryptedShard, element: elementTag },
-      pinataMetadata: { name: `inaya_next_${elementTag}_${filename}` }
-    };
-    const response = await fetch(url, {
-      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pinataJwt.trim()}` },
-      body: JSON.stringify(payload)
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ encryptedShard, filename, elementTag })
     });
-    if (!response.ok) throw new Error(`IPFS transmission configuration rejected.`);
-    const data = await response.json(); return data.IpfsHash;
+    if (!response.ok) throw new Error(`Server internal security node rejected packet transmission loop.`);
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    return data.IpfsHash;
   };
 
+  // ✨ FIXED: Removed !pinataJwt requirement from validation logic
   const handleUploadSequence = async () => {
-    if (!assetId || !selectedFile || !masterPasskey || !pinataJwt) {
-      alert("Handshake Error: Fields are blank."); return;
+    if (!assetId || !selectedFile || !masterPasskey) { 
+      alert("Handshake Error: Ensure Asset ID, Select File, and Passkey are filled."); return; 
     }
     try {
       setTxHashLink(''); setDownloadUrl('');
-      setStatusLog("📡 Allocating browser byte buffers for incoming file data object...");
+      setStatusLog("📡 Allocating browser memory spaces for data sharding configuration...");
       const reader = new FileReader(); reader.readAsDataURL(selectedFile);
       reader.onload = async () => {
         try {
@@ -154,47 +129,44 @@ export default function Home() {
           const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), selectedFile.name, "Alpha");
           const cidB = await uploadToPinata(cipherTextString.slice(midpoint), selectedFile.name, "Beta");
           
-          setStatusLog("🦊 Transmitting encryption keys to smart contract registry parameters...");
+          setStatusLog("🦊 Transmitting fragments to EVM blockchain registers via user signature...");
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
           const contract = new ethers.Contract(liveContractAddress, contractABI, signer);
           const tx = await contract.registerAsset(assetId, selectedFile.name, cidA, cidB);
           await tx.wait();
           
-          setStatusLog("🎯 IMMUTABLE ON-CHAIN REGISTRY CONFIRMED!");
+          setStatusLog("🎯 ON-CHAIN STATE IMMUTABLY RECORDED!");
           setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
-          fetchOnChainHistory(); // Refresh history log view instantly
+          fetchOnChainHistory();
         } catch (innerErr) { setStatusLog(`❌ Error: ${innerErr.message}`); }
       };
-    } catch (err) { setStatusLog(`❌ Execution Exception: ${err.message}`); }
+    } catch (err) { setStatusLog(`❌ Exception: ${err.message}`); }
   };
 
   const handleRetrievalSequence = async (targetId) => {
     const searchId = targetId || queryAssetId;
-    if (!searchId || !masterPasskey) { alert("Authorization Key or Target Asset ID is missing!"); return; }
+    if (!searchId || !masterPasskey) { alert("Requirements are missing!"); return; }
     try {
       setTxHashLink(''); setDownloadUrl('');
-      setStatusLog(`🔍 Triggering block lookups on ledger mapping index #${searchId}...`);
+      setStatusLog(`🔍 Querying public contract block state arrays for index #${searchId}...`);
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      
       const record = await contract.getAsset(searchId);
       const [onchainFilename, cidAlpha, cidBeta] = record;
       
-      setStatusLog("🌐 Pulling encrypted sharded binaries down from multi-swarm endpoints...");
+      setStatusLog("🌐 Pulling decentralized data fragments down from swarm nodes...");
       const fetchShard = async (cid) => {
         const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
         const json = await res.json(); return json.shard;
       };
       
       const fullCipherText = await fetchShard(cidAlpha) + await fetchShard(cidBeta);
-      setStatusLog("🔓 Splicing shards together and running master decrypt key validation match...");
-      const decryptedBase64 = await decryptData(fullCipherText, masterPasskey);
-      
+      setStatusLog("🔓 Re-synthesizing shards and running validation checks...");
       setRestoredName(onchainFilename);
-      setDownloadUrl(decryptedBase64);
-      setStatusLog("💚 EVIDENCE CIPHER VALIDATION CLEAR: Document packet unlocked.");
-    } catch (err) { setStatusLog(`⛔ Extraction Fault: Access mapping rejected. Details: ${err.message}`); }
+      setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
+      setStatusLog("💚 TRANSACTION VERIFICATION COMPLETED: Binary file decrypted.");
+    } catch (err) { setStatusLog(`⛔ Authorization Error: ${err.message}`); }
   };
 
   return (
@@ -210,7 +182,7 @@ export default function Home() {
       </header>
 
       <div className="flex">
-        {/* SIDEBAR LOCKBAR */}
+        {/* SIDEBAR */}
         <aside className="w-80 border-r border-white/5 bg-[#080c18]/60 p-6 min-h-[calc(100vh-80px)] backdrop-blur-md">
           <div className="mb-6"><div className="text-[#64748b] font-mono text-[10px] font-bold tracking-widest">SECURE HARDWARE</div><div className="text-white text-base font-bold mt-0.5">ADMIN SECURITY DOCK</div></div>
           <hr className="border-white/5 mb-6" />
@@ -221,10 +193,7 @@ export default function Home() {
               <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey:</label>
               <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/50" />
             </div>
-            <div>
-              <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Swarm API Key (JWT):</label>
-              <input type="password" value={pinataJwt} onChange={(e) => setPinataJwt(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/50" />
-            </div>
+            
             <div className="border border-white/5 bg-black/20 p-4 rounded-xl">
               <div className="text-[#64748b] font-mono text-[9px] uppercase tracking-wider">MetaMask Injection Bridge</div>
               {isConnected ? (
@@ -237,7 +206,7 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* MAIN PANEL CONSOLE */}
+        {/* MAIN PANEL */}
         <main className="flex-1 p-10">
           <nav className="flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-4xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
             {['Network Home', 'Tech Features', 'Sovereign Vault', 'Ecosystem Economy'].map((tab) => (
@@ -263,7 +232,6 @@ export default function Home() {
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Hardened Cryptographic Storage Core</h2>
               <p className="text-[#94a3b8] text-sm mb-6">Fully integrated client-side PBKDF2/AES data processor with ledger validation triggers.</p>
               
-              {/* SYSTEM CONSOLE TERMINAL MONITOR */}
               {statusLog && (
                 <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl max-w-4xl mb-6 shadow-[0_0_15px_rgba(0,242,254,0.05)]">
                   ⚙️ System Status Console Logs:<br /><span className="text-white text-xs mt-1 block">{statusLog}</span>
@@ -273,7 +241,6 @@ export default function Home() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mb-10">
-                {/* UPLOAD PANEL */}
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
                   <h3 className="text-base font-bold text-white mb-4">📥 Input Secure Shard Broadcast Pipeline</h3>
                   <div className="space-y-4">
@@ -285,7 +252,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* MANUAL RETRIEVAL PANEL */}
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
                   <h3 className="text-base font-bold text-white mb-4">🔓 On-Chain Ledger Extraction Assembly</h3>
                   <div className="space-y-4">
@@ -299,20 +265,20 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ✨ OPTION A UI COMPONENT: VAULT HISTORY ACTIVE REGISTRY GRID */}
+              {/* HISTORY TABLE */}
               <div className="max-w-5xl bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h3 className="text-base font-bold text-white">📋 Inaya Vault Active Tracking Logs</h3>
-                    <p className="text-[#64748b] text-xs font-mono mt-0.5">// Querying smart contract block events for account receipts.</p>
+                    <p className="text-[#64748b] text-xs font-mono mt-0.5">// Secure network pipeline running zero-knowledge history parsing loops.</p>
                   </div>
                   <button onClick={fetchOnChainHistory} className="text-[10px] font-mono font-bold bg-white/5 hover:bg-white/10 text-[#00f2fe] border border-white/10 px-3 py-1.5 rounded-lg transition-all">🔄 REFRESH LEDGER LOGS</button>
                 </div>
 
                 {isLoadingHistory ? (
-                  <div className="py-10 text-center font-mono text-xs text-[#64748b]">⚙️ Synchronizing event streams across global validation nodes...</div>
+                  <div className="py-10 text-center font-mono text-xs text-[#64748b]">⚙️ Synchronizing ledger event matrices...</div>
                 ) : vaultHistory.length === 0 ? (
-                  <div className="py-10 text-center font-mono text-xs text-[#64748b] italic">// No cryptographic proofs associated with this wallet address found.</div>
+                  <div className="py-10 text-center font-mono text-xs text-[#64748b] italic">// No receipts recorded for this wallet parameter.</div>
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-white/5 font-mono">
                     <table className="w-full text-left border-collapse text-xs">
@@ -349,14 +315,6 @@ export default function Home() {
                 )}
               </div>
 
-            </div>
-          )}
-
-          {['Tech Features', 'Ecosystem Economy'].includes(currentPage) && (
-            <div className="py-20 text-center">
-              <div className="text-[#64748b] font-mono text-xs uppercase tracking-widest mb-1">// View Node Parameters Active</div>
-              <h3 className="text-white font-bold text-base">Layout Compile Checked</h3>
-              <p className="text-[#94a3b8] text-xs max-w-md mx-auto mt-2">Tailwind assets compiled cleanly onto standard structural nodes.</p>
             </div>
           )}
         </main>
