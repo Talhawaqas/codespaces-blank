@@ -44,87 +44,121 @@ def fetch_shard_from_ipfs(cid):
     except Exception as e:
         return False, str(e)
 
-# ─── 🧪 THE LUXURY FINTECH GLASSMORPHIC STYLING MATRIX ───
+# ─── 🧪 LUXURY ULTRA-MODERN GLOBAL CSS STYLING MATRIX ───
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        /* Smooth Global Reskinning */
+        /* Smooth Global Dark Theme Base */
         html, body, [class*="css"], .stApp {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #070a13 !important;
+            background-color: #05070f !important;
             color: #f8fafc !important;
         }
         
-        /* Modern Gradient Hero Panel */
+        /* Premium Center-Aligned Top App Identity */
+        .top-brand-bar {
+            text-align: center;
+            padding: 20px 0 10px 0;
+            background: radial-gradient(circle, rgba(223, 183, 108, 0.05) 0%, transparent 80%);
+        }
+        
+        /* Glassmorphic Modern Top Navbar Container Overrides */
+        div[data-testid="stRadioHorizontal"] {
+            background: rgba(15, 23, 42, 0.6) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            padding: 12px 24px !important;
+            border-radius: 30px !important;
+            justify-content: center !important;
+            max-width: 900px !important;
+            margin: 0 auto 35px auto !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+        
+        /* Hiding native radio circles to make them look like sleek navbar menu links */
+        div[data-testid="stRadioHorizontal"] label div[data-testid="stMarker"] {
+            display: none !important;
+        }
+        div[data-testid="stRadioHorizontal"] label {
+            color: #94a3b8 !important;
+            font-weight: 600 !important;
+            font-size: 10.5pt !important;
+            padding: 8px 18px !important;
+            border-radius: 20px !important;
+            transition: all 0.25s ease !important;
+            cursor: pointer !important;
+            margin: 0 4px !important;
+        }
+        div[data-testid="stRadioHorizontal"] label:hover {
+            color: #dfb76c !important;
+            background: rgba(223, 183, 108, 0.08) !important;
+        }
+        div[data-testid="stRadioHorizontal"] [data-checked="true"] label {
+            color: #05070f !important;
+            background: linear-gradient(135deg, #dfb76c 0%, #c5a059 100%) !important;
+            box-shadow: 0 4px 12px rgba(223, 183, 108, 0.25) !important;
+        }
+        
+        /* Modern Gradient Hero Panel Card */
         .hero-card {
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
-            border: 1px solid rgba(223, 183, 108, 0.2);
-            padding: 50px 40px;
+            border: 1px solid rgba(223, 183, 108, 0.15);
+            padding: 45px 40px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            margin-bottom: 35px;
         }
-        .hero-card::before {
-            content: '';
-            position: absolute;
-            top: 0; right: 0; width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(223, 183, 108, 0.08) 0%, transparent 70%);
-            z-index: 1;
-        }
-        .hero-title { font-size: 34pt; font-weight: 800; color: #ffffff; letter-spacing: -1px; margin: 0; }
-        .hero-subtitle { font-size: 10.5pt; color: #dfb76c; text-transform: uppercase; letter-spacing: 4px; margin-top: 12px; font-weight: 600; }
+        .hero-title { font-size: 32pt; font-weight: 800; color: #ffffff; letter-spacing: -1px; margin: 0; }
+        .hero-subtitle { font-size: 10pt; color: #dfb76c; text-transform: uppercase; letter-spacing: 4px; margin-top: 10px; font-weight: 600; }
         
-        /* Premium Floating Feature Cards */
+        /* Premium Floating Feature Cards Layout */
         .premium-card {
-            background: rgba(30, 41, 59, 0.4);
+            background: rgba(30, 41, 59, 0.35);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             padding: 35px 30px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             height: 100%;
         }
         .premium-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(223, 183, 108, 0.4);
-            box-shadow: 0 20px 40px rgba(223, 183, 108, 0.07);
-            background: rgba(30, 41, 59, 0.55);
+            transform: translateY(-5px);
+            border-color: rgba(223, 183, 108, 0.35);
+            box-shadow: 0 20px 40px rgba(223, 183, 108, 0.06);
+            background: rgba(30, 41, 59, 0.5);
         }
         .card-icon {
             background: linear-gradient(135deg, #dfb76c 0%, #c5a059 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 28pt; font-weight: 700; margin-bottom: 20px;
+            font-size: 26pt; font-weight: 700; margin-bottom: 15px;
         }
-        .card-title { font-size: 15pt; font-weight: 700; color: #ffffff; margin-bottom: 12px; letter-spacing: -0.3px; }
-        .card-desc { font-size: 10pt; color: #94a3b8; line-height: 1.7; font-weight: 400; }
+        .card-title { font-size: 14.5pt; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+        .card-desc { font-size: 10pt; color: #94a3b8; line-height: 1.7; }
 
-        /* Sleek Web3 Metrics Grids */
+        /* Sleek Web3 Metrics Cards Layout */
         .metric-container {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.03);
             border-radius: 14px;
             padding: 24px 20px;
             text-align: center;
-            box-shadow: inset 0 1px 2px rgba(255,255,255,0.02);
         }
         .metric-val { font-size: 22pt; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
         .metric-lbl { font-size: 8.5pt; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; font-weight: 600; }
 
-        /* Modernized Interactive Roadmap Pipeline */
+        /* Modernized Growth Roadmap Pipeline Timeline */
         .modern-timeline {
-            border-left: 2px dashed rgba(223, 183, 108, 0.3);
+            border-left: 2px dashed rgba(223, 183, 108, 0.25);
             padding-left: 30px;
             margin: 20px 10px;
         }
-        .timeline-item { position: relative; margin-bottom: 45px; }
+        .timeline-item { position: relative; margin-bottom: 40px; }
         .timeline-item::before {
             content: ''; position: absolute; left: -39px; top: 6px;
-            background: #070a13; border: 3px solid #dfb76c;
+            background: #05070f; border: 3px solid #dfb76c;
             border-radius: 50%; width: 16px; height: 16px;
             box-shadow: 0 0 10px #dfb76c;
         }
@@ -132,55 +166,74 @@ st.markdown("""
         .time-head { font-size: 15pt; font-weight: 700; color: #ffffff; margin: 4px 0 10px 0; }
         .time-body { font-size: 10pt; color: #94a3b8; line-height: 1.6; }
 
-        /* Full Custom Branding Sidebar Overrides */
-        .sidebar- crest-box { text-align: center; padding: 20px 0; }
+        /* Admin Sidebar Panel Custom Container */
         .ledger-badge {
-            background: rgba(223, 183, 108, 0.06);
-            border: 1px solid rgba(223, 183, 108, 0.15);
-            padding: 14px; border-radius: 10px; margin: 20px 0;
-            box-shadow: inset 0 1px 10px rgba(0,0,0,0.2);
+            background: rgba(223, 183, 108, 0.05);
+            border: 1px solid rgba(223, 183, 108, 0.12);
+            padding: 14px; border-radius: 10px; margin-bottom: 20px;
         }
         
-        /* High-End Glass Buttons */
+        /* High-End Glass CTA Buttons styling */
         .stButton>button {
             background: linear-gradient(135deg, #dfb76c 0%, #ba944b 100%) !important;
-            color: #070a13 !important;
+            color: #05070f !important;
             border: none !important;
             border-radius: 10px !important;
             padding: 14px 30px !important;
             font-weight: 700 !important;
-            letter-spacing: 0.5px !important;
             width: 100%;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            box-shadow: 0 4px 15px rgba(223, 183, 108, 0.2) !important;
+            transition: all 0.25s ease !important;
+            box-shadow: 0 4px 15px rgba(223, 183, 108, 0.15) !important;
         }
         .stButton>button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 8px 25px rgba(223, 183, 108, 0.4) !important;
+            box-shadow: 0 8px 25px rgba(223, 183, 108, 0.35) !important;
         }
         
-        /* Form input fields sleek styling */
+        /* Standard Form Input Box Styling Adjustments */
         input {
-            background-color: rgba(15, 23, 42, 0.8) !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
+            background-color: rgba(15, 23, 42, 0.7) !important;
+            border: 1px solid rgba(255,255,255,0.06) !important;
             color: #ffffff !important;
-            border-radius: 8px !important;
         }
-        
-        /* Dynamic Tabs Reskinning */
-        .stTabs [data-baseweb="tab"] {
-            color: #64748b !important; font-weight: 600 !important; font-size: 11pt !important;
-        }
-        .stTabs [data-baseweb="tab"][aria-selected="true"] {
-            color: #dfb76c !important; border-bottom-color: #dfb76c !important;
-        }
+        .stTabs [data-baseweb="tab"] { color: #64748b !important; font-weight: 600 !important; }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #dfb76c !important; border-bottom-color: #dfb76c !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# ─── SIDEBAR BRANDING & EXECUTIVE NAVIGATION ───
+# ─── SIDEBAR: HARDENED ADMINISTRATIVE SECURITY CONSOLE ───
 st.sidebar.markdown("""
-    <div style="text-align: center; padding: 15px 0;">
-        <svg width="90" height="90" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/2000/svg">
+    <div style="padding: 10px 0 5px 0;">
+        <div style="color: #dfb76c; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">SECURE NODE</div>
+        <div style="color: #ffffff; font-size: 13pt; font-weight: 800; margin-top: 2px; letter-spacing: 0.5px;">ADMIN CONTROL DECK</div>
+    </div>
+    <hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0 20px 0;" />
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown(f"""
+    <div class="ledger-badge">
+        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Verified On-Chain Contract:</div>
+        <div style="color: #94a3b8; font-family: monospace; font-size: 8pt; word-break: break-all; margin-top: 6px; opacity: 0.85;">{LIVE_CONTRACT_ADDRESS}</div>
+    </div>
+""", unsafe_allow_html=True)
+
+st.sidebar.header("🔑 Cryptographic Authentication")
+password_input = st.sidebar.text_input("Administrative Passkey:", type="password", help="Decrypts local sharding files securely.")
+pinata_jwt_input = st.sidebar.text_input("IPFS Gateway Access Key (JWT):", type="password", help="Authenticates pipeline broadcast to storage nodes.")
+
+# Core Telemetry Calculations For Real-time Indicators
+total_files_archived = 0
+if os.path.exists(MANIFEST_FILE):
+    try:
+        with open(MANIFEST_FILE, "r") as f: total_files_archived = len(json.load(f))
+    except Exception: total_files_archived = 0
+accumulated_fees = total_files_archived * 0.0001
+
+
+# ─── TOP HEADER IDENTITY LOGO & BRANDING RENDER ───
+st.markdown("""
+    <div class="top-brand-bar">
+        <svg width="65" height="65" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/2000/svg" style="margin-bottom: 8px;">
             <defs>
                 <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#0f172a" /><stop offset="100%" stop-color="#1e293b" />
@@ -195,42 +248,22 @@ st.sidebar.markdown("""
             <line x1="100" y1="56" x2="100" y2="144" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
             <circle cx="100" cy="100" r="16" fill="#0f172a" stroke="url(#goldGrad)" stroke-width="3"/>
         </svg>
-        <div style="color: #ffffff; font-size: 15pt; font-weight: 800; margin-top: 12px; letter-spacing: 0.5px;">INAYA VAULT</div>
-        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;">Sovereign Protocol</div>
+        <div style="color: #ffffff; font-size: 18pt; font-weight: 800; letter-spacing: 1px;">PROJECT INAYA</div>
+        <div style="color: #dfb76c; font-size: 8pt; font-weight: 600; text-transform: uppercase; letter-spacing: 4px; margin-top: 4px;">Sovereign Protocol Hub</div>
     </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown(f"""
-    <div class="ledger-badge">
-        <div style="color: #dfb76c; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Verified Live Contract:</div>
-        <div style="color: #94a3b8; font-family: monospace; font-size: 8pt; word-break: break-all; margin-top: 6px; opacity: 0.85;">{LIVE_CONTRACT_ADDRESS}</div>
-    </div>
-""", unsafe_allow_html=True)
-
-st.sidebar.markdown('<hr style="border-color: rgba(255,255,255,0.05); margin: 15px 0;" />', unsafe_allow_html=True)
-
-st.sidebar.header("🗺️ Core System Portals")
-current_page = st.sidebar.radio(
-    "Select Interface Terminal:",
-    ["🌐 Corporate Hub", "✨ Tech Features Matrix", "📥 Sovereign Storage Core", "📊 Live Tokenomics Deck", "🗺️ Tactical Growth Roadmap", "📜 Executive Philosophy"]
+# 🌐 THE COVETED TOP NAVBAR FIELD AT THE HEAD
+current_page = st.radio(
+    "label_is_hidden_by_css",
+    ["Corporate Hub", "Tech Features", "Sovereign Vault", "Tokenomics Deck", "Growth Roadmap", "Executive Philosophy"],
+    horizontal=True,
+    label_visibility="collapsed"
 )
 
-st.sidebar.markdown("---")
-st.sidebar.header("🔑 Security Access Layers")
-password_input = st.sidebar.text_input("Vault Passkey Hash:", type="password")
-pinata_jwt_input = st.sidebar.text_input("IPFS Swarm Token (JWT):", type="password")
 
-# Core Dynamic Telemetry Calculations
-total_files_archived = 0
-if os.path.exists(MANIFEST_FILE):
-    try:
-        with open(MANIFEST_FILE, "r") as f: total_files_archived = len(json.load(f))
-    except Exception: total_files_archived = 0
-accumulated_fees = total_files_archived * 0.0001
-
-
-# ─── 1. CORPORATE HOME PAGE ───
-if current_page == "🌐 Corporate Hub":
+# ─── 1. CORPORATE HUB DESTINATION ───
+if current_page == "Corporate Hub":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">Sovereign Cloud Assets Linked to Global Ledgers</div>
@@ -238,20 +271,20 @@ if current_page == "🌐 Corporate Hub":
         </div>
     """, unsafe_allow_html=True)
     
-    st.subheader("🏛️ Institutional Layer Overview")
-    st.markdown("Project Inaya anchors operational corporate document workflows seamlessly onto immutable node networks. The platform isolates data assets into mathematical vectors before broadcasting parallel pipelines across global high-availability swarms.")
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.subheader("🏛ntroduction Layer Summary")
+    st.markdown("Project Inaya anchors operational corporate document workflows seamlessly onto immutable node networks. The platform isolates data assets into mathematical vectors before broadcasting parallel pipelines across global high-availability storage swarms.")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     st.subheader("🌐 Global Node Cluster Telemetry Matrix")
     s_col1, s_col2, s_col3, s_col4 = st.columns(4)
     with s_col1: st.markdown(f'<div class="metric-container"><div class="metric-val" style="color:#10b981;">ACTIVE</div><div class="metric-lbl">Ledger Connection</div></div>', unsafe_allow_html=True)
     with s_col2: st.markdown(f'<div class="metric-container"><div class="metric-val">{total_files_archived}</div><div class="metric-lbl">Secured Shard Pairs</div></div>', unsafe_allow_html=True)
-    with s_col3: st.markdown(f'<div class="metric-container"><div class="metric-val">99.999%</div><div class="metric-lbl">Swarm Gateway Availability</div></div>', unsafe_allow_html=True)
+    with s_col3: st.markdown(f'<div class="metric-container"><div class="metric-val">99.999%</div><div class="metric-lbl">Swarm Availability</div></div>', unsafe_allow_html=True)
     with s_col4: st.markdown(f'<div class="metric-container"><div class="metric-val">&lt; 0.9s</div><div class="metric-lbl">Cryptographic Synthesis</div></div>', unsafe_allow_html=True)
 
 
-# ─── 2. FEATURES MATRIX PAGE ───
-elif current_page == "✨ Tech Features Matrix":
+# ─── 2. FEATURES MATRIX DESTINATION ───
+elif current_page == "Tech Features":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">CORE PROTOCOL ARCHITECTURE FEATURES</div>
@@ -286,8 +319,8 @@ elif current_page == "✨ Tech Features Matrix":
         """, unsafe_allow_html=True)
 
 
-# ─── 3. SOVEREIGN SECURE VAULT ENGINE ───
-elif current_page == "📥 Sovereign Storage Core":
+# ─── 3. SOVEREIGN STORAGE VAULT ENGINE ───
+elif current_page == "Sovereign Vault":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">SECURE OPERATIONAL TRANSMISSION VAULT</div>
@@ -296,11 +329,11 @@ elif current_page == "📥 Sovereign Storage Core":
     """, unsafe_allow_html=True)
     
     if not password_input or not pinata_jwt_input:
-        st.warning("🔒 Security Handshake Required: Please supply your master administrative credentials inside the sidebar controller panel to open the communication arrays.")
+        st.warning("🔒 Security Handshake Required: Please supply your administrative credentials inside the left console panel to clear transmission channel lines.")
     else:
         VAULT_KEY = derive_vault_key(password_input)
         cipher_suite = Fernet(VAULT_KEY)
-        st.sidebar.success("🔗 CRYPTOGRAPHIC HANDSHAKE LINKED: ONLINE")
+        st.sidebar.success("🔗 SECURITY PIPELINE HANDSHAKE: LIVE")
         
         tab1, tab2 = st.tabs(["📥 Broadcast New Asset Stream", "🔓 Quorum Assembly Retrieval"])
         
@@ -364,8 +397,8 @@ elif current_page == "📥 Sovereign Storage Core":
                 else: st.error("❌ Missing target fields.")
 
 
-# ─── 4. VENTURE TOKENOMICS HUB ───
-elif current_page == "📊 Live Tokenomics Deck":
+# ─── 4. VENTURE TOKENOMICS HUB DESTINATION ───
+elif current_page == "Tokenomics Deck":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">VENTURE ECONOMIC MODEL & ASSET CAPITAL BALANCES</div>
@@ -377,7 +410,7 @@ elif current_page == "📊 Live Tokenomics Deck":
     with m_col1: st.metric(label="📊 Token Max Supply Cap", value="30,000,000 INAYA", delta="Strict Scarcity Lock")
     with m_col2: st.metric(label="📈 Initial Circulating Pool", value="5,000,000 INAYA", delta="Seed Base Allocation")
     with m_col3: st.metric(label="💸 Service Micro-Fee Rate", value="0.0001 INAYA", delta="Fixed Per Archival")
-    with m_col4: st.metric(label="🏦 Treasury Working Capital", value=f"{accumulated_fees:.4f} INAYA", delta="Live Cash Flow Telemetry")
+    with m_col4: st.metric(label="🏦 Treasury Working Capital", value=f"{accumulated_fees:.4f} INAYA", delta="Live Revenue Cash Flow")
     
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.subheader("📊 System Structure Distribution Models")
@@ -389,8 +422,8 @@ elif current_page == "📊 Live Tokenomics Deck":
     st.bar_chart(pd.DataFrame(tokenomics_structure).set_index("Ecosystem Strategic Allocation Pools"), use_container_width=True)
 
 
-# ─── 5. ECOSYSTEM ROADMAP PAGE ───
-elif current_page == "🗺️ Tactical Growth Roadmap":
+# ─── 5. ECOSYSTEM ROADMAP DESTINATION ───
+elif current_page == "Growth Roadmap":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">STRATEGIC INFRASTRUCTURE TIMELINES</div>
@@ -427,8 +460,8 @@ elif current_page == "🗺️ Tactical Growth Roadmap":
     """, unsafe_allow_html=True)
 
 
-# ─── 6. ABOUT US & BRAND PHILOSOPHY PAGE ───
-elif current_page == "📜 Executive Philosophy":
+# ─── 6. ABOUT US & BRAND PHILOSOPHY DESTINATION ───
+elif current_page == "Executive Philosophy":
     st.markdown("""
         <div class="hero-card">
             <div class="hero-title">THE INAYA FOUNDATION PHILOSOPHY</div>
