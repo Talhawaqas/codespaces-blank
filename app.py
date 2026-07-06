@@ -187,6 +187,8 @@ elif current_page == "Sovereign Vault":
                     
                     if success_a and success_b:
                         try:
+                            if success_a and success_b:
+                        try:
                             st.info("⛓️ Upload successful. Preparing on-chain transaction package for BNB Chain ledger...")
                             operator_account = w3.eth.account.from_key(operator_private_key)
                             operator_address = operator_account.address
@@ -203,7 +205,7 @@ elif current_page == "Sovereign Vault":
                             })
                             
                             signed_tx = w3.eth.account.sign_transaction(tx, private_key=operator_private_key)
-tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+                            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
                             
                             st.balloons()
                             st.success(f"🎯 ON-CHAIN TRANSACTION CONFIRMED! Hash: {w3.to_hex(tx_hash)}")
