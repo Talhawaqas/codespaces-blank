@@ -2,3 +2,4 @@ streamlit
 cryptography
 pandas
 requests
+web3
