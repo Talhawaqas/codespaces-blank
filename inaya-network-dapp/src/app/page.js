@@ -113,7 +113,6 @@ export default function Home() {
     return data.IpfsHash;
   };
 
-  // ✨ FIXED: Removed !pinataJwt requirement from validation logic
   const handleUploadSequence = async () => {
     if (!assetId || !selectedFile || !masterPasskey) { 
       alert("Handshake Error: Ensure Asset ID, Select File, and Passkey are filled."); return; 
@@ -170,10 +169,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans antialiased selection:bg-[#00f2fe]/30">
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans antialiased selection:bg-[#00f2fe]/30 w-full overflow-x-hidden">
       
-      {/* GLOBAL NAVBAR */}
-      <header className="flex justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-10 py-5 backdrop-blur-xl sticky top-0 z-50">
+      {/* GLOBAL NAVBAR - RESPONSIVE UPGRADE */}
+      <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 md:py-5 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm shadow-[0_0_10px_#00f2fe]"></div>
           <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
@@ -181,9 +180,11 @@ export default function Home() {
         <button onClick={connectWallet} className={`px-6 py-2 rounded-full text-xs font-mono font-bold tracking-wider transition-all duration-300 transform active:scale-95 ${isConnected ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe] shadow-[0_0_20px_rgba(0,242,254,0.15)]' : 'bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)]'}`}>{isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT METAMASK'}</button>
       </header>
 
-      <div className="flex">
-        {/* SIDEBAR */}
-        <aside className="w-80 border-r border-white/5 bg-[#080c18]/60 p-6 min-h-[calc(100vh-80px)] backdrop-blur-md">
+      {/* MAIN SPLITTER CONTAINER - RESPONSIVE UPGRADE */}
+      <div className="flex flex-col md:flex-row w-full">
+        
+        {/* SIDEBAR - RESPONSIVE UPGRADE */}
+        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md">
           <div className="mb-6"><div className="text-[#64748b] font-mono text-[10px] font-bold tracking-widest">SECURE HARDWARE</div><div className="text-white text-base font-bold mt-0.5">ADMIN SECURITY DOCK</div></div>
           <hr className="border-white/5 mb-6" />
           <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl font-mono mb-6"><div className="text-[#64748b] text-[10px] uppercase tracking-wider">On-Chain Target Contract:</div><div className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold">{liveContractAddress}</div></div>
@@ -206,9 +207,11 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* MAIN PANEL */}
-        <main className="flex-1 p-10">
-          <nav className="flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-4xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
+        {/* MAIN PANEL - RESPONSIVE UPGRADE */}
+        <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
+          
+          {/* TABS MENU - RESPONSIVE UPGRADE */}
+          <nav className="grid grid-cols-2 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-4xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
             {['Network Home', 'Tech Features', 'Sovereign Vault', 'Ecosystem Economy'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-[#00f2fe]'}`}>{tab}</button>
             ))}
@@ -218,7 +221,7 @@ export default function Home() {
             <div>
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Scaling Networks</h2>
               <p className="text-[#94a3b8] text-sm mb-8">Next-generation client-side runtime parameters reskinned onto pure modular Tailwind DOM layouts.</p>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "ACTIVE_NODE" : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">Verified Supply Cap</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "99.999%" : "0.000%"}</div><div className="text-[10px] uppercase text-[#64748b] tracking-widest mt-1">EVM Sync Confidence</div></div>
@@ -233,14 +236,14 @@ export default function Home() {
               <p className="text-[#94a3b8] text-sm mb-6">Fully integrated client-side PBKDF2/AES data processor with ledger validation triggers.</p>
               
               {statusLog && (
-                <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl max-w-4xl mb-6 shadow-[0_0_15px_rgba(0,242,254,0.05)]">
+                <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl max-w-4xl mb-6 shadow-[0_0_15px_rgba(0,242,254,0.05)] break-all">
                   ⚙️ System Status Console Logs:<br /><span className="text-white text-xs mt-1 block">{statusLog}</span>
                   {txHashLink && <a href={txHashLink} target="_blank" className="text-emerald-400 font-bold block mt-2 underline">🔗 VIEW TRANSACTION ON BSCSCAN EXPLORER</a>}
                   {downloadUrl && <a href={downloadUrl} download={restoredName} className="inline-block mt-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-900 font-bold text-xs font-sans px-5 py-2.5 rounded-lg shadow-lg hover:brightness-110">📥 DOWNLOAD DECRYPTED RESTORED ASSET OBJECT</a>}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mb-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mb-10">
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
                   <h3 className="text-base font-bold text-white mb-4">📥 Input Secure Shard Broadcast Pipeline</h3>
                   <div className="space-y-4">
@@ -265,7 +268,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* HISTORY TABLE */}
+              {/* HISTORY TABLE WITH CLEAN CLOSURE */}
               <div className="max-w-5xl bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex justify-between items-center mb-4">
                   <div>
@@ -281,31 +284,23 @@ export default function Home() {
                   <div className="py-10 text-center font-mono text-xs text-[#64748b] italic">// No receipts recorded for this wallet parameter.</div>
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-white/5 font-mono">
-                    <table className="w-full text-left border-collapse text-xs">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[#0b1222]/80 text-[#94a3b8] border-b border-white/5">
-                          <th className="p-4">Asset ID</th>
-                          <th className="p-4">Registered Filename</th>
-                          <th className="p-4">Vector Proofs Alpha/Beta</th>
-                          <th className="p-4 text-right">Actions Panel</th>
+                        <tr className="border-b border-white/5 text-[#64748b] text-[10px] uppercase tracking-wider">
+                          <th className="py-3 px-4">Asset ID</th>
+                          <th className="py-3 px-4">Filename</th>
+                          <th className="py-3 px-4">Operator</th>
+                          <th className="py-3 px-4">Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {vaultHistory.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-white/[0.01] transition-all text-slate-300">
-                            <td className="p-4 text-[#00f2fe] font-bold">#{item.assetId}</td>
-                            <td className="p-4 text-white font-medium">{item.filename}</td>
-                            <td className="p-4 text-[#64748b] text-[10px]">
-                              A: {item.cidAlpha.slice(0, 10)}...<br />
-                              B: {item.cidBeta.slice(0, 10)}...
-                            </td>
-                            <td className="p-4 text-right">
-                              <button 
-                                onClick={() => handleRetrievalSequence(item.assetId)}
-                                className="bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border border-[#00f2fe]/20 text-[10px] px-3 py-1.5 rounded-md font-bold tracking-wider transition-all"
-                              >
-                                🔓 QUICK EXTRACT
-                              </button>
+                      <tbody>
+                        {vaultHistory.map((item, index) => (
+                          <tr key={index} className="border-b border-white/[0.02] text-xs hover:bg-white/[0.01]">
+                            <td className="py-3 px-4 text-[#00f2fe] font-bold">#{item.assetId}</td>
+                            <td className="py-3 px-4 text-white max-w-[150px] truncate">{item.filename}</td>
+                            <td className="py-3 px-4 text-[#64748b] text-[10px]">{item.operator.slice(0,6)}...{item.operator.slice(-4)}</td>
+                            <td className="py-3 px-4">
+                              <button onClick={() => handleRetrievalSequence(item.assetId)} className="text-[#00f2fe] hover:underline text-[11px] font-bold">RECONSTRUCT</button>
                             </td>
                           </tr>
                         ))}
@@ -314,7 +309,6 @@ export default function Home() {
                   </div>
                 )}
               </div>
-
             </div>
           )}
         </main>
