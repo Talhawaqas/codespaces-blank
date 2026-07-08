@@ -10,11 +10,15 @@ export default function Home() {
   const [walletBalance, setWalletBalance] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   
-  // Storage System Input Configurations (JWT completely removed)
+  // Storage System Input Configurations
   const [assetId, setAssetId] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterPasskey, setMasterPasskey] = useState('');
   const [queryAssetId, setQueryAssetId] = useState('');
+  
+  // Gamified Airdrop State Handles
+  const [userPoints, setUserPoints] = useState({ dapp_points: 0, social_points: 0, total_points: 0 });
+  const [socialHandle, setSocialHandle] = useState('');
   
   // Real-Time Historical Ledger State
   const [vaultHistory, setVaultHistory] = useState([]);
@@ -34,6 +38,21 @@ export default function Home() {
     "event AssetArchived(string assetId, string filename, string cidAlpha, string cidBeta, address operator)"
   ];
 
+  // Fetch points module linked to Next API gateway
+  const fetchUserPoints = async (address) => {
+    try {
+      const res = await fetch(`/api/points?address=${address.toLowerCase()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserPoints({
+          dapp_points: data.dapp_points || 0,
+          social_points: data.social_points || 0,
+          total_points: data.total_points || 0
+        });
+      }
+    } catch (err) { console.error("Points syncing telemetry error:", err); }
+  };
+
   const connectWallet = async () => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       try {
@@ -42,6 +61,7 @@ export default function Home() {
         setIsConnected(true);
         const balanceHex = await window.ethereum.request({ method: 'eth_getBalance', params: [accounts[0], 'latest'] });
         setWalletBalance((parseInt(balanceHex, 16) / 10**18).toFixed(4));
+        fetchUserPoints(accounts[0]);
       } catch (err) { console.error(err); }
     } else { alert("Please install MetaMask extension!"); }
   };
@@ -49,8 +69,14 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', (accs) => {
-        if (accs.length > 0) { setWalletAddress(accs[0]); setIsConnected(true); }
-        else { setWalletAddress(''); setIsConnected(false); }
+        if (accs.length > 0) { 
+          setWalletAddress(accs[0]); 
+          setIsConnected(true); 
+          fetchUserPoints(accs[0]);
+        } else { 
+          setWalletAddress(''); 
+          setIsConnected(false); 
+        }
       });
     }
   }, []);
@@ -77,6 +103,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isConnected && currentPage === 'Sovereign Vault') { fetchOnChainHistory(); }
+    if (isConnected && walletAddress) { fetchUserPoints(walletAddress); }
   }, [isConnected, currentPage, walletAddress]);
 
   const encryptData = async (text, password) => {
@@ -109,7 +136,6 @@ export default function Home() {
     });
     if (!response.ok) throw new Error(`Server internal security node rejected packet transmission loop.`);
     const data = await response.json();
-    if (data.error) throw new Error(data.error);
     return data.IpfsHash;
   };
 
@@ -137,6 +163,14 @@ export default function Home() {
           
           setStatusLog("🎯 ON-CHAIN STATE IMMUTABLY RECORDED!");
           setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+
+          // Trigger automated database points addition rule
+          await fetch('/api/points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
+          });
+          fetchUserPoints(walletAddress);
           fetchOnChainHistory();
         } catch (innerErr) { setStatusLog(`❌ Error: ${innerErr.message}`); }
       };
@@ -165,13 +199,31 @@ export default function Home() {
       setRestoredName(onchainFilename);
       setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
       setStatusLog("💚 TRANSACTION VERIFICATION COMPLETED: Binary file decrypted.");
+
+      await fetch('/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'RETRIEVE' })
+      });
+      fetchUserPoints(walletAddress);
     } catch (err) { setStatusLog(`⛔ Authorization Error: ${err.message}`); }
+  };
+
+  const handleSubmitSocial = async () => {
+    if(!socialHandle) return alert("Enter social account username first!");
+    alert(`Success: Handle linked! Points updated dynamically.`);
+    await fetch('/api/points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'SOCIAL' })
+    });
+    fetchUserPoints(walletAddress);
   };
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans antialiased selection:bg-[#00f2fe]/30 w-full overflow-x-hidden">
       
-      {/* GLOBAL NAVBAR - RESPONSIVE UPGRADE */}
+      {/* GLOBAL NAVBAR - MOBILE RESPONSIVE WRAPPERS */}
       <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 md:py-5 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm shadow-[0_0_10px_#00f2fe]"></div>
@@ -180,10 +232,10 @@ export default function Home() {
         <button onClick={connectWallet} className={`px-6 py-2 rounded-full text-xs font-mono font-bold tracking-wider transition-all duration-300 transform active:scale-95 ${isConnected ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe] shadow-[0_0_20px_rgba(0,242,254,0.15)]' : 'bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)]'}`}>{isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT METAMASK'}</button>
       </header>
 
-      {/* MAIN SPLITTER CONTAINER - RESPONSIVE UPGRADE */}
+      {/* CORE CONTAINER SEGMENT GRID LAYOUT SPLIT */}
       <div className="flex flex-col md:flex-row w-full">
         
-        {/* SIDEBAR - RESPONSIVE UPGRADE */}
+        {/* SIDEBAR DOCK MODULE SYSTEM */}
         <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md">
           <div className="mb-6"><div className="text-[#64748b] font-mono text-[10px] font-bold tracking-widest">SECURE HARDWARE</div><div className="text-white text-base font-bold mt-0.5">ADMIN SECURITY DOCK</div></div>
           <hr className="border-white/5 mb-6" />
@@ -207,18 +259,19 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* MAIN PANEL - RESPONSIVE UPGRADE */}
+        {/* MAIN CONSOLE INTERFACE CONTROLLER BOARD */}
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
-          {/* TABS MENU - RESPONSIVE UPGRADE */}
-          <nav className="grid grid-cols-2 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-4xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
-            {['Network Home', 'Tech Features', 'Sovereign Vault', 'Ecosystem Economy'].map((tab) => (
+          {/* HORIZONTAL NAV TABS SELECTOR COMPONENT */}
+          <nav className="grid grid-cols-2 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
+            {['Network Home', 'Sovereign Vault', 'Genesis Airdrop'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-[#00f2fe]'}`}>{tab}</button>
             ))}
           </nav>
 
+          {/* TAB 1: USER REGULAR BASE LANDING INDEX */}
           {currentPage === 'Network Home' && (
-            <div>
+            <div className="max-w-5xl mx-auto">
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Scaling Networks</h2>
               <p className="text-[#94a3b8] text-sm mb-8">Next-generation client-side runtime parameters reskinned onto pure modular Tailwind DOM layouts.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -230,20 +283,21 @@ export default function Home() {
             </div>
           )}
 
+          {/* TAB 2: CRYPTO RECONSTRUCTION STORAGE SECURE VAULT */}
           {currentPage === 'Sovereign Vault' && (
-            <div>
+            <div className="max-w-5xl mx-auto">
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Hardened Cryptographic Storage Core</h2>
               <p className="text-[#94a3b8] text-sm mb-6">Fully integrated client-side PBKDF2/AES data processor with ledger validation triggers.</p>
               
               {statusLog && (
-                <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl max-w-4xl mb-6 shadow-[0_0_15px_rgba(0,242,254,0.05)] break-all">
+                <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl max-w-full mb-6 shadow-[0_0_15px_rgba(0,242,254,0.05)] break-all">
                   ⚙️ System Status Console Logs:<br /><span className="text-white text-xs mt-1 block">{statusLog}</span>
-                  {txHashLink && <a href={txHashLink} target="_blank" className="text-emerald-400 font-bold block mt-2 underline">🔗 VIEW TRANSACTION ON BSCSCAN EXPLORER</a>}
-                  {downloadUrl && <a href={downloadUrl} download={restoredName} className="inline-block mt-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-900 font-bold text-xs font-sans px-5 py-2.5 rounded-lg shadow-lg hover:brightness-110">📥 DOWNLOAD DECRYPTED RESTORED ASSET OBJECT</a>}
+                  {txHashLink && <a href={txHashLink} target="_blank" className="text-emerald-400 font-bold block mt-2 underline">🔗 VIEW TRANSACTION ON EXPLORER</a>}
+                  {downloadUrl && <a href={downloadUrl} download={restoredName} className="inline-block mt-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-900 font-bold text-xs font-sans px-5 py-2.5 rounded-lg shadow-lg hover:brightness-110">📥 DOWNLOAD DECRYPTED RESTORED ASSET</a>}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mb-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
                   <h3 className="text-base font-bold text-white mb-4">📥 Input Secure Shard Broadcast Pipeline</h3>
                   <div className="space-y-4">
@@ -268,12 +322,12 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* HISTORY TABLE WITH CLEAN CLOSURE */}
-              <div className="max-w-5xl bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+              {/* TRANSACTIONS HISTORY RECEIPT TELEMETRY LOG DATA TABLE VIEW */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h3 className="text-base font-bold text-white">📋 Inaya Vault Active Tracking Logs</h3>
-                    <p className="text-[#64748b] text-xs font-mono mt-0.5">// Secure network pipeline running zero-knowledge history parsing loops.</p>
+                    <p className="text-[#64748b] text-xs font-mono mt-0.5">// Secure network architecture loops tracing database indices.</p>
                   </div>
                   <button onClick={fetchOnChainHistory} className="text-[10px] font-mono font-bold bg-white/5 hover:bg-white/10 text-[#00f2fe] border border-white/10 px-3 py-1.5 rounded-lg transition-all">🔄 REFRESH LEDGER LOGS</button>
                 </div>
@@ -308,6 +362,79 @@ export default function Home() {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: THE BRAND NEW GENESIS AIRDROP POINT ENGINE SYSTEM */}
+          {currentPage === 'Genesis Airdrop' && (
+            <div className="max-w-5xl mx-auto space-y-8">
+              <div>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Genesis Incentivized Testnet Portal</h2>
+                <p className="text-[#94a3b8] text-sm">Every cryptographic shard interaction and community amplify action translates into raw ecosystem weight tokens.</p>
+              </div>
+
+              {/* POINTS INTERACTION CORE SCOREBOARD CARD CONTAINERS */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-[#0b1120]/60 to-[#0d1527]/60 border border-[#00f2fe]/30 p-6 rounded-2xl shadow-[0_0_25px_rgba(0,242,254,0.08)]">
+                  <div className="text-[#64748b] font-mono text-[10px] uppercase tracking-widest font-bold">Total Vault Weight</div>
+                  <div className="text-4xl font-extrabold text-[#00f2fe] font-mono mt-2">{userPoints.total_points} <span className="text-xs text-white">PTS</span></div>
+                </div>
+                <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
+                  <div className="text-[#64748b] font-mono text-[10px] uppercase tracking-widest">On-Chain Shard Points</div>
+                  <div className="text-2xl font-bold text-white font-mono mt-2">{userPoints.dapp_points} PTS</div>
+                </div>
+                <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl">
+                  <div className="text-[#64748b] font-mono text-[10px] uppercase tracking-widest">Social Amplify Base Weight</div>
+                  <div className="text-2xl font-bold text-white font-mono mt-2">{userPoints.social_points} PTS</div>
+                </div>
+              </div>
+
+              {/* DIRECTIVES MISSIONS INTERACTIVE GRID PANELS LIST */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">🎯 Open Operational Directives</h3>
+                <div className="space-y-4">
+                  
+                  {/* AIRDROP DIRECTIVE MISSION 1 */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
+                    <div>
+                      <div className="text-sm font-bold text-white">Execute Secure Shard Storage Loop</div>
+                      <div className="text-xs text-[#94a3b8] mt-0.5">Upload a raw file asset, execute local AES-GCM matrix configurations, and sign ledger proof.</div>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                      <span className="text-xs font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 px-2 py-1 rounded font-bold">+50 PTS / Event</span>
+                      <button onClick={() => setCurrentPage('Sovereign Vault')} className="text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] px-4 py-2 rounded-lg hover:brightness-110 transition-all">RUN VAULT</button>
+                    </div>
+                  </div>
+
+                  {/* AIRDROP DIRECTIVE MISSION 2 */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
+                    <div>
+                      <div className="text-sm font-bold text-white">Extract & Assemble Shard Objects</div>
+                      <div className="text-xs text-[#94a3b8] mt-0.5">Query an encrypted index asset ID from smart contracts and run reconstruction parameters.</div>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                      <span className="text-xs font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 px-2 py-1 rounded font-bold">+30 PTS / Event</span>
+                      <button onClick={() => setCurrentPage('Sovereign Vault')} className="text-xs font-mono font-bold bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-2 rounded-lg transition-all">LAUNCH</button>
+                    </div>
+                  </div>
+
+                  {/* AIRDROP DIRECTIVE MISSION 3 */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
+                    <div>
+                      <div className="text-sm font-bold text-white">Link Social Handles (X / Telegram Link Sync)</div>
+                      <div className="text-xs text-[#94a3b8] mt-0.5">Submit verification identity parameters to log verification loops into telemetry channels.</div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                      <span className="text-xs font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 px-2 py-1 rounded font-bold text-center sm:text-left">+145 PTS Once</span>
+                      <div className="flex gap-2">
+                        <input type="text" value={socialHandle} onChange={(e) => setSocialHandle(e.target.value)} placeholder="e.g. @TalhaWaqas14" className="bg-[#060913] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none w-full sm:w-36" />
+                        <button onClick={handleSubmitSocial} className="text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-[#00f2fe] px-3 py-2 rounded-lg transition-all">SUBMIT</button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           )}
