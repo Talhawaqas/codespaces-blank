@@ -38,7 +38,6 @@ export default function Home() {
     "event AssetArchived(string assetId, string filename, string cidAlpha, string cidBeta, address operator)"
   ];
 
-  // Fetch points module linked to Next API gateway
   const fetchUserPoints = async (address) => {
     try {
       const res = await fetch(`/api/points?address=${address.toLowerCase()}`);
@@ -164,7 +163,6 @@ export default function Home() {
           setStatusLog("🎯 ON-CHAIN STATE IMMUTABLY RECORDED!");
           setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
 
-          // Trigger automated database points addition rule
           await fetch('/api/points', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -223,7 +221,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans antialiased selection:bg-[#00f2fe]/30 w-full overflow-x-hidden">
       
-      {/* GLOBAL NAVBAR - MOBILE RESPONSIVE WRAPPERS */}
+      {/* GLOBAL NAVBAR */}
       <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 md:py-5 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm shadow-[0_0_10px_#00f2fe]"></div>
@@ -232,10 +230,10 @@ export default function Home() {
         <button onClick={connectWallet} className={`px-6 py-2 rounded-full text-xs font-mono font-bold tracking-wider transition-all duration-300 transform active:scale-95 ${isConnected ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe] shadow-[0_0_20px_rgba(0,242,254,0.15)]' : 'bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)]'}`}>{isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT METAMASK'}</button>
       </header>
 
-      {/* CORE CONTAINER SEGMENT GRID LAYOUT SPLIT */}
+      {/* CORE SPLITTER GRID LAYOUT */}
       <div className="flex flex-col md:flex-row w-full">
         
-        {/* SIDEBAR DOCK MODULE SYSTEM */}
+        {/* SIDEBAR DOCK */}
         <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md">
           <div className="mb-6"><div className="text-[#64748b] font-mono text-[10px] font-bold tracking-widest">SECURE HARDWARE</div><div className="text-white text-base font-bold mt-0.5">ADMIN SECURITY DOCK</div></div>
           <hr className="border-white/5 mb-6" />
@@ -259,17 +257,17 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* MAIN CONSOLE INTERFACE CONTROLLER BOARD */}
+        {/* MAIN PANEL */}
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
-          {/* HORIZONTAL NAV TABS SELECTOR COMPONENT */}
-          <nav className="grid grid-cols-2 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
-            {['Network Home', 'Sovereign Vault', 'Genesis Airdrop'].map((tab) => (
+          {/* NAVIGATION TABS MENU - RESPONSIVE CHANNELS UPGRADE */}
+          <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
+            {['Network Home', 'Sovereign Vault', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-[#00f2fe]'}`}>{tab}</button>
             ))}
           </nav>
 
-          {/* TAB 1: USER REGULAR BASE LANDING INDEX */}
+          {/* TAB 1: NETWORK HOME */}
           {currentPage === 'Network Home' && (
             <div className="max-w-5xl mx-auto">
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Scaling Networks</h2>
@@ -283,7 +281,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 2: CRYPTO RECONSTRUCTION STORAGE SECURE VAULT */}
+          {/* TAB 2: SOVEREIGN VAULT */}
           {currentPage === 'Sovereign Vault' && (
             <div className="max-w-5xl mx-auto">
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Hardened Cryptographic Storage Core</h2>
@@ -322,7 +320,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* TRANSACTIONS HISTORY RECEIPT TELEMETRY LOG DATA TABLE VIEW */}
+              {/* TRANSACTIONS HISTORY RECEIPT TELEMETRY */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex justify-between items-center mb-4">
                   <div>
@@ -366,7 +364,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 3: THE BRAND NEW GENESIS AIRDROP POINT ENGINE SYSTEM */}
+          {/* TAB 3: GENESIS AIRDROP */}
           {currentPage === 'Genesis Airdrop' && (
             <div className="max-w-5xl mx-auto space-y-8">
               <div>
@@ -374,7 +372,6 @@ export default function Home() {
                 <p className="text-[#94a3b8] text-sm">Every cryptographic shard interaction and community amplify action translates into raw ecosystem weight tokens.</p>
               </div>
 
-              {/* POINTS INTERACTION CORE SCOREBOARD CARD CONTAINERS */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="bg-gradient-to-br from-[#0b1120]/60 to-[#0d1527]/60 border border-[#00f2fe]/30 p-6 rounded-2xl shadow-[0_0_25px_rgba(0,242,254,0.08)]">
                   <div className="text-[#64748b] font-mono text-[10px] uppercase tracking-widest font-bold">Total Vault Weight</div>
@@ -390,12 +387,10 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* DIRECTIVES MISSIONS INTERACTIVE GRID PANELS LIST */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🎯 Open Operational Directives</h3>
                 <div className="space-y-4">
                   
-                  {/* AIRDROP DIRECTIVE MISSION 1 */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
                     <div>
                       <div className="text-sm font-bold text-white">Execute Secure Shard Storage Loop</div>
@@ -407,7 +402,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* AIRDROP DIRECTIVE MISSION 2 */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
                     <div>
                       <div className="text-sm font-bold text-white">Extract & Assemble Shard Objects</div>
@@ -419,7 +413,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* AIRDROP DIRECTIVE MISSION 3 */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 border border-white/5 p-4 rounded-xl gap-4">
                     <div>
                       <div className="text-sm font-bold text-white">Link Social Handles (X / Telegram Link Sync)</div>
@@ -428,7 +421,7 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                       <span className="text-xs font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 px-2 py-1 rounded font-bold text-center sm:text-left">+145 PTS Once</span>
                       <div className="flex gap-2">
-                        <input type="text" value={socialHandle} onChange={(e) => setSocialHandle(e.target.value)} placeholder="e.g. @TalhaWaqas14" className="bg-[#060913] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none w-full sm:w-36" />
+                        <input type="text" value={socialHandle} onChange={(e) => setSocialHandle(e.target.value)} placeholder="e.g. @username" className="bg-[#060913] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none w-full sm:w-36" />
                         <button onClick={handleSubmitSocial} className="text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-[#00f2fe] px-3 py-2 rounded-lg transition-all">SUBMIT</button>
                       </div>
                     </div>
@@ -436,6 +429,98 @@ export default function Home() {
 
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* NEW TAB 4: TECHNICAL WHITE PAPER MODULE */}
+          {currentPage === 'White Paper' && (
+            <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 md:p-10 backdrop-blur-md space-y-6">
+              <div>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">Inaya Network Specifications</h2>
+                <p className="text-[#64748b] font-mono text-xs mt-1">// Protocol Level Decentralized File-Sharding & Zero-Knowledge Architecture</p>
+              </div>
+              <hr className="border-white/5" />
+              
+              <div className="space-y-6 text-sm text-[#94a3b8] leading-relaxed font-sans">
+                <section>
+                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">1. Abstract</h3>
+                  <p>Inaya Network implements an absolute trustless, client-side data custody system. Traditional cloud solutions rely on centralized web2 silos, posing catastrophic liability leaks. Inaya forces absolute data privacy by executing local web-crypto layers before bytes ever touch any public transit pipelines.</p>
+                </section>
+
+                <section>
+                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">2. Cryptographic Pipeline</h3>
+                  <p>When an object stream enters the hardware sandbox, the system applies a multi-layered PBKDF2 key derivation loop alongside high-performance AES-GCM 256-bit symmetric encryption. The output cipher text is mathematically bisected into independent metadata blocks: <strong>Shard Alpha</strong> and <strong>Shard Beta</strong>.</p>
+                </section>
+
+                <section>
+                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">3. Immutable Ledger Routing</h3>
+                  <p>The resulting encrypted shards are routed into globally dispersed peer-to-peer swarms (IPFS). The corresponding Content Identifiers (CIDs) are encapsulated and cryptographically anchored directly into decentralized EVM smart contract registers via on-chain transaction logs. Re-assembly requires strict dual-shard retrieval alongside local passkey validation, leaving zero vector vulnerabilities for platform hosts.</p>
+                </section>
+              </div>
+            </div>
+          )}
+
+          {/* NEW TAB 5: ABOUT US & ROADMAP SEGMENT */}
+          {currentPage === 'About Us' && (
+            <div className="max-w-4xl mx-auto space-y-8">
+              
+              {/* SOCIAL INTERACTION CARDS CONTAINER */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">🌐 Connect Ecosystem Nodes</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <a href="https://t.me/inayanetwork" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                    <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">Telegram Hub</span>
+                    <span className="text-xs text-[#64748b] font-mono">t.me 🚀</span>
+                  </a>
+                  <a href="https://x.com/" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                    <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">X Network</span>
+                    <span className="text-xs text-[#64748b] font-mono">@Inaya 🐦</span>
+                  </a>
+                  <a href="https://linkedin.com/" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                    <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">LinkedIn Core</span>
+                    <span className="text-xs text-[#64748b] font-mono">Corporate 💼</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* TIMELINE ROADMAP GRAPH COMPONENT */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-6">🗺️ Protocol Operational Roadmap</h3>
+                <div className="space-y-6 relative before:absolute before:top-2 before:bottom-2 before:left-3.5 before:w-0.5 before:bg-white/5">
+                  
+                  {/* PHASE 1 */}
+                  <div className="relative pl-10 group">
+                    <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full bg-[#00f2fe] border-4 border-[#060913] shadow-[0_0_10px_#00f2fe]"></div>
+                    <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                      <span className="text-[10px] font-mono font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 px-2 py-0.5 rounded">PHASE 1 - LIVE TESTNET ALPHA</span>
+                      <h4 className="text-sm font-bold text-white mt-2">Genesis Infrastructure Sandbox</h4>
+                      <p className="text-xs text-[#94a3b8] mt-1">Deployment of core sharding smart contracts, client-side AES engine launch, and incentivized community testnet bootstrapping program.</p>
+                    </div>
+                  </div>
+
+                  {/* PHASE 2 */}
+                  <div className="relative pl-10 group">
+                    <div className="absolute left-2 top-2 w-3 h-3 rounded-full bg-white/20 border-2 border-[#060913]"></div>
+                    <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                      <span className="text-[10px] font-mono font-bold text-[#64748b] bg-white/5 border border-white/10 px-2 py-0.5 rounded">PHASE 2 - COMING Q4 2026</span>
+                      <h4 className="text-sm font-bold text-white mt-2">Hardening & Validation Audit</h4>
+                      <p className="text-xs text-[#94a3b8] mt-1">Comprehensive smart contract security audit, decentralized storage latency optimization loops, and custom file type chunking adjustments.</p>
+                    </div>
+                  </div>
+
+                  {/* PHASE 3 */}
+                  <div className="relative pl-10 group">
+                    <div className="absolute left-2 top-2 w-3 h-3 rounded-full bg-white/20 border-2 border-[#060913]"></div>
+                    <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                      <span className="text-[10px] font-mono font-bold text-[#64748b] bg-white/5 border border-white/10 px-2 py-0.5 rounded">PHASE 3 - COMING Q1 2027</span>
+                      <h4 className="text-sm font-bold text-white mt-2">Mainnet Token Generation Event</h4>
+                      <p className="text-xs text-[#94a3b8] mt-1">Official token launch, linear lock vesting triggers activated, and native storage utility nodes routing across public multi-chain spaces.</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
             </div>
           )}
         </main>
