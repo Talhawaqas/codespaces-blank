@@ -93,7 +93,7 @@ export default function Home() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const verificationMessage = `[INAYA CUSTODY NETWORK - NODE REGISTRATION]\n\nAuthorize absolute sovereign data fragmentation access routines for this host station.\n\nNode Index: ${walletAddress.toLowerCase()}\nTimestamp Hash: ${Date.now()}`;
+      const verificationMessage = `[INAYA CUSTOLOGY NETWORK - NODE REGISTRATION]\n\nAuthorize absolute sovereign data fragmentation access routines for this host station.\n\nNode Index: ${walletAddress.toLowerCase()}\nTimestamp Hash: ${Date.now()}`;
       await signer.signMessage(verificationMessage);
       setIsSignedUp(true);
       setStatusLog("🎯 CRYPTOGRAPHIC REGISTRATION SUCCESSFUL: Node token logged in system arrays.");
@@ -186,9 +186,10 @@ export default function Home() {
     return data.IpfsHash;
   };
 
+  // ⛽ STEP 3 INTEGRATED: UPLOAD, GAS SIMULATION & WEB3 ERROR HANDLING
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
-    if (!assetId || !selectedFile || !masterPasskey) { alert("Validation Error: Missing secure parameter inputs."); return; }
+    if (!assetId || !selectedFile || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
     try {
       setTxHashLink(''); setDownloadUrl('');
       setStatusLog("📡 Processing bits fragmentation via client-side PBKDF2 layers...");
@@ -200,15 +201,31 @@ export default function Home() {
           const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), selectedFile.name, "Alpha");
           const cidB = await uploadToPinata(cipherTextString.slice(midpoint), selectedFile.name, "Beta");
           
-          setStatusLog("🦊 Transmitting binary mapping hashes to EVM contract indices... Sign transaction.");
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
           const contract = new ethers.Contract(liveContractAddress, contractABI, signer);
-          const tx = await contract.registerAsset(assetId, selectedFile.name, cidA, cidB);
+          
+          setStatusLog("⚡ Simulating gas execution parameters on BNB Chain nodes...");
+          let estimatedGas;
+          try {
+            estimatedGas = await contract.registerAsset.estimateGas(assetId, selectedFile.name, cidA, cidB);
+            setStatusLog(`⛽ Estimated Gas Weight: ${estimatedGas.toString()} units. Prompting wallet handshake...`);
+          } catch (gasErr) {
+            console.error(gasErr);
+            estimatedGas = 300000n; 
+            setStatusLog("⚠️ Gas simulation dropped by node. Enforcing safety buffer ceiling limits...");
+          }
+
+          const tx = await contract.registerAsset(assetId, selectedFile.name, cidA, cidB, {
+            gasLimit: (estimatedGas * 120n) / 100n 
+          });
+          
+          setStatusLog("⏳ Mining block transaction verification receipts onto public ledger...");
           await tx.wait();
           
           setStatusLog("🎯 ON-CHAIN STATE SECURELY RECORDED IN PUBLIC LEDGER!");
           setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+
           await fetch('/api/points', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -216,7 +233,16 @@ export default function Home() {
           });
           fetchUserPoints(walletAddress);
           fetchOnChainHistory();
-        } catch (innerErr) { setStatusLog(`❌ Error: ${innerErr.message}`); }
+        } catch (innerErr) {
+          console.error(innerErr);
+          if (innerErr.code === 'ACTION_REJECTED') {
+            setStatusLog("❌ Transaction cancelled: Handshake signatures rejected by host operator user.");
+          } else if (innerErr.message.includes('insufficient funds')) {
+            setStatusLog("❌ Transaction dropped: Insufficient tBNB runtime balances to deploy gas routines.");
+          } else {
+            setStatusLog(`❌ EVM Execution Crash: ${innerErr.reason || innerErr.message}`);
+          }
+        }
       };
     } catch (err) { setStatusLog(`❌ Exception Node: ${err.message}`); }
   };
@@ -251,22 +277,37 @@ export default function Home() {
     } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
   };
 
+  // 🎯 STEP 4 INTEGRATED: SUPABASE REAL-TIME SOCIAL SYNC BACKEND
   const handleSubmitSocial = async () => {
     if(!socialHandle) return alert("Validation Core Error: Fill social reference mapping tag.");
-    alert(`Success: Verification tracking indices mapped securely to identity ledger.`);
-    await fetch('/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'SOCIAL' })
-    });
-    fetchUserPoints(walletAddress);
+    if(!isConnected) return alert("Web3 Engine Error: Connect wallet target index matrix.");
+    try {
+      setStatusLog("📡 Logging telemetry handle parameters into identity servers...");
+      const res = await fetch('/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          walletAddress: walletAddress.toLowerCase(), 
+          actionType: 'SOCIAL',
+          handle: socialHandle 
+        })
+      });
+      if (res.ok) {
+        alert(`Success: ${socialHandle} verification tracking parameters mapped securely to your telemetry node ledger!`);
+        fetchUserPoints(walletAddress);
+      } else {
+        throw new Error("Database update rejection pipeline error.");
+      }
+    } catch (err) {
+      alert(`Backend Sync Dropped: ${err.message}`);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm"></div>
+          <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm shadow-[0_0_10px_#00f2fe]"></div>
           <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
         </div>
         <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913]">
@@ -312,7 +353,8 @@ export default function Home() {
 
           {currentPage === 'Network Home' && (
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-2xl font-extrabold text-white mb-4">Sovereign Data Storage Networks</h2>
+              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Networks</h2>
+              <p className="text-[#94a3b8] text-sm mb-8">Next-generation client-side runtime parameters reskinned onto pure modular Tailwind DOM layouts.</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Supply Cap Weight</div></div>
@@ -324,18 +366,18 @@ export default function Home() {
           {currentPage === 'Sovereign Vault' && (
             <div className="max-w-5xl mx-auto space-y-6">
               <h2 className="text-2xl font-extrabold text-white">Cryptographic Storage Core</h2>
-              {statusLog && <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-all">{statusLog}</div>}
+              {statusLog && <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-all shadow-md">{statusLog}</div>}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
                   <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm" />
                   <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="w-full text-xs text-white" />
-                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl">SIGN & EMIT SECURE RECORD</button>
+                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg">SIGN & EMIT SECURE RECORD</button>
                 </div>
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">🔓 Reconstruct Assembly</h3>
                   <input type="text" value={queryAssetId} onChange={(e) => setQueryAssetId(e.target.value)} placeholder="Query Asset ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm" />
-                  <button onClick={() => handleRetrievalSequence('')} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl">COMPILE AND RECONSTRUCT FRAGMENTS</button>
+                  <button onClick={() => handleRetrievalSequence('')} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg">COMPILE AND RECONSTRUCT FRAGMENTS</button>
                 </div>
               </div>
 
@@ -398,7 +440,7 @@ export default function Home() {
           )}
 
           {currentPage === 'KYC Portal' && (
-            <div className="max-w-3xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 text-center space-y-6 font-sans">
+            <div className="max-w-3xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 text-center space-y-6">
               <div className="text-4xl">🛡️</div>
               <h2 className="text-xl font-extrabold text-white">Sovereign Node Compliance (KYC)</h2>
               <p className="text-sm text-[#94a3b8] max-w-md mx-auto">Identity validation checks are mandatory prior to token allocation events to isolate sybil vectors.</p>
@@ -411,7 +453,8 @@ export default function Home() {
 
           {currentPage === 'White Paper' && (
             <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-6">
-              <h1 className="text-2xl font-black text-white">THE INAYA PROTOCOL WHITE PAPER</h1>
+              <h1 className="text-2xl font-black text-white">THE INAYA PROTOCOL</h1>
+              <p className="text-xs text-[#94a3b8] font-bold uppercase tracking-wider">A Decentralized Sovereign Custody Network for High-Value Assets</p>
               
               <div className="flex flex-wrap gap-2 border-b border-white/5 pb-3">
                 {['Abstract', 'The Problem', 'Architecture', 'Tokenomics Matrix'].map((sec) => (
@@ -424,7 +467,6 @@ export default function Home() {
                   <>
                     <h3 className="text-white font-bold text-sm">// 1.0 ABSTRACT SUMMARY</h3>
                     <p>Inaya Custody Network represents a paradigm shift in decentralized object storage management. Traditional layouts suffer from localized single-point failures and third-party infrastructure exposures.</p>
-                    <p>By enforcing client-side multi-fragment mathematical arrays via advanced derivation parameters (PBKDF2/AES-GCM), data files are split cleanly into decoupled encrypted components (Alpha and Beta Shards) before ever transmitting over external transport protocols.</p>
                   </>
                 )}
 
@@ -446,13 +488,10 @@ export default function Home() {
                   <div className="space-y-4 font-sans">
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
-                      
-                      {/* FIXED NEXT.JS COMPLIANT IMAGE TAG */}
                       <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/tokenomics.png" alt="Tokenomics Allocation Diagram" className="w-full h-full object-contain" />
                       </div>
-                      
                       <div className="font-mono text-xs space-y-3">
                         <div className="text-white font-bold bg-white/5 p-2 rounded">Total Hard Cap: 30,000,000 TOKENS</div>
                         <div className="space-y-1 text-[#94a3b8]">
@@ -478,7 +517,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* ROADMAP TARGET DATES FIXED TO Q1 2027 START */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🗺️ DECENTRALIZED SWARM ROADMAP</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
