@@ -260,7 +260,7 @@ export default function Home() {
         {/* MAIN PANEL */}
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
-          {/* NAVIGATION TABS MENU - RESPONSIVE CHANNELS UPGRADE */}
+          {/* NAVIGATION TABS MENU */}
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 justify-between backdrop-blur-md">
             {['Network Home', 'Sovereign Vault', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-[#00f2fe]'}`}>{tab}</button>
@@ -432,35 +432,185 @@ export default function Home() {
             </div>
           )}
 
-          {/* NEW TAB 4: TECHNICAL WHITE PAPER MODULE */}
+          {/* TAB 4: OFFICIAL PRODUCTION WHITE PAPER MODULE */}
           {currentPage === 'White Paper' && (
-            <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 md:p-10 backdrop-blur-md space-y-6">
-              <div>
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">Inaya Network Specifications</h2>
-                <p className="text-[#64748b] font-mono text-xs mt-1">// Protocol Level Decentralized File-Sharding & Zero-Knowledge Architecture</p>
+            <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 md:p-10 backdrop-blur-md space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+              <div className="text-center md:text-left space-y-2">
+                <div className="text-[#00f2fe] font-mono text-[10px] uppercase tracking-widest font-bold">Official Architecture Document</div>
+                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none">THE INAYA PROTOCOL</h1>
+                <p className="text-xs md:text-sm text-[#94a3b8] font-bold uppercase tracking-wider">A Decentralized Sovereign Custody Network for High-Value Enterprise Assets</p>
               </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-black/30 p-4 rounded-xl border border-white/5 font-mono text-[10px] text-[#64748b]">
+                <div>DOC IDENTIFIER:<br/><span className="text-white font-bold">INAYA-WP-2026-V1</span></div>
+                <div>BLOCKCHAIN ATTESTATION:<br/><span className="text-white font-bold">BNB CHAIN TESTNET</span></div>
+                <div>SECURITY CLASSIFICATION:<br/><span className="text-white font-bold">PUBLIC PARADIGM</span></div>
+                <div>DATE OF EMISSION:<br/><span className="text-white font-bold">JULY 2026</span></div>
+              </div>
+
               <hr className="border-white/5" />
               
               <div className="space-y-6 text-sm text-[#94a3b8] leading-relaxed font-sans">
-                <section>
-                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">1. Abstract</h3>
-                  <p>Inaya Network implements an absolute trustless, client-side data custody system. Traditional cloud solutions rely on centralized web2 silos, posing catastrophic liability leaks. Inaya forces absolute data privacy by executing local web-crypto layers before bytes ever touch any public transit pipelines.</p>
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">Abstract</h3>
+                  <p>In contemporary high-value corporate operations, traditional cloud data configurations pose immense systemic single-point-of-failure liabilities. Centralized data models face constant perimeter exploitation threats, server vulnerability manipulation, and third-party administrative risks. The Inaya Protocol introduces a hardened infrastructure layer that eliminates central server dependencies through a zero-knowledge pipeline consisting of client-side localized cryptographic slicing, multi-swarm sharded distribution via the InterPlanetary File System (IPFS), and immutable state ledger tracking via Ethereum Virtual Machine (EVM) smart contracts.</p>
+                  <p className="text-xs italic text-[#64748b] font-mono">// This whitepaper details the underlying mechanical equations governing decentralized slicing arrays, the on-chain registry mechanics, and the scarcity ecosystem tokenomics models designed to secure multi-tenant cloud asset compliance without exposing cleartext credentials to external environments.</p>
                 </section>
 
-                <section>
-                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">2. Cryptographic Pipeline</h3>
-                  <p>When an object stream enters the hardware sandbox, the system applies a multi-layered PBKDF2 key derivation loop alongside high-performance AES-GCM 256-bit symmetric encryption. The output cipher text is mathematically bisected into independent metadata blocks: <strong>Shard Alpha</strong> and <strong>Shard Beta</strong>.</p>
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">1. Architectural Vulnerability Paradigm</h3>
+                  <p>Enterprise data asset protection platforms are fundamentally limited by standard storage paradigms. When digital assets are saved to classical servers, files reside whole within localized virtual environments. If an administrative boundary is breached via an attack on authentication mechanisms, the cleartext contents of the files are entirely compromised.</p>
+                  
+                  <div className="pl-4 border-l border-white/10 space-y-2 mt-3">
+                    <h4 className="text-white text-xs font-bold">1.1 Systemic Threat Matrices</h4>
+                    <ul className="list-disc pl-4 space-y-1 text-xs">
+                      <li><strong className="text-white">Perimeter Sniffing & Exfiltration:</strong> Attack vectors targeting network interfaces to duplicate whole files during runtime transmission loops.</li>
+                      <li><strong className="text-white">Host Multi-Tenant Contamination:</strong> Hardware level memory bleeds inside unified hypervisors where data from one enterprise is exposed to adjacent virtual clusters.</li>
+                      <li><strong className="text-white">Cryptographic Custody Key Forgery:</strong> Forced access to databases holding system-managed encryption master certificates on central database management servers.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-[#00f2fe]/5 border border-[#00f2fe]/10 p-4 rounded-xl mt-4">
+                    <h4 className="text-white font-mono text-xs font-bold text-[#00f2fe] mb-1">The Absolute Custody Operational Philosophy</h4>
+                    <p className="text-xs italic">Derived from the structural linguistic Arabic term meaning "Absolute Protection, Vigilant Care, and Functional Grace," Project Inaya re-engineers data storage from a cold mathematical process into an active digital guardian framework. Security is realized through mathematical fragmentation, eliminating structural data vulnerability.</p>
+                  </div>
                 </section>
 
-                <section>
-                  <h3 className="text-white font-mono text-sm font-bold uppercase tracking-wider text-[#00f2fe] mb-2">3. Immutable Ledger Routing</h3>
-                  <p>The resulting encrypted shards are routed into globally dispersed peer-to-peer swarms (IPFS). The corresponding Content Identifiers (CIDs) are encapsulated and cryptographically anchored directly into decentralized EVM smart contract registers via on-chain transaction logs. Re-assembly requires strict dual-shard retrieval alongside local passkey validation, leaving zero vector vulnerabilities for platform hosts.</p>
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">2. The Localized Cryptographic Slicing Protocol</h3>
+                  <p>The core breakthrough of the Inaya Network is that files never leave user host parameters in a unified form. The system routes every incoming file object through a local compilation layer inside host browser runtimes before broadcasting transport parameters to network peers.</p>
+                  
+                  <div className="space-y-2 mt-3">
+                    <h4 className="text-white text-xs font-bold">2.1 Client-Side Encryption Key Derivation</h4>
+                    <p>To preserve zero-knowledge status, master passwords are run through a password-based key derivation function (PBKDF2) using an isolated pseudo-random number generator salt sequence. The derived output vector forms an asymmetric local vault key wrapper.</p>
+                    <div className="bg-black/30 p-3 rounded-lg font-mono text-xs text-center text-white border border-white/5 my-2">
+                      {"K_v = PBKDF2(P, S, c=100,000, HMAC-SHA256, len=256)"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mt-3">
+                    <h4 className="text-white text-xs font-bold">2.2 Dual-Vector Binary Sharding Logic</h4>
+                    <p>Once local encryption is completed via AES-GCM-256 blocks, the resulting unified cipher text payload string C is mathematically bisected into standalone structural fragments. The slicing coordinate is calculated dynamically at the precise byte midpoint of the array string:</p>
+                    <div className="bg-black/30 p-3 rounded-lg font-mono text-xs text-center text-white border border-white/5 my-2">
+                      {"M_p = [length(C) / 2]"}
+                    </div>
+                    <p>The payload is divided into two distinct vector streams, denoted as Shard Alpha (V_α) and Shard Beta (V_β):</p>
+                    <div className="bg-black/30 p-3 rounded-lg font-mono text-xs text-center text-white border border-white/5 my-2">
+                      {"V_α = C[0 ... M_p - 1]   and   V_β = C[M_p ... end]"}
+                    </div>
+                  </div>
+
+                  <div className="bg-black/40 border border-white/5 p-4 rounded-xl mt-2 font-mono text-xs">
+                    <span className="text-[#00f2fe] font-bold">Mathematical Slicing Perimeter Isolation Proof:</span> Neither Shard Alpha nor Shard Beta contains enough contiguous bit information to recreate block structures. If an individual network peer gateway is compromised, the isolated shard is mathematically indistinguishable from random binary noise, rendering raw exfiltration vectors useless.
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">3. On-Chain Ledger Attestation Layer</h3>
+                  <p>Project Inaya entirely eliminates the need for database clusters. The management registry loop tracks global storage asset pointers by mapping references directly onto public smart contract variables on EVM-compatible execution networks.</p>
+                  
+                  <h4 className="text-white text-xs font-bold mt-3">3.1 Smart Contract State Configurations</h4>
+                  <pre className="bg-black/50 p-4 rounded-xl font-mono text-xs text-[#00f2fe] border border-white/5 overflow-x-auto">
+{`struct AssetRecord {
+    string filename;
+    string cidAlpha; // Content Identifier pointing to IPFS Swarm A
+    string cidBeta;  // Content Identifier pointing to IPFS Swarm B
+    uint256 timestamp;
+    address operator; // Cryptographic signing address of the node
+}
+mapping(string => AssetRecord) private _registry;`}
+                  </pre>
+
+                  <h4 className="text-white text-xs font-bold mt-3">3.2 Immutable Data Registry Flow</h4>
+                  <p>When an asset record is published, the network operator invokes the execution function 'registerAsset'. This updates contract storage variables permanently across all decentralized validation nodes globally.</p>
+                  <pre className="bg-black/50 p-4 rounded-xl font-mono text-xs text-[#00f2fe] border border-white/5 overflow-x-auto">
+{`function registerAsset(
+    string memory assetId,
+    string memory filename,
+    string memory cidAlpha,
+    string memory cidBeta
+) public {
+    require(bytes(_registry[assetId].cidAlpha).length == 0, "Asset collision");
+    _registry[assetId] = AssetRecord({
+        filename: filename,
+        cidAlpha: cidAlpha,
+        cidBeta: cidBeta,
+        timestamp: block.timestamp,
+        operator: msg.sender
+    });
+    emit AssetArchived(assetId, cidAlpha, cidBeta, msg.sender);
+}`}
+                  </pre>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">4. Tokenomics Ecosystem Matrix</h3>
+                  <p>The economic framework underpinning the Inaya Protocol enforces strict programmatic token scarcity to protect network bandwidth allocation from denial-of-service spam events.</p>
+                  
+                  <h4 className="text-white text-xs font-bold">4.1 Token Allocation Metrics</h4>
+                  <div className="overflow-x-auto border border-white/5 rounded-xl font-mono text-[11px]">
+                    <table className="w-full border-collapse text-left bg-black/20">
+                      <thead>
+                        <tr className="border-b border-white/10 text-[#64748b] bg-black/40">
+                          <th className="p-3">Pool Sector</th>
+                          <th className="p-3">Token Volume ($INAYA)</th>
+                          <th className="p-3">Percentage</th>
+                          <th className="p-3">Vesting Horizons</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-white">
+                        <tr className="border-b border-white/5">
+                          <td className="p-3 font-sans font-bold">Initial Circulating Operations</td>
+                          <td className="p-3">5,000,000</td>
+                          <td className="p-3 text-[#00f2fe]">16.67%</td>
+                          <td className="p-3 text-[#64748b]">100% Unlocked at Mainnet</td>
+                        </tr>
+                        <tr className="border-b border-white/5">
+                          <td className="p-3 font-sans font-bold">Locked Institutional Swarm Nodes</td>
+                          <td className="p-3">15,000,000</td>
+                          <td className="p-3 text-[#00f2fe]">50.00%</td>
+                          <td className="p-3 text-[#64748b]">Linear block release over 48 months</td>
+                        </tr>
+                        <tr className="border-b border-white/5">
+                          <td className="p-3 font-sans font-bold">Dynamic Cloud Services Pool</td>
+                          <td className="p-3">10,000,000</td>
+                          <td className="p-3 text-[#00f2fe]">33.33%</td>
+                          <td className="p-3 text-[#64748b]">Reserved for B2B API / Grants</td>
+                        </tr>
+                        <tr className="bg-[#00f2fe]/5 text-[#00f2fe] font-bold">
+                          <td className="p-3 font-sans">Total Capped Supply Baseline</td>
+                          <td className="p-3">30,000,000</td>
+                          <td className="p-3">100.00%</td>
+                          <td className="p-3">Programmatic Immutable Hard Cap</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <h4 className="text-white text-xs font-bold mt-3">4.2 Micro-Utility Network Burn Mechanics</h4>
+                  <p>To prevent arbitrary storage layer bloat, every single upload transaction requires an on-chain fee execution burn equal to exactly <span className="text-[#00f2fe] font-mono">F_m = 0.0001 INAYA</span> per sequence. This creates a perpetual deflationary mechanism linked directly to physical system consumption rates.</p>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">5. Project Development Roadmap</h3>
+                  <p>The systematic development pipeline scales the project from initial test environments up to enterprise production deployment layers.</p>
+                  <div className="space-y-2 text-xs bg-black/20 p-4 rounded-xl border border-white/5 font-mono">
+                    <div><span className="text-[#00f2fe] font-bold">PHASE 01 | SUCCESS VALIDATION:</span> Genesis Contract deployment of 30,000,000 supply cap onto public BNB Chain testnet.</div>
+                    <div><span className="text-[#00f2fe] font-bold">PHASE 02 | ACTIVE OPERATIONS [Q4 2026]:</span> Next.js Client-Side Swarm Integration with MetaMask file fragmentation runtimes.</div>
+                    <div><span className="text-[#00f2fe] font-bold">PHASE 03 | UPCOMING TARGET [Q1 2027]:</span> Enterprise API Gateways & Cross-Platform SDK Hooks for corporate storage pipelines.</div>
+                    <div><span className="text-[#00f2fe] font-bold">PHASE 04 | SCALING HORIZON [Q2 2027]:</span> Mainnet Migration & Public Token Liquidity Initialization Events.</div>
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-white font-mono text-xs font-bold uppercase tracking-wider text-[#00f2fe]">6. Conclusion & Vision</h3>
+                  <p>The Inaya Protocol represents a paradigm shift in data privacy mechanics. By combining localized cryptographic processing with decentralized storage channels and public blockchain state registers, it guarantees complete custody over data assets. The system proves that corporate data integrity does not require centralized databases, but can be realized through zero-knowledge execution and mathematical grace.</p>
                 </section>
               </div>
             </div>
           )}
 
-          {/* NEW TAB 5: ABOUT US & ROADMAP SEGMENT */}
+          {/* TAB 5: ABOUT US & ROADMAP */}
           {currentPage === 'About Us' && (
             <div className="max-w-4xl mx-auto space-y-8">
               
@@ -468,15 +618,15 @@ export default function Home() {
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🌐 Connect Ecosystem Nodes</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <a href="https://t.me/inayanetwork" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                  <a href="https://t.me/inayanetwork" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group" rel="noreferrer">
                     <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">Telegram Hub</span>
-                    <span className="text-xs text-[#64748b] font-mono">t.me 🚀</span>
+                    <span className="text-xs text-[#64748b] font-mono">t.me/inayanetwork 🚀</span>
                   </a>
-                  <a href="https://x.com/" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                  <a href="https://x.com/InayaNetwork" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group" rel="noreferrer">
                     <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">X Network</span>
-                    <span className="text-xs text-[#64748b] font-mono">@Inaya 🐦</span>
+                    <span className="text-xs text-[#64748b] font-mono">@InayaNetwork 🐦</span>
                   </a>
-                  <a href="https://linkedin.com/" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group">
+                  <a href="https://linkedin.com/" target="_blank" className="flex items-center justify-between bg-black/20 border border-white/5 p-4 rounded-xl hover:border-[#00f2fe]/40 transition-all group" rel="noreferrer">
                     <span className="text-sm font-mono text-white group-hover:text-[#00f2fe]">LinkedIn Core</span>
                     <span className="text-xs text-[#64748b] font-mono">Corporate 💼</span>
                   </a>
