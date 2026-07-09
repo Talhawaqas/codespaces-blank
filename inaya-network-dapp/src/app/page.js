@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import Image from 'next/image';
 
 export default function Home() {
   // 1. NAVIGATION CONTROL
@@ -151,6 +152,7 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && currentPage === 'Sovereign Vault') { fetchOnChainHistory(); }
     if (isConnected && walletAddress) { fetchUserPoints(walletAddress); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, currentPage, walletAddress]);
 
   const encryptData = async (text, password) => {
@@ -382,7 +384,7 @@ export default function Home() {
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-white">📋 Inaya Vault Active Tracking Logs</h3>
-                  <button onClick={fetchOnChainHistory} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg">🔄 REFRESH</button>
+                  <button onClick={fetchOnChainHistory} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg">🔄 REFRESH matrix</button>
                 </div>
                 {isLoadingHistory ? (
                   <div className="py-6 text-center font-mono text-xs text-[#64748b]">⚙️ Syncing ledger event matrices...</div>
@@ -395,7 +397,7 @@ export default function Home() {
                         <tr className="border-b border-white/5 text-[#64748b] text-[10px] uppercase">
                           <th className="py-2 px-4">Asset ID</th>
                           <th className="py-2 px-4">Filename</th>
-                          <th className="py-2 px-4">Action</th>
+                          <th className="py-2 px-4">Action Token</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -443,7 +445,7 @@ export default function Home() {
               <h2 className="text-xl font-extrabold text-white">Sovereign Node Compliance (KYC)</h2>
               <p className="text-sm text-[#94a3b8] max-w-md mx-auto">Identity validation checks are mandatory prior to token allocation events to isolate sybil vectors.</p>
               <div className="bg-black/30 border border-white/5 rounded-xl p-4 text-left max-w-md mx-auto font-mono text-xs text-amber-400">
-                STATUS REFERENCE: STAGE PENDING (MAINNET CLAIM ONLY)
+                STATUS REFERENCE: STAGE PENDING (MAINNET CLAIM DEPLOYMENTS ONLY)
               </div>
               <button disabled className="px-6 py-3 bg-white/5 text-[#64748b] rounded-xl text-xs font-mono font-bold cursor-not-allowed">🔒 PORTAL OPENS AT PHASE 3 TGE</button>
             </div>
@@ -486,9 +488,15 @@ export default function Home() {
                   <div className="space-y-4 font-sans">
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
-                      <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/tokenomics.png" alt="Tokenomics Allocation Diagram" className="w-full h-full object-contain" />
+                      <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
+                        <Image 
+                          src="/tokenomics.png" 
+                          alt="Tokenomics Allocation Diagram" 
+                          width={400} 
+                          height={400} 
+                          className="w-full h-full object-contain" 
+                          unoptimized
+                        />
                       </div>
                       <div className="font-mono text-xs space-y-3">
                         <div className="text-white font-bold bg-white/5 p-2 rounded">Total Hard Cap: 30,000,000 TOKENS</div>
