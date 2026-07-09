@@ -364,7 +364,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ACTIVE HISTORICAL EVENT MATRIX RECEIPT TABLE */}
+              {/* TRANSACTIONS TABLE */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-white">📋 Inaya Vault Active Tracking Logs</h3>
@@ -437,22 +437,18 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 5: INSTITUTIONAL WHITE PAPER (Full Professional Scrolling Layout Added) */}
+          {/* TAB 5: WHITE PAPER */}
           {currentPage === 'White Paper' && (
-            <div className="max-w-5xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 md:p-8 backdrop-blur-md space-y-6">
-              <div className="border-b border-white/10 pb-4">
-                <span className="text-[#00f2fe] font-mono text-[10px] uppercase font-bold tracking-widest">// System Blueprint Technical Framework</span>
-                <h1 className="text-2xl font-black text-white mt-1">THE INAYA PROTOCOL WHITE PAPER</h1>
-              </div>
-
-              {/* White Paper Section Controls Menu */}
+            <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-6">
+              <h1 className="text-2xl font-black text-white">THE INAYA PROTOCOL</h1>
+              <p className="text-xs text-[#94a3b8] font-bold uppercase tracking-wider">A Decentralized Sovereign Custody Network for High-Value Assets</p>
+              
               <div className="flex flex-wrap gap-2 border-b border-white/5 pb-3">
                 {['Abstract', 'The Problem', 'Architecture', 'Tokenomics Matrix'].map((sec) => (
-                  <button key={sec} onClick={() => setActivePaperSection(sec)} className={`px-4 py-2 text-xs font-mono font-bold rounded-lg transition-all ${activePaperSection === sec ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe]' : 'text-[#64748b] hover:text-white bg-white/[0.01]'}`}>{sec}</button>
+                  <button key={sec} onClick={() => setActivePaperSection(sec)} className={`px-4 py-2 text-xs font-mono font-bold rounded-lg transition-all ${activePaperSection === sec ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe]' : 'text-[#64748b] bg-white/[0.01]'}`}>{sec}</button>
                 ))}
               </div>
 
-              {/* White Paper Dynamic Reader Panels */}
               <div className="font-mono text-xs leading-relaxed text-[#94a3b8] bg-black/20 p-5 rounded-xl border border-white/5 max-h-[50vh] overflow-y-auto space-y-4">
                 {activePaperSection === 'Abstract' && (
                   <>
@@ -487,9 +483,13 @@ export default function Home() {
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
-                      <div className="relative w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 shadow-inner">
-                        <img src="/tokenomics.png" alt="Tokenomics Chart" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
-                        <div className="hidden font-mono text-[10px] text-[#64748b] text-center">📊 Live Tokenomics Allocation Circle Graphic Channel Active</div>
+                      {/* PURE TAILWIND CHART PLACEHOLDER - NO INTERCEPTING IMG TAGS */}
+                      <div className="w-full aspect-square border border-white/10 bg-[#070b15] rounded-xl flex flex-col items-center justify-center p-6 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#00f2fe]/5 to-transparent pointer-events-none"></div>
+                        <div className="w-32 h-32 rounded-full border-8 border-dashed border-[#00f2fe]/40 flex items-center justify-center animate-spin-slow">
+                          <div className="w-20 h-20 rounded-full border-4 border-double border-[#4facfe]/60"></div>
+                        </div>
+                        <span className="text-[10px] font-mono text-[#64748b] mt-4 tracking-wider uppercase font-bold">📊 TOKEN DISTRIBUTION SPECTRUM</span>
                       </div>
                       
                       <div className="font-mono text-xs space-y-3">
@@ -537,12 +537,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 6: ABOUT US (Enhanced with Mission, Roadmap & Core Team Slots) */}
+          {/* TAB 6: ABOUT US */}
           {currentPage === 'About Us' && (
             <div className="max-w-5xl mx-auto space-y-8">
-              
-              {/* Core Mission Panel */}
-              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+              <div className="bg-[#090d16]/80 border border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <span className="text-[#00f2fe] font-mono text-[10px] uppercase font-bold tracking-widest">// Ecosystem Core Values</span>
                 <h3 className="text-lg font-extrabold text-white mt-1 mb-2">OUR CORE MISSION</h3>
                 <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
@@ -550,7 +548,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* STRATEGIC ROADMAP GRID */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🗺️ DECENTRALIZED SWARM ROADMAP</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
@@ -573,26 +570,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* CORE TEAM ARCHITECTS SECTION */}
-              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
-                <h3 className="text-base font-bold text-white mb-4">👥 SWARM ARCHITECT MATRIX</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs text-center">
-                  <div className="bg-black/30 p-4 rounded-xl border border-white/5">
-                    <div className="text-white font-bold text-sm">Node_Alpha_Lead</div>
-                    <div className="text-[#00f2fe] text-[10px] uppercase mt-0.5">Core System Protocol</div>
-                  </div>
-                  <div className="bg-black/30 p-4 rounded-xl border border-white/5">
-                    <div className="text-white font-bold text-sm">Matrix_Security_Dev</div>
-                    <div className="text-[#00f2fe] text-[10px] uppercase mt-0.5">EVM Layer Integrator</div>
-                  </div>
-                  <div className="bg-black/30 p-4 rounded-xl border border-white/5">
-                    <div className="text-white font-bold text-sm">Telemetry_Architect</div>
-                    <div className="text-[#00f2fe] text-[10px] uppercase mt-0.5">Database & Storage Swarm</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* HARDENED SOCIAL LINKS PANEL */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🌐 LIVE NETWORKS INTERFACE ENDPOINTS</h3>
                 <div className="flex flex-col sm:flex-row gap-4 font-mono text-xs text-[#00f2fe]">
@@ -600,7 +577,6 @@ export default function Home() {
                   <a href="https://x.com/InayaNetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all">X Network Telemetry 🐦</a>
                 </div>
               </div>
-
             </div>
           )}
         </main>
