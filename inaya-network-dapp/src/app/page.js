@@ -489,14 +489,17 @@ export default function Home() {
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
                       <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
-                        <Image 
-                          src="/tokenomics.png" 
-                          alt="Tokenomics Allocation Diagram" 
-                          width={400} 
-                          height={400} 
-                          className="w-full h-full object-contain" 
-                          unoptimized
-                        />
+                        {/* FIXED NEXT.JS COMPLIANT IMAGE LOGIC WITH REQUIRED PROPERTIES */}
+<div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
+  <Image 
+    src="/tokenomics.png" 
+    alt="Tokenomics Allocation Diagram" 
+    width={500} 
+    height={500} 
+    className="w-full h-full object-contain" 
+    priority
+  />
+</div>
                       </div>
                       <div className="font-mono text-xs space-y-3">
                         <div className="text-white font-bold bg-white/5 p-2 rounded">Total Hard Cap: 30,000,000 TOKENS</div>
