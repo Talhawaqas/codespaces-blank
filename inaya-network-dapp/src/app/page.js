@@ -186,7 +186,6 @@ export default function Home() {
     return data.IpfsHash;
   };
 
-  // ⛽ STEP 3 INTEGRATED: UPLOAD, GAS SIMULATION & WEB3 ERROR HANDLING
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
     if (!assetId || !selectedFile || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
@@ -212,12 +211,12 @@ export default function Home() {
             setStatusLog(`⛽ Estimated Gas Weight: ${estimatedGas.toString()} units. Prompting wallet handshake...`);
           } catch (gasErr) {
             console.error(gasErr);
-            estimatedGas = 300000n; 
+            estimatedGas = BigInt(300000); 
             setStatusLog("⚠️ Gas simulation dropped by node. Enforcing safety buffer ceiling limits...");
           }
 
           const tx = await contract.registerAsset(assetId, selectedFile.name, cidA, cidB, {
-            gasLimit: (estimatedGas * 120n) / 100n 
+            gasLimit: (estimatedGas * BigInt(120)) / BigInt(100) 
           });
           
           setStatusLog("⏳ Mining block transaction verification receipts onto public ledger...");
@@ -277,7 +276,6 @@ export default function Home() {
     } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
   };
 
-  // 🎯 STEP 4 INTEGRATED: SUPABASE REAL-TIME SOCIAL SYNC BACKEND
   const handleSubmitSocial = async () => {
     if(!socialHandle) return alert("Validation Core Error: Fill social reference mapping tag.");
     if(!isConnected) return alert("Web3 Engine Error: Connect wallet target index matrix.");
