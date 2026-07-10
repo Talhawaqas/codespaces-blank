@@ -177,6 +177,7 @@ export default function Home() {
     return enc.decode(await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: fontIv }, key, encrypted));
   };
 
+  // FIXED: STRICT BACKEND ACCURACY LOGIC FOR SHARD RECEPTIONS
   const uploadToPinata = async (encryptedShard, filename, elementTag) => {
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -185,6 +186,11 @@ export default function Home() {
     });
     if (!response.ok) throw new Error(`Swarm transport connection timeout.`);
     const data = await response.json();
+    
+    // Catch backend validation response without hitting contract undefined bounds
+    if (data.success === false) {
+      throw new Error(data.error || "Backend pipeline processing failure.");
+    }
     return data.IpfsHash;
   };
 
@@ -199,6 +205,8 @@ export default function Home() {
         try {
           const cipherTextString = await encryptData(reader.result, masterPasskey);
           const midpoint = Math.ceil(cipherTextString.length / 2);
+          
+          setStatusLog("🌐 Uploading fragmented shards to decentralized storage nodes...");
           const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), selectedFile.name, "Alpha");
           const cidB = await uploadToPinata(cipherTextString.slice(midpoint), selectedFile.name, "Beta");
           
@@ -367,6 +375,9 @@ export default function Home() {
             <div className="max-w-5xl mx-auto space-y-6">
               <h2 className="text-2xl font-extrabold text-white">Cryptographic Storage Core</h2>
               {statusLog && <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-all shadow-md">{statusLog}</div>}
+              {txHashLink && <div className="mt-2 text-xs font-mono"><a href={txHashLink} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline font-bold">👀 View BSCScan Transaction</a></div>}
+              {downloadUrl && <div className="mt-2 text-xs font-mono bg-emerald-950 p-3 rounded-lg border border-emerald-500/30 text-emerald-400 font-bold">🔓 Decrypted File Payload Ready: <a href={downloadUrl} download={restoredName} className="underline text-white ml-2">📥 DOWNLOAD {restoredName.toUpperCase()}</a></div>}
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
@@ -489,17 +500,14 @@ export default function Home() {
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
                       <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
-                        {/* FIXED NEXT.JS COMPLIANT IMAGE LOGIC WITH REQUIRED PROPERTIES */}
-<div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
-  <Image 
-    src="/tokenomics.png" 
-    alt="Tokenomics Allocation Diagram" 
-    width={500} 
-    height={500} 
-    className="w-full h-full object-contain" 
-    priority
-  />
-</div>
+                        <Image 
+                          src="/tokenomics.png" 
+                          alt="Tokenomics Allocation Diagram" 
+                          width={400} 
+                          height={400} 
+                          className="w-full h-full object-contain" 
+                          unoptimized
+                        />
                       </div>
                       <div className="font-mono text-xs space-y-3">
                         <div className="text-white font-bold bg-white/5 p-2 rounded">Total Hard Cap: 30,000,000 TOKENS</div>
