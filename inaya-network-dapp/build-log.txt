@@ -1,0 +1,30 @@
+
+> inaya-network-dapp@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+Error: supabaseUrl is required.
+    at /workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:57135
+    at new r6 (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:57386)
+    at 8396 (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:62107)
+    at t (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/webpack-runtime.js:1:127)
+    at r (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:63870)
+    at /workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:63901
+    at t.X (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/webpack-runtime.js:1:1191)
+    at /workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:63883
+    at Object.<anonymous> (/workspaces/codespaces-blank/inaya-network-dapp/.next/server/app/api/points/route.js:37:63928)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+
+> Build error occurred
+Error: Failed to collect page data for /api/points
+    at /workspaces/codespaces-blank/inaya-network-dapp/node_modules/next/dist/build/utils.js:1268:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'Error'
+}
