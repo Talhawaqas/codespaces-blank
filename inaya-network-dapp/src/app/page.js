@@ -41,7 +41,7 @@ export default function Home() {
   // WHITE PAPER SUB-TABS STATE
   const [activePaperSection, setActivePaperSection] = useState('Abstract');
 
-  const liveContractAddress = "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3";
+  const liveContractAddress = "0x871229a40d58A89545270B8d059B8E0F481f1d55";
   
   const contractABI = [
     "function registerAsset(string assetId, string filename, string cidAlpha, string cidBeta) public",
