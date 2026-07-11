@@ -434,27 +434,76 @@ const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"; // Fi
           )}
 
           {currentPage === 'Genesis Airdrop' && (
-            <div className="max-w-5xl mx-auto space-y-6">
-              <h2 className="text-2xl font-extrabold text-white">Genesis Incentivized Portal</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-6 rounded-xl border border-white/5 font-mono text-xs">
-                <div>Total Points Weight:<br/><span className="text-[#00f2fe] text-2xl font-bold">{userPoints.total_points} PTS</span></div>
-                <div>Shard Points:<br/><span className="text-white text-xl font-bold">{userPoints.dapp_points} PTS</span></div>
-                <div>Social Weight:<br/><span className="text-white text-xl font-bold">{userPoints.social_points} PTS</span></div>
-              </div>
-              <div className="bg-black/40 border border-white/5 p-6 rounded-xl space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <div className="text-sm font-bold text-white">Link Social Handle (X / Telegram Link Matrix)</div>
-                    <div className="text-xs text-[#94a3b8]">Register community verification markers to scale weights.</div>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <input type="text" value={socialHandle} onChange={(e) => setSocialHandle(e.target.value)} placeholder="@username" className="bg-[#060913] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white" />
-                    <button onClick={handleSubmitSocial} className="text-xs font-bold bg-[#00f2fe] text-[#060913] px-4 py-2 rounded-lg">SUBMIT</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+  <div className="max-w-5xl mx-auto space-y-6">
+    <h2 className="text-2xl font-extrabold text-white">Genesis Incentivized Portal</h2>
+    
+    {/* 1. Points Matrix Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-6 rounded-xl border border-white/5 font-mono text-xs">
+      <div>Total Points Weight:<br/><span className="text-[#00f2fe] text-2xl font-bold">{userPoints.total_points} PTS</span></div>
+      <div>Shard Points:<br/><span className="text-white text-xl font-bold">{userPoints.dapp_points} PTS</span></div>
+      <div>Social Weight:<br/><span className="text-white text-xl font-bold">{userPoints.social_points} PTS</span></div>
+    </div>
+
+    {/* ======================================================== */}
+    {/* 📊 SCARCE TOKENOMICS CONVERSION HUBCARD (ADDED HERE) */}
+    {/* ======================================================== */}
+    <div className="bg-gradient-to-r from-[#0a0f1d] to-[#0b1426] border border-[#00f2fe]/20 rounded-xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center font-mono text-xs">
+      
+      {/* A. Low Supply Ratio Metric */}
+      <div className="flex flex-col space-y-1">
+        <span className="text-[#64748b] uppercase tracking-widest text-[10px]">Network Conversion Rate</span>
+        <div className="flex items-baseline space-x-1.5">
+          <span className="text-xl font-bold text-[#00f2fe]">50</span>
+          <span className="text-[#64748b] text-[10px]">PTS</span>
+          <span className="text-slate-400 font-bold">=</span>
+          <span className="text-xl font-bold text-emerald-400">0.01</span>
+          <span className="text-emerald-500 text-[10px] font-bold">$INAYA</span>
+        </div>
+        <p className="text-[10px] text-slate-500">Calibrated for 30M Strict Max Supply Scarcity Lock.</p>
+      </div>
+
+      {/* B. High Precision Mathematical Yield Output */}
+      <div className="bg-black/30 border border-white/5 rounded-lg p-3.5 flex flex-col justify-center items-center text-center">
+        <span className="text-[#64748b] uppercase text-[10px] mb-1">Estimated Yield Output</span>
+        <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#00f2fe] to-emerald-400">
+          {(userPoints.total_points * 0.0002).toFixed(4)} <span className="text-[10px] font-bold text-emerald-400">$INAYA</span>
+        </div>
+        <span className="text-[9px] text-[#00f2fe]/70 mt-1">✓ Allocation Verified for Host Node</span>
+      </div>
+
+      {/* C. Global Network Vault Allocation Status */}
+      <div className="flex flex-col space-y-2">
+        <div className="flex justify-between text-[10px]">
+          <span className="text-[#64748b]">Pool Claim Progress</span>
+          <span className="text-emerald-400 font-bold">0.00001% Claimed</span>
+        </div>
+        <div className="w-full bg-black/40 rounded-full h-1.5 border border-white/5 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#00f2fe] to-emerald-500 h-full rounded-full w-[1%] shadow-[0_0_8px_rgba(0,242,254,0.4)]"></div>
+        </div>
+        <div className="flex justify-between text-[9px] text-slate-500">
+          <span>0 INAYA</span>
+          <span>1,000,000 INAYA CAP</span>
+        </div>
+      </div>
+      
+    </div>
+
+    {/* 3. Link Social Handle Card */}
+    <div className="bg-black/40 border border-white/5 p-6 rounded-xl space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="text-sm font-bold text-white">Link Social Handle (X / Telegram Link Matrix)</div>
+          <div className="text-xs text-[#94a3b8]">Register community verification markers to scale weights.</div>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <input type="text" value={socialHandle} onChange={(e) => setSocialHandle(e.target.value)} placeholder="@username" className="bg-[#060913] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#00f2fe]/50" />
+          <button onClick={handleSubmitSocial} className="text-xs font-bold bg-[#00f2fe] text-[#060913] px-4 py-2 rounded-lg transition-transform active:scale-95">SUBMIT</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+)}
 
           {currentPage === 'KYC Portal' && (
             <div className="max-w-3xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 text-center space-y-6">
