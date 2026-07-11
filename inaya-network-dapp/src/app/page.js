@@ -290,6 +290,7 @@ const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"; // Fi
   const handleSubmitSocial = async () => {
     if(!socialHandle) return alert("Validation Core Error: Fill social reference mapping tag.");
     if(!isConnected) return alert("Web3 Engine Error: Connect wallet target index matrix.");
+    
     try {
       setStatusLog("📡 Logging telemetry handle parameters into identity servers...");
       const res = await fetch('/api/points', {
@@ -301,16 +302,20 @@ const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"; // Fi
           handle: socialHandle 
         })
       });
+
+      const responseData = await res.json(); // ✨ Server se aane wala raw response read karein
+
       if (res.ok) {
-        alert(`Success: ${socialHandle} verification tracking parameters mapped securely to your telemetry node ledger!`);
+        alert(`Success: ${socialHandle} verification tracking parameters mapped securely!`);
         fetchUserPoints(walletAddress);
       } else {
-        throw new Error("Database update rejection pipeline error.");
+        // ✨ Hardcoded error ki jagah backend ka actual error message throw karein
+        throw new Error(responseData.error || "Database update rejection pipeline error.");
       }
     } catch (err) {
       alert(`Backend Sync Dropped: ${err.message}`);
     }
-  };
+};
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
