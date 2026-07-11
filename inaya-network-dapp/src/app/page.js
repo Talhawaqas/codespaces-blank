@@ -41,7 +41,8 @@ export default function Home() {
   // WHITE PAPER SUB-TABS STATE
   const [activePaperSection, setActivePaperSection] = useState('Abstract');
 
-  const liveContractAddress = "0x871229a40d58A89545270B8d059B8E0F481f1d55";
+  const liveContractAddress = "0x871229a40d58a89545270B8d059B8E0F481f1d55"; // Main Network Address (BscScan waala)
+const tokenContractAddress = "0x9dA15C2908C9A87Ac5af8c116d4092cB6569488e"; // Token Address
   
   const contractABI = [
     "function registerAsset(string assetId, string filename, string cidAlpha, string cidBeta) public",
