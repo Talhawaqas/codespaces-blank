@@ -5,9 +5,11 @@ export async function POST(request) {
     const body = await request.json();
     const { encryptedShard, filename, elementTag } = body;
     
-    // Server-side environment token pull
-    const serverPinataJwt = process.env.PINATA_JWT;
-    if (!serverPinataJwt) {
+    // Server-side environment tokens pulled directly from your Vercel Dashboard
+    const apiKey = process.env.PINATA_API_KEY;
+    const apiSecret = process.env.PINATA_SECRET_API_KEY;
+    
+    if (!apiKey || !apiSecret) {
       return NextResponse.json({ error: "System Error: Server missing environment tokens." }, { status: 500 });
     }
 
@@ -17,11 +19,13 @@ export async function POST(request) {
       pinataMetadata: { name: `inaya_next_${elementTag}_${filename}` }
     };
 
+    // Authenticating using API Key + Secret Key headers instead of missing JWT
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${serverPinataJwt.trim()}`
+        "pinata_api_key": apiKey.trim(),
+        "pinata_secret_api_key": apiSecret.trim()
       },
       body: JSON.stringify(payload)
     });
