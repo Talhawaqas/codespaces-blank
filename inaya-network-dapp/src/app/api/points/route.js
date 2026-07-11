@@ -44,16 +44,7 @@ export async function POST(request) {
 
     const address = walletAddress.toLowerCase();
 
-    // Point Matrix configuration
-    let pointsToAdd = 0;
-    let isSocial = false;
-
-    if (actionType === 'SIGNUP') pointsToAdd = 50;
-    if (actionType === 'UPLOAD') pointsToAdd = 100;
-    if (actionType === 'RETRIEVE') pointsToAdd = 20;
-    if (actionType === 'SOCIAL') { pointsToAdd = 145; isSocial = true; }
-
-    // 1. ✨ FIXED: Fetch current points and explicitly handle the PGRST116 exception
+    // 1. Fetch current points data object state
     const { data: user, error: fetchError } = await supabase
       .from('user_points')
       .select('*')
@@ -62,6 +53,46 @@ export async function POST(request) {
 
     if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
+    // Point Matrix configuration
+    let pointsToAdd = 0;
+    let isSocial = false;
+
+    if (actionType === 'SIGNUP') pointsToAdd = 50;
+    if (actionType === 'UPLOAD') pointsToAdd = 100;
+    if (actionType === 'RETRIEVE') pointsToAdd = 20;
+    
+    // ========================================================
+    // 🛡️ ANTI-DUPLICATION & SYBIL SECURITY SHIELD FOR SOCIALS
+    // ========================================================
+    if (actionType === 'SOCIAL') { 
+      if (!handle || handle.trim() === '') {
+        return NextResponse.json({ error: "Validation Core Error: Fill social reference mapping tag." }, { status: 400 });
+      }
+
+      const cleanHandle = handle.trim();
+
+      // Check 1: Kya kisi aur wallet node ne yeh handle pehle se use kiya hua hai?
+      const { data: handleTaken } = await supabase
+        .from('user_points')
+        .select('wallet_address')
+        .eq('social_handle', cleanHandle)
+        .not('wallet_address', 'eq', address) // Kisi doosre wallet par mapping check karega
+        .maybeSingle();
+
+      if (handleTaken) {
+        return NextResponse.json({ error: "Duplication Core Error: This handle is already mapped to another wallet matrix node!" }, { status: 400 });
+      }
+
+      // Check 2: Kya is current wallet address ne pehle se hi social points claim kiye hue hain?
+      if (user && user.social_handle) {
+        return NextResponse.json({ error: "Pipeline Lock: This node index has already synchronized a social identifier asset." }, { status: 400 });
+      }
+
+      pointsToAdd = 145; 
+      isSocial = true; 
+    }
+
+    // Mathematical accumulation matrices
     const currentDapp = user?.dapp_points || 0;
     const currentSocial = user?.social_points || 0;
 
@@ -69,7 +100,7 @@ export async function POST(request) {
     const nextSocial = isSocial ? currentSocial + pointsToAdd : currentSocial;
     const nextTotal = nextDapp + nextSocial;
 
-    // 2. ✨ FIXED: Upsert with clear onConflict constraints targeting primary key
+    // 2. Upsert updated state vector into table registers
     const { error: upsertError } = await supabase
       .from('user_points')
       .upsert(
@@ -78,7 +109,7 @@ export async function POST(request) {
           dapp_points: nextDapp,
           social_points: nextSocial,
           total_points: nextTotal,
-          social_handle: isSocial ? handle : user?.social_handle || null,
+          social_handle: isSocial ? handle.trim() : user?.social_handle || null,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'wallet_address' } // Resolves conflict and merges data perfectly
