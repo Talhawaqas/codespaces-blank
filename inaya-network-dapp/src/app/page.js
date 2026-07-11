@@ -135,16 +135,26 @@ const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"; // Fi
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
+      
+      // ✨ FIX 1: Fetch current block number dynamically
+      const latestBlock = await provider.getBlockNumber();
+      // ✨ FIX 2: Query only the last 4900 blocks to stay under RPC range ceilings
+      const fromBlock = latestBlock - 4900 > 0 ? latestBlock - 4900 : 0;
+
       const filter = contract.filters.AssetArchived();
-      const logs = await contract.queryFilter(filter, 0, 'latest');
+      const logs = await contract.queryFilter(filter, fromBlock, 'latest');
+      
       const parsedHistory = logs.map(log => {
+        if (!log.args) return null;
         const [id, name, cA, cB, op] = log.args;
         return { assetId: id, filename: name, cidAlpha: cA, cidBeta: cB, operator: op };
-      }).filter(item => item.operator.toLowerCase() === walletAddress.toLowerCase());
+      }).filter(item => item && item.operator.toLowerCase() === walletAddress.toLowerCase());
+      
       setVaultHistory(parsedHistory.reverse());
     } catch (err) {
-      console.error(err);
-      setVaultHistory([{ assetId: "23", filename: "Inaya_Whitepaper.pdf", cidAlpha: "QmX...", cidBeta: "QmY...", operator: walletAddress }]);
+      console.error("🚨 RPC Logs Extraction Failure:", err);
+      // Agar fail ho toh list khali rakhein taake real state pata chalay, static mock nahi
+      setVaultHistory([]);
     } finally { 
       setIsLoadingHistory(false); 
     }
