@@ -561,104 +561,77 @@ const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"; // Fi
                 )}
 
                 {activePaperSection === 'Tokenomics Matrix' && (
-  <div className="space-y-4 font-sans">
-    <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
-      
-      {/* 📊 LIVE CSS TOKENOMICS VISUALIZATION LAYER (No Image Needed) */}
-      <div className="w-full border border-white/10 bg-[#060913] rounded-xl p-5 flex flex-col justify-center space-y-4">
-        <span className="text-[10px] font-mono text-[#64748b] uppercase tracking-widest">Visual Asset Weight Distribution</span>
-        
-        {/* Dynamic Stacked Distribution Bar */}
-        <div className="w-full h-8 rounded-lg overflow-hidden flex border border-white/5 shadow-inner">
-          <div className="bg-[#4facfe] h-full transition-all" style={{ width: '66.7%' }} title="Future Swarm Swaps: 66.7%"></div>
-          <div className="bg-cyan-400 h-full transition-all" style={{ width: '21.7%' }} title="Liquidity Pool: 21.7%"></div>
-          <div className="bg-indigo-500 h-full transition-all" style={{ width: '5.0%' }} title="Team Runway: 5.0%"></div>
-          <div className="bg-emerald-400 h-full transition-all" style={{ width: '3.3%' }} title="Genesis Airdrop: 3.3%"></div>
-        </div>
-
-        {/* Micro Badges Indicator Matrix */}
-        <div className="grid grid-cols-2 gap-2 font-mono text-[9px]">
-          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4facfe]"></span> <span className="text-slate-400">Swarm Swaps (66.7%)</span></div>
-          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-cyan-400"></span> <span className="text-slate-400">Liquidity (21.7%)</span></div>
-          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-indigo-500"></span> <span className="text-slate-400">Team Core (5.0%)</span></div>
-          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-emerald-400"></span> <span className="text-slate-400">Airdrop (3.3%)</span></div>
-        </div>
-      </div>
-
-      {/* Numerical Data Ledger */}
-      <div className="font-mono text-xs space-y-3">
-        <div className="text-white font-bold bg-white/5 p-2 rounded border border-white/5">Total Hard Cap: 30,000,000 $INAYA</div>
-        <div className="space-y-1 text-[#94a3b8]">
-          <div className="flex justify-between border-b border-white/5 pb-1"><span>🛸 Future Swarm Swaps Reserves:</span><span className="text-[#4facfe] font-bold">66.7% (20M)</span></div>
-          <div className="flex justify-between border-b border-white/5 pb-1"><span>💧 Liquidity Pool Allocation:</span><span className="text-cyan-400 font-bold">21.7% (6.5M)</span></div>
-          <div className="flex justify-between border-b border-white/5 pb-1"><span>👥 Team Runway Core:</span><span className="text-indigo-400 font-bold">5.0% (1.5M)</span></div>
-          <div className="flex justify-between"><span>🎁 Genesis Airdrop Portals:</span><span className="text-emerald-400 font-bold">3.3% (1M)</span></div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-)}
+                  <div className="space-y-4 font-sans">
+                    <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
+                      <div className="w-full aspect-square border border-white/10 bg-[#060913] rounded-xl overflow-hidden flex items-center justify-center p-4 relative">
+                        <Image 
+                          src="/tokenomics.png" 
+                          alt="Tokenomics Allocation Diagram" 
+                          width={400} 
+                          height={400} 
+                          className="w-full h-full object-contain" 
+                          unoptimized
+                        />
+                      </div>
+                      <div className="font-mono text-xs space-y-3">
+                        <div className="text-white font-bold bg-white/5 p-2 rounded">Total Hard Cap: 30,000,000 TOKENS</div>
+                        <div className="space-y-1 text-[#94a3b8]">
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>🛸 Future Swarm Swaps Reserves:</span><span className="text-[#4facfe] font-bold">66.7% (20M)</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>💧 Liquidity Pool Allocation:</span><span>21.7% (6.5M)</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>👥 Team Runway Core:</span><span>5.0% (1.5M)</span></div>
+                          <div className="flex justify-between"><span>🎁 Genesis Airdrop Portals:</span><span>3.3% (1M)</span></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {currentPage === 'About Us' && (
-  <div className="max-w-5xl mx-auto space-y-8">
-    
-    {/* 🌐 DETAILED ENG DEPLOYMENT CORPORATE STATEMENT */}
-    <div className="bg-[#090d16]/80 border border-[#00f2fe]/20 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-4">
-      <h3 className="text-lg font-extrabold text-white tracking-wide border-b border-white/5 pb-2">🛡️ OUR ARCHITECTURAL MISSION</h3>
-      <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
-        The primary objective of the Inaya Network is to re-establish absolute data sovereignty directly at the client-side execution layer. By eliminating institutional intermediaries and systemic runtime vectors, we empower edge-node operators with uncompromised asset management control.
-      </p>
-      <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
-        Our proprietary protocol utilizes state-of-the-art cryptographic sharding procedures backed by advanced PBKDF2 parameters and local AES-GCM verification models. Unlike legacy cloud databases prone to targeted exploits or server administrator interference, data parsed through the Inaya Core cannot be decrypted, reassembled, or altered by any single administrative entity or external threat index.
-      </p>
-      <div className="bg-[#0c162b]/80 border border-cyan-500/20 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-mono">
-        <div>
-          <span className="text-[#00f2fe] font-bold">✓ Zero-Knowledge Framework:</span>
-          <p className="text-slate-500 mt-0.5">Telemetry arrays only index validation hashes. Plaintext files never traverse the network pipelines intact.</p>
-        </div>
-        <div>
-          <span className="text-emerald-400 font-bold">✓ Decentralized Immutable Anchoring:</span>
-          <p className="text-slate-500 mt-0.5">State variables are locked into EVM registers on the BNB Chain, maintaining bulletproof transactional lineage tracking.</p>
-        </div>
-      </div>
-    </div>
+            <div className="max-w-5xl mx-auto space-y-8">
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-lg font-extrabold text-white mb-2">OUR CORE MISSION</h3>
+                <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
+                  Inaya Network ka wahid maqsad client-side devices par data ki absolute sovereignty ko bahal karna hai. Hum aisi decentralized custody solutions tarteeb de rahe hain jahan kisi bhi centralized organization ya server management provider ke paas aapke private storage keys intercept karne ka rasta na ho. 
+                </p>
+              </div>
 
-    {/* 🗺️ DECENTRALIZED SWARM ROADMAP */}
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
-      <h3 className="text-base font-bold text-white mb-4">🗺️ DECENTRALIZED SWARM ROADMAP</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
-        <div className="bg-black/20 p-4 rounded-xl border border-[#00f2fe]/20">
-          <div className="text-[#00f2fe] font-bold">Q1 2027: DEPLOYMENT PROOF</div>
-          <p className="text-[#64748b] text-[11px] mt-1">EVM validation matrix smart contract release across Binance Smart Chain scaling protocols.</p>
-        </div>
-        <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-          <div className="text-white font-bold">Q2 2027: AUDIT PROTOCOLS</div>
-          <p className="text-[#64748b] text-[11px] mt-1">Global security validation check tracking loops and penetration audit matrix clearance tests.</p>
-        </div>
-        <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-          <div className="text-white font-bold">Q3 2027: INCENTIVIZED CLAIM</div>
-          <p className="text-[#64748b] text-[11px] mt-1">Anti-sybil verification portal access execution loop and official TGE token allocation processing.</p>
-        </div>
-        <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-          <div className="text-white font-bold">Q4 2027: SWARM SCALING</div>
-          <p className="text-[#64748b] text-[11px] mt-1">Cross-chain network bridge expansion loops to aggregate decentralized client file fragment storage servers.</p>
-        </div>
-      </div>
-    </div>
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">🗺️ DECENTRALIZED SWARM ROADMAP</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                  <div className="bg-black/20 p-4 rounded-xl border border-[#00f2fe]/20">
+                    <div className="text-[#00f2fe] font-bold">Q1 2027: DEPLOYMENT PROOF</div>
+                    <p className="text-[#64748b] text-[11px] mt-1">EVM validation matrix smart contract release across Binance Smart Chain scaling protocols.</p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <div className="text-white font-bold">Q2 2027: AUDIT PROTOCOLS</div>
+                    <p className="text-[#64748b] text-[11px] mt-1">Global security validation check tracking loops and penetration audit matrix clearance tests.</p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <div className="text-white font-bold">Q3 2027: INCENTIVIZED CLAIM</div>
+                    <p className="text-[#64748b] text-[11px] mt-1">Anti-sybil verification portal access execution loop and official TGE token allocation processing.</p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <div className="text-white font-bold">Q4 2027: SWARM SCALING</div>
+                    <p className="text-[#64748b] text-[11px] mt-1">Cross-chain network bridge expansion loops to aggregate decentralized client file fragment storage servers.</p>
+                  </div>
+                </div>
+              </div>
 
-    {/* 🌐 LIVE NETWORKS INTERFACE ENDPOINTS */}
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
-      <h3 className="text-base font-bold text-white mb-4">🌐 LIVE NETWORKS INTERFACE ENDPOINTS</h3>
-      <div className="flex flex-col sm:flex-row gap-4 font-mono text-xs text-[#00f2fe]">
-        <a href="https://t.me/inayanetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all">Telegram Swarm Hub 🚀</a>
-        <a href="https://x.com/InayaNetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all">X Network Telemetry 🐦</a>
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">🌐 LIVE NETWORKS INTERFACE ENDPOINTS</h3>
+                <div className="flex flex-col sm:flex-row gap-4 font-mono text-xs text-[#00f2fe]">
+                  <a href="https://t.me/inayanetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all">Telegram Swarm Hub 🚀</a>
+                  <a href="https://x.com/InayaNetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all">X Network Telemetry 🐦</a>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
-    </div>
-
-  </div>
-)}
 
       {isWalletModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
