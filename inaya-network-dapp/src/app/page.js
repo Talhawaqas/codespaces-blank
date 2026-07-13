@@ -52,6 +52,7 @@ export default function Home() {
   const [txHashLink, setTxHashLink] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [restoredName, setRestoredName] = useState('');
+  const [copiedField, setCopiedField] = useState('');
 
   // Fixed Network Endpoint Registries
   const liveContractAddress = "0x871229a40d58a89545270b8d059b8e0f481f1d55";
@@ -110,6 +111,18 @@ export default function Home() {
       icon: "🏢"
     },
   ];
+
+  const copyToClipboard = async (text, fieldKey) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldKey);
+      setTimeout(() => setCopiedField(''), 1800);
+    } catch (err) {
+      console.error("Clipboard write failed:", err);
+    }
+  };
+
+  const truncateAddress = (addr) => `${addr.slice(0, 8)}...${addr.slice(-6)}`;
 
   // ========================================================
   // 📲 BACKEND TELEMETRY CORE SYNC METHODS
@@ -417,66 +430,143 @@ export default function Home() {
       <div className="flex flex-col md:flex-row w-full">
         
         {/* ASIDE SECURITY MODULE */}
-        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md">
-          <div className="text-white text-base font-bold mb-4">ADMIN SECURITY DOCK</div>
-          <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl font-mono mb-6">
-            <div className="flex items-center justify-between">
-              <div className="text-[#64748b] text-[10px] uppercase tracking-wider">Public Core Contract (BNB Testnet):</div>
-              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
-                ✓ Verified
-              </span>
+        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md space-y-7">
+
+          {/* DOCK HEADER */}
+          <div className="flex items-center gap-2.5 pb-1">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/25 flex items-center justify-center text-sm">
+              🛡️
             </div>
-            <a
-              href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold underline hover:text-cyan-300 block"
-            >
-              {liveContractAddress}
-            </a>
-            <div className="text-[9px] text-[#64748b] mt-1.5 italic">↗ View verified source on BscScan</div>
+            <div>
+              <div className="text-white text-sm font-bold tracking-wide leading-tight">Security Dock</div>
+              <div className="text-[9px] text-[#64748b] uppercase tracking-wider">Network diagnostics &amp; identity</div>
+            </div>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl font-mono mb-6">
-            <div className="flex items-center justify-between">
-              <div className="text-[#64748b] text-[10px] uppercase tracking-wider">$INAYA Token Contract (BNB Testnet):</div>
-              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
-                ✓ Verified
-              </span>
+          {/* DEPLOYED CONTRACTS */}
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Deployed Contracts</div>
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl divide-y divide-white/5 overflow-hidden">
+
+              {/* Core Contract Row */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Core Custody Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={liveContractAddress}
+                  >
+                    {truncateAddress(liveContractAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(liveContractAddress, 'core')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'core' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
+              {/* Token Contract Row */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">$INAYA Token Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${tokenContractAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={tokenContractAddress}
+                  >
+                    {truncateAddress(tokenContractAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(tokenContractAddress, 'token')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'token' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${tokenContractAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
             </div>
-            <a
-              href={`https://testnet.bscscan.com/address/${tokenContractAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold underline hover:text-cyan-300 block"
-            >
-              {tokenContractAddress}
-            </a>
-            <div className="text-[9px] text-[#64748b] mt-1.5 italic">↗ View verified source on BscScan</div>
           </div>
-          <div className="space-y-5">
-            <div className="border border-[#00f2fe]/20 bg-[#0c162b]/80 p-4 rounded-xl">
-              <div className="text-[#00f2fe] font-mono text-[10px] font-bold uppercase">Node Authentication</div>
+
+          {/* NODE IDENTITY */}
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Node Identity</div>
+            <div className="border border-[#00f2fe]/20 bg-gradient-to-b from-[#0c162b]/80 to-[#0c162b]/40 p-4 rounded-xl">
+              <div className="flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-[#64748b]'}`}></span>
+                <span className="text-[#00f2fe] font-mono text-[10px] font-bold uppercase tracking-wide">Node Authentication</span>
+              </div>
               {isConnected ? (
                 isSignedUp ? (
-                  <div className="mt-2 text-xs font-mono text-emerald-400 font-bold">⏱️ NODE OPERATIONAL (VERIFIED)</div>
+                  <div className="mt-3 flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                    <span>✓</span> NODE OPERATIONAL (VERIFIED)
+                  </div>
                 ) : (
                   <button onClick={handleWeb3SignUp} disabled={isSigning} className="w-full mt-3 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 font-bold text-xs rounded-lg animate-pulse">
                     {isSigning ? "SIGNING..." : "📝 COMPLETE SIGN UP (VERIFY NODE)"}
                   </button>
                 )
               ) : (
-                <div className="text-[#64748b] text-[11px] italic mt-2 font-mono">// Connect wallet to sign up.</div>
+                <div className="text-[#64748b] text-[11px] italic mt-3 font-mono">// Connect wallet to sign up.</div>
               )}
             </div>
-            <div>
-              <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey:</label>
-              <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
-              <p className="text-[10px] text-amber-400/80 font-mono mt-2 leading-relaxed">
-                ⚠️ This passkey is never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
+          </div>
+
+          {/* VAULT ACCESS */}
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
+            <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey</label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b] text-xs">🔒</span>
+              <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
+            </div>
+            <div className="flex gap-2 mt-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
+              <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+              <p className="text-[10px] text-amber-400/80 font-mono leading-relaxed">
+                Never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
               </p>
             </div>
           </div>
+
         </aside>
 
         {/* MAIN ROUTER ROUTING INTERFACE HOOK */}
