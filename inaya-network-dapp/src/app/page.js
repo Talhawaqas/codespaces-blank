@@ -436,6 +436,24 @@ export default function Home() {
             </a>
             <div className="text-[9px] text-[#64748b] mt-1.5 italic">↗ View verified source on BscScan</div>
           </div>
+
+          <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl font-mono mb-6">
+            <div className="flex items-center justify-between">
+              <div className="text-[#64748b] text-[10px] uppercase tracking-wider">$INAYA Token Contract (BNB Testnet):</div>
+              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                ✓ Verified
+              </span>
+            </div>
+            <a
+              href={`https://testnet.bscscan.com/address/${tokenContractAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold underline hover:text-cyan-300 block"
+            >
+              {tokenContractAddress}
+            </a>
+            <div className="text-[9px] text-[#64748b] mt-1.5 italic">↗ View verified source on BscScan</div>
+          </div>
           <div className="space-y-5">
             <div className="border border-[#00f2fe]/20 bg-[#0c162b]/80 p-4 rounded-xl">
               <div className="text-[#00f2fe] font-mono text-[10px] font-bold uppercase">Node Authentication</div>
@@ -658,16 +676,20 @@ export default function Home() {
                         <span className="text-[10px] font-mono text-[#64748b] uppercase tracking-widest">Visual Asset Weight Distribution</span>
                         
                         <div className="w-full h-8 rounded-lg overflow-hidden flex border border-white/5 shadow-inner">
-                          <div className="bg-[#4facfe] h-full transition-all" style={{ width: '66.7%' }} title="Future Swarm Swaps: 66.7%"></div>
+                          <div className="bg-[#4facfe] h-full transition-all" style={{ width: '40.0%' }} title="Swarm Reserve: 40.0%"></div>
+                          <div className="bg-violet-500 h-full transition-all" style={{ width: '26.7%' }} title="Staking Rewards: 26.7%"></div>
                           <div className="bg-cyan-400 h-full transition-all" style={{ width: '21.7%' }} title="Liquidity Pool: 21.7%"></div>
                           <div className="bg-indigo-500 h-full transition-all" style={{ width: '5.0%' }} title="Team Runway: 5.0%"></div>
+                          <div className="bg-amber-400 h-full transition-all" style={{ width: '3.3%' }} title="Ecosystem Fund: 3.3%"></div>
                           <div className="bg-emerald-400 h-full transition-all" style={{ width: '3.3%' }} title="Genesis Airdrop: 3.3%"></div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 font-mono text-[9px]">
-                          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4facfe]"></span> <span className="text-slate-400">Swarm Swaps (66.7%)</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4facfe]"></span> <span className="text-slate-400">Swarm Reserve (40.0%)</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-violet-500"></span> <span className="text-slate-400">Staking Rewards (26.7%)</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-cyan-400"></span> <span className="text-slate-400">Liquidity (21.7%)</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-indigo-500"></span> <span className="text-slate-400">Team Core (5.0%)</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-amber-400"></span> <span className="text-slate-400">Ecosystem Fund (3.3%)</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-emerald-400"></span> <span className="text-slate-400">Airdrop (3.3%)</span></div>
                         </div>
                       </div>
@@ -675,11 +697,14 @@ export default function Home() {
                       <div className="font-mono text-xs space-y-3">
                         <div className="text-white font-bold bg-white/5 p-2 rounded border border-white/5">Total Hard Cap: 30,000,000 $INAYA</div>
                         <div className="space-y-1 text-[#94a3b8]">
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>🛸 Future Swarm Swaps Reserves:</span><span className="text-[#4facfe] font-bold">66.7% (20M)</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>🛸 Swarm Reserve (Strategic/Nodes):</span><span className="text-[#4facfe] font-bold">40.0% (12M)</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>🥩 Staking Rewards Pool:</span><span className="text-violet-400 font-bold">26.7% (8M)</span></div>
                           <div className="flex justify-between border-b border-white/5 pb-1"><span>💧 Liquidity Pool Allocation:</span><span className="text-cyan-400 font-bold">21.7% (6.5M)</span></div>
                           <div className="flex justify-between border-b border-white/5 pb-1"><span>👥 Team Runway Core:</span><span className="text-indigo-400 font-bold">5.0% (1.5M)</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>🌱 Ecosystem Fund:</span><span className="text-amber-400 font-bold">3.3% (1M)</span></div>
                           <div className="flex justify-between"><span>🎁 Genesis Airdrop Portals:</span><span className="text-emerald-400 font-bold">3.3% (1M)</span></div>
                         </div>
+                        <p className="text-[9px] text-slate-600 pt-1 italic">Figures reconciled directly against the verified $INAYA token contract allocations on BNB Testnet.</p>
                       </div>
 
                     </div>
