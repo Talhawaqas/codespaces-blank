@@ -773,7 +773,7 @@ export default function Home() {
 
               <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
                 <p className="mb-2"><span className="text-amber-400/80 font-bold">⚠ Deployment Status:</span> Inaya Network is currently deployed on BNB Chain Testnet only. No mainnet funds, tokens, or production data should be used with this interface.</p>
-                <p>By connecting a wallet, you acknowledge that the Genesis Airdrop point system is a testnet incentive tracker and does not represent a guaranteed token allocation. Wallet addresses and social handles submitted are used solely for ecosystem contribution tracking.</p>
+                <p>By connecting a wallet, you acknowledge that Genesis Airdrop points earned during the testnet phase will convert into $INAYA mainnet token allocations at TGE, subject to the program's eligibility criteria and anti-sybil verification requirements. Wallet addresses and social handles submitted are used solely for ecosystem contribution tracking.</p>
               </div>
             </div>
           )}
