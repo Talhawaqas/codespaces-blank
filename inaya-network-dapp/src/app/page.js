@@ -829,6 +829,37 @@ export default function Home() {
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-5">👤 EXECUTIVE LEADERSHIP &amp; FOUNDER MATRIX</h3>
+                <div className="space-y-4">
+
+                  <div className="border border-[#00f2fe]/20 bg-black/20 rounded-xl p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <span className="text-white font-bold text-base">Talha Waqas</span>
+                      <span className="text-[9px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Founder &amp; CTO</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 italic font-mono mb-3">Core System Architect, Smart Contract Architect &amp; Lead Web3 Full-Stack Engineer</p>
+                    <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
+                    <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
+                      Deep specialization in browser-layer cryptographic engineering, EVM smart contract architecture, client-side encrypted storage protocols, and node telemetry networks. Leads technical execution of the decentralized storage kernels, automated gas estimation pipelines, and public ledger sync operations — along with core codebase development and security parameter optimization for the Inaya stack.
+                    </p>
+                  </div>
+
+                  <div className="border border-white/10 bg-black/20 rounded-xl p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <span className="text-white font-bold text-base">Fibha Urooj</span>
+                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Co-Founder &amp; CMO</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 italic font-mono mb-3">Corporate Operations Director, Head of Ecosystem Growth &amp; Lead User Acquisition Strategist</p>
+                    <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
+                    <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
+                      Strong foundation in commercial finance and asset tracking analysis (B.Com), paired with a background in educational program management. Converts technical cryptography concepts into simplified, mass-market onboarding. Directly manages alpha testing recruitment, ecosystem marketing funnels, community rewards tracking (Zealy / QuestN), and cross-regional tester education.
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🗺️ DECENTRALIZED SWARM ROADMAP</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                   <div className="bg-black/20 p-4 rounded-xl border border-[#00f2fe]/20">
