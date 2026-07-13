@@ -64,6 +64,54 @@ export default function Home() {
   ];
 
   // ========================================================
+  // 📚 OFFICIAL DOCUMENTS & RESOURCES REGISTRY
+  // ========================================================
+  const documentsList = [
+    {
+      title: "The Inaya Protocol — Whitepaper",
+      desc: "Technical & economic whitepaper covering the custody architecture and tokenomics.",
+      href: "/documents/inaya-whitepaper.pdf",
+      icon: "📄"
+    },
+    {
+      title: "Strategic Business Model & Financial Architecture",
+      desc: "Subscription tiers, financial matrix, and case-scenario revenue projections.",
+      href: "/documents/inaya-business-model.pdf",
+      icon: "📊"
+    },
+    {
+      title: "Institutional & Enterprise FAQs",
+      desc: "Compliance-oriented FAQ prepared for institutional and enterprise reviewers.",
+      href: "/documents/inaya-institutional-faqs.pdf",
+      icon: "🏛️"
+    },
+    {
+      title: "General User & Community FAQs",
+      desc: "Plain-language FAQ for everyday users, builders, and grant applicants.",
+      href: "/documents/inaya-community-faqs.pdf",
+      icon: "💬"
+    },
+    {
+      title: "Inaya Custody SDK — Developer Guide",
+      desc: "Integration guide and API reference for @inaya-network/custody-sdk.",
+      href: "/documents/inaya-sdk-guide.pdf",
+      icon: "🛠️"
+    },
+    {
+      title: "Inaya Protocol — Technical SOW",
+      desc: "DePIN custody layer scope of work: component deliverables, architecture boundaries, and system data flow for auditors and engineering teams.",
+      href: "/documents/inaya-technical-sow.pdf",
+      icon: "🧩"
+    },
+    {
+      title: "Inaya Network — Company Profile",
+      desc: "Official corporate profile covering the executive summary, core architecture, leadership team, and strategic roadmap.",
+      href: "/documents/inaya-company-profile.pdf",
+      icon: "🏢"
+    },
+  ];
+
+  // ========================================================
   // 📲 BACKEND TELEMETRY CORE SYNC METHODS
   // ========================================================
   const fetchUserPoints = async (address) => {
@@ -668,6 +716,34 @@ export default function Home() {
                     <div className="text-white font-bold">Q4 2027: SWARM SCALING</div>
                     <p className="text-[#64748b] text-[11px] mt-1">Cross-chain network bridge expansion loops to aggregate decentralized client file fragment storage servers.</p>
                   </div>
+                </div>
+              </div>
+
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">📚 OFFICIAL DOCUMENTS & RESOURCES</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {documentsList.map((doc) => (
+                    <a
+                      key={doc.href}
+                      href={doc.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 p-4 rounded-xl flex items-start gap-3 transition-all hover:bg-white/[0.02]"
+                    >
+                      <span className="text-xl leading-none mt-0.5">{doc.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white group-hover:text-[#00f2fe] transition-colors">
+                          {doc.title}
+                        </div>
+                        <p className="text-[11px] text-[#64748b] font-mono mt-1 leading-relaxed">
+                          {doc.desc}
+                        </p>
+                        <span className="inline-block mt-2 text-[10px] font-mono font-bold text-[#00f2fe]">
+                          VIEW / DOWNLOAD PDF →
+                        </span>
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
 
