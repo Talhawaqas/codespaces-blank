@@ -161,7 +161,7 @@ export default function Home() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const verificationMessage = `[INAYA CUSTOLOGY NETWORK - NODE REGISTRATION]\n\nAuthorize absolute sovereign data fragmentation access routines for this host station.\n\nNode Index: ${walletAddress.toLowerCase()}\nTimestamp Hash: ${Date.now()}`;
+      const verificationMessage = `[INAYA CUSTODY NETWORK - NODE REGISTRATION]\n\nAuthorize client-side encrypted data fragmentation access routines for this host station.\n\nNode Index: ${walletAddress.toLowerCase()}\nTimestamp Hash: ${Date.now()}`;
       await signer.signMessage(verificationMessage);
       setIsSignedUp(true);
       setStatusLog("🎯 CRYPTOGRAPHIC REGISTRATION SUCCESSFUL: Node token logged in system arrays.");
@@ -420,8 +420,21 @@ export default function Home() {
         <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md">
           <div className="text-white text-base font-bold mb-4">ADMIN SECURITY DOCK</div>
           <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl font-mono mb-6">
-            <div className="text-[#64748b] text-[10px] uppercase tracking-wider">Public Core Contract:</div>
-            <div className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold">{liveContractAddress}</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[#64748b] text-[10px] uppercase tracking-wider">Public Core Contract (BNB Testnet):</div>
+              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                ✓ Verified
+              </span>
+            </div>
+            <a
+              href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#00f2fe] text-xs break-all mt-1.5 font-bold underline hover:text-cyan-300 block"
+            >
+              {liveContractAddress}
+            </a>
+            <div className="text-[9px] text-[#64748b] mt-1.5 italic">↗ View verified source on BscScan</div>
           </div>
           <div className="space-y-5">
             <div className="border border-[#00f2fe]/20 bg-[#0c162b]/80 p-4 rounded-xl">
@@ -441,6 +454,9 @@ export default function Home() {
             <div>
               <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey:</label>
               <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
+              <p className="text-[10px] text-amber-400/80 font-mono mt-2 leading-relaxed">
+                ⚠️ This passkey is never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
+              </p>
             </div>
           </div>
         </aside>
@@ -458,11 +474,11 @@ export default function Home() {
           {currentPage === 'Network Home' && (
             <div className="max-w-5xl mx-auto space-y-6">
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Networks</h2>
-              <p className="text-[#94a3b8] text-sm mb-8">Next-generation client-side runtime parameters reskinned onto pure modular Tailwind DOM layouts.</p>
+              <p className="text-[#94a3b8] text-sm mb-8">Client-side encrypted storage with on-chain attestation — no central server ever holds your data whole.</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Supply Cap Weight</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "99.999%" : "0.000%"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Sync Confidence</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">RPC Connection Status</div></div>
               </div>
             </div>
           )}
@@ -683,12 +699,12 @@ export default function Home() {
                   The primary objective of the Inaya Network is to re-establish absolute data sovereignty directly at the client-side execution layer. By eliminating institutional intermediaries and systemic runtime vectors, we empower edge-node operators with uncompromised asset management control.
                 </p>
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed">
-                  Our proprietary protocol utilizes state-of-the-art cryptographic sharding procedures backed by advanced PBKDF2 parameters and local AES-GCM verification models. Unlike legacy cloud databases prone to targeted exploits or server administrator interference, data parsed through the Inaya Core cannot be decrypted, reassembled, or altered by any single administrative entity or external threat index.
+                  Our protocol uses client-side cryptographic sharding backed by PBKDF2 key derivation and AES-GCM encryption. Files are encrypted and split into independent fragments before they ever leave the browser — no single node, server, or administrator holds a complete, decryptable copy of your data.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-mono pt-2">
                   <div className="bg-black/40 border border-cyan-500/20 p-4 rounded-xl">
-                    <span className="text-[#00f2fe] font-bold">✓ Zero-Knowledge Framework:</span>
-                    <p className="text-slate-500 mt-1">Telemetry arrays only index validation hashes. Plaintext files never traverse the network pipelines intact.</p>
+                    <span className="text-[#00f2fe] font-bold">✓ Client-Side Encrypted:</span>
+                    <p className="text-slate-500 mt-1">Files are encrypted locally before upload. Plaintext never traverses the network pipelines intact.</p>
                   </div>
                   <div className="bg-black/40 border border-emerald-500/20 p-4 rounded-xl">
                     <span className="text-emerald-400 font-bold">✓ Decentralized Immutable Anchoring:</span>
@@ -753,6 +769,11 @@ export default function Home() {
                   <a href="https://t.me/inayanetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all py-3 block">Telegram Swarm Hub 🚀</a>
                   <a href="https://x.com/InayaNetwork" target="_blank" rel="noreferrer" className="bg-black/20 p-4 rounded-xl border border-white/5 flex-1 text-center hover:border-[#00f2fe] transition-all py-3 block">X Network Telemetry 🐦</a>
                 </div>
+              </div>
+
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
+                <p className="mb-2"><span className="text-amber-400/80 font-bold">⚠ Deployment Status:</span> Inaya Network is currently deployed on BNB Chain Testnet only. No mainnet funds, tokens, or production data should be used with this interface.</p>
+                <p>By connecting a wallet, you acknowledge that the Genesis Airdrop point system is a testnet incentive tracker and does not represent a guaranteed token allocation. Wallet addresses and social handles submitted are used solely for ecosystem contribution tracking.</p>
               </div>
             </div>
           )}
