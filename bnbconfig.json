@@ -1,0 +1,10 @@
+{
+  "network": "bnb-smart-chain-testnet",
+  "chainId": 97,
+  "rpcUrl": "https://data-seed-prebsc-1-s1.binance.org:8545/",
+  "explorer": "https://testnet.bscscan.com",
+  "contracts": {
+    "core": "0x871229a40d58a89545270b8d059b8e0f481f1d55",
+    "token": "0x9da15c2908c9a87ac5af8c116d4092cb6569488e"
+  }
+}
