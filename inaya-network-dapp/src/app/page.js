@@ -59,7 +59,7 @@ export default function Home() {
   // 🌐 UPGRADED CORE CONTRACT ENDPOINT REGISTRIES
   // ========================================================
   // ⚠️ NOTE: Copy the complete contract address of your newly deployed InayaCustody contract from Remix and paste here:
-  const liveContractAddress = "0x6A1cBF43A614421C159f06Ee5eAb0D4C3C8142c5"; 
+  const liveContractAddress = "0xf9c096c5522446367A5Bf350EA8CB2e5A37dB06A"; 
   const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e";
   const mockUsdtAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D";
   
