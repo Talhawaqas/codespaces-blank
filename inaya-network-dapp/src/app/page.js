@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import Image from 'next/image';
 
@@ -53,6 +53,7 @@ export default function Home() {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [restoredName, setRestoredName] = useState('');
   const [copiedField, setCopiedField] = useState('');
+  const fileInputRef = useRef(null);
 
   // Fixed Network Endpoint Registries
   const liveContractAddress = "0x871229a40d58a89545270b8d059b8e0f481f1d55";
@@ -123,6 +124,12 @@ export default function Home() {
   };
 
   const truncateAddress = (addr) => `${addr.slice(0, 8)}...${addr.slice(-6)}`;
+
+  const splitFileName = (name) => {
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot <= 0) return { base: name, ext: '—' };
+    return { base: name.slice(0, lastDot), ext: name.slice(lastDot + 1).toUpperCase() };
+  };
 
   // ========================================================
   // 📲 BACKEND TELEMETRY CORE SYNC METHODS
@@ -603,7 +610,35 @@ export default function Home() {
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
                   <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
-                  <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="w-full text-xs text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white/5 file:text-white hover:file:bg-white/10" />
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="w-full bg-[#060913] border border-white/10 border-dashed rounded-lg px-4 py-2.5 text-xs text-[#94a3b8] font-mono hover:border-[#00f2fe]/40 hover:text-white transition-colors text-left"
+                  >
+                    📎 {selectedFile ? 'Change file...' : 'Choose a file to encrypt & shard...'}
+                  </button>
+
+                  {selectedFile && (
+                    <div className="flex items-stretch gap-2 bg-[#060913] border border-white/10 rounded-lg overflow-hidden font-mono">
+                      <div className="flex-1 px-3 py-2.5 min-w-0">
+                        <div className="text-[9px] text-[#64748b] uppercase tracking-wider mb-0.5">Filename</div>
+                        <div className="text-xs text-white truncate" title={splitFileName(selectedFile.name).base}>
+                          {splitFileName(selectedFile.name).base}
+                        </div>
+                      </div>
+                      <div className="w-20 shrink-0 px-3 py-2.5 border-l border-white/10 bg-white/[0.02]">
+                        <div className="text-[9px] text-[#64748b] uppercase tracking-wider mb-0.5">Type</div>
+                        <div className="text-xs text-[#00f2fe] font-bold">.{splitFileName(selectedFile.name).ext}</div>
+                      </div>
+                    </div>
+                  )}
+
                   <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">SIGN & EMIT SECURE RECORD</button>
                 </div>
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
