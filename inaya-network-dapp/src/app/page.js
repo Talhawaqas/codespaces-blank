@@ -29,7 +29,7 @@ export default function Home() {
   // 4. SHARDED STORAGE ENGINE CONFIGURATIONS
   // ========================================================
   const [assetId, setAssetId] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [masterPasskey, setMasterPasskey] = useState('');
   const [queryAssetId, setQueryAssetId] = useState('');
   
@@ -129,6 +129,20 @@ export default function Home() {
     const lastDot = name.lastIndexOf('.');
     if (lastDot <= 0) return { base: name, ext: '—' };
     return { base: name.slice(0, lastDot), ext: name.slice(lastDot + 1).toUpperCase() };
+  };
+
+  const getFileIcon = (filename) => {
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    const map = {
+      pdf: '📕', doc: '📃', docx: '📃', txt: '📄', md: '📄',
+      png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️', webp: '🖼️',
+      zip: '🗜️', rar: '🗜️', '7z': '🗜️',
+      mp4: '🎞️', mov: '🎞️', avi: '🎞️', mkv: '🎞️',
+      mp3: '🎵', wav: '🎵',
+      csv: '📊', xlsx: '📊', xls: '📊',
+      json: '🧾', xml: '🧾',
+    };
+    return map[ext] || '📁';
   };
 
   // ========================================================
@@ -241,66 +255,86 @@ export default function Home() {
   // ========================================================
   // ⚡ DISPERSAL & ASSEMBLY ROUTINES FOR ATOMIC DATASTORE
   // ========================================================
+  const readFileAsDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const processSingleFile = async (file, effectiveAssetId) => {
+    const dataUrl = await readFileAsDataURL(file);
+    const cipherTextString = await encryptData(dataUrl, masterPasskey);
+    const midpoint = Math.ceil(cipherTextString.length / 2);
+
+    const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha");
+    const cidB = await uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta");
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(liveContractAddress, contractABI, signer);
+
+    let estimatedGas;
+    try {
+      estimatedGas = await contract.registerAsset.estimateGas(effectiveAssetId, file.name, cidA, cidB);
+    } catch (gasErr) {
+      console.error(gasErr);
+      estimatedGas = BigInt(300000);
+    }
+
+    const tx = await contract.registerAsset(effectiveAssetId, file.name, cidA, cidB, {
+      gasLimit: (estimatedGas * BigInt(120)) / BigInt(100)
+    });
+    await tx.wait();
+    return tx.hash;
+  };
+
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
-    if (!assetId || !selectedFile || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
-    try {
-      setTxHashLink(''); setDownloadUrl('');
-      setStatusLog("📡 Processing bits fragmentation via client-side PBKDF2 layers...");
-      const reader = new FileReader(); reader.readAsDataURL(selectedFile);
-      reader.onload = async () => {
-        try {
-          const cipherTextString = await encryptData(reader.result, masterPasskey);
-          const midpoint = Math.ceil(cipherTextString.length / 2);
-          
-          setStatusLog("🌐 Uploading fragmented shards to decentralized storage nodes...");
-          const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), selectedFile.name, "Alpha");
-          const cidB = await uploadToPinata(cipherTextString.slice(midpoint), selectedFile.name, "Beta");
-          
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const contract = new ethers.Contract(liveContractAddress, contractABI, signer);
-          
-          setStatusLog("⚡ Simulating gas execution parameters on BNB Chain nodes...");
-          let estimatedGas;
-          try {
-            estimatedGas = await contract.registerAsset.estimateGas(assetId, selectedFile.name, cidA, cidB);
-            setStatusLog(`⛽ Estimated Gas Weight: ${estimatedGas.toString()} units. Prompting wallet handshake...`);
-          } catch (gasErr) {
-            console.error(gasErr);
-            estimatedGas = BigInt(300000); 
-            setStatusLog("⚠️ Gas simulation dropped by node. Enforcing safety buffer ceiling limits...");
-          }
+    if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
 
-          const tx = await contract.registerAsset(assetId, selectedFile.name, cidA, cidB, {
-            gasLimit: (estimatedGas * BigInt(120)) / BigInt(100) 
-          });
-          
-          setStatusLog("⏳ Mining block transaction verification receipts onto public ledger...");
-          await tx.wait();
-          
-          setStatusLog("🎯 ON-CHAIN STATE SECURELY RECORDED IN PUBLIC LEDGER!");
-          setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+    setTxHashLink(''); setDownloadUrl('');
+    const isBatch = selectedFiles.length > 1;
+    let lastTxHash = '';
+    let successCount = 0;
 
-          await fetch('/api/points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
-          });
-          fetchUserPoints(walletAddress);
-          fetchOnChainHistory();
-        } catch (innerErr) {
-          console.error(innerErr);
-          if (innerErr.code === 'ACTION_REJECTED') {
-            setStatusLog("❌ Transaction cancelled: Handshake signatures rejected by host operator user.");
-          } else if (innerErr.message.includes('insufficient funds')) {
-            setStatusLog("❌ Transaction dropped: Insufficient tBNB runtime balances to deploy gas routines.");
-          } else {
-            setStatusLog(`❌ EVM Execution Crash: ${innerErr.reason || innerErr.message}`);
-          }
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
+      try {
+        setStatusLog(`📡 [${i + 1}/${selectedFiles.length}] Encrypting & sharding "${file.name}"...`);
+        const txHash = await processSingleFile(file, effectiveAssetId);
+        lastTxHash = txHash;
+        successCount += 1;
+        setStatusLog(`🎯 [${i + 1}/${selectedFiles.length}] "${file.name}" registered — Asset ID: ${effectiveAssetId}`);
+      } catch (innerErr) {
+        console.error(innerErr);
+        if (innerErr.code === 'ACTION_REJECTED') {
+          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": Handshake signature rejected by host operator.`);
+        } else if (innerErr.message && innerErr.message.includes('insufficient funds')) {
+          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": Insufficient tBNB balance for gas.`);
+        } else {
+          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": ${innerErr.reason || innerErr.message}`);
         }
-      };
-    } catch (err) { setStatusLog(`❌ Exception Node: ${err.message}`); }
+        // Continue to next file rather than aborting the whole batch
+      }
+    }
+
+    if (lastTxHash) {
+      setTxHashLink(`https://testnet.bscscan.com/tx/${lastTxHash}`);
+    }
+    setStatusLog(`✅ Batch complete: ${successCount}/${selectedFiles.length} file(s) registered successfully.`);
+
+    await fetch('/api/points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
+    });
+    fetchUserPoints(walletAddress);
+    fetchOnChainHistory();
+    setSelectedFiles([]);
   };
 
   const handleRetrievalSequence = async (targetId) => {
@@ -610,36 +644,55 @@ export default function Home() {
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
                   <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
+                  {selectedFiles.length > 1 && (
+                    <p className="text-[9px] text-[#64748b] font-mono -mt-2">Batch mode: files will register as {assetId || '<ID>'}-1, {assetId || '<ID>'}-2, etc.</p>
+                  )}
 
                   <input
                     ref={fileInputRef}
                     type="file"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    multiple
+                    onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
                     className="hidden"
                   />
                   <button
                     onClick={() => fileInputRef.current && fileInputRef.current.click()}
                     className="w-full bg-[#060913] border border-white/10 border-dashed rounded-lg px-4 py-2.5 text-xs text-[#94a3b8] font-mono hover:border-[#00f2fe]/40 hover:text-white transition-colors text-left"
                   >
-                    📎 {selectedFile ? 'Change file...' : 'Choose a file to encrypt & shard...'}
+                    📎 {selectedFiles.length > 0
+                      ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected — click to change`
+                      : 'Choose one or more files to encrypt & shard...'}
                   </button>
 
-                  {selectedFile && (
-                    <div className="flex items-stretch gap-2 bg-[#060913] border border-white/10 rounded-lg overflow-hidden font-mono">
-                      <div className="flex-1 px-3 py-2.5 min-w-0">
-                        <div className="text-[9px] text-[#64748b] uppercase tracking-wider mb-0.5">Filename</div>
-                        <div className="text-xs text-white truncate" title={splitFileName(selectedFile.name).base}>
-                          {splitFileName(selectedFile.name).base}
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                      {selectedFiles.map((f, idx) => (
+                        <div key={idx} className="flex items-stretch gap-2 bg-[#060913] border border-white/10 rounded-lg overflow-hidden font-mono">
+                          <div className="flex-1 px-3 py-2 min-w-0">
+                            <div className="text-[8.5px] text-[#64748b] uppercase tracking-wider mb-0.5">Filename</div>
+                            <div className="text-xs text-white truncate" title={splitFileName(f.name).base}>
+                              {splitFileName(f.name).base}
+                            </div>
+                          </div>
+                          <div className="w-16 shrink-0 px-2.5 py-2 border-l border-white/10 bg-white/[0.02]">
+                            <div className="text-[8.5px] text-[#64748b] uppercase tracking-wider mb-0.5">Type</div>
+                            <div className="text-xs text-[#00f2fe] font-bold">.{splitFileName(f.name).ext}</div>
+                          </div>
+                          <button
+                            onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
+                            className="w-9 shrink-0 flex items-center justify-center text-[#64748b] hover:text-red-400 hover:bg-red-500/10 transition-colors border-l border-white/10"
+                            title="Remove file"
+                          >
+                            ✕
+                          </button>
                         </div>
-                      </div>
-                      <div className="w-20 shrink-0 px-3 py-2.5 border-l border-white/10 bg-white/[0.02]">
-                        <div className="text-[9px] text-[#64748b] uppercase tracking-wider mb-0.5">Type</div>
-                        <div className="text-xs text-[#00f2fe] font-bold">.{splitFileName(selectedFile.name).ext}</div>
-                      </div>
+                      ))}
                     </div>
                   )}
 
-                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">SIGN & EMIT SECURE RECORD</button>
+                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">
+                    SIGN &amp; EMIT SECURE RECORD{selectedFiles.length > 1 ? `S (${selectedFiles.length})` : ''}
+                  </button>
                 </div>
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">🔓 Reconstruct Assembly</h3>
@@ -650,7 +703,7 @@ export default function Home() {
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-white">📋 Inaya Vault Active Tracking Logs</h3>
+                  <h3 className="text-sm font-bold text-white">🗂️ Inaya Vault File Explorer</h3>
                   <button onClick={fetchOnChainHistory} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH matrix</button>
                 </div>
                 {isLoadingHistory ? (
@@ -658,25 +711,21 @@ export default function Home() {
                 ) : vaultHistory.length === 0 ? (
                   <div className="py-6 text-center font-mono text-xs text-[#64748b] italic">// No active tracking logs fetched in current target ledger block limit.</div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-white/5 font-mono text-xs">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-white/5 text-[#64748b] text-[10px] uppercase">
-                          <th className="py-2 px-4">Asset ID</th>
-                          <th className="py-2 px-4">Filename</th>
-                          <th className="py-2 px-4">Action Token</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {vaultHistory.map((item, index) => (
-                          <tr key={index} className="border-b border-white/[0.02] hover:bg-white/[0.01]">
-                            <td className="py-2 px-4 text-[#00f2fe] font-bold">#{item.assetId}</td>
-                            <td className="py-2 px-4 text-white truncate max-w-[150px]">{item.filename}</td>
-                            <td className="py-2 px-4"><button onClick={() => handleRetrievalSequence(item.assetId)} className="text-[#00f2fe] underline font-bold hover:text-cyan-300">RECONSTRUCT</button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {vaultHistory.map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleRetrievalSequence(item.assetId)}
+                        className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 rounded-xl p-4 flex flex-col items-center text-center transition-all hover:bg-white/[0.03]"
+                        title={`${item.filename} — click to reconstruct`}
+                      >
+                        <span className="text-3xl mb-2">{getFileIcon(item.filename)}</span>
+                        <span className="text-[11px] text-white font-mono truncate max-w-full w-full">{splitFileName(item.filename).base}</span>
+                        <span className="text-[9px] text-[#00f2fe]/70 font-mono">.{splitFileName(item.filename).ext}</span>
+                        <span className="text-[9px] text-[#64748b] font-mono mt-1.5">#{item.assetId}</span>
+                        <span className="mt-2 text-[8.5px] font-mono font-bold text-[#00f2fe] opacity-0 group-hover:opacity-100 transition-opacity">RECONSTRUCT →</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
