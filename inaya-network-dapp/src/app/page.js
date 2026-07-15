@@ -55,14 +55,23 @@ export default function Home() {
   const [copiedField, setCopiedField] = useState('');
   const fileInputRef = useRef(null);
 
-  // Fixed Network Endpoint Registries
-  const liveContractAddress = "0x871229a40d58a89545270b8d059b8e0f481f1d55";
+  // ========================================================
+  // 🌐 UPGRADED CORE CONTRACT ENDPOINT REGISTRIES
+  // ========================================================
+  // ⚠️ NOTE: Copy the complete contract address of your newly deployed InayaCustody contract from Remix and paste here:
+  const liveContractAddress = "0x6A1a94E157b8509C311099Ab8DbfF09dCC3142c5"; 
   const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e";
+  const mockUsdtAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D";
   
-  const contractABI = [
-    "function registerAsset(string assetId, string filename, string cidAlpha, string cidBeta) public",
-    "function getAsset(string assetId) public view returns (string filename, string cidAlpha, string cidBeta, uint256 timestamp, address operator)",
-    "event AssetArchived(string assetId, string filename, string cidAlpha, string cidBeta, address operator)"
+  const custodyContractABI = [
+    "function batchRegisterAssets(bytes32[] calldata fileHashes, string[] calldata shardACIDs, string[] calldata shardBCIDs) external",
+    "function assets(bytes32) external view returns (address owner, string memory shardACID, string memory shardBCID, uint256 timestamp)",
+    "event AssetRegistered(address indexed owner, bytes32 indexed fileHash, string shardACID, string shardBCID, uint256 timestamp)"
+  ];
+
+  const erc20ABI = [
+    "function approve(address spender, uint256 amount) external returns (bool)",
+    "function allowance(address owner, address spender) external view returns (uint256)"
   ];
 
   // ========================================================
@@ -142,7 +151,26 @@ export default function Home() {
       csv: '📊', xlsx: '📊', xls: '📊',
       json: '🧾', xml: '🧾',
     };
-    return map[ext] || '📁';
+    return map[ext] || '📦';
+  };
+
+  // Helper utility to dynamically resolve decrypted binary payload formats[cite: 1, 2]
+  const getExtensionFromDataURL = (dataUrl) => {
+    try {
+      const mime = dataUrl.split(';')[0].split(':')[1];
+      const map = {
+        'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/svg+xml': 'svg', 'image/webp': 'webp',
+        'application/pdf': 'pdf', 'text/plain': 'txt', 'text/markdown': 'md',
+        'application/zip': 'zip', 'application/x-rar-compressed': 'rar', 'application/x-7z-compressed': '7z',
+        'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/x-msvideo': 'avi', 'video/x-matroska': 'mkv',
+        'audio/mpeg': 'mp3', 'audio/wav': 'wav',
+        'text/csv': 'csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/json': 'json', 'application/xml': 'xml'
+      };
+      return map[mime] || 'bin';
+    } catch {
+      return 'bin';
+    }
   };
 
   // ========================================================
@@ -214,10 +242,10 @@ export default function Home() {
   };
 
   // ========================================================
-  // 🛡️ BROWSER AES-GCM / PBKDF2 HARDENED SECURE MATRIX
+  // 🛡️ BROWSER AES-GCM / PBKDF2 HARDENED SECURE MATRIX[cite: 1, 2]
   // ========================================================
   const encryptData = async (text, password) => {
-    const enc = new TextEncoder();
+    const enc = new TextEncoder(); 
     const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
@@ -264,90 +292,157 @@ export default function Home() {
     });
   };
 
-  const processSingleFile = async (file, effectiveAssetId) => {
-    const dataUrl = await readFileAsDataURL(file);
-    const cipherTextString = await encryptData(dataUrl, masterPasskey);
-    const midpoint = Math.ceil(cipherTextString.length / 2);
-
-    const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha");
-    const cidB = await uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta");
-
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(liveContractAddress, contractABI, signer);
-
-    let estimatedGas;
-    try {
-      estimatedGas = await contract.registerAsset.estimateGas(effectiveAssetId, file.name, cidA, cidB);
-    } catch (gasErr) {
-      console.error(gasErr);
-      estimatedGas = BigInt(300000);
-    }
-
-    const tx = await contract.registerAsset(effectiveAssetId, file.name, cidA, cidB, {
-      gasLimit: (estimatedGas * BigInt(120)) / BigInt(100)
-    });
-    await tx.wait();
-    return tx.hash;
-  };
-
+  // ========================================================
+  // 🚀 HARDENED BATCH EXECUTION & APPROVAL PROCESS PIPELINE[cite: 2]
+  // ========================================================
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
-    if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
+    if (selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
 
     setTxHashLink(''); setDownloadUrl('');
-    const isBatch = selectedFiles.length > 1;
-    let lastTxHash = '';
-    let successCount = 0;
+    const totalFiles = selectedFiles.length;
+    
+    const fileHashes = [];
+    const shardACIDs = [];
+    const shardBCIDs = [];
 
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
-      try {
-        setStatusLog(`📡 [${i + 1}/${selectedFiles.length}] Encrypting & sharding "${file.name}"...`);
-        const txHash = await processSingleFile(file, effectiveAssetId);
-        lastTxHash = txHash;
-        successCount += 1;
-        setStatusLog(`🎯 [${i + 1}/${selectedFiles.length}] "${file.name}" registered — Asset ID: ${effectiveAssetId}`);
-      } catch (innerErr) {
-        console.error(innerErr);
-        if (innerErr.code === 'ACTION_REJECTED') {
-          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": Handshake signature rejected by host operator.`);
-        } else if (innerErr.message && innerErr.message.includes('insufficient funds')) {
-          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": Insufficient tBNB balance for gas.`);
+    try {
+      setStatusLog(`⚙️ Beginning cryptographic pipeline for ${totalFiles} file(s)...`);
+
+      // 1. Process files sequentially for memory safety and UI progress tracking[cite: 2]
+      for (let i = 0; i < totalFiles; i++) {
+        const file = selectedFiles[i];
+        setStatusLog(`📡 [${i + 1}/${totalFiles}] Encrypting locally & sharding "${file.name}"...`);
+        
+        const dataUrl = await readFileAsDataURL(file);
+        const cipherTextString = await encryptData(dataUrl, masterPasskey);
+        const midpoint = Math.ceil(cipherTextString.length / 2);
+
+        // Map Asset ID using keccak256 hash if provided, otherwise compute standard SHA-256 hash of file buffer[cite: 1, 2]
+        let fileHash;
+        if (assetId) {
+          const effectiveAssetId = totalFiles > 1 ? `${assetId}-${i + 1}` : assetId;
+          fileHash = ethers.id(effectiveAssetId);
         } else {
-          setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}": ${innerErr.reason || innerErr.message}`);
+          const fileBuffer = await file.arrayBuffer();
+          const fileHashBuffer = await window.crypto.subtle.digest("SHA-256", fileBuffer);
+          fileHash = "0x" + Array.from(new Uint8Array(fileHashBuffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
         }
-        // Continue to next file rather than aborting the whole batch
+
+        setStatusLog(`🌐 [${i + 1}/${totalFiles}] Uploading Shard Alpha to IPFS...`);
+        const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha");
+        
+        setStatusLog(`🌐 [${i + 1}/${totalFiles}] Uploading Shard Beta to IPFS...`);
+        const cidB = await uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta");
+
+        fileHashes.push(fileHash);
+        shardACIDs.push(cidA);
+        shardBCIDs.push(cidB);
+      }
+
+      // 2. Initialize Smart Contract Engines[cite: 2]
+      setStatusLog('🔌 Connecting to on-chain smart contracts...');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      const usdtContract = new ethers.Contract(mockUsdtAddress, erc20ABI, signer);
+      const inayaContract = new ethers.Contract(tokenContractAddress, erc20ABI, signer);
+      const custodyContract = new ethers.Contract(liveContractAddress, custodyContractABI, signer);
+
+      // 3. Dynamic Decimals Resolution and Dual-Asset Allowance Checks (0.1 Token / File)[cite: 2]
+      const totalUSDTFee = ethers.parseUnits((0.1 * totalFiles).toFixed(18), 18);
+      const totalInayaFee = ethers.parseUnits((0.1 * totalFiles).toFixed(18), 18);
+
+      // check Mock USDT allowance
+      setStatusLog('🛡️ Verifying Mock USDT fee allowance...');
+      const currentUSDTAllowance = await usdtContract.allowance(userAddress, liveContractAddress);
+      if (currentUSDTAllowance < totalUSDTFee) {
+        setStatusLog('✍️ Approve Mock USDT fee deduction in your wallet...');
+        const tx = await usdtContract.approve(liveContractAddress, totalUSDTFee);
+        await tx.wait();
+      }
+
+      // check $INAYA token allowance
+      setStatusLog('🛡️ Verifying $INAYA fee allowance...');
+      const currentInayaAllowance = await inayaContract.allowance(userAddress, liveContractAddress);
+      if (currentInayaAllowance < totalInayaFee) {
+        setStatusLog('✍️ Approve $INAYA fee deduction in your wallet...');
+        const tx = await inayaContract.approve(liveContractAddress, totalInayaFee);
+        await tx.wait();
+      }
+
+      // 4. Submit Gas-Optimized Batch Transaction to BNB Chain[cite: 2]
+      setStatusLog('⚡ Broadcasting batch registration to BNB Chain...');
+      
+      let estimatedGas;
+      try {
+        estimatedGas = await custodyContract.batchRegisterAssets.estimateGas(fileHashes, shardACIDs, shardBCIDs);
+      } catch (gasErr) {
+        console.error(gasErr);
+        estimatedGas = BigInt(500000); // Standard gas fallback limit
+      }
+
+      const batchTx = await custodyContract.batchRegisterAssets(fileHashes, shardACIDs, shardBCIDs, {
+        gasLimit: (estimatedGas * BigInt(120)) / BigInt(100)
+      });
+
+      setStatusLog('⏳ Waiting for transaction confirmation...');
+      await batchTx.wait();
+
+      setTxHashLink(`https://testnet.bscscan.com/tx/${batchTx.hash}`);
+      setStatusLog(`✅ Success! Batch registration complete.`);
+
+      // Server telemetry sync
+      await fetch('/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
+      });
+      fetchUserPoints(walletAddress);
+      fetchOnChainHistory();
+      setSelectedFiles([]);
+      setAssetId('');
+
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'ACTION_REJECTED') {
+        setStatusLog('❌ Handshake signature rejected by operator.');
+      } else {
+        setStatusLog(`❌ Execution Failed: ${err.reason || err.message}`);
       }
     }
-
-    if (lastTxHash) {
-      setTxHashLink(`https://testnet.bscscan.com/tx/${lastTxHash}`);
-    }
-    setStatusLog(`✅ Batch complete: ${successCount}/${selectedFiles.length} file(s) registered successfully.`);
-
-    await fetch('/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
-    });
-    fetchUserPoints(walletAddress);
-    fetchOnChainHistory();
-    setSelectedFiles([]);
   };
 
+  // ========================================================
+  // 🔓 ASSEMBLY RECONSTRUCTION MATRIX ROUTINES[cite: 1, 2]
+  // ========================================================
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
     if (!searchId || !masterPasskey) { alert("Input Error: Tracking index parameters missing."); return; }
+    
     try {
       setTxHashLink(''); setDownloadUrl('');
-      setStatusLog(`🔍 Checking public blocks for tracking index reference #${searchId}...`);
+      setStatusLog(`🔍 Checking public blocks for tracking index reference...`);
+      
+      // Handle both custom string Asset IDs (by generating their ethers.id) and raw bytes32 hex hashes directly[cite: 2]
+      let searchHash = searchId;
+      if (!ethers.isHexString(searchId) || searchId.length !== 66) {
+        searchHash = ethers.id(searchId);
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      const record = await contract.getAsset(searchId);
-      const [onchainFilename, cidAlpha, cidBeta] = record;
+      const contract = new ethers.Contract(liveContractAddress, custodyContractABI, provider);
+      
+      const record = await contract.assets(searchHash);
+      const [owner, cidAlpha, cidBeta, timestamp] = record;
+
+      if (owner === ethers.ZeroAddress) {
+        throw new Error("Asset not found or registered under this hash.");
+      }
       
       setStatusLog("🌐 Transporting sharded components down from network swarm nodes...");
       const fetchShard = async (cid) => {
@@ -355,38 +450,57 @@ export default function Home() {
         const json = await res.json(); return json.shard;
       };
       const fullCipherText = await fetchShard(cidAlpha) + await fetchShard(cidBeta);
-      setRestoredName(onchainFilename);
-      setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
+      
+      setStatusLog("🔓 Decrypting payload locally...");
+      const decryptedPayload = await decryptData(fullCipherText, masterPasskey);
+      
+      // Reconstruct file name and dynamic extension based on Base64 Header MIME[cite: 1, 2]
+      const ext = getExtensionFromDataURL(decryptedPayload);
+      const shortId = searchId.length > 10 ? `${searchId.slice(0, 6)}...${searchId.slice(-4)}` : searchId;
+      const generatedName = `restored_${shortId}.${ext}`;
+
+      setRestoredName(generatedName);
+      setDownloadUrl(decryptedPayload);
       setStatusLog("💚 TRANSACTION FULLY VERIFIED: Payload restored intact.");
+      
       await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'RETRIEVE' })
       });
       fetchUserPoints(walletAddress);
-    } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
+    } catch (err) { 
+      setStatusLog(`❌ Security check validation dropped: ${err.message}`); 
+    }
   };
 
   // ========================================================
-  // 📋 RPC BLOCK RANGE EXTRACTION LOOP
+  // 📋 RPC BLOCK RANGE EXTRACTION LOOP (AssetRegistered Event)[cite: 2]
   // ========================================================
   const fetchOnChainHistory = async () => {
     if (!walletAddress) return;
     setIsLoadingHistory(true);
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
+      const contract = new ethers.Contract(liveContractAddress, custodyContractABI, provider);
       
       const latestBlock = await provider.getBlockNumber();
       const fromBlock = latestBlock - 4900 > 0 ? latestBlock - 4900 : 0;
 
-      const filter = contract.filters.AssetArchived();
+      // Filter by indexed owner parameters
+      const filter = contract.filters.AssetRegistered(walletAddress);
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
       
       const parsedHistory = logs.map(log => {
         if (!log.args) return null;
-        const [id, name, cA, cB, op] = log.args;
-        return { assetId: id, filename: name, cidAlpha: cA, cidBeta: cB, operator: op };
+        const [owner, fileHash, shardA, shardB, timestamp] = log.args;
+        return { 
+          assetId: fileHash, 
+          filename: `Asset Hash: ${fileHash.slice(0, 10)}...`, 
+          cidAlpha: shardA, 
+          cidBeta: shardB, 
+          operator: owner 
+        };
       }).filter(item => item && item.operator.toLowerCase() === walletAddress.toLowerCase());
       
       setVaultHistory(parsedHistory.reverse());
@@ -527,6 +641,44 @@ export default function Home() {
                 <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
+              {/* Mock USDT Contract Row[cite: 2] */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Mock USDT Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${mockUsdtAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={mockUsdtAddress}
+                  >
+                    {truncateAddress(mockUsdtAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(mockUsdtAddress, 'usdt')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'usdt' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${mockUsdtAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
               {/* Token Contract Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -642,10 +794,10 @@ export default function Home() {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
-                  <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
-                  <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
+                  <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline (Batch Mode Enabled)</h3>
+                  <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID (Optional)" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
                   {selectedFiles.length > 1 && (
-                    <p className="text-[9px] text-[#64748b] font-mono -mt-2">Batch mode: files will register as {assetId || '<ID>'}-1, {assetId || '<ID>'}-2, etc.</p>
+                    <p className="text-[9px] text-[#64748b] font-mono -mt-2">Batch mode: files will register as {assetId || 'Cryptography Hash'}-1, {assetId || 'Cryptography Hash'}-2, etc.</p>
                   )}
 
                   <input
@@ -696,7 +848,7 @@ export default function Home() {
                 </div>
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">🔓 Reconstruct Assembly</h3>
-                  <input type="text" value={queryAssetId} onChange={(e) => setQueryAssetId(e.target.value)} placeholder="Query Asset ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
+                  <input type="text" value={queryAssetId} onChange={(e) => setQueryAssetId(e.target.value)} placeholder="Query Asset ID or Hash" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
                   <button onClick={() => handleRetrievalSequence('')} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">COMPILE AND RECONSTRUCT FRAGMENTS</button>
                 </div>
               </div>
@@ -717,12 +869,12 @@ export default function Home() {
                         key={index}
                         onClick={() => handleRetrievalSequence(item.assetId)}
                         className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 rounded-xl p-4 flex flex-col items-center text-center transition-all hover:bg-white/[0.03]"
-                        title={`${item.filename} — click to reconstruct`}
+                        title={`${item.assetId} — click to reconstruct`}
                       >
                         <span className="text-3xl mb-2">{getFileIcon(item.filename)}</span>
                         <span className="text-[11px] text-white font-mono truncate max-w-full w-full">{splitFileName(item.filename).base}</span>
                         <span className="text-[9px] text-[#00f2fe]/70 font-mono">.{splitFileName(item.filename).ext}</span>
-                        <span className="text-[9px] text-[#64748b] font-mono mt-1.5">#{item.assetId}</span>
+                        <span className="text-[9px] text-[#64748b] font-mono mt-1.5">#{item.assetId.slice(0, 10)}...</span>
                         <span className="mt-2 text-[8.5px] font-mono font-bold text-[#00f2fe] opacity-0 group-hover:opacity-100 transition-opacity">RECONSTRUCT →</span>
                       </button>
                     ))}
