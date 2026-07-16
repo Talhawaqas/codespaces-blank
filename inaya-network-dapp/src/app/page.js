@@ -855,7 +855,7 @@ export default function Home() {
 
               <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
                 <p className="mb-1"><span className="text-amber-400/80 font-bold">⛽ Need gas (tBNB) too?</span> This faucet only covers $INAYA and mUSDT.</p>
-                <p>Get free testnet BNB from the official faucet: <a href="https://testnet.bnbchain.org/faucet-smart" target="_blank" rel="noreferrer" className="text-[#00f2fe] underline hover:text-cyan-300">testnet.bnbchain.org/faucet-smart</a></p>
+                <p>Get free testnet BNB from the official faucet: <a href="https://faucet.zalalena.com/bsc" target="_blank" rel="noopener noreferrer"> faucet.zalalena.com/bsc </a></p>
               </div>
             </div>
           )}
