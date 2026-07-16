@@ -13,9 +13,9 @@ const ERC20_ABI = [
   "function decimals() public view returns (uint8)"
 ];
 
-const INAYA_DRIP_AMOUNT = "50000";
+const INAYA_DRIP_AMOUNT = "500";
 const USDT_DRIP_AMOUNT = "100";
-const INAYA_SUFFICIENCY_THRESHOLD = "10000";
+const INAYA_SUFFICIENCY_THRESHOLD = "1000";
 const USDT_SUFFICIENCY_THRESHOLD = "20";
 
 export async function POST(request) {
