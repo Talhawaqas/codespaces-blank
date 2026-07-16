@@ -825,7 +825,7 @@ export default function Home() {
               <div className="bg-[#0b1120]/40 border border-white/5 rounded-2xl p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs">
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-emerald-400">50,000</div>
+                    <div className="text-2xl font-bold text-emerald-400">500</div>
                     <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">$INAYA per request</div>
                   </div>
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
