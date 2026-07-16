@@ -60,7 +60,7 @@ export default function Home() {
   // ========================================================
   // ⚠️ NOTE: Copy the complete contract address of your newly deployed InayaCustody contract from Remix and paste here:
   const liveContractAddress = "0xF7B5DCADbf8af799a8bafb823b09c12805C1c60c"; 
-  const tokenContractAddress = "0x9da15c2908c9a87ac5af8c116d4092cb6569488e";
+  const tokenContractAddress = "0x3966a3378C8d9e6bBb34dD0b8458EEf4B878cE94e";
   const mockUsdtAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D";
   
   const custodyContractABI = [
