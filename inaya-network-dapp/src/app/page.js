@@ -156,7 +156,7 @@ export default function Home() {
   const computeFileHash = (assetIdText) => ethers.keccak256(ethers.toUtf8Bytes(assetIdText));
 
   // ========================================================
-  // REAL-TIME COST CALCULATOR HOOK
+  // REAL-TIME COST CALCULATOR HOOK (FIXED SCIENTIFIC NOTATION)
   // ========================================================
   useEffect(() => {
     if (selectedFiles.length === 0) {
@@ -167,9 +167,9 @@ export default function Home() {
     const ONE_GB_IN_BYTES = 1024 * 1024 * 1024;
     const totalBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
     const calculatedFee = (totalBytes / ONE_GB_IN_BYTES) * 0.1;
-    const displayFee = calculatedFee < 0.0001 && calculatedFee > 0
-      ? calculatedFee.toExponential(4)
-      : calculatedFee.toFixed(4);
+    
+    // Yahan e-5 fix kar diya hai. Ab hamesha 6 decimal places tak zero (0.0000xx) show hoga.
+    const displayFee = calculatedFee > 0 ? calculatedFee.toFixed(6) : "0.00";
       
     setDynamicInayaCost(displayFee);
     setDynamicUsdtCost(displayFee);
