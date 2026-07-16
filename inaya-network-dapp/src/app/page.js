@@ -57,16 +57,21 @@ export default function Home() {
   const [copiedField, setCopiedField] = useState('');
   const fileInputRef = useRef(null);
 
-  // Fixed Network Endpoint Registries
-  const liveContractAddress = "0xF7B5DCADbf8af799a8bafb823b09c12805C1c60c"; // InayaCustody
-  const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; // Mock USDT
-  const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; // Real $INAYA (corrected)
+  // Dynamic Cost States for Frontend Math
+  const [dynamicInayaCost, setDynamicInayaCost] = useState("0.00");
+  const [dynamicUsdtCost, setDynamicUsdtCost] = useState("0.00");
 
+  // Fixed Network Endpoint Registries (UPDATED TO NEW DYNAMIC CONTRACT)
+  const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // Upgraded InayaCustody (Dynamic)
+  const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; // Mock USDT
+  const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; // Real $INAYA
+
+  // ABI Updated for dynamic sizes array and perGB fee logic
   const contractABI = [
-    "function batchRegisterAssets(bytes32[] fileHashes, string[] shardACIDs, string[] shardBCIDs) external",
+    "function batchRegisterAssets(bytes32[] fileHashes, uint256[] fileSizes, string[] shardACIDs, string[] shardBCIDs) external",
     "function assets(bytes32) public view returns (address owner, string shardACID, string shardBCID, uint256 timestamp)",
-    "function usdtFeePerFile() public view returns (uint256)",
-    "function inayaFeePerFile() public view returns (uint256)",
+    "function usdtFeePerGB() public view returns (uint256)",
+    "function inayaFeePerGB() public view returns (uint256)",
     "function usdtToken() public view returns (address)",
     "function inayaToken() public view returns (address)",
     "event AssetRegistered(address indexed owner, bytes32 indexed fileHash, string shardACID, string shardBCID, uint256 timestamp)"
@@ -83,48 +88,13 @@ export default function Home() {
   // 📚 OFFICIAL DOCUMENTS & RESOURCES REGISTRY
   // ========================================================
   const documentsList = [
-    {
-      title: "The Inaya Protocol — Whitepaper",
-      desc: "Technical & economic whitepaper covering the custody architecture and tokenomics.",
-      href: "/documents/inaya-whitepaper.pdf",
-      icon: "📄"
-    },
-    {
-      title: "Strategic Business Model & Financial Architecture",
-      desc: "Subscription tiers, financial matrix, and case-scenario revenue projections.",
-      href: "/documents/inaya-business-model.pdf",
-      icon: "📊"
-    },
-    {
-      title: "Institutional & Enterprise FAQs",
-      desc: "Compliance-oriented FAQ prepared for institutional and enterprise reviewers.",
-      href: "/documents/inaya-institutional-faqs.pdf",
-      icon: "🏛️"
-    },
-    {
-      title: "General User & Community FAQs",
-      desc: "Plain-language FAQ for everyday users, builders, and grant applicants.",
-      href: "/documents/inaya-community-faqs.pdf",
-      icon: "💬"
-    },
-    {
-      title: "Inaya Custody SDK — Developer Guide",
-      desc: "Integration guide and API reference for @inaya-network/custody-sdk.",
-      href: "/documents/inaya-sdk-guide.pdf",
-      icon: "🛠️"
-    },
-    {
-      title: "Inaya Protocol — Technical SOW",
-      desc: "DePIN custody layer scope of work: component deliverables, architecture boundaries, and system data flow for auditors and engineering teams.",
-      href: "/documents/inaya-technical-sow.pdf",
-      icon: "🧩"
-    },
-    {
-      title: "Inaya Network — Company Profile",
-      desc: "Official corporate profile covering the executive summary, core architecture, leadership team, and strategic roadmap.",
-      href: "/documents/inaya-company-profile.pdf",
-      icon: "🏢"
-    },
+    { title: "The Inaya Protocol — Whitepaper", desc: "Technical & economic whitepaper covering the custody architecture and tokenomics.", href: "/documents/inaya-whitepaper.pdf", icon: "📄" },
+    { title: "Strategic Business Model & Financial Architecture", desc: "Subscription tiers, financial matrix, and case-scenario revenue projections.", href: "/documents/inaya-business-model.pdf", icon: "📊" },
+    { title: "Institutional & Enterprise FAQs", desc: "Compliance-oriented FAQ prepared for institutional and enterprise reviewers.", href: "/documents/inaya-institutional-faqs.pdf", icon: "🏛️" },
+    { title: "General User & Community FAQs", desc: "Plain-language FAQ for everyday users, builders, and grant applicants.", href: "/documents/inaya-community-faqs.pdf", icon: "💬" },
+    { title: "Inaya Custody SDK — Developer Guide", desc: "Integration guide and API reference for @inaya-network/custody-sdk.", href: "/documents/inaya-sdk-guide.pdf", icon: "🛠️" },
+    { title: "Inaya Protocol — Technical SOW", desc: "DePIN custody layer scope of work: component deliverables, architecture boundaries, and system data flow for auditors and engineering teams.", href: "/documents/inaya-technical-sow.pdf", icon: "🧩" },
+    { title: "Inaya Network — Company Profile", desc: "Official corporate profile covering the executive summary, core architecture, leadership team, and strategic roadmap.", href: "/documents/inaya-company-profile.pdf", icon: "🏢" },
   ];
 
   const copyToClipboard = async (text, fieldKey) => {
@@ -161,11 +131,6 @@ export default function Home() {
 
   // ========================================================
   // 🗂️ LOCAL FILENAME REGISTRY
-  // The new InayaCustody contract only stores a bytes32 fileHash on-chain —
-  // no filename field. We keep a client-side lookup (hash -> filename) so
-  // the File Explorer can still display real names for files registered
-  // from this browser. This is local-only: it won't show real names for
-  // assets registered from a different browser/device.
   // ========================================================
   const FILENAME_STORAGE_KEY = 'inaya_filename_registry';
 
@@ -191,6 +156,26 @@ export default function Home() {
   const computeFileHash = (assetIdText) => ethers.keccak256(ethers.toUtf8Bytes(assetIdText));
 
   // ========================================================
+  // REAL-TIME COST CALCULATOR HOOK
+  // ========================================================
+  useEffect(() => {
+    if (selectedFiles.length === 0) {
+      setDynamicInayaCost("0.00");
+      setDynamicUsdtCost("0.00");
+      return;
+    }
+    const ONE_GB_IN_BYTES = 1024 * 1024 * 1024;
+    const totalBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
+    const calculatedFee = (totalBytes / ONE_GB_IN_BYTES) * 0.1;
+    const displayFee = calculatedFee < 0.0001 && calculatedFee > 0
+      ? calculatedFee.toExponential(4)
+      : calculatedFee.toFixed(4);
+      
+    setDynamicInayaCost(displayFee);
+    setDynamicUsdtCost(displayFee);
+  }, [selectedFiles]);
+
+  // ========================================================
   // 📲 BACKEND TELEMETRY CORE SYNC METHODS
   // ========================================================
   const fetchUserPoints = async (address) => {
@@ -198,11 +183,7 @@ export default function Home() {
       const res = await fetch(`/api/points?address=${address.toLowerCase()}`);
       if (res.ok) {
         const data = await res.json();
-        setUserPoints({
-          dapp_points: data.dapp_points || 0,
-          social_points: data.social_points || 0,
-          total_points: data.total_points || 0
-        });
+        setUserPoints({ dapp_points: data.dapp_points || 0, social_points: data.social_points || 0, total_points: data.total_points || 0 });
       }
     } catch (err) { 
       console.error("Points server sync error:", err); 
@@ -232,9 +213,7 @@ export default function Home() {
   };
 
   const handleWeb3SignUp = async () => {
-    if (!isConnected || !walletAddress) {
-      alert("Authentication error: Connect wallet first."); return;
-    }
+    if (!isConnected || !walletAddress) { alert("Authentication error: Connect wallet first."); return; }
     setIsSigning(true);
     setStatusLog("🔐 Emitting unique cryptographic host registration message to your wallet provider...");
     try {
@@ -291,9 +270,7 @@ export default function Home() {
     });
     if (!response.ok) throw new Error(`Swarm transport connection timeout.`);
     const data = await response.json();
-    if (data.success === false) {
-      throw new Error(data.error || "Backend pipeline processing failure.");
-    }
+    if (data.success === false) { throw new Error(data.error || "Backend pipeline processing failure."); }
     return data.IpfsHash;
   };
 
@@ -313,23 +290,25 @@ export default function Home() {
     const dataUrl = await readFileAsDataURL(file);
     const cipherTextString = await encryptData(dataUrl, masterPasskey);
     const midpoint = Math.ceil(cipherTextString.length / 2);
-
     const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha");
     const cidB = await uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta");
-
     return { filename: file.name, cidAlpha: cidA, cidBeta: cidB };
   };
 
-  const ensureTokenApproval = async (tokenAddress, signer, ownerAddress, requiredAmount, label) => {
+  const ensureTokenApproval = async (tokenAddress, signer, ownerAddress, requiredAmountWei, label) => {
     const token = new ethers.Contract(tokenAddress, erc20ABI, signer);
     const currentAllowance = await token.allowance(ownerAddress, liveContractAddress);
-    if (currentAllowance >= requiredAmount) return; // already sufficient, no signature needed
+    if (currentAllowance >= requiredAmountWei) return;
 
     setStatusLog(`✍️ Requesting approval to spend ${label}...`);
-    const approveTx = await token.approve(liveContractAddress, ethers.MaxUint256); // approve once, covers future batches too
+    const approveTx = await token.approve(liveContractAddress, ethers.MaxUint256);
     await approveTx.wait();
+    setStatusLog(`✅ ${label} spending approved!`);
   };
 
+  // ========================================================
+  // UPLOAD SEQUENCE (WITH DYNAMIC ON-CHAIN SIZING)
+  // ========================================================
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
     if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
@@ -337,12 +316,12 @@ export default function Home() {
     setTxHashLink(''); setDownloadUrl('');
     const isBatch = selectedFiles.length > 1;
     const fileHashes = [];
+    const fileSizes = []; // Array for dynamic sizing payload
     const shardACIDs = [];
     const shardBCIDs = [];
     const pendingFilenameMappings = [];
 
-    // --- PHASE 1: Off-chain encryption + sharding for every file. No wallet
-    // signature required for this phase — only IPFS/API calls happen here. ---
+    // --- PHASE 1: Off-chain encryption + sharding ---
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
@@ -350,14 +329,15 @@ export default function Home() {
         setStatusLog(`📡 [${i + 1}/${selectedFiles.length}] Encrypting & sharding "${file.name}"...`);
         const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
         const hash = computeFileHash(effectiveAssetId);
+        
         fileHashes.push(hash);
+        fileSizes.push(file.size); // Save raw byte size
         shardACIDs.push(cidAlpha);
         shardBCIDs.push(cidBeta);
         pendingFilenameMappings.push({ hash, filename });
       } catch (prepErr) {
         console.error(prepErr);
-        setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}" failed during encryption/sharding: ${prepErr.message}`);
-        // Skip this file, continue preparing the rest of the batch
+        setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}" failed: ${prepErr.message}`);
       }
     }
 
@@ -366,50 +346,55 @@ export default function Home() {
       return;
     }
 
-    // --- PHASE 2: Ensure both token allowances are sufficient. Only prompts
-    // a signature the first time (or if a previous approval was revoked) —
-    // approved amount is effectively unlimited so future batches skip this. ---
+    // --- PHASE 2: Dynamic Allowances based on sizes ---
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
 
-      const [usdtFeePerFile, inayaFeePerFile] = await Promise.all([
-        custody.usdtFeePerFile(),
-        custody.inayaFeePerFile()
+      setStatusLog("🔍 Syncing with live contract fee registers...");
+      const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([
+        custody.usdtFeePerGB(),
+        custody.inayaFeePerGB()
       ]);
-      const totalUsdtFee = usdtFeePerFile * BigInt(fileHashes.length);
-      const totalInayaFee = inayaFeePerFile * BigInt(fileHashes.length);
 
-      if (totalUsdtFee > 0n) {
-        await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFee, "Mock USDT");
+      // Solidity Division-safe BigInt Math on Frontend
+      let totalUsdtFeeWei = 0n;
+      let totalInayaFeeWei = 0n;
+
+      fileSizes.forEach((size) => {
+        totalUsdtFeeWei += (BigInt(size) * usdtFeePerGB) / 1073741824n;
+        totalInayaFeeWei += (BigInt(size) * inayaFeePerGB) / 1073741824n;
+      });
+
+      if (totalUsdtFeeWei > 0n) {
+        await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFeeWei, "Mock USDT");
       }
-      if (totalInayaFee > 0n) {
-        await ensureTokenApproval(inayaTokenAddress, signer, walletAddress, totalInayaFee, "$INAYA");
+      if (totalInayaFeeWei > 0n) {
+        await ensureTokenApproval(inayaTokenAddress, signer, walletAddress, totalInayaFeeWei, "$INAYA");
       }
 
-      // --- PHASE 3: ONE on-chain transaction registers every prepared file. ---
-      setStatusLog(`✍️ Requesting a single signature to register ${fileHashes.length} file(s) on-chain...`);
+      // --- PHASE 3: ONE on-chain transaction ---
+      setStatusLog(`✍️ Requesting signature to register ${fileHashes.length} dynamic file(s) on-chain...`);
 
       let estimatedGas;
       try {
-        estimatedGas = await custody.batchRegisterAssets.estimateGas(fileHashes, shardACIDs, shardBCIDs);
+        estimatedGas = await custody.batchRegisterAssets.estimateGas(fileHashes, fileSizes, shardACIDs, shardBCIDs);
       } catch (gasErr) {
-        console.error(gasErr);
-        estimatedGas = BigInt(300000) * BigInt(fileHashes.length);
+        console.error("Gas fall-back:", gasErr);
+        estimatedGas = BigInt(350000) * BigInt(fileHashes.length);
       }
 
       const gasLimit = (estimatedGas * BigInt(120)) / BigInt(100);
-      const tx = await custody.batchRegisterAssets(fileHashes, shardACIDs, shardBCIDs, { gasLimit });
+      const tx = await custody.batchRegisterAssets(fileHashes, fileSizes, shardACIDs, shardBCIDs, { gasLimit });
 
-      setStatusLog(`⏳ Mining batch transaction — registering ${fileHashes.length} file(s)...`);
+      setStatusLog(`⏳ Mining dynamic batch transaction...`);
       await tx.wait();
 
-      // Persist filename lookups locally now that the on-chain write succeeded
       pendingFilenameMappings.forEach(({ hash, filename }) => saveFilenameMapping(hash, filename));
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
-      setStatusLog(`🎯 ON-CHAIN STATE SECURELY RECORDED: ${fileHashes.length} file(s) registered in a single transaction.`);
+      setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
     } catch (txErr) {
       console.error(txErr);
       if (txErr.code === 'ACTION_REJECTED') {
@@ -438,7 +423,6 @@ export default function Home() {
     if (!searchId || !masterPasskey) { alert("Input Error: Tracking index parameters missing."); return; }
     try {
       setTxHashLink(''); setDownloadUrl('');
-      // Accept either a raw asset ID string (hash it) or an already-computed 0x... hash (used as-is)
       const searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
       setStatusLog(`🔍 Checking public blocks for tracking index reference #${searchHash.slice(0, 10)}...`);
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -479,10 +463,8 @@ export default function Home() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      
       const latestBlock = await provider.getBlockNumber();
       const fromBlock = latestBlock - 4900 > 0 ? latestBlock - 4900 : 0;
-
       const filter = contract.filters.AssetRegistered();
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
       
@@ -491,8 +473,8 @@ export default function Home() {
         const [op, hash, cA, cB] = log.args;
         const localFilename = getFilenameMapping(hash);
         return {
-          assetId: hash, // bytes32 hash — the contract no longer stores the original text ID
-          filename: localFilename || `${hash.slice(0, 10)}...${hash.slice(-6)}`, // fallback if registered from another browser
+          assetId: hash, 
+          filename: localFilename || `${hash.slice(0, 10)}...${hash.slice(-6)}`,
           cidAlpha: cA,
           cidBeta: cB,
           operator: op
@@ -512,10 +494,7 @@ export default function Home() {
   // 🚰 TESTNET FAUCET REQUEST HANDLER
   // ========================================================
   const handleFaucetRequest = async () => {
-    if (!isConnected || !walletAddress) {
-      alert("Connect your wallet first to request test tokens.");
-      return;
-    }
+    if (!isConnected || !walletAddress) { alert("Connect your wallet first to request test tokens."); return; }
     setIsFauceting(true);
     setFaucetLog("📡 Requesting test tokens from the Inaya faucet...");
     try {
@@ -525,16 +504,10 @@ export default function Home() {
         body: JSON.stringify({ walletAddress })
       });
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Faucet request failed.");
-      }
+      if (!res.ok || !data.success) { throw new Error(data.error || "Faucet request failed."); }
       const lines = [];
-      lines.push(data.results.inaya.sent
-        ? `✅ Sent ${data.results.inaya.amount} $INAYA`
-        : `ℹ️ $INAYA: ${data.results.inaya.reason}`);
-      lines.push(data.results.usdt.sent
-        ? `✅ Sent ${data.results.usdt.amount} mUSDT`
-        : `ℹ️ mUSDT: ${data.results.usdt.reason}`);
+      lines.push(data.results.inaya.sent ? `✅ Sent ${data.results.inaya.amount} $INAYA` : `ℹ️ $INAYA: ${data.results.inaya.reason}`);
+      lines.push(data.results.usdt.sent ? `✅ Sent ${data.results.usdt.amount} mUSDT` : `ℹ️ mUSDT: ${data.results.usdt.reason}`);
       setFaucetLog(lines.join('   •   '));
     } catch (err) {
       console.error(err);
@@ -553,24 +526,16 @@ export default function Home() {
       const res = await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          walletAddress: walletAddress.toLowerCase(), 
-          actionType: 'SOCIAL',
-          handle: socialHandle 
-        })
+        body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'SOCIAL', handle: socialHandle })
       });
-
       const responseData = await res.json();
-
       if (res.ok) {
         alert(`Success: ${socialHandle} verification tracking parameters mapped securely!`);
         fetchUserPoints(walletAddress);
       } else {
         throw new Error(responseData.error || "Database update rejection pipeline error.");
       }
-    } catch (err) {
-      alert(`Backend Sync Dropped: ${err.message}`);
-    }
+    } catch (err) { alert(`Backend Sync Dropped: ${err.message}`); }
   };
 
   // Synchronization Telemetry Hooks
@@ -918,12 +883,35 @@ export default function Home() {
                     </div>
                   )}
 
+                  {/* DYNAMIC PER-GB COST INDICATOR */}
+                  {selectedFiles.length > 0 && (
+                    <div className="bg-[#060913]/80 border border-[#00f2fe]/15 rounded-xl p-3.5 space-y-1.5 font-mono text-[11px] shadow-inner mt-4">
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span>Total Payload Size:</span>
+                        <span className="text-white font-bold">
+                          {(selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-400 border-t border-white/5 pt-1.5 mt-1.5">
+                        <span>Pricing Algorithm:</span>
+                        <span className="text-[#00f2fe] font-bold">0.1 Token / GB</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-400 border-t border-white/5 pt-1.5">
+                        <span>Dynamic Custody Fee:</span>
+                        <span className="text-emerald-400 font-extrabold">
+                          {dynamicInayaCost} INAYA + {dynamicUsdtCost} mUSDT
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">
                     {selectedFiles.length > 1
-                      ? `SIGN & EMIT ${selectedFiles.length} RECORDS (1 SIGNATURE)`
+                      ? `SIGN & EMIT ${selectedFiles.length} DYNAMIC RECORDS`
                       : 'SIGN & EMIT SECURE RECORD'}
                   </button>
                 </div>
+                
                 <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
                   <h3 className="text-base font-bold text-white">🔓 Reconstruct Assembly</h3>
                   <input type="text" value={queryAssetId} onChange={(e) => setQueryAssetId(e.target.value)} placeholder="Query Asset ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
