@@ -348,9 +348,10 @@ export default function Home() {
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 
-      const usdtContract = new ethers.Contract(mockUsdtAddress, erc20ABI, signer);
-      const inayaContract = new ethers.Contract(tokenContractAddress, erc20ABI, signer);
-      const custodyContract = new ethers.Contract(liveContractAddress, custodyContractABI, signer);
+// .trim() lagane se saare hidden spaces automatic khatam ho jayenge!
+const usdtContract = new ethers.Contract(mockUsdtAddress.trim(), erc20ABI, signer);
+const inayaContract = new ethers.Contract(tokenContractAddress.trim(), erc20ABI, signer);
+const custodyContract = new ethers.Contract(liveContractAddress.trim(), custodyContractABI, signer);
 
       // 3. Dynamic Decimals Resolution and Dual-Asset Allowance Checks (0.1 Token / File)[cite: 2]
       const totalUSDTFee = ethers.parseUnits((0.1 * totalFiles).toFixed(18), 18);
