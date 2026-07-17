@@ -431,13 +431,11 @@ export default function Home() {
   };
 
   // ========================================================
-  // UPLOAD SEQUENCE (WITH FIXED PURE PROVIDER FOR MOBILE VIEW CALLS)
+  // UPLOAD SEQUENCE (WITH PRE-FLIGHT IMMUTABLE RECORD VALIDATIONS)
   // ========================================================
   const handleUploadSequence = async () => {
-    // Hard Mobile Verification Tracing Popups
     if (!isConnected) { alert("🚨 Wallet Connected Nahi Hai! Pehle top-right se wallet connect karein."); return; }
     
-    // Ensure network structure is active before moving ahead
     const networkCorrect = await ensureCorrectNetwork();
     if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
 
@@ -448,10 +446,6 @@ export default function Home() {
     
     if (hasSizeViolation) {
       alert("❌ Size limit violation: Max 5MB per file and 20MB total limits exist.");
-      return;
-    }
-    if (!hasEnoughInaya || !hasEnoughUsdt) {
-      alert("❌ Insufficient Balance: Visit the Faucet tab to request testnet tokens.");
       return;
     }
 
@@ -502,34 +496,55 @@ export default function Home() {
       return;
     }
 
-    // --- PHASE 2: Dynamic Allowances based on sizes ---
-    let totalUsdtFeeWei = requiredUsdtWei;
-    let totalInayaFeeWei = requiredInayaWei;
-
+    // --- PHASE 2: Pre-Flight On-Chain Check Against Call Reverts ---
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
-      // FIX: Read methods call using raw provider to bypass mobile webview CALL_EXCEPTION simulation glitch
       const readCustody = new ethers.Contract(liveContractAddress, contractABI, provider);
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
 
-      setStatusLog("🔍 Syncing with live contract fee registers...");
+      setStatusLog("🔍 Pre-validating tracking IDs against public ledger registry...");
+      
+      // 1. Check for Duplicate Asset Tracking IDs immediately to block execution revert
+      for (let i = 0; i < fileHashes.length; i++) {
+        const assetRecord = await readCustody.assets(fileHashes[i]);
+        if (assetRecord && assetRecord[0] !== ethers.ZeroAddress) {
+          alert(`🚨 DUPLICATE ASSET ID DETECTED!\n\nYe Tracking ID [${pendingFilenameMappings[i].assetIdText}] pehle se blockchain par registered hai. Koshish karein ke "Asset Tracking ID" field mein koi bilkul unique alphanumeric string enter karein.`);
+          setStatusLog("❌ Transaction cancelled: Duplicate Tracking ID mapping found on-chain.");
+          fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Duplicate tracking ID'));
+          return;
+        }
+      }
+
+      // 2. Fetch Fee Matrix and Verify Balance Allocations
       const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([
         readCustody.usdtFeePerGB(),
         readCustody.inayaFeePerGB()
       ]);
 
-      let calculatedUsdtFee = 0n;
-      let calculatedInayaFee = 0n;
+      let totalUsdtFeeWei = 0n;
+      let totalInayaFeeWei = 0n;
       fileSizes.forEach((size) => {
-        calculatedUsdtFee += (BigInt(size) * usdtFeePerGB) / 1073741824n;
-        calculatedInayaFee += (BigInt(size) * inayaFeePerGB) / 1073741824n;
+        totalUsdtFeeWei += (BigInt(size) * usdtFeePerGB) / 1073741824n;
+        totalInayaFeeWei += (BigInt(size) * inayaFeePerGB) / 1073741824n;
       });
-      
-      if (calculatedUsdtFee > 0n) totalUsdtFeeWei = calculatedUsdtFee;
-      if (calculatedInayaFee > 0n) totalInayaFeeWei = calculatedInayaFee;
 
+      const inayaToken = new ethers.Contract(inayaTokenAddress, erc20ABI, provider);
+      const usdtToken = new ethers.Contract(usdtTokenAddress, erc20ABI, provider);
+      const [inayaBal, usdtBal] = await Promise.all([
+        inayaToken.balanceOf(walletAddress),
+        usdtToken.balanceOf(walletAddress)
+      ]);
+
+      if (inayaBal < totalInayaFeeWei || usdtBal < totalUsdtFeeWei) {
+        alert(`🚨 INSUFFICIENT MOCK BALANCES!\n\nContract requires ${ethers.formatUnits(totalInayaFeeWei, 18)} INAYA and ${ethers.formatUnits(totalUsdtFeeWei, 18)} USDT.\nYour balances: ${ethers.formatUnits(inayaBal, 18)} INAYA | ${ethers.formatUnits(usdtBal, 18)} USDT.\nPlease use the Faucet tab.`);
+        setStatusLog("❌ Transaction cancelled: Insufficient mock token funding.");
+        fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Insufficient balance'));
+        return;
+      }
+
+      // 3. Process Dynamic Spending Allowance Handshakes
       if (totalUsdtFeeWei > 0n) {
         await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFeeWei, "Mock USDT");
       }
@@ -537,7 +552,7 @@ export default function Home() {
         await ensureTokenApproval(inayaTokenAddress, signer, walletAddress, totalInayaFeeWei, "$INAYA");
       }
 
-      // --- PHASE 3: ONE on-chain transaction ---
+      // --- PHASE 3: Execution Over Broadcast Channel ---
       setStatusLog(`✍️ Requesting signature to register ${fileHashes.length} dynamic file(s) on-chain...`);
       fileHashes.forEach((_, idx) => updateProgress(idx, 'signing', 'Awaiting on-chain confirmation...'));
 
@@ -545,11 +560,11 @@ export default function Home() {
       try {
         estimatedGas = await custody.batchRegisterAssets.estimateGas(fileHashes, fileSizes, shardACIDs, shardBCIDs);
       } catch (gasErr) {
-        console.error("Gas fall-back:", gasErr);
-        estimatedGas = BigInt(350000) * BigInt(fileHashes.length);
+        console.warn("Gas simulation skipped, forcing safe deployment boundaries:", gasErr);
+        estimatedGas = BigInt(360000) * BigInt(fileHashes.length);
       }
 
-      const gasLimit = (estimatedGas * BigInt(120)) / BigInt(100);
+      const gasLimit = (estimatedGas * BigInt(125)) / BigInt(100);
       const tx = await custody.batchRegisterAssets(fileHashes, fileSizes, shardACIDs, shardBCIDs, { gasLimit });
 
       setStatusLog(`⏳ Mining dynamic batch transaction...`);
@@ -566,14 +581,15 @@ export default function Home() {
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
       setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
+      
+      // Clear out the selection space on complete workflow success
+      setSelectedFiles([]);
     } catch (txErr) {
       console.error(txErr);
       fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Transaction failed'));
       alert(`❌ Contract Interaction Failed: ${txErr.reason || txErr.message || txErr}`);
       if (txErr.code === 'ACTION_REJECTED') {
         setStatusLog("❌ Transaction cancelled: Signature rejected by host operator.");
-      } else if (txErr.message && txErr.message.includes('insufficient funds')) {
-        setStatusLog("❌ Transaction dropped: Insufficient tBNB balance for gas.");
       } else {
         setStatusLog(`❌ EVM Execution Crash: ${txErr.reason || txErr.message}`);
       }
@@ -588,7 +604,6 @@ export default function Home() {
       });
       fetchUserPoints(walletAddress);
       fetchOnChainHistory();
-      setSelectedFiles([]);
     } catch(apiErr) {
       console.error("Points calculation api failure:", apiErr);
     }
@@ -659,7 +674,7 @@ export default function Home() {
     } catch (err) {
       console.error("🚨 RPC Logs Extraction Failure:", err);
       setVaultHistory([]);
-    } fillHistory: { 
+    } finally { 
       setIsLoadingHistory(false); 
     }
   };
@@ -1095,8 +1110,6 @@ export default function Home() {
                       ? '🔑 ENTER MASTER PASSKEY' 
                       : hasSizeViolation 
                       ? '❌ SIZE LIMIT VIOLATION (MAX 5MB)' 
-                      : (!hasEnoughInaya || !hasEnoughUsdt) 
-                      ? '❌ INSUFFICIENT TREASURY BALANCE' 
                       : selectedFiles.length > 1
                       ? `⚡ SIGN & EMIT ${selectedFiles.length} DYNAMIC RECORDS`
                       : '⚡ SIGN & EMIT SECURE RECORD'}
