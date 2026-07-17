@@ -76,10 +76,10 @@ export default function Home() {
   const MAX_FILE_SIZE_MB = 5;
   const MAX_TOTAL_SIZE_MB = 20;
 
-  // Fixed Network Endpoint Registries (UPDATED TO NEW DYNAMIC CONTRACT)
-  const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // Upgraded InayaCustody (Dynamic)
-  const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; // Mock USDT
-  const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; // Real $INAYA
+  // Fixed Network Endpoint Registries
+  const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; 
+  const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; 
+  const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; 
 
   // ABI Updated for dynamic sizes array and perGB fee logic
   const contractABI = [
@@ -102,7 +102,7 @@ export default function Home() {
   // ========================================================
   // 🌐 NETWORK AUTO-SWITCH — BNB Chain Testnet
   // ========================================================
-  const BSC_TESTNET_CHAIN_ID = '0x61'; // 97 in hex
+  const BSC_TESTNET_CHAIN_ID = '0x61'; 
   const BSC_TESTNET_PARAMS = {
     chainId: BSC_TESTNET_CHAIN_ID,
     chainName: 'BNB Smart Chain Testnet',
@@ -210,8 +210,7 @@ export default function Home() {
   };
 
   // ========================================================
-  // 🧠 ASSET ID HISTORY — remembers every Asset ID this browser
-  // has registered, so users never have to memorize one themselves.
+  // 🧠 ASSET ID HISTORY
   // ========================================================
   const ASSET_ID_HISTORY_KEY = 'inaya_asset_id_history';
 
@@ -255,7 +254,6 @@ export default function Home() {
     setDynamicInayaCost(displayFee);
     setDynamicUsdtCost(displayFee);
 
-    // Pull real on-chain rates + the user's real balances, read-only (no signer/signature needed)
     const checkBalances = async () => {
       try {
         if (typeof window === 'undefined' || !window.ethereum || !walletAddress) return;
@@ -289,7 +287,6 @@ export default function Home() {
     checkBalances();
   }, [selectedFiles, walletAddress]);
 
-  // Load this browser's Asset ID history once on mount
   useEffect(() => {
     setAssetIdHistory(getAssetIdHistory());
   }, []);
@@ -437,8 +434,6 @@ export default function Home() {
   const handleUploadSequence = async () => {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
     if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
-
-    // Feature 6 — Large file guardrail (final check, in addition to the disabled-button state)
     if (hasSizeViolation) {
       alert("One or more files exceed the size guardrail. Please remove or split large files before continuing.");
       return;
@@ -456,7 +451,6 @@ export default function Home() {
     const shardBCIDs = [];
     const pendingFilenameMappings = [];
 
-    // Feature 5 — initialize the per-file progress tracker
     const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
     setUploadProgress(initialProgress);
 
@@ -539,16 +533,13 @@ export default function Home() {
       setStatusLog(`⏳ Mining dynamic batch transaction...`);
       await tx.wait();
 
-      // Persist filenames + Asset ID history now that the chain write succeeded
       pendingFilenameMappings.forEach(({ hash, filename, assetIdText }) => {
         saveFilenameMapping(hash, filename);
         saveAssetIdHistory(assetIdText, hash, filename);
       });
       setAssetIdHistory(getAssetIdHistory());
 
-      // Feature 7 — success summary card data
       setLastBatchResults(pendingFilenameMappings.map(({ assetIdText, filename }) => ({ assetIdText, filename })));
-
       fileHashes.forEach((_, idx) => updateProgress(idx, 'done', 'Registered on-chain ✓'));
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
@@ -613,9 +604,6 @@ export default function Home() {
     } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
   };
 
-  // ========================================================
-  // 📋 RPC BLOCK RANGE EXTRACTION LOOP
-  // ========================================================
   const fetchOnChainHistory = async () => {
     if (!walletAddress) return;
     setIsLoadingHistory(true);
@@ -644,14 +632,11 @@ export default function Home() {
     } catch (err) {
       console.error("🚨 RPC Logs Extraction Failure:", err);
       setVaultHistory([]);
-    } finally { 
+    } biographical: { 
       setIsLoadingHistory(false); 
     }
   };
 
-  // ========================================================
-  // 🚰 TESTNET FAUCET REQUEST HANDLER
-  // ========================================================
   const handleFaucetRequest = async () => {
     if (!isConnected || !walletAddress) { alert("Connect your wallet first to request test tokens."); return; }
     setIsFauceting(true);
@@ -697,7 +682,6 @@ export default function Home() {
     } catch (err) { alert(`Backend Sync Dropped: ${err.message}`); }
   };
 
-  // Synchronization Telemetry Hooks
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', (accs) => {
@@ -717,7 +701,6 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && currentPage === 'Sovereign Vault') { fetchOnChainHistory(); }
     if (isConnected && walletAddress) { fetchUserPoints(walletAddress); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, currentPage, walletAddress]);
 
   // ========================================================
@@ -729,7 +712,9 @@ export default function Home() {
   const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > MAX_FILE_SIZE_MB);
   const isOverTotalLimit = totalSelectedMB > MAX_TOTAL_SIZE_MB;
   const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
-  const canSign = selectedFiles.length > 0 && hasEnoughInaya && hasEnoughUsdt && !hasSizeViolation;
+  
+  // Refined conditional helper to block click if parameters are empty
+  const isUploadConfigured = selectedFiles.length > 0 && assetId && masterPasskey;
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
@@ -1072,10 +1057,28 @@ export default function Home() {
                     </div>
                   )}
 
-                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">
-                    {selectedFiles.length > 1
-                      ? `SIGN & EMIT ${selectedFiles.length} DYNAMIC RECORDS`
-                      : 'SIGN & EMIT SECURE RECORD'}
+                  {/* ⚡ STATE-DRIVEN SHARD & EMIT TRIGGER BUTTON */}
+                  <button 
+                    onClick={handleUploadSequence} 
+                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {!isConnected 
+                      ? '🔌 CONNECT WALLET TO EMIT' 
+                      : !isSignedUp 
+                      ? '📝 VERIFY NODE IN SIDEBAR' 
+                      : selectedFiles.length === 0 
+                      ? '📎 CHOOSE FILES TO EMIT' 
+                      : !assetId 
+                      ? '🆔 ENTER ASSET TRACKING ID' 
+                      : !masterPasskey 
+                      ? '🔑 ENTER MASTER PASSKEY' 
+                      : hasSizeViolation 
+                      ? '❌ SIZE LIMIT VIOLATION (MAX 5MB)' 
+                      : (!hasEnoughInaya || !hasEnoughUsdt) 
+                      ? '❌ INSUFFICIENT TREASURY BALANCE' 
+                      : selectedFiles.length > 1
+                      ? `⚡ SIGN & EMIT ${selectedFiles.length} DYNAMIC RECORDS`
+                      : '⚡ SIGN & EMIT SECURE RECORD'}
                   </button>
                 </div>
                 
@@ -1192,7 +1195,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* VIEWPORT AREA 5: WHITE PAPER WITH CUSTOM DYNAMIC CSS BARS */}
+          {/* VIEWPORT AREA 5: WHITE PAPER */}
           {currentPage === 'White Paper' && (
             <div className="max-w-4xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-6">
               <h1 className="text-2xl font-black text-white">THE INAYA PROTOCOL</h1>
