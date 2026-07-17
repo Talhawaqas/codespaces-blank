@@ -18,6 +18,7 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [selectedWalletName, setSelectedWalletName] = useState('');
+  const [isWrongNetwork, setIsWrongNetwork] = useState(false);
   
   // ========================================================
   // 3. CRYPTOGRAPHIC SIGNATURE & IDENTITY SIGNUP STATES
@@ -61,6 +62,20 @@ export default function Home() {
   const [dynamicInayaCost, setDynamicInayaCost] = useState("0.00");
   const [dynamicUsdtCost, setDynamicUsdtCost] = useState("0.00");
 
+  // Feature states: balance check, progress tracker, asset ID history, success summary
+  const [userInayaBalance, setUserInayaBalance] = useState(0n);
+  const [userUsdtBalance, setUserUsdtBalance] = useState(0n);
+  const [requiredInayaWei, setRequiredInayaWei] = useState(0n);
+  const [requiredUsdtWei, setRequiredUsdtWei] = useState(0n);
+  const [uploadProgress, setUploadProgress] = useState([]);
+  const [assetIdHistory, setAssetIdHistory] = useState([]);
+  const [showAssetIdDropdown, setShowAssetIdDropdown] = useState(false);
+  const [lastBatchResults, setLastBatchResults] = useState([]);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  const MAX_FILE_SIZE_MB = 5;
+  const MAX_TOTAL_SIZE_MB = 20;
+
   // Fixed Network Endpoint Registries (UPDATED TO NEW DYNAMIC CONTRACT)
   const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // Upgraded InayaCustody (Dynamic)
   const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; // Mock USDT
@@ -83,6 +98,47 @@ export default function Home() {
     "function balanceOf(address account) public view returns (uint256)",
     "function decimals() public view returns (uint8)"
   ];
+
+  // ========================================================
+  // 🌐 NETWORK AUTO-SWITCH — BNB Chain Testnet
+  // ========================================================
+  const BSC_TESTNET_CHAIN_ID = '0x61'; // 97 in hex
+  const BSC_TESTNET_PARAMS = {
+    chainId: BSC_TESTNET_CHAIN_ID,
+    chainName: 'BNB Smart Chain Testnet',
+    nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
+    rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+    blockExplorerUrls: ['https://testnet.bscscan.com']
+  };
+
+  const ensureCorrectNetwork = async () => {
+    try {
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (currentChainId.toLowerCase() === BSC_TESTNET_CHAIN_ID) return true;
+
+      setStatusLog("🔄 Switching network to BNB Chain Testnet...");
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: BSC_TESTNET_CHAIN_ID }]
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [BSC_TESTNET_PARAMS]
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Network switch failed:", err);
+      setStatusLog(`❌ Please switch your wallet to BNB Chain Testnet manually: ${err.message}`);
+      return false;
+    }
+  };
 
   // ========================================================
   // 📚 OFFICIAL DOCUMENTS & RESOURCES REGISTRY
@@ -153,26 +209,90 @@ export default function Home() {
     }
   };
 
+  // ========================================================
+  // 🧠 ASSET ID HISTORY — remembers every Asset ID this browser
+  // has registered, so users never have to memorize one themselves.
+  // ========================================================
+  const ASSET_ID_HISTORY_KEY = 'inaya_asset_id_history';
+
+  const saveAssetIdHistory = (assetIdText, hash, filename) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
+      const updated = [{ assetIdText, hash, filename, timestamp: Date.now() }, ...existing];
+      const deduped = updated.filter((item, idx, arr) => arr.findIndex(i => i.assetIdText === item.assetIdText) === idx);
+      localStorage.setItem(ASSET_ID_HISTORY_KEY, JSON.stringify(deduped.slice(0, 50)));
+    } catch (err) {
+      console.error("Asset ID history write failed:", err);
+    }
+  };
+
+  const getAssetIdHistory = () => {
+    try {
+      return JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
+    } catch (err) {
+      return [];
+    }
+  };
+
   const computeFileHash = (assetIdText) => ethers.keccak256(ethers.toUtf8Bytes(assetIdText));
 
   // ========================================================
-  // REAL-TIME COST CALCULATOR HOOK (FIXED SCIENTIFIC NOTATION)
+  // REAL-TIME COST CALCULATOR + BALANCE SUFFICIENCY CHECK
   // ========================================================
   useEffect(() => {
     if (selectedFiles.length === 0) {
       setDynamicInayaCost("0.00");
       setDynamicUsdtCost("0.00");
+      setRequiredInayaWei(0n);
+      setRequiredUsdtWei(0n);
       return;
     }
     const ONE_GB_IN_BYTES = 1024 * 1024 * 1024;
     const totalBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
     const calculatedFee = (totalBytes / ONE_GB_IN_BYTES) * 0.1;
-    
     const displayFee = calculatedFee > 0 ? calculatedFee.toFixed(6) : "0.00";
-        
+
     setDynamicInayaCost(displayFee);
     setDynamicUsdtCost(displayFee);
-  }, [selectedFiles]);
+
+    // Pull real on-chain rates + the user's real balances, read-only (no signer/signature needed)
+    const checkBalances = async () => {
+      try {
+        if (typeof window === 'undefined' || !window.ethereum || !walletAddress) return;
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const custody = new ethers.Contract(liveContractAddress, contractABI, provider);
+        const inayaToken = new ethers.Contract(inayaTokenAddress, erc20ABI, provider);
+        const usdtToken = new ethers.Contract(usdtTokenAddress, erc20ABI, provider);
+
+        const [usdtFeePerGB, inayaFeePerGB, inayaBal, usdtBal] = await Promise.all([
+          custody.usdtFeePerGB(),
+          custody.inayaFeePerGB(),
+          inayaToken.balanceOf(walletAddress),
+          usdtToken.balanceOf(walletAddress)
+        ]);
+
+        let totalUsdtFeeWei = 0n;
+        let totalInayaFeeWei = 0n;
+        selectedFiles.forEach((f) => {
+          totalUsdtFeeWei += (BigInt(f.size) * usdtFeePerGB) / 1073741824n;
+          totalInayaFeeWei += (BigInt(f.size) * inayaFeePerGB) / 1073741824n;
+        });
+
+        setRequiredInayaWei(totalInayaFeeWei);
+        setRequiredUsdtWei(totalUsdtFeeWei);
+        setUserInayaBalance(inayaBal);
+        setUserUsdtBalance(usdtBal);
+      } catch (err) {
+        console.error("Balance check failed:", err);
+      }
+    };
+    checkBalances();
+  }, [selectedFiles, walletAddress]);
+
+  // Load this browser's Asset ID history once on mount
+  useEffect(() => {
+    setAssetIdHistory(getAssetIdHistory());
+  }, []);
 
   // ========================================================
   // 📲 BACKEND TELEMETRY CORE SYNC METHODS
@@ -198,6 +318,12 @@ export default function Home() {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         setWalletAddress(accounts[0]);
         setIsConnected(true);
+
+        const onCorrectNetwork = await ensureCorrectNetwork();
+        if (!onCorrectNetwork) {
+          setStatusLog("⚠️ Wallet connected, but not on BNB Chain Testnet. Please switch networks to use the Vault.");
+        }
+
         const balanceHex = await window.ethereum.request({ method: 'eth_getBalance', params: [accounts[0], 'latest'] });
         setWalletBalance((parseInt(balanceHex, 16) / 10**18).toFixed(4));
         fetchUserPoints(accounts[0]);
@@ -312,31 +438,54 @@ export default function Home() {
     if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
     if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
 
-    setTxHashLink(''); setDownloadUrl('');
+    // Feature 6 — Large file guardrail (final check, in addition to the disabled-button state)
+    if (hasSizeViolation) {
+      alert("One or more files exceed the size guardrail. Please remove or split large files before continuing.");
+      return;
+    }
+    if (!hasEnoughInaya || !hasEnoughUsdt) {
+      alert("Insufficient token balance for this upload. Visit the Faucet tab to get more test tokens.");
+      return;
+    }
+
+    setTxHashLink(''); setDownloadUrl(''); setLastBatchResults([]);
     const isBatch = selectedFiles.length > 1;
     const fileHashes = [];
-    const fileSizes = []; // Array for dynamic sizing payload
+    const fileSizes = [];
     const shardACIDs = [];
     const shardBCIDs = [];
     const pendingFilenameMappings = [];
+
+    // Feature 5 — initialize the per-file progress tracker
+    const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
+    setUploadProgress(initialProgress);
+
+    const updateProgress = (index, status, message) => {
+      setUploadProgress((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], status, message };
+        return next;
+      });
+    };
 
     // --- PHASE 1: Off-chain encryption + sharding ---
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
       try {
-        setStatusLog(`📡 [${i + 1}/${selectedFiles.length}] Encrypting & sharding "${file.name}"...`);
+        updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
         const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
         const hash = computeFileHash(effectiveAssetId);
-        
+
         fileHashes.push(hash);
-        fileSizes.push(file.size); // Save raw byte size
+        fileSizes.push(file.size);
         shardACIDs.push(cidAlpha);
         shardBCIDs.push(cidBeta);
-        pendingFilenameMappings.push({ hash, filename });
+        pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
+        updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
       } catch (prepErr) {
         console.error(prepErr);
-        setStatusLog(`❌ [${i + 1}/${selectedFiles.length}] "${file.name}" failed: ${prepErr.message}`);
+        updateProgress(i, 'error', prepErr.message || 'Encryption/sharding failed');
       }
     }
 
@@ -351,13 +500,12 @@ export default function Home() {
       const signer = await provider.getSigner();
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
 
-      setStatusLog("🔍 Syncing with live contract fee registers (Using Deployment Freeze Fallback)...");
-      
-      // 🛡️ Bypassed read calls temporary to prevent EVM CALL_EXCEPTION crash until next week's deployment
-      const usdtFeePerGB = 100000000000000000n; // 0.1 Token rate fallback in Wei
-      const inayaFeePerGB = 100000000000000000n;
+      setStatusLog("🔍 Syncing with live contract fee registers...");
+      const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([
+        custody.usdtFeePerGB(),
+        custody.inayaFeePerGB()
+      ]);
 
-      // Solidity Division-safe BigInt Math on Frontend
       let totalUsdtFeeWei = 0n;
       let totalInayaFeeWei = 0n;
 
@@ -375,6 +523,7 @@ export default function Home() {
 
       // --- PHASE 3: ONE on-chain transaction ---
       setStatusLog(`✍️ Requesting signature to register ${fileHashes.length} dynamic file(s) on-chain...`);
+      fileHashes.forEach((_, idx) => updateProgress(idx, 'signing', 'Awaiting on-chain confirmation...'));
 
       let estimatedGas;
       try {
@@ -390,12 +539,23 @@ export default function Home() {
       setStatusLog(`⏳ Mining dynamic batch transaction...`);
       await tx.wait();
 
-      pendingFilenameMappings.forEach(({ hash, filename }) => saveFilenameMapping(hash, filename));
+      // Persist filenames + Asset ID history now that the chain write succeeded
+      pendingFilenameMappings.forEach(({ hash, filename, assetIdText }) => {
+        saveFilenameMapping(hash, filename);
+        saveAssetIdHistory(assetIdText, hash, filename);
+      });
+      setAssetIdHistory(getAssetIdHistory());
+
+      // Feature 7 — success summary card data
+      setLastBatchResults(pendingFilenameMappings.map(({ assetIdText, filename }) => ({ assetIdText, filename })));
+
+      fileHashes.forEach((_, idx) => updateProgress(idx, 'done', 'Registered on-chain ✓'));
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
       setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
     } catch (txErr) {
       console.error(txErr);
+      fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Transaction failed'));
       if (txErr.code === 'ACTION_REJECTED') {
         setStatusLog("❌ Transaction cancelled: Signature rejected by host operator.");
       } else if (txErr.message && txErr.message.includes('insufficient funds')) {
@@ -416,40 +576,21 @@ export default function Home() {
     setSelectedFiles([]);
   };
 
-  // ========================================================
-  // RECONSTRUCT ASSEMBLY (WITH AUTOMATIC BATCH SEGMENT LOOKUP)
-  // ========================================================
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
     if (!searchId || !masterPasskey) { alert("Input Error: Tracking index parameters missing."); return; }
-    
     try {
-      setTxHashLink(''); setDownloadUrl(''); setStatusLog("🔍 Initializing cryptographic fragment lookup...");
-      
+      setTxHashLink(''); setDownloadUrl('');
+      const searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
+      setStatusLog(`🔍 Checking public blocks for tracking index reference #${searchHash.slice(0, 10)}...`);
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      
-      // Step 1: Check standard input ID direct or hashed
-      let searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
-      let record = await contract.assets(searchHash);
-      
-      // Step 2: Suffix Fallback Loop if tracking string is main batch index name
-      if (record[0] === ethers.ZeroAddress && !searchId.startsWith('0x')) {
-        setStatusLog("📦 Direct tracking ID not found. Interrogating ledger for batch suffix fragments...");
-        const batchFallbackId = `${searchId}-1`;
-        searchHash = computeFileHash(batchFallbackId);
-        record = await contract.assets(searchHash);
-        
-        if (record[0] !== ethers.ZeroAddress) {
-          setStatusLog("💡 Batch detected! Extracting structural parameters from fragment index #1.");
-        }
-      }
-
+      const record = await contract.assets(searchHash);
       const [ownerAddr, cidAlpha, cidBeta] = record;
 
       if (ownerAddr === ethers.ZeroAddress) {
-        setStatusLog("❌ Verification Error: No registered asset sequence found for that tracking marker.");
+        setStatusLog("❌ No registered asset found for that Asset Tracking ID.");
         return;
       }
 
@@ -458,23 +599,18 @@ export default function Home() {
         const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
         const json = await res.json(); return json.shard;
       };
-      
       const fullCipherText = await fetchShard(cidAlpha) + await fetchShard(cidBeta);
       const localFilename = getFilenameMapping(searchHash);
-      
       setRestoredName(localFilename || searchId);
       setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
       setStatusLog("💚 TRANSACTION FULLY VERIFIED: Payload restored intact.");
-      
       await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'RETRIEVE' })
       });
       fetchUserPoints(walletAddress);
-    } catch (err) { 
-      setStatusLog(`❌ Security check validation dropped: ${err.message}`); 
-    }
+    } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
   };
 
   // ========================================================
@@ -587,6 +723,14 @@ export default function Home() {
   // ========================================================
   // 🖥️ WEB3 STRUCTURAL LAYER UI LAYOUTS
   // ========================================================
+  const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
+  const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
+  const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
+  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > MAX_FILE_SIZE_MB);
+  const isOverTotalLimit = totalSelectedMB > MAX_TOTAL_SIZE_MB;
+  const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
+  const canSign = selectedFiles.length > 0 && hasEnoughInaya && hasEnoughUsdt && !hasSizeViolation;
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       
@@ -843,7 +987,7 @@ export default function Home() {
 
               <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
                 <p className="mb-1"><span className="text-amber-400/80 font-bold">⛽ Need gas (tBNB) too?</span> This faucet only covers $INAYA and mUSDT.</p>
-                <p>Get free testnet BNB from the official faucet: <a href="https://faucet.zalalena.com/bsc" target="_blank" rel="noopener noreferrer"> faucet.zalalena.com/bsc </a></p>
+                <p>Get free testnet BNB here: <a href="https://faucet.zalalena.com/bsc" target="_blank" rel="noopener noreferrer" className="text-[#00f2fe] underline hover:text-cyan-300">faucet.zalalena.com/bsc</a></p>
               </div>
             </div>
           )}
