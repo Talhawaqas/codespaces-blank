@@ -113,6 +113,7 @@ export default function Home() {
 
   const ensureCorrectNetwork = async () => {
     try {
+      if (typeof window === 'undefined' || !window.ethereum) return false;
       const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
       if (currentChainId.toLowerCase() === BSC_TESTNET_CHAIN_ID) return true;
 
@@ -354,6 +355,7 @@ export default function Home() {
     } catch (err) {
       console.error(err);
       setStatusLog(`❌ Registration dropped: ${err.message}`);
+      alert(`❌ Sign-up failed: ${err.message}`);
     } finally {
       setIsSigning(false);
     }
@@ -429,86 +431,104 @@ export default function Home() {
   };
 
   // ========================================================
-  // UPLOAD SEQUENCE (WITH COMPREHENSIVE MOBILE TRACING)
+  // UPLOAD SEQUENCE (WITH FIXED PURE PROVIDER FOR MOBILE VIEW CALLS)
   // ========================================================
   const handleUploadSequence = async () => {
+    // Hard Mobile Verification Tracing Popups
+    if (!isConnected) { alert("🚨 Wallet Connected Nahi Hai! Pehle top-right se wallet connect karein."); return; }
+    
+    // Ensure network structure is active before moving ahead
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    if (!isSignedUp) { alert("🚨 Node Verified Nahi Hai! Sidebar mein 'COMPLETE SIGN UP (VERIFY NODE)' par click karke message sign karein."); return; }
+    if (!assetId) { alert("🚨 Asset Tracking ID missing hai! Input field mein koi ID enter karein."); return; }
+    if (selectedFiles.length === 0) { alert("🚨 Koi file select nahi ki! Pehle file attach karein."); return; }
+    if (!masterPasskey) { alert("🚨 Master Node Passkey missing hai! Sidebar mein passkey enter karein."); return; }
+    
+    if (hasSizeViolation) {
+      alert("❌ Size limit violation: Max 5MB per file and 20MB total limits exist.");
+      return;
+    }
+    if (!hasEnoughInaya || !hasEnoughUsdt) {
+      alert("❌ Insufficient Balance: Visit the Faucet tab to request testnet tokens.");
+      return;
+    }
+
+    setTxHashLink(''); setDownloadUrl(''); setLastBatchResults([]);
+    const isBatch = selectedFiles.length > 1;
+    const fileHashes = [];
+    const fileSizes = [];
+    const shardACIDs = [];
+    const shardBCIDs = [];
+    const pendingFilenameMappings = [];
+
+    const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
+    setUploadProgress(initialProgress);
+
+    const updateProgress = (index, status, message) => {
+      setUploadProgress((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], status, message };
+        return next;
+      });
+    };
+
+    // --- PHASE 1: Off-chain encryption + sharding ---
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
+      try {
+        updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
+        const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
+        const hash = computeFileHash(effectiveAssetId);
+
+        fileHashes.push(hash);
+        fileSizes.push(file.size);
+        shardACIDs.push(cidAlpha);
+        shardBCIDs.push(cidBeta);
+        pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
+        updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
+      } catch (prepErr) {
+        console.error(prepErr);
+        updateProgress(i, 'error', prepErr.message || 'Encryption/sharding failed');
+        alert(`❌ Sharding Pipeline Error on file [${file.name}]: ${prepErr.message}`);
+        return;
+      }
+    }
+
+    if (fileHashes.length === 0) {
+      setStatusLog("❌ No files were successfully prepared — nothing to register.");
+      return;
+    }
+
+    // --- PHASE 2: Dynamic Allowances based on sizes ---
+    let totalUsdtFeeWei = requiredUsdtWei;
+    let totalInayaFeeWei = requiredInayaWei;
+
     try {
-      if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
-      if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
-      if (hasSizeViolation) {
-        alert("One or more files exceed the size guardrail (Max 5MB per file, 20MB total).");
-        return;
-      }
-      if (!hasEnoughInaya || !hasEnoughUsdt) {
-        alert("Insufficient token balance for this upload. Visit the Faucet tab to get more test tokens.");
-        return;
-      }
-
-      setTxHashLink(''); setDownloadUrl(''); setLastBatchResults([]);
-      const isBatch = selectedFiles.length > 1;
-      const fileHashes = [];
-      const fileSizes = [];
-      const shardACIDs = [];
-      const shardBCIDs = [];
-      const pendingFilenameMappings = [];
-
-      const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
-      setUploadProgress(initialProgress);
-
-      const updateProgress = (index, status, message) => {
-        setUploadProgress((prev) => {
-          const next = [...prev];
-          next[index] = { ...next[index], status, message };
-          return next;
-        });
-      };
-
-      // --- PHASE 1: Off-chain encryption + sharding ---
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
-        try {
-          updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
-          const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
-          const hash = computeFileHash(effectiveAssetId);
-
-          fileHashes.push(hash);
-          fileSizes.push(file.size);
-          shardACIDs.push(cidAlpha);
-          shardBCIDs.push(cidBeta);
-          pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
-          updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
-        } catch (prepErr) {
-          console.error(prepErr);
-          updateProgress(i, 'error', prepErr.message || 'Encryption/sharding failed');
-          alert(`❌ Sharding Failed for ${file.name}: ${prepErr.message}`);
-          return;
-        }
-      }
-
-      if (fileHashes.length === 0) {
-        setStatusLog("❌ No files were successfully prepared — nothing to register.");
-        return;
-      }
-
-      // --- PHASE 2: Dynamic Allowances based on sizes ---
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      
+      // FIX: Read methods call using raw provider to bypass mobile webview CALL_EXCEPTION simulation glitch
+      const readCustody = new ethers.Contract(liveContractAddress, contractABI, provider);
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
 
       setStatusLog("🔍 Syncing with live contract fee registers...");
       const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([
-        custody.usdtFeePerGB(),
-        custody.inayaFeePerGB()
+        readCustody.usdtFeePerGB(),
+        readCustody.inayaFeePerGB()
       ]);
 
-      let totalUsdtFeeWei = 0n;
-      let totalInayaFeeWei = 0n;
-
+      let calculatedUsdtFee = 0n;
+      let calculatedInayaFee = 0n;
       fileSizes.forEach((size) => {
-        totalUsdtFeeWei += (BigInt(size) * usdtFeePerGB) / 1073741824n;
-        totalInayaFeeWei += (BigInt(size) * inayaFeePerGB) / 1073741824n;
+        calculatedUsdtFee += (BigInt(size) * usdtFeePerGB) / 1073741824n;
+        calculatedInayaFee += (BigInt(size) * inayaFeePerGB) / 1073741824n;
       });
+      
+      if (calculatedUsdtFee > 0n) totalUsdtFeeWei = calculatedUsdtFee;
+      if (calculatedInayaFee > 0n) totalInayaFeeWei = calculatedInayaFee;
 
       if (totalUsdtFeeWei > 0n) {
         await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFeeWei, "Mock USDT");
@@ -546,7 +566,21 @@ export default function Home() {
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
       setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
-      
+    } catch (txErr) {
+      console.error(txErr);
+      fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Transaction failed'));
+      alert(`❌ Contract Interaction Failed: ${txErr.reason || txErr.message || txErr}`);
+      if (txErr.code === 'ACTION_REJECTED') {
+        setStatusLog("❌ Transaction cancelled: Signature rejected by host operator.");
+      } else if (txErr.message && txErr.message.includes('insufficient funds')) {
+        setStatusLog("❌ Transaction dropped: Insufficient tBNB balance for gas.");
+      } else {
+        setStatusLog(`❌ EVM Execution Crash: ${txErr.reason || txErr.message}`);
+      }
+      return;
+    }
+
+    try {
       await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -555,17 +589,8 @@ export default function Home() {
       fetchUserPoints(walletAddress);
       fetchOnChainHistory();
       setSelectedFiles([]);
-      
-    } catch (txErr) {
-      console.error(txErr);
-      alert(`❌ Transaction Error: ${txErr.reason || txErr.message || txErr}`);
-      if (txErr.code === 'ACTION_REJECTED') {
-        setStatusLog("❌ Transaction cancelled: Signature rejected by host operator.");
-      } else if (txErr.message && txErr.message.includes('insufficient funds')) {
-        setStatusLog("❌ Transaction dropped: Insufficient tBNB balance for gas.");
-      } else {
-        setStatusLog(`❌ EVM Execution Crash: ${txErr.reason || txErr.message}`);
-      }
+    } catch(apiErr) {
+      console.error("Points calculation api failure:", apiErr);
     }
   };
 
@@ -634,7 +659,7 @@ export default function Home() {
     } catch (err) {
       console.error("🚨 RPC Logs Extraction Failure:", err);
       setVaultHistory([]);
-    } finally { 
+    } fillHistory: { 
       setIsLoadingHistory(false); 
     }
   };
@@ -1056,11 +1081,8 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* ⚡ STATE-DRIVEN SHARD & EMIT TRIGGER BUTTON */}
-                  <button 
-                    onClick={handleUploadSequence} 
-                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
-                  >
+                  {/* ⚡ REACTIVE ACTION BUTTON */}
+                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">
                     {!isConnected 
                       ? '🔌 CONNECT WALLET TO EMIT' 
                       : !isSignedUp 
