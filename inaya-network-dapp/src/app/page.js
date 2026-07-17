@@ -168,9 +168,8 @@ export default function Home() {
     const totalBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
     const calculatedFee = (totalBytes / ONE_GB_IN_BYTES) * 0.1;
     
-    // Yahan e-5 fix kar diya hai. Ab hamesha 6 decimal places tak zero (0.0000xx) show hoga.
     const displayFee = calculatedFee > 0 ? calculatedFee.toFixed(6) : "0.00";
-      
+        
     setDynamicInayaCost(displayFee);
     setDynamicUsdtCost(displayFee);
   }, [selectedFiles]);
@@ -352,11 +351,11 @@ export default function Home() {
       const signer = await provider.getSigner();
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
 
-      setStatusLog("🔍 Syncing with live contract fee registers...");
-      const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([
-        custody.usdtFeePerGB(),
-        custody.inayaFeePerGB()
-      ]);
+      setStatusLog("🔍 Syncing with live contract fee registers (Using Deployment Freeze Fallback)...");
+      
+      // 🛡️ Bypassed read calls temporary to prevent EVM CALL_EXCEPTION crash until next week's deployment
+      const usdtFeePerGB = 100000000000000000n; // 0.1 Token rate fallback in Wei
+      const inayaFeePerGB = 100000000000000000n;
 
       // Solidity Division-safe BigInt Math on Frontend
       let totalUsdtFeeWei = 0n;
@@ -417,21 +416,40 @@ export default function Home() {
     setSelectedFiles([]);
   };
 
+  // ========================================================
+  // RECONSTRUCT ASSEMBLY (WITH AUTOMATIC BATCH SEGMENT LOOKUP)
+  // ========================================================
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
     if (!searchId || !masterPasskey) { alert("Input Error: Tracking index parameters missing."); return; }
+    
     try {
-      setTxHashLink(''); setDownloadUrl('');
-      const searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
-      setStatusLog(`🔍 Checking public blocks for tracking index reference #${searchHash.slice(0, 10)}...`);
+      setTxHashLink(''); setDownloadUrl(''); setStatusLog("🔍 Initializing cryptographic fragment lookup...");
+      
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
-      const record = await contract.assets(searchHash);
+      
+      // Step 1: Check standard input ID direct or hashed
+      let searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
+      let record = await contract.assets(searchHash);
+      
+      // Step 2: Suffix Fallback Loop if tracking string is main batch index name
+      if (record[0] === ethers.ZeroAddress && !searchId.startsWith('0x')) {
+        setStatusLog("📦 Direct tracking ID not found. Interrogating ledger for batch suffix fragments...");
+        const batchFallbackId = `${searchId}-1`;
+        searchHash = computeFileHash(batchFallbackId);
+        record = await contract.assets(searchHash);
+        
+        if (record[0] !== ethers.ZeroAddress) {
+          setStatusLog("💡 Batch detected! Extracting structural parameters from fragment index #1.");
+        }
+      }
+
       const [ownerAddr, cidAlpha, cidBeta] = record;
 
       if (ownerAddr === ethers.ZeroAddress) {
-        setStatusLog("❌ No registered asset found for that Asset Tracking ID.");
+        setStatusLog("❌ Verification Error: No registered asset sequence found for that tracking marker.");
         return;
       }
 
@@ -440,18 +458,23 @@ export default function Home() {
         const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
         const json = await res.json(); return json.shard;
       };
+      
       const fullCipherText = await fetchShard(cidAlpha) + await fetchShard(cidBeta);
       const localFilename = getFilenameMapping(searchHash);
+      
       setRestoredName(localFilename || searchId);
       setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
       setStatusLog("💚 TRANSACTION FULLY VERIFIED: Payload restored intact.");
+      
       await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'RETRIEVE' })
       });
       fetchUserPoints(walletAddress);
-    } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
+    } catch (err) { 
+      setStatusLog(`❌ Security check validation dropped: ${err.message}`); 
+    }
   };
 
   // ========================================================
