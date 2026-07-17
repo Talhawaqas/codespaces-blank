@@ -429,67 +429,69 @@ export default function Home() {
   };
 
   // ========================================================
-  // UPLOAD SEQUENCE (WITH DYNAMIC ON-CHAIN SIZING)
+  // UPLOAD SEQUENCE (WITH COMPREHENSIVE MOBILE TRACING)
   // ========================================================
   const handleUploadSequence = async () => {
-    if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
-    if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
-    if (hasSizeViolation) {
-      alert("One or more files exceed the size guardrail. Please remove or split large files before continuing.");
-      return;
-    }
-    if (!hasEnoughInaya || !hasEnoughUsdt) {
-      alert("Insufficient token balance for this upload. Visit the Faucet tab to get more test tokens.");
-      return;
-    }
-
-    setTxHashLink(''); setDownloadUrl(''); setLastBatchResults([]);
-    const isBatch = selectedFiles.length > 1;
-    const fileHashes = [];
-    const fileSizes = [];
-    const shardACIDs = [];
-    const shardBCIDs = [];
-    const pendingFilenameMappings = [];
-
-    const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
-    setUploadProgress(initialProgress);
-
-    const updateProgress = (index, status, message) => {
-      setUploadProgress((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], status, message };
-        return next;
-      });
-    };
-
-    // --- PHASE 1: Off-chain encryption + sharding ---
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
-      try {
-        updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
-        const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
-        const hash = computeFileHash(effectiveAssetId);
-
-        fileHashes.push(hash);
-        fileSizes.push(file.size);
-        shardACIDs.push(cidAlpha);
-        shardBCIDs.push(cidBeta);
-        pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
-        updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
-      } catch (prepErr) {
-        console.error(prepErr);
-        updateProgress(i, 'error', prepErr.message || 'Encryption/sharding failed');
-      }
-    }
-
-    if (fileHashes.length === 0) {
-      setStatusLog("❌ No files were successfully prepared — nothing to register.");
-      return;
-    }
-
-    // --- PHASE 2: Dynamic Allowances based on sizes ---
     try {
+      if (!isSignedUp) { alert("Access Denied: Please verify your node signature in the sidebar panel first."); return; }
+      if (!assetId || selectedFiles.length === 0 || !masterPasskey) { alert("Validation Error: Missing secure parameter configuration inputs."); return; }
+      if (hasSizeViolation) {
+        alert("One or more files exceed the size guardrail (Max 5MB per file, 20MB total).");
+        return;
+      }
+      if (!hasEnoughInaya || !hasEnoughUsdt) {
+        alert("Insufficient token balance for this upload. Visit the Faucet tab to get more test tokens.");
+        return;
+      }
+
+      setTxHashLink(''); setDownloadUrl(''); setLastBatchResults([]);
+      const isBatch = selectedFiles.length > 1;
+      const fileHashes = [];
+      const fileSizes = [];
+      const shardACIDs = [];
+      const shardBCIDs = [];
+      const pendingFilenameMappings = [];
+
+      const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
+      setUploadProgress(initialProgress);
+
+      const updateProgress = (index, status, message) => {
+        setUploadProgress((prev) => {
+          const next = [...prev];
+          next[index] = { ...next[index], status, message };
+          return next;
+        });
+      };
+
+      // --- PHASE 1: Off-chain encryption + sharding ---
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
+        try {
+          updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
+          const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
+          const hash = computeFileHash(effectiveAssetId);
+
+          fileHashes.push(hash);
+          fileSizes.push(file.size);
+          shardACIDs.push(cidAlpha);
+          shardBCIDs.push(cidBeta);
+          pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
+          updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
+        } catch (prepErr) {
+          console.error(prepErr);
+          updateProgress(i, 'error', prepErr.message || 'Encryption/sharding failed');
+          alert(`❌ Sharding Failed for ${file.name}: ${prepErr.message}`);
+          return;
+        }
+      }
+
+      if (fileHashes.length === 0) {
+        setStatusLog("❌ No files were successfully prepared — nothing to register.");
+        return;
+      }
+
+      // --- PHASE 2: Dynamic Allowances based on sizes ---
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const custody = new ethers.Contract(liveContractAddress, contractABI, signer);
@@ -544,9 +546,19 @@ export default function Home() {
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
       setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
+      
+      await fetch('/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
+      });
+      fetchUserPoints(walletAddress);
+      fetchOnChainHistory();
+      setSelectedFiles([]);
+      
     } catch (txErr) {
       console.error(txErr);
-      fileHashes.forEach((_, idx) => updateProgress(idx, 'error', 'Transaction failed'));
+      alert(`❌ Transaction Error: ${txErr.reason || txErr.message || txErr}`);
       if (txErr.code === 'ACTION_REJECTED') {
         setStatusLog("❌ Transaction cancelled: Signature rejected by host operator.");
       } else if (txErr.message && txErr.message.includes('insufficient funds')) {
@@ -554,17 +566,7 @@ export default function Home() {
       } else {
         setStatusLog(`❌ EVM Execution Crash: ${txErr.reason || txErr.message}`);
       }
-      return;
     }
-
-    await fetch('/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: walletAddress.toLowerCase(), actionType: 'UPLOAD' })
-    });
-    fetchUserPoints(walletAddress);
-    fetchOnChainHistory();
-    setSelectedFiles([]);
   };
 
   const handleRetrievalSequence = async (targetId) => {
@@ -632,7 +634,7 @@ export default function Home() {
     } catch (err) {
       console.error("🚨 RPC Logs Extraction Failure:", err);
       setVaultHistory([]);
-    } biographical: { 
+    } finally { 
       setIsLoadingHistory(false); 
     }
   };
@@ -712,9 +714,6 @@ export default function Home() {
   const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > MAX_FILE_SIZE_MB);
   const isOverTotalLimit = totalSelectedMB > MAX_TOTAL_SIZE_MB;
   const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
-  
-  // Refined conditional helper to block click if parameters are empty
-  const isUploadConfigured = selectedFiles.length > 0 && assetId && masterPasskey;
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
@@ -1060,7 +1059,7 @@ export default function Home() {
                   {/* ⚡ STATE-DRIVEN SHARD & EMIT TRIGGER BUTTON */}
                   <button 
                     onClick={handleUploadSequence} 
-                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
                   >
                     {!isConnected 
                       ? '🔌 CONNECT WALLET TO EMIT' 
