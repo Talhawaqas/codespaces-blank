@@ -26,3 +26,6 @@ export async function connectToDatabase() {
   const db = client.db("inaya_network_corporate");
   return { client, db };
 }
+
+// Bhasudi khatam karne wali aakhri line
+export default clientPromise;
