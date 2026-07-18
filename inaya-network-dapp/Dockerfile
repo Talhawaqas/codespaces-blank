@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package.json ./
 RUN npm install --omit=dev
-
+COPY index.js ./
 COPY src ./src
 
 # Where persistent node identity + state lives — mount a volume here
@@ -19,4 +19,4 @@ ENV NODE_DATA_DIR=/app/node-data
 
 EXPOSE 4500
 
-CMD ["node", "src/index.js"]
+CMD ["node", "index.js"]
