@@ -1260,7 +1260,7 @@ export default function Home() {
                       <td className="p-4 text-white font-bold">Scale Matrix</td>
                       <td className="p-4">Early-stage dApps &amp; audited protocols</td>
                       <td className="p-4 text-amber-400 font-bold">$999 / month</td>
-                      <td className="p-4">Up to 15M API requests; client-side GCM cryptographic pipelines (<span className="text-emerald-400 font-bold">250 TB Storage Limit</span> — 5x sasta than AWS/Azure)</td>
+                      <td className="p-4">Up to 15M API requests; client-side GCM cryptographic pipelines (<span className="text-emerald-400 font-bold">250 TB Storage Limit</span> — 5x cheaper than AWS/Azure)</td>
                     </tr>
                     <tr className={selectedB2BTier === 'Established Swarm' ? 'bg-cyan-500/[0.04]' : ''}>
                       <td className="p-4 text-white font-bold">Established Swarm</td>
