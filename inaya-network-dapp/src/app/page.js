@@ -73,8 +73,26 @@ export default function Home() {
   const [lastBatchResults, setLastBatchResults] = useState([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  const MAX_FILE_SIZE_MB = 5;
-  const MAX_TOTAL_SIZE_MB = 20;
+  // 💎 MONGO CORPORATE B2B SUBSCRIPTION SUBSYSTEM STATE (HYPER LOW-COST USP MARKET DISRUPTOR)
+  const [selectedB2BTier, setSelectedB2BTier] = useState('Scale Matrix');
+  const [b2bTierData, setB2BTierData] = useState({
+    price: "$999 / month",
+    inclusions: "Up to 15M API requests; client-side GCM cryptographic pipelines",
+    maxFileMB: 262144000, // 250 TB in MB
+    maxTotalMB: 524288000,
+    displayLimit: "250 TB Boundary"
+  });
+
+  // Dynamic Tier Allocation Listeners with Petabyte/Terabyte Hyper-Scaling
+  useEffect(() => {
+    if (selectedB2BTier === 'Scale Matrix') {
+      setB2BTierData({ price: "$999 / month", inclusions: "Up to 15M API requests; client-side GCM cryptographic pipelines", maxFileMB: 262144000, maxTotalMB: 524288000, displayLimit: "250 TB Boundary" });
+    } else if (selectedB2BTier === 'Established Swarm') {
+      setB2BTierData({ price: "$5,000–$10,000 / month", inclusions: "Up to 150M API loops; priority distributed routing", maxFileMB: 1073741824, maxTotalMB: 2147483648, displayLimit: "1 PB (1024 TB) Boundary" });
+    } else if (selectedB2BTier === 'Institutional Node') {
+      setB2BTierData({ price: "$15,000–$35,000 / month", inclusions: "Dedicated RPC endpoints; zero-latency SLAs; unlimited allocations", maxFileMB: 5368709120, maxTotalMB: 10737418240, displayLimit: "5 PB (5120 TB) Boundary" });
+    }
+  }, [selectedB2BTier]);
 
   // Fixed Network Endpoint Registries
   const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; 
@@ -399,15 +417,21 @@ export default function Home() {
     return enc.decode(await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: fontIv }, key, encrypted));
   };
 
+  // ⚡ MONGO BUSINESS PIPELINE ROUTING FOR PINATA
   const uploadToPinata = async (encryptedShard, filename, elementTag) => {
     const response = await fetch("/api/upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ encryptedShard, filename, elementTag })
+      body: JSON.stringify({ 
+        encryptedShard, 
+        filename, 
+        elementTag,
+        walletAddress,
+        selectedTier: selectedB2BTier
+      })
     });
-    if (!response.ok) throw new Error(`Swarm transport connection timeout.`);
     const data = await response.json();
-    if (data.success === false) { throw new Error(data.error || "Backend pipeline processing failure."); }
+    if (!response.ok || data.error) throw new Error(data.error || "IPFS Pipeline drop failure.");
     return data.IpfsHash;
   };
 
@@ -427,8 +451,12 @@ export default function Home() {
     const dataUrl = await readFileAsDataURL(file);
     const cipherTextString = await encryptData(dataUrl, masterPasskey);
     const midpoint = Math.ceil(cipherTextString.length / 2);
-    const cidA = await uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha");
-    const cidB = await uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta");
+
+    // ⚡ CONCURRENT ASYNC EXECUTIONS: BOTH SHARDS DISPATCH PARALLELLY INSTEAD OF WAITING
+    const [cidA, cidB] = await Promise.all([
+      uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha"),
+      uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta")
+    ]);
     return { filename: file.name, cidAlpha: cidA, cidBeta: cidB };
   };
 
@@ -462,7 +490,7 @@ export default function Home() {
     if (!masterPasskey) { alert("🚨 Master Node Passkey missing hai! Sidebar mein passkey enter karein."); return; }
     
     if (hasSizeViolation) {
-      alert("❌ Size limit violation: Max 5MB per file and 20MB total limits exist.");
+      alert(`❌ Size limit violation: Your allocation limits allow up to ${b2bTierData.displayLimit} processing capacity under ${selectedB2BTier}.`);
       return;
     }
 
@@ -629,6 +657,7 @@ export default function Home() {
     }
   };
 
+  // 🚀 HIGH-SPEED PARALLEL CONCURRENT FETCH ASSEMBLY (DOWNLOAD MULTIPLIER)
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
@@ -637,6 +666,7 @@ export default function Home() {
       setTxHashLink(''); setDownloadUrl('');
       const searchHash = searchId.startsWith('0x') && searchId.length === 66 ? searchId : computeFileHash(searchId);
       setStatusLog(`🔍 Checking public blocks for tracking index reference #${searchHash.slice(0, 10)}...`);
+      
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
       const record = await contract.assets(searchHash);
@@ -647,16 +677,30 @@ export default function Home() {
         return;
       }
 
-      setStatusLog("🌐 Transporting sharded components down from network swarm nodes...");
-      const fetchShard = async (cid) => {
-        const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-        const json = await res.json(); return json.shard;
+      setStatusLog("🌐 Pulling synchronized multi-shard byte streams concurrently over edge proxies...");
+
+      const fetchFastShard = async (cid) => {
+        try {
+          const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
+          const json = await res.json(); return json.shard;
+        } catch {
+          const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+          const json = await res.json(); return json.shard;
+        }
       };
-      const fullCipherText = await fetchShard(cidAlpha) + await fetchShard(cidBeta);
+
+      // ⚡ ASYNC PROMISE PIPELINE - ELIMINATES LATENCY BOTTLENECK ENTIRELY
+      const [shardA, shardB] = await Promise.all([
+        fetchFastShard(cidAlpha),
+        fetchFastShard(cidBeta)
+      ]);
+
+      const fullCipherText = shardA + shardB;
       const localFilename = getFilenameMapping(searchHash);
       setRestoredName(localFilename || searchId);
       setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
       setStatusLog("💚 TRANSACTION FULLY VERIFIED: Payload restored intact.");
+      
       await fetch('/api/points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -771,8 +815,8 @@ export default function Home() {
   const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
   const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
   const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
-  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > MAX_FILE_SIZE_MB);
-  const isOverTotalLimit = totalSelectedMB > MAX_TOTAL_SIZE_MB;
+  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
+  const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
   const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
 
   return (
@@ -783,6 +827,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] w-3.5 h-3.5 rounded-sm shadow-[0_0_10px_#00f2fe]"></div>
           <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
+          <span className="text-[10px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
         </div>
         <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
           {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
@@ -803,6 +848,24 @@ export default function Home() {
             <div>
               <div className="text-white text-sm font-bold tracking-wide leading-tight">Security Dock</div>
               <div className="text-[9px] text-[#64748b] uppercase tracking-wider">Network diagnostics &amp; identity</div>
+            </div>
+          </div>
+
+          {/* B2B CORPORATE PANELS CHANGER */}
+          <div className="bg-[#0b1426]/70 border border-[#00f2fe]/20 p-4 rounded-xl space-y-3 font-mono text-[11px]">
+            <div className="text-[#00f2fe] font-extrabold text-xs uppercase border-b border-white/5 pb-1">B2B Corporate Panel</div>
+            <div>
+              <span className="text-slate-400 block mb-1">Select Active Subscription:</span>
+              <select value={selectedB2BTier} onChange={(e) => setSelectedB2BTier(e.target.value)} className="w-full bg-[#060913] border border-white/10 rounded px-2 py-1 text-white font-bold text-xs cursor-pointer focus:outline-none">
+                <option value="Scale Matrix">Scale Matrix ($999/mo)</option>
+                <option value="Established Swarm">Established Swarm ($5k-$10k/mo)</option>
+                <option value="Institutional Node">Institutional Node ($15k-$35k/mo)</option>
+              </select>
+            </div>
+            <div className="pt-1 text-slate-300 space-y-1">
+              <div>• Base Scale: <span className="text-white font-bold">{b2bTierData.price}</span></div>
+              <div>• SLA Limit: <span className="text-white font-bold">{b2bTierData.displayLimit}</span></div>
+              <div className="text-[10px] text-slate-500 italic pt-1">{b2bTierData.inclusions}</div>
             </div>
           </div>
 
@@ -974,7 +1037,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 backdrop-blur-md">
-            {['Network Home', 'Faucet', 'Sovereign Vault', 'Genesis Airdrop', 'KYC Portal', 'White Paper', 'About Us'].map((tab) => (
+            {['Network Home', 'Faucet', 'Sovereign Vault', 'Corporate Tiers Profile', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
             ))}
           </nav>
@@ -1129,7 +1192,7 @@ export default function Home() {
                       : !masterPasskey 
                       ? '🔑 ENTER MASTER PASSKEY' 
                       : hasSizeViolation 
-                      ? '❌ SIZE LIMIT VIOLATION (MAX 5MB)' 
+                      ? `❌ SIZE LIMIT VIOLATION (MAX SUBSCRIPTION CAPACITY EXCEEDED)` 
                       : '⚡ SIGN & EMIT SECURE RECORD'}
                   </button>
                 </div>
@@ -1168,6 +1231,51 @@ export default function Home() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* 💎 VIEWPORT AREA 2B: CORPORATE DETAILED TIERS PROFILE MATRIX (UPDATED TO COMPETITIVE LOW-COST DEPIN PARAMETERS) */}
+          {currentPage === 'Corporate Tiers Profile' && (
+            <div className="max-w-5xl mx-auto space-y-6">
+              <div className="bg-gradient-to-r from-[#0a1124] to-[#080d1a] border border-[#00f2fe]/20 rounded-2xl p-6 shadow-xl">
+                <h2 className="text-base font-black text-white uppercase tracking-wider mb-2">Corporate Subscription Tier Matrix</h2>
+                <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                  Our high-margin B2B subscription infrastructure layer offers enterprise gateway access and institutional Service Level Agreements (SLAs). These subscription fees function as a recurring overlay atop the network's baseline usage-based processing rate of <span className="text-[#00f2fe] font-bold">0.1 USDT + 0.1 INAYA per GB</span> — reinforcing predictable, institutional-grade cash flow parameters.
+                </p>
+              </div>
+
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                      <th className="p-4 font-bold">Tier Name</th>
+                      <th className="p-4 font-bold">Target Target</th>
+                      <th className="p-4 font-bold">Pricing Matrix</th>
+                      <th className="p-4 font-bold">SLA Inclusions Boundary</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-slate-300">
+                    <tr className={selectedB2BTier === 'Scale Matrix' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">Scale Matrix</td>
+                      <td className="p-4">Early-stage dApps &amp; audited protocols</td>
+                      <td className="p-4 text-amber-400 font-bold">$999 / month</td>
+                      <td className="p-4">Up to 15M API requests; client-side GCM cryptographic pipelines (<span className="text-emerald-400 font-bold">250 TB Storage Limit</span> — 5x sasta than AWS/Azure)</td>
+                    </tr>
+                    <tr className={selectedB2BTier === 'Established Swarm' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">Established Swarm</td>
+                      <td className="p-4">Mid-tier DeFi &amp; active Web3 networks</td>
+                      <td className="p-4 text-amber-400 font-bold">$5,000–$10,000 / month</td>
+                      <td className="p-4">Up to 150M API loops; priority distributed routing architecture (<span className="text-emerald-400 font-bold">1 PB (1024 TB) Storage Limit</span>)</td>
+                    </tr>
+                    <tr className={selectedB2BTier === 'Institutional Node' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">Institutional Node</td>
+                      <td className="p-4">Enterprise frameworks &amp; Tier-1 chains</td>
+                      <td className="p-4 text-amber-400 font-bold">$15,000–$35,000 / month</td>
+                      <td className="p-4">Dedicated RPC endpoints; zero-latency SLAs; unlimited allocations (<span className="text-emerald-400 font-bold">5 PB (5120 TB) Storage Limit</span>)</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1231,19 +1339,6 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* VIEWPORT AREA 4: KYC LAYER STATUS */}
-          {currentPage === 'KYC Portal' && (
-            <div className="max-w-3xl mx-auto bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 text-center space-y-6">
-              <div className="text-4xl">🛡️</div>
-              <h2 className="text-xl font-extrabold text-white">Sovereign Node Compliance (KYC)</h2>
-              <p className="text-sm text-[#94a3b8] max-w-md mx-auto">Identity validation checks are mandatory prior to token allocation events to isolate sybil vectors.</p>
-              <div className="bg-black/30 border border-white/5 rounded-xl p-4 text-left max-w-md mx-auto font-mono text-xs text-amber-400">
-                STATUS REFERENCE: STAGE PENDING (MAINNET CLAIM DEPLOYMENTS ONLY)
-              </div>
-              <button disabled className="px-6 py-3 bg-white/5 text-[#64748b] rounded-xl text-xs font-mono font-bold cursor-not-allowed">🔒 PORTAL OPENS AT PHASE 3 TGE</button>
             </div>
           )}
 
