@@ -73,24 +73,28 @@ export default function Home() {
   const [lastBatchResults, setLastBatchResults] = useState([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  // 💎 MONGO CORPORATE B2B SUBSCRIPTION SUBSYSTEM STATE (HYPER LOW-COST USP MARKET DISRUPTOR)
-  const [selectedB2BTier, setSelectedB2BTier] = useState('Scale Matrix');
+  // 💎 CORPORATE RESERVE (ANNUAL) SUBSCRIPTION SUBSYSTEM STATE
+  // Aligned to the Strategic Business Model & Financial Architecture (INAYA-EXEC-2026-V1):
+  // Baseline Pay-As-You-Go storage is billed at 4.5 USDT / TB / month with egress at 5 INAYA / 0.5 TB.
+  // Corporate Reserve tiers below are the fixed annual allocation plans for institutional clients.
+  const [selectedB2BTier, setSelectedB2BTier] = useState('250 TB / Year');
   const [b2bTierData, setB2BTierData] = useState({
-    price: "$999 / month",
-    inclusions: "Up to 15M API requests; client-side GCM cryptographic pipelines",
+    price: "13,500 USDT / Year",
+    maintenance: "500 USDT-equivalent INAYA / Year",
+    inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate",
     maxFileMB: 262144000, // 250 TB in MB
-    maxTotalMB: 524288000,
-    displayLimit: "250 TB Boundary"
+    maxTotalMB: 262144000,
+    displayLimit: "250 TB Annual Allocation"
   });
 
-  // Dynamic Tier Allocation Listeners with Petabyte/Terabyte Hyper-Scaling
+  // Dynamic Tier Allocation Listeners — Corporate Reserve (Annual) Plans
   useEffect(() => {
-    if (selectedB2BTier === 'Scale Matrix') {
-      setB2BTierData({ price: "$999 / month", inclusions: "Up to 15M API requests; client-side GCM cryptographic pipelines", maxFileMB: 262144000, maxTotalMB: 524288000, displayLimit: "250 TB Boundary" });
-    } else if (selectedB2BTier === 'Established Swarm') {
-      setB2BTierData({ price: "$5,000–$10,000 / month", inclusions: "Up to 150M API loops; priority distributed routing", maxFileMB: 1073741824, maxTotalMB: 2147483648, displayLimit: "1 PB (1024 TB) Boundary" });
-    } else if (selectedB2BTier === 'Institutional Node') {
-      setB2BTierData({ price: "$15,000–$35,000 / month", inclusions: "Dedicated RPC endpoints; zero-latency SLAs; unlimited allocations", maxFileMB: 5368709120, maxTotalMB: 10737418240, displayLimit: "5 PB (5120 TB) Boundary" });
+    if (selectedB2BTier === '250 TB / Year') {
+      setB2BTierData({ price: "13,500 USDT / Year", maintenance: "500 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate", maxFileMB: 262144000, maxTotalMB: 262144000, displayLimit: "250 TB Annual Allocation" });
+    } else if (selectedB2BTier === '500 TB / Year') {
+      setB2BTierData({ price: "27,000 USDT / Year", maintenance: "1,000 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; priority distributed routing", maxFileMB: 524288000, maxTotalMB: 524288000, displayLimit: "500 TB Annual Allocation" });
+    } else if (selectedB2BTier === '1000 TB / Year') {
+      setB2BTierData({ price: "54,000 USDT / Year", maintenance: "2,000 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; dedicated RPC endpoints, zero-latency SLAs", maxFileMB: 1048576000, maxTotalMB: 1048576000, displayLimit: "1000 TB Annual Allocation" });
     }
   }, [selectedB2BTier]);
 
@@ -164,7 +168,7 @@ export default function Home() {
   // ========================================================
   const documentsList = [
     { title: "The Inaya Protocol — Whitepaper", desc: "Technical & economic whitepaper covering the custody architecture and tokenomics.", href: "/documents/inaya-whitepaper.pdf", icon: "📄" },
-    { title: "Strategic Business Model & Financial Architecture", desc: "Subscription tiers, financial matrix, and case-scenario revenue projections.", href: "/documents/inaya-business-model.pdf", icon: "📊" },
+    { title: "Strategic Business Model & Financial Architecture", desc: "Pay-as-you-go pricing, Corporate Reserve plans, TVL engine, and the verified token allocation matrix.", href: "/documents/inaya-business-model.pdf", icon: "📊" },
     { title: "Institutional & Enterprise FAQs", desc: "Compliance-oriented FAQ prepared for institutional and enterprise reviewers.", href: "/documents/inaya-institutional-faqs.pdf", icon: "🏛️" },
     { title: "General User & Community FAQs", desc: "Plain-language FAQ for everyday users, builders, and grant applicants.", href: "/documents/inaya-community-faqs.pdf", icon: "💬" },
     { title: "Inaya Custody SDK — Developer Guide", desc: "Integration guide and API reference for @inaya-network/custody-sdk.", href: "/documents/inaya-sdk-guide.pdf", icon: "🛠️" },
@@ -851,21 +855,25 @@ export default function Home() {
             </div>
           </div>
 
-          {/* B2B CORPORATE PANELS CHANGER */}
+          {/* B2B CORPORATE RESERVE PANEL CHANGER */}
           <div className="bg-[#0b1426]/70 border border-[#00f2fe]/20 p-4 rounded-xl space-y-3 font-mono text-[11px]">
-            <div className="text-[#00f2fe] font-extrabold text-xs uppercase border-b border-white/5 pb-1">B2B Corporate Panel</div>
+            <div className="text-[#00f2fe] font-extrabold text-xs uppercase border-b border-white/5 pb-1">Corporate Reserve Panel</div>
             <div>
-              <span className="text-slate-400 block mb-1">Select Active Subscription:</span>
+              <span className="text-slate-400 block mb-1">Select Active Annual Plan:</span>
               <select value={selectedB2BTier} onChange={(e) => setSelectedB2BTier(e.target.value)} className="w-full bg-[#060913] border border-white/10 rounded px-2 py-1 text-white font-bold text-xs cursor-pointer focus:outline-none">
-                <option value="Scale Matrix">Scale Matrix ($999/mo)</option>
-                <option value="Established Swarm">Established Swarm ($5k-$10k/mo)</option>
-                <option value="Institutional Node">Institutional Node ($15k-$35k/mo)</option>
+                <option value="250 TB / Year">250 TB / Year (13,500 USDT/yr)</option>
+                <option value="500 TB / Year">500 TB / Year (27,000 USDT/yr)</option>
+                <option value="1000 TB / Year">1000 TB / Year (54,000 USDT/yr)</option>
               </select>
             </div>
             <div className="pt-1 text-slate-300 space-y-1">
-              <div>• Base Scale: <span className="text-white font-bold">{b2bTierData.price}</span></div>
-              <div>• SLA Limit: <span className="text-white font-bold">{b2bTierData.displayLimit}</span></div>
+              <div>• Reserve Fee: <span className="text-white font-bold">{b2bTierData.price}</span></div>
+              <div>• Annual Maintenance: <span className="text-white font-bold">{b2bTierData.maintenance}</span></div>
+              <div>• Allocation Limit: <span className="text-white font-bold">{b2bTierData.displayLimit}</span></div>
               <div className="text-[10px] text-slate-500 italic pt-1">{b2bTierData.inclusions}</div>
+            </div>
+            <div className="text-[9.5px] text-slate-500 pt-1 border-t border-white/5">
+              Retail / pay-as-you-go storage remains available at the baseline <span className="text-[#00f2fe] font-bold">4.5 USDT / TB / month</span> rate outside of a Corporate Reserve plan.
             </div>
           </div>
 
@@ -1037,7 +1045,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 backdrop-blur-md">
-            {['Network Home', 'Faucet', 'Sovereign Vault', 'Corporate Tiers Profile', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
+            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
             ))}
           </nav>
@@ -1235,47 +1243,118 @@ export default function Home() {
             </div>
           )}
 
-          {/* 💎 VIEWPORT AREA 2B: CORPORATE DETAILED TIERS PROFILE MATRIX (UPDATED TO COMPETITIVE LOW-COST DEPIN PARAMETERS) */}
-          {currentPage === 'Corporate Tiers Profile' && (
+          {/* 💎 VIEWPORT AREA 2B: BUSINESS MODEL (PAY-AS-YOU-GO + CORPORATE RESERVE) */}
+          {currentPage === 'Business Model' && (
             <div className="max-w-5xl mx-auto space-y-6">
               <div className="bg-gradient-to-r from-[#0a1124] to-[#080d1a] border border-[#00f2fe]/20 rounded-2xl p-6 shadow-xl">
-                <h2 className="text-base font-black text-white uppercase tracking-wider mb-2">Corporate Subscription Tier Matrix</h2>
+                <h2 className="text-base font-black text-white uppercase tracking-wider mb-2">Strategic Business Model &amp; Financial Architecture</h2>
                 <p className="text-xs text-slate-400 leading-relaxed font-mono">
-                  Our high-margin B2B subscription infrastructure layer offers enterprise gateway access and institutional Service Level Agreements (SLAs). These subscription fees function as a recurring overlay atop the network's baseline usage-based processing rate of <span className="text-[#00f2fe] font-bold">0.1 USDT + 0.1 INAYA per GB</span> — reinforcing predictable, institutional-grade cash flow parameters.
+                  Retail and developer accounts run on transparent <span className="text-[#00f2fe] font-bold">Pay-As-You-Go</span> pricing settled in stablecoins, while institutional clients can lock in a fixed-cost <span className="text-[#00f2fe] font-bold">Corporate Reserve</span> annual plan. Every invoice — retail or corporate — routes through the dApp's automated USDT→INAYA buyback, driving programmatic TVL into the network vault.
                 </p>
               </div>
 
+              {/* PAY-AS-YOU-GO SUMMARY CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                  <div className="text-[#00f2fe] font-bold text-lg">4.5 USDT</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
+                </div>
+                <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                  <div className="text-emerald-400 font-bold text-lg">5 INAYA</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
+                </div>
+                <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                  <div className="text-amber-400 font-bold text-lg">5 USDT</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
+                </div>
+                <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                  <div className="text-violet-400 font-bold text-lg">26.7%</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Staking Rewards Pool APY Source</div>
+                </div>
+              </div>
+
+              {/* MARKET PRICING COMPARISON */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
+                <h3 className="text-sm font-bold text-white mb-4">📉 Market Pricing Comparison</h3>
                 <table className="w-full text-left font-mono text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
-                      <th className="p-4 font-bold">Tier Name</th>
-                      <th className="p-4 font-bold">Target Target</th>
-                      <th className="p-4 font-bold">Pricing Matrix</th>
-                      <th className="p-4 font-bold">SLA Inclusions Boundary</th>
+                      <th className="p-4 font-bold">Provider</th>
+                      <th className="p-4 font-bold">Storage (1 TB / Month)</th>
+                      <th className="p-4 font-bold">Egress (1 TB Download)</th>
+                      <th className="p-4 font-bold">Minimum Duration</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-slate-300">
-                    <tr className={selectedB2BTier === 'Scale Matrix' ? 'bg-cyan-500/[0.04]' : ''}>
-                      <td className="p-4 text-white font-bold">Scale Matrix</td>
-                      <td className="p-4">Early-stage dApps &amp; audited protocols</td>
-                      <td className="p-4 text-amber-400 font-bold">$999 / month</td>
-                      <td className="p-4">Up to 15M API requests; client-side GCM cryptographic pipelines (<span className="text-emerald-400 font-bold">250 TB Storage Limit</span> — 5x cheaper than AWS/Azure)</td>
+                    <tr><td className="p-4">Amazon S3 (Standard)</td><td className="p-4">~23.00 USDT</td><td className="p-4">~90.00 USDT</td><td className="p-4">30 Days</td></tr>
+                    <tr><td className="p-4">Google Cloud Storage</td><td className="p-4">~20.00 USDT</td><td className="p-4">~80.00 USDT</td><td className="p-4">30 Days</td></tr>
+                    <tr><td className="p-4">Legacy Web2 (B2)</td><td className="p-4">~6.00 USDT</td><td className="p-4">~10.00 USDT</td><td className="p-4">None</td></tr>
+                    <tr className="bg-cyan-500/[0.06]"><td className="p-4 text-white font-bold">Inaya Network (DePIN)</td><td className="p-4 text-emerald-400 font-bold">4.50 USDT</td><td className="p-4 text-emerald-400 font-bold">10 INAYA</td><td className="p-4 text-emerald-400 font-bold">Zero Constraints</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* CORPORATE RESERVE PLANS TABLE */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
+                <h3 className="text-sm font-bold text-white mb-1">🏢 Corporate Reserve Plans (Annual)</h3>
+                <p className="text-[10px] text-slate-500 font-mono mb-4">Fixed annual allocation, billed in USDT, with system maintenance settled natively in INAYA.</p>
+                <table className="w-full text-left font-mono text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                      <th className="p-4 font-bold">Total Allocated Data</th>
+                      <th className="p-4 font-bold">Legacy AWS S3 Cost</th>
+                      <th className="p-4 font-bold">Competitor B2 Reserve</th>
+                      <th className="p-4 font-bold">Inaya Corporate Storage Fee</th>
+                      <th className="p-4 font-bold">Annual Maintenance (INAYA)</th>
                     </tr>
-                    <tr className={selectedB2BTier === 'Established Swarm' ? 'bg-cyan-500/[0.04]' : ''}>
-                      <td className="p-4 text-white font-bold">Established Swarm</td>
-                      <td className="p-4">Mid-tier DeFi &amp; active Web3 networks</td>
-                      <td className="p-4 text-amber-400 font-bold">$5,000–$10,000 / month</td>
-                      <td className="p-4">Up to 150M API loops; priority distributed routing architecture (<span className="text-emerald-400 font-bold">1 PB (1024 TB) Storage Limit</span>)</td>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-slate-300">
+                    <tr className={selectedB2BTier === '250 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">250 TB / Year</td>
+                      <td className="p-4">76,680 USDT / yr</td>
+                      <td className="p-4">19,500 USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">13,500 USDT / Year</td>
+                      <td className="p-4">500 USDT-equivalent / yr</td>
                     </tr>
-                    <tr className={selectedB2BTier === 'Institutional Node' ? 'bg-cyan-500/[0.04]' : ''}>
-                      <td className="p-4 text-white font-bold">Institutional Node</td>
-                      <td className="p-4">Enterprise frameworks &amp; Tier-1 chains</td>
-                      <td className="p-4 text-amber-400 font-bold">$15,000–$35,000 / month</td>
-                      <td className="p-4">Dedicated RPC endpoints; zero-latency SLAs; unlimited allocations (<span className="text-emerald-400 font-bold">5 PB (5120 TB) Storage Limit</span>)</td>
+                    <tr className={selectedB2BTier === '500 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">500 TB / Year</td>
+                      <td className="p-4">151,680 USDT / yr</td>
+                      <td className="p-4">39,000 USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">27,000 USDT / Year</td>
+                      <td className="p-4">1,000 USDT-equivalent / yr</td>
+                    </tr>
+                    <tr className={selectedB2BTier === '1000 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
+                      <td className="p-4 text-white font-bold">1000 TB / Year</td>
+                      <td className="p-4">295,680 USDT / yr</td>
+                      <td className="p-4">78,000 USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">54,000 USDT / Year</td>
+                      <td className="p-4">2,000 USDT-equivalent / yr</td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              {/* PROFESSIONAL NETWORK FUNDAMENTALS */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+                <h3 className="text-sm font-bold text-white mb-4">✅ Professional Network Fundamentals</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-[11px]">
+                  <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                    <span className="text-[#00f2fe] font-bold">Always-Hot Performance Storage</span>
+                    <p className="text-slate-500 mt-1">Data shards stay permanently ready for concurrent retrieval — no cold-archive latency gaps.</p>
+                  </div>
+                  <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                    <span className="text-[#00f2fe] font-bold">Zero Minimum File Size Penalties</span>
+                    <p className="text-slate-500 mt-1">Tiny configs or massive video assets settle under the same uniform rate framework.</p>
+                  </div>
+                  <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                    <span className="text-[#00f2fe] font-bold">Zero Storage Duration Constraints</span>
+                    <p className="text-slate-500 mt-1">Delete or cycle files freely — no contractual early-termination penalties.</p>
+                  </div>
+                  <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                    <span className="text-[#00f2fe] font-bold">Free Core API Calls</span>
+                    <p className="text-slate-500 mt-1">Configure, query, and monitor storage routes without unexpected micro-charges.</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1379,6 +1458,7 @@ export default function Home() {
                 {activePaperSection === 'Tokenomics Matrix' && (
                   <div className="space-y-4 font-sans">
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
+                    <p className="text-[10px] text-slate-500 italic font-mono -mt-2">Verified against the Strategic Business Model &amp; Financial Architecture (INAYA-EXEC-2026-V1).</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
                       
                       <div className="w-full border border-white/10 bg-[#060913] rounded-xl p-5 flex flex-col justify-center space-y-4">
