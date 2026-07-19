@@ -169,6 +169,7 @@ export default function Home() {
   const documentsList = [
     { title: "The Inaya Protocol — Whitepaper", desc: "Technical & economic whitepaper covering the custody architecture and tokenomics.", href: "/documents/inaya-whitepaper.pdf", icon: "📄" },
     { title: "Strategic Business Model & Financial Architecture", desc: "Pay-as-you-go pricing, Corporate Reserve plans, TVL engine, and the verified token allocation matrix.", href: "/documents/inaya-business-model.pdf", icon: "📊" },
+    { title: "The Node Operator Manifesto", desc: "Commission tiers, uptime requirements, and onboarding steps for hardware/storage node operators.", href: "/documents/inaya-operator-manifesto.pdf", icon: "🖥️" },
     { title: "Institutional & Enterprise FAQs", desc: "Compliance-oriented FAQ prepared for institutional and enterprise reviewers.", href: "/documents/inaya-institutional-faqs.pdf", icon: "🏛️" },
     { title: "General User & Community FAQs", desc: "Plain-language FAQ for everyday users, builders, and grant applicants.", href: "/documents/inaya-community-faqs.pdf", icon: "💬" },
     { title: "Inaya Custody SDK — Developer Guide", desc: "Integration guide and API reference for @inaya-network/custody-sdk.", href: "/documents/inaya-sdk-guide.pdf", icon: "🛠️" },
