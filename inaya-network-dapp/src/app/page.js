@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import Image from 'next/image';
 
 export default function Home() {
   // ========================================================
@@ -74,20 +73,27 @@ export default function Home() {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   // 💎 CORPORATE RESERVE (ANNUAL) SUBSCRIPTION SUBSYSTEM STATE
-  // Aligned to the Strategic Business Model & Financial Architecture (INAYA-EXEC-2026-V1):
-  // Baseline Pay-As-You-Go storage is billed at 4.5 USDT / TB / month with egress at 5 INAYA / 0.5 TB.
-  // Corporate Reserve tiers below are the fixed annual allocation plans for institutional clients.
   const [selectedB2BTier, setSelectedB2BTier] = useState('250 TB / Year');
   const [b2bTierData, setB2BTierData] = useState({
     price: "13,500 USDT / Year",
     maintenance: "500 USDT-equivalent INAYA / Year",
     inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate",
-    maxFileMB: 262144000, // 250 TB in MB
+    maxFileMB: 262144000, 
     maxTotalMB: 262144000,
     displayLimit: "250 TB Annual Allocation"
   });
 
-  // Dynamic Tier Allocation Listeners — Corporate Reserve (Annual) Plans
+  // ========================================================
+  // DERIVED UI STATES (Hoisted to prevent reference errors)
+  // ========================================================
+  const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
+  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
+  const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
+  const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
+  const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
+  const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
+
+  // Dynamic Tier Allocation Listeners
   useEffect(() => {
     if (selectedB2BTier === '250 TB / Year') {
       setB2BTierData({ price: "13,500 USDT / Year", maintenance: "500 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate", maxFileMB: 262144000, maxTotalMB: 262144000, displayLimit: "250 TB Annual Allocation" });
@@ -103,7 +109,6 @@ export default function Home() {
   const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; 
   const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; 
 
-  // ABI Updated for dynamic sizes array and perGB fee logic
   const contractABI = [
     "function batchRegisterAssets(bytes32[] fileHashes, uint256[] fileSizes, string[] shardACIDs, string[] shardBCIDs) external",
     "function assets(bytes32) public view returns (address owner, string shardACID, string shardBCID, uint256 timestamp)",
@@ -215,6 +220,7 @@ export default function Home() {
   const FILENAME_STORAGE_KEY = 'inaya_filename_registry';
 
   const saveFilenameMapping = (hash, filename) => {
+    if (typeof window === 'undefined') return;
     try {
       const existing = JSON.parse(localStorage.getItem(FILENAME_STORAGE_KEY) || '{}');
       existing[hash] = filename;
@@ -225,6 +231,7 @@ export default function Home() {
   };
 
   const getFilenameMapping = (hash) => {
+    if (typeof window === 'undefined') return null;
     try {
       const existing = JSON.parse(localStorage.getItem(FILENAME_STORAGE_KEY) || '{}');
       return existing[hash] || null;
@@ -239,6 +246,7 @@ export default function Home() {
   const ASSET_ID_HISTORY_KEY = 'inaya_asset_id_history';
 
   const saveAssetIdHistory = (assetIdText, hash, filename) => {
+    if (typeof window === 'undefined') return;
     try {
       const existing = JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
       const updated = [{ assetIdText, hash, filename, timestamp: Date.now() }, ...existing];
@@ -250,6 +258,7 @@ export default function Home() {
   };
 
   const getAssetIdHistory = () => {
+    if (typeof window === 'undefined') return [];
     try {
       return JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
     } catch (err) {
@@ -457,7 +466,7 @@ export default function Home() {
     const cipherTextString = await encryptData(dataUrl, masterPasskey);
     const midpoint = Math.ceil(cipherTextString.length / 2);
 
-    // ⚡ CONCURRENT ASYNC EXECUTIONS: BOTH SHARDS DISPATCH PARALLELLY INSTEAD OF WAITING
+    // ⚡ CONCURRENT ASYNC EXECUTIONS
     const [cidA, cidB] = await Promise.all([
       uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha"),
       uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta")
@@ -559,7 +568,6 @@ export default function Home() {
 
       setStatusLog("🔍 Pre-validating tracking logs and allocations...");
       
-      // ISOLATED: Duplicate check shouldn't halt the flow if RPC responds with empty values
       try {
         for (let i = 0; i < fileHashes.length; i++) {
           const assetRecord = await readCustody.assets(fileHashes[i]);
@@ -574,7 +582,6 @@ export default function Home() {
         console.warn("Isolating asset view check exception (Forcing fallback bypass):", assetErr);
       }
 
-      // ISOLATED: Fee fetching wrapper fallback values
       let usdtFeePerGB = 100000000000000000n; 
       let inayaFeePerGB = 100000000000000000n;
       try {
@@ -598,7 +605,7 @@ export default function Home() {
       if (calculatedUsdtFee > 0n) totalUsdtFeeWei = calculatedUsdtFee;
       if (calculatedInayaFee > 0n) totalInayaFeeWei = calculatedInayaFee;
 
-      // Token Handshakes with error pass-through
+      // Token Handshakes
       if (totalUsdtFeeWei > 0n) {
         await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFeeWei, "Mock USDT");
       }
@@ -662,7 +669,7 @@ export default function Home() {
     }
   };
 
-  // 🚀 HIGH-SPEED PARALLEL CONCURRENT FETCH ASSEMBLY (DOWNLOAD MULTIPLIER)
+  // 🚀 HIGH-SPEED PARALLEL CONCURRENT FETCH ASSEMBLY
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
@@ -694,7 +701,6 @@ export default function Home() {
         }
       };
 
-      // ⚡ ASYNC PROMISE PIPELINE - ELIMINATES LATENCY BOTTLENECK ENTIRELY
       const [shardA, shardB] = await Promise.all([
         fetchFastShard(cidAlpha),
         fetchFastShard(cidBeta)
@@ -817,13 +823,6 @@ export default function Home() {
   // ========================================================
   // 🖥️ WEB3 STRUCTURAL LAYER UI LAYOUTS
   // ========================================================
-  const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
-  const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
-  const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
-  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
-  const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
-  const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
-
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       
@@ -1226,7 +1225,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {vaultHistory.map((item, index) => (
                       <button
-                        key={index}
+                        key={item.assetId || index}
                         onClick={() => handleRetrievalSequence(item.assetId)}
                         className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 rounded-xl p-4 flex flex-col items-center text-center transition-all hover:bg-white/[0.03]"
                         title={`${item.filename} — click to reconstruct`}
