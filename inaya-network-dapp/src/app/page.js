@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
+import Image from 'next/image';
 
 export default function Home() {
   // ========================================================
@@ -71,6 +72,7 @@ export default function Home() {
   const [showAssetIdDropdown, setShowAssetIdDropdown] = useState(false);
   const [lastBatchResults, setLastBatchResults] = useState([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
 
   // 💎 CORPORATE RESERVE (ANNUAL) SUBSCRIPTION SUBSYSTEM STATE
   const [selectedB2BTier, setSelectedB2BTier] = useState('250 TB / Year');
@@ -83,17 +85,7 @@ export default function Home() {
     displayLimit: "250 TB Annual Allocation"
   });
 
-  // ========================================================
-  // DERIVED UI STATES (Hoisted to prevent reference errors)
-  // ========================================================
-  const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
-  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
-  const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
-  const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
-  const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
-  const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
-
-  // Dynamic Tier Allocation Listeners
+  // Dynamic Tier Allocation Listeners — Corporate Reserve (Annual) Plans
   useEffect(() => {
     if (selectedB2BTier === '250 TB / Year') {
       setB2BTierData({ price: "13,500 USDT / Year", maintenance: "500 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate", maxFileMB: 262144000, maxTotalMB: 262144000, displayLimit: "250 TB Annual Allocation" });
@@ -108,7 +100,10 @@ export default function Home() {
   const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; 
   const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; 
   const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; 
+  const nodeRegistryAddress = process.env.NEXT_PUBLIC_NODE_REGISTRY_ADDRESS || "0xDFF378C63c2f2233E9eF1d57E55F22fC792272D7";
+  const revenueRouterAddress = process.env.NEXT_PUBLIC_REVENUE_ROUTER_ADDRESS || "0xcC01748999bE2494293Af714A597126D4E31fb56";
 
+  // ABI Updated for dynamic sizes array and perGB fee logic
   const contractABI = [
     "function batchRegisterAssets(bytes32[] fileHashes, uint256[] fileSizes, string[] shardACIDs, string[] shardBCIDs) external",
     "function assets(bytes32) public view returns (address owner, string shardACID, string shardBCID, uint256 timestamp)",
@@ -220,7 +215,6 @@ export default function Home() {
   const FILENAME_STORAGE_KEY = 'inaya_filename_registry';
 
   const saveFilenameMapping = (hash, filename) => {
-    if (typeof window === 'undefined') return;
     try {
       const existing = JSON.parse(localStorage.getItem(FILENAME_STORAGE_KEY) || '{}');
       existing[hash] = filename;
@@ -231,7 +225,6 @@ export default function Home() {
   };
 
   const getFilenameMapping = (hash) => {
-    if (typeof window === 'undefined') return null;
     try {
       const existing = JSON.parse(localStorage.getItem(FILENAME_STORAGE_KEY) || '{}');
       return existing[hash] || null;
@@ -246,7 +239,6 @@ export default function Home() {
   const ASSET_ID_HISTORY_KEY = 'inaya_asset_id_history';
 
   const saveAssetIdHistory = (assetIdText, hash, filename) => {
-    if (typeof window === 'undefined') return;
     try {
       const existing = JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
       const updated = [{ assetIdText, hash, filename, timestamp: Date.now() }, ...existing];
@@ -258,7 +250,6 @@ export default function Home() {
   };
 
   const getAssetIdHistory = () => {
-    if (typeof window === 'undefined') return [];
     try {
       return JSON.parse(localStorage.getItem(ASSET_ID_HISTORY_KEY) || '[]');
     } catch (err) {
@@ -401,8 +392,77 @@ export default function Home() {
       console.error(err);
       setStatusLog(`❌ Registration dropped: ${err.message}`);
       alert(`❌ Sign-up failed: ${err.message}`);
-    } finally {
+    } fillAll {
       setIsSigning(false);
+    }
+  };
+
+  // ========================================================
+  // 💳 B2B CORPORATE INVOICE CHECKOUT LOOP
+  // ========================================================
+  const handleCorporateCheckout = async () => {
+    if (!isConnected || !walletAddress) { 
+      alert("🚨 Wallet Connected Nahi Hai! Pehle wallet connect karein."); 
+      return; 
+    }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { 
+      alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); 
+      return; 
+    }
+
+    setIsProcessingInvoice(true);
+    setStatusLog("🔄 Corporate checkout pipeline initiated...");
+
+    if (!revenueRouterAddress || !usdtTokenAddress) {
+      alert("❌ Environment Error: Router or USDT addresses missing configuration.");
+      setIsProcessingInvoice(false);
+      return;
+    }
+
+    let rawPrice = "13500"; 
+    if (selectedB2BTier === '500 TB / Year') rawPrice = "27000";
+    if (selectedB2BTier === '1000 TB / Year') rawPrice = "54000";
+
+    const invoiceAmountWei = ethers.parseUnits(rawPrice, 18);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const usdtContract = new ethers.Contract(usdtTokenAddress, erc20ABI, signer);
+      
+      setStatusLog(`🔍 Checking USDT allowance for Router...`);
+      const currentAllowance = await usdtContract.allowance(walletAddress, revenueRouterAddress);
+
+      if (currentAllowance < invoiceAmountWei) {
+        setStatusLog(`✍️ Requesting USDT spending approval for ${rawPrice} mUSDT...`);
+        const approveTx = await usdtContract.approve(revenueRouterAddress, ethers.MaxUint256);
+        setStatusLog("⏳ Mining approval transaction...");
+        await approveTx.wait();
+        setStatusLog("✅ USDT approved successfully!");
+      }
+
+      const routerABI = ["function processCorporateInvoice(uint256 _usdtAmount) external"];
+      const routerContract = new ethers.Contract(revenueRouterAddress, routerABI, signer);
+
+      setStatusLog(`✍️ Signing invoice settlement for ${selectedB2BTier} package...`);
+      const checkoutTx = await routerContract.processCorporateInvoice(invoiceAmountWei);
+
+      setStatusLog("⏳ Settling corporate revenue allocation loop on-chain...");
+      await checkoutTx.wait();
+
+      setTxHashLink(`https://testnet.bscscan.com/tx/${checkoutTx.hash}`);
+      setStatusLog(`🎯 CORPORATE TIER ACTIVE: 3-Way revenue splitting fully settled.`);
+      alert(`🎉 Success! ${selectedB2BTier} plan status has been activated securely.`);
+
+    } catch (err) {
+      console.error("Checkout crash:", err);
+      alert(`❌ Checkout Failed: ${err.reason || err.message || err}`);
+      setStatusLog(`❌ Pipeline Error: ${err.reason || err.message}`);
+    } finally {
+      setIsProcessingInvoice(false);
     }
   };
 
@@ -466,7 +526,6 @@ export default function Home() {
     const cipherTextString = await encryptData(dataUrl, masterPasskey);
     const midpoint = Math.ceil(cipherTextString.length / 2);
 
-    // ⚡ CONCURRENT ASYNC EXECUTIONS
     const [cidA, cidB] = await Promise.all([
       uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha"),
       uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta")
@@ -527,7 +586,6 @@ export default function Home() {
       });
     };
 
-    // --- PHASE 1: Off-chain encryption + sharding ---
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
@@ -555,7 +613,6 @@ export default function Home() {
       return;
     }
 
-    // --- PHASE 2: Non-Blocking Pre-Flight On-Chain Check ---
     let totalUsdtFeeWei = requiredUsdtWei;
     let totalInayaFeeWei = requiredInayaWei;
 
@@ -605,7 +662,6 @@ export default function Home() {
       if (calculatedUsdtFee > 0n) totalUsdtFeeWei = calculatedUsdtFee;
       if (calculatedInayaFee > 0n) totalInayaFeeWei = calculatedInayaFee;
 
-      // Token Handshakes
       if (totalUsdtFeeWei > 0n) {
         await ensureTokenApproval(usdtTokenAddress, signer, walletAddress, totalUsdtFeeWei, "Mock USDT");
       }
@@ -613,7 +669,6 @@ export default function Home() {
         await ensureTokenApproval(inayaTokenAddress, signer, walletAddress, totalInayaFeeWei, "$INAYA");
       }
 
-      // --- PHASE 3: ONE Final Write Transaction ---
       setStatusLog(`✍️ Requesting signature to register ${fileHashes.length} dynamic file(s) on-chain...`);
       fileHashes.forEach((_, idx) => updateProgress(idx, 'signing', 'Awaiting on-chain confirmation...'));
 
@@ -669,7 +724,6 @@ export default function Home() {
     }
   };
 
-  // 🚀 HIGH-SPEED PARALLEL CONCURRENT FETCH ASSEMBLY
   const handleRetrievalSequence = async (targetId) => {
     if (!isSignedUp) { alert("Access Denied: Authenticate node access array parameters first."); return; }
     const searchId = targetId || queryAssetId;
@@ -823,6 +877,13 @@ export default function Home() {
   // ========================================================
   // 🖥️ WEB3 STRUCTURAL LAYER UI LAYOUTS
   // ========================================================
+  const hasEnoughInaya = userInayaBalance >= requiredInayaWei;
+  const hasEnoughUsdt = userUsdtBalance >= requiredUsdtWei;
+  const totalSelectedMB = selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
+  const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
+  const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
+  const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       
@@ -985,6 +1046,82 @@ export default function Home() {
                   </button>
                   <a
                     href={`https://testnet.bscscan.com/address/${inayaTokenAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
+              {/* Inaya Node Registry Row */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Node Registry Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${nodeRegistryAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={nodeRegistryAddress}
+                  >
+                    {truncateAddress(nodeRegistryAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(nodeRegistryAddress, 'nodeRegistry')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'nodeRegistry' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${nodeRegistryAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
+              {/* Inaya Revenue Router Row */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Revenue Router Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${revenueRouterAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={revenueRouterAddress}
+                  >
+                    {truncateAddress(revenueRouterAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(revenueRouterAddress, 'revenueRouter')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'revenueRouter' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${revenueRouterAddress}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
@@ -1225,7 +1362,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {vaultHistory.map((item, index) => (
                       <button
-                        key={item.assetId || index}
+                        key={index}
                         onClick={() => handleRetrievalSequence(item.assetId)}
                         className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 rounded-xl p-4 flex flex-col items-center text-center transition-all hover:bg-white/[0.03]"
                         title={`${item.filename} — click to reconstruct`}
@@ -1332,6 +1469,27 @@ export default function Home() {
                     </tr>
                   </tbody>
                 </table>
+
+                {/* LIVE REVENUE ROUTER CHECKOUT TRIGGER */}
+                <div className="mt-6 bg-[#0b1224] border border-[#00f2fe]/30 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="text-left font-mono">
+                    <span className="text-[#00f2fe] text-xs font-bold block">// READY FOR ON-CHAIN ACTIVATION</span>
+                    <p className="text-sm text-white font-extrabold mt-1">
+                      Selected Allocation: <span className="text-amber-400">{selectedB2BTier}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Billed via trustless multi-shard settlement router.
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={handleCorporateCheckout}
+                    disabled={isProcessingInvoice}
+                    className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-black text-xs rounded-xl shadow-[0_0_15px_rgba(52,211,153,0.2)] hover:brightness-110 active:scale-95 transition-all disabled:opacity-40"
+                  >
+                    {isProcessingInvoice ? "PROCESSING ORDER..." : `💳 PAY & ACTIVATE ${selectedB2BTier.toUpperCase()}`}
+                  </button>
+                </div>
               </div>
 
               {/* PROFESSIONAL NETWORK FUNDAMENTALS */}
