@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import Image from 'next/image';
+import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
 
 export default function Home() {
   // ========================================================
@@ -33,6 +34,36 @@ export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [masterPasskey, setMasterPasskey] = useState('');
   const [queryAssetId, setQueryAssetId] = useState('');
+
+  // ========================================================
+  // 🌳 PROOF-OF-STORAGE LOOKUP PANEL STATE
+  // ========================================================
+  const [proofLookupInput, setProofLookupInput] = useState('');
+  const [proofLookupResult, setProofLookupResult] = useState(null);
+  const [isLoadingProofLookup, setIsLoadingProofLookup] = useState(false);
+  const [nodeLookupInput, setNodeLookupInput] = useState('');
+  const [nodeLookupResult, setNodeLookupResult] = useState(null);
+  const [isLoadingNodeLookup, setIsLoadingNodeLookup] = useState(false);
+
+  // ========================================================
+  // 🥩 $INAYA STAKING ENGINE STATE
+  // ========================================================
+  const [stakeAmountInput, setStakeAmountInput] = useState('');
+  const [unstakeAmountInput, setUnstakeAmountInput] = useState('');
+  const [selectedLockTier, setSelectedLockTier] = useState(0); // 0, 30, or 90
+  const [stakingOverview, setStakingOverview] = useState({
+    totalStakedTVL: '0',
+    estimatedAPY: '0',
+    myStakedBalance: '0',
+    claimableRewards: '0',
+    lockExpiryTimestamp: 0,
+    userTier: 'None'
+  });
+  const [isStakingBusy, setIsStakingBusy] = useState(false);
+  const [isUnstakingBusy, setIsUnstakingBusy] = useState(false);
+  const [isClaimingBusy, setIsClaimingBusy] = useState(false);
+  const [stakingLog, setStakingLog] = useState('');
+  const stakingActionLockRef = useRef(false);
   
   // ========================================================
   // 5. DECENTRALIZED IDENTITY POINTS DATA MATRIX
@@ -73,6 +104,22 @@ export default function Home() {
   const [lastBatchResults, setLastBatchResults] = useState([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
+  const corporateCheckoutLockRef = useRef(false); // hard lock — blocks double-submit / double-click duplication
+
+  // ========================================================
+  // 💵 PAY-AS-YOU-GO (PAYG) DASHBOARD & BILLING STATE
+  // ========================================================
+  const [paygTbUnits, setPaygTbUnits] = useState(1);
+  const [paygEgressUnits, setPaygEgressUnits] = useState(1);
+  const [paygStatus, setPaygStatus] = useState({ tbCommitted: 0, storagePaidThrough: 0, lastMaintenancePaidAt: 0, storageActive: false, maintenanceCurrent: false });
+  const [paygPricing, setPaygPricing] = useState({ storagePerTB: "4.5", egressPerHalfTB: "5", maintenanceFee: "5" });
+  const [paygHistory, setPaygHistory] = useState([]);
+  const [paygLog, setPaygLog] = useState('');
+  const [isPaygStorageBusy, setIsPaygStorageBusy] = useState(false);
+  const [isPaygEgressBusy, setIsPaygEgressBusy] = useState(false);
+  const [isPaygMaintenanceBusy, setIsPaygMaintenanceBusy] = useState(false);
+  const [isLoadingPaygHistory, setIsLoadingPaygHistory] = useState(false);
+  const paygActionLockRef = useRef(false); // shared lock across the three PAYG actions
 
   // 💎 CORPORATE RESERVE (ANNUAL) SUBSCRIPTION SUBSYSTEM STATE
   const [selectedB2BTier, setSelectedB2BTier] = useState('250 TB / Year');
@@ -84,6 +131,8 @@ export default function Home() {
     maxTotalMB: 262144000,
     displayLimit: "250 TB Annual Allocation"
   });
+
+  const [activeCorporatePlan, setActiveCorporatePlan] = useState(null);
 
   // Dynamic Tier Allocation Listeners — Corporate Reserve (Annual) Plans
   useEffect(() => {
@@ -100,8 +149,8 @@ export default function Home() {
   const liveContractAddress = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; 
   const usdtTokenAddress = "0x6f16E2d169B5F2c7141c2b46dD864f8daE01745D"; 
   const inayaTokenAddress = "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e"; 
-  const nodeRegistryAddress = process.env.NEXT_PUBLIC_NODE_REGISTRY_ADDRESS || "0xDFF378C63c2f2233E9eF1d57E55F22fC792272D7";
-  const revenueRouterAddress = process.env.NEXT_PUBLIC_REVENUE_ROUTER_ADDRESS || "0xcC01748999bE2494293Af714A597126D4E31fb56";
+  const nodeRegistryAddress = process.env.NEXT_PUBLIC_NODE_REGISTRY_ADDRESS || "0x61df4aEb4a5CeeB0D1192B8caE2b3936badd3d15";
+  const revenueRouterAddress = process.env.NEXT_PUBLIC_REVENUE_ROUTER_ADDRESS || "0x76B0d41f5c02b34FEa36E5F23D3D3d34C7243256";
 
   // ABI Updated for dynamic sizes array and perGB fee logic
   const contractABI = [
@@ -119,6 +168,74 @@ export default function Home() {
     "function allowance(address owner, address spender) public view returns (uint256)",
     "function balanceOf(address account) public view returns (uint256)",
     "function decimals() public view returns (uint8)"
+  ];
+
+  // ========================================================
+  // 🧾 PROOF-OF-STORAGE REGISTRY — InayaProofRegistry.sol
+  // ========================================================
+  // registerMerkleRoot has no onlyOwner guard, so the connected user's wallet can call it directly.
+  // verifyChunkProof IS onlyOwner (only the contract deployer's key can call it) — it is intentionally
+  // NOT wired into this client-side UI. That call belongs in a backend/verifier process, exactly like
+  // scripts/verify-chunk.js already does with a server-held private key.
+  const proofRegistryAddress = "0xbd36fF32293414F7DA320c095b6324f64C86345C";
+  const proofRegistryABI = [
+    "function registerMerkleRoot(bytes32 _fileHash, bytes32 _merkleRoot, uint256 _chunkCount, address _node) external",
+    "function verifyChunkProof(bytes32 _fileHash, uint256 _leafIndex, bytes32 _leaf, bytes32[] calldata _proof) external returns (bool)",
+    "function getNodeReliability(address _node) external view returns (uint256 passed, uint256 failed)",
+    "function getAssetProof(bytes32 _fileHash) external view returns (tuple(bytes32 merkleRoot, uint256 chunkCount, address owner, address node, uint256 registeredAt, uint256 lastVerifiedAt, uint256 challengesPassed, uint256 challengesFailed))",
+    "function assetProofs(bytes32) public view returns (bytes32 merkleRoot, uint256 chunkCount, address owner, address node, uint256 registeredAt, uint256 lastVerifiedAt, uint256 challengesPassed, uint256 challengesFailed)",
+    "function nodePassCount(address) public view returns (uint256)",
+    "function nodeFailCount(address) public view returns (uint256)",
+    "event MerkleRootRegistered(bytes32 indexed fileHash, bytes32 merkleRoot, uint256 chunkCount, address indexed owner, address indexed node)",
+    "event ProofVerified(bytes32 indexed fileHash, uint256 leafIndex, bool success, address indexed node)"
+  ];
+
+  // ========================================================
+  // 💵 PAY-AS-YOU-GO (PAYG) BILLING CONTRACT — INAYA-SOW-PAYG-2026-V1
+  // ========================================================
+  const paygContractAddress = "0x22D543B02FdAA38635F859F27A6a636731936348";
+  const paygABI = [
+    "function paySubscriptionStorage(uint256 _tbUnits) external",
+    "function payEgressFee(uint256 _halfTbUnits) external",
+    "function payAnnualMaintenance() external",
+    "function storagePricePerTB() public view returns (uint256)",
+    "function egressPricePerHalfTB() public view returns (uint256)",
+    "function annualMaintenanceFee() public view returns (uint256)",
+    "function getSubscriptionStatus(address _user) external view returns (uint256 tbCommitted, uint256 storagePaidThrough, uint256 lastMaintenancePaidAt, bool storageActive, bool maintenanceCurrent)",
+    "event StorageSubscriptionPaid(address indexed user, uint256 tbUnits, uint256 amountPaid, uint256 paidThrough)",
+    "event EgressFeePaid(address indexed user, uint256 halfTbUnits, uint256 amountPaid, uint256 timestamp)",
+    "event AnnualMaintenancePaid(address indexed user, uint256 amountPaid, uint256 nextDueAt)"
+  ];
+
+  // ========================================================
+  // ESCROW CONTRACT CONSTANTS
+  // ========================================================
+  const corporateEscrowAddress = "0xadf0Be67889394065987467a8b6225BBf9DdfeEb";
+  const corporateEscrowABI = [
+    "function createEscrow(address _corporate, address _node, uint256 _totalAmount) external returns (uint256 scheduleId)",
+    "event EscrowCreated(uint256 indexed scheduleId, address indexed corporate, address indexed node, uint256 totalAmount, uint256 monthlyAmount)"
+  ];
+  const OPERATOR_POOL_ADDRESS = "0x618f429bF27Ef458B60c1211b9ca8b3CD5d9C175";
+
+  // ========================================================
+  // 🥩 $INAYA STAKING ENGINE — InayaStaking.sol
+  // ========================================================
+  const stakingContractAddress = process.env.NEXT_PUBLIC_STAKING_ADDRESS || "0xc465279444Cb0E10c69D0769CDae31E457eA660f";
+  const stakingABI = [
+    "function stake(uint256 amount, uint256 lockPeriodDays) external",
+    "function withdraw(uint256 amount) external",
+    "function claimReward() external",
+    "function exit() external",
+    "function earned(address account) public view returns (uint256)",
+    "function getUserTier(address account) external view returns (string memory)",
+    "function totalStaked() public view returns (uint256)",
+    "function rewardRate() public view returns (uint256)",
+    "function userStakedBalance(address) public view returns (uint256)",
+    "function lockExpiry(address) public view returns (uint256)",
+    "function enterpriseTierThreshold() public view returns (uint256)",
+    "event Staked(address indexed user, uint256 amount, uint256 lockPeriodDays)",
+    "event Withdrawn(address indexed user, uint256 amount)",
+    "event RewardPaid(address indexed user, uint256 reward)"
   ];
 
   // ========================================================
@@ -260,6 +377,64 @@ export default function Home() {
   const computeFileHash = (assetIdText) => ethers.keccak256(ethers.toUtf8Bytes(assetIdText));
 
   // ========================================================
+  // 🌳 MERKLE TREE LAYER CACHE (per-file, for later chunk challenges)
+  // ========================================================
+  // Only the Merkle ROOT goes on-chain (via registerMerkleRoot). The full layers are needed later
+  // to produce a proof for a given leafIndex — that reconstruction should ultimately live in your
+  // backend/DB (see scripts/verify-chunk.js's asset-store.json), not just the browser. Caching here
+  // is a stopgap so the data isn't lost immediately after upload; it will not survive a cleared
+  // browser or a different device.
+  const MERKLE_TREE_KEY = 'inaya_merkle_tree_cache';
+
+  const saveMerkleTreeRecord = (fileHash, { layers, chunkCount, root }) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(MERKLE_TREE_KEY) || '{}');
+      existing[fileHash] = { layers, chunkCount, root, savedAt: Date.now() };
+      localStorage.setItem(MERKLE_TREE_KEY, JSON.stringify(existing));
+    } catch (err) {
+      console.error("Merkle tree cache write failed:", err);
+    }
+  };
+
+  const getMerkleTreeRecord = (fileHash) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(MERKLE_TREE_KEY) || '{}');
+      return existing[fileHash] || null;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // ========================================================
+  // 🧾 CORPORATE RESERVE — ACTIVE PLAN REGISTRY (DUPLICATE-PURCHASE GUARD)
+  // ========================================================
+  const CORPORATE_ACTIVE_KEY = 'inaya_corporate_active_plans';
+  const CORPORATE_TERM_MS = 365 * 24 * 60 * 60 * 1000; // 1 year, mirrors the on-chain annual billing cycle
+
+  const getActiveCorporatePlan = (address) => {
+    try {
+      const registry = JSON.parse(localStorage.getItem(CORPORATE_ACTIVE_KEY) || '{}');
+      const entry = registry[address.toLowerCase()];
+      if (!entry) return null;
+      if (Date.now() >= entry.expiresAt) return null; // term lapsed, no longer "active"
+      return entry;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const saveActiveCorporatePlan = (address, tier, txHash) => {
+    try {
+      const registry = JSON.parse(localStorage.getItem(CORPORATE_ACTIVE_KEY) || '{}');
+      const now = Date.now();
+      registry[address.toLowerCase()] = { tier, txHash, activatedAt: now, expiresAt: now + CORPORATE_TERM_MS };
+      localStorage.setItem(CORPORATE_ACTIVE_KEY, JSON.stringify(registry));
+    } catch (err) {
+      console.error("Corporate plan registry write failed:", err);
+    }
+  };
+
+  // ========================================================
   // REAL-TIME COST CALCULATOR + BALANCE SUFFICIENCY CHECK
   // ========================================================
   useEffect(() => {
@@ -392,7 +567,7 @@ export default function Home() {
       console.error(err);
       setStatusLog(`❌ Registration dropped: ${err.message}`);
       alert(`❌ Sign-up failed: ${err.message}`);
-    } fillAll {
+    } finally {
       setIsSigning(false);
     }
   };
@@ -406,9 +581,29 @@ export default function Home() {
       return; 
     }
 
+    if (corporateCheckoutLockRef.current || isProcessingInvoice) {
+      return;
+    }
+
+    const existingPlan = getActiveCorporatePlan(walletAddress);
+    if (existingPlan) {
+      const expiresLabel = new Date(existingPlan.expiresAt).toLocaleDateString();
+      const proceed = window.confirm(
+        `⚠️ You already have an active ${existingPlan.tier} Corporate Reserve plan (valid until ${expiresLabel}).\n\n` +
+        `Purchasing ${selectedB2BTier} now will stack an additional billing cycle on-chain.\n\n` +
+        `Continue anyway?`
+      );
+      if (!proceed) {
+        setStatusLog(`ℹ️ Checkout cancelled: ${existingPlan.tier} plan is already active until ${expiresLabel}.`);
+        return;
+      }
+    }
+
+    corporateCheckoutLockRef.current = true;
     const networkCorrect = await ensureCorrectNetwork();
     if (!networkCorrect) { 
       alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); 
+      corporateCheckoutLockRef.current = false;
       return; 
     }
 
@@ -418,6 +613,7 @@ export default function Home() {
     if (!revenueRouterAddress || !usdtTokenAddress) {
       alert("❌ Environment Error: Router or USDT addresses missing configuration.");
       setIsProcessingInvoice(false);
+      corporateCheckoutLockRef.current = false;
       return;
     }
 
@@ -425,14 +621,26 @@ export default function Home() {
     if (selectedB2BTier === '500 TB / Year') rawPrice = "27000";
     if (selectedB2BTier === '1000 TB / Year') rawPrice = "54000";
 
-    const invoiceAmountWei = ethers.parseUnits(rawPrice, 18);
-
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
       const usdtContract = new ethers.Contract(usdtTokenAddress, erc20ABI, signer);
-      
+
+      const usdtDecimals = await usdtContract.decimals();
+      const invoiceAmountWei = ethers.parseUnits(rawPrice, usdtDecimals);
+
+      setStatusLog("🔍 Verifying mUSDT balance covers this invoice...");
+      const currentBalance = await usdtContract.balanceOf(walletAddress);
+      if (currentBalance < invoiceAmountWei) {
+        const have = ethers.formatUnits(currentBalance, usdtDecimals);
+        const need = ethers.formatUnits(invoiceAmountWei, usdtDecimals);
+        alert(`🚨 Insufficient mUSDT Balance!\n\nYou have ${have} mUSDT.\nThis plan requires ${need} mUSDT.\n\nUse the Faucet tab to request more test tokens.`);
+        setStatusLog(`❌ Blocked before signing: balance ${have} mUSDT < required ${need} mUSDT.`);
+        setIsProcessingInvoice(false);
+        corporateCheckoutLockRef.current = false;
+        return;
+      }
+
       setStatusLog(`🔍 Checking USDT allowance for Router...`);
       const currentAllowance = await usdtContract.allowance(walletAddress, revenueRouterAddress);
 
@@ -455,16 +663,48 @@ export default function Home() {
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${checkoutTx.hash}`);
       setStatusLog(`🎯 CORPORATE TIER ACTIVE: 3-Way revenue splitting fully settled.`);
+
+      // ============================================================
+      // 🔒 ESCROW LOGIC START (39% COGS)
+      // ============================================================
+      setStatusLog("🔒 Escrowing node-operator commission for monthly release...");
+
+      const cogsAmountWei = (invoiceAmountWei * 39n) / 100n;
+
+      const escrowAllowance = await usdtContract.allowance(walletAddress, corporateEscrowAddress);
+      if (escrowAllowance < cogsAmountWei) {
+        setStatusLog("✍️ Requesting USDT approval for the escrow contract...");
+        const approveEscrowTx = await usdtContract.approve(corporateEscrowAddress, ethers.MaxUint256);
+        await approveEscrowTx.wait();
+      }
+
+      const escrowContract = new ethers.Contract(corporateEscrowAddress, corporateEscrowABI, signer);
+      setStatusLog(`✍️ Creating 12-month escrow schedule for ${ethers.formatUnits(cogsAmountWei, usdtDecimals)} mUSDT...`);
+      
+      const escrowTx = await escrowContract.createEscrow(walletAddress, OPERATOR_POOL_ADDRESS, cogsAmountWei);
+      await escrowTx.wait();
+
+      setStatusLog(`✅ Escrow active: ${ethers.formatUnits(cogsAmountWei / 12n, usdtDecimals)} mUSDT/month for 12 months.`);
+      // ============================================================
+      // 🔓 ESCROW LOGIC END
+      // ============================================================
+
+      saveActiveCorporatePlan(walletAddress, selectedB2BTier, checkoutTx.hash);
+      setActiveCorporatePlan(getActiveCorporatePlan(walletAddress));
+
+      // ⚠️ ALERT SABSE AAKHIR MEIN AAYEGA
       alert(`🎉 Success! ${selectedB2BTier} plan status has been activated securely.`);
 
-    } catch (err) {
+} catch (err) {
       console.error("Checkout crash:", err);
-      alert(`❌ Checkout Failed: ${err.reason || err.message || err}`);
-      setStatusLog(`❌ Pipeline Error: ${err.reason || err.message}`);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      alert(`❌ Checkout Failed: ${friendly}`);
+      setStatusLog(`❌ Pipeline Error: ${friendly}`);
     } finally {
       setIsProcessingInvoice(false);
+      corporateCheckoutLockRef.current = false;
     }
-  };
+  }; // <--- Yeh bracket handleCorporateCheckout ko close karne ke liye hai
 
   // ========================================================
   // 🛡️ BROWSER AES-GCM / PBKDF2 HARDENED SECURE MATRIX
@@ -483,7 +723,7 @@ export default function Home() {
   };
 
   const decryptData = async (base64Str, password) => {
-    const enc = new TextDecoder(); const binaryStr = window.atob(base64Str);
+    const enc = new TextEncoder(); const binaryStr = window.atob(base64Str);
     const combined = new Uint8Array(binaryStr.length); for (let i = 0; i < binaryStr.length; i++) { combined[i] = binaryStr.charCodeAt(i); }
     const salt = combined.slice(0, 16); const fontIv = combined.slice(16, 28); const encrypted = combined.slice(28);
     const keyMaterial = await window.crypto.subtle.importKey("raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -530,7 +770,15 @@ export default function Home() {
       uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha"),
       uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta")
     ]);
-    return { filename: file.name, cidAlpha: cidA, cidBeta: cidB };
+
+    // 🌳 Proof-of-storage: chunk the same ciphertext into 256KB leaves and build the Merkle tree.
+    // NOTE: this chunking is independent of the Alpha/Beta pinning above — verifyChunkProof's
+    // eventual chunk-fetch step (see scripts/verify-chunk.js) expects a CID *per chunk*, which this
+    // two-shard pipeline does not produce. Root registration below works today; wiring a real
+    // end-to-end challenge later will require pinning each 256KB chunk individually too.
+    const { root, layers, chunkCount } = buildProofOfStoragePayload(cipherTextString);
+
+    return { filename: file.name, cidAlpha: cidA, cidBeta: cidB, merkleRoot: root, merkleLayers: layers, chunkCount };
   };
 
   const ensureTokenApproval = async (tokenAddress, signer, ownerAddress, requiredAmountWei, label) => {
@@ -574,6 +822,7 @@ export default function Home() {
     const shardACIDs = [];
     const shardBCIDs = [];
     const pendingFilenameMappings = [];
+    const pendingMerkleRecords = []; // { hash, root, chunkCount, layers } — registered on-chain after custody tx confirms
 
     const initialProgress = selectedFiles.map((f) => ({ filename: f.name, status: 'pending', message: 'Queued' }));
     setUploadProgress(initialProgress);
@@ -591,7 +840,7 @@ export default function Home() {
       const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
       try {
         updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
-        const { filename, cidAlpha, cidBeta } = await prepareShardedFile(file);
+        const { filename, cidAlpha, cidBeta, merkleRoot, merkleLayers, chunkCount } = await prepareShardedFile(file);
         const hash = computeFileHash(effectiveAssetId);
 
         fileHashes.push(hash);
@@ -599,6 +848,7 @@ export default function Home() {
         shardACIDs.push(cidAlpha);
         shardBCIDs.push(cidBeta);
         pendingFilenameMappings.push({ hash, filename, assetIdText: effectiveAssetId });
+        pendingMerkleRecords.push({ hash, root: merkleRoot, chunkCount, layers: merkleLayers });
         updateProgress(i, 'sharded', 'Sharded & uploaded to IPFS — awaiting signature');
       } catch (prepErr) {
         console.error(prepErr);
@@ -697,7 +947,26 @@ export default function Home() {
 
       setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
       setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully.`);
-      
+
+      // --- Register each file's Merkle root on InayaProofRegistry ---
+      // No batch function on this contract, so these go one-at-a-time. registerMerkleRoot has no
+      // onlyOwner guard, so the same connected signer used for custody registration can call it.
+      // A failure here does NOT roll back the custody registration above — the file is still
+      // safely registered/stored either way, it just won't have a proof-of-storage root yet.
+      setStatusLog(`✍️ Registering Merkle proof root(s) for ${pendingMerkleRecords.length} file(s)...`);
+      const proofRegistry = new ethers.Contract(proofRegistryAddress, proofRegistryABI, signer);
+      for (const { hash, root, chunkCount, layers } of pendingMerkleRecords) {
+        try {
+          const rootTx = await proofRegistry.registerMerkleRoot(hash, root, chunkCount, ethers.ZeroAddress);
+          await rootTx.wait();
+          saveMerkleTreeRecord(hash, { layers, chunkCount, root });
+        } catch (rootErr) {
+          console.error(`registerMerkleRoot failed for ${hash}:`, rootErr);
+          setStatusLog(`⚠️ Custody registration succeeded, but Merkle root registration failed for one file: ${rootErr.reason || rootErr.message}`);
+        }
+      }
+      setStatusLog(`🎯 DYNAMIC STATE SECURED: ${fileHashes.length} file(s) registered successfully (custody + proof root).`);
+
       setSelectedFiles([]);
     } catch (txErr) {
       console.error(txErr);
@@ -776,35 +1045,568 @@ export default function Home() {
   };
 
   const fetchOnChainHistory = async () => {
-    if (!walletAddress) return;
-    setIsLoadingHistory(true);
+  if (!walletAddress) return;
+  setIsLoadingHistory(true);
+  try {
+    // 1. Get local upload history first (Instant load)
+    const localHistory = getAssetIdHistory().map(item => ({
+      assetId: item.hash || computeFileHash(item.assetIdText),
+      assetIdText: item.assetIdText,
+      filename: item.filename,
+      timestamp: item.timestamp || Date.now(),
+      isLocal: true
+    }));
+
+    // 2. Fetch On-Chain logs as secondary sync
+    let onChainHistory = [];
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(liveContractAddress, contractABI, provider);
       const latestBlock = await provider.getBlockNumber();
-      const fromBlock = latestBlock - 4900 > 0 ? latestBlock - 4900 : 0;
+      const fromBlock = Math.max(0, latestBlock - 2000); // Shorter range to prevent RPC error
       const filter = contract.filters.AssetRegistered();
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
-      
-      const parsedHistory = logs.map(log => {
+
+      onChainHistory = logs.map(log => {
         if (!log.args) return null;
         const [op, hash, cA, cB] = log.args;
+        if (op.toLowerCase() !== walletAddress.toLowerCase()) return null;
         const localFilename = getFilenameMapping(hash);
         return {
-          assetId: hash, 
+          assetId: hash,
           filename: localFilename || `${hash.slice(0, 10)}...${hash.slice(-6)}`,
           cidAlpha: cA,
           cidBeta: cB,
-          operator: op
+          operator: op,
+          isLocal: false
         };
-      }).filter(item => item && item.operator.toLowerCase() === walletAddress.toLowerCase());
-      
-      setVaultHistory(parsedHistory.reverse());
+      }).filter(Boolean);
+    } catch (rpcErr) {
+      console.warn("RPC log query skipped/failed, using local registry:", rpcErr);
+    }
+
+    // Combine & Deduplicate by assetId
+    const mergedMap = new Map();
+    localHistory.forEach(item => mergedMap.set(item.assetId, item));
+    onChainHistory.forEach(item => mergedMap.set(item.assetId, { ...mergedMap.get(item.assetId), ...item }));
+
+    setVaultHistory(Array.from(mergedMap.values()).reverse());
+  } catch (err) {
+    console.error("History sync error:", err);
+  } finally {
+    setIsLoadingHistory(false);
+  }
+};
+
+  // ========================================================
+  // 💵 PAY-AS-YOU-GO (PAYG) — STATUS, PRICING & HISTORY SYNC
+  // ========================================================
+  const fetchPaygPricing = async (provider) => {
+    try {
+      const payg = new ethers.Contract(paygContractAddress, paygABI, provider);
+      const [storagePrice, egressPrice, maintenanceFee] = await Promise.all([
+        payg.storagePricePerTB(),
+        payg.egressPricePerHalfTB(),
+        payg.annualMaintenanceFee()
+      ]);
+      setPaygPricing({
+        storagePerTB: ethers.formatUnits(storagePrice, 18),
+        egressPerHalfTB: ethers.formatUnits(egressPrice, 18),
+        maintenanceFee: ethers.formatUnits(maintenanceFee, 18)
+      });
     } catch (err) {
-      console.error("🚨 RPC Logs Extraction Failure:", err);
-      setVaultHistory([]);
-    } finally { 
-      setIsLoadingHistory(false); 
+      console.warn("PAYG pricing view call failed, using published defaults:", err);
+    }
+  };
+
+  const fetchPaygStatus = async (address, providerOverride) => {
+    if (!address) return;
+    try {
+      const provider = providerOverride || new ethers.BrowserProvider(window.ethereum);
+      const payg = new ethers.Contract(paygContractAddress, paygABI, provider);
+      const [tbCommitted, storagePaidThrough, lastMaintenancePaidAt, storageActive, maintenanceCurrent] = await payg.getSubscriptionStatus(address);
+      setPaygStatus({
+        tbCommitted: Number(tbCommitted),
+        storagePaidThrough: Number(storagePaidThrough) * 1000,
+        lastMaintenancePaidAt: Number(lastMaintenancePaidAt) * 1000,
+        storageActive,
+        maintenanceCurrent
+      });
+      return provider;
+    } catch (err) {
+      console.warn("PAYG subscription status view call failed:", err);
+    }
+  };
+
+  const fetchPaygHistory = async (address) => {
+    if (!address || typeof window === 'undefined' || !window.ethereum) return;
+    setIsLoadingPaygHistory(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const payg = new ethers.Contract(paygContractAddress, paygABI, provider);
+      const latestBlock = await provider.getBlockNumber();
+      const fromBlock = latestBlock - 4900 > 0 ? latestBlock - 4900 : 0;
+
+      const [storageLogs, egressLogs, maintenanceLogs] = await Promise.all([
+        payg.queryFilter(payg.filters.StorageSubscriptionPaid(address), fromBlock, 'latest'),
+        payg.queryFilter(payg.filters.EgressFeePaid(address), fromBlock, 'latest'),
+        payg.queryFilter(payg.filters.AnnualMaintenancePaid(address), fromBlock, 'latest')
+      ]);
+
+      const merged = [
+        ...storageLogs.map(log => ({
+          type: 'Storage Subscription',
+          asset: 'USDT',
+          units: `${log.args.tbUnits.toString()} TB`,
+          amount: ethers.formatUnits(log.args.amountPaid, 18),
+          timestamp: Number(log.args.paidThrough) * 1000 - 30 * 24 * 60 * 60 * 1000,
+          txHash: log.transactionHash
+        })),
+        ...egressLogs.map(log => ({
+          type: 'Egress (Retrieval)',
+          asset: 'INAYA',
+          units: `${log.args.halfTbUnits.toString()} × 0.5 TB`,
+          amount: ethers.formatUnits(log.args.amountPaid, 18),
+          timestamp: Number(log.args.timestamp) * 1000,
+          txHash: log.transactionHash
+        })),
+        ...maintenanceLogs.map(log => ({
+          type: 'Annual Maintenance',
+          asset: 'USDT',
+          units: '—',
+          amount: ethers.formatUnits(log.args.amountPaid, 18),
+          timestamp: Number(log.args.nextDueAt) * 1000 - 365 * 24 * 60 * 60 * 1000,
+          txHash: log.transactionHash
+        }))
+      ].sort((a, b) => b.timestamp - a.timestamp);
+
+      setPaygHistory(merged);
+    } catch (err) {
+      console.error("PAYG history extraction failed:", err);
+      setPaygHistory([]);
+    } finally {
+      setIsLoadingPaygHistory(false);
+    }
+  };
+
+  const refreshPaygDashboard = async (address) => {
+    if (!address || typeof window === 'undefined' || !window.ethereum) return;
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await Promise.all([fetchPaygPricing(provider), fetchPaygStatus(address, provider), fetchPaygHistory(address)]);
+  };
+
+  // ========================================================
+  // 🥩 STAKING — OVERVIEW FETCH + STAKE / UNSTAKE / CLAIM HANDLERS
+  // ========================================================
+  const refreshStakingOverview = async (address) => {
+    if (typeof window === 'undefined' || !window.ethereum) return;
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const staking = new ethers.Contract(stakingContractAddress, stakingABI, provider);
+
+      const [totalStaked, rate, tierLabel] = await Promise.all([
+        staking.totalStaked(),
+        staking.rewardRate(),
+        address ? staking.getUserTier(address) : Promise.resolve('None')
+      ]);
+
+      // APY estimate: (rewardRate * seconds/year) / totalStaked, annualized.
+      // Falls back to 0% if nothing is staked yet (avoids a divide-by-zero display).
+      const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+      let apyPercent = "0.00";
+      if (totalStaked > 0n) {
+        const annualRewardWei = rate * BigInt(SECONDS_PER_YEAR);
+        const apyBps = (annualRewardWei * 10000n) / totalStaked;
+        apyPercent = (Number(apyBps) / 100).toFixed(2);
+      }
+
+      let myBalance = 0n;
+      let claimable = 0n;
+      let expiry = 0;
+      if (address) {
+        [myBalance, claimable, expiry] = await Promise.all([
+          staking.userStakedBalance(address),
+          staking.earned(address),
+          staking.lockExpiry(address)
+        ]);
+      }
+
+      setStakingOverview({
+        totalStakedTVL: ethers.formatUnits(totalStaked, 18),
+        estimatedAPY: apyPercent,
+        myStakedBalance: ethers.formatUnits(myBalance, 18),
+        claimableRewards: ethers.formatUnits(claimable, 18),
+        lockExpiryTimestamp: Number(expiry) * 1000,
+        userTier: tierLabel
+      });
+    } catch (err) {
+      console.warn("Staking overview fetch failed:", err);
+    }
+  };
+
+  const handleStakeInaya = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (stakingActionLockRef.current || isStakingBusy) return;
+    const amount = parseFloat(stakeAmountInput);
+    if (!amount || amount <= 0) { alert("🚨 Enter a valid amount to stake."); return; }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    stakingActionLockRef.current = true;
+    setIsStakingBusy(true);
+    setStakingLog(`🔄 Preparing to stake ${amount} $INAYA (${selectedLockTier === 0 ? 'Flexible' : selectedLockTier + '-day lock'})...`);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const inayaContract = new ethers.Contract(inayaTokenAddress, erc20ABI, signer);
+      const staking = new ethers.Contract(stakingContractAddress, stakingABI, signer);
+
+      const amountWei = ethers.parseUnits(stakeAmountInput, 18);
+
+      const balance = await inayaContract.balanceOf(walletAddress);
+      if (balance < amountWei) {
+        alert(`🚨 Insufficient $INAYA balance. You have ${ethers.formatUnits(balance, 18)}.`);
+        setStakingLog("❌ Blocked before signing: insufficient $INAYA balance.");
+        return;
+      }
+
+      const allowance = await inayaContract.allowance(walletAddress, stakingContractAddress);
+      if (allowance < amountWei) {
+        setStakingLog("✍️ Requesting $INAYA spending approval for the staking contract...");
+        const approveTx = await inayaContract.approve(stakingContractAddress, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+
+      setStakingLog(`✍️ Signing stake transaction for ${amount} $INAYA...`);
+      const tx = await staking.stake(amountWei, selectedLockTier);
+      setStakingLog("⏳ Mining stake transaction...");
+      await tx.wait();
+
+      setStakingLog(`💚 Staked ${amount} $INAYA successfully (${selectedLockTier === 0 ? 'Flexible' : selectedLockTier + '-day lock'}).`);
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      setStakeAmountInput('');
+      refreshStakingOverview(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setStakingLog(`❌ Stake failed: ${friendly}`);
+      alert(`❌ Stake Failed: ${friendly}`);
+    } finally {
+      setIsStakingBusy(false);
+      stakingActionLockRef.current = false;
+    }
+  };
+
+  const handleUnstakeInaya = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (stakingActionLockRef.current || isUnstakingBusy) return;
+    const amount = parseFloat(unstakeAmountInput);
+    if (!amount || amount <= 0) { alert("🚨 Enter a valid amount to unstake."); return; }
+
+    if (stakingOverview.lockExpiryTimestamp > Date.now()) {
+      const unlockDate = new Date(stakingOverview.lockExpiryTimestamp).toLocaleString();
+      alert(`🚨 Your stake is locked until ${unlockDate}. It cannot be withdrawn early.`);
+      return;
+    }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    stakingActionLockRef.current = true;
+    setIsUnstakingBusy(true);
+    setStakingLog(`🔄 Preparing to withdraw ${amount} $INAYA...`);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const staking = new ethers.Contract(stakingContractAddress, stakingABI, signer);
+
+      const amountWei = ethers.parseUnits(unstakeAmountInput, 18);
+      setStakingLog(`✍️ Signing withdrawal for ${amount} $INAYA...`);
+      const tx = await staking.withdraw(amountWei);
+      setStakingLog("⏳ Mining withdrawal transaction...");
+      await tx.wait();
+
+      setStakingLog(`💚 Withdrew ${amount} $INAYA successfully.`);
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      setUnstakeAmountInput('');
+      refreshStakingOverview(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setStakingLog(`❌ Withdrawal failed: ${friendly}`);
+      alert(`❌ Withdrawal Failed: ${friendly}`);
+    } finally {
+      setIsUnstakingBusy(false);
+      stakingActionLockRef.current = false;
+    }
+  };
+
+  const handleClaimStakingReward = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (stakingActionLockRef.current || isClaimingBusy) return;
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    stakingActionLockRef.current = true;
+    setIsClaimingBusy(true);
+    setStakingLog("🔄 Preparing to claim rewards...");
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const staking = new ethers.Contract(stakingContractAddress, stakingABI, signer);
+
+      setStakingLog("✍️ Signing reward claim...");
+      const tx = await staking.claimReward();
+      setStakingLog("⏳ Mining claim transaction...");
+      await tx.wait();
+
+      setStakingLog("💚 Rewards claimed successfully.");
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      refreshStakingOverview(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setStakingLog(`❌ Claim failed: ${friendly}`);
+      alert(`❌ Claim Failed: ${friendly}`);
+    } finally {
+      setIsClaimingBusy(false);
+      stakingActionLockRef.current = false;
+    }
+  };
+
+  const handlePaygStorageSubscription = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (paygActionLockRef.current || isPaygStorageBusy) return;
+    if (!paygTbUnits || paygTbUnits < 1) { alert("🚨 Enter at least 1 TB unit."); return; }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    paygActionLockRef.current = true;
+    setIsPaygStorageBusy(true);
+    setPaygLog("🔄 Preparing storage subscription payment...");
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const payg = new ethers.Contract(paygContractAddress, paygABI, signer);
+      const usdtContract = new ethers.Contract(usdtTokenAddress, erc20ABI, signer);
+
+      const pricePerTB = await payg.storagePricePerTB();
+      const amountDue = pricePerTB * BigInt(paygTbUnits);
+
+      const balance = await usdtContract.balanceOf(walletAddress);
+      if (balance < amountDue) {
+        alert(`🚨 Insufficient mUSDT balance for ${paygTbUnits} TB. Use the Faucet tab to top up.`);
+        setPaygLog("❌ Blocked before signing: insufficient mUSDT balance.");
+        return;
+      }
+
+      const allowance = await usdtContract.allowance(walletAddress, paygContractAddress);
+      if (allowance < amountDue) {
+        setPaygLog("✍️ Requesting USDT spending approval...");
+        const approveTx = await usdtContract.approve(paygContractAddress, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+
+      setPaygLog(`✍️ Signing storage subscription for ${paygTbUnits} TB...`);
+      const tx = await payg.paySubscriptionStorage(paygTbUnits);
+      setPaygLog("⏳ Mining storage subscription transaction...");
+      await tx.wait();
+
+      setPaygLog(`💚 Storage subscription active: ${paygTbUnits} TB committed for 30 days.`);
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      refreshPaygDashboard(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setPaygLog(`❌ Storage subscription failed: ${friendly}`);
+      alert(`❌ Storage Subscription Failed: ${friendly}`);
+    } finally {
+      setIsPaygStorageBusy(false);
+      paygActionLockRef.current = false;
+    }
+  };
+
+  const handlePaygEgressFee = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (paygActionLockRef.current || isPaygEgressBusy) return;
+    if (!paygEgressUnits || paygEgressUnits < 1) { alert("🚨 Enter at least one 0.5 TB unit."); return; }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    paygActionLockRef.current = true;
+    setIsPaygEgressBusy(true);
+    setPaygLog("🔄 Preparing egress fee payment...");
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const payg = new ethers.Contract(paygContractAddress, paygABI, signer);
+      const inayaContract = new ethers.Contract(inayaTokenAddress, erc20ABI, signer);
+
+      const pricePerHalfTB = await payg.egressPricePerHalfTB();
+      const amountDue = pricePerHalfTB * BigInt(paygEgressUnits);
+
+      const balance = await inayaContract.balanceOf(walletAddress);
+      if (balance < amountDue) {
+        alert(`🚨 Insufficient $INAYA balance for ${paygEgressUnits} × 0.5 TB egress. Use the Faucet tab to top up.`);
+        setPaygLog("❌ Blocked before signing: insufficient $INAYA balance.");
+        return;
+      }
+
+      const allowance = await inayaContract.allowance(walletAddress, paygContractAddress);
+      if (allowance < amountDue) {
+        setPaygLog("✍️ Requesting $INAYA spending approval...");
+        const approveTx = await inayaContract.approve(paygContractAddress, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+
+      setPaygLog(`✍️ Signing egress fee for ${paygEgressUnits} × 0.5 TB...`);
+      const tx = await payg.payEgressFee(paygEgressUnits);
+      setPaygLog("⏳ Mining egress fee transaction...");
+      await tx.wait();
+
+      setPaygLog(`💚 Egress fee settled for ${paygEgressUnits} × 0.5 TB.`);
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      refreshPaygDashboard(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setPaygLog(`❌ Egress fee payment failed: ${friendly}`);
+      alert(`❌ Egress Fee Payment Failed: ${friendly}`);
+    } finally {
+      setIsPaygEgressBusy(false);
+      paygActionLockRef.current = false;
+    }
+  };
+
+  const handlePaygAnnualMaintenance = async () => {
+    if (!isConnected || !walletAddress) { alert("🚨 Connect your wallet first."); return; }
+    if (paygActionLockRef.current || isPaygMaintenanceBusy) return;
+
+    if (paygStatus.maintenanceCurrent) {
+      const proceed = window.confirm("⚠️ Annual maintenance is already paid for the current period on-chain and will revert if resubmitted. Continue anyway?");
+      if (!proceed) return;
+    }
+
+    const networkCorrect = await ensureCorrectNetwork();
+    if (!networkCorrect) { alert("🚨 Please switch your wallet to BNB Chain Testnet first!"); return; }
+
+    paygActionLockRef.current = true;
+    setIsPaygMaintenanceBusy(true);
+    setPaygLog("🔄 Preparing annual maintenance payment...");
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const payg = new ethers.Contract(paygContractAddress, paygABI, signer);
+      const usdtContract = new ethers.Contract(usdtTokenAddress, erc20ABI, signer);
+
+      const fee = await payg.annualMaintenanceFee();
+
+      const balance = await usdtContract.balanceOf(walletAddress);
+      if (balance < fee) {
+        alert("🚨 Insufficient mUSDT balance for annual maintenance. Use the Faucet tab to top up.");
+        setPaygLog("❌ Blocked before signing: insufficient mUSDT balance.");
+        return;
+      }
+
+      const allowance = await usdtContract.allowance(walletAddress, paygContractAddress);
+      if (allowance < fee) {
+        setPaygLog("✍️ Requesting USDT spending approval...");
+        const approveTx = await usdtContract.approve(paygContractAddress, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+
+      setPaygLog("✍️ Signing annual maintenance payment...");
+      const tx = await payg.payAnnualMaintenance();
+      setPaygLog("⏳ Mining annual maintenance transaction...");
+      await tx.wait();
+
+      setPaygLog("💚 Annual maintenance settled for the next 365-day period.");
+      setTxHashLink(`https://testnet.bscscan.com/tx/${tx.hash}`);
+      refreshPaygDashboard(walletAddress);
+    } catch (err) {
+      console.error(err);
+      const friendly = err.shortMessage || err.reason || err.message || String(err);
+      setPaygLog(`❌ Annual maintenance payment failed: ${friendly}`);
+      alert(`❌ Annual Maintenance Payment Failed: ${friendly}`);
+    } finally {
+      setIsPaygMaintenanceBusy(false);
+      paygActionLockRef.current = false;
+    }
+  };
+
+  // ========================================================
+  // 🔎 PROOF REGISTRY READ-ONLY LOOKUPS (view calls, no wallet signature needed)
+  // ========================================================
+  const fetchAssetProofStatus = async (fileHash) => {
+    try {
+      if (typeof window === 'undefined' || !window.ethereum) return null;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const proofRegistry = new ethers.Contract(proofRegistryAddress, proofRegistryABI, provider);
+      const record = await proofRegistry.getAssetProof(fileHash);
+      return {
+        merkleRoot: record.merkleRoot,
+        chunkCount: Number(record.chunkCount),
+        node: record.node,
+        registeredAt: Number(record.registeredAt),
+        lastVerifiedAt: Number(record.lastVerifiedAt),
+        challengesPassed: Number(record.challengesPassed),
+        challengesFailed: Number(record.challengesFailed)
+      };
+    } catch (err) {
+      console.error("fetchAssetProofStatus failed:", err);
+      return null;
+    }
+  };
+
+  const fetchNodeReliability = async (nodeAddress) => {
+    try {
+      if (typeof window === 'undefined' || !window.ethereum) return null;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const proofRegistry = new ethers.Contract(proofRegistryAddress, proofRegistryABI, provider);
+      const [passed, failed] = await proofRegistry.getNodeReliability(nodeAddress);
+      return { passed: Number(passed), failed: Number(failed) };
+    } catch (err) {
+      console.error("fetchNodeReliability failed:", err);
+      return null;
+    }
+  };
+
+  // UI handler: accepts either a raw 0x fileHash or a plain Asset Tracking ID (same convention
+  // used by handleRetrievalSequence — hashed with computeFileHash if it's not already a hash).
+  const handleProofLookup = async () => {
+    const raw = proofLookupInput.trim();
+    if (!raw) { alert("🚨 Enter an Asset Tracking ID or file hash first!"); return; }
+    const fileHash = raw.startsWith('0x') && raw.length === 66 ? raw : computeFileHash(raw);
+
+    setIsLoadingProofLookup(true);
+    setProofLookupResult(null);
+    try {
+      const result = await fetchAssetProofStatus(fileHash);
+      if (!result || result.registeredAt === 0) {
+        setProofLookupResult({ notFound: true });
+      } else {
+        setProofLookupResult(result);
+      }
+    } finally {
+      setIsLoadingProofLookup(false);
+    }
+  };
+
+  const handleNodeReliabilityLookup = async () => {
+    const raw = nodeLookupInput.trim();
+    if (!raw || !ethers.isAddress(raw)) { alert("🚨 Enter a valid node wallet address!"); return; }
+
+    setIsLoadingNodeLookup(true);
+    setNodeLookupResult(null);
+    try {
+      const result = await fetchNodeReliability(raw);
+      setNodeLookupResult(result);
+    } finally {
+      setIsLoadingNodeLookup(false);
     }
   };
 
@@ -872,6 +1674,13 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && currentPage === 'Sovereign Vault') { fetchOnChainHistory(); }
     if (isConnected && walletAddress) { fetchUserPoints(walletAddress); }
+    if (isConnected && walletAddress && (currentPage === 'Business Model' || currentPage === 'My Dashboard')) {
+      refreshPaygDashboard(walletAddress);
+      setActiveCorporatePlan(getActiveCorporatePlan(walletAddress));
+    }
+    if (currentPage === 'Staking') {
+      refreshStakingOverview(walletAddress || null); // works read-only even if not connected
+    }
   }, [isConnected, currentPage, walletAddress]);
 
   // ========================================================
@@ -883,6 +1692,19 @@ export default function Home() {
   const oversizedFiles = selectedFiles.filter(f => f.size / (1024 * 1024) > b2bTierData.maxFileMB);
   const isOverTotalLimit = totalSelectedMB > b2bTierData.maxTotalMB;
   const hasSizeViolation = oversizedFiles.length > 0 || isOverTotalLimit;
+
+  // ========================================================
+  // 💵 PAYG DASHBOARD DERIVED TOTALS
+  // ========================================================
+  const paygTotalUsdtSpent = paygHistory
+    .filter(item => item.asset === 'USDT')
+    .reduce((acc, item) => acc + parseFloat(item.amount || "0"), 0);
+  const paygTotalInayaSpent = paygHistory
+    .filter(item => item.asset === 'INAYA')
+    .reduce((acc, item) => acc + parseFloat(item.amount || "0"), 0);
+  const corporateTierToTB = { '250 TB / Year': 250, '500 TB / Year': 500, '1000 TB / Year': 1000 };
+  const corporateAllocatedTB = activeCorporatePlan ? (corporateTierToTB[activeCorporatePlan.tier] || 0) : 0;
+  const totalSpaceAllocatedTB = paygStatus.tbCommitted + corporateAllocatedTB;
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
@@ -1133,6 +1955,44 @@ export default function Home() {
                 <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
+              {/* Proof Registry Row */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Proof Registry Contract</span>
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    ✓ Verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://testnet.bscscan.com/address/${proofRegistryAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#00f2fe] text-xs font-mono font-bold hover:text-cyan-300 transition-colors flex-1 truncate"
+                    title={proofRegistryAddress}
+                  >
+                    {truncateAddress(proofRegistryAddress)}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(proofRegistryAddress, 'proofregistry')}
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    title="Copy address"
+                  >
+                    {copiedField === 'proofregistry' ? '✅' : '📋'}
+                  </button>
+                  <a
+                    href={`https://testnet.bscscan.com/address/${proofRegistryAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    title="View on BscScan"
+                  >
+                    ↗
+                  </a>
+                </div>
+                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+              </div>
+
             </div>
           </div>
 
@@ -1182,7 +2042,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 backdrop-blur-md">
-            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
+            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Staking', 'My Dashboard', 'Genesis Airdrop', 'White Paper', 'About Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
             ))}
           </nav>
@@ -1245,140 +2105,300 @@ export default function Home() {
           )}
 
           {/* VIEWPORT AREA 2: CRYPTOGRAPHIC VAULT LAYER */}
-          {currentPage === 'Sovereign Vault' && (
-            <div className="max-w-5xl mx-auto space-y-6">
-              <h2 className="text-2xl font-extrabold text-white">Cryptographic Storage Core</h2>
-              {statusLog && <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-all shadow-md">{statusLog}</div>}
-              {txHashLink && <div className="mt-2 text-xs font-mono"><a href={txHashLink} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline font-bold">👀 View BSCScan Transaction</a></div>}
-              {downloadUrl && <div className="mt-2 text-xs font-mono bg-emerald-950 p-3 rounded-lg border border-emerald-500/30 text-emerald-400 font-bold">🔓 Decrypted File Payload Ready: <a href={downloadUrl} download={restoredName} className="underline text-white ml-2">📥 DOWNLOAD {restoredName.toUpperCase()}</a></div>}
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-                <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
-                  <h3 className="text-base font-bold text-white">📥 Upload Shard Pipeline</h3>
-                  <input type="text" value={assetId} onChange={(e) => setAssetId(e.target.value)} placeholder="Asset Tracking ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
-                  {selectedFiles.length > 1 && (
-                    <p className="text-[9px] text-[#64748b] font-mono -mt-2">Batch mode: files will register as {assetId || '<ID>'}-1, {assetId || '<ID>'}-2, etc.</p>
-                  )}
+{currentPage === 'Sovereign Vault' && (
+  <div className="max-w-7xl mx-auto space-y-6 font-sans">
+    
+    {/* 1. GOOGLE DRIVE TOP SEARCH & ACTION BAR */}
+    <div className="bg-[#0b101d]/90 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl shadow-xl">
+      
+      {/* Top Search Bar */}
+      <div className="relative flex-1 w-full">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+        <input 
+          type="text" 
+          value={queryAssetId} 
+          onChange={(e) => setQueryAssetId(e.target.value)} 
+          placeholder="Search in Inaya Drive (Asset ID or Hash)..." 
+          className="w-full bg-[#040711] border border-white/10 rounded-full pl-11 pr-28 py-2.5 text-white text-xs focus:outline-none focus:border-[#00f2fe] transition-all"
+        />
+        <button 
+          onClick={() => handleRetrievalSequence('')}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#00f2fe] text-[#060913] font-bold text-[11px] rounded-full hover:brightness-110 transition-all"
+        >
+          🧩 RECONSTRUCT
+        </button>
+      </div>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                    className="w-full bg-[#060913] border border-white/10 border-dashed rounded-lg px-4 py-2.5 text-xs text-[#94a3b8] font-mono hover:border-[#00f2fe]/40 hover:text-white transition-colors text-left"
-                  >
-                    📎 {selectedFiles.length > 0
-                      ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected — click to change`
-                      : 'Choose one or more files to encrypt & shard...'}
-                  </button>
+      {/* Action Controls */}
+      <div className="flex items-center gap-3 shrink-0">
+        <input ref={fileInputRef} type="file" multiple onChange={(e) => setSelectedFiles(Array.from(e.target.files))} className="hidden" />
+        <button 
+          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          className="px-5 py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-extrabold text-xs rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center gap-2"
+        >
+          <span className="text-base leading-none">┼</span>
+          <span>NEW UPLOAD</span>
+        </button>
+        
+        <button 
+          onClick={fetchOnChainHistory} 
+          className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-slate-300 transition-colors"
+          title="Refresh Drive Matrix"
+        >
+          🔄
+        </button>
+      </div>
+    </div>
 
-                  {selectedFiles.length > 0 && (
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                      {selectedFiles.map((f, idx) => (
-                        <div key={idx} className="flex items-stretch gap-2 bg-[#060913] border border-white/10 rounded-lg overflow-hidden font-mono">
-                          <div className="flex-1 px-3 py-2 min-w-0">
-                            <div className="text-[8.5px] text-[#64748b] uppercase tracking-wider mb-0.5">Filename</div>
-                            <div className="text-xs text-white truncate" title={splitFileName(f.name).base}>
-                              {splitFileName(f.name).base}
-                            </div>
-                          </div>
-                          <div className="w-16 shrink-0 px-2.5 py-2 border-l border-white/10 bg-white/[0.02]">
-                            <div className="text-[8.5px] text-[#64748b] uppercase tracking-wider mb-0.5">Type</div>
-                            <div className="text-xs text-[#00f2fe] font-bold">.{splitFileName(f.name).ext}</div>
-                          </div>
-                          <button
-                            onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
-                            className="w-9 shrink-0 flex items-center justify-center text-[#64748b] hover:text-red-400 hover:bg-red-500/10 transition-colors border-l border-white/10"
-                            title="Remove file"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+    {/* SYSTEM NOTIFICATION BARS */}
+    {statusLog && (
+      <div className="bg-[#091224] border border-[#00f2fe]/30 text-[#00f2fe] font-mono text-xs p-3.5 rounded-xl break-all flex items-center gap-2 shadow-lg">
+        <span className="animate-pulse">⚡</span>
+        <span>{statusLog}</span>
+      </div>
+    )}
 
-                  {/* DYNAMIC PER-GB COST INDICATOR */}
-                  {selectedFiles.length > 0 && (
-                    <div className="bg-[#060913]/80 border border-[#00f2fe]/15 rounded-xl p-3.5 space-y-1.5 font-mono text-[11px] shadow-inner mt-4">
-                      <div className="flex justify-between items-center text-slate-400">
-                        <span>Total Payload Size:</span>
-                        <span className="text-white font-bold">
-                          {(selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-400 border-t border-white/5 pt-1.5 mt-1.5">
-                        <span>Pricing Algorithm:</span>
-                        <span className="text-[#00f2fe] font-bold">0.1 Token / GB</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-400 border-t border-white/5 pt-1.5">
-                        <span>Dynamic Custody Fee:</span>
-                        <span className="text-emerald-400 font-extrabold">
-                          {dynamicInayaCost} INAYA + {dynamicUsdtCost} mUSDT
-                        </span>
-                      </div>
-                    </div>
-                  )}
+    {downloadUrl && (
+      <div className="text-xs font-mono bg-cyan-950/80 p-4 rounded-xl border border-[#00f2fe]/40 text-[#00f2fe] flex justify-between items-center shadow-lg">
+        <span>🔓 Decrypted File Payload Ready: <strong>{restoredName}</strong></span>
+        <a href={downloadUrl} download={restoredName} className="px-4 py-1.5 bg-[#00f2fe] text-[#060913] font-bold rounded-lg hover:brightness-110">
+          📥 DOWNLOAD FILE
+        </a>
+      </div>
+    )}
 
-                  {/* ⚡ REACTIVE ACTION BUTTON */}
-                  <button onClick={handleUploadSequence} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">
-                    {!isConnected 
-                      ? '🔌 CONNECT WALLET TO EMIT' 
-                      : !isSignedUp 
-                      ? '📝 VERIFY NODE IN SIDEBAR' 
-                      : selectedFiles.length === 0 
-                      ? '📎 CHOOSE FILES TO EMIT' 
-                      : !assetId 
-                      ? '🆔 ENTER ASSET TRACKING ID' 
-                      : !masterPasskey 
-                      ? '🔑 ENTER MASTER PASSKEY' 
-                      : hasSizeViolation 
-                      ? `❌ SIZE LIMIT VIOLATION (MAX SUBSCRIPTION CAPACITY EXCEEDED)` 
-                      : '⚡ SIGN & EMIT SECURE RECORD'}
-                  </button>
-                </div>
-                
-                <div className="bg-[#0b1120]/40 border border-white/5 p-6 rounded-2xl space-y-4">
-                  <h3 className="text-base font-bold text-white">🔓 Reconstruct Assembly</h3>
-                  <input type="text" value={queryAssetId} onChange={(e) => setQueryAssetId(e.target.value)} placeholder="Query Asset ID" className="w-full bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30" />
-                  <button onClick={() => handleRetrievalSequence('')} className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all">COMPILE AND RECONSTRUCT FRAGMENTS</button>
-                </div>
-              </div>
+    {/* 2. PENDING UPLOAD BAR (Appears when files are chosen) */}
+    {selectedFiles.length > 0 && (
+      <div className="bg-[#0a1224] border border-[#00f2fe]/40 rounded-2xl p-5 space-y-4 shadow-2xl animate-fade-in">
+        <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📤</span>
+            <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">Pending Upload Queue ({selectedFiles.length} File)</span>
+          </div>
+          <button onClick={() => setSelectedFiles([])} className="text-xs text-slate-400 hover:text-red-400 font-mono">Clear Queue ✕</button>
+        </div>
 
-              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-white">🗂️ Inaya Vault File Explorer</h3>
-                  <button onClick={fetchOnChainHistory} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH matrix</button>
-                </div>
-                {isLoadingHistory ? (
-                  <div className="py-6 text-center font-mono text-xs text-[#64748b]">⚙️ Syncing ledger event matrices...</div>
-                ) : vaultHistory.length === 0 ? (
-                  <div className="py-6 text-center font-mono text-xs text-[#64748b] italic">// No active tracking logs fetched in current target ledger block limit.</div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {vaultHistory.map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleRetrievalSequence(item.assetId)}
-                        className="group bg-black/20 border border-white/5 hover:border-[#00f2fe]/50 rounded-xl p-4 flex flex-col items-center text-center transition-all hover:bg-white/[0.03]"
-                        title={`${item.filename} — click to reconstruct`}
-                      >
-                        <span className="text-3xl mb-2">{getFileIcon(item.filename)}</span>
-                        <span className="text-[11px] text-white font-mono truncate max-w-full w-full">{splitFileName(item.filename).base}</span>
-                        <span className="text-[9px] text-[#00f2fe]/70 font-mono">.{splitFileName(item.filename).ext}</span>
-                        <span className="text-[9px] text-[#64748b] font-mono mt-1.5">#{item.assetId}</span>
-                        <span className="mt-2 text-[8.5px] font-mono font-bold text-[#00f2fe] opacity-0 group-hover:opacity-100 transition-opacity">RECONSTRUCT →</span>
-                      </button>
-                    ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono">
+          <div className="md:col-span-2 space-y-2 max-h-32 overflow-y-auto pr-1">
+            {selectedFiles.map((f, idx) => {
+              const meta = splitFileName(f.name);
+              return (
+                <div key={idx} className="flex justify-between items-center bg-[#040711] border border-white/10 rounded-xl px-3 py-2 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span>{getFileIcon(f.name)}</span>
+                    <span className="text-white font-bold truncate">{meta.base}</span>
                   </div>
-                )}
+                  <span className="text-[9px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 py-0.5 rounded border border-[#00f2fe]/30">.{meta.ext}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="bg-[#040711] border border-white/10 rounded-xl p-3 flex flex-col justify-between font-mono text-[11px]">
+            <div className="space-y-1">
+              <input 
+                type="text" 
+                value={assetId} 
+                onChange={(e) => setAssetId(e.target.value)} 
+                placeholder="Assign Asset Tracking ID..." 
+                className="w-full bg-[#0a0f1d] border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#00f2fe]" 
+              />
+              <div className="flex justify-between text-slate-400 pt-1">
+                <span>Fee:</span>
+                <span className="text-emerald-400 font-bold">{dynamicInayaCost} $INAYA</span>
               </div>
             </div>
-          )}
+
+            <button 
+              onClick={handleUploadSequence} 
+              className="w-full mt-2 py-2 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-extrabold text-xs rounded-lg hover:brightness-110 active:scale-95 transition-all"
+            >
+              ⚡ EMIT TO DRIVE
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* 3. GOOGLE DRIVE MAIN LAYOUT & SUGGESTED FILES MATRIX */}
+    <div className="bg-[#0b101d]/90 border border-white/10 rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-4">
+      
+      {/* Header Banner */}
+      <div className="border-b border-white/5 pb-3 flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-white tracking-tight">Welcome to Inaya Sovereign Drive</h3>
+          <p className="text-xs text-slate-400 font-mono mt-0.5">Encrypted client-side storage fragments anchored on BNB Chain</p>
+        </div>
+        <span className="text-xs font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-3 py-1 rounded-full font-bold">
+          {vaultHistory.length} Files Stored
+        </span>
+      </div>
+
+      <div className="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider pt-2">
+        Suggested Files
+      </div>
+
+      {isLoadingHistory ? (
+        <div className="py-16 text-center font-mono text-xs text-slate-500 border border-dashed border-white/10 rounded-2xl">
+          ⚙️ Loading Drive files from blockchain ledger...
+        </div>
+      ) : vaultHistory.length === 0 ? (
+        <div className="py-16 text-center font-mono text-xs text-slate-500 italic border border-dashed border-white/10 rounded-2xl">
+          // Drive is empty. Click "+ NEW UPLOAD" above to store your first encrypted file.
+        </div>
+      ) : (
+        /* EXACT GOOGLE DRIVE TILES GRID */
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          {vaultHistory.map((item, index) => {
+            const fileMeta = splitFileName(item.filename || item.assetIdText || 'Document');
+            const isPdf = fileMeta.ext === 'PDF';
+            const isImg = ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(fileMeta.ext);
+
+            return (
+              <div 
+                key={index}
+                className="group bg-[#040711] border border-white/10 hover:border-[#00f2fe]/60 rounded-2xl p-3.5 transition-all duration-200 flex flex-col justify-between hover:shadow-[0_0_25px_rgba(0,242,254,0.15)] relative"
+              >
+                {/* Top Tile Bar: File Badge + Title + Options Menu */}
+                <div className="flex items-center gap-2 mb-2 min-w-0">
+                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
+                    isPdf ? 'bg-red-500/10 text-red-400 border-red-500/30' : isImg ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30'
+                  }`}>
+                    {fileMeta.ext}
+                  </span>
+
+                  <h4 className="text-white text-xs font-bold font-mono truncate flex-1 group-hover:text-[#00f2fe] transition-colors" title={item.filename}>
+                    {fileMeta.base}
+                  </h4>
+
+                  <button 
+                    onClick={() => setQueryAssetId(item.assetIdText || item.assetId)}
+                    className="text-slate-500 hover:text-white p-1 rounded font-bold text-xs shrink-0"
+                    title="Select Asset ID"
+                  >
+                    ⋮
+                  </button>
+                </div>
+
+                {/* Main Card Body (Google Drive Preview Box) */}
+                <div 
+                  onClick={() => setQueryAssetId(item.assetIdText || item.assetId)}
+                  className="h-32 bg-[#090e1f] rounded-xl border border-white/5 group-hover:border-[#00f2fe]/30 flex flex-col items-center justify-center mb-3 cursor-pointer transition-all relative overflow-hidden group/preview"
+                >
+                  <span className="text-5xl group-hover/preview:scale-110 transition-transform duration-300 mb-1">
+                    {getFileIcon(item.filename)}
+                  </span>
+                  <span className="text-[9.5px] text-slate-500 font-mono">Encrypted Payload</span>
+                </div>
+
+                {/* Bottom Metadata Bar (Google Drive Owner Avatar & Reconstruct Action) */}
+                <div className="flex justify-between items-center pt-2 border-t border-white/5 font-mono text-[10px]">
+                  <div className="flex items-center gap-1.5 text-slate-400 min-w-0">
+                    <span className="w-4 h-4 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-[8px] text-[#060913] font-black shrink-0">
+                      I
+                    </span>
+                    <span className="truncate text-slate-400">
+                      {item.assetIdText ? `#${item.assetIdText}` : 'Owner'}
+                    </span>
+                  </div>
+
+                  <button 
+                    onClick={() => handleRetrievalSequence(item.assetIdText || item.assetId)}
+                    className="px-2.5 py-1 bg-[#00f2fe]/10 hover:bg-[#00f2fe] text-[#00f2fe] hover:text-[#060913] border border-[#00f2fe]/30 font-bold rounded-lg transition-all shrink-0"
+                  >
+                    🧩 RECONSTRUCT
+                  </button>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+    </div>
+
+    {/* 🌳 PROOF-OF-STORAGE STATUS & NODE RELIABILITY PANEL */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {/* Asset Proof Status Lookup */}
+      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
+        <h3 className="text-sm font-bold text-white">🌳 Asset Proof Status</h3>
+        <p className="text-[10px] text-[#64748b] font-mono leading-relaxed">Look up the on-chain Merkle root + challenge history for an Asset Tracking ID (InayaProofRegistry).</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={proofLookupInput}
+            onChange={(e) => setProofLookupInput(e.target.value)}
+            placeholder="Asset Tracking ID or 0x fileHash"
+            className="flex-1 bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30"
+          />
+          <button
+            onClick={handleProofLookup}
+            disabled={isLoadingProofLookup}
+            className="px-4 py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-lg shadow-lg hover:brightness-110 transition-all whitespace-nowrap disabled:opacity-50"
+          >
+            {isLoadingProofLookup ? '⏳' : 'CHECK'}
+          </button>
+        </div>
+
+        {proofLookupResult && (
+          proofLookupResult.notFound ? (
+            <div className="text-[11px] font-mono text-amber-400/80 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-3">
+              No Merkle root registered on-chain for this asset yet.
+            </div>
+          ) : (
+            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
+              <div className="flex justify-between"><span className="text-[#64748b]">Merkle Root</span><span className="text-[#00f2fe] truncate max-w-[60%]" title={proofLookupResult.merkleRoot}>{truncateAddress(proofLookupResult.merkleRoot)}</span></div>
+              <div className="flex justify-between"><span className="text-[#64748b]">Chunk Count</span><span className="text-white">{proofLookupResult.chunkCount}</span></div>
+              <div className="flex justify-between"><span className="text-[#64748b]">Assigned Node</span><span className="text-white truncate max-w-[60%]" title={proofLookupResult.node}>{proofLookupResult.node === ethers.ZeroAddress ? '— unassigned —' : truncateAddress(proofLookupResult.node)}</span></div>
+              <div className="flex justify-between"><span className="text-[#64748b]">Registered At</span><span className="text-white">{proofLookupResult.registeredAt ? new Date(proofLookupResult.registeredAt * 1000).toLocaleString() : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-[#64748b]">Last Verified</span><span className="text-white">{proofLookupResult.lastVerifiedAt ? new Date(proofLookupResult.lastVerifiedAt * 1000).toLocaleString() : 'Never'}</span></div>
+              <div className="flex justify-between"><span className="text-emerald-400">Challenges Passed</span><span className="text-emerald-400 font-bold">{proofLookupResult.challengesPassed}</span></div>
+              <div className="flex justify-between"><span className="text-red-400">Challenges Failed</span><span className="text-red-400 font-bold">{proofLookupResult.challengesFailed}</span></div>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Node Reliability Lookup */}
+      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
+        <h3 className="text-sm font-bold text-white">🛡️ Node Reliability</h3>
+        <p className="text-[10px] text-[#64748b] font-mono leading-relaxed">Check any storage node operator's aggregate pass/fail challenge history across every asset they've hosted.</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={nodeLookupInput}
+            onChange={(e) => setNodeLookupInput(e.target.value)}
+            placeholder="0x Node Wallet Address"
+            className="flex-1 bg-[#060913] border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-[#00f2fe]/30"
+          />
+          <button
+            onClick={handleNodeReliabilityLookup}
+            disabled={isLoadingNodeLookup}
+            className="px-4 py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-lg shadow-lg hover:brightness-110 transition-all whitespace-nowrap disabled:opacity-50"
+          >
+            {isLoadingNodeLookup ? '⏳' : 'CHECK'}
+          </button>
+        </div>
+
+        {nodeLookupResult && (() => {
+          const total = nodeLookupResult.passed + nodeLookupResult.failed;
+          const rate = total > 0 ? ((nodeLookupResult.passed / total) * 100).toFixed(1) : null;
+          return (
+            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
+              <div className="flex justify-between"><span className="text-emerald-400">Challenges Passed</span><span className="text-emerald-400 font-bold">{nodeLookupResult.passed}</span></div>
+              <div className="flex justify-between"><span className="text-red-400">Challenges Failed</span><span className="text-red-400 font-bold">{nodeLookupResult.failed}</span></div>
+              <div className="flex justify-between"><span className="text-[#64748b]">Reliability Rate</span><span className="text-white font-bold">{rate !== null ? `${rate}%` : 'No challenges yet'}</span></div>
+            </div>
+          );
+        })()}
+      </div>
+
+    </div>
+
+  </div>
+)}
 
           {/* 💎 VIEWPORT AREA 2B: BUSINESS MODEL (PAY-AS-YOU-GO + CORPORATE RESERVE) */}
           {currentPage === 'Business Model' && (
@@ -1410,6 +2430,92 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* 💵 PAY-AS-YOU-GO LIVE BILLING PANEL */}
+              <div className="bg-[#090d16]/80 border border-[#00f2fe]/20 rounded-2xl p-6 space-y-5">
+                <div>
+                  <h3 className="text-sm font-bold text-white mb-1">💵 Pay-As-You-Go Live Billing</h3>
+                  <p className="text-[10px] text-slate-500 font-mono">Retail metered billing settled directly on-chain against the PAYG contract — independent of the Corporate Reserve checkout below.</p>
+                </div>
+
+                {paygLog && (
+                  <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-[11px] p-3.5 rounded-xl break-words">
+                    {paygLog}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                  {/* STORAGE SUBSCRIPTION */}
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
+                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Storage Subscription (30 Days)</div>
+                    <div className="text-white font-bold text-sm">{paygPricing.storagePerTB} USDT / TB</div>
+                    <input
+                      type="number"
+                      min="1"
+                      value={paygTbUnits}
+                      onChange={(e) => setPaygTbUnits(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full bg-[#060913] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#00f2fe]/40"
+                      placeholder="TB units"
+                    />
+                    <button
+                      onClick={handlePaygStorageSubscription}
+                      disabled={isPaygStorageBusy || !isConnected}
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isPaygStorageBusy ? "PROCESSING..." : "💵 PAY STORAGE (PAYG)"}
+                    </button>
+                  </div>
+
+                  {/* EGRESS FEE */}
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
+                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Egress / Retrieval Fee</div>
+                    <div className="text-white font-bold text-sm">{paygPricing.egressPerHalfTB} INAYA / 0.5 TB</div>
+                    <input
+                      type="number"
+                      min="1"
+                      value={paygEgressUnits}
+                      onChange={(e) => setPaygEgressUnits(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full bg-[#060913] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#00f2fe]/40"
+                      placeholder="0.5 TB units"
+                    />
+                    <button
+                      onClick={handlePaygEgressFee}
+                      disabled={isPaygEgressBusy || !isConnected}
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isPaygEgressBusy ? "PROCESSING..." : "💵 PAY EGRESS (PAYG)"}
+                    </button>
+                  </div>
+
+                  {/* ANNUAL MAINTENANCE */}
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
+                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Annual Maintenance</div>
+                    <div className="text-white font-bold text-sm">{paygPricing.maintenanceFee} USDT / Year</div>
+                    <div className="text-[10px] text-slate-500 py-2">
+                      {paygStatus.maintenanceCurrent ? (
+                        <span className="text-emerald-400 font-bold">✓ Current through {new Date(paygStatus.lastMaintenancePaidAt + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
+                      ) : (
+                        <span className="text-amber-400 font-bold">⚠ Not yet paid / lapsed</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handlePaygAnnualMaintenance}
+                      disabled={isPaygMaintenanceBusy || !isConnected}
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isPaygMaintenanceBusy ? "PROCESSING..." : "💵 PAY MAINTENANCE (PAYG)"}
+                    </button>
+                  </div>
+
+                </div>
+
+                {isConnected && (
+                  <div className="text-[9.5px] text-slate-500 font-mono pt-1 border-t border-white/5">
+                    Current PAYG commitment: <span className="text-white font-bold">{paygStatus.tbCommitted} TB</span> · Storage {paygStatus.storageActive ? <span className="text-emerald-400 font-bold">ACTIVE</span> : <span className="text-amber-400 font-bold">LAPSED</span>} until {paygStatus.storagePaidThrough ? new Date(paygStatus.storagePaidThrough).toLocaleDateString() : '—'}
+                  </div>
+                )}
+              </div>
+
               {/* MARKET PRICING COMPARISON */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
                 <h3 className="text-sm font-bold text-white mb-4">📉 Market Pricing Comparison</h3>
@@ -1430,6 +2536,17 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
+
+              {activeCorporatePlan && (
+                <div className="bg-emerald-500/[0.06] border border-emerald-500/30 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 font-mono text-xs">
+                  <div>
+                    <span className="text-emerald-400 font-bold">✓ ACTIVE CORPORATE RESERVE:</span>
+                    <span className="text-white font-bold ml-2">{activeCorporatePlan.tier}</span>
+                    <span className="text-slate-500 ml-2">— valid until {new Date(activeCorporatePlan.expiresAt).toLocaleDateString()}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500">Re-purchasing before this date will prompt a duplicate-purchase confirmation.</span>
+                </div>
+              )}
 
               {/* CORPORATE RESERVE PLANS TABLE */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
@@ -1514,6 +2631,217 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 🥩 VIEWPORT AREA 2B-2: $INAYA STAKING ENGINE */}
+          {currentPage === 'Staking' && (
+            <div className="max-w-5xl mx-auto space-y-6">
+              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">$INAYA Staking Engine</h2>
+              <p className="text-[#94a3b8] text-sm mb-2">Stake $INAYA to earn passive APY from the 8,000,000 INAYA Staking Rewards Pool and unlock priority bandwidth tiers.</p>
+
+              {stakingLog && (
+                <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-words">
+                  {stakingLog}
+                </div>
+              )}
+
+              {/* OVERVIEW CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
+                  <div className="text-xl font-bold text-white">{Number(stakingOverview.totalStakedTVL).toLocaleString()} INAYA</div>
+                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Value Locked</div>
+                </div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
+                  <div className="text-xl font-bold text-white">{stakingOverview.estimatedAPY}%</div>
+                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Estimated APY (Flexible)</div>
+                </div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
+                  <div className="text-xl font-bold text-white">{Number(stakingOverview.myStakedBalance).toLocaleString()} INAYA</div>
+                  <div className="text-[10px] uppercase text-[#64748b] mt-1">My Staked Balance</div>
+                </div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
+                  <div className="text-xl font-bold text-white">{Number(stakingOverview.claimableRewards).toFixed(4)} INAYA</div>
+                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Claimable Rewards</div>
+                </div>
+              </div>
+
+              {/* ENTERPRISE TIER BADGE */}
+              {isConnected && stakingOverview.userTier === 'Enterprise Priority' && (
+                <div className="bg-emerald-500/[0.06] border border-emerald-500/30 rounded-2xl p-4 font-mono text-xs flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">⚡ Tier 1 Priority Node — High API Bandwidth Active</span>
+                </div>
+              )}
+
+              {/* STAKE / UNSTAKE / CLAIM PANELS */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                {/* STAKE PANEL */}
+                <div className="bg-[#090d16]/80 border border-[#00f2fe]/20 rounded-2xl p-5 space-y-3 font-mono">
+                  <h3 className="text-sm font-bold text-white">📥 Stake</h3>
+                  <input
+                    type="number" min="0" value={stakeAmountInput}
+                    onChange={(e) => setStakeAmountInput(e.target.value)}
+                    placeholder="Amount to stake"
+                    className="w-full bg-[#060913] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#00f2fe]/40"
+                  />
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[{ label: 'Flexible', value: 0 }, { label: '30 Days', value: 30 }, { label: '90 Days', value: 90 }].map((tier) => (
+                      <button
+                        key={tier.value}
+                        onClick={() => setSelectedLockTier(tier.value)}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg border transition-all ${selectedLockTier === tier.value ? 'bg-[#00f2fe] text-[#060913] border-[#00f2fe]' : 'bg-black/20 text-slate-400 border-white/10'}`}
+                      >
+                        {tier.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-slate-500">Flexible = 1.00x · 30 Days = 1.25x · 90 Days = 1.50x reward multiplier.</p>
+                  <button
+                    onClick={handleStakeInaya}
+                    disabled={isStakingBusy || !isConnected}
+                    className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
+                  >
+                    {isStakingBusy ? "STAKING..." : "⚡ APPROVE & STAKE"}
+                  </button>
+                </div>
+
+                {/* UNSTAKE PANEL */}
+                <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 space-y-3 font-mono">
+                  <h3 className="text-sm font-bold text-white">📤 Unstake</h3>
+                  <input
+                    type="number" min="0" value={unstakeAmountInput}
+                    onChange={(e) => setUnstakeAmountInput(e.target.value)}
+                    placeholder="Amount to withdraw"
+                    className="w-full bg-[#060913] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#00f2fe]/40"
+                  />
+                  {stakingOverview.lockExpiryTimestamp > Date.now() && (
+                    <p className="text-[10px] text-amber-400 font-bold">🔒 Locked until {new Date(stakingOverview.lockExpiryTimestamp).toLocaleString()}</p>
+                  )}
+                  <button
+                    onClick={handleUnstakeInaya}
+                    disabled={isUnstakingBusy || !isConnected}
+                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[11px] rounded-lg transition-all disabled:opacity-40"
+                  >
+                    {isUnstakingBusy ? "WITHDRAWING..." : "WITHDRAW"}
+                  </button>
+                </div>
+
+                {/* CLAIM PANEL */}
+                <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 space-y-3 font-mono flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-2">🎁 Claim Rewards</h3>
+                    <div className="text-2xl font-extrabold text-emerald-400">{Number(stakingOverview.claimableRewards).toFixed(4)}</div>
+                    <div className="text-[10px] text-slate-500">$INAYA available to claim</div>
+                  </div>
+                  <button
+                    onClick={handleClaimStakingReward}
+                    disabled={isClaimingBusy || !isConnected || parseFloat(stakingOverview.claimableRewards) <= 0}
+                    className="w-full py-2.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
+                  >
+                    {isClaimingBusy ? "CLAIMING..." : "CLAIM REWARDS"}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* 📊 VIEWPORT AREA 2C: MY DASHBOARD */}
+          {currentPage === 'My Dashboard' && (
+            <div className="max-w-5xl mx-auto space-y-6">
+              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">My Dashboard</h2>
+              <p className="text-[#94a3b8] text-sm mb-2">A live read of your on-chain billing activity, storage allocation, and total spend across Pay-As-You-Go and Corporate Reserve.</p>
+
+              {!isConnected ? (
+                <div className="bg-black/20 border border-white/5 rounded-2xl p-10 text-center font-mono text-xs text-[#64748b] italic">// Connect your wallet to load dashboard data.</div>
+              ) : (
+                <>
+                  {/* SUMMARY CARDS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                    <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
+                      <div className="text-xl font-bold text-white">{totalSpaceAllocatedTB.toLocaleString()} TB</div>
+                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Space Allocated</div>
+                    </div>
+                    <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
+                      <div className="text-xl font-bold text-white">{paygTotalUsdtSpent.toFixed(4)} USDT</div>
+                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total PAYG Spent (USDT)</div>
+                    </div>
+                    <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
+                      <div className="text-xl font-bold text-white">{paygTotalInayaSpent.toFixed(4)} INAYA</div>
+                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total PAYG Spent (INAYA)</div>
+                    </div>
+                    <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
+                      <div className="text-xl font-bold text-white">{paygHistory.length}</div>
+                      <div className="text-[10px] uppercase text-[#64748b] mt-1">PAYG Transactions Logged</div>
+                    </div>
+                  </div>
+
+                  {/* STORAGE SPACE ALLOCATION BREAKDOWN */}
+                  <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+                    <h3 className="text-sm font-bold text-white mb-4">🗄️ Storage Space Allocation</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+                      <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">Pay-As-You-Go Commitment</div>
+                        <div className="text-white font-bold text-lg">{paygStatus.tbCommitted} TB</div>
+                        <div className="mt-1">
+                          Storage: {paygStatus.storageActive ? <span className="text-emerald-400 font-bold">ACTIVE</span> : <span className="text-amber-400 font-bold">LAPSED</span>}
+                          {paygStatus.storagePaidThrough > 0 && <span className="text-slate-500"> · through {new Date(paygStatus.storagePaidThrough).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">Corporate Reserve Allocation</div>
+                        <div className="text-white font-bold text-lg">{corporateAllocatedTB.toLocaleString()} TB</div>
+                        <div className="mt-1">
+                          {activeCorporatePlan ? (
+                            <span className="text-emerald-400 font-bold">{activeCorporatePlan.tier} — valid until {new Date(activeCorporatePlan.expiresAt).toLocaleDateString()}</span>
+                          ) : (
+                            <span className="text-slate-500">No active Corporate Reserve plan</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PAYG TRANSACTION HISTORY TABLE */}
+                  <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-sm font-bold text-white">🧾 Pay-As-You-Go Transactions</h3>
+                      <button onClick={() => fetchPaygHistory(walletAddress)} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH</button>
+                    </div>
+                    {isLoadingPaygHistory ? (
+                      <div className="py-6 text-center font-mono text-xs text-[#64748b]">⚙️ Syncing PAYG ledger events...</div>
+                    ) : paygHistory.length === 0 ? (
+                      <div className="py-6 text-center font-mono text-xs text-[#64748b] italic">// No Pay-As-You-Go transactions found in the current ledger block window.</div>
+                    ) : (
+                      <table className="w-full text-left font-mono text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                            <th className="p-3 font-bold">Type</th>
+                            <th className="p-3 font-bold">Units</th>
+                            <th className="p-3 font-bold">Amount</th>
+                            <th className="p-3 font-bold">Date</th>
+                            <th className="p-3 font-bold">Tx</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 text-slate-300">
+                          {paygHistory.map((item, idx) => (
+                            <tr key={idx}>
+                              <td className="p-3 text-white">{item.type}</td>
+                              <td className="p-3">{item.units}</td>
+                              <td className="p-3 text-emerald-400 font-bold">{parseFloat(item.amount).toFixed(4)} {item.asset}</td>
+                              <td className="p-3">{new Date(item.timestamp).toLocaleDateString()}</td>
+                              <td className="p-3">
+                                <a href={`https://testnet.bscscan.com/tx/${item.txHash}`} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline">View ↗</a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -1739,7 +3067,7 @@ export default function Home() {
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
-                <h3 className="text-base font-bold text-white mb-4">📚 OFFICIAL DOCUMENTS & RESOURCES</h3>
+                <h3 className="text-base font-bold text-white mb-4">📚 OFFICIAL DOCUMENTS &amp; RESOURCES</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {documentsList.map((doc) => (
                     <a
