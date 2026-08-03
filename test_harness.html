@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inaya Custody SDK — Test Harness</title>
+<style>
+  body { font-family: monospace; background: #0a0e14; color: #d7e0f5; max-width: 720px; margin: 40px auto; padding: 0 20px; }
+  h1 { color: #7fd6c8; font-size: 18px; }
+  .step { background: #0e1830; border: 1px solid #2a3a5c; border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; }
+  .step h3 { margin: 0 0 8px; color: #c9a24d; font-size: 13px; }
+  button { background: #7fd6c8; color: #0a0e14; border: none; padding: 8px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-right: 8px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  input, textarea { width: 100%; background: #060c16; color: #d7e0f5; border: 1px solid #2a3a5c; border-radius: 4px; padding: 6px 8px; margin: 4px 0; font-family: monospace; }
+  .log { white-space: pre-wrap; font-size: 11px; color: #94a3b8; background: #060c16; border-radius: 4px; padding: 10px; margin-top: 8px; max-height: 200px; overflow-y: auto; }
+  .ok { color: #7fd6c8; } .err { color: #ff8080; }
+</style>
+</head>
+<body>
+<h1>🧪 Inaya Custody SDK — Manual Test Harness (BNB Chain Testnet)</h1>
+<p style="color:#8b93ab;font-size:12px;">Self-contained — no build step. Open this file directly in a browser with MetaMask installed and set to BNB Chain Testnet. Inlines the SDK's crypto + contract logic directly so it runs with zero npm install.</p>
+
+<div class="step">
+  <h3>Step 1 — Connect Wallet</h3>
+  <button id="btnConnect">Connect Wallet</button>
+  <div id="logConnect" class="log"></div>
+</div>
+
+<div class="step">
+  <h3>Step 2 — Encrypt &amp; Shard a Test File</h3>
+  <input type="text" id="passkey" placeholder="Test passkey (any string)" value="test-passkey-123">
+  <input type="file" id="fileInput">
+  <button id="btnEncrypt" disabled>Encrypt + Shard</button>
+  <div id="logEncrypt" class="log"></div>
+</div>
+
+<div class="step">
+  <h3>Step 3 — Anchor to Ledger (batchRegisterAssets)</h3>
+  <p style="font-size:11px;color:#8b93ab;">Uses the raw shard strings directly as placeholder CIDs for this test — swap in real IPFS CIDs once you've pinned them.</p>
+  <button id="btnAnchor" disabled>Anchor to Ledger</button>
+  <div id="logAnchor" class="log"></div>
+</div>
+
+<div class="step">
+  <h3>Step 4 — Retrieve &amp; Decrypt</h3>
+  <button id="btnRetrieve" disabled>Retrieve + Decrypt</button>
+  <div id="logRetrieve" class="log"></div>
+</div>
+
+<script type="module">
+import { ethers } from "https://esm.sh/ethers@6";
+
+// ---- Inlined from contracts.js ----
+const INAYA_NETWORK_ABI = [
+  "function batchRegisterAssets(bytes32[] fileHashes, string[] shardACIDs, string[] shardBCIDs) external",
+  "function getAsset(string memory assetId) public view returns (string memory filename, string memory cidAlpha, string memory cidBeta, uint256 timestamp, address operator)",
+];
+const NETWORK_ADDRESS = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888";
+
+// ---- Inlined from crypto.js ----
+function toBase64(bytes) { let b=""; for (let i=0;i<bytes.byteLength;i++) b+=String.fromCharCode(bytes[i]); return btoa(b); }
+function fromBase64(b64) { const bin=atob(b64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return bytes; }
+function readFileAsDataURL(file) { return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);}); }
+async function deriveVaultKey(passkey, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passkey), {name:"PBKDF2"}, false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:100000, hash:"SHA-256"}, keyMaterial, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+}
+async function disperseAndSlice(file, passkey) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await deriveVaultKey(passkey, salt);
+  const dataUrl = await readFileAsDataURL(file);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const encrypted = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, enc.encode(dataUrl));
+  const combined = new Uint8Array(salt.length+iv.length+encrypted.byteLength);
+  combined.set(salt,0); combined.set(iv,salt.length); combined.set(new Uint8Array(encrypted), salt.length+iv.length);
+  const cipherTextString = toBase64(combined);
+  const midpoint = Math.ceil(cipherTextString.length/2);
+  return { shardAlpha: cipherTextString.slice(0,midpoint), shardBeta: cipherTextString.slice(midpoint) };
+}
+async function reconstructAndDecrypt(shardAlpha, shardBeta, passkey) {
+  const combined = fromBase64(shardAlpha+shardBeta);
+  const salt = combined.slice(0,16), iv = combined.slice(16,28), encrypted = combined.slice(28);
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passkey), {name:"PBKDF2"}, false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:100000, hash:"SHA-256"}, keyMaterial, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const decrypted = await crypto.subtle.decrypt({name:"AES-GCM", iv}, key, encrypted);
+  return new TextDecoder().decode(decrypted);
+}
+
+// ---- Harness wiring ----
+let provider, signer, shards, assetId, filename;
+const log = (id, msg, cls="") => { document.getElementById(id).innerHTML += `<div class="${cls}">${msg}</div>`; };
+
+document.getElementById("btnConnect").onclick = async () => {
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    const network = await provider.getNetwork();
+    log("logConnect", `✅ Connected: ${accounts[0]}`, "ok");
+    log("logConnect", `Chain ID: ${network.chainId} (BNB Testnet = 97)`, network.chainId === 97n ? "ok" : "err");
+    document.getElementById("btnEncrypt").disabled = false;
+  } catch (e) { log("logConnect", `❌ ${e.message}`, "err"); }
+};
+
+document.getElementById("btnEncrypt").onclick = async () => {
+  try {
+    const file = document.getElementById("fileInput").files[0];
+    const passkey = document.getElementById("passkey").value;
+    if (!file) return log("logEncrypt", "❌ Choose a file first.", "err");
+    filename = file.name;
+    shards = await disperseAndSlice(file, passkey);
+    log("logEncrypt", `✅ Encrypted + sharded "${filename}"`, "ok");
+    log("logEncrypt", `Shard Alpha (${shards.shardAlpha.length} chars): ${shards.shardAlpha.slice(0,40)}...`);
+    log("logEncrypt", `Shard Beta (${shards.shardBeta.length} chars): ${shards.shardBeta.slice(0,40)}...`);
+    document.getElementById("btnAnchor").disabled = false;
+  } catch (e) { log("logEncrypt", `❌ ${e.message}`, "err"); }
+};
+
+document.getElementById("btnAnchor").onclick = async () => {
+  try {
+    const contract = new ethers.Contract(NETWORK_ADDRESS, INAYA_NETWORK_ABI, signer);
+    assetId = `${filename}-${Date.now()}`;
+    const fileHash = ethers.id(assetId);
+    log("logAnchor", `Submitting batchRegisterAssets for assetId "${assetId}"...`);
+    const tx = await contract.batchRegisterAssets([fileHash], [shards.shardAlpha], [shards.shardBeta]);
+    log("logAnchor", `Tx sent: ${tx.hash} — waiting for confirmation...`);
+    const receipt = await tx.wait();
+    log("logAnchor", `✅ Confirmed in block ${receipt.blockNumber}`, "ok");
+    log("logAnchor", `View: https://testnet.bscscan.com/tx/${receipt.hash}`);
+    document.getElementById("btnRetrieve").disabled = false;
+  } catch (e) { log("logAnchor", `❌ ${e.message}`, "err"); }
+};
+
+document.getElementById("btnRetrieve").onclick = async () => {
+  try {
+    const contract = new ethers.Contract(NETWORK_ADDRESS, INAYA_NETWORK_ABI, provider);
+    const [fname, cidAlpha, cidBeta] = await contract.getAsset(assetId);
+    log("logRetrieve", `getAsset("${assetId}") returned filename="${fname}"`);
+    if (!cidAlpha) return log("logRetrieve", `❌ No asset found — check the assetId/fileHash keying matches what was written.`, "err");
+    const passkey = document.getElementById("passkey").value;
+    const dataUrl = await reconstructAndDecrypt(cidAlpha, cidBeta, passkey);
+    const matches = dataUrl.startsWith("data:");
+    log("logRetrieve", matches ? "✅ Reconstructed + decrypted successfully — full round trip confirmed on-chain." : "❌ Decrypted output doesn't look like a valid data URL.", matches ? "ok" : "err");
+  } catch (e) { log("logRetrieve", `❌ ${e.message}`, "err"); }
+};
+</script>
+</body>
+</html>

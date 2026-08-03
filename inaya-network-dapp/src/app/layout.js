@@ -3,8 +3,23 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata = {
-  title: "Inaya Network",
-  description: "Decentralized Sovereign Custody Network",
+  title: "Inaya Network — Sovereign DePIN Data Storage",
+  description: "Decentralized Sovereign Custody Network — client-side encrypted, sharded storage anchored on BNB Chain. Enterprise-grade custody with no central point of failure.",
+  metadataBase: new URL("https://www.inayanetwork.com"),
+  openGraph: {
+    title: "Inaya Network",
+    description: "Sovereign, encrypted, decentralized storage — BNB Chain Testnet.",
+    url: "https://www.inayanetwork.com",
+    siteName: "Inaya Network",
+    images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Inaya Network",
+    description: "Sovereign, encrypted, decentralized storage — BNB Chain Testnet.",
+    images: ["/og-banner.png"],
+  },
 };
 
 export default function RootLayout({ children }) {

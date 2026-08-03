@@ -1,3 +1,17 @@
 node_modules/
 .next/
+.env
 .env.local
+env.local
+
+# Separately hosted repos — not embedded here to avoid broken gitlinks
+inaya-mobile/
+inaya-network-dapp/custody-sdk/
+
+# Stray backups / archives, not real project content
+inaya-network-dapp/custody-sdk.zip
+inaya-network-dapp/src/app/page.js.bak-20260802
+
+# Hardhat build output — regenerable via `npx hardhat compile`
+artifacts/
+cache/

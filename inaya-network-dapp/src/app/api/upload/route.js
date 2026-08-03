@@ -6,12 +6,11 @@ export async function POST(request) {
     const body = await request.json();
     const { encryptedShard, filename, elementTag, walletAddress, selectedTier } = body;
     
-    // Server-side environment tokens pulled directly from your Dashboard
-    const apiKey = process.env.PINATA_API_KEY;
-    const apiSecret = process.env.PINATA_SECRET_API_KEY;
+    // 🔑 Updated to use Pinata JWT (Modern Method)
+    const pinataJWT = process.env.PINATA_JWT;
     
-    if (!apiKey || !apiSecret) {
-      return NextResponse.json({ error: "System Error: Server missing environment tokens." }, { status: 500 });
+    if (!pinataJWT) {
+      return NextResponse.json({ error: "System Error: Server missing PINATA_JWT environment token." }, { status: 500 });
     }
 
     // 🔒 MONGO-BACKED B2B SUBSCRIPTION CHECK SYSTEM
@@ -61,19 +60,28 @@ export async function POST(request) {
       pinataMetadata: { name: `inaya_next_${elementTag}_${filename}` }
     };
 
-    // Authenticating using API Key + Secret Key headers
+    // Authenticating using Bearer JWT Token
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "pinata_api_key": apiKey.trim(),
-        "pinata_secret_api_key": apiSecret.trim()
+        "Authorization": `Bearer ${pinataJWT.trim()}`
       },
       body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Decentralized IPFS Node transmission rejected." }, { status: 500 });
+      const errorText = await response.text();
+
+      console.error("Pinata Error:", response.status, errorText);
+
+      return NextResponse.json(
+        {
+          status: response.status,
+          pinata: errorText,
+        },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
