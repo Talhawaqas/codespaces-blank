@@ -5549,9 +5549,12 @@ export default function Home() {
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[10px] uppercase tracking-widest text-[#c9a24d] font-bold bg-[#c9a24d]/10 border border-[#c9a24d]/30 rounded-full px-3 py-1">📣 Announcement</span>
                 </div>
-                <h3 className="text-lg font-extrabold text-white tracking-wide mb-3">Developer SDK — Now Available. Mobile App — Coming Soon.</h3>
+                <h3 className="text-lg font-extrabold text-white tracking-wide mb-3">Developer SDK — Now Available. Mobile App — Launching Today!</h3>
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed mb-4">
                   The <code className="text-[#00f2fe]">@inaya-network/custody-sdk</code> developer SDK is live now — build against Inaya's encryption, sharding, and on-chain custody layer directly. The Inaya Mobile app is being rebuilt with a premium new interface before its public release — the download link lands here once it's ready.
+                </p>
+                <p className="text-sm text-[#94a3b8] font-mono leading-relaxed mb-4">
+                  Inaya's Developer Platform delivers a complete ecosystem for building next-generation decentralized storage applications. Beyond a traditional SDK, it includes an official TypeScript SDK, React package, command-line tools, project scaffolding with create-inaya-dapp, live Storybook, production-ready templates, and extensive documentation. Developers have access to a comprehensive API supporting secure file uploads, deletion, renaming, moving, sharing, folder management, retry logic, upload progress callbacks, event listeners, advanced error handling, and strong TypeScript typings. Combined with client-side AES-256 encryption, binary sharding, immutable blockchain metadata, and open-source components, the platform enables teams to rapidly build scalable, secure, and enterprise-ready Web3 applications without having to implement the underlying decentralized storage infrastructure themselves.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <a
