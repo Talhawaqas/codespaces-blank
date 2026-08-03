@@ -3,22 +3,20 @@
 // GET /api/admin/usage-overview
 //
 // Totals files/bytes across every wallet with metadata_files records —
-// by REUSING custody-sdk's Analytics.getWalletStorageStats() per wallet
-// (real on-chain reconciliation, same honesty rules) rather than
-// rebuilding the aggregation with a raw Mongo count/sum, which would
-// silently drop the on-chain verification Module 2 already built.
-// InayaCustody has no on-chain enumeration at all (see analytics.js's
-// own module comment) — Metadata.listFiles() per owner is still the
-// only source of which files exist, same constraint as the single-wallet
-// case, just summed across every distinct owner instead of one.
+// via src/lib/wallet-storage-stats.js, a local port of custody-sdk's
+// Analytics.getWalletStorageStats() (same on-chain reconciliation, same
+// honesty rules). Originally imported custody-sdk directly across
+// repos; that broke the Vercel build because custody-sdk/ is
+// deliberately excluded from this repo's git history (separately
+// hosted repo, see .gitignore) and so doesn't exist on the build server
+// at all, even though the import resolved fine in local dev where both
+// folders happen to sit on the same disk. See wallet-storage-stats.js's
+// own comment for the full explanation.
 
 import { NextResponse } from "next/server";
-import { ethers } from "ethers";
 import { connectToDatabase } from "../../../../lib/mongodb";
 import { isAdminAuthenticated } from "../../../../lib/admin-auth";
-import { Analytics } from "../../../../../custody-sdk/src/analytics.js";
-
-const RPC_URL = process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
+import { getWalletStorageStats } from "../../../../lib/wallet-storage-stats";
 
 export async function GET(req) {
   if (!isAdminAuthenticated(req)) {
@@ -28,12 +26,7 @@ export async function GET(req) {
   const { db } = await connectToDatabase();
   const owners = await db.collection("metadata_files").distinct("owner");
 
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-
-  const perWallet = await Promise.all(
-    owners.map((address) => Analytics.getWalletStorageStats({ connection: provider, address, apiBaseUrl }))
-  );
+  const perWallet = await Promise.all(owners.map((address) => getWalletStorageStats(address)));
 
   let totalFilesStored = 0;
   let totalBytesStored = 0;
