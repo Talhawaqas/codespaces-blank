@@ -2080,6 +2080,15 @@ export default function Home() {
   };
 
   // ========================================================
+  // 🎬 PRODUCT & DEMO VIDEO REGISTRY
+  // ========================================================
+  const productDemoVideos = [
+    { title: "Website Walkthrough (75s)", desc: "Quick tour of the Inaya Network web app — encryption, sharding, and on-chain custody in action.", src: "/videos/inaya-website-demo.mp4" },
+    { title: "Mobile App Demo", desc: "The Inaya mobile app — wallet connect, upload, download, and staking on the go.", src: "/videos/inaya-mobile-demo.mp4" },
+    { title: "Card Payment Flow Demo", desc: "No-wallet card checkout — Corporate Reserve and Pay-As-You-Go, powered by Stripe.", src: "/videos/inaya-card-payment-demo.mp4" },
+  ];
+
+  // ========================================================
   // 📚 OFFICIAL DOCUMENTS & RESOURCES REGISTRY
   // ========================================================
   const documentsList = [
@@ -5710,6 +5719,23 @@ export default function Home() {
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-4">🎬 PRODUCT &amp; DEMO</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {productDemoVideos.map((demo) => (
+                    <div key={demo.src} className="bg-black/20 border border-white/5 rounded-xl overflow-hidden">
+                      <video controls preload="metadata" playsInline className="w-full aspect-video bg-black block">
+                        <source src={demo.src} type="video/mp4" />
+                      </video>
+                      <div className="p-4">
+                        <div className="text-sm font-bold text-white">{demo.title}</div>
+                        <p className="text-[11px] text-[#64748b] font-mono mt-1 leading-relaxed">{demo.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">📚 OFFICIAL DOCUMENTS &amp; RESOURCES</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {documentsList.map((doc) => (
@@ -5818,6 +5844,23 @@ export default function Home() {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              {/* INVESTOR RESOURCES */}
+              <div className="bg-[#090d16]/80 border border-[#c9a24d]/25 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-3">💼 Investors</h3>
+                <p className="text-sm text-[#94a3b8] leading-relaxed">Interested in learning more about Inaya Network?</p>
+                <p className="text-sm text-[#94a3b8] leading-relaxed mt-2 mb-4">
+                  Access our Executive Summary, Investment Memorandum, GTM Strategy, technical documentation, and product demonstrations.
+                </p>
+                <a
+                  href="https://drive.google.com/drive/folders/1i91fWkX1etQeoi_XR6ndW-iKQtMxi5la?usp=sharing"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block px-6 py-3 bg-gradient-to-r from-[#c9a24d] to-[#e8c375] text-[#0a0e14] font-black text-xs rounded-xl hover:brightness-110 active:scale-95 transition-all"
+                >
+                  → View Investor Resources
+                </a>
               </div>
 
               <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
