@@ -2091,6 +2091,9 @@ export default function Home() {
     { title: "Inaya Custody SDK — Developer Guide", desc: "Integration guide and API reference for @inaya-network/custody-sdk.", href: "/documents/inaya-sdk-guide.pdf", icon: "🛠️" },
     { title: "Inaya Network — Company Profile", desc: "Official corporate profile covering the executive summary, core architecture, leadership team, and strategic roadmap.", href: "/documents/inaya-company-profile.pdf", icon: "🏢" },
     { title: "Enterprise Revenue & Node Reward Architecture", desc: "Executive deck covering the RevenueRouter settlement flow, CorporateEscrow vesting, Proof-of-Storage-gated reward authorization, and Swarm Reserve SLA tier emissions.", href: "/documents/inaya-enterprise-revenue-node-reward-architecture.pdf", icon: "⚙️" },
+    { title: "Go-To-Market Strategy", desc: "Institutional GTM strategy covering market opportunity, customer segmentation, product-led growth, developer acquisition, and the 24-month execution roadmap.", href: "/documents/inaya-gtm-strategy.pdf", icon: "🚀" },
+    { title: "Investment Memorandum", desc: "Formal investment memorandum covering the opportunity, technology, traction, team, and terms for the current fundraising round.", href: "/documents/inaya-investment-memorandum.pdf", icon: "💼" },
+    { title: "Executive Summary", desc: "One-page investor overview of the mission, problem, solution, market opportunity, and traction to date.", href: "/documents/inaya-executive-summary.pdf", icon: "📋" },
   ];
 
   // ========================================================
