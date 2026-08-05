@@ -5564,7 +5564,7 @@ export default function Home() {
                     rel="noreferrer"
                     className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-black text-xs rounded-xl text-center shadow-[0_0_15px_rgba(52,211,153,0.2)] hover:brightness-110 active:scale-95 transition-all"
                   >
-                    📱 Download Android Alpha (.apk)
+                    📱 Download Inaya Mobile App - Alpha Version 1.0 (.apk)
                   </a>
 
                   <a
