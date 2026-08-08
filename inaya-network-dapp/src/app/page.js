@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ReferralSection from '../components/ReferralSection';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
 // outside the component since it never changes between renders.
@@ -4341,7 +4342,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 backdrop-blur-md">
-            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Staking', 'My Dashboard', 'Genesis Airdrop', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
+            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
             ))}
           </nav>
@@ -5274,6 +5275,8 @@ export default function Home() {
               )}
             </div>
           )}
+
+          {currentPage === 'Referrals' && <ReferralSection />}
 
           {/* VIEWPORT AREA 3: GENESIS AIRDROP CALCULATOR METRICS */}
           {currentPage === 'Genesis Airdrop' && (
