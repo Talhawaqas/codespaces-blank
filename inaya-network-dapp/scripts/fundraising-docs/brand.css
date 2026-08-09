@@ -1,0 +1,397 @@
+/* Shared brand styles for Inaya's investor-facing PDF documents
+   (Executive Summary, Investment Memorandum, GTM Strategy). Navy + gold —
+   deliberately distinct from the product's cyan accent, matching the
+   existing look of these three documents. Edit here to change the look of
+   ALL generated fundraising docs at once. */
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: #1f2430;
+  background: #f7f5ef;
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+
+:root {
+  --navy: #0a0e14;
+  --navy-soft: #12161f;
+  --gold: #b8862f;
+  --gold-bright: #d4a24a;
+  --cream: #f7f5ef;
+  --ink: #1f2430;
+  --ink-muted: #5b6270;
+  --rule: #e4ddcc;
+}
+
+.page {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  background: var(--cream);
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+}
+
+.page:last-child {
+  page-break-after: avoid;
+}
+
+/* ---------- Header band (cover + running header) ---------- */
+.header-band {
+  background: var(--navy);
+  color: #ffffff;
+  padding: 14mm 16mm 10mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Tighter variant for the one-page Executive Summary, which has to fit a
+   full document on a single sheet — the multi-page Investment Memorandum
+   keeps the roomier default above. */
+.page-compact {
+  min-height: 0;
+}
+
+.page-compact .header-band {
+  padding: 8mm 16mm 5mm;
+}
+
+.page-compact .section-body {
+  padding: 5mm 16mm 0;
+}
+
+.page-compact .exec-block {
+  margin-bottom: 3mm;
+}
+
+.page-compact .block-heading {
+  margin-bottom: 1.2mm;
+  padding-bottom: 1mm;
+  font-size: 8.3pt;
+}
+
+.page-compact .lead {
+  font-size: 8.8pt;
+  line-height: 1.35;
+  margin: 0 0 1.5mm;
+}
+
+.page-compact ul.bullets {
+  margin: 0 0 1.5mm;
+  padding-left: 4mm;
+}
+
+.page-compact ul.bullets li {
+  font-size: 8.8pt;
+  line-height: 1.35;
+  margin-bottom: 1mm;
+}
+
+.page-compact .footer-panel {
+  padding: 3mm 16mm 6mm;
+  font-size: 7.6pt;
+}
+
+.header-band .brand {
+  font-weight: 800;
+  font-size: 15pt;
+  letter-spacing: 0.06em;
+}
+
+.header-band .kicker {
+  color: var(--gold-bright);
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  margin-top: 2mm;
+}
+
+.header-band .meta {
+  text-align: right;
+}
+
+.header-band .badge {
+  color: var(--gold-bright);
+  font-weight: 700;
+  font-size: 8.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.header-band .date {
+  color: #aab1c0;
+  font-size: 9pt;
+  margin-top: 1.5mm;
+}
+
+/* ---------- Running header/footer for multi-page docs ---------- */
+.running-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8mm 16mm 4mm;
+  font-size: 8pt;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 0.4pt solid var(--rule);
+}
+
+.running-header .doc-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.running-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  padding: 4mm 16mm 8mm;
+  font-size: 8pt;
+  color: var(--ink-muted);
+  border-top: 0.4pt solid var(--rule);
+}
+
+/* ---------- Cover page ---------- */
+.cover-title-block {
+  padding: 26mm 20mm;
+}
+
+.cover-title-block .cover-kicker {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 9.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cover-title-block h1 {
+  font-size: 26pt;
+  line-height: 1.2;
+  margin: 6mm 0 6mm;
+  color: var(--navy);
+}
+
+.cover-title-block .subtitle {
+  font-size: 12pt;
+  color: var(--ink-muted);
+  max-width: 140mm;
+  line-height: 1.5;
+}
+
+.cover-title-block .doc-line {
+  margin-top: 14mm;
+  font-size: 8.5pt;
+  color: var(--ink-muted);
+  border-top: 0.6pt solid var(--gold);
+  padding-top: 4mm;
+}
+
+/* ---------- Section content ---------- */
+.section-body {
+  padding: 10mm 16mm 6mm;
+  flex: 1;
+}
+
+.section-number {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 8.5pt;
+  letter-spacing: 0.14em;
+  margin-bottom: 2mm;
+}
+
+.section-title {
+  font-size: 18pt;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 0 0 6mm;
+}
+
+h2.block-heading {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 0.6pt solid var(--gold);
+  padding-bottom: 1.5mm;
+  margin: 0 0 2.5mm;
+}
+
+.lead {
+  font-size: 10.5pt;
+  color: var(--ink);
+  margin-bottom: 4mm;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(var(--col-count, 3), 1fr);
+  gap: 8mm;
+  margin-bottom: 5mm;
+}
+
+.columns.two {
+  --col-count: 2;
+}
+
+.card p {
+  color: var(--ink);
+  font-size: 9.5pt;
+  white-space: pre-line;
+}
+
+ul.bullets {
+  margin: 0 0 4mm;
+  padding-left: 4.5mm;
+}
+
+ul.bullets li {
+  margin-bottom: 2.5mm;
+  font-size: 9.8pt;
+}
+
+ol.numbered {
+  margin: 0 0 4mm;
+  padding-left: 5mm;
+}
+
+ol.numbered li {
+  margin-bottom: 3mm;
+  font-size: 9.8pt;
+}
+
+ol.numbered li strong {
+  color: var(--navy);
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 5mm;
+  font-size: 9.3pt;
+}
+
+table.data th {
+  text-align: left;
+  color: var(--gold);
+  font-size: 8.2pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 0.8pt solid var(--gold);
+  padding: 2mm 3mm;
+}
+
+table.data td {
+  vertical-align: top;
+  padding: 2.5mm 3mm;
+  border-bottom: 0.4pt solid var(--rule);
+  white-space: pre-line;
+}
+
+.note {
+  background: #ffffff;
+  border: 0.4pt solid var(--rule);
+  border-left: 2.2pt solid var(--gold);
+  padding: 4mm 5mm;
+  margin-bottom: 4mm;
+  font-size: 9.5pt;
+}
+
+.note .note-label {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.quote {
+  font-size: 12pt;
+  font-style: italic;
+  color: var(--navy);
+  border-left: 2.5pt solid var(--gold);
+  padding-left: 5mm;
+  margin: 5mm 0;
+}
+
+.subsection {
+  margin-bottom: 4.5mm;
+}
+
+.subsection-heading {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 1.5mm;
+}
+
+.divider {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24mm;
+}
+
+.divider-kicker {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 9.5pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 5mm;
+}
+
+.divider-title {
+  font-size: 24pt;
+  color: var(--navy);
+  margin: 0 0 6mm;
+}
+
+.divider-subtitle {
+  font-size: 11pt;
+  color: var(--ink-muted);
+  max-width: 130mm;
+  line-height: 1.6;
+}
+
+.profile .name {
+  font-weight: 800;
+  font-size: 11pt;
+  color: var(--navy);
+  margin-bottom: 3mm;
+}
+
+.profile p {
+  margin-bottom: 3mm;
+  font-size: 9.8pt;
+}
+
+.footer-panel {
+  border-top: 0.8pt solid var(--gold);
+  padding: 6mm 16mm 12mm;
+  display: flex;
+  justify-content: space-between;
+  gap: 10mm;
+  font-size: 8.5pt;
+}
+
+.footer-panel .contact {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.footer-panel .note-text {
+  color: var(--ink-muted);
+  max-width: 100mm;
+}
