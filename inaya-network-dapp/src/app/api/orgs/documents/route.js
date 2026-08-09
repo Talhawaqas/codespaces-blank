@@ -1,0 +1,165 @@
+// app/api/orgs/documents/route.js
+//
+// POST /api/orgs/documents  { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta }
+//   Registers an already-encrypted-and-pinned document on-chain and records
+//   it under an org/department/project. The client does the actual work
+//   (encrypt with a passkey, shard, pin to IPFS via Pinata) using the exact
+//   same pipeline the existing wallet-connected flow uses — this route only
+//   takes over from "file is encrypted and pinned" onward, the same handoff
+//   point settlePaygUpload() in app/api/stripe-webhook/route.js uses for
+//   card customers. The on-chain call itself is intentionally duplicated
+//   from that function rather than extracted into a shared helper — that
+//   file handles real payment webhooks, and refactoring it purely for
+//   reuse here isn't worth the risk to something already working in
+//   production for an unrelated reason.
+//
+// GET /api/orgs/documents?orgId=...&departmentId=...&projectId=...
+//   Lists documents in a project. Gated by canAccessDepartment — same
+//   department-scoped visibility as everything else in this feature.
+
+import { NextResponse } from "next/server";
+import { ethers } from "ethers";
+import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
+
+const RPC_URL = process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
+const CUSTODY_ADDRESS = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // matches page.js's liveContractAddress / stripe-webhook's CUSTODY_ADDRESS
+const USDT_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_MOCK_USDT_ADDRESS;
+const INAYA_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_INAYA_TOKEN_ADDRESS;
+const TREASURY_WALLET_PRIVATE_KEY = process.env.TREASURY_WALLET_PRIVATE_KEY;
+const GB = 1073741824n;
+
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+];
+const CUSTODY_ABI = [
+  "function batchRegisterAssets(bytes32[] fileHashes, uint256[] fileSizes, string[] shardACIDs, string[] shardBCIDs) external",
+  "function usdtFeePerGB() public view returns (uint256)",
+  "function inayaFeePerGB() public view returns (uint256)",
+];
+
+export const maxDuration = 60; // on-chain confirmations can be slow, same reasoning as stripe-webhook's maxDuration
+
+export async function POST(req) {
+  try {
+    const { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
+
+    if (!orgId || !departmentId || !projectId) {
+      return NextResponse.json({ error: "orgId, departmentId, and projectId are required." }, { status: 400 });
+    }
+    if (!filename || !fileHash || !sizeBytes || !cidAlpha || !cidBeta) {
+      return NextResponse.json({ error: "filename, fileHash, sizeBytes, cidAlpha, and cidBeta are required." }, { status: 400 });
+    }
+
+    await ensureOrgIndexes();
+    const auth = await requireMembership(req, orgId);
+    if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if (!canAccessDepartment(auth.membership, departmentId)) {
+      return NextResponse.json({ error: "You don't have access to this department." }, { status: 403 });
+    }
+
+    const { departments, projects, orgDocuments } = await getOrgCollections();
+    const orgObjectId = toObjectId(orgId);
+    const departmentObjectId = toObjectId(departmentId);
+    const projectObjectId = toObjectId(projectId);
+
+    const [department, project] = await Promise.all([
+      departments.findOne({ _id: departmentObjectId, orgId: orgObjectId }),
+      projects.findOne({ _id: projectObjectId, orgId: orgObjectId, departmentId: departmentObjectId }),
+    ]);
+    if (!department) return NextResponse.json({ error: "Department not found." }, { status: 404 });
+    if (!project) return NextResponse.json({ error: "Project not found in this department." }, { status: 404 });
+
+    const existing = await orgDocuments.findOne({ fileHash });
+    if (existing) return NextResponse.json({ error: "This exact file has already been registered." }, { status: 409 });
+
+    // Same on-chain registration pattern as settlePaygUpload() — treasury
+    // wallet fronts whatever protocol fee applies and registers the asset,
+    // since the org member has no wallet of their own to sign with.
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const treasuryWallet = new ethers.Wallet(TREASURY_WALLET_PRIVATE_KEY, provider);
+    const custodyRead = new ethers.Contract(CUSTODY_ADDRESS, CUSTODY_ABI, provider);
+    const custody = new ethers.Contract(CUSTODY_ADDRESS, CUSTODY_ABI, treasuryWallet);
+
+    const [usdtFeePerGB, inayaFeePerGB] = await Promise.all([custodyRead.usdtFeePerGB(), custodyRead.inayaFeePerGB()]);
+    const sizeBigInt = BigInt(sizeBytes);
+    const usdtFee = (sizeBigInt * usdtFeePerGB) / GB;
+    const inayaFee = (sizeBigInt * inayaFeePerGB) / GB;
+
+    if (usdtFee > 0n) {
+      const usdt = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, treasuryWallet);
+      const allowance = await usdt.allowance(treasuryWallet.address, CUSTODY_ADDRESS);
+      if (allowance < usdtFee) await (await usdt.approve(CUSTODY_ADDRESS, ethers.MaxUint256)).wait();
+    }
+    if (inayaFee > 0n) {
+      const inaya = new ethers.Contract(INAYA_TOKEN_ADDRESS, ERC20_ABI, treasuryWallet);
+      const allowance = await inaya.allowance(treasuryWallet.address, CUSTODY_ADDRESS);
+      if (allowance < inayaFee) await (await inaya.approve(CUSTODY_ADDRESS, ethers.MaxUint256)).wait();
+    }
+
+    const registerTx = await custody.batchRegisterAssets([fileHash], [sizeBytes], [cidAlpha], [cidBeta]);
+    await registerTx.wait();
+
+    const now = new Date().toISOString();
+    await orgDocuments.insertOne({
+      orgId: orgObjectId,
+      departmentId: departmentObjectId,
+      projectId: projectObjectId,
+      filename,
+      fileHash,
+      sizeBytes: Number(sizeBytes),
+      cidAlpha,
+      cidBeta,
+      uploadedByEmail: auth.session.email,
+      txHash: registerTx.hash,
+      status: "active", // Phase 2 introduces the real workflow state machine on top of this
+      createdAt: now,
+      deletedAt: null,
+    });
+
+    return NextResponse.json({ registered: true, txHash: registerTx.hash });
+  } catch (err) {
+    console.error("orgs/documents POST failed:", err);
+    return NextResponse.json({ error: "Could not register the document." }, { status: 500 });
+  }
+}
+
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const orgId = searchParams.get("orgId");
+    const departmentId = searchParams.get("departmentId");
+    const projectId = searchParams.get("projectId");
+    if (!orgId || !departmentId || !projectId) {
+      return NextResponse.json({ error: "orgId, departmentId, and projectId are required." }, { status: 400 });
+    }
+
+    await ensureOrgIndexes();
+    const auth = await requireMembership(req, orgId);
+    if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if (!canAccessDepartment(auth.membership, departmentId)) {
+      return NextResponse.json({ error: "You don't have access to this department." }, { status: 403 });
+    }
+
+    const { orgDocuments } = await getOrgCollections();
+    const list = await orgDocuments
+      .find({ orgId: toObjectId(orgId), departmentId: toObjectId(departmentId), projectId: toObjectId(projectId), deletedAt: null })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return NextResponse.json({
+      documents: list.map((d) => ({
+        id: d._id.toString(),
+        filename: d.filename,
+        fileHash: d.fileHash,
+        sizeBytes: d.sizeBytes,
+        uploadedByEmail: d.uploadedByEmail,
+        status: d.status,
+        createdAt: d.createdAt,
+      })),
+    });
+  } catch (err) {
+    console.error("orgs/documents GET failed:", err);
+    return NextResponse.json({ error: "Could not fetch documents." }, { status: 500 });
+  }
+}
