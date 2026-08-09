@@ -8,10 +8,10 @@
 // this person switch between."
 
 import { NextResponse } from "next/server";
-import { getOrgCollections, getSession, SESSION_COOKIE } from "../../../../lib/orgs.js";
+import { getOrgCollections, getSession, getRawSessionToken } from "../../../../lib/orgs.js";
 
 export async function GET(req) {
-  const rawToken = req.cookies.get(SESSION_COOKIE)?.value;
+  const rawToken = getRawSessionToken(req);
   const session = await getSession(rawToken);
   if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 401 });

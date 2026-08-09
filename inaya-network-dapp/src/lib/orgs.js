@@ -106,6 +106,23 @@ export async function ensureOrgIndexes() {
   indexesEnsured = true;
 }
 
+/** Extracts the raw session token from a request. Web clients send it as the
+ *  inaya_org_session cookie (set by GET /api/orgs/login/consume). Mobile has no
+ *  cookie jar shared with the app's own fetch calls (a magic link opened from an
+ *  email opens the device's system browser, not the app, so any cookie it gets
+ *  set stays trapped there) — so the mobile client instead consumes its login
+ *  token via POST /api/orgs/login/consume-token, gets the raw session token back
+ *  in the JSON body, and sends it back as `Authorization: Bearer <token>` on
+ *  every subsequent request. Both paths resolve to the same sessions collection,
+ *  so nothing else about session validation differs between web and mobile. */
+export function getRawSessionToken(req) {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice("Bearer ".length).trim();
+  }
+  return req.cookies.get(SESSION_COOKIE)?.value || null;
+}
+
 /** Looks up the active session for a request's session cookie value (the raw token,
  *  not the hash). Returns null for missing/expired/unknown tokens rather than throwing —
  *  callers decide whether that's a 401 or an anonymous view. */
@@ -141,7 +158,7 @@ export function toObjectId(id) {
  *  Pass requireManage:true for owner/admin-only actions (inviting members, creating
  *  departments/projects); omit it for anything any active member can do. */
 export async function requireMembership(req, orgId, { requireManage = false } = {}) {
-  const rawToken = req.cookies.get(SESSION_COOKIE)?.value;
+  const rawToken = getRawSessionToken(req);
   const session = await getSession(rawToken);
   if (!session) return { error: "Not signed in.", status: 401 };
 
@@ -157,6 +174,42 @@ export async function requireMembership(req, orgId, { requireManage = false } = 
   }
 
   return { session, membership };
+}
+
+/** Validates and consumes a magic-link token (shared by the web GET redirect route and
+ *  the mobile POST JSON route) — marks it used, flips an invite's membership to active,
+ *  and issues a fresh session. Returns { error, status } or { email, sessionToken }.
+ *  Does NOT set a cookie or build a response — callers decide how to hand the token back. */
+export async function consumeLoginToken(token) {
+  if (!token) return { error: "missing_token", status: 400 };
+
+  await ensureOrgIndexes();
+  const { magicLinks, orgMembers, sessions } = await getOrgCollections();
+
+  const link = await magicLinks.findOne({ tokenHash: hashToken(token) });
+  if (!link || link.usedAt || new Date(link.expiresAt).getTime() < Date.now()) {
+    return { error: "invalid_or_expired", status: 400 };
+  }
+
+  const now = new Date().toISOString();
+  await magicLinks.updateOne({ _id: link._id }, { $set: { usedAt: now } });
+
+  if (link.purpose === "invite" && link.orgId) {
+    await orgMembers.updateOne(
+      { orgId: link.orgId, email: link.email },
+      { $set: { status: "active", joinedAt: now } }
+    );
+  }
+
+  const sessionToken = generateToken();
+  await sessions.insertOne({
+    tokenHash: hashToken(sessionToken),
+    email: link.email,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    createdAt: now,
+  });
+
+  return { email: link.email, sessionToken };
 }
 
 /** Members see documents in departments they're assigned to; owner/admin see everything

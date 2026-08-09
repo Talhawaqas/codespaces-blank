@@ -6,10 +6,10 @@
 // token can't be replayed if it leaked before logout.
 
 import { NextResponse } from "next/server";
-import { getOrgCollections, hashToken, SESSION_COOKIE } from "../../../../lib/orgs.js";
+import { getOrgCollections, hashToken, getRawSessionToken, SESSION_COOKIE } from "../../../../lib/orgs.js";
 
 export async function POST(req) {
-  const rawToken = req.cookies.get(SESSION_COOKIE)?.value;
+  const rawToken = getRawSessionToken(req);
   if (rawToken) {
     const { sessions } = await getOrgCollections();
     await sessions.deleteOne({ tokenHash: hashToken(rawToken) });
