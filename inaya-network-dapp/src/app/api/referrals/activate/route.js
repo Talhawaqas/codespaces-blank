@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { createDiditSession } from "../../../../lib/didit.js";
 import { getReferralCollections, ensureReferralIndexes, normalizeEmail, isValidEmail } from "../../../../lib/referrals.js";
 
+export const dynamic = 'force-dynamic';
 export async function POST(req) {
   try {
     const { email: rawEmail } = await req.json();

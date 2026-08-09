@@ -23,6 +23,7 @@ import {
   REWARD_PER_SUCCESSFUL_REFERRAL_INAYA,
 } from "../../../../lib/referrals.js";
 
+export const dynamic = 'force-dynamic';
 export async function POST(req) {
   try {
     const { referralCode, referredEmail: rawReferred } = await req.json();

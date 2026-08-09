@@ -29,6 +29,7 @@ import { handleActivationDecision, handleReferralDecision } from "../../../../li
 
 export const maxDuration = 30;
 
+export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const rawBody = await req.text();
 

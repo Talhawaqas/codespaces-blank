@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { getReferralCollections, getLeaderboardEntries } from "../../../../lib/referrals.js";
 
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const { referrers } = await getReferralCollections();
