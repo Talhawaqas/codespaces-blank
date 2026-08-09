@@ -245,6 +245,11 @@ h2.block-heading {
   --col-count: 2;
 }
 
+.card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .card p {
   color: var(--ink);
   font-size: 9.5pt;
@@ -259,6 +264,8 @@ ul.bullets {
 ul.bullets li {
   margin-bottom: 2.5mm;
   font-size: 9.8pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 ol.numbered {
@@ -269,6 +276,8 @@ ol.numbered {
 ol.numbered li {
   margin-bottom: 3mm;
   font-size: 9.8pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 ol.numbered li strong {
@@ -299,6 +308,11 @@ table.data td {
   white-space: pre-line;
 }
 
+table.data tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .note {
   background: #ffffff;
   border: 0.4pt solid var(--rule);
@@ -306,6 +320,8 @@ table.data td {
   padding: 4mm 5mm;
   margin-bottom: 4mm;
   font-size: 9.5pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .note .note-label {
@@ -320,10 +336,14 @@ table.data td {
   border-left: 2.5pt solid var(--gold);
   padding-left: 5mm;
   margin: 5mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .subsection {
   margin-bottom: 4.5mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .subsection-heading {
