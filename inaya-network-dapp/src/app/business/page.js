@@ -315,6 +315,13 @@ const ICONS = {
       <path d="M12 7v5l3.5 2" />
     </>
   ),
+  aiAssistant: (
+    <>
+      <path d="M12 3a1 1 0 0 1 1 1v1.06a7.5 7.5 0 0 1 6.94 6.94H21a1 1 0 0 1 0 2h-1.06a7.5 7.5 0 0 1-6.94 6.94V22a1 1 0 0 1-2 0v-1.06a7.5 7.5 0 0 1-6.94-6.94H3a1 1 0 0 1 0-2h1.06A7.5 7.5 0 0 1 11 5.06V4a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="12" r="3.2" />
+    </>
+  ),
+  send: <path d="M4 12l16-8-6 8 6 8-16-8Z" />,
   logout: (
     <>
       <path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4" />
@@ -351,6 +358,7 @@ const NAV_ITEMS = [
   { key: "documents", label: "Documents", icon: "documents" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "activity", label: "Activity", icon: "activity" },
+  { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
   { key: "settings", label: "Settings", icon: "settings", manageOnly: true },
 ];
 
@@ -427,6 +435,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     browse: "Company Records",
     approvals: "Approvals",
     activity: "Activity",
+    ai: "AI Assistant",
     settings: "Settings",
   };
 
@@ -487,6 +496,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           )}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
+          {activeView === "ai" && <AIAssistantView orgId={orgId} />}
           {activeView === "settings" && canManage && <TeamView orgId={orgId} />}
         </main>
       </div>
@@ -788,6 +798,101 @@ function ActivityView({ orgId }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// AI ASSISTANT — natural-language questions over this org's departments/
+// projects/documents/activity. Every answer comes from
+// POST /api/ai/business-chat, which runs Gemini function-calling against
+// tools that are themselves permission-scoped server-side
+// (lib/ai-business-tools.js) — this component has no say in what the
+// assistant can see, it only renders the conversation.
+// ============================================================
+const AI_SUGGESTIONS = [
+  "Which documents are waiting for approval?",
+  "Show me the latest rejected documents.",
+  "Which projects currently have pending documents?",
+  "Show me our recently approved documents.",
+];
+
+function AIAssistantView({ orgId }) {
+  const [messages, setMessages] = useState([
+    { role: "assistant", content: "Hi — ask me about your company's departments, projects, documents, or recent activity. I only show you what you're already allowed to see." },
+  ]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function send(text) {
+    const trimmed = (text ?? input).trim();
+    if (!trimmed || sending) return;
+    const nextMessages = [...messages, { role: "user", content: trimmed }];
+    setMessages(nextMessages);
+    setInput("");
+    setSending(true);
+    setError("");
+    try {
+      const data = await api("/api/ai/business-chat", { method: "POST", body: JSON.stringify({ orgId, messages: nextMessages }) });
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+                m.role === "user" ? "bg-[#00f2fe]/15 text-white" : "bg-white/5 text-slate-200"
+              }`}
+            >
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div className="flex justify-start">
+            <div className="bg-white/5 text-[#64748b] rounded-2xl px-4 py-2.5 text-sm italic">Thinking…</div>
+          </div>
+        )}
+      </div>
+
+      {messages.length <= 1 && (
+        <div className="flex flex-wrap gap-2 py-3 border-t border-white/5 mt-3">
+          {AI_SUGGESTIONS.map((s) => (
+            <button key={s} onClick={() => send(s)} className="text-[10px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder="Ask about your company's documents, approvals, or activity…"
+          disabled={sending}
+          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569]"
+        />
+        <button
+          onClick={() => send()}
+          disabled={sending || !input.trim()}
+          className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-r from-[#00f2fe] to-[#4facfe] flex items-center justify-center disabled:opacity-40"
+        >
+          <Icon path={ICONS.send} className="w-4 h-4 text-black" />
+        </button>
+      </div>
     </div>
   );
 }
