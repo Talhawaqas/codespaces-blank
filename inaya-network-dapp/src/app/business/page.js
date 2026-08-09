@@ -264,6 +264,14 @@ function AuthScreen({ notice, onAuthed }) {
           <a href={fallbackUrl} className="text-[#00f2fe] underline text-xs break-all">{fallbackUrl}</a>
         </div>
       )}
+
+      <a
+        href="/docs/business-workspace-guide.md"
+        download
+        className="mt-8 flex items-center justify-center gap-2 text-xs text-[#64748b] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+      >
+        <span aria-hidden>↓</span> Download the step-by-step setup guide
+      </a>
     </div>
   );
 }
@@ -464,6 +472,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/docs/business-workspace-guide.md"
+              download
+              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#64748b] hover:text-slate-300 px-2 py-2"
+              title="Download the step-by-step setup guide"
+            >
+              ↓ Guide
+            </a>
             <a
               href="/"
               className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#64748b] hover:text-slate-300 px-2 py-2"
