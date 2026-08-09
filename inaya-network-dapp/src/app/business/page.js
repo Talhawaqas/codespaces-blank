@@ -41,6 +41,34 @@ async function encryptData(text, password) {
   return window.btoa(binary);
 }
 
+async function decryptData(base64Str, password) {
+  const binaryStr = window.atob(base64Str);
+  const combined = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) combined[i] = binaryStr.charCodeAt(i);
+  const salt = combined.slice(0, 16);
+  const iv = combined.slice(16, 28);
+  const encrypted = combined.slice(28);
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+  const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted);
+  return new TextDecoder().decode(decrypted);
+}
+
+// Same two-gateway fallback the wallet-connected flow uses (page.js) —
+// Cloudflare's IPFS gateway first, Pinata's as a fallback.
+async function fetchShardFromIPFS(cid) {
+  try {
+    const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
+    const json = await res.json();
+    return json.shard;
+  } catch {
+    const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+    const json = await res.json();
+    return json.shard;
+  }
+}
+
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -468,9 +496,16 @@ const ACTIONS_BY_STATUS = {
   ARCHIVED: [["restore", "Restore", "manage"]],
 };
 
+const ACCESS_LEVEL_HINTS = {
+  PRIVATE: "Only you and people you explicitly grant access to",
+  DEPARTMENT: "Anyone in this department",
+  PROJECT: "Anyone added to this project",
+};
+
 function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, onUploaded }) {
   const [file, setFile] = useState(null);
   const [passkey, setPasskey] = useState("");
+  const [accessLevel, setAccessLevel] = useState("DEPARTMENT");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -492,7 +527,7 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
 
       await api("/api/orgs/documents", {
         method: "POST",
-        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes: file.size, cidAlpha, cidBeta }),
+        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes: file.size, cidAlpha, cidBeta, accessLevel }),
       });
 
       setFile(null);
@@ -510,6 +545,12 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
       <form onSubmit={handleUpload} className="mb-4 space-y-2">
         <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[10px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
         <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white" />
+        <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+          <option value="PRIVATE">Private</option>
+          <option value="DEPARTMENT">Department</option>
+          <option value="PROJECT">Project</option>
+        </select>
+        <p className="text-[9px] text-[#64748b]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
         <button disabled={uploading || !file || !passkey} className="w-full text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] py-2 rounded-lg disabled:opacity-40">
           {uploading ? "Encrypting & uploading…" : "Upload document"}
         </button>
@@ -534,8 +575,14 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
   const [showActivity, setShowActivity] = useState(false);
   const [activity, setActivity] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
+  const [downloadPasskey, setDownloadPasskey] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const availableActions = (ACTIONS_BY_STATUS[doc.status] || []).filter(([, , who]) => who === "member" || canManage);
+  const canManageThisDoc = canManage || doc.yourAccessLevel === "MANAGE";
 
   async function loadActivity() {
     setLoadingActivity(true);
@@ -575,6 +622,27 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
     loadActivity();
   }
 
+  async function handleDownload() {
+    if (!downloadPasskey) return;
+    setDownloading(true);
+    setError("");
+    try {
+      const info = await api(`/api/orgs/documents/${doc.id}/retrieve?orgId=${orgId}`);
+      const [shardA, shardB] = await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
+      const dataUrl = await decryptData(shardA + shardB, downloadPasskey);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = info.filename;
+      a.click();
+      setShowDownload(false);
+      setDownloadPasskey("");
+    } catch (err) {
+      setError(err.message || "Could not decrypt — check the passkey.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="bg-black/20 border border-white/5 rounded-lg p-2.5">
       <div className="flex items-start justify-between gap-2">
@@ -582,9 +650,12 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
           <div className="text-xs text-white truncate">{doc.filename}</div>
           <div className="text-[10px] text-[#64748b] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
         </div>
-        <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
-          {doc.status.replace("_", " ")}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
+            {doc.status.replace("_", " ")}
+          </span>
+          <span className="text-[8px] font-mono text-[#64748b]">{doc.accessLevel}</span>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
@@ -598,12 +669,43 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             {acting === action ? "…" : label}
           </button>
         ))}
+        <button onClick={() => setShowDownload((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+          Download
+        </button>
+        {canManageThisDoc && (
+          <>
+            <button onClick={() => setShowPermissions((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+              Permissions
+            </button>
+            <button onClick={() => setShowShare((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+              Share
+            </button>
+          </>
+        )}
         <button onClick={toggleActivity} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md text-[#64748b] hover:text-slate-300 ml-auto">
           {showActivity ? "Hide history" : "History"}
         </button>
       </div>
 
       {error && <p className="text-red-400 text-[10px] mt-1.5">{error}</p>}
+
+      {showDownload && (
+        <div className="mt-2 border-t border-white/5 pt-2 flex gap-2">
+          <input
+            type="password"
+            value={downloadPasskey}
+            onChange={(e) => setDownloadPasskey(e.target.value)}
+            placeholder="Encryption passkey"
+            className="flex-1 bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white"
+          />
+          <button onClick={handleDownload} disabled={downloading || !downloadPasskey} className="text-[9px] font-bold uppercase px-3 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
+            {downloading ? "…" : "Go"}
+          </button>
+        </div>
+      )}
+
+      {showPermissions && <PermissionsPanel documentId={doc.id} orgId={orgId} ownerEmail={doc.uploadedByEmail} />}
+      {showShare && <SharePanel documentId={doc.id} orgId={orgId} />}
 
       {showActivity && (
         <div className="mt-2 border-t border-white/5 pt-2 space-y-1">
@@ -623,6 +725,198 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// PERMISSIONS PANEL — "people with access" per the SOW's mockup
+// ============================================================
+function PermissionsPanel({ documentId, orgId, ownerEmail }) {
+  const [grants, setGrants] = useState(null);
+  const [error, setError] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newLevel, setNewLevel] = useState("VIEW");
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api(`/api/orgs/documents/${documentId}/permissions?orgId=${orgId}`);
+      setGrants(data.grants);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [documentId, orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${documentId}/permissions`, { method: "POST", body: JSON.stringify({ orgId, email: newEmail, level: newLevel }) });
+      setNewEmail("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleChange(email, level) {
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${documentId}/permissions`, { method: "POST", body: JSON.stringify({ orgId, email, level }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleRevoke(email) {
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${documentId}/permissions`, { method: "DELETE", body: JSON.stringify({ orgId, email }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="mt-2 border-t border-white/5 pt-2">
+      <p className="text-[9px] font-bold uppercase text-[#64748b] mb-1.5">People with access</p>
+      <div className="flex items-center justify-between text-[10px] py-1">
+        <span className="text-slate-300 truncate">{ownerEmail}</span>
+        <span className="text-[#64748b] font-mono">Owner</span>
+      </div>
+      {grants === null ? (
+        <p className="text-[#475569] text-[10px] italic">Loading…</p>
+      ) : (
+        grants.map((g) => (
+          <div key={g.email} className="flex items-center justify-between gap-2 text-[10px] py-1">
+            <span className="text-slate-300 truncate">{g.email}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/30 border border-white/10 rounded px-1 py-0.5 text-[9px] text-white">
+                <option value="VIEW">View</option>
+                <option value="EDIT">Edit</option>
+                <option value="MANAGE">Manage</option>
+              </select>
+              <button onClick={() => handleRevoke(g.email)} className="text-red-400 hover:text-red-300 text-[9px] font-bold uppercase px-1.5">Revoke</button>
+            </div>
+          </div>
+        ))
+      )}
+      <form onSubmit={handleAdd} className="flex items-center gap-1.5 mt-2">
+        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white" />
+        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/30 border border-white/10 rounded px-1 py-1 text-[9px] text-white">
+          <option value="VIEW">View</option>
+          <option value="EDIT">Edit</option>
+          <option value="MANAGE">Manage</option>
+        </select>
+        <button disabled={submitting} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">+ Add</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// SHARE PANEL — secure share link creation + active shares + revoke
+// ============================================================
+function SharePanel({ documentId, orgId }) {
+  const [shares, setShares] = useState(null);
+  const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [preset, setPreset] = useState("24h");
+  const [maxUses, setMaxUses] = useState("");
+  const [newShareUrl, setNewShareUrl] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api(`/api/orgs/documents/${documentId}/shares?orgId=${orgId}`);
+      setShares(data.shares);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [documentId, orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    setCreating(true);
+    setError("");
+    setNewShareUrl("");
+    try {
+      const body = { orgId, expirationPreset: preset };
+      if (maxUses) body.maxUses = Number(maxUses);
+      const data = await api(`/api/orgs/documents/${documentId}/shares`, { method: "POST", body: JSON.stringify(body) });
+      setNewShareUrl(data.shareUrl);
+      setMaxUses("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRevoke(shareId) {
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${documentId}/shares/${shareId}/revoke`, { method: "POST", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="mt-2 border-t border-white/5 pt-2">
+      <p className="text-[9px] font-bold uppercase text-[#64748b] mb-1.5">Secure sharing</p>
+      <form onSubmit={handleCreate} className="flex items-center gap-1.5">
+        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/30 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white">
+          <option value="1h">Expires in 1 hour</option>
+          <option value="24h">Expires in 24 hours</option>
+          <option value="7d">Expires in 7 days</option>
+          <option value="30d">Expires in 30 days</option>
+        </select>
+        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white" />
+        <button disabled={creating} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
+          {creating ? "…" : "Create link"}
+        </button>
+      </form>
+
+      {newShareUrl && (
+        <div className="mt-2 bg-black/20 border border-white/10 rounded-lg p-2">
+          <p className="text-[9px] text-[#64748b] mb-1">Share this link — it won't be shown again:</p>
+          <p className="text-[10px] text-[#00f2fe] break-all font-mono">{newShareUrl}</p>
+        </div>
+      )}
+
+      {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+
+      <div className="mt-2 space-y-1">
+        {shares === null ? (
+          <p className="text-[#475569] text-[10px] italic">Loading…</p>
+        ) : shares.length === 0 ? (
+          <p className="text-[#475569] text-[10px] italic">No share links yet.</p>
+        ) : (
+          shares.map((s) => (
+            <div key={s.shareId} className="flex items-center justify-between gap-2 text-[10px] bg-black/20 rounded px-2 py-1">
+              <span className="text-slate-300">
+                {s.status} · {s.useCount}{s.maxUses !== null ? `/${s.maxUses}` : ""} uses · expires {new Date(s.expiresAt).toLocaleString()}
+              </span>
+              {s.status === "active" && (
+                <button onClick={() => handleRevoke(s.shareId)} className="text-red-400 hover:text-red-300 text-[9px] font-bold uppercase shrink-0">Revoke</button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

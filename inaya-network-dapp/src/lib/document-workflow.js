@@ -10,13 +10,18 @@
 //         REJECTED -> DRAFT (revise, then resubmit via the same DRAFT->PENDING
 //         transition)     ARCHIVED -> APPROVED (restore)
 //
-// ROLES: "revise" and "submit" are open to any member with access to the
-// document's department — reworking or sending a draft onward is normal
-// day-to-day document handling. Every other transition (starting a review,
-// approving, rejecting, archiving, restoring) requires owner/admin
-// (canManageOrg) — these are the org's actual review authority, and Phase 1
-// has no separate "reviewer" role to delegate to without inventing a new
-// permission concept the SOW didn't ask for.
+// ROLES: "revise" and "submit" require at least EDIT-level document access
+// (Phase 3's getDocumentAccessLevel — org owner/admin, the document owner,
+// an explicit EDIT/MANAGE grant, or implicit VIEW-only department/project
+// access does NOT qualify, since editing a draft is more than viewing it).
+// Every other transition (starting a review, approving, rejecting,
+// archiving, restoring) requires owner/admin (canManageOrg) — these are
+// the org's actual review authority, and Phase 1 has no separate
+// "reviewer" role to delegate to without inventing a new permission
+// concept the SOW didn't ask for. Document-level permissions (VIEW/EDIT/
+// MANAGE) NEVER grant workflow approval authority — that separation is a
+// hard requirement, not an oversight (see document-permissions.js's
+// module comment).
 //
 // ATOMICITY + REPLAY SAFETY: transitionDocument() does ONE findOneAndUpdate
 // with a filter requiring the document's CURRENT status to still equal the
@@ -31,8 +36,11 @@
 // only ever calls documentActivity.insertOne(). There is no update/delete
 // path for this collection anywhere in the codebase — don't add one.
 
-import { randomUUID } from "node:crypto";
-import { getOrgCollections, canManageOrg, canAccessDepartment, toObjectId } from "./orgs.js";
+import { getOrgCollections, canManageOrg, toObjectId } from "./orgs.js";
+import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
+import { logDocumentActivity } from "./activity-log.js";
+
+export { logDocumentActivity }; // re-exported — existing imports across the codebase use this path
 
 export const DOCUMENT_STATES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 
@@ -45,23 +53,6 @@ export const TRANSITIONS = {
   archive: { from: "APPROVED", to: "ARCHIVED", requiresManage: true, activityAction: "ARCHIVED" },
   restore: { from: "ARCHIVED", to: "APPROVED", requiresManage: true, activityAction: "RESTORED" },
 };
-
-export async function logDocumentActivity({ organizationId, documentId, actorId, action, previousState, newState, metadata }) {
-  const { documentActivity } = await getOrgCollections();
-  const event = {
-    eventId: randomUUID(),
-    organizationId: toObjectId(organizationId),
-    documentId: toObjectId(documentId),
-    actorId,
-    action,
-    previousState: previousState ?? null,
-    newState: newState ?? null,
-    timestamp: new Date().toISOString(),
-    metadata: metadata || {},
-  };
-  await documentActivity.insertOne(event);
-  return event;
-}
 
 /** The single enforcement point for every document state change. Returns
  *  { document } on success, or { error, status } on failure — callers
@@ -89,8 +80,13 @@ export async function transitionDocument({ orgId, documentId, action, membership
   if (!doc) {
     return { error: "Document not found.", status: 404 };
   }
-  if (!canAccessDepartment(membership, doc.departmentId)) {
-    return { error: "You don't have access to this department.", status: 403 };
+  if (!definition.requiresManage) {
+    // submit/revise: EDIT-level document access, not just department
+    // visibility — see this file's ROLES comment.
+    const accessLevel = await getDocumentAccessLevel({ orgId, doc, membership, email: actorEmail });
+    if (!meetsLevel(accessLevel, "EDIT")) {
+      return { error: "You don't have permission to do that.", status: 403 };
+    }
   }
 
   const updated = await orgDocuments.findOneAndUpdate(

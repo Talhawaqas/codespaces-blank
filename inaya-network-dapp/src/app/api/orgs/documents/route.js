@@ -14,13 +14,22 @@
 //   production for an unrelated reason.
 //
 // GET /api/orgs/documents?orgId=...&departmentId=...&projectId=...
-//   Lists documents in a project. Gated by canAccessDepartment — same
-//   department-scoped visibility as everything else in this feature.
+//   Lists documents in a project — metadata only, never cidAlpha/cidBeta
+//   (see the dedicated .../[documentId]/retrieve route for that, which
+//   goes through the same permission resolution but is its own explicit
+//   step, per the SOW's "never bypass authorization to reach retrieval"
+//   requirement). Listable by anyone who can access the department OR is
+//   a project member (Phase 3 — project membership is its own path to a
+//   project's resources, not gated behind also being in the department);
+//   each individual document is then filtered by its resolved access
+//   level, so e.g. a PRIVATE document in an otherwise-visible project
+//   still won't appear for someone without an explicit grant.
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
 import { logDocumentActivity } from "../../../../lib/document-workflow.js";
+import { getBulkDocumentAccess, isProjectMember, ACCESS_LEVELS } from "../../../../lib/document-permissions.js";
 
 const RPC_URL = process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
 const CUSTODY_ADDRESS = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // matches page.js's liveContractAddress / stripe-webhook's CUSTODY_ADDRESS
@@ -43,13 +52,16 @@ export const maxDuration = 60; // on-chain confirmations can be slow, same reaso
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
+    const { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel = "DEPARTMENT" } = await req.json();
 
     if (!orgId || !departmentId || !projectId) {
       return NextResponse.json({ error: "orgId, departmentId, and projectId are required." }, { status: 400 });
     }
     if (!filename || !fileHash || !sizeBytes || !cidAlpha || !cidBeta) {
       return NextResponse.json({ error: "filename, fileHash, sizeBytes, cidAlpha, and cidBeta are required." }, { status: 400 });
+    }
+    if (!ACCESS_LEVELS.includes(accessLevel)) {
+      return NextResponse.json({ error: `accessLevel must be one of: ${ACCESS_LEVELS.join(", ")}` }, { status: 400 });
     }
 
     await ensureOrgIndexes();
@@ -114,6 +126,7 @@ export async function POST(req) {
       uploadedByEmail: auth.session.email,
       txHash: registerTx.hash,
       status: "DRAFT", // Phase 2 workflow — see src/lib/document-workflow.js
+      accessLevel, // Phase 3 permissions — see src/lib/document-permissions.js
       createdAt: now,
       deletedAt: null,
     });
@@ -148,8 +161,11 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    if (!canAccessDepartment(auth.membership, departmentId)) {
-      return NextResponse.json({ error: "You don't have access to this department." }, { status: 403 });
+
+    const hasDeptAccess = canAccessDepartment(auth.membership, departmentId);
+    const hasProjectAccess = hasDeptAccess || (await isProjectMember({ orgId, projectId, email: auth.session.email }));
+    if (!hasProjectAccess) {
+      return NextResponse.json({ error: "You don't have access to this project." }, { status: 403 });
     }
 
     const { orgDocuments } = await getOrgCollections();
@@ -158,14 +174,22 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .toArray();
 
+    // Per-document filtering — being able to see the project doesn't mean
+    // every document inside it is visible (a PRIVATE one still needs an
+    // explicit grant or ownership). One bulk resolution, not one query per doc.
+    const accessByDoc = await getBulkDocumentAccess({ orgId, email: auth.session.email, membership: auth.membership, docs: list });
+    const visible = list.filter((d) => accessByDoc.get(d._id.toString()));
+
     return NextResponse.json({
-      documents: list.map((d) => ({
+      documents: visible.map((d) => ({
         id: d._id.toString(),
         filename: d.filename,
         fileHash: d.fileHash,
         sizeBytes: d.sizeBytes,
         uploadedByEmail: d.uploadedByEmail,
         status: d.status,
+        accessLevel: d.accessLevel || "DEPARTMENT",
+        yourAccessLevel: accessByDoc.get(d._id.toString()),
         createdAt: d.createdAt,
       })),
     });

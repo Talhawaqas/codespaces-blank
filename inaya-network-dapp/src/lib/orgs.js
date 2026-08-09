@@ -65,6 +65,9 @@ export async function getOrgCollections() {
     sessions: db.collection("sessions"),
     orgDocuments: db.collection("org_documents"),
     documentActivity: db.collection("document_activity"),
+    projectMembers: db.collection("project_members"),
+    documentPermissions: db.collection("document_permissions"),
+    documentShares: db.collection("document_shares"),
   };
 }
 
@@ -72,7 +75,10 @@ let indexesEnsured = false;
 
 export async function ensureOrgIndexes() {
   if (indexesEnsured) return;
-  const { orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity } = await getOrgCollections();
+  const {
+    orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity,
+    projectMembers, documentPermissions, documentShares,
+  } = await getOrgCollections();
 
   await Promise.all([
     orgMembers.createIndex({ orgId: 1, email: 1 }, { unique: true }),
@@ -87,6 +93,14 @@ export async function ensureOrgIndexes() {
     orgDocuments.createIndex({ fileHash: 1 }, { unique: true }),
     documentActivity.createIndex({ documentId: 1, timestamp: 1 }),
     documentActivity.createIndex({ eventId: 1 }, { unique: true }),
+    // Phase 3 — permissions & secure sharing
+    projectMembers.createIndex({ orgId: 1, projectId: 1, email: 1 }, { unique: true }),
+    projectMembers.createIndex({ orgId: 1, email: 1 }),
+    documentPermissions.createIndex({ orgId: 1, documentId: 1, email: 1 }, { unique: true }),
+    documentPermissions.createIndex({ orgId: 1, email: 1 }),
+    documentShares.createIndex({ tokenHash: 1 }, { unique: true }),
+    documentShares.createIndex({ documentId: 1 }),
+    documentShares.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
   indexesEnsured = true;
