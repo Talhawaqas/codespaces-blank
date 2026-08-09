@@ -29,10 +29,45 @@ import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, busi
 
 const MAX_TOOL_ROUNDS = 5;
 
+// Unlike /api/ai/chat (a single streamed call), this route can make up to
+// MAX_TOOL_ROUNDS sequential Gemini calls plus MongoDB queries before it
+// has a final answer, each with its own retry-on-503 backoff below —
+// observed taking ~55s end-to-end during a period of real Gemini API
+// congestion. Comfortably past Vercel's default function duration if left
+// unset, with headroom above that observed worst case.
+export const maxDuration = 90;
+
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
+}
+
+const RETRYABLE_STATUSES = new Set([429, 503]); // rate-limited / model overloaded — both transient
+const RETRY_DELAYS_MS = [700, 1800]; // two retries: short backoff, then a longer one
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Gemini's flash models intermittently return a 503 "currently experiencing
+ *  high demand" under load — seen in production for this exact route. A
+ *  short retry-with-backoff turns that into a slightly slower reply instead
+ *  of a hard failure, without masking a genuinely broken key/config (those
+ *  fail with a different status and aren't retried). */
+async function generateContentWithRetry(ai, params) {
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      return await ai.models.generateContent(params);
+    } catch (err) {
+      lastErr = err;
+      if (!RETRYABLE_STATUSES.has(err?.status) || attempt === RETRY_DELAYS_MS.length) throw err;
+      console.warn(`business-chat: Gemini call got ${err.status}, retrying in ${RETRY_DELAYS_MS[attempt]}ms...`);
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastErr;
 }
 
 export async function POST(req) {
@@ -75,7 +110,7 @@ export async function POST(req) {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       let response;
       try {
-        response = await ai.models.generateContent({
+        response = await generateContentWithRetry(ai, {
           model: "gemini-flash-latest",
           contents,
           config: {
