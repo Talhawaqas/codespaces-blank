@@ -4351,6 +4351,9 @@ export default function Home() {
             <a href="/business" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
               Business Workspace ↗
             </a>
+            <a href="/business/roadmap" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
+              Business SaaS ↗
+            </a>
           </nav>
 
           {/* VIEWPORT AREA 1: HOME PANEL */}
