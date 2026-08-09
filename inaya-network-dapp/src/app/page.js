@@ -4345,6 +4345,12 @@ export default function Home() {
             {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
               <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
             ))}
+            {/* /business is a genuinely separate Next.js route (its own email+
+                magic-link auth, no wallet) — a real link, not a setCurrentPage
+                tab like everything else in this nav. */}
+            <a href="/business" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
+              Business Workspace ↗
+            </a>
           </nav>
 
           {/* VIEWPORT AREA 1: HOME PANEL */}
