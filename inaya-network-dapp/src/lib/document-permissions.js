@@ -153,6 +153,52 @@ export async function getBulkDocumentAccess({ orgId, email, membership, docs }) 
   return result;
 }
 
+/** Resolves everything one member can see across an entire org in one pass —
+ *  departments they can access, projects inside those departments (plus any
+ *  project they're an explicit member of even outside those departments,
+ *  same OR-path GET /api/orgs/documents already uses), and documents inside
+ *  those projects filtered through the usual accessLevel/explicit-grant
+ *  resolution. Backs the dashboard and activity-feed aggregate routes —
+ *  both need "what can this person see, org-wide" rather than one
+ *  project's worth at a time, and this is the one place that logic lives
+ *  so they don't each re-derive it. Org owner/admin naturally get
+ *  everything, since canAccessDepartment/getBulkDocumentAccess already
+ *  bypass every check for them. */
+export async function getAccessibleScope({ orgId, membership, email }) {
+  const { departments, projects, orgDocuments, projectMembers } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const isOrgManager = canManageOrg(membership);
+
+  const allDepartments = await departments.find({ orgId: orgObjectId }).toArray();
+  const visibleDepartments = allDepartments.filter((d) => canAccessDepartment(membership, d._id));
+  const visibleDeptIds = visibleDepartments.map((d) => d._id);
+
+  const projectsInDepts = visibleDeptIds.length
+    ? await projects.find({ orgId: orgObjectId, departmentId: { $in: visibleDeptIds } }).toArray()
+    : [];
+
+  let visibleProjects = projectsInDepts;
+  if (!isOrgManager) {
+    const memberships = await projectMembers.find({ orgId: orgObjectId, email }).toArray();
+    const existingIds = new Set(projectsInDepts.map((p) => p._id.toString()));
+    const extraIds = memberships.map((m) => m.projectId).filter((id) => !existingIds.has(id.toString()));
+    if (extraIds.length) {
+      const extraProjects = await projects.find({ _id: { $in: extraIds } }).toArray();
+      visibleProjects = [...projectsInDepts, ...extraProjects];
+    }
+  }
+
+  const projectIds = visibleProjects.map((p) => p._id);
+  const docs = projectIds.length
+    ? await orgDocuments.find({ orgId: orgObjectId, projectId: { $in: projectIds }, deletedAt: null }).sort({ createdAt: -1 }).toArray()
+    : [];
+
+  const accessByDoc = await getBulkDocumentAccess({ orgId, email, membership, docs });
+  const visibleDocuments = docs.filter((d) => accessByDoc.get(d._id.toString()));
+
+  return { visibleDepartments, visibleProjects, visibleDocuments };
+}
+
 /** The full chain for a single-document route: load the document (scoped to
  *  orgId, so cross-org IDs 404 the same way document-workflow.js's org
  *  isolation does), resolve access, and enforce a minimum level. Returns

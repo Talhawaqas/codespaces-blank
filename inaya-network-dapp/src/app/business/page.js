@@ -17,6 +17,16 @@
 // module), and encryptData is pure Web Crypto with no dependency on any
 // wallet state, so duplicating ~15 lines here is lower-risk than
 // refactoring the already-shipped upload flow just to share it.
+//
+// LAYOUT: a fixed left sidebar (Dashboard/Departments/Projects/Documents/
+// Approvals/Activity/Settings) + a scrollable content area, replacing the
+// original single-column/tab layout. The Dashboard, Approvals, and
+// Activity views are backed by two new aggregate routes
+// (/api/orgs/dashboard, /api/orgs/activity) that resolve "everything this
+// member can see across the whole org" in one call via
+// getAccessibleScope() (document-permissions.js) — every number and list
+// shown is real data through the same permission resolution the rest of
+// the app already uses, nothing here is placeholder content.
 
 import { useState, useEffect, useCallback } from "react";
 
@@ -146,50 +156,41 @@ export default function BusinessPage() {
   }
 
   if (sessionLoading) {
-    return <Shell><p className="text-[#64748b] font-mono text-sm">Loading…</p></Shell>;
+    return (
+      <CenteredShell>
+        <p className="text-[#64748b] font-mono text-sm">Loading…</p>
+      </CenteredShell>
+    );
   }
 
   if (!session?.authenticated) {
     return (
-      <Shell>
+      <CenteredShell>
         <AuthScreen notice={notice} onAuthed={refreshSession} />
-      </Shell>
+      </CenteredShell>
     );
   }
 
   const currentMembership = session.orgs.find((o) => o.orgId === selectedOrgId) || session.orgs[0];
 
   return (
-    <Shell>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">Business Records</h1>
-          <p className="text-[#64748b] text-xs font-mono mt-1">{session.email}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {session.orgs.length > 1 && (
-            <select
-              value={selectedOrgId || ""}
-              onChange={(e) => setSelectedOrgId(e.target.value)}
-              className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
-            >
-              {session.orgs.map((o) => (
-                <option key={o.orgId} value={o.orgId}>{o.orgName}</option>
-              ))}
-            </select>
-          )}
-          <button onClick={handleLogout} className="text-xs font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10">
-            Sign out
-          </button>
-        </div>
-      </div>
-
-      {currentMembership && <OrgWorkspace key={currentMembership.orgId} membership={currentMembership} />}
-    </Shell>
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans">
+      {currentMembership && (
+        <Workspace
+          key={currentMembership.orgId}
+          email={session.email}
+          membership={currentMembership}
+          orgs={session.orgs}
+          selectedOrgId={currentMembership.orgId}
+          onSwitchOrg={setSelectedOrgId}
+          onLogout={handleLogout}
+        />
+      )}
+    </div>
   );
 }
 
-function Shell({ children }) {
+function CenteredShell({ children }) {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-6xl mx-auto">{children}</div>
@@ -267,17 +268,540 @@ function AuthScreen({ notice, onAuthed }) {
 }
 
 // ============================================================
-// ORG WORKSPACE (departments -> projects -> documents, + team management)
+// ICONS — small inline SVGs, no icon library dependency in this app.
 // ============================================================
-function OrgWorkspace({ membership }) {
+function Icon({ path, className = "w-[18px] h-[18px]" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {path}
+    </svg>
+  );
+}
+
+const ICONS = {
+  dashboard: (
+    <>
+      <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+    </>
+  ),
+  departments: (
+    <>
+      <rect x="4" y="3" width="12" height="18" rx="1" />
+      <path d="M8 7h1M11 7h1M8 11h1M11 11h1M8 15h1M11 15h1" />
+      <path d="M16 21v-7h4v7" />
+    </>
+  ),
+  projects: <path d="M3 7a1 1 0 0 1 1-1h4l2 2h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z" />,
+  documents: (
+    <>
+      <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v5h5" />
+      <rect x="9.5" y="13" width="5" height="4" rx="1" />
+      <path d="M10.5 13v-1.5a1.5 1.5 0 0 1 3 0V13" />
+    </>
+  ),
+  approvals: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.5 2.5L16 9.5" />
+    </>
+  ),
+  activity: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
+    </>
+  ),
+  chevronRight: <path d="M9 18l6-6-6-6" />,
+  lock: (
+    <>
+      <rect x="5" y="10" width="14" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+};
+
+// The gear icon's cutout path above is fiddly to hand-write cleanly; use a
+// simpler bolt-free cog approximation instead so it actually renders well
+// at 18px.
+ICONS.settings = (
+  <>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7L16 16M8 8 6.3 6.3" />
+  </>
+);
+
+// ============================================================
+// SIDEBAR + WORKSPACE SHELL
+// ============================================================
+const NAV_ITEMS = [
+  { key: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { key: "departments", label: "Departments", icon: "departments" },
+  { key: "projects", label: "Projects", icon: "projects" },
+  { key: "documents", label: "Documents", icon: "documents" },
+  { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
+  { key: "activity", label: "Activity", icon: "activity" },
+  { key: "settings", label: "Settings", icon: "settings", manageOnly: true },
+];
+
+function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen, onCloseMobile }) {
+  return (
+    <>
+      {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-[#090d16] border-r border-white/5 flex flex-col transition-transform duration-200 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <div className="px-5 py-6 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center shrink-0">
+              <span className="text-black font-extrabold text-sm">I</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-extrabold text-sm leading-tight truncate">Inaya Network</p>
+              <p className="text-[#64748b] text-[10px] font-mono uppercase tracking-wide">Business Workspace</p>
+            </div>
+          </div>
+          <div className="mt-4 bg-black/30 border border-white/5 rounded-lg px-3 py-2">
+            <p className="text-slate-200 text-xs font-bold truncate">{orgName}</p>
+            <p className="text-[#00f2fe] text-[10px] font-mono uppercase tracking-wide mt-0.5">{ROLE_LABELS[role] || role}</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV_ITEMS.filter((item) => !item.manageOnly || canManage).map((item) => (
+            <button
+              key={item.key}
+              onClick={() => onNavigate(item.key)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[#94a3b8] hover:bg-white/5 hover:text-slate-200"
+              }`}
+            >
+              <Icon path={ICONS[item.icon]} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="px-3 pb-5">
+          <div className="flex items-center gap-2 px-3 py-3 rounded-lg bg-emerald-400/5 border border-emerald-400/15">
+            <Icon path={ICONS.lock} className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-emerald-300 text-[10px] font-bold uppercase tracking-wide">End-to-end encrypted</p>
+              <p className="text-[#64748b] text-[9px] font-mono">AES-256 · client-side</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
 
-  const [view, setView] = useState("documents"); // 'documents' | 'team'
+  const [activeView, setActiveView] = useState("dashboard");
+  const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  function navigate(view, target) {
+    setActiveView(view === "departments" || view === "projects" || view === "documents" ? "browse" : view);
+    setBrowseTarget(target || null);
+    setMobileNavOpen(false);
+  }
+
+  const VIEW_TITLES = {
+    dashboard: "Overview",
+    browse: "Company Records",
+    approvals: "Approvals",
+    activity: "Activity",
+    settings: "Settings",
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        orgName={membership.orgName}
+        role={role}
+        activeView={activeView}
+        onNavigate={navigate}
+        canManage={canManage}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
+      />
+
+      <div className="flex-1 min-w-0">
+        <header className="sticky top-0 z-30 bg-[#060913]/90 backdrop-blur border-b border-white/5 px-5 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-slate-300 p-1">
+              <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg font-extrabold text-white tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
+              <p className="text-[#64748b] text-[11px] font-mono truncate">{email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {orgs.length > 1 && (
+              <select
+                value={selectedOrgId || ""}
+                onChange={(e) => onSwitchOrg(e.target.value)}
+                className="bg-black/30 border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white"
+              >
+                {orgs.map((o) => (
+                  <option key={o.orgId} value={o.orgId}>{o.orgName}</option>
+                ))}
+              </select>
+            )}
+            <button onClick={onLogout} className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10">
+              Sign out
+            </button>
+          </div>
+        </header>
+
+        <main className="p-5 md:p-8 max-w-6xl">
+          {activeView === "dashboard" && (
+            <DashboardView orgId={orgId} canManage={canManage} onNavigate={navigate} />
+          )}
+          {activeView === "browse" && (
+            <OrgWorkspace
+              key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}
+              orgId={orgId}
+              departmentIds={departmentIds}
+              canManage={canManage}
+              initialDeptId={browseTarget?.deptId || null}
+              initialProjectId={browseTarget?.projectId || null}
+            />
+          )}
+          {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
+          {activeView === "activity" && <ActivityView orgId={orgId} />}
+          {activeView === "settings" && canManage && <TeamView orgId={orgId} />}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// DASHBOARD — overview cards + recent departments/projects/documents.
+// ============================================================
+const STATUS_STYLES = {
+  DRAFT: "bg-white/5 text-[#94a3b8] border-white/10",
+  PENDING: "bg-amber-400/10 text-amber-400 border-amber-400/30",
+  UNDER_REVIEW: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
+  APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
+  REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
+  ARCHIVED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
+};
+
+function StatCard({ icon, label, value, sub }) {
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+      <div className="w-11 h-11 rounded-xl bg-[#00f2fe]/10 flex items-center justify-center shrink-0">
+        <Icon path={ICONS[icon]} className="w-5 h-5 text-[#00f2fe]" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-white text-2xl font-extrabold leading-tight">{value}</p>
+        {sub && <p className="text-[#64748b] text-[10px] font-mono">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function DashboardCard({ title, onViewAll, children }) {
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b]">{title}</h3>
+        {onViewAll && (
+          <button onClick={onViewAll} className="text-[10px] font-bold text-[#00f2fe] flex items-center gap-0.5">
+            View all <Icon path={ICONS.chevronRight} className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function DashboardView({ orgId, canManage, onNavigate }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const result = await api(`/api/orgs/dashboard?orgId=${orgId}`);
+      setData(result);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (error) return <p className="text-red-400 text-xs">{error}</p>;
+  if (!data) return <p className="text-[#64748b] font-mono text-sm">Loading…</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard icon="departments" label="Departments" value={data.counts.departments} sub="Active departments" />
+        <StatCard icon="projects" label="Projects" value={data.counts.projects} sub="Active projects" />
+        <StatCard icon="documents" label="Documents" value={data.counts.documents} sub="Encrypted & secured" />
+      </div>
+
+      {canManage && data.pendingApprovals.length > 0 && (
+        <DashboardCard title={`Pending your approval (${data.pendingApprovals.length})`} onViewAll={() => onNavigate("approvals")}>
+          <div className="space-y-1">
+            {data.pendingApprovals.slice(0, 4).map((d) => (
+              <button
+                key={d.id}
+                onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-left"
+              >
+                <span className="text-slate-300 text-xs truncate">{d.filename}</span>
+                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
+              </button>
+            ))}
+          </div>
+        </DashboardCard>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DashboardCard title="Recent Departments" onViewAll={() => onNavigate("departments")}>
+          {data.recentDepartments.length === 0 ? (
+            <p className="text-[#475569] text-xs italic">No departments yet.</p>
+          ) : (
+            <div className="space-y-1">
+              {data.recentDepartments.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => onNavigate("projects", { deptId: d.id })}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                    <Icon path={ICONS.departments} className="w-4 h-4 text-[#94a3b8]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-slate-200 text-xs font-bold truncate">{d.name}</p>
+                    <p className="text-[#64748b] text-[10px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </DashboardCard>
+
+        <DashboardCard title="Recent Projects" onViewAll={() => onNavigate("projects")}>
+          {data.recentProjects.length === 0 ? (
+            <p className="text-[#475569] text-xs italic">No projects yet.</p>
+          ) : (
+            <div className="space-y-1">
+              {data.recentProjects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => onNavigate("documents", { deptId: p.departmentId, projectId: p.id })}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-slate-200 text-xs font-bold truncate">{p.name}</p>
+                    <p className="text-[#64748b] text-[10px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
+                  </div>
+                  <span className="flex items-center gap-1 text-[9px] font-bold uppercase text-emerald-400 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DashboardCard>
+      </div>
+
+      <DashboardCard title="Encrypted Documents" onViewAll={() => onNavigate("documents")}>
+        {data.recentDocuments.length === 0 ? (
+          <p className="text-[#475569] text-xs italic">No documents yet.</p>
+        ) : (
+          <div className="space-y-1">
+            {data.recentDocuments.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <Icon path={ICONS.documents} className="w-4 h-4 text-[#94a3b8]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-slate-200 text-xs font-bold truncate">{d.filename}</p>
+                  <p className="text-[#64748b] text-[10px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status] || STATUS_STYLES.DRAFT}`}>
+                    {d.status.replace("_", " ")}
+                  </span>
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400">
+                    <Icon path={ICONS.lock} className="w-2.5 h-2.5" /> Encrypted
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </DashboardCard>
+    </div>
+  );
+}
+
+// ============================================================
+// APPROVALS — pending/under-review documents this manager can act on.
+// ============================================================
+function ApprovalsView({ orgId, onNavigate }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [acting, setActing] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const result = await api(`/api/orgs/dashboard?orgId=${orgId}`);
+      setData(result.pendingApprovals);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAction(docId, action) {
+    setActing(docId + action);
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${docId}/transition`, { method: "POST", body: JSON.stringify({ orgId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActing("");
+    }
+  }
+
+  if (error) return <p className="text-red-400 text-xs">{error}</p>;
+  if (!data) return <p className="text-[#64748b] font-mono text-sm">Loading…</p>;
+
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b] mb-4">Documents awaiting your review</h3>
+      {data.length === 0 ? (
+        <p className="text-[#475569] text-xs italic">Nothing needs your attention right now.</p>
+      ) : (
+        <div className="space-y-2">
+          {data.map((d) => (
+            <div key={d.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
+              <button onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })} className="min-w-0 text-left">
+                <p className="text-white text-sm truncate">{d.filename}</p>
+                <p className="text-[#64748b] text-[10px] font-mono">{d.departmentName} · {d.projectName}</p>
+              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
+                {d.status === "PENDING" && (
+                  <button
+                    onClick={() => handleAction(d.id, "startReview")}
+                    disabled={!!acting}
+                    className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40"
+                  >
+                    {acting === d.id + "startReview" ? "…" : "Start review"}
+                  </button>
+                )}
+                {d.status === "UNDER_REVIEW" && (
+                  <>
+                    <button
+                      onClick={() => handleAction(d.id, "approve")}
+                      disabled={!!acting}
+                      className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40"
+                    >
+                      {acting === d.id + "approve" ? "…" : "Approve"}
+                    </button>
+                    <button
+                      onClick={() => handleAction(d.id, "reject")}
+                      disabled={!!acting}
+                      className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 disabled:opacity-40"
+                    >
+                      {acting === d.id + "reject" ? "…" : "Reject"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// ACTIVITY — org-wide feed across every document the caller can see.
+// ============================================================
+function ActivityView({ orgId }) {
+  const [activity, setActivity] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/activity?orgId=${orgId}`)
+      .then((data) => setActivity(data.activity))
+      .catch((err) => setError(err.message));
+  }, [orgId]);
+
+  if (error) return <p className="text-red-400 text-xs">{error}</p>;
+  if (!activity) return <p className="text-[#64748b] font-mono text-sm">Loading…</p>;
+
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b] mb-4">Recent activity</h3>
+      {activity.length === 0 ? (
+        <p className="text-[#475569] text-xs italic">No activity recorded yet.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {activity.map((e) => (
+            <div key={e.eventId} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
+              <span className="text-slate-200 font-bold">{e.filename}</span>
+              <span className="text-[#64748b]"> · {e.action}</span>
+              {e.previousState && <span className="text-[#64748b] font-mono"> · {e.previousState} → {e.newState}</span>}
+              <div className="text-[10px] font-mono text-[#475569] mt-0.5">
+                {e.actorId} · {new Date(e.timestamp).toLocaleString()}
+                {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// BROWSE — Departments -> Projects -> Documents drill-down (Phase 1-3's
+// original 3-column workspace, reused unchanged for the Departments/
+// Projects/Documents sidebar entries).
+// ============================================================
+function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialProjectId }) {
   const [departments, setDepartments] = useState([]);
-  const [selectedDeptId, setSelectedDeptId] = useState(null);
+  const [selectedDeptId, setSelectedDeptId] = useState(initialDeptId);
   const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
   const [documents, setDocuments] = useState([]);
   const [error, setError] = useState("");
 
@@ -303,8 +827,6 @@ function OrgWorkspace({ membership }) {
   }, [orgId]);
 
   useEffect(() => {
-    setSelectedProjectId(null);
-    setDocuments([]);
     if (selectedDeptId) loadProjects(selectedDeptId);
   }, [selectedDeptId, loadProjects]);
 
@@ -322,54 +844,48 @@ function OrgWorkspace({ membership }) {
     if (selectedDeptId && selectedProjectId) loadDocuments(selectedDeptId, selectedProjectId);
   }, [selectedDeptId, selectedProjectId, loadDocuments]);
 
+  function handleSelectDept(id) {
+    setSelectedDeptId(id);
+    setSelectedProjectId(null);
+    setDocuments([]);
+  }
+
   const visibleDepartments = canManage ? departments : departments.filter((d) => departmentIds.includes(d.id));
 
   return (
     <div>
-      <div className="flex gap-2 mb-6">
-        <button onClick={() => setView("documents")} className={`text-xs font-bold uppercase px-4 py-2 rounded-lg ${view === "documents" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#64748b] bg-white/5"}`}>Documents</button>
-        {canManage && (
-          <button onClick={() => setView("team")} className={`text-xs font-bold uppercase px-4 py-2 rounded-lg ${view === "team" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#64748b] bg-white/5"}`}>Team</button>
+      {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <DepartmentColumn
+          orgId={orgId}
+          departments={visibleDepartments}
+          selectedDeptId={selectedDeptId}
+          onSelect={handleSelectDept}
+          canManage={canManage}
+          onCreated={loadDepartments}
+        />
+        {selectedDeptId && (
+          <ProjectColumn
+            orgId={orgId}
+            departmentId={selectedDeptId}
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            onSelect={setSelectedProjectId}
+            canManage={canManage}
+            onCreated={() => loadProjects(selectedDeptId)}
+          />
+        )}
+        {selectedProjectId && (
+          <DocumentColumn
+            orgId={orgId}
+            departmentId={selectedDeptId}
+            projectId={selectedProjectId}
+            documents={documents}
+            canManage={canManage}
+            onUploaded={() => loadDocuments(selectedDeptId, selectedProjectId)}
+          />
         )}
       </div>
-
-      {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
-
-      {view === "team" ? (
-        <TeamView orgId={orgId} />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <DepartmentColumn
-            orgId={orgId}
-            departments={visibleDepartments}
-            selectedDeptId={selectedDeptId}
-            onSelect={setSelectedDeptId}
-            canManage={canManage}
-            onCreated={loadDepartments}
-          />
-          {selectedDeptId && (
-            <ProjectColumn
-              orgId={orgId}
-              departmentId={selectedDeptId}
-              projects={projects}
-              selectedProjectId={selectedProjectId}
-              onSelect={setSelectedProjectId}
-              canManage={canManage}
-              onCreated={() => loadProjects(selectedDeptId)}
-            />
-          )}
-          {selectedProjectId && (
-            <DocumentColumn
-              orgId={orgId}
-              departmentId={selectedDeptId}
-              projectId={selectedProjectId}
-              documents={documents}
-              canManage={canManage}
-              onUploaded={() => loadDocuments(selectedDeptId, selectedProjectId)}
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -475,14 +991,6 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
 // enforcement (role, current state, org/department scoping) happens
 // server-side in src/lib/document-workflow.js — these buttons are shown/
 // hidden for UX clarity only, not as the actual access control.
-const STATUS_STYLES = {
-  DRAFT: "bg-white/5 text-[#94a3b8] border-white/10",
-  PENDING: "bg-amber-400/10 text-amber-400 border-amber-400/30",
-  UNDER_REVIEW: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
-  APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
-  REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
-  ARCHIVED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
-};
 
 // [action, label, whoCanSeeIt] — "member" means visible to anyone with
 // department access, "manage" means owner/admin only (matches
@@ -922,7 +1430,7 @@ function SharePanel({ documentId, orgId }) {
 }
 
 // ============================================================
-// TEAM VIEW
+// TEAM VIEW (Settings)
 // ============================================================
 function TeamView({ orgId }) {
   const [members, setMembers] = useState([]);
