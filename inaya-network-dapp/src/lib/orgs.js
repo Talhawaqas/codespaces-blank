@@ -64,6 +64,7 @@ export async function getOrgCollections() {
     magicLinks: db.collection("magic_links"),
     sessions: db.collection("sessions"),
     orgDocuments: db.collection("org_documents"),
+    documentActivity: db.collection("document_activity"),
   };
 }
 
@@ -71,7 +72,7 @@ let indexesEnsured = false;
 
 export async function ensureOrgIndexes() {
   if (indexesEnsured) return;
-  const { orgMembers, departments, projects, magicLinks, sessions, orgDocuments } = await getOrgCollections();
+  const { orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity } = await getOrgCollections();
 
   await Promise.all([
     orgMembers.createIndex({ orgId: 1, email: 1 }, { unique: true }),
@@ -84,6 +85,8 @@ export async function ensureOrgIndexes() {
     sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     orgDocuments.createIndex({ orgId: 1, departmentId: 1, projectId: 1 }),
     orgDocuments.createIndex({ fileHash: 1 }, { unique: true }),
+    documentActivity.createIndex({ documentId: 1, timestamp: 1 }),
+    documentActivity.createIndex({ eventId: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;

@@ -336,6 +336,7 @@ function OrgWorkspace({ membership }) {
               departmentId={selectedDeptId}
               projectId={selectedProjectId}
               documents={documents}
+              canManage={canManage}
               onUploaded={() => loadDocuments(selectedDeptId, selectedProjectId)}
             />
           )}
@@ -441,7 +442,33 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
   );
 }
 
-function DocumentColumn({ orgId, departmentId, projectId, documents, onUploaded }) {
+// Phase 2 — workflow status display + transition actions. Every action
+// button just calls POST /api/orgs/documents/:id/transition; all the real
+// enforcement (role, current state, org/department scoping) happens
+// server-side in src/lib/document-workflow.js — these buttons are shown/
+// hidden for UX clarity only, not as the actual access control.
+const STATUS_STYLES = {
+  DRAFT: "bg-white/5 text-[#94a3b8] border-white/10",
+  PENDING: "bg-amber-400/10 text-amber-400 border-amber-400/30",
+  UNDER_REVIEW: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
+  APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
+  REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
+  ARCHIVED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
+};
+
+// [action, label, whoCanSeeIt] — "member" means visible to anyone with
+// department access, "manage" means owner/admin only (matches
+// TRANSITIONS' requiresManage in document-workflow.js exactly).
+const ACTIONS_BY_STATUS = {
+  DRAFT: [["submit", "Submit for review", "member"]],
+  PENDING: [["startReview", "Start review", "manage"]],
+  UNDER_REVIEW: [["approve", "Approve", "manage"], ["reject", "Reject", "manage"]],
+  REJECTED: [["revise", "Revise", "member"]],
+  APPROVED: [["archive", "Archive", "manage"]],
+  ARCHIVED: [["restore", "Restore", "manage"]],
+};
+
+function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, onUploaded }) {
   const [file, setFile] = useState(null);
   const [passkey, setPasskey] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -493,14 +520,110 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, onUploaded 
       ) : (
         <div className="space-y-2">
           {documents.map((d) => (
-            <div key={d.id} className="bg-black/20 border border-white/5 rounded-lg p-2.5">
-              <div className="text-xs text-white truncate">{d.filename}</div>
-              <div className="text-[10px] text-[#64748b] font-mono mt-0.5">{(d.sizeBytes / 1024).toFixed(1)} KB · {d.uploadedByEmail}</div>
-            </div>
+            <DocumentCard key={d.id} doc={d} orgId={orgId} canManage={canManage} onChanged={onUploaded} />
           ))}
         </div>
       )}
     </Column>
+  );
+}
+
+function DocumentCard({ doc, orgId, canManage, onChanged }) {
+  const [acting, setActing] = useState("");
+  const [error, setError] = useState("");
+  const [showActivity, setShowActivity] = useState(false);
+  const [activity, setActivity] = useState(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  const availableActions = (ACTIONS_BY_STATUS[doc.status] || []).filter(([, , who]) => who === "member" || canManage);
+
+  async function loadActivity() {
+    setLoadingActivity(true);
+    try {
+      const data = await api(`/api/orgs/documents/${doc.id}/activity?orgId=${orgId}`);
+      setActivity(data.activity);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingActivity(false);
+    }
+  }
+
+  async function handleAction(action) {
+    setActing(action);
+    setError("");
+    try {
+      await api(`/api/orgs/documents/${doc.id}/transition`, { method: "POST", body: JSON.stringify({ orgId, action }) });
+      onChanged();
+      // The history panel, if open, would otherwise keep showing the
+      // pre-transition snapshot — refetch so a new action's entry shows up
+      // immediately instead of only after closing and reopening it.
+      if (showActivity) loadActivity();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActing("");
+    }
+  }
+
+  function toggleActivity() {
+    if (showActivity) {
+      setShowActivity(false);
+      return;
+    }
+    setShowActivity(true);
+    loadActivity();
+  }
+
+  return (
+    <div className="bg-black/20 border border-white/5 rounded-lg p-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-xs text-white truncate">{doc.filename}</div>
+          <div className="text-[10px] text-[#64748b] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
+        </div>
+        <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
+          {doc.status.replace("_", " ")}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+        {availableActions.map(([action, label]) => (
+          <button
+            key={action}
+            onClick={() => handleAction(action)}
+            disabled={!!acting}
+            className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+          >
+            {acting === action ? "…" : label}
+          </button>
+        ))}
+        <button onClick={toggleActivity} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md text-[#64748b] hover:text-slate-300 ml-auto">
+          {showActivity ? "Hide history" : "History"}
+        </button>
+      </div>
+
+      {error && <p className="text-red-400 text-[10px] mt-1.5">{error}</p>}
+
+      {showActivity && (
+        <div className="mt-2 border-t border-white/5 pt-2 space-y-1">
+          {loadingActivity ? (
+            <p className="text-[#475569] text-[10px] italic">Loading…</p>
+          ) : activity && activity.length > 0 ? (
+            activity.map((e) => (
+              <div key={e.eventId} className="text-[10px] font-mono text-[#64748b]">
+                <span className="text-slate-300">{e.action}</span>
+                {e.previousState && <span> · {e.previousState} → {e.newState}</span>}
+                <span> · {e.actorId} · {new Date(e.timestamp).toLocaleString()}</span>
+                {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
+              </div>
+            ))
+          ) : (
+            <p className="text-[#475569] text-[10px] italic">No activity recorded.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

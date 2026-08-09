@@ -20,6 +20,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
+import { logDocumentActivity } from "../../../../lib/document-workflow.js";
 
 const RPC_URL = process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
 const CUSTODY_ADDRESS = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // matches page.js's liveContractAddress / stripe-webhook's CUSTODY_ADDRESS
@@ -101,7 +102,7 @@ export async function POST(req) {
     await registerTx.wait();
 
     const now = new Date().toISOString();
-    await orgDocuments.insertOne({
+    const insertResult = await orgDocuments.insertOne({
       orgId: orgObjectId,
       departmentId: departmentObjectId,
       projectId: projectObjectId,
@@ -112,12 +113,22 @@ export async function POST(req) {
       cidBeta,
       uploadedByEmail: auth.session.email,
       txHash: registerTx.hash,
-      status: "active", // Phase 2 introduces the real workflow state machine on top of this
+      status: "DRAFT", // Phase 2 workflow — see src/lib/document-workflow.js
       createdAt: now,
       deletedAt: null,
     });
 
-    return NextResponse.json({ registered: true, txHash: registerTx.hash });
+    await logDocumentActivity({
+      organizationId: orgObjectId,
+      documentId: insertResult.insertedId,
+      actorId: auth.session.email,
+      action: "CREATED",
+      previousState: null,
+      newState: "DRAFT",
+      metadata: { filename },
+    });
+
+    return NextResponse.json({ registered: true, txHash: registerTx.hash, documentId: insertResult.insertedId.toString() });
   } catch (err) {
     console.error("orgs/documents POST failed:", err);
     return NextResponse.json({ error: "Could not register the document." }, { status: 500 });
