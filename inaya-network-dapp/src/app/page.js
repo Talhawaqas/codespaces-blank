@@ -4347,11 +4347,14 @@ export default function Home() {
             ))}
             {/* /business is a genuinely separate Next.js route (its own email+
                 magic-link auth, no wallet) — a real link, not a setCurrentPage
-                tab like everything else in this nav. */}
-            <a href="/business" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
+                tab like everything else in this nav. Opens in a new tab
+                (target="_blank") so switching into the Business Workspace
+                never navigates away from the wallet dApp — both stay open
+                as separate tabs instead of needing a "back" button. */}
+            <a href="/business" target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
               Business Workspace ↗
             </a>
-            <a href="/business/roadmap" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
+            <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
               Business SaaS ↗
             </a>
           </nav>

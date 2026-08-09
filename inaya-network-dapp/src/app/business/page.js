@@ -235,6 +235,7 @@ function AuthScreen({ notice, onAuthed }) {
 
   return (
     <div className="max-w-md mx-auto mt-16">
+      <a href="/" className="inline-block text-[#64748b] hover:text-slate-300 text-xs font-mono mb-8">← Inaya Network</a>
       <h1 className="text-2xl font-extrabold text-white text-center mb-1">Business Records</h1>
       <p className="text-[#64748b] text-sm text-center mb-8">Encrypted document management for your company, built on Inaya's storage infrastructure.</p>
 
@@ -463,6 +464,13 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/"
+              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#64748b] hover:text-slate-300 px-2 py-2"
+              title="Back to the Inaya Network dApp"
+            >
+              ← dApp
+            </a>
             {orgs.length > 1 && (
               <select
                 value={selectedOrgId || ""}

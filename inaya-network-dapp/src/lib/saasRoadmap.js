@@ -20,12 +20,13 @@
 // As of this file's creation:
 //   - Stages 1-3 (workspace, workflow, permissions/sharing) are the
 //     Phase 1-3 Business Records Management build — real, tested, shipped.
-//   - Stage 4 (AI Business Assistant) is real and shipped, but ONLY in the
-//     web Business Workspace (/business, POST /api/ai/business-chat). The
-//     mobile app's existing "Ask AI" screen is a separate, general docs
-//     assistant (/api/ai/chat) with no business-workspace awareness —
-//     extending the permission-aware business assistant to mobile has NOT
-//     shipped yet, so it's listed as a Stage 5 item, not a Stage 4 claim.
+//   - Stage 4 (AI Business Assistant) is real and shipped on BOTH web
+//     (/business, "AI Assistant" tab) and mobile ("Ask the AI Assistant"
+//     from each company card in the Business Workspace) — both call the
+//     same POST /api/ai/business-chat and the same permission-scoped
+//     tools. The mobile app's separate, older "Ask AI" screen (a general
+//     docs assistant, /api/ai/chat) is unrelated and still exists
+//     alongside it for non-business questions.
 //   - Stages 5-8 (Business Operations, Finance/HR, BI, AI-powered
 //     operations) are none of them implemented — no backend, no schema,
 //     no routes exist for any of it. They're roadmap direction only.
@@ -166,10 +167,11 @@ export const ROADMAP_STAGES = [
       "Document access queries",
       "Natural-language business questions",
       "Integrated into the Business Workspace",
+      "Available on web and mobile",
     ],
     tools: ["list_documents", "list_departments", "list_projects", "get_activity", "get_document_access"],
     notes:
-      "Live today in the web Business Workspace. The mobile app currently has a separate general-purpose assistant without business-workspace awareness — bringing this same permission-aware assistant to mobile is a near-term goal (Stage 5).",
+      "Live today in both the web and mobile Business Workspace, powered by the exact same permission-scoped tools on the backend.",
   },
   {
     number: 5,
@@ -181,7 +183,6 @@ export const ROADMAP_STAGES = [
       { title: "CRM", items: ["Customers", "Leads", "Deals", "Customer records", "Sales pipeline"] },
       { title: "Procurement", items: ["Suppliers", "Purchase requests", "Purchase orders", "Approval workflows"] },
       { title: "Inventory", items: ["Products / items", "Stock levels", "Warehouses", "Stock movements"] },
-      { title: "Mobile AI", items: ["Extend the permission-aware AI Business Assistant to the mobile app"] },
     ],
   },
   {
