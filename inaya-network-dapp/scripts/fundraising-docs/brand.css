@@ -47,6 +47,7 @@ body {
   page-break-after: avoid;
 }
 
+
 /* ---------- Header band (cover + running header) ---------- */
 .header-band {
   background: var(--navy);
@@ -200,6 +201,13 @@ body {
 .section-body {
   padding: 10mm 16mm 6mm;
   flex: 1;
+  /* When a section's content is taller than one physical PDF page, Chrome
+     only applies this padding to the FIRST page fragment by default —
+     continuation pages get zero top padding, so content butts against the
+     page edge. box-decoration-break: clone repeats the padding on every
+     fragment instead. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .section-number {
