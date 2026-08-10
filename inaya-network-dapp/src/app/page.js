@@ -4923,22 +4923,34 @@ export default function Home() {
         {/* MAIN ROUTER ROUTING INTERFACE HOOK */}
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
           
-          <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex bg-[#090d15]/60 border border-white/5 p-1.5 rounded-xl max-w-5xl mx-auto mb-10 gap-2 backdrop-blur-md">
-            {['Network Home', 'Faucet', 'Sovereign Vault', 'Business Model', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
-              <button key={tab} onClick={() => setCurrentPage(tab)} className={`flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
-            ))}
-            {/* /business is a genuinely separate Next.js route (its own email+
-                magic-link auth, no wallet) — a real link, not a setCurrentPage
-                tab like everything else in this nav. Opens in a new tab
-                (target="_blank") so switching into the Business Workspace
-                never navigates away from the wallet dApp — both stay open
-                as separate tabs instead of needing a "back" button. */}
-            <a href="/business" target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
-              Business Workspace ↗
-            </a>
-            <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all text-[#64748b] hover:text-slate-300">
-              Business SaaS ↗
-            </a>
+          <nav className="max-w-5xl mx-auto mb-10 bg-[#090d15]/60 border border-white/5 rounded-xl backdrop-blur-md p-3 space-y-2.5">
+            {/* Row 1: things you do inside the wallet dApp itself */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop'].map((tab) => (
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+              ))}
+            </div>
+
+            <div className="border-t border-white/5" />
+
+            {/* Row 2: informational pages + the separate Business suite links */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {['Business Model', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+              ))}
+              {/* /business is a genuinely separate Next.js route (its own email+
+                  magic-link auth, no wallet) — a real link, not a setCurrentPage
+                  tab like everything else in this nav. Opens in a new tab
+                  (target="_blank") so switching into the Business Workspace
+                  never navigates away from the wallet dApp — both stay open
+                  as separate tabs instead of needing a "back" button. */}
+              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Business Workspace ↗
+              </a>
+              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Business SaaS ↗
+              </a>
+            </div>
           </nav>
 
           {/* VIEWPORT AREA 1: HOME PANEL */}
