@@ -30,6 +30,10 @@ import { ethers } from "ethers";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
 import { logDocumentActivity } from "../../../../lib/document-workflow.js";
 import { getBulkDocumentAccess, isProjectMember, ACCESS_LEVELS } from "../../../../lib/document-permissions.js";
+import { getOrgPlan, getOrgUsage } from "../../../../lib/orgPlans.js";
+
+const BYTES_PER_MB = 1048576;
+const BYTES_PER_GB = 1073741824;
 
 const RPC_URL = process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
 const CUSTODY_ADDRESS = "0x7F5E6cF1353beEE4fc19FD46Dd6EaD0B3895a888"; // matches page.js's liveContractAddress / stripe-webhook's CUSTODY_ADDRESS
@@ -71,20 +75,41 @@ export async function POST(req) {
       return NextResponse.json({ error: "You don't have access to this department." }, { status: 403 });
     }
 
-    const { departments, projects, orgDocuments } = await getOrgCollections();
+    const { orgs, departments, projects, orgDocuments } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);
     const departmentObjectId = toObjectId(departmentId);
     const projectObjectId = toObjectId(projectId);
 
-    const [department, project] = await Promise.all([
+    const [department, project, org] = await Promise.all([
       departments.findOne({ _id: departmentObjectId, orgId: orgObjectId }),
       projects.findOne({ _id: projectObjectId, orgId: orgObjectId, departmentId: departmentObjectId }),
+      orgs.findOne({ _id: orgObjectId }),
     ]);
     if (!department) return NextResponse.json({ error: "Department not found." }, { status: 404 });
     if (!project) return NextResponse.json({ error: "Project not found in this department." }, { status: 404 });
 
     const existing = await orgDocuments.findOne({ fileHash });
     if (existing) return NextResponse.json({ error: "This exact file has already been registered." }, { status: 409 });
+
+    // Plan limits — checked before doing any on-chain work so a rejected
+    // upload never wastes the treasury wallet's gas.
+    const plan = getOrgPlan(org);
+    const sizeBytesNum = Number(sizeBytes);
+    if (plan.maxFileSizeMB !== Infinity && sizeBytesNum > plan.maxFileSizeMB * BYTES_PER_MB) {
+      return NextResponse.json(
+        { error: `Your ${plan.name} plan allows files up to ${plan.maxFileSizeMB} MB. Upgrade to upload larger files.` },
+        { status: 413 }
+      );
+    }
+    if (plan.maxStorageGB !== Infinity) {
+      const { storageUsedBytes } = await getOrgUsage(orgId);
+      if (storageUsedBytes + sizeBytesNum > plan.maxStorageGB * BYTES_PER_GB) {
+        return NextResponse.json(
+          { error: `Your ${plan.name} plan's ${plan.maxStorageGB} GB storage limit is full. Upgrade for more space.` },
+          { status: 403 }
+        );
+      }
+    }
 
     // Same on-chain registration pattern as settlePaygUpload() — treasury
     // wallet fronts whatever protocol fee applies and registers the asset,

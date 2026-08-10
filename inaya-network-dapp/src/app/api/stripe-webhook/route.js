@@ -1,17 +1,26 @@
 // app/api/stripe-webhook/route.js
 //
-// Fires when Stripe confirms a card payment. Branches on
-// session.metadata.checkoutType:
+// checkout.session.completed fires when Stripe confirms a card payment.
+// Branches on session.metadata.checkoutType:
 //   - "corporate_reserve" (or unset, for backward compatibility) â€”
 //     RevenueRouter.processCorporateInvoice() + CorporateEscrow.createEscrow()
 //   - "payg_upload" â€” InayaCustody.batchRegisterAssets() for a single
 //     already-encrypted-and-pinned file
-// Both are signed by the server's own treasury wallet instead of the
-// customer's, since the customer never connects one. Entitlements are
-// tracked in MongoDB, keyed by email from Stripe, not by a wallet address.
+//   - "org_subscription" â€” Business Workspace plan billing (src/lib/orgPlans.js).
+//     Keyed by orgId (from session metadata), not email â€” the org member
+//     already has a real session, unlike the other three flows' anonymous
+//     card customers. No on-chain settlement involved.
+// The first two are signed by the server's own treasury wallet instead of
+// the customer's, since that customer never connects one. Entitlements are
+// tracked in MongoDB.
+//
+// customer.subscription.updated / customer.subscription.deleted also fire
+// for org_subscription's recurring lifecycle (trial->active conversion,
+// renewals, cancellation) â€” see handleSubscriptionUpdated/Deleted below.
 
 import Stripe from "stripe";
 import { ethers } from "ethers";
+import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/mongodb";
 
@@ -59,20 +68,45 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  if (event.type === "customer.subscription.updated") {
+    try {
+      await handleSubscriptionUpdated(event.data.object);
+    } catch (err) {
+      console.error("[FAILED] customer.subscription.updated handling failed:", err);
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    try {
+      await handleSubscriptionDeleted(event.data.object);
+    } catch (err) {
+      console.error("[FAILED] customer.subscription.deleted handling failed:", err);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (event.type !== "checkout.session.completed") {
     return NextResponse.json({ received: true }); // ignore anything else
   }
 
   const session = event.data.object;
   const checkoutType = session.metadata?.checkoutType || "corporate_reserve";
-  const customerEmail = session.customer_details?.email;
-
-  if (!customerEmail) {
-    console.error("Missing email on completed session:", session.id);
-    return NextResponse.json({ error: "Missing email" }, { status: 400 });
-  }
 
   try {
+    // Keyed by orgId, not email â€” the org member already has a real
+    // session, so this doesn't need (and shouldn't require) customer_details.email.
+    if (checkoutType === "org_subscription") {
+      const result = await settleOrgSubscription(session);
+      return NextResponse.json({ received: true, ...result });
+    }
+
+    const customerEmail = session.customer_details?.email;
+    if (!customerEmail) {
+      console.error("Missing email on completed session:", session.id);
+      return NextResponse.json({ error: "Missing email" }, { status: 400 });
+    }
+
     if (checkoutType === "payg_upload") {
       const result = await settlePaygUpload(session, customerEmail);
       return NextResponse.json({ received: true, ...result });
@@ -84,10 +118,10 @@ export async function POST(req) {
       return NextResponse.json({ received: true, ...result });
     }
   } catch (err) {
-    // Payment already succeeded at this point â€” on-chain settlement failing
-    // needs to alert someone, not silently 500 and lose the customer's money's worth.
-    console.error(`[FAILED] On-chain settlement failed after successful payment (${checkoutType}) for ${customerEmail}:`, err);
-    return NextResponse.json({ error: "On-chain settlement failed", details: err.message }, { status: 500 });
+    // Payment already succeeded at this point â€” settlement failing needs to
+    // alert someone, not silently 500 and lose the customer's money's worth.
+    console.error(`[FAILED] Settlement failed after successful payment (${checkoutType}):`, err);
+    return NextResponse.json({ error: "Settlement failed", details: err.message }, { status: 500 });
   }
 }
 
@@ -237,4 +271,83 @@ async function settlePaygUpload(session, customerEmail) {
 
   console.log(`[OK] PAYG asset registered on-chain for ${customerEmail}: ${filename} (tx ${registerTx.hash})`);
   return { registerTxHash: registerTx.hash };
+}
+
+// ============================================================
+// Business Workspace org subscriptions â€” no on-chain interaction, no
+// treasury wallet. Just records which plan the org is on. Mirrors the
+// corporate_plans upsert-by-email shape above, keyed by orgId instead.
+// ============================================================
+async function settleOrgSubscription(session) {
+  const { orgId, planId, interval } = session.metadata || {};
+  if (!orgId || !planId) throw new Error("Missing orgId/planId in session metadata");
+
+  const { db } = await connectToDatabase();
+  const orgObjectId = new ObjectId(orgId);
+  const now = new Date().toISOString();
+
+  await db.collection("org_subscriptions").updateOne(
+    { orgId: orgObjectId },
+    {
+      $set: {
+        orgId: orgObjectId,
+        plan: planId,
+        status: "trialing", // checkout completed -> subscription starts in its trial period
+        stripeCustomerId: session.customer,
+        stripeSubscriptionId: session.subscription,
+        billingInterval: interval || null,
+        updatedAt: now,
+      },
+    },
+    { upsert: true }
+  );
+
+  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: planId, planUpdatedAt: now } });
+
+  console.log(`[OK] Org subscription activated: org ${orgId} -> ${planId}`);
+  return { orgId, planId };
+}
+
+// Keeps org_subscriptions.status/currentPeriodEnd/billingInterval in sync
+// with Stripe's own record of the subscription â€” covers trial->active
+// conversion, renewals, and interval changes made via the Billing Portal.
+async function handleSubscriptionUpdated(subscription) {
+  const orgId = subscription.metadata?.orgId;
+  if (!orgId) return; // not an org subscription (or predates this metadata) â€” nothing to sync
+
+  const { db } = await connectToDatabase();
+  const orgObjectId = new ObjectId(orgId);
+  const interval = subscription.items?.data?.[0]?.price?.recurring?.interval || null;
+
+  await db.collection("org_subscriptions").updateOne(
+    { orgId: orgObjectId },
+    {
+      $set: {
+        status: subscription.status,
+        billingInterval: interval,
+        currentPeriodEnd: subscription.current_period_end ? subscription.current_period_end * 1000 : null,
+        stripeSubscriptionId: subscription.id,
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    { upsert: true }
+  );
+}
+
+// A canceled subscription restricts the org rather than reverting it to
+// legacy-unlimited â€” it lands on Starter, the lowest paid tier, rather
+// than granting the unrestricted grandfathered state a real subscriber
+// never actually had.
+async function handleSubscriptionDeleted(subscription) {
+  const orgId = subscription.metadata?.orgId;
+  if (!orgId) return;
+
+  const { db } = await connectToDatabase();
+  const orgObjectId = new ObjectId(orgId);
+  const now = new Date().toISOString();
+
+  await db.collection("org_subscriptions").updateOne({ orgId: orgObjectId }, { $set: { status: "canceled", updatedAt: now } });
+  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: "starter", planUpdatedAt: now } });
+
+  console.log(`[OK] Org subscription canceled: org ${orgId} -> starter`);
 }

@@ -37,7 +37,10 @@ export async function POST(req) {
     const { orgs, orgMembers, magicLinks } = await getOrgCollections();
 
     const now = new Date().toISOString();
-    const orgResult = await orgs.insertOne({ name, ownerEmail, createdAt: now });
+    // plan/planUpdatedAt start null — getOrgPlan() (src/lib/orgPlans.js)
+    // treats an org with no plan as unrestricted until the owner picks one
+    // from Billing, same as any pre-existing org from before plans existed.
+    const orgResult = await orgs.insertOne({ name, ownerEmail, plan: null, planUpdatedAt: null, createdAt: now });
     const orgId = orgResult.insertedId;
 
     await orgMembers.insertOne({

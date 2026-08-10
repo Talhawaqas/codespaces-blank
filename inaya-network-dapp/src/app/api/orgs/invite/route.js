@@ -27,6 +27,7 @@ import {
   MAGIC_LINK_TTL_MS,
 } from "../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
+import { getOrgPlan, getOrgUsage } from "../../../../lib/orgPlans.js";
 
 export async function POST(req) {
   try {
@@ -50,6 +51,20 @@ export async function POST(req) {
     const existing = await orgMembers.findOne({ orgId: orgObjectId, email });
     if (existing?.status === "active") {
       return NextResponse.json({ error: "That person is already a member." }, { status: 409 });
+    }
+
+    // Seat limit — an "invited" (not-yet-accepted) row doesn't count
+    // against the limit here (getOrgUsage only counts status:"active"), so
+    // re-sending a pending invite never double-charges a seat.
+    const plan = getOrgPlan(org);
+    if (plan.maxUsers !== Infinity) {
+      const { activeUsers } = await getOrgUsage(orgId);
+      if (activeUsers >= plan.maxUsers) {
+        return NextResponse.json(
+          { error: `Your ${plan.name} plan allows up to ${plan.maxUsers} users. Upgrade to invite more.` },
+          { status: 403 }
+        );
+      }
     }
 
     const now = new Date().toISOString();

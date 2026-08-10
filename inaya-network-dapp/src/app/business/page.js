@@ -29,6 +29,12 @@
 // the app already uses, nothing here is placeholder content.
 
 import { useState, useEffect, useCallback } from "react";
+import { PricingCard } from "./PricingCard";
+
+// Set by the public pricing page (business/pricing/page.js) before it
+// redirects a not-yet-signed-in visitor here — see that file's header
+// comment for why this is localStorage and not a query param.
+const PENDING_PLAN_KEY = "inaya_pending_plan";
 
 const ROLE_LABELS = { owner: "Owner", admin: "Admin", member: "Member" };
 
@@ -148,6 +154,41 @@ export default function BusinessPage() {
     }
     refreshSession();
   }, [refreshSession]);
+
+  // A visitor who picked a plan on the public pricing page while signed
+  // out lands back here post-auth with the choice stashed in localStorage
+  // (see PricingPage's header comment) — fire that checkout automatically
+  // instead of making them find and re-click "Change plan" themselves.
+  useEffect(() => {
+    if (!session?.authenticated) return;
+    const raw = localStorage.getItem(PENDING_PLAN_KEY);
+    if (!raw) return;
+    localStorage.removeItem(PENDING_PLAN_KEY);
+
+    let pending;
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!pending?.planId) return;
+
+    const membership = session.orgs.find((o) => o.orgId === selectedOrgId) || session.orgs[0];
+    if (!membership) return;
+    if (membership.role !== "owner" && membership.role !== "admin") {
+      setNotice("Ask your company's owner or admin to upgrade the plan.");
+      return;
+    }
+
+    api("/api/orgs/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month" }),
+    })
+      .then((data) => {
+        window.location.href = data.url;
+      })
+      .catch((err) => setNotice(err.message));
+  }, [session, selectedOrgId]);
 
   async function handleLogout() {
     await api("/api/orgs/logout", { method: "POST" });
@@ -345,6 +386,13 @@ const ICONS = {
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </>
   ),
+  billing: (
+    <>
+      <rect x="2.5" y="5" width="19" height="14" rx="2" />
+      <path d="M2.5 10h19" />
+      <path d="M6 15h4" />
+    </>
+  ),
 };
 
 // The gear icon's cutout path above is fiddly to hand-write cleanly; use a
@@ -368,6 +416,7 @@ const NAV_ITEMS = [
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "activity", label: "Activity", icon: "activity" },
   { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
+  { key: "billing", label: "Billing", icon: "billing", manageOnly: true },
   { key: "settings", label: "Settings", icon: "settings", manageOnly: true },
 ];
 
@@ -445,6 +494,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     approvals: "Approvals",
     activity: "Activity",
     ai: "AI Assistant",
+    billing: "Billing",
     settings: "Settings",
   };
 
@@ -521,6 +571,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}
+          {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
           {activeView === "settings" && canManage && <TeamView orgId={orgId} />}
         </main>
       </div>
@@ -1561,6 +1612,135 @@ function SharePanel({ documentId, orgId }) {
 // ============================================================
 // TEAM VIEW (Settings)
 // ============================================================
+// ============================================================
+// BILLING — current plan, usage against its limits, and a plan switcher.
+// ============================================================
+function UsageBar({ label, used, max, unit = "" }) {
+  const unlimited = max === null || max === undefined;
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / max) * 100));
+  const barColor = pct >= 90 ? "bg-red-400" : pct >= 70 ? "bg-amber-400" : "bg-[#00f2fe]";
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-white text-xs font-mono">{unlimited ? `${used}${unit} · Unlimited` : `${used}${unit} / ${max}${unit}`}</p>
+      </div>
+      <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${unlimited ? "bg-[#00f2fe]/25" : barColor}`} style={{ width: unlimited ? "100%" : `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function BillingView({ orgId, canManage }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [switchingPlanId, setSwitchingPlanId] = useState(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const d = await api(`/api/orgs/billing?orgId=${orgId}`);
+      setData(d);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleSwitch(planId) {
+    setSwitchingPlanId(planId);
+    setError("");
+    try {
+      const d = await api("/api/orgs/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ orgId, planId, interval: "month" }),
+      });
+      window.location.href = d.url;
+    } catch (err) {
+      setError(err.message);
+      setSwitchingPlanId(null);
+    }
+  }
+
+  async function handlePortal() {
+    setPortalLoading(true);
+    setError("");
+    try {
+      const d = await api("/api/orgs/billing/portal", { method: "POST", body: JSON.stringify({ orgId }) });
+      window.location.href = d.url;
+    } catch (err) {
+      setError(err.message);
+      setPortalLoading(false);
+    }
+  }
+
+  if (!data) {
+    return <p className="text-[#94a3b8] text-sm">{error || "Loading…"}</p>;
+  }
+
+  const { plan, usage, subscription, availablePlans } = data;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+        <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+          <div>
+            <p className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wide">Current plan</p>
+            <p className="text-white text-xl font-extrabold">{plan.name}</p>
+            {subscription && (
+              <p className="text-[#94a3b8] text-[11px] font-mono mt-0.5">
+                {subscription.status}
+                {subscription.currentPeriodEnd ? ` · renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ""}
+              </p>
+            )}
+          </div>
+          {subscription && (
+            <button
+              onClick={handlePortal}
+              disabled={portalLoading}
+              className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            >
+              {portalLoading ? "Opening…" : "Manage billing"}
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UsageBar label="Users" used={usage.users.used} max={usage.users.max} />
+          <UsageBar label="Storage" used={usage.storageGB.used} max={usage.storageGB.max} unit=" GB" />
+        </div>
+      </div>
+
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+
+      {canManage && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">Change plan</h3>
+            <a href="/business/pricing" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#00f2fe]">
+              Full pricing page ↗
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {availablePlans.map((p) => (
+              <PricingCard
+                key={p.id}
+                plan={p}
+                current={plan.id === p.id}
+                loading={switchingPlanId === p.id}
+                onSelect={() => (p.contactSalesOnly ? (window.location.href = "mailto:sales@inaya.ai") : handleSwitch(p.id))}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TeamView({ orgId }) {
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
