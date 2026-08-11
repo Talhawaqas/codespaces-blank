@@ -3,12 +3,18 @@
 // POST /api/orgs/create
 // Body: { orgName, ownerEmail }
 //
-// Creates the org and its owner membership, then immediately generates a
-// login link for that owner (same magic-link mechanism as any other
-// login — creating an org doesn't itself grant a session, so this can't
-// be used to silently claim an email you don't control) and emails it via
-// Resend. The link is also returned directly in the response — useful for
-// testing, and a fallback for local dev where RESEND_API_KEY isn't set.
+// Creates the org and its owner membership. Two callers:
+//
+// - Anonymous (no session cookie/Bearer token) — the original flow: a
+//   login magic link is generated for the given ownerEmail and emailed via
+//   Resend (also returned directly for local dev without RESEND_API_KEY).
+//   Creating an org doesn't itself grant a session this way, so this can't
+//   be used to silently claim an email you don't control.
+// - Already signed in (e.g. just completed Google sign-in with zero org
+//   memberships — see /api/orgs/login/google) — the caller's identity is
+//   already verified, so there's no need for a second magic-link round
+//   trip. ownerEmail is ignored in favor of the session's own email, and
+//   the response is immediate: { orgId, alreadySignedIn: true }.
 
 import { NextResponse } from "next/server";
 import {
@@ -18,6 +24,8 @@ import {
   isValidEmail,
   generateToken,
   hashToken,
+  getRawSessionToken,
+  getSession,
   MAGIC_LINK_TTL_MS,
 } from "../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
@@ -26,9 +34,11 @@ export async function POST(req) {
   try {
     const { orgName, ownerEmail: rawEmail } = await req.json();
     const name = String(orgName || "").trim();
-    const ownerEmail = normalizeEmail(rawEmail);
-
     if (!name) return NextResponse.json({ error: "Company name is required." }, { status: 400 });
+
+    const existingSession = await getSession(getRawSessionToken(req));
+    const ownerEmail = existingSession ? existingSession.email : normalizeEmail(rawEmail);
+
     if (!ownerEmail || !isValidEmail(ownerEmail)) {
       return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
     }
@@ -65,6 +75,12 @@ export async function POST(req) {
       invitedAt: now,
       joinedAt: now,
     });
+
+    // Already signed in (e.g. Google) — identity is already verified, no
+    // magic-link round trip needed.
+    if (existingSession) {
+      return NextResponse.json({ orgId: orgId.toString(), alreadySignedIn: true });
+    }
 
     const token = generateToken();
     await magicLinks.insertOne({

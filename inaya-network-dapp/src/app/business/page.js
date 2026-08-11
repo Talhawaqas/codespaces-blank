@@ -28,7 +28,7 @@
 // shown is real data through the same permission resolution the rest of
 // the app already uses, nothing here is placeholder content.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PricingCard } from "./PricingCard";
 
 // Set by the public pricing page (business/pricing/page.js) before it
@@ -212,6 +212,17 @@ export default function BusinessPage() {
     );
   }
 
+  // Only reachable via Google sign-in — magic-link logins always come from
+  // an existing member or an invite, so they can never land here with zero
+  // memberships. A brand-new Google identity can, though.
+  if (session.orgs.length === 0) {
+    return (
+      <CenteredShell>
+        <CreateCompanyPrompt email={session.email} onCreated={refreshSession} onLogout={handleLogout} />
+      </CenteredShell>
+    );
+  }
+
   const currentMembership = session.orgs.find((o) => o.orgId === selectedOrgId) || session.orgs[0];
 
   const needsPlanSelection = currentMembership?.requiresPlanSelection && !currentMembership?.plan;
@@ -362,6 +373,48 @@ function AuthScreen({ notice, onAuthed }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [fallbackUrl, setFallbackUrl] = useState("");
+  const [googleError, setGoogleError] = useState("");
+  const googleButtonRef = useRef(null);
+
+  // Google Identity Services renders its own button into this ref via a
+  // dynamically-loaded script — kept optional (silently absent) when
+  // NEXT_PUBLIC_GOOGLE_CLIENT_ID isn't configured, rather than a hard
+  // dependency every deployment must set up.
+  const handleGoogleCredential = useCallback(
+    async (response) => {
+      setGoogleError("");
+      try {
+        await api("/api/orgs/login/google", { method: "POST", body: JSON.stringify({ idToken: response.credential }) });
+        onAuthed();
+      } catch (err) {
+        setGoogleError(err.message);
+      }
+    },
+    [onAuthed]
+  );
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || !googleButtonRef.current) return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      if (!window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "filled_black",
+        size: "large",
+        width: 336,
+        text: "continue_with",
+      });
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [handleGoogleCredential]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -399,6 +452,16 @@ function AuthScreen({ notice, onAuthed }) {
         <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Create a company</button>
       </div>
 
+      <div ref={googleButtonRef} className="flex justify-center mb-2" />
+      {googleError && <p className="text-red-400 text-xs text-center mb-3">{googleError}</p>}
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-[10px] text-[#64748b] uppercase font-bold">or</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-3">
         {mode === "create" && (
           <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
@@ -425,6 +488,61 @@ function AuthScreen({ notice, onAuthed }) {
       >
         <span aria-hidden>↓</span> Download the step-by-step setup guide
       </a>
+    </div>
+  );
+}
+
+// ============================================================
+// CREATE COMPANY PROMPT — shown when a session is authenticated but has
+// zero org memberships. Only reachable via Google sign-in today (see the
+// comment where this is rendered in BusinessPage) — the caller's identity
+// is already verified by the existing session, so this just needs a
+// company name; /api/orgs/create infers ownerEmail from the session and
+// skips its usual magic-link round trip.
+// ============================================================
+function CreateCompanyPrompt({ email, onCreated, onLogout }) {
+  const [orgName, setOrgName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      await api("/api/orgs/create", { method: "POST", body: JSON.stringify({ orgName }) });
+      onCreated();
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="max-w-md mx-auto mt-16">
+      <div className="flex items-center justify-between mb-8">
+        <p className="text-[#94a3b8] text-xs font-mono truncate">{email}</p>
+        <button onClick={onLogout} className="text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 shrink-0 ml-2">
+          Sign out
+        </button>
+      </div>
+      <h1 className="text-2xl font-extrabold text-white text-center mb-1">Name your company</h1>
+      <p className="text-[#94a3b8] text-sm text-center mb-8">You're signed in but not part of any company yet — create one to get started.</p>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          value={orgName}
+          onChange={(e) => setOrgName(e.target.value)}
+          required
+          placeholder="Company name"
+          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]"
+        />
+        <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
+          {submitting ? "Creating…" : "Create company"}
+        </button>
+      </form>
+
+      {error && <p className="text-red-400 text-xs mt-4">{error}</p>}
     </div>
   );
 }

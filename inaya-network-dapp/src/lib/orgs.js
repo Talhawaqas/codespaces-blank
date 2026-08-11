@@ -176,15 +176,31 @@ export async function requireMembership(req, orgId, { requireManage = false } = 
   return { session, membership };
 }
 
+/** Issues a fresh session for an email whose identity has already been verified by the
+ *  caller — a consumed magic-link token, or a verified Google ID token. Returns
+ *  { email, sessionToken }. Does NOT set a cookie — callers decide how to hand it back. */
+export async function createSession(email) {
+  const { sessions } = await getOrgCollections();
+  const sessionToken = generateToken();
+  await sessions.insertOne({
+    tokenHash: hashToken(sessionToken),
+    email,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    createdAt: new Date().toISOString(),
+  });
+  return { email, sessionToken };
+}
+
 /** Validates and consumes a magic-link token (shared by the web GET redirect route and
  *  the mobile POST JSON route) — marks it used, flips an invite's membership to active,
- *  and issues a fresh session. Returns { error, status } or { email, sessionToken }.
- *  Does NOT set a cookie or build a response — callers decide how to hand the token back. */
+ *  and issues a fresh session via createSession(). Returns { error, status } or
+ *  { email, sessionToken }. Does NOT set a cookie or build a response — callers decide
+ *  how to hand the token back. */
 export async function consumeLoginToken(token) {
   if (!token) return { error: "missing_token", status: 400 };
 
   await ensureOrgIndexes();
-  const { magicLinks, orgMembers, sessions } = await getOrgCollections();
+  const { magicLinks, orgMembers } = await getOrgCollections();
 
   const link = await magicLinks.findOne({ tokenHash: hashToken(token) });
   if (!link || link.usedAt || new Date(link.expiresAt).getTime() < Date.now()) {
@@ -201,15 +217,7 @@ export async function consumeLoginToken(token) {
     );
   }
 
-  const sessionToken = generateToken();
-  await sessions.insertOne({
-    tokenHash: hashToken(sessionToken),
-    email: link.email,
-    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
-    createdAt: now,
-  });
-
-  return { email: link.email, sessionToken };
+  return createSession(link.email);
 }
 
 /** Members see documents in departments they're assigned to; owner/admin see everything
