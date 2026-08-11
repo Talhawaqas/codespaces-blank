@@ -38,9 +38,22 @@ export async function POST(req) {
 
     const now = new Date().toISOString();
     // plan/planUpdatedAt start null — getOrgPlan() (src/lib/orgPlans.js)
-    // treats an org with no plan as unrestricted until the owner picks one
-    // from Billing, same as any pre-existing org from before plans existed.
-    const orgResult = await orgs.insertOne({ name, ownerEmail, plan: null, planUpdatedAt: null, createdAt: now });
+    // treats an org with no plan as unrestricted for LIMIT purposes, which
+    // is what we want for orgs that existed before plans did. But a org
+    // created from here on is new, on testnet, with real Stripe checkout
+    // available — requiresPlanSelection:true tells the frontend to gate
+    // the workspace behind picking a plan (or starting its free trial)
+    // before showing the Dashboard, instead of quietly granting the same
+    // unrestricted access pre-existing orgs get. See business/page.js's
+    // PlanSelectionGate.
+    const orgResult = await orgs.insertOne({
+      name,
+      ownerEmail,
+      plan: null,
+      planUpdatedAt: null,
+      requiresPlanSelection: true,
+      createdAt: now,
+    });
     const orgId = orgResult.insertedId;
 
     await orgMembers.insertOne({

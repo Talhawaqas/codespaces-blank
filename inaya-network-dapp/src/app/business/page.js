@@ -214,9 +214,14 @@ export default function BusinessPage() {
 
   const currentMembership = session.orgs.find((o) => o.orgId === selectedOrgId) || session.orgs[0];
 
+  const needsPlanSelection = currentMembership?.requiresPlanSelection && !currentMembership?.plan;
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans">
-      {currentMembership && (
+      {currentMembership && needsPlanSelection && (
+        <PlanSelectionGate email={session.email} membership={currentMembership} onLogout={handleLogout} />
+      )}
+      {currentMembership && !needsPlanSelection && (
         <Workspace
           key={currentMembership.orgId}
           email={session.email}
@@ -227,6 +232,113 @@ export default function BusinessPage() {
           onLogout={handleLogout}
         />
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// PLAN SELECTION GATE — shown instead of the Dashboard for a newly
+// created company (orgs/create/route.js sets requiresPlanSelection:true
+// going forward) until its owner picks a plan or starts its free trial.
+// Pre-existing orgs never have this field set, so they're unaffected —
+// see that route's comment for why new vs. legacy orgs are treated
+// differently here.
+// ============================================================
+function PlanSelectionGate({ email, membership, onLogout }) {
+  const [plans, setPlans] = useState(null);
+  const [error, setError] = useState("");
+  const [switchingPlanId, setSwitchingPlanId] = useState(null);
+  const [checkingActivation, setCheckingActivation] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/orgs/billing/plans")
+      .then((res) => res.json())
+      .then((data) => setPlans(data.plans))
+      .catch(() => setError("Could not load plans."));
+  }, []);
+
+  // Stripe's redirect back here can beat the webhook that actually writes
+  // the plan — poll briefly instead of just re-showing this same gate as
+  // if the checkout the user just completed did nothing.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("billing") !== "success") return;
+    window.history.replaceState({}, "", window.location.pathname);
+    setCheckingActivation(true);
+
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const res = await fetch("/api/orgs/session");
+        const data = await res.json();
+        const org = data.orgs?.find((o) => o.orgId === membership.orgId);
+        if (org?.plan) {
+          window.location.reload(); // simplest way for BusinessPage to re-derive membership and drop the gate
+          return;
+        }
+      } catch {
+        // keep polling — a transient failure here shouldn't stop retrying
+      }
+      if (attempts >= 8) {
+        clearInterval(interval);
+        setCheckingActivation(false);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [membership.orgId]);
+
+  async function handleSelect(plan) {
+    if (plan.contactSalesOnly) {
+      window.location.href = "mailto:sales@inaya.ai?subject=Inaya%20Business%20Workspace%20—%20Enterprise";
+      return;
+    }
+    setSwitchingPlanId(plan.id);
+    setError("");
+    try {
+      const d = await api("/api/orgs/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ orgId: membership.orgId, planId: plan.id, interval: "month" }),
+      });
+      window.location.href = d.url;
+    } catch (err) {
+      setError(err.message);
+      setSwitchingPlanId(null);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
+          <div>
+            <p className="text-[#94a3b8] text-xs font-mono">{email} · {membership.orgName}</p>
+            <h1 className="text-2xl font-extrabold text-white mt-1">Activate your workspace</h1>
+            <p className="text-[#94a3b8] text-sm mt-1 max-w-xl">
+              Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
+            </p>
+          </div>
+          <button onClick={onLogout} className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 shrink-0">
+            Sign out
+          </button>
+        </div>
+
+        {checkingActivation && (
+          <div className="bg-[#00f2fe]/10 border border-[#00f2fe]/20 text-[#00f2fe] text-xs rounded-lg p-3 mb-6">
+            Activating your plan — this can take a few seconds after checkout…
+          </div>
+        )}
+        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+        {!plans && !error && <p className="text-[#94a3b8] text-sm">Loading plans…</p>}
+
+        {plans && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan) => (
+              <PricingCard key={plan.id} plan={plan} loading={switchingPlanId === plan.id} onSelect={() => handleSelect(plan)} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

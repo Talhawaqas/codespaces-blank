@@ -20,6 +20,7 @@ import puppeteer from "puppeteer-core";
 import { executiveSummary } from "./content/executive-summary.js";
 import { investmentMemorandum } from "./content/investment-memorandum.js";
 import { gtmStrategy } from "./content/gtm-strategy.js";
+import { saasBusinessModel } from "./content/saas-business-model.js";
 import { buildExecutiveSummaryHTML, buildInvestmentMemorandumHTML, buildGtmStrategyHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +72,9 @@ async function main() {
     { name: "inaya-executive-summary.pdf", html: buildExecutiveSummaryHTML(executiveSummary) },
     { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
     { name: "inaya-gtm-strategy.pdf", html: buildGtmStrategyHTML(gtmStrategy) },
+    // Reuses the Investment Memorandum's builder — same {cover, sections,
+    // docId} shape, no new template function needed.
+    { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
   ];
 
   for (const target of targets) {

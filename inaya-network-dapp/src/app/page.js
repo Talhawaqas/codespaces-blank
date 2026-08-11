@@ -2704,6 +2704,7 @@ export default function Home() {
     { label: "Telegram Swarm Hub", href: "https://t.me/inayanetwork", icon: "🚀" },
     { label: "YouTube Channel", href: "https://youtube.com/@inayanetworkofficial?si=GzAzY5m3PzZy8MU-", icon: "▶️" },
     { label: "X Network Telemetry", href: "https://x.com/InayaNetwork", icon: "🐦" },
+    { label: "Discord Community", href: "https://discord.gg/DS8uDAr9jV", icon: "💬" },
   ];
 
   const copyToClipboard = async (text, fieldKey) => {
@@ -4971,6 +4972,41 @@ export default function Home() {
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Supply Cap Weight</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">RPC Connection Status</div></div>
+              </div>
+
+              {/* Business Workspace / SaaS cross-promotion — converts
+                  wallet-connected retail users into Business Workspace
+                  signups. Opens in a new tab, same reasoning as the nav's
+                  Business Workspace/SaaS links: switching products
+                  shouldn't navigate the visitor away from the wallet dApp. */}
+              <div className="relative overflow-hidden bg-gradient-to-r from-violet-500/10 via-[#090d16] to-[#00f2fe]/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-violet-300 bg-violet-400/10 border border-violet-400/20 rounded-full px-2.5 py-1 mb-2">
+                    New · For Teams &amp; Companies
+                  </span>
+                  <h3 className="text-white font-extrabold text-base sm:text-lg">Run your company on Inaya, not just your files</h3>
+                  <p className="text-[#94a3b8] text-xs sm:text-sm mt-1 max-w-lg">
+                    Business Workspace brings the same zero-knowledge encryption to your team's documents — departments, projects, permissions, an AI assistant, and real pricing plans.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                  <a
+                    href="/business/pricing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-violet-400 to-[#00f2fe] px-4 py-2.5 rounded-lg hover:brightness-110"
+                  >
+                    See Pricing
+                  </a>
+                  <a
+                    href="/business"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-slate-200 bg-white/5 border border-white/10 px-4 py-2.5 rounded-lg hover:bg-white/10"
+                  >
+                    Explore ↗
+                  </a>
+                </div>
               </div>
 
               {/* Product overview video — embedded from YouTube (adaptive quality per
