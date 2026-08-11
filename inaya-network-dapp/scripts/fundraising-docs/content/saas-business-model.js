@@ -118,9 +118,9 @@ export const saasBusinessModel = {
           headers: ["Plan", "Price", "Users", "Storage", "Max File Size"],
           rows: [
             ["Starter", "$7.99/mo · $79/yr", "2", "250 GB", "5 GB"],
-            ["Professional (Most Popular)", "$19.99/mo · $199/yr", "5", "1 TB", "10 GB"],
+            ["Professional (Most Popular)", "$28/mo · $280/yr", "5", "1 TB", "10 GB"],
             ["Business", "$49.99/mo · $499/yr", "10", "5 TB", "25 GB"],
-            ["Enterprise", "$199/mo · $1,990/yr", "Up to 25", "10 TB", "100 GB"],
+            ["Enterprise", "$799/mo · $7,990/yr", "Up to 25", "10 TB", "100 GB"],
           ],
         },
         {
@@ -201,9 +201,9 @@ export const saasBusinessModel = {
           headers: ["Scenario", "Mix", "Monthly Recurring Revenue"],
           rows: [
             ["Early traction", "100 Starter", "$799"],
-            ["Modest adoption", "200 Starter + 100 Professional", "$3,597"],
-            ["Established base", "300 Starter + 200 Professional + 50 Business", "$8,895"],
-            ["Broader base", "500 Starter + 400 Professional + 150 Business + 10 Enterprise", "$21,480"],
+            ["Modest adoption", "200 Starter + 100 Professional", "$4,398"],
+            ["Established base", "300 Starter + 200 Professional + 50 Business", "$10,497"],
+            ["Broader base", "500 Starter + 400 Professional + 150 Business + 10 Enterprise", "$30,684"],
           ],
         },
       ],
