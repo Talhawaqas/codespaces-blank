@@ -5,16 +5,18 @@
 // Google OAuth for the mobile app (inaya-mobile) requires an "Authorized
 // redirect URI" that ends in a public top-level domain — a raw custom URL
 // scheme (inayamobile://oauth2redirect) is rejected by Google's Web
-// application client type. This page is that HTTPS landing target.
-//
-// In practice it's rarely actually rendered: expo-auth-session's
-// WebBrowser.openAuthSessionAsync watches for navigation to this exact URL
-// and closes its in-app browser session the moment it's requested, handing
-// the full URL (including Google's id_token in the fragment) back to the
-// app — this page's own JS never gets a chance to run. It exists as a
-// fallback for the rarer case the OS opens this in a real external browser
-// instead: bounce into the app via its custom scheme, carrying over
-// whatever Google appended.
+// application client type. This page is that HTTPS landing target, and its
+// bounce below is the ACTUAL mechanism that gets the user back into the
+// app — not a rare fallback. expo-web-browser's own promise resolution
+// can't do this itself: on Android it only resolves 'success' when the URL
+// that reopens the app literally starts with the exact redirect_uri string
+// that was sent to Google (this https one) — since the real return trip
+// goes through a different URL entirely (this page's own custom-scheme
+// redirect below), that check always fails there. So inaya-mobile's
+// GoogleSignInButton doesn't rely on that promise for the actual result at
+// all — it listens for this inbound inayamobile://oauth2redirect deep link
+// directly (see its own comment for the full explanation) and extracts the
+// id_token from it itself.
 
 import { useEffect, useState } from "react";
 
