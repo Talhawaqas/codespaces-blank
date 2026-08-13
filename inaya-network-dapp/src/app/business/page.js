@@ -334,6 +334,13 @@ function PlanSelectionGate({ email, membership, onLogout }) {
           </button>
         </div>
 
+        <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-6">
+          <span className="text-amber-400 text-sm">⚠️</span>
+          <p className="text-[12px] text-amber-300 font-bold font-mono">
+            TEST MODE — Stripe checkout won't accept a real card. Use 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
+          </p>
+        </div>
+
         {checkingActivation && (
           <div className="bg-[#00f2fe]/10 border border-[#00f2fe]/20 text-[#00f2fe] text-xs rounded-lg p-3 mb-6">
             Activating your plan — this can take a few seconds after checkout…
@@ -1953,6 +1960,12 @@ function BillingView({ orgId, canManage }) {
             <a href="/business/pricing" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#00f2fe]">
               Full pricing page ↗
             </a>
+          </div>
+          <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-4">
+            <span className="text-amber-400 text-sm">⚠️</span>
+            <p className="text-[12px] text-amber-300 font-bold font-mono">
+              TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {availablePlans.map((p) => (

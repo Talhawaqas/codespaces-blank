@@ -4512,9 +4512,9 @@ export default function Home() {
           <button
             onClick={() => setIsUpdatesDrawerOpen(true)}
             aria-label="Open updates and knowledge base"
-            className="relative w-10 h-10 flex items-center justify-center rounded-full border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors"
+            className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
           >
-            📣
+            📣 Knowledge Base
           </button>
           <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
             {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
