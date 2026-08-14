@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import Image from 'next/image';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -2038,11 +2037,6 @@ Frequently Asked Questions (FAQs)
   },
 ];
 
-// Mobile app relaunch target (the new premium/glassmorphism UI build) — the
-// download link gets added once it's ready; until then the About Us page
-// shows a countdown instead of a live .apk link.
-const MOBILE_LAUNCH_TARGET = new Date('2026-08-04');
-
 export default function Home() {
   // ========================================================
   // 1. SYSTEM ROUTING & CONTROL STATES
@@ -2070,21 +2064,6 @@ export default function Home() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isUpdatesDrawerOpen]);
-
-  // Countdown to the mobile app relaunch — called unconditionally (hooks
-  // can't live inside the `currentPage === 'About Us'` conditional render
-  // below), even though it's only ever displayed on that one page.
-  const [mobileLaunchMsLeft, setMobileLaunchMsLeft] = useState(() => Math.max(0, MOBILE_LAUNCH_TARGET.getTime() - Date.now()));
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMobileLaunchMsLeft(Math.max(0, MOBILE_LAUNCH_TARGET.getTime() - Date.now()));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-  const mobileLaunchDays = Math.floor(mobileLaunchMsLeft / 86400000);
-  const mobileLaunchHours = Math.floor((mobileLaunchMsLeft / 3600000) % 24);
-  const mobileLaunchMinutes = Math.floor((mobileLaunchMsLeft / 60000) % 60);
-  const mobileLaunchSeconds = Math.floor((mobileLaunchMsLeft / 1000) % 60);
 
   // Card-paying customers (Stripe checkout) never connect a wallet, so they're
   // identified by an http-only cookie instead — see /api/resolve-checkout-session
@@ -6208,7 +6187,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-extrabold text-white tracking-wide mb-3">Developer SDK — Now Available. Mobile App Launched Today!</h3>
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed mb-4">
-                  The <code className="text-[#00f2fe]">@inaya-network/custody-sdk</code> developer SDK is live now — build against Inaya's encryption, sharding, and on-chain custody layer directly. The Inaya Mobile app is being rebuilt with a premium new interface before its public release — the download link lands here once it's ready.
+                  The <code className="text-[#00f2fe]">@inaya-network/custody-sdk</code> developer SDK is live now — build against Inaya's encryption, sharding, and on-chain custody layer directly. The Inaya Mobile app's alpha build is available to download below, with a premium new interface in active development ahead of full public release.
                 </p>
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed mb-4">
                   Inaya's Developer Platform delivers a complete ecosystem for building next-generation decentralized storage applications. Beyond a traditional SDK, it includes an official TypeScript SDK, React package, command-line tools, project scaffolding with create-inaya-dapp, live Storybook, production-ready templates, and extensive documentation. Developers have access to a comprehensive API supporting secure file uploads, deletion, renaming, moving, sharing, folder management, retry logic, upload progress callbacks, event listeners, advanced error handling, and strong TypeScript typings. Combined with client-side AES-256 encryption, binary sharding, immutable blockchain metadata, and open-source components, the platform enables teams to rapidly build scalable, secure, and enterprise-ready Web3 applications without having to implement the underlying decentralized storage infrastructure themselves.
@@ -6236,39 +6215,6 @@ export default function Home() {
                 <p className="text-[10px] text-slate-500 mt-3 font-mono">
                   SDK access is currently by invite — contact us for collaborator access.
                 </p>
-              </div>
-
-              <div className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#0b1120] to-[#0a0e1a] border border-[#00f2fe]/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,242,254,0.08)]">
-                <div className="flex flex-col items-center text-center gap-4">
-                  <Image
-                    src="/mobile-app-banner.jpeg"
-                    alt="Inaya Mobile App — Coming Soon. Your Decentralized Storage, On the Go."
-                    width={1254}
-                    height={1254}
-                    className="w-full max-w-xl h-auto rounded-2xl"
-                    priority
-                  />
-
-                  <div className="flex items-center gap-3 sm:gap-5 mt-2">
-                    {[
-                      { label: 'Days', value: mobileLaunchDays },
-                      { label: 'Hours', value: mobileLaunchHours },
-                      { label: 'Minutes', value: mobileLaunchMinutes },
-                      { label: 'Seconds', value: mobileLaunchSeconds },
-                    ].map((unit) => (
-                      <div key={unit.label} className="flex flex-col items-center bg-black/30 border border-white/10 rounded-xl px-4 py-3 min-w-[64px]">
-                        <span className="text-2xl sm:text-3xl font-mono font-black text-white tabular-nums">{String(unit.value).padStart(2, '0')}</span>
-                        <span className="text-[9px] uppercase tracking-widest text-slate-500 mt-1">{unit.label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="text-[10px] text-slate-600 font-mono mt-1">
-                    {mobileLaunchMsLeft > 0
-                      ? `Launching Tuesday, August 4, 2026 at 11:59 PM — check back here for the download link.`
-                      : `Almost there — the download link will appear here shortly.`}
-                  </p>
-                </div>
               </div>
 
               <div className="bg-[#090d16]/80 border border-[#00f2fe]/20 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-4">
