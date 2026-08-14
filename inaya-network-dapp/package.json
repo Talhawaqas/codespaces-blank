@@ -13,6 +13,7 @@
     "@google/genai": "^2.13.0",
     "@supabase/supabase-js": "^2.44.4",
     "@tailwindcss/postcss": "^4.3.3",
+    "@vercel/analytics": "^2.0.1",
     "@walletconnect/ethereum-provider": "^2.23.10",
     "autoprefixer": "^10.4.19",
     "ethers": "^6.17.0",
