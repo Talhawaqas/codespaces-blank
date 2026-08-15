@@ -23,6 +23,17 @@ import {
 
 const TERMINAL_NON_APPROVED_STATUSES = ["Declined", "Expired", "Kyc Expired", "Abandoned"];
 
+// Case-insensitive compare — defense-in-depth against Didit ever sending a
+// differently-cased status string than the "Approved" this code was
+// written against; a silent case mismatch would otherwise leave a record
+// stuck on "pending" forever with no error logged anywhere.
+function isApproved(status) {
+  return typeof status === "string" && status.toLowerCase() === "approved";
+}
+function isTerminalNonApproved(status) {
+  return typeof status === "string" && TERMINAL_NON_APPROVED_STATUSES.some((s) => s.toLowerCase() === status.toLowerCase());
+}
+
 // ============================================================
 // Referrer activation
 // ============================================================
@@ -37,8 +48,8 @@ export async function handleActivationDecision(referrerId, decision) {
 
   const now = new Date().toISOString();
 
-  if (decision.status !== "Approved") {
-    if (TERMINAL_NON_APPROVED_STATUSES.includes(decision.status)) {
+  if (!isApproved(decision.status)) {
+    if (isTerminalNonApproved(decision.status)) {
       await referrers.updateOne({ _id: referrer._id }, { $set: { status: "rejected", rejectionReason: decision.status, updatedAt: now } });
     }
     return;
@@ -97,8 +108,8 @@ export async function handleReferralDecision(referralId, decision) {
 
   const now = new Date().toISOString();
 
-  if (decision.status !== "Approved") {
-    if (TERMINAL_NON_APPROVED_STATUSES.includes(decision.status)) {
+  if (!isApproved(decision.status)) {
+    if (isTerminalNonApproved(decision.status)) {
       await referrals.updateOne({ _id: referral._id }, { $set: { status: "rejected", rejectionReason: decision.status, updatedAt: now } });
     }
     return;

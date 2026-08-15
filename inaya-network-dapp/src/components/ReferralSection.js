@@ -27,6 +27,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// Persisted purely so a returning referrer's verified code/status survives
+// navigating away and back (this component fully unmounts whenever
+// page.js's currentPage leaves 'Referrals' — see its render branch) or a
+// page reload — without this, `activatedEmail`/`referrerStatus` reset to
+// nothing and the verified branch below can never render again until the
+// user re-types their email and resubmits, even though they're already
+// verified. Just an email address, not sensitive.
+const ACTIVATED_EMAIL_KEY = 'inaya_referral_activated_email';
+
 function StatusPill({ status }) {
   const map = {
     verified: ['bg-emerald-400/10 text-emerald-400 border-emerald-400/30', '✅ Verified'],
@@ -103,6 +112,19 @@ export default function ReferralSection() {
     if (ref) setRedeemCode(ref.trim().toUpperCase());
   }, []);
 
+  // Resume a previously-activated referrer on mount — see ACTIVATED_EMAIL_KEY's
+  // comment. refreshStatus() also benefits from /api/referrals/status's own
+  // Didit-reconciliation fallback, so this doubles as a chance to self-heal
+  // a status that's stuck on "pending" locally despite already being
+  // verified on Didit's side.
+  useEffect(() => {
+    const persisted = window.localStorage.getItem(ACTIVATED_EMAIL_KEY);
+    if (!persisted) return;
+    setEmail(persisted);
+    setActivatedEmail(persisted);
+    refreshStatus(persisted);
+  }, [refreshStatus]);
+
   // Poll while a KYC decision is still pending — the webhook updates the
   // backend asynchronously, this is how the UI notices without a page reload.
   useEffect(() => {
@@ -131,6 +153,7 @@ export default function ReferralSection() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not start verification.');
       setActivatedEmail(trimmed);
+      window.localStorage.setItem(ACTIVATED_EMAIL_KEY, trimmed);
       setReferrerStatus(data.status === 'verified' ? { status: 'verified', referralCode: data.referralCode } : { status: 'pending' });
       if (data.url) setKycUrl(data.url);
     } catch (err) {
