@@ -7,7 +7,9 @@
 // ADMIN_DASHBOARD_SECRET, set in Vercel's env vars). Bookmark the full URL
 // with the key included; there's no login form, this is a one-person view.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+const FEEDBACK_STATUSES = ["New", "Reviewing", "Confirmed", "In Progress", "Resolved", "Rejected"];
 
 function Bar({ value, max, color }) {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
@@ -18,9 +20,133 @@ function Bar({ value, max, color }) {
   );
 }
 
+function StatTile({ label, value }) {
+  return (
+    <div className="bg-black/20 border border-white/10 rounded-xl p-3">
+      <div className="text-lg font-extrabold text-white">{value}</div>
+      <div className="text-[9px] uppercase tracking-wide text-[#64748b] mt-0.5">{label}</div>
+    </div>
+  );
+}
+
+function FeedbackRow({ item, adminKey, onChanged }) {
+  const [expanded, setExpanded] = useState(false);
+  const [notes, setNotes] = useState(item.adminNotes || "");
+  const [saving, setSaving] = useState(false);
+
+  async function patch(body) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/feedback/${item._id}?key=${encodeURIComponent(adminKey)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      onChanged(json);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/feedback/${item._id}?key=${encodeURIComponent(adminKey)}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      onChanged(null, item._id);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  const severityColor = { Critical: "#f87171", High: "#f59e0b", Medium: "#00f2fe", Low: "#64748b" }[item.severity] || "#64748b";
+
+  return (
+    <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+      <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs">
+            <span>{item.type === "bug" ? "🐛" : "💡"}</span>
+            <span className="font-bold text-white truncate">{item.title}</span>
+            {item.severity && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ color: severityColor, background: `${severityColor}1a` }}>{item.severity}</span>}
+          </div>
+          <p className="text-[10px] text-[#64748b] font-mono mt-1">{item.category} · {new Date(item.createdAt).toLocaleString()}</p>
+        </div>
+        <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border bg-white/5 text-slate-300 border-white/10 shrink-0">{item.status}</span>
+      </div>
+
+      {expanded && (
+        <div className="mt-4 pt-4 border-t border-white/10 space-y-3 text-xs" onClick={(e) => e.stopPropagation()}>
+          <p className="text-slate-300 whitespace-pre-wrap">{item.description}</p>
+          {item.reproductionSteps && (
+            <div>
+              <p className="text-[#64748b] font-bold uppercase text-[9px] mb-1">Steps to reproduce</p>
+              <p className="text-slate-300 whitespace-pre-wrap font-mono">{item.reproductionSteps}</p>
+            </div>
+          )}
+          {item.attachmentUrl && (
+            <a href={item.attachmentUrl} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline break-all">📎 View attachment</a>
+          )}
+          <div className="grid grid-cols-2 gap-2 font-mono text-[10px] text-[#94a3b8] bg-white/5 rounded-lg p-3">
+            <span>Wallet: {item.walletAddress || "—"}</span>
+            <span>Route: {item.route || "—"}</span>
+            <span>Device: {item.device || "—"}</span>
+            <span>Browser: {item.browser || "—"}</span>
+            <span>Network: {item.network || "—"}</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={item.status}
+              onChange={(e) => patch({ status: e.target.value })}
+              disabled={saving}
+              className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-[11px]"
+            >
+              {FEEDBACK_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <button onClick={handleDelete} className="text-[10px] font-bold uppercase text-red-400 border border-red-400/30 bg-red-400/10 px-2.5 py-1.5 rounded-lg hover:bg-red-400/20">
+              Delete
+            </button>
+          </div>
+
+          <div>
+            <p className="text-[#64748b] font-bold uppercase text-[9px] mb-1">Admin notes</p>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              onBlur={() => notes !== (item.adminNotes || "") && patch({ adminNotes: notes })}
+              rows={2}
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-[11px] focus:outline-none focus:border-[#00f2fe]/50"
+              placeholder="Internal notes…"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState(null);
+  const [feedbackError, setFeedbackError] = useState("");
+  const adminKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") || "" : "";
+
+  const loadFeedback = useCallback(() => {
+    fetch(`/api/admin/feedback?key=${encodeURIComponent(adminKey)}`)
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+        setFeedback(json.submissions);
+      })
+      .catch((err) => setFeedbackError(err.message));
+  }, [adminKey]);
 
   useEffect(() => {
     const key = new URLSearchParams(window.location.search).get("key") || "";
@@ -31,7 +157,15 @@ export default function AdminDashboardPage() {
         setData(json);
       })
       .catch((err) => setError(err.message));
-  }, []);
+    loadFeedback();
+  }, [loadFeedback]);
+
+  function handleFeedbackChanged(updated, deletedId) {
+    setFeedback((prev) => {
+      if (deletedId) return prev.filter((f) => f._id !== deletedId);
+      return prev.map((f) => (f._id === updated._id ? updated : f));
+    });
+  }
 
   if (error) {
     return (
@@ -120,6 +254,37 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* SECTION 3: Feedback */}
+        <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+          <h2 className="text-sm font-bold text-white mb-4">Testnet Feedback</h2>
+
+          {feedbackError ? (
+            <p className="text-red-400 text-xs">⚠ {feedbackError}</p>
+          ) : !feedback ? (
+            <p className="text-[#64748b] text-xs">Loading…</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+                <StatTile label="Total" value={feedback.length} />
+                <StatTile label="Bugs" value={feedback.filter((f) => f.type === "bug").length} />
+                <StatTile label="Ideas" value={feedback.filter((f) => f.type === "idea").length} />
+                <StatTile label="Open / New" value={feedback.filter((f) => f.status === "New").length} />
+                <StatTile label="Resolved" value={feedback.filter((f) => f.status === "Resolved").length} />
+              </div>
+
+              {feedback.length === 0 ? (
+                <p className="text-[#64748b] text-xs italic">No feedback submitted yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {feedback.map((item) => (
+                    <FeedbackRow key={item._id} item={item} adminKey={adminKey} onChanged={handleFeedbackChanged} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

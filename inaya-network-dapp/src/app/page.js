@@ -2065,6 +2065,113 @@ export default function Home() {
     };
   }, [isUpdatesDrawerOpen]);
 
+  // Same enum values as src/lib/feedback.js — duplicated here (not
+  // imported) because that file also imports mongodb.js, which can't be
+  // bundled into client-side JS.
+  const FEEDBACK_CATEGORIES = ['Watcher Node', 'File Upload', 'Storage', 'Mobile', 'Business Workspace', 'AI Assistant', 'Authentication', 'Other'];
+  const FEEDBACK_SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
+
+  // Testnet Feedback System — 'bug' | 'idea' | null drives a single modal
+  // (copies isWalletModalOpen's visual pattern) rather than two separate
+  // booleans, since only one form is ever open at a time.
+  const [feedbackModal, setFeedbackModal] = useState(null);
+  const [feedbackForm, setFeedbackForm] = useState({ title: '', description: '', category: 'Other', severity: '', reproductionSteps: '' });
+  const [feedbackFile, setFeedbackFile] = useState(null);
+  const [feedbackAttachmentUrl, setFeedbackAttachmentUrl] = useState('');
+  const [feedbackUploading, setFeedbackUploading] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+
+  function openFeedbackModal(type) {
+    setFeedbackModal(type);
+    setFeedbackForm({ title: '', description: '', category: 'Other', severity: type === 'bug' ? 'Medium' : '', reproductionSteps: '' });
+    setFeedbackFile(null);
+    setFeedbackAttachmentUrl('');
+    setFeedbackError('');
+    setFeedbackSuccess(false);
+  }
+
+  function detectDeviceAndBrowser() {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const platform = typeof navigator !== 'undefined' ? navigator.platform : '';
+    let device = 'Desktop';
+    if (/Android/i.test(ua)) device = 'Android';
+    else if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS';
+    else if (/Windows/i.test(ua) || /Win/i.test(platform)) device = 'Windows';
+    else if (/Mac/i.test(platform)) device = 'macOS';
+    else if (/Linux/i.test(platform)) device = 'Linux';
+
+    let browser = 'Unknown';
+    if (/Edg\//i.test(ua)) browser = 'Edge';
+    else if (/Chrome\//i.test(ua) && !/OPR\//i.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+    else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = 'Safari';
+    else if (/OPR\//i.test(ua)) browser = 'Opera';
+
+    return { device, browser };
+  }
+
+  async function handleFeedbackFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFeedbackFile(file);
+    setFeedbackUploading(true);
+    setFeedbackError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/feedback/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not upload attachment.');
+      setFeedbackAttachmentUrl(data.url);
+    } catch (err) {
+      setFeedbackError(err.message);
+      setFeedbackFile(null);
+    } finally {
+      setFeedbackUploading(false);
+    }
+  }
+
+  async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+    setFeedbackSubmitting(true);
+    setFeedbackError('');
+    try {
+      const { device, browser } = detectDeviceAndBrowser();
+      const network = typeof navigator !== 'undefined'
+        ? (navigator.onLine === false ? 'offline' : (navigator.connection?.effectiveType || 'online'))
+        : 'unknown';
+
+      const res = await fetch('/api/feedback/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: feedbackModal,
+          title: feedbackForm.title,
+          description: feedbackForm.description,
+          category: feedbackForm.category,
+          severity: feedbackModal === 'bug' ? feedbackForm.severity : undefined,
+          reproductionSteps: feedbackModal === 'bug' && feedbackForm.reproductionSteps ? feedbackForm.reproductionSteps : undefined,
+          attachmentUrl: feedbackAttachmentUrl || undefined,
+          route: currentPage,
+          walletAddress: isConnected ? walletAddress : undefined,
+          device,
+          browser,
+          network,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not submit feedback.');
+      setFeedbackSuccess(true);
+      setTimeout(() => setFeedbackModal(null), 1800);
+    } catch (err) {
+      setFeedbackError(err.message);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  }
+
   // Card-paying customers (Stripe checkout) never connect a wallet, so they're
   // identified by an http-only cookie instead — see /api/resolve-checkout-session
   // and /api/whoami. cardCustomerEmail being set is what lets the Dashboard
@@ -4495,6 +4602,22 @@ export default function Home() {
           >
             📣 Knowledge Base
           </button>
+          <button
+            onClick={() => openFeedbackModal('bug')}
+            aria-label="Report a bug"
+            title="Report a bug"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm"
+          >
+            🐛
+          </button>
+          <button
+            onClick={() => openFeedbackModal('idea')}
+            aria-label="Suggest an idea"
+            title="Suggest an idea"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm"
+          >
+            💡
+          </button>
           <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
             {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
           </button>
@@ -6487,6 +6610,114 @@ export default function Home() {
                 This dApp runs on <strong>BNB Chain Testnet</strong>. Not every mobile wallet exposes testnets over WalletConnect — that's the wallet's own choice, not something this site controls. <strong>MetaMask</strong> (and browsers with a built-in wallet, like Brave) currently offer the most reliable connection. If <strong>Coinbase Wallet</strong> opens to its home screen instead of this site, manually type <span className="text-amber-300">inayanetwork.com</span> into Coinbase's built-in browser and tap Connect Wallet again from there.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TESTNET FEEDBACK — Submit a Bug / Submit an Idea */}
+      {feedbackModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-[#090e1a] border border-[#00f2fe]/20 w-full max-w-md rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setFeedbackModal(null)} className="absolute top-4 right-4 text-[#64748b] font-mono hover:text-white">✕</button>
+            <div className="text-center mb-5">
+              <h3 className="text-white font-bold">{feedbackModal === 'bug' ? '🐛 Report a Bug' : '💡 Suggest an Idea'}</h3>
+              <p className="text-[10px] text-[#64748b] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
+            </div>
+
+            {feedbackSuccess ? (
+              <div className="text-center py-6">
+                <p className="text-emerald-400 font-bold text-sm">✅ Thanks — feedback submitted!</p>
+              </div>
+            ) : (
+              <form onSubmit={handleFeedbackSubmit} className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Title</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={200}
+                    value={feedbackForm.title}
+                    onChange={(e) => setFeedbackForm((f) => ({ ...f, title: e.target.value }))}
+                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                    placeholder={feedbackModal === 'bug' ? 'Short summary of the bug' : 'Short summary of the idea'}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Description</label>
+                  <textarea
+                    required
+                    maxLength={5000}
+                    rows={4}
+                    value={feedbackForm.description}
+                    onChange={(e) => setFeedbackForm((f) => ({ ...f, description: e.target.value }))}
+                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                    placeholder="What happened / what you'd like to see"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-[#64748b] font-mono uppercase">Category</label>
+                    <select
+                      value={feedbackForm.category}
+                      onChange={(e) => setFeedbackForm((f) => ({ ...f, category: e.target.value }))}
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#00f2fe]/50"
+                    >
+                      {FEEDBACK_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  {feedbackModal === 'bug' && (
+                    <div>
+                      <label className="text-[10px] text-[#64748b] font-mono uppercase">Severity</label>
+                      <select
+                        value={feedbackForm.severity}
+                        onChange={(e) => setFeedbackForm((f) => ({ ...f, severity: e.target.value }))}
+                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#00f2fe]/50"
+                      >
+                        {FEEDBACK_SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {feedbackModal === 'bug' && (
+                  <div>
+                    <label className="text-[10px] text-[#64748b] font-mono uppercase">Steps to reproduce (optional)</label>
+                    <textarea
+                      maxLength={3000}
+                      rows={3}
+                      value={feedbackForm.reproductionSteps}
+                      onChange={(e) => setFeedbackForm((f) => ({ ...f, reproductionSteps: e.target.value }))}
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                      placeholder={'1. Go to...\n2. Click...\n3. See error'}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Screenshot / file (optional)</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
+                    onChange={handleFeedbackFileChange}
+                    className="w-full mt-1 text-xs text-[#94a3b8] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-white/10 file:text-white file:text-xs"
+                  />
+                  {feedbackUploading && <p className="text-[10px] text-[#00f2fe] mt-1">Uploading…</p>}
+                  {feedbackAttachmentUrl && !feedbackUploading && <p className="text-[10px] text-emerald-400 mt-1">✓ Attached: {feedbackFile?.name}</p>}
+                </div>
+
+                {feedbackError && <p className="text-red-400 text-xs">⚠ {feedbackError}</p>}
+
+                <button
+                  type="submit"
+                  disabled={feedbackSubmitting || feedbackUploading}
+                  className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {feedbackSubmitting ? 'SUBMITTING...' : feedbackModal === 'bug' ? 'SUBMIT BUG REPORT' : 'SUBMIT IDEA'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
