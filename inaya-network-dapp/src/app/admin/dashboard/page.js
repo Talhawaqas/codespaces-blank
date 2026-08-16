@@ -29,6 +29,26 @@ function StatTile({ label, value }) {
   );
 }
 
+function FilterChips({ options, value, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
+            value === opt.value
+              ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/40"
+              : "bg-white/5 text-[#64748b] border-white/10 hover:text-slate-300"
+          }`}
+        >
+          {opt.label}{opt.count != null ? ` (${opt.count})` : ""}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function FeedbackRow({ item, adminKey, onChanged }) {
   const [expanded, setExpanded] = useState(false);
   const [notes, setNotes] = useState(item.adminNotes || "");
@@ -131,7 +151,16 @@ function FeedbackRow({ item, adminKey, onChanged }) {
   );
 }
 
+const TABS = [
+  { key: "referrals", label: "Referral Dashboard" },
+  { key: "watchers", label: "Watcher Node Analytics" },
+  { key: "feedback", label: "Testnet Feedback" },
+];
+
 export default function AdminDashboardPage() {
+  const [activeTab, setActiveTab] = useState("referrals");
+  const [referralFilter, setReferralFilter] = useState("all"); // all | pending | verified | rejected
+  const [watcherFilter, setWatcherFilter] = useState("all"); // all | active | inactive
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
@@ -186,107 +215,162 @@ export default function AdminDashboardPage() {
   const maxPoints = Math.max(1, ...data.watchers.map((w) => w.points));
   const activeCount = data.watchers.filter((w) => w.active).length;
 
+  const referralCounts = {
+    all: data.referrers.length,
+    pending: data.referrers.filter((r) => r.status === "pending").length,
+    verified: data.referrers.filter((r) => r.status === "verified").length,
+    rejected: data.referrers.filter((r) => r.status === "rejected").length,
+  };
+  const filteredReferrers = referralFilter === "all" ? data.referrers : data.referrers.filter((r) => r.status === referralFilter);
+
+  const watcherCounts = { all: data.watchers.length, active: activeCount, inactive: data.watchers.length - activeCount };
+  const filteredWatchers = watcherFilter === "all" ? data.watchers : data.watchers.filter((w) => (watcherFilter === "active" ? w.active : !w.active));
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
-      <div className="max-w-5xl mx-auto space-y-10">
+      <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-extrabold text-white">Admin Dashboard</h1>
           <p className="text-[#64748b] text-xs font-mono mt-1">Private view — not linked publicly.</p>
         </div>
 
-        {/* CHART 1: Referrals by email */}
-        <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-sm font-bold text-white">Referrals by Email</h2>
-            <span className="text-[10px] text-[#64748b] font-mono">{data.referrers.length} referrers</span>
-          </div>
-          {data.referrers.length === 0 ? (
-            <p className="text-[#64748b] text-xs italic">No referrers yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {data.referrers.map((r) => (
-                <div key={r.email} className="grid grid-cols-[1fr_auto] gap-3 items-center">
-                  <div>
-                    <div className="flex items-baseline justify-between text-xs mb-1">
-                      <span className="font-mono text-slate-300 truncate">{r.email}</span>
-                      <span className="font-mono font-bold text-[#00f2fe] ml-3 shrink-0">{r.referrals}</span>
-                    </div>
-                    <Bar value={r.referrals} max={maxReferrals} color="#00f2fe" />
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-wide text-[#64748b] w-16 text-right">{r.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* TAB NAV */}
+        <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 gap-1 flex-wrap">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 min-w-[140px] py-2 px-3 text-xs font-bold uppercase rounded-lg transition-colors ${
+                activeTab === tab.key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8] hover:text-slate-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* CHART 2: Watcher Pioneer wallets */}
-        <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-sm font-bold text-white">Watcher Pioneer Wallets</h2>
-            <span className="text-[10px] text-[#64748b] font-mono">{data.watchers.length} enrolled · {activeCount} active now</span>
-          </div>
-          {data.watchers.length === 0 ? (
-            <p className="text-[#64748b] text-xs italic">No enrolled wallets yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {data.watchers.map((w) => (
-                <div key={w.walletAddress} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
-                  <div>
-                    <div className="flex items-baseline justify-between text-xs mb-1">
-                      <span className="font-mono text-slate-300 truncate">{w.walletAddress}</span>
-                      <span className="font-mono ml-3 shrink-0">
-                        <span className="font-bold text-emerald-400">{w.points.toLocaleString()} pts</span>
-                        <span className="text-[#64748b]"> · {w.inaya.toFixed(2)} INAYA</span>
-                      </span>
-                    </div>
-                    <Bar value={w.points} max={maxPoints} color="#34d399" />
-                  </div>
-                  <span
-                    className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
-                      w.active
-                        ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
-                        : "bg-white/5 text-[#64748b] border-white/10"
-                    }`}
-                  >
-                    {w.active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-              ))}
+        {/* TAB 1: Referral Dashboard */}
+        {activeTab === "referrals" && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-white">Referral Dashboard</h2>
+              <span className="text-[10px] text-[#64748b] font-mono">{filteredReferrers.length} of {data.referrers.length} referrers</span>
             </div>
-          )}
-        </div>
-
-        {/* SECTION 3: Feedback */}
-        <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
-          <h2 className="text-sm font-bold text-white mb-4">Testnet Feedback</h2>
-
-          {feedbackError ? (
-            <p className="text-red-400 text-xs">⚠ {feedbackError}</p>
-          ) : !feedback ? (
-            <p className="text-[#64748b] text-xs">Loading…</p>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-                <StatTile label="Total" value={feedback.length} />
-                <StatTile label="Bugs" value={feedback.filter((f) => f.type === "bug").length} />
-                <StatTile label="Ideas" value={feedback.filter((f) => f.type === "idea").length} />
-                <StatTile label="Open / New" value={feedback.filter((f) => f.status === "New").length} />
-                <StatTile label="Resolved" value={feedback.filter((f) => f.status === "Resolved").length} />
+            <div className="mb-4">
+              <FilterChips
+                value={referralFilter}
+                onChange={setReferralFilter}
+                options={[
+                  { value: "all", label: "All", count: referralCounts.all },
+                  { value: "pending", label: "Pending", count: referralCounts.pending },
+                  { value: "verified", label: "Verified", count: referralCounts.verified },
+                  { value: "rejected", label: "Rejected", count: referralCounts.rejected },
+                ]}
+              />
+            </div>
+            {filteredReferrers.length === 0 ? (
+              <p className="text-[#64748b] text-xs italic">No referrers match this filter.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredReferrers.map((r) => (
+                  <div key={r.email} className="grid grid-cols-[1fr_auto] gap-3 items-center">
+                    <div>
+                      <div className="flex items-baseline justify-between text-xs mb-1">
+                        <span className="font-mono text-slate-300 truncate">{r.email}</span>
+                        <span className="font-mono font-bold text-[#00f2fe] ml-3 shrink-0">{r.referrals}</span>
+                      </div>
+                      <Bar value={r.referrals} max={maxReferrals} color="#00f2fe" />
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#64748b] w-16 text-right">{r.status}</span>
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
+        )}
 
-              {feedback.length === 0 ? (
-                <p className="text-[#64748b] text-xs italic">No feedback submitted yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {feedback.map((item) => (
-                    <FeedbackRow key={item._id} item={item} adminKey={adminKey} onChanged={handleFeedbackChanged} />
-                  ))}
+        {/* TAB 2: Watcher Node Analytics */}
+        {activeTab === "watchers" && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-white">Watcher Node Analytics</h2>
+              <span className="text-[10px] text-[#64748b] font-mono">{filteredWatchers.length} of {data.watchers.length} wallets</span>
+            </div>
+            <div className="mb-4">
+              <FilterChips
+                value={watcherFilter}
+                onChange={setWatcherFilter}
+                options={[
+                  { value: "all", label: "All", count: watcherCounts.all },
+                  { value: "active", label: "Active", count: watcherCounts.active },
+                  { value: "inactive", label: "Inactive", count: watcherCounts.inactive },
+                ]}
+              />
+            </div>
+            {filteredWatchers.length === 0 ? (
+              <p className="text-[#64748b] text-xs italic">No wallets match this filter.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredWatchers.map((w) => (
+                  <div key={w.walletAddress} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
+                    <div>
+                      <div className="flex items-baseline justify-between text-xs mb-1">
+                        <span className="font-mono text-slate-300 truncate">{w.walletAddress}</span>
+                        <span className="font-mono ml-3 shrink-0">
+                          <span className="font-bold text-emerald-400">{w.points.toLocaleString()} pts</span>
+                          <span className="text-[#64748b]"> · {w.inaya.toFixed(2)} INAYA</span>
+                        </span>
+                      </div>
+                      <Bar value={w.points} max={maxPoints} color="#34d399" />
+                    </div>
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
+                        w.active
+                          ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
+                          : "bg-white/5 text-[#64748b] border-white/10"
+                      }`}
+                    >
+                      {w.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: Testnet Feedback */}
+        {activeTab === "feedback" && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+            <h2 className="text-sm font-bold text-white mb-4">Testnet Feedback</h2>
+
+            {feedbackError ? (
+              <p className="text-red-400 text-xs">⚠ {feedbackError}</p>
+            ) : !feedback ? (
+              <p className="text-[#64748b] text-xs">Loading…</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+                  <StatTile label="Total" value={feedback.length} />
+                  <StatTile label="Bugs" value={feedback.filter((f) => f.type === "bug").length} />
+                  <StatTile label="Ideas" value={feedback.filter((f) => f.type === "idea").length} />
+                  <StatTile label="Open / New" value={feedback.filter((f) => f.status === "New").length} />
+                  <StatTile label="Resolved" value={feedback.filter((f) => f.status === "Resolved").length} />
                 </div>
-              )}
-            </>
-          )}
-        </div>
+
+                {feedback.length === 0 ? (
+                  <p className="text-[#64748b] text-xs italic">No feedback submitted yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {feedback.map((item) => (
+                      <FeedbackRow key={item._id} item={item} adminKey={adminKey} onChanged={handleFeedbackChanged} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
