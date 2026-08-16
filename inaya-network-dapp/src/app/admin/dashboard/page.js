@@ -154,13 +154,39 @@ function FeedbackRow({ item, adminKey, onChanged }) {
 const TABS = [
   { key: "referrals", label: "Referral Dashboard" },
   { key: "watchers", label: "Watcher Node Analytics" },
+  { key: "businesses", label: "Business Customers" },
   { key: "feedback", label: "Testnet Feedback" },
 ];
+
+// Duplicated from src/lib/orgPlans.js — that file imports mongodb.js, which
+// can't be pulled into a client component (same reason FEEDBACK_CATEGORIES
+// is duplicated in page.js). Keep in sync with PLANS there.
+const PLAN_LABELS = {
+  starter: "Starter",
+  professional: "Professional",
+  business: "Business",
+  enterprise: "Enterprise",
+};
+const PLAN_COLORS = {
+  starter: "#34d399",
+  professional: "#00f2fe",
+  business: "#a78bfa",
+  enterprise: "#fbbf24",
+};
+const NO_PLAN_COLOR = "#64748b";
+
+const SUBSCRIPTION_STATUS_COLORS = {
+  trialing: "#00f2fe",
+  active: "#34d399",
+  past_due: "#f59e0b",
+  canceled: "#f87171",
+};
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("referrals");
   const [referralFilter, setReferralFilter] = useState("all"); // all | pending | verified | rejected
   const [watcherFilter, setWatcherFilter] = useState("all"); // all | active | inactive
+  const [businessFilter, setBusinessFilter] = useState("all"); // all | starter | professional | business | enterprise | none
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
@@ -226,6 +252,21 @@ export default function AdminDashboardPage() {
   const watcherCounts = { all: data.watchers.length, active: activeCount, inactive: data.watchers.length - activeCount };
   const filteredWatchers = watcherFilter === "all" ? data.watchers : data.watchers.filter((w) => (watcherFilter === "active" ? w.active : !w.active));
 
+  const businessCounts = {
+    all: data.businesses.length,
+    starter: data.businesses.filter((b) => b.plan === "starter").length,
+    professional: data.businesses.filter((b) => b.plan === "professional").length,
+    business: data.businesses.filter((b) => b.plan === "business").length,
+    enterprise: data.businesses.filter((b) => b.plan === "enterprise").length,
+    none: data.businesses.filter((b) => !b.plan).length,
+  };
+  const filteredBusinesses =
+    businessFilter === "all"
+      ? data.businesses
+      : businessFilter === "none"
+      ? data.businesses.filter((b) => !b.plan)
+      : data.businesses.filter((b) => b.plan === businessFilter);
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -233,6 +274,18 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl font-extrabold text-white">Admin Dashboard</h1>
           <p className="text-[#64748b] text-xs font-mono mt-1">Private view — not linked publicly.</p>
         </div>
+
+        {data.mobileDownloads && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-[#64748b] font-bold">📱 Mobile App (.apk) Downloads</p>
+              <p className="text-xl font-extrabold text-white mt-0.5">{data.mobileDownloads.total.toLocaleString()}</p>
+            </div>
+            <span className="text-[10px] text-[#64748b] font-mono">
+              Latest release: {data.mobileDownloads.latestVersion || "—"} · counted by GitHub Releases
+            </span>
+          </div>
+        )}
 
         {/* TAB NAV */}
         <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 gap-1 flex-wrap">
@@ -339,7 +392,71 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: Testnet Feedback */}
+        {/* TAB 3: Business Customers */}
+        {activeTab === "businesses" && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-white">Business Customers</h2>
+              <span className="text-[10px] text-[#64748b] font-mono">{filteredBusinesses.length} of {data.businesses.length} companies</span>
+            </div>
+            <div className="mb-4">
+              <FilterChips
+                value={businessFilter}
+                onChange={setBusinessFilter}
+                options={[
+                  { value: "all", label: "All", count: businessCounts.all },
+                  { value: "starter", label: "Starter", count: businessCounts.starter },
+                  { value: "professional", label: "Professional", count: businessCounts.professional },
+                  { value: "business", label: "Business", count: businessCounts.business },
+                  { value: "enterprise", label: "Enterprise", count: businessCounts.enterprise },
+                  { value: "none", label: "No Plan", count: businessCounts.none },
+                ]}
+              />
+            </div>
+            {filteredBusinesses.length === 0 ? (
+              <p className="text-[#64748b] text-xs italic">No companies match this filter.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredBusinesses.map((b) => {
+                  const planColor = b.plan ? PLAN_COLORS[b.plan] || NO_PLAN_COLOR : NO_PLAN_COLOR;
+                  const statusColor = b.subscriptionStatus ? SUBSCRIPTION_STATUS_COLORS[b.subscriptionStatus] || NO_PLAN_COLOR : null;
+                  return (
+                    <div key={b.orgId} className="grid grid-cols-[1fr_auto] gap-3 items-center border border-white/10 rounded-xl p-3 bg-black/20">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-bold text-white truncate">{b.name}</span>
+                          <span
+                            className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
+                            style={{ color: planColor, background: `${planColor}1a` }}
+                          >
+                            {b.planName}
+                          </span>
+                          {b.subscriptionStatus && (
+                            <span
+                              className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
+                              style={{ color: statusColor, background: `${statusColor}1a` }}
+                            >
+                              {b.subscriptionStatus.replace("_", " ")}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[#64748b] font-mono mt-1 truncate">
+                          {b.ownerEmail} · {b.memberCount} {b.memberCount === 1 ? "user" : "users"}
+                          {b.billingInterval ? ` · ${b.billingInterval}ly` : ""}
+                        </p>
+                      </div>
+                      <span className="text-[9px] font-mono text-[#64748b] shrink-0">
+                        {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: Testnet Feedback */}
         {activeTab === "feedback" && (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <h2 className="text-sm font-bold text-white mb-4">Testnet Feedback</h2>

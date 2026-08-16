@@ -5,6 +5,7 @@ import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if li
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
+import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
 // outside the component since it never changes between renders.
@@ -6321,6 +6322,7 @@ export default function Home() {
                     href="https://github.com/Talhawaqas/inaya-mobile/releases/download/Mobile-App-Alpha-ver1.1/app-release.apk"
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => track('mobile_apk_download', { version: 'alpha-1.1' })}
                     className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-black text-xs rounded-xl text-center shadow-[0_0_15px_rgba(52,211,153,0.2)] hover:brightness-110 active:scale-95 transition-all"
                   >
                     📱 Download Inaya Mobile App - Alpha Version 1.1 (.apk)
