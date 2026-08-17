@@ -79,7 +79,14 @@ export default function ReferralSection() {
     try {
       const res = await fetch(`/api/referrals/status?email=${encodeURIComponent(targetEmail)}`);
       const data = await res.json();
-      if (res.ok) setReferrerStatus(data);
+      if (res.ok) {
+        setReferrerStatus(data);
+        // Lets a returning user (fresh page load, or after an app restart) resume
+        // an already-created session's link without re-POSTing /activate — that
+        // route would otherwise mint a wasteful duplicate Didit session just to
+        // show them the same link again.
+        if (data.url) setKycUrl(data.url);
+      }
     } catch {
       // Silent — this is a background poll, the activate/initiate error states
       // already surface anything the user needs to act on.

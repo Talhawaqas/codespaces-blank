@@ -10,45 +10,9 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getReferralCollections, ensureReferralIndexes, normalizeEmail } from "../../../../lib/referrals.js";
-import { getDiditDecision } from "../../../../lib/didit.js";
-import { handleActivationDecision, handleReferralDecision } from "../../../../lib/referral-webhook-logic.js";
+import { reconcilePendingReferrer, reconcilePendingReferral } from "../../../../lib/referral-reconciliation.js";
 
 export const dynamic = 'force-dynamic';
-
-// Reconciliation fallback for a webhook that never arrived or was rejected
-// (e.g. delivered past the signature freshness window) — this endpoint is
-// polled by the frontend while status is "pending" anyway, so it's a
-// natural place to double-check Didit's own live decision and self-heal a
-// stuck record before answering, using the EXACT SAME crediting logic the
-// webhook itself uses (handleActivationDecision/handleReferralDecision) so
-// there's no separate, divergent code path for this vs. the webhook.
-// Best-effort: a Didit API hiccup here just means we fall back to
-// returning whatever the DB currently has, not a hard failure.
-async function reconcilePendingReferrer(referrer) {
-  if (referrer.status !== "pending" || !referrer.diditSessionId) return referrer;
-  try {
-    const decision = await getDiditDecision(referrer.diditSessionId);
-    await handleActivationDecision(referrer._id.toString(), decision);
-  } catch (err) {
-    console.error("referrals/status: reconciliation against Didit failed for referrer", referrer._id.toString(), err);
-    return referrer;
-  }
-  const { referrers } = await getReferralCollections();
-  return (await referrers.findOne({ _id: referrer._id })) || referrer;
-}
-
-async function reconcilePendingReferral(referral) {
-  if (referral.status !== "pending" || !referral.diditSessionId) return referral;
-  try {
-    const decision = await getDiditDecision(referral.diditSessionId);
-    await handleReferralDecision(referral._id.toString(), decision);
-  } catch (err) {
-    console.error("referrals/status: reconciliation against Didit failed for referral", referral._id.toString(), err);
-    return referral;
-  }
-  const { referrals } = await getReferralCollections();
-  return (await referrals.findOne({ _id: referral._id })) || referral;
-}
 
 export async function GET(req) {
   try {
@@ -76,6 +40,7 @@ export async function GET(req) {
         referredEmail: referral.referredEmail,
         createdAt: referral.createdAt,
         creditedAt: referral.creditedAt || null,
+        url: referral.status === "pending" ? referral.diditSessionUrl || null : null,
       });
     }
 
@@ -87,6 +52,7 @@ export async function GET(req) {
       rejectionReason: referrer.rejectionReason || null,
       referralCode: referrer.referralCode || null,
       successfulReferralCount: referrer.successfulReferralCount || 0,
+      url: referrer.status === "pending" ? referrer.diditSessionUrl || null : null,
     });
   } catch (err) {
     console.error("referrals/status failed:", err);

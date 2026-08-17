@@ -56,6 +56,17 @@ export async function createDiditSession({ vendorData, callback } = {}) {
   };
 }
 
+/** Thrown by getDiditDecision specifically for a 404 — Didit has no record of this
+ *  session at all (expired past its retention window, or never really existed).
+ *  Distinguished from other errors (5xx, network) so callers can tell "this session
+ *  is definitively dead, stop waiting on it" apart from "transient, try again later." */
+export class DiditSessionNotFoundError extends Error {
+  constructor(sessionId) {
+    super(`Didit has no record of session ${sessionId} (HTTP 404).`);
+    this.name = "DiditSessionNotFoundError";
+  }
+}
+
 /** Retrieves the current decision/status for a Didit session. Used for
  *  status-check polling as a fallback to the webhook, not as the primary path. */
 export async function getDiditDecision(sessionId) {
@@ -66,6 +77,7 @@ export async function getDiditDecision(sessionId) {
     headers: { "x-api-key": apiKey },
   });
 
+  if (res.status === 404) throw new DiditSessionNotFoundError(sessionId);
   if (!res.ok) {
     throw new Error(`Didit decision fetch failed (HTTP ${res.status}).`);
   }

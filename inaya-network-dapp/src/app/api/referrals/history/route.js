@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 import { getReferralCollections, normalizeEmail } from "../../../../lib/referrals.js";
+import { reconcilePendingReferral } from "../../../../lib/referral-reconciliation.js";
 
 export const dynamic = 'force-dynamic';
 export async function GET(req) {
@@ -21,13 +22,20 @@ export async function GET(req) {
 
     const { referrers, referrals, referralRewards } = await getReferralCollections();
 
-    const [referrer, referralList, rewards] = await Promise.all([
+    const rawReferralList = await referrals.find({ referrerEmail: email }).sort({ createdAt: -1 }).toArray();
+
+    // Nothing else calls reconciliation for individual referrals (the
+    // referred person themselves never sees a status screen — this history
+    // table, viewed by the referrer, is the only place a stuck "pending"
+    // referral would otherwise sit forever with no self-heal ever running).
+    // Runs BEFORE reading referrer/rewards below — reconciling a referral
+    // can credit it right here (new reward docs, incremented
+    // successfulReferralCount), and reading those first would return the
+    // pre-credit snapshot on this very request.
+    const referralList = await Promise.all(rawReferralList.map((r) => reconcilePendingReferral(r)));
+
+    const [referrer, rewards] = await Promise.all([
       referrers.findOne({ email }),
-      referrals
-        .find({ referrerEmail: email })
-        .sort({ createdAt: -1 })
-        .project({ referredEmail: 1, status: 1, createdAt: 1, creditedAt: 1 })
-        .toArray(),
       referralRewards.find({ user: email }).toArray(),
     ]);
 
@@ -41,6 +49,7 @@ export async function GET(req) {
       referrals: referralList.map((r) => ({
         referredEmail: r.referredEmail,
         status: r.status,
+        rejectionReason: r.rejectionReason || null,
         createdAt: r.createdAt,
         creditedAt: r.creditedAt || null,
       })),
