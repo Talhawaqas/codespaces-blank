@@ -67,6 +67,11 @@ function renderBlock(block) {
     case "quote":
       return `<p class="quote">${escMultiline(block.text)}</p>`;
 
+    case "code": {
+      const label = block.label ? `<div class="code-label">${esc(block.label)}</div>` : "";
+      return `<div class="code-block">${label}<pre><code>${esc(block.text)}</code></pre></div>`;
+    }
+
     // A labeled sub-block within a section (e.g. Section 05's "Problem 1-6",
     // Section 13's "Principle One-Five") — GTM's dominant structural pattern.
     case "subsection": {
@@ -192,6 +197,67 @@ export function buildInvestmentMemorandumHTML(content) {
     .join("\n");
 
   return `<!doctype html><html><head><meta charset="utf-8"/></head><body>${coverPage}${sectionPages}</body></html>`;
+}
+
+export function buildOperatorManifestoHTML(content) {
+  const { cover, intro, sections, docId } = content;
+
+  const coverPage = pageShell(`
+    <div class="header-band">
+      <div>
+        <div class="brand">${esc(cover.company)}</div>
+      </div>
+      <div class="meta">
+        <div class="badge">${esc(cover.classification)}</div>
+      </div>
+    </div>
+    <div class="cover-title-block">
+      <div class="cover-kicker">${esc(cover.kicker)}</div>
+      <h1>${esc(cover.title)}</h1>
+      <p class="subtitle">${esc(cover.subtitle)}</p>
+    </div>
+    <div class="cover-meta-grid">
+      ${cover.metaItems
+        .map((item) => `<div><span class="cover-meta-label">${esc(item.label)}</span> ${esc(item.value)}</div>`)
+        .join("\n")}
+    </div>
+  `);
+
+  const introPage = pageShell(`
+    <div class="divider">
+      <div class="divider-kicker">${esc(intro.kicker)}</div>
+      <h1 class="divider-title">${esc(intro.title)}</h1>
+      <p class="divider-subtitle">${escMultiline(intro.subtitle)}</p>
+    </div>
+  `);
+
+  const runningHeader = `
+    <div class="running-header">
+      <div class="doc-title">${esc(cover.company)}</div>
+      <div>${esc(docId)}</div>
+    </div>`;
+  const runningFooter = `
+    <div class="running-footer">
+      <div>${esc(cover.company)}</div>
+      <div>${esc(docId)}</div>
+    </div>`;
+
+  const sectionPages = sections
+    .map((section) => {
+      const blocksHtml = section.blocks.map(renderBlock).join("\n");
+      return pageShell(`
+        ${runningHeader}
+        <div class="section-body">
+          <div class="section-number">SECTION ${esc(section.number)}</div>
+          <h1 class="section-title">${esc(section.title)}</h1>
+          ${blocksHtml}
+        </div>
+        ${runningFooter}
+      `);
+    })
+    .join("\n");
+
+  return `<!doctype html><html><head><meta charset="utf-8"/></head><body>${coverPage}${introPage}${sectionPages}</body></html>`;
 }
 
 export function buildGtmStrategyHTML(content) {

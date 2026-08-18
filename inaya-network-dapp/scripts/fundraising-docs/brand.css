@@ -197,6 +197,23 @@ body {
   padding-top: 4mm;
 }
 
+.cover-meta-grid {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3mm 10mm;
+  padding: 6mm 20mm 14mm;
+  border-top: 0.6pt solid var(--gold);
+  font-size: 9pt;
+  color: var(--ink);
+}
+
+.cover-meta-label {
+  font-weight: 700;
+  color: var(--gold);
+  margin-right: 2mm;
+}
+
 /* ---------- Section content ---------- */
 .section-body {
   padding: 10mm 16mm 6mm;
@@ -346,6 +363,37 @@ table.data tr {
   margin: 5mm 0;
   break-inside: avoid;
   page-break-inside: avoid;
+}
+
+.code-block {
+  background: var(--navy);
+  border-radius: 2mm;
+  padding: 4mm 5mm;
+  margin: 4mm 0 5mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.code-label {
+  color: var(--gold-bright);
+  font-size: 7.6pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2.5mm;
+}
+
+.code-block pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.code-block code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 8.3pt;
+  line-height: 1.55;
+  color: #d7dce6;
 }
 
 .subsection {

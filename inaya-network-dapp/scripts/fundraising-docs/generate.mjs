@@ -21,7 +21,8 @@ import { executiveSummary } from "./content/executive-summary.js";
 import { investmentMemorandum } from "./content/investment-memorandum.js";
 import { gtmStrategy } from "./content/gtm-strategy.js";
 import { saasBusinessModel } from "./content/saas-business-model.js";
-import { buildExecutiveSummaryHTML, buildInvestmentMemorandumHTML, buildGtmStrategyHTML } from "./template.js";
+import { operatorManifesto } from "./content/operator-manifesto.js";
+import { buildExecutiveSummaryHTML, buildInvestmentMemorandumHTML, buildGtmStrategyHTML, buildOperatorManifestoHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.resolve(__dirname, "../../public/documents");
@@ -75,6 +76,7 @@ async function main() {
     // Reuses the Investment Memorandum's builder — same {cover, sections,
     // docId} shape, no new template function needed.
     { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
+    { name: "inaya-operator-manifesto.pdf", html: buildOperatorManifestoHTML(operatorManifesto) },
   ];
 
   for (const target of targets) {
