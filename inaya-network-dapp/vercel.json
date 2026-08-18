@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/nodes/settlements/release",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
