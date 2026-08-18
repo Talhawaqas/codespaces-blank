@@ -67,6 +67,19 @@ export class DiditSessionNotFoundError extends Error {
   }
 }
 
+/** Best-effort hint about which step is blocking an in-progress session, for
+ *  friendlier "ID approved, one step left" messaging instead of a bare
+ *  "pending" that reads as if nothing happened. Currently only detects the
+ *  one gap actually observed in practice (users completing ID Verification
+ *  but never finishing Liveness) -- not a general per-feature status parser,
+ *  since that's the only case with real evidence behind it so far. */
+export function deriveAwaitingStep(decision) {
+  const idApproved = decision?.id_verifications?.some((v) => v.status === "Approved");
+  const livenessMissing = !decision?.liveness_checks || decision.liveness_checks.length === 0;
+  if (idApproved && livenessMissing) return "liveness";
+  return null;
+}
+
 /** Retrieves the current decision/status for a Didit session. Used for
  *  status-check polling as a fallback to the webhook, not as the primary path. */
 export async function getDiditDecision(sessionId) {

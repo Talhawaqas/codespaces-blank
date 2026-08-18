@@ -63,7 +63,12 @@ export async function POST(req) {
       return NextResponse.json({ error: "This person has already completed a referral with you." }, { status: 409 });
     }
     if (existingReferral?.status === "pending" && existingReferral.diditSessionUrl) {
-      return NextResponse.json({ status: "pending", url: existingReferral.diditSessionUrl, referralCode: referrer.referralCode });
+      return NextResponse.json({
+        status: "pending",
+        url: existingReferral.diditSessionUrl,
+        referralCode: referrer.referralCode,
+        referralId: existingReferral._id.toString(),
+      });
     }
 
     const now = new Date().toISOString();
@@ -81,7 +86,7 @@ export async function POST(req) {
       { $set: { diditSessionId: session.sessionId, diditSessionUrl: session.url, status: "pending", updatedAt: now } }
     );
 
-    return NextResponse.json({ status: "pending", url: session.url, referralCode: referrer.referralCode });
+    return NextResponse.json({ status: "pending", url: session.url, referralCode: referrer.referralCode, referralId: referralDoc._id.toString() });
   } catch (err) {
     console.error("referrals/initiate failed:", err);
     return NextResponse.json({ error: "Could not start the referral. Please try again." }, { status: 500 });

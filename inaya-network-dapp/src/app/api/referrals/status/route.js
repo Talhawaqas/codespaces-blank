@@ -41,6 +41,7 @@ export async function GET(req) {
         createdAt: referral.createdAt,
         creditedAt: referral.creditedAt || null,
         url: referral.status === "pending" ? referral.diditSessionUrl || null : null,
+        awaitingStep: referral.status === "pending" ? referral.awaitingStep || null : null,
       });
     }
 
@@ -53,6 +54,7 @@ export async function GET(req) {
       referralCode: referrer.referralCode || null,
       successfulReferralCount: referrer.successfulReferralCount || 0,
       url: referrer.status === "pending" ? referrer.diditSessionUrl || null : null,
+      awaitingStep: referrer.status === "pending" ? referrer.awaitingStep || null : null,
     });
   } catch (err) {
     console.error("referrals/status failed:", err);

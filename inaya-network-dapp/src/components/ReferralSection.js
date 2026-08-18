@@ -36,6 +36,14 @@ import { useState, useEffect, useCallback } from 'react';
 // verified. Just an email address, not sensitive.
 const ACTIVATED_EMAIL_KEY = 'inaya_referral_activated_email';
 
+// Same reasoning as ACTIVATED_EMAIL_KEY, for the OTHER side of the flow: a
+// referred person who redeems a code, closes the tab before finishing
+// Didit's Liveness step, and comes back later has no way to get their
+// verification link back short of re-typing the exact code + email they
+// used originally. Persisting {referralId, redeemEmail} lets this page
+// resume polling and re-show the still-valid link automatically instead.
+const REDEEM_PENDING_KEY = 'inaya_referral_redeem_pending';
+
 function StatusPill({ status }) {
   const map = {
     verified: ['bg-emerald-400/10 text-emerald-400 border-emerald-400/30', '✅ Verified'],
@@ -73,6 +81,11 @@ export default function ReferralSection() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemError, setRedeemError] = useState('');
   const [redeemUrl, setRedeemUrl] = useState('');
+  const [redeemReferralId, setRedeemReferralId] = useState('');
+  const [redeemAwaitingStep, setRedeemAwaitingStep] = useState(null);
+  const [redeemResolvedStatus, setRedeemResolvedStatus] = useState(null); // 'verified' | 'rejected' | null (still pending)
+  const [redeemRejectionReason, setRedeemRejectionReason] = useState(null);
+  const [showResumeForm, setShowResumeForm] = useState(false);
 
   const refreshStatus = useCallback(async (targetEmail) => {
     if (!targetEmail) return;
@@ -90,6 +103,26 @@ export default function ReferralSection() {
     } catch {
       // Silent — this is a background poll, the activate/initiate error states
       // already surface anything the user needs to act on.
+    }
+  }, []);
+
+  const refreshRedeemStatus = useCallback(async (referralId) => {
+    if (!referralId) return;
+    try {
+      const res = await fetch(`/api/referrals/status?referralId=${encodeURIComponent(referralId)}`);
+      const data = await res.json();
+      if (!res.ok) return;
+      if (data.status === 'pending') {
+        if (data.url) setRedeemUrl(data.url);
+        setRedeemAwaitingStep(data.awaitingStep || null);
+      } else {
+        // Resolved (verified/rejected) — nothing left to resume, stop persisting it.
+        setRedeemResolvedStatus(data.status);
+        setRedeemRejectionReason(data.rejectionReason || null);
+        window.localStorage.removeItem(REDEEM_PENDING_KEY);
+      }
+    } catch {
+      // Silent — background poll, same as refreshStatus above.
     }
   }, []);
 
@@ -132,6 +165,21 @@ export default function ReferralSection() {
     refreshStatus(persisted);
   }, [refreshStatus]);
 
+  // Same resume behavior for a referred person who redeemed a code and left
+  // before finishing — see REDEEM_PENDING_KEY's comment.
+  useEffect(() => {
+    let persisted;
+    try {
+      persisted = JSON.parse(window.localStorage.getItem(REDEEM_PENDING_KEY) || 'null');
+    } catch {
+      persisted = null;
+    }
+    if (!persisted?.referralId) return;
+    setRedeemReferralId(persisted.referralId);
+    if (persisted.redeemEmail) setRedeemEmail(persisted.redeemEmail);
+    refreshRedeemStatus(persisted.referralId);
+  }, [refreshRedeemStatus]);
+
   // Poll while a KYC decision is still pending — the webhook updates the
   // backend asynchronously, this is how the UI notices without a page reload.
   useEffect(() => {
@@ -139,6 +187,12 @@ export default function ReferralSection() {
     const id = setInterval(() => refreshStatus(activatedEmail), 5000);
     return () => clearInterval(id);
   }, [activatedEmail, referrerStatus?.status, refreshStatus]);
+
+  useEffect(() => {
+    if (!redeemReferralId || redeemResolvedStatus) return;
+    const id = setInterval(() => refreshRedeemStatus(redeemReferralId), 5000);
+    return () => clearInterval(id);
+  }, [redeemReferralId, redeemResolvedStatus, refreshRedeemStatus]);
 
   useEffect(() => {
     if (referrerStatus?.status === 'verified' && activatedEmail) refreshHistory(activatedEmail);
@@ -219,6 +273,8 @@ export default function ReferralSection() {
     setRedeeming(true);
     setRedeemError('');
     setRedeemUrl('');
+    setRedeemResolvedStatus(null);
+    setRedeemRejectionReason(null);
     try {
       const res = await fetch('/api/referrals/redeem', {
         method: 'POST',
@@ -228,6 +284,10 @@ export default function ReferralSection() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not start verification.');
       if (data.url) setRedeemUrl(data.url);
+      if (data.referralId) {
+        setRedeemReferralId(data.referralId);
+        window.localStorage.setItem(REDEEM_PENDING_KEY, JSON.stringify({ referralId: data.referralId, redeemEmail: trimmedEmail }));
+      }
     } catch (err) {
       setRedeemError(err.message);
     } finally {
@@ -245,14 +305,36 @@ export default function ReferralSection() {
           Earn 0.4 INAYA for every successful referral, and the person you refer earns 0.1 INAYA — no wallet needed, just email and a quick identity check.
           Rewards are recorded now and distributed at mainnet.
         </p>
+        {!redeemCode && !redeemUrl && !showResumeForm && (
+          <button
+            type="button"
+            onClick={() => setShowResumeForm(true)}
+            className="text-[#00f2fe] text-xs underline mt-2"
+          >
+            Already started a verification? Resume it
+          </button>
+        )}
       </div>
 
-      {/* REDEEM A SHARED LINK: ?ref=CODE lands here */}
-      {redeemCode && !redeemUrl && (
+      {/* REDEEM A SHARED LINK: ?ref=CODE lands here, or "Resume it" above for
+          someone who has their code/email but lost the link. */}
+      {(redeemCode || showResumeForm) && !redeemUrl && (
         <div className="bg-[#090d16]/80 border border-[#00f2fe]/30 rounded-2xl p-6">
-          <h3 className="text-sm font-bold text-white mb-1">You were invited with code <span className="text-[#00f2fe]">{redeemCode}</span></h3>
-          <p className="text-[#64748b] text-xs mb-4">Enter your email to start your verification and earn 0.1 INAYA once approved.</p>
+          <h3 className="text-sm font-bold text-white mb-1">
+            {redeemCode ? <>You were invited with code <span className="text-[#00f2fe]">{redeemCode}</span></> : 'Resume your verification'}
+          </h3>
+          <p className="text-[#64748b] text-xs mb-4">Enter your email{redeemCode ? '' : ' and referral code'} to start — or pick back up where you left off if you already started.</p>
           <form onSubmit={handleRedeem} className="flex flex-col sm:flex-row gap-3">
+            {!redeemCode && (
+              <input
+                type="text"
+                required
+                value={redeemCode}
+                onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                placeholder="REFERRAL CODE"
+                className="sm:w-40 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+              />
+            )}
             <input
               type="email"
               required
@@ -272,10 +354,25 @@ export default function ReferralSection() {
           {redeemError && <p className="text-red-400 text-xs mt-3">{redeemError}</p>}
         </div>
       )}
-      {redeemUrl && (
+      {redeemUrl && redeemResolvedStatus !== 'verified' && (
         <div className="bg-[#090d16]/80 border border-amber-400/20 rounded-2xl p-6">
-          <p className="text-amber-400 text-xs font-bold mb-2">Complete your verification here:</p>
+          {redeemAwaitingStep === 'liveness' ? (
+            <p className="text-emerald-400 text-xs font-bold mb-2">✅ ID approved — just one more step: complete the quick selfie/liveness check to finish.</p>
+          ) : (
+            <p className="text-amber-400 text-xs font-bold mb-2">Complete your verification here:</p>
+          )}
           <a href={redeemUrl} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline text-xs break-all">{redeemUrl}</a>
+          <p className="text-[#64748b] text-xs mt-2">This page checks automatically every few seconds — you can safely close this tab and come back later, this link stays valid.</p>
+        </div>
+      )}
+      {redeemResolvedStatus === 'verified' && (
+        <div className="bg-emerald-400/10 border border-emerald-400/30 rounded-2xl p-6">
+          <p className="text-emerald-400 text-sm font-bold">🎉 Verified! Your referral reward has been recorded.</p>
+        </div>
+      )}
+      {redeemResolvedStatus === 'rejected' && (
+        <div className="bg-red-400/10 border border-red-400/30 rounded-2xl p-6">
+          <p className="text-red-400 text-sm font-bold">Verification wasn't approved{redeemRejectionReason ? ` (${redeemRejectionReason})` : ''}.</p>
         </div>
       )}
 
@@ -314,7 +411,11 @@ export default function ReferralSection() {
 
         {kycUrl && referrerStatus?.status === 'pending' && (
           <div className="mt-4 bg-black/20 border border-amber-400/20 rounded-xl p-4">
-            <p className="text-amber-400 text-xs font-bold mb-2">Complete your verification to activate:</p>
+            {referrerStatus?.awaitingStep === 'liveness' ? (
+              <p className="text-emerald-400 text-xs font-bold mb-2">✅ ID approved — just one more step: complete the quick selfie/liveness check to finish.</p>
+            ) : (
+              <p className="text-amber-400 text-xs font-bold mb-2">Complete your verification to activate:</p>
+            )}
             <a href={kycUrl} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline text-xs break-all">{kycUrl}</a>
           </div>
         )}

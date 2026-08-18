@@ -60,7 +60,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "You've already completed a referral with this code." }, { status: 409 });
     }
     if (existingReferral?.status === "pending" && existingReferral.diditSessionUrl) {
-      return NextResponse.json({ status: "pending", url: existingReferral.diditSessionUrl });
+      return NextResponse.json({ status: "pending", url: existingReferral.diditSessionUrl, referralId: existingReferral._id.toString() });
     }
 
     const now = new Date().toISOString();
@@ -78,7 +78,7 @@ export async function POST(req) {
       { $set: { diditSessionId: session.sessionId, diditSessionUrl: session.url, status: "pending", updatedAt: now } }
     );
 
-    return NextResponse.json({ status: "pending", url: session.url });
+    return NextResponse.json({ status: "pending", url: session.url, referralId: referralDoc._id.toString() });
   } catch (err) {
     console.error("referrals/redeem failed:", err);
     return NextResponse.json({ error: "Could not start verification. Please try again." }, { status: 500 });

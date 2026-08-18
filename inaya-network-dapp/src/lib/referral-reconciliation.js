@@ -7,7 +7,7 @@
 // status's own polling would have caught it.
 
 import { getReferralCollections } from "./referrals.js";
-import { getDiditDecision, DiditSessionNotFoundError } from "./didit.js";
+import { getDiditDecision, DiditSessionNotFoundError, deriveAwaitingStep } from "./didit.js";
 import { handleActivationDecision, handleReferralDecision } from "./referral-webhook-logic.js";
 
 // A record only lacks a diditSessionId while /api/referrals/activate (or
@@ -55,6 +55,8 @@ export async function reconcilePendingReferrer(referrer) {
   try {
     const decision = await getDiditDecision(referrer.diditSessionId);
     await handleActivationDecision(referrer._id.toString(), decision);
+    const updated = (await referrers.findOne({ _id: referrer._id })) || referrer;
+    return updated.status === "pending" ? { ...updated, awaitingStep: deriveAwaitingStep(decision) } : updated;
   } catch (err) {
     if (err instanceof DiditSessionNotFoundError) {
       await referrers.updateOne(
@@ -66,7 +68,6 @@ export async function reconcilePendingReferrer(referrer) {
     }
     return (await referrers.findOne({ _id: referrer._id })) || referrer;
   }
-  return (await referrers.findOne({ _id: referrer._id })) || referrer;
 }
 
 export async function reconcilePendingReferral(referral) {
@@ -86,6 +87,8 @@ export async function reconcilePendingReferral(referral) {
   try {
     const decision = await getDiditDecision(referral.diditSessionId);
     await handleReferralDecision(referral._id.toString(), decision);
+    const updated = (await referrals.findOne({ _id: referral._id })) || referral;
+    return updated.status === "pending" ? { ...updated, awaitingStep: deriveAwaitingStep(decision) } : updated;
   } catch (err) {
     if (err instanceof DiditSessionNotFoundError) {
       await referrals.updateOne(
@@ -97,5 +100,4 @@ export async function reconcilePendingReferral(referral) {
     }
     return (await referrals.findOne({ _id: referral._id })) || referral;
   }
-  return (await referrals.findOne({ _id: referral._id })) || referral;
 }
