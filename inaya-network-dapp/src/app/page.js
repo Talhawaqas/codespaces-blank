@@ -2529,11 +2529,15 @@ export default function Home() {
   // ========================================================
   // 🧾 PROOF-OF-STORAGE REGISTRY — InayaProofRegistry.sol
   // ========================================================
-  // registerMerkleRoot has no onlyOwner guard, so the connected user's wallet can call it directly.
+  // registerMerkleRoot now verifies the caller against InayaCustody.assets(fileHash).owner before
+  // accepting a registration (redeployed 2026-08-17 to fix a front-running gap — anyone could
+  // previously register any fileHash first, including a legitimate uploader's own pending file,
+  // permanently locking them out). The connected user's wallet still calls it directly; the
+  // on-chain check is what makes that safe now, not a client-side restriction.
   // verifyChunkProof IS onlyOwner (only the contract deployer's key can call it) — it is intentionally
   // NOT wired into this client-side UI. That call belongs in a backend/verifier process, exactly like
   // scripts/verify-chunk.js already does with a server-held private key.
-  const proofRegistryAddress = "0xbd36fF32293414F7DA320c095b6324f64C86345C";
+  const proofRegistryAddress = "0xEdF431857e92A00420444F27Ad105278b21CEBcB";
   const proofRegistryABI = [
     "function registerMerkleRoot(bytes32 _fileHash, bytes32 _merkleRoot, uint256 _chunkCount, address _node) external",
     "function verifyChunkProof(bytes32 _fileHash, uint256 _leafIndex, bytes32 _leaf, bytes32[] calldata _proof) external returns (bool)",
