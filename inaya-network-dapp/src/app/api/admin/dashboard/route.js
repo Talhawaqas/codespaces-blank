@@ -20,10 +20,15 @@
 //   - mobileDownloads: total .apk download count, pulled live from
 //     GitHub's own Releases API (see getMobileApkDownloads below) rather
 //     than a DB counter — GitHub already tracks this for us.
+//   - nodeOperators: total registered nodes + how many are "active" (a
+//     heartbeat within the last 10 minutes) from the 'nodes' collection
+//     that @inaya-network/node-daemon's register/heartbeat commands
+//     already write to (see /api/nodes/register, /api/nodes/heartbeat).
 // First three are pulled straight from existing collections — no new
 // schema, no duplicated counters.
 
 import { NextResponse } from "next/server";
+import clientPromise from "../../../../lib/mongodb.js";
 import { getReferralCollections, ensureReferralIndexes } from "../../../../lib/referrals.js";
 import { getWatcherCollections, ensureWatcherIndexes, WATCHER_POINTS_PER_INAYA } from "../../../../lib/watcherPioneer.js";
 import { getOrgCollections, ensureOrgIndexes } from "../../../../lib/orgs.js";
@@ -32,6 +37,43 @@ import { PLANS } from "../../../../lib/orgPlans.js";
 export const dynamic = "force-dynamic";
 
 const MOBILE_APK_REPO = "Talhawaqas/inaya-mobile";
+
+// A node counts as "running right now" if its daemon has sent a heartbeat
+// within the last two intervals -- the daemon's own default is 5 minutes
+// (see custody-sdk/packages/node-daemon/src/constants.js), so this gives
+// one full missed beat of slack before a node drops off the active count,
+// without waiting so long that a genuinely-stopped daemon still shows as
+// active for ages.
+const NODE_ACTIVE_WINDOW_MS = 10 * 60 * 1000;
+
+// nodes/register.js and nodes/heartbeat.js write to the 'inaya_network' db
+// directly via the raw client, not through getOrgCollections()'s
+// connectToDatabase() helper (which points at 'inaya_network_corporate') --
+// matching that same connection here rather than introducing a second path.
+async function getNodeOperatorStats() {
+  try {
+    const client = await clientPromise;
+    const nodes = client.db("inaya_network").collection("nodes");
+    const cutoff = new Date(Date.now() - NODE_ACTIVE_WINDOW_MS);
+    const rows = await nodes
+      .find({}, { projection: { nodeId: 1, operatorWallet: 1, totalCapacityGB: 1, tier: 1, lastHeartbeatAt: 1, registeredAt: 1 } })
+      .sort({ lastHeartbeatAt: -1 })
+      .toArray();
+    const list = rows.map((n) => ({
+      nodeId: n.nodeId,
+      operatorWallet: n.operatorWallet || null,
+      totalCapacityGB: n.totalCapacityGB || 0,
+      tier: n.tier || "Entry",
+      active: !!(n.lastHeartbeatAt && n.lastHeartbeatAt >= cutoff),
+      lastHeartbeatAt: n.lastHeartbeatAt,
+      registeredAt: n.registeredAt,
+    }));
+    return { total: list.length, active: list.filter((n) => n.active).length, nodes: list };
+  } catch (err) {
+    console.error("admin/dashboard: node operator stats fetch failed:", err);
+    return null;
+  }
+}
 
 // The dapp's download button links straight to a GitHub Releases asset —
 // GitHub already counts every download of that file server-side, so
@@ -78,7 +120,7 @@ export async function GET(req) {
     const { orgs, orgMembers, db } = await getOrgCollections();
     const orgSubscriptions = db.collection("org_subscriptions");
 
-    const [referrerRows, pioneerRows, activeSessionRows, orgRows, memberCountRows, subscriptionRows, mobileDownloads] = await Promise.all([
+    const [referrerRows, pioneerRows, activeSessionRows, orgRows, memberCountRows, subscriptionRows, mobileDownloads, nodeOperators] = await Promise.all([
       referrers
         .find({}, { projection: { email: 1, successfulReferralCount: 1, status: 1 } })
         .sort({ successfulReferralCount: -1 })
@@ -95,6 +137,7 @@ export async function GET(req) {
       orgMembers.aggregate([{ $match: { status: "active" } }, { $group: { _id: "$orgId", count: { $sum: 1 } } }]).toArray(),
       orgSubscriptions.find({}, { projection: { orgId: 1, status: 1, billingInterval: 1 } }).toArray(),
       getMobileApkDownloads(),
+      getNodeOperatorStats(),
     ]);
 
     const activeWallets = new Set(activeSessionRows.map((s) => s.walletAddress));
@@ -129,6 +172,7 @@ export async function GET(req) {
         };
       }),
       mobileDownloads,
+      nodeOperators,
     });
   } catch (err) {
     console.error("admin/dashboard failed:", err);

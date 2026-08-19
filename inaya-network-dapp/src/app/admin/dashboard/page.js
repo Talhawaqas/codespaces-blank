@@ -154,6 +154,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
 const TABS = [
   { key: "referrals", label: "Referral Dashboard" },
   { key: "watchers", label: "Watcher Node Analytics" },
+  { key: "nodeOperators", label: "Node Daemon Operators" },
   { key: "businesses", label: "Business Customers" },
   { key: "feedback", label: "Testnet Feedback" },
 ];
@@ -186,6 +187,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("referrals");
   const [referralFilter, setReferralFilter] = useState("all"); // all | pending | verified | rejected
   const [watcherFilter, setWatcherFilter] = useState("all"); // all | active | inactive
+  const [nodeOperatorFilter, setNodeOperatorFilter] = useState("all"); // all | active | inactive
   const [businessFilter, setBusinessFilter] = useState("all"); // all | starter | professional | business | enterprise | none
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -252,6 +254,15 @@ export default function AdminDashboardPage() {
   const watcherCounts = { all: data.watchers.length, active: activeCount, inactive: data.watchers.length - activeCount };
   const filteredWatchers = watcherFilter === "all" ? data.watchers : data.watchers.filter((w) => (watcherFilter === "active" ? w.active : !w.active));
 
+  const nodeOperatorList = data.nodeOperators?.nodes || [];
+  const nodeOperatorCounts = {
+    all: nodeOperatorList.length,
+    active: nodeOperatorList.filter((n) => n.active).length,
+    inactive: nodeOperatorList.filter((n) => !n.active).length,
+  };
+  const filteredNodeOperators =
+    nodeOperatorFilter === "all" ? nodeOperatorList : nodeOperatorList.filter((n) => (nodeOperatorFilter === "active" ? n.active : !n.active));
+
   const businessCounts = {
     all: data.businesses.length,
     starter: data.businesses.filter((b) => b.plan === "starter").length,
@@ -283,6 +294,20 @@ export default function AdminDashboardPage() {
             </div>
             <span className="text-[10px] text-[#64748b] font-mono">
               Latest release: {data.mobileDownloads.latestVersion || "—"} · counted by GitHub Releases
+            </span>
+          </div>
+        )}
+
+        {data.nodeOperators && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-[#64748b] font-bold">🖥️ Inaya Node Daemon Operators</p>
+              <p className="text-xl font-extrabold text-white mt-0.5">
+                {data.nodeOperators.active.toLocaleString()} <span className="text-emerald-400 text-sm font-bold">running now</span>
+              </p>
+            </div>
+            <span className="text-[10px] text-[#64748b] font-mono">
+              {data.nodeOperators.total.toLocaleString()} registered total · "running now" = heartbeat in the last 10 min
             </span>
           </div>
         )}
@@ -384,6 +409,60 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       {w.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: Node Daemon Operators */}
+        {activeTab === "nodeOperators" && (
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-white">Node Daemon Operators</h2>
+              <span className="text-[10px] text-[#64748b] font-mono">
+                {filteredNodeOperators.length} of {nodeOperatorList.length} nodes
+              </span>
+            </div>
+            <div className="mb-4">
+              <FilterChips
+                value={nodeOperatorFilter}
+                onChange={setNodeOperatorFilter}
+                options={[
+                  { value: "all", label: "All", count: nodeOperatorCounts.all },
+                  { value: "active", label: "Running now", count: nodeOperatorCounts.active },
+                  { value: "inactive", label: "Not running", count: nodeOperatorCounts.inactive },
+                ]}
+              />
+            </div>
+            {filteredNodeOperators.length === 0 ? (
+              <p className="text-[#64748b] text-xs italic">No nodes match this filter.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredNodeOperators.map((n) => (
+                  <div key={n.nodeId} className="grid grid-cols-[1fr_auto] gap-3 items-center border border-white/10 rounded-xl p-3 bg-black/20">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-mono text-slate-300 truncate">{n.operatorWallet || n.nodeId}</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 bg-[#00f2fe]/10 text-[#00f2fe]">
+                          {n.tier}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[#64748b] font-mono mt-1">
+                        {n.totalCapacityGB.toLocaleString()} GB declared · last heartbeat:{" "}
+                        {n.lastHeartbeatAt ? new Date(n.lastHeartbeatAt).toLocaleString() : "never"}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
+                        n.active
+                          ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
+                          : "bg-white/5 text-[#64748b] border-white/10"
+                      }`}
+                    >
+                      {n.active ? "Running now" : "Not running"}
                     </span>
                   </div>
                 ))}
