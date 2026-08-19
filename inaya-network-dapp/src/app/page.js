@@ -2614,7 +2614,12 @@ export default function Home() {
     try {
       const provider = getActiveProvider();
       if (typeof window === 'undefined' || !provider) return false;
-      const currentChainId = await provider.request({ method: 'eth_chainId' });
+      const rawChainId = await provider.request({ method: 'eth_chainId' });
+      // WalletConnect's provider can return this as a number (e.g. 97) instead of
+      // the hex string MetaMask returns (e.g. "0x61") -- normalize both shapes.
+      const currentChainId = typeof rawChainId === 'number'
+        ? `0x${rawChainId.toString(16)}`
+        : String(rawChainId);
       if (currentChainId.toLowerCase() === BSC_TESTNET_CHAIN_ID) return true;
 
       setStatusLog("🔄 Switching network to BNB Chain Testnet...");
