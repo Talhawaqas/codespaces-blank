@@ -5116,6 +5116,31 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Desktop app cross-promotion -- hidden when already running
+                  inside the desktop app itself (window.__TAURI__), same
+                  reasoning as the Business Workspace dashboard's banner. */}
+              {typeof window !== 'undefined' && !window.__TAURI__ && (
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
+                      New · Desktop App
+                    </span>
+                    <h3 className="text-white font-extrabold text-base sm:text-lg">🖥️ Inaya Network, now on your desktop</h3>
+                    <p className="text-[#94a3b8] text-xs sm:text-sm mt-1 max-w-lg">
+                      Faucet, node registry, staking, KYC, and referrals as a real app — runs in your system tray and updates itself. Available for Windows and Linux.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                    <a
+                      href="/download"
+                      className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Product overview video — embedded from YouTube (adaptive quality per
                   visitor's connection, no repo bloat, feeds the existing channel). */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 sm:p-6 space-y-3">
