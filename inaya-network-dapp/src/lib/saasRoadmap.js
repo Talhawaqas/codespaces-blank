@@ -175,6 +175,27 @@ export const ROADMAP_STAGES = [
   },
   {
     number: 5,
+    title: "Desktop & Native Apps",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "The Business Workspace as a real installed application — its own icon, tray presence, native notifications and auto-updates, not just a browser tab.",
+    features: [
+      "Windows installer (NSIS)",
+      "Linux installer (AppImage)",
+      "Linux installer (.deb)",
+      "System tray & minimize-to-tray",
+      "Native application menu (File / Edit / View)",
+      "Native desktop notifications for pending approvals",
+      "Signed, auto-updating releases",
+      "Google Sign-In support inside the native app window",
+      "Magic-link email sign-in support",
+      "Combined download page for Windows & Linux",
+    ],
+    notes:
+      "Same Business Workspace, same permissions and encryption, running in its own window instead of a browser tab. macOS is not available yet.",
+  },
+  {
+    number: 6,
     title: "Business Operations",
     status: ROADMAP_STATUS.NEXT,
     description: "Expand Inaya from document management into the operational systems businesses use every day.",
@@ -186,7 +207,7 @@ export const ROADMAP_STAGES = [
     ],
   },
   {
-    number: 6,
+    number: 7,
     title: "Finance & HR",
     status: ROADMAP_STATUS.FUTURE,
     description: "Build secure financial and people-management capabilities directly into the Business Workspace.",
@@ -202,7 +223,7 @@ export const ROADMAP_STAGES = [
     ],
   },
   {
-    number: 7,
+    number: 8,
     title: "Business Intelligence",
     status: ROADMAP_STATUS.FUTURE,
     description: "Turn business activity into dashboards and AI-generated insight.",
@@ -224,7 +245,7 @@ export const ROADMAP_STAGES = [
     examplesNote: "These are examples of the intended future direction, not currently available capabilities.",
   },
   {
-    number: 8,
+    number: 9,
     title: "AI-Powered Business Operations",
     status: ROADMAP_STATUS.FUTURE,
     description:

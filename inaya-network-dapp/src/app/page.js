@@ -2696,6 +2696,23 @@ export default function Home() {
         { text: "Docs — React examples", done: true },
         { text: "Docs — Next.js examples", done: true },
         { text: "Docs — Node.js examples", done: true },
+        { text: "Desktop app (dApp) — Windows installer", done: true },
+        { text: "Desktop app (dApp) — Linux AppImage installer", done: true },
+        { text: "Desktop app (dApp) — Linux .deb installer", done: true },
+        { text: "Desktop app (dApp) — System tray & minimize-to-tray", done: true },
+        { text: "Desktop app (dApp) — Native application menu", done: true },
+        { text: "Desktop app (dApp) — Signed auto-updates", done: true },
+        { text: "Desktop app (dApp) — WalletConnect-first wallet picker for native webview", done: true }, // MetaMask/Trust/Coinbase need a browser extension that doesn't exist in a desktop webview, so WalletConnect leads automatically when window.__TAURI__ is detected
+        { text: "Desktop app (dApp) — Native popup support for Google Sign-In", done: true },
+        { text: "Desktop app (Business Workspace) — Windows installer", done: true },
+        { text: "Desktop app (Business Workspace) — Linux AppImage installer", done: true },
+        { text: "Desktop app (Business Workspace) — Linux .deb installer", done: true },
+        { text: "Desktop app (Business Workspace) — System tray & minimize-to-tray", done: true },
+        { text: "Desktop app (Business Workspace) — Native application menu", done: true },
+        { text: "Desktop app (Business Workspace) — Signed auto-updates", done: true },
+        { text: "Desktop app (Business Workspace) — Native desktop notifications for pending approvals", done: true },
+        { text: "Desktop app (Business Workspace) — Google Sign-In & magic-link sign-in support", done: true },
+        { text: "Combined Windows/Linux download hub for both desktop apps", done: true },
       ],
     },
     {
@@ -2782,6 +2799,7 @@ export default function Home() {
     { title: "Go-To-Market Strategy", desc: "Institutional GTM strategy covering market opportunity, customer segmentation, product-led growth, developer acquisition, and the 24-month execution roadmap.", href: "/documents/inaya-gtm-strategy.pdf", icon: "🚀" },
     { title: "Investment Memorandum", desc: "Formal investment memorandum covering the opportunity, technology, traction, team, and terms for the current fundraising round.", href: "/documents/inaya-investment-memorandum.pdf", icon: "💼" },
     { title: "Executive Summary", desc: "One-page investor overview of the mission, problem, solution, market opportunity, and traction to date.", href: "/documents/inaya-executive-summary.pdf", icon: "📋" },
+    { title: "Desktop Apps — Download & Release Notes", desc: "Windows and Linux desktop apps for both the Inaya Network dApp and the Business Workspace, with WalletConnect wallet support and auto-updates.", href: "/download", icon: "💻", linkLabel: "GO TO DOWNLOAD PAGE →" },
   ];
 
   // ========================================================
@@ -6505,7 +6523,7 @@ export default function Home() {
                           {doc.desc}
                         </p>
                         <span className="inline-block mt-2 text-[10px] font-mono font-bold text-[#00f2fe]">
-                          VIEW / DOWNLOAD PDF →
+                          {doc.linkLabel || "VIEW / DOWNLOAD PDF →"}
                         </span>
                       </div>
                     </a>
