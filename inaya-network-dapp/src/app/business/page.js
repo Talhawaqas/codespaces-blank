@@ -890,8 +890,35 @@ function DashboardView({ orgId, canManage, onNavigate }) {
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
   if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
 
+  const isDesktopApp = typeof window !== "undefined" && !!window.__TAURI__;
+
   return (
     <div className="space-y-6">
+      {/* Desktop app cross-promotion -- hidden when already running inside
+          the desktop app itself, same reasoning as not showing "Explore"
+          for a product you're already in. */}
+      {!isDesktopApp && (
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
+              New · Desktop App
+            </span>
+            <h3 className="text-white font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
+            <p className="text-[#94a3b8] text-xs sm:text-sm mt-1 max-w-lg">
+              Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+            <a
+              href="/business/download"
+              className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110"
+            >
+              Download
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon="departments" label="Departments" value={data.counts.departments} sub="Active departments" />
         <StatCard icon="projects" label="Projects" value={data.counts.projects} sub="Active projects" />
