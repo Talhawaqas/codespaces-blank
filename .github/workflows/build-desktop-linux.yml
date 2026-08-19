@@ -1,0 +1,66 @@
+name: Build Desktop (Linux)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "inaya-desktop/**"
+      - ".github/workflows/build-desktop-linux.yml"
+  workflow_dispatch: # lets you trigger this manually from GitHub's Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./inaya-desktop
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: inaya-desktop/package-lock.json
+
+      # Tauri's Linux target needs WebKitGTK (the actual webview engine on
+      # Linux, unlike Windows which shares the OS's WebView2) plus the usual
+      # native-build toolchain -- none of this is present on a bare
+      # ubuntu-latest runner by default.
+      - name: Install Linux webview + native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build (AppImage + .deb, signed for the auto-updater)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: npx tauri build
+
+      - name: List actual build output (diagnostic)
+        run: find src-tauri/target/release/bundle -type f \( -name "*.AppImage" -o -name "*.deb" -o -name "*.sig" \)
+
+      - name: Upload AppImage + .deb as downloadable artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: inaya-desktop-linux
+          path: |
+            inaya-desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            inaya-desktop/src-tauri/target/release/bundle/appimage/*.AppImage.sig
+            inaya-desktop/src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
