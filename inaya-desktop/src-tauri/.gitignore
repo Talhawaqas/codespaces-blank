@@ -2,3 +2,8 @@
 # will have compiled files and executables
 /target/
 /gen/schemas
+
+# Updater signing key -- private, never committed. The .pub file (embedded
+# in tauri.conf.json's updater.pubkey) is the only half that's meant to be
+# public.
+inaya-desktop-updater.key

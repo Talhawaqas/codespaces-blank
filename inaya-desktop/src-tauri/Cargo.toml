@@ -1,6 +1,6 @@
 [package]
 name = "inaya-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Inaya Business Workspace -- installable desktop wrapper around the existing web app. No new features: same Business Workspace (orgs, departments, projects, documents, workflow, permissions, sharing, AI Assistant), rendered from the same URL, with native OS integration (tray, notifications, menu, auto-update) around it."
 authors = ["Inaya Network"]
 license = ""
@@ -23,3 +23,6 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.11.3", features = ["tray-icon"] }
 tauri-plugin-log = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-dialog = "2"
