@@ -144,6 +144,13 @@ pub fn run() {
                 .inner_size(1280.0, 800.0)
                 .resizable(true)
                 .initialization_script(PENDING_APPROVALS_POLL_SCRIPT)
+                // Google's Sign-In popup (and any other window.open() call) is
+                // refused by default -- WebView2 doesn't create a real popup
+                // window unless something handles the request. Allow uses
+                // Tauri's own default popup creation, which wires up the
+                // opener/postMessage relationship the same way a real browser
+                // would, so GSI's existing popup flow works unmodified.
+                .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Allow)
                 .build()?;
 
             check_for_updates(app.handle().clone());
