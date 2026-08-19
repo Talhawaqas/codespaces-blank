@@ -495,6 +495,12 @@ function AuthScreen({ notice, onAuthed }) {
       >
         <span aria-hidden>↓</span> Download the step-by-step setup guide
       </a>
+      <a
+        href="/business/download"
+        className="mt-2 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+      >
+        <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
+      </a>
     </div>
   );
 }
@@ -766,6 +772,13 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               title="Download the step-by-step setup guide"
             >
               ↓ Guide
+            </a>
+            <a
+              href="/business/download"
+              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              title="Get the Business Workspace desktop app"
+            >
+              🖥️ Desktop App
             </a>
             <a
               href="/"

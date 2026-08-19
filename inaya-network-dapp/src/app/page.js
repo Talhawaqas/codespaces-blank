@@ -6598,13 +6598,30 @@ export default function Home() {
             <button onClick={() => setIsWalletModalOpen(false)} className="absolute top-4 right-4 text-[#64748b] font-mono hover:text-white">✕</button>
             <div className="text-center mb-5"><h3 className="text-white font-bold">Select Gateway Access</h3></div>
             <div className="space-y-2">
-              {[
-                { name: 'MetaMask', badge: '✓ Recommended', badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-                { name: 'Trust Wallet', badge: '⚠ Testnet limited', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-                { name: 'Coinbase Wallet', badge: '⚠ May need manual open', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-                { name: 'WalletConnect', badge: '⚠ Varies by wallet', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-              ].map((w) => (
-                <button key={w.name} onClick={() => connectTargetWallet(w.name)} className="w-full bg-white/[0.02] border border-white/5 hover:border-[#00f2fe] p-3.5 rounded-xl transition-all hover:bg-white/5 flex items-center justify-between gap-2">
+              {(typeof window !== 'undefined' && window.__TAURI__
+                ? [
+                    // Desktop app: no browser extension exists inside the native
+                    // webview, so MetaMask/Trust/Coinbase's window.ethereum path
+                    // is a dead end here -- WalletConnect (QR/relay, no extension
+                    // needed) is the one that actually works, so it leads.
+                    { name: 'WalletConnect', badge: '✓ Recommended for Desktop', badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+                    { name: 'MetaMask', badge: '✗ Needs browser extension', badgeClass: 'text-red-400 bg-red-500/10 border-red-500/30', disabled: true },
+                    { name: 'Trust Wallet', badge: '✗ Needs browser extension', badgeClass: 'text-red-400 bg-red-500/10 border-red-500/30', disabled: true },
+                    { name: 'Coinbase Wallet', badge: '✗ Needs browser extension', badgeClass: 'text-red-400 bg-red-500/10 border-red-500/30', disabled: true },
+                  ]
+                : [
+                    { name: 'MetaMask', badge: '✓ Recommended', badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+                    { name: 'Trust Wallet', badge: '⚠ Testnet limited', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+                    { name: 'Coinbase Wallet', badge: '⚠ May need manual open', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+                    { name: 'WalletConnect', badge: '⚠ Varies by wallet', badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+                  ]
+              ).map((w) => (
+                <button
+                  key={w.name}
+                  disabled={w.disabled}
+                  onClick={() => !w.disabled && connectTargetWallet(w.name)}
+                  className={`w-full bg-white/[0.02] border border-white/5 p-3.5 rounded-xl transition-all flex items-center justify-between gap-2 ${w.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-[#00f2fe] hover:bg-white/5'}`}
+                >
                   <span className="text-left text-xs text-white font-bold">{w.name}</span>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${w.badgeClass}`}>{w.badge}</span>
                 </button>
