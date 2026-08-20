@@ -29,13 +29,23 @@ export async function GET(req, { params }) {
     if (!doc) return NextResponse.json({ error: "Document not found." }, { status: 404 });
 
     const gatewayRes = await fetch(`https://gateway.pinata.cloud/ipfs/${doc.cid}`);
-    if (!gatewayRes.ok || !gatewayRes.body) {
+    if (!gatewayRes.ok) {
+      console.error(`dataroom/documents/stream: gateway returned ${gatewayRes.status} for cid ${doc.cid}`);
       return NextResponse.json({ error: "Could not load this document. Please try again." }, { status: 502 });
     }
 
+    // Buffered rather than passing gatewayRes.body straight through —
+    // piping a raw fetch ReadableStream into NextResponse is inconsistent
+    // across Vercel's runtimes (worked fine locally, 502'd in production
+    // with an ok, 200 upstream response — confirmed by fetching the same
+    // CID directly, which succeeded). Buffering trades a small amount of
+    // serverless memory for a body type NextResponse always handles
+    // correctly; these documents are capped at 50MB, well within budget.
+    const buffer = await gatewayRes.arrayBuffer();
+
     await recordViewOpened({ visitorId: visitor._id, documentId: doc._id });
 
-    return new NextResponse(gatewayRes.body, {
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": doc.mimeType || "application/octet-stream",
