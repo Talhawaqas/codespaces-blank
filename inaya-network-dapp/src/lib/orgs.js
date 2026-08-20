@@ -18,11 +18,13 @@
 // wallet registers on-chain on the customer's behalf, see
 // app/api/stripe-webhook/route.js's settlePaygUpload()).
 //
-// AUTH: no email-sending service exists in this codebase yet (same gap
-// hit building the referral system) so real magic-link delivery isn't
-// wired up — login/invite links are generated here and returned to the
-// caller (an org owner/admin) to share manually, same as referral invite
-// links. Session tokens are opaque random values, stored SHA-256-hashed
+// AUTH: magic links are generated here and emailed via Resend (see
+// src/lib/email.js's sendMagicLinkEmail(), called from orgs/create,
+// orgs/invite, and orgs/login/request) whenever RESEND_API_KEY is
+// configured. Only falls back to returning the raw link directly to the
+// caller when delivery isn't configured or a send fails — see each
+// route's own comment for why that fallback is safe there specifically.
+// Session tokens are opaque random values, stored SHA-256-hashed
 // (not in plaintext) so a database leak doesn't directly yield usable
 // sessions — there's no reason to store them recoverable, hashing costs
 // nothing extra here.
