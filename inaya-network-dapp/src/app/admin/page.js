@@ -41,23 +41,26 @@ export default function AdminDashboard() {
   const [revenue, setRevenue] = useState(null);
   const [customers, setCustomers] = useState(null);
   const [usage, setUsage] = useState(null);
+  const [activity, setActivity] = useState(null);
   const [loadError, setLoadError] = useState("");
 
   async function loadDashboardData() {
     setLoading(true);
     setLoadError("");
     try {
-      const [revenueRes, customersRes, usageRes] = await Promise.all([
+      const [revenueRes, customersRes, usageRes, activityRes] = await Promise.all([
         fetch("/api/admin/revenue-overview"),
         fetch("/api/admin/customers"),
         fetch("/api/admin/usage-overview"),
+        fetch("/api/admin/activity"),
       ]);
-      if (!revenueRes.ok || !customersRes.ok || !usageRes.ok) {
+      if (!revenueRes.ok || !customersRes.ok || !usageRes.ok || !activityRes.ok) {
         throw new Error("One or more dashboard endpoints rejected the request — session may have expired.");
       }
       setRevenue(await revenueRes.json());
       setCustomers(await customersRes.json());
       setUsage(await usageRes.json());
+      setActivity(await activityRes.json());
     } catch (err) {
       setLoadError(err.message);
     } finally {
@@ -96,6 +99,7 @@ export default function AdminDashboard() {
     setRevenue(null);
     setCustomers(null);
     setUsage(null);
+    setActivity(null);
   }
 
   if (!authed) {
@@ -180,6 +184,28 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Active users (DAU/WAU) */}
+      <section className="mb-10">
+        <h2 className="text-[#00f2fe] font-mono text-xs font-bold tracking-widest uppercase mb-3">Active Users</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[["dapp", "dApp"], ["business", "Business Workspace"], ["mobile", "Mobile App"]].map(([key, label]) => (
+            <div key={key} className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
+              <div className="text-[#64748b] text-xs mb-1">{label}</div>
+              <div className="flex items-end gap-4 mt-2">
+                <div>
+                  <div className="text-2xl font-bold">{activity ? activity[key].dau : "—"}</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5">DAU today</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-[#94a3b8]">{activity ? activity[key].wau : "—"}</div>
+                  <div className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5">WAU (7d)</div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

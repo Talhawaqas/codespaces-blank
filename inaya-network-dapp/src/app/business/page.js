@@ -155,6 +155,18 @@ export default function BusinessPage() {
     refreshSession();
   }, [refreshSession]);
 
+  // DAU/WAU activity ping — fire-and-forget, once per confirmed session.
+  // Identity is the session email (always authenticated here, no
+  // anonymous case for Business Workspace).
+  useEffect(() => {
+    if (!session?.email) return;
+    fetch('/api/activity/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ surface: 'business', identityId: session.email }),
+    }).catch(() => {});
+  }, [session?.email]);
+
   // A visitor who picked a plan on the public pricing page while signed
   // out lands back here post-auth with the choice stashed in localStorage
   // (see PricingPage's header comment) — fire that checkout automatically

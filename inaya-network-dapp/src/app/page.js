@@ -2336,7 +2336,35 @@ export default function Home() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [selectedWalletName, setSelectedWalletName] = useState('');
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
-  
+
+  // ========================================================
+  // 📊 DAU/WAU ACTIVITY PING — fire-and-forget, never blocks the UI.
+  // Identity is the wallet address once connected, otherwise a stable
+  // anonymous id cached in localStorage — most visitors browse before
+  // ever connecting a wallet, and only counting wallet-connected
+  // sessions would badly understate real usage. Pings once on mount and
+  // again if a wallet connects afterward (covers both "arrived
+  // anonymous" and "wallet auto-restored on load").
+  // ========================================================
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let visitorId;
+    try {
+      visitorId = localStorage.getItem('inaya_visitor_id');
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem('inaya_visitor_id', visitorId);
+      }
+    } catch {
+      return; // localStorage unavailable — skip rather than throw
+    }
+    fetch('/api/activity/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ surface: 'dapp', identityId: walletAddress || visitorId }),
+    }).catch(() => {});
+  }, [walletAddress]);
+
   // ========================================================
   // 3. CRYPTOGRAPHIC SIGNATURE & IDENTITY SIGNUP STATES
   // ========================================================
