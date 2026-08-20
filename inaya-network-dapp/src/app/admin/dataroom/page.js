@@ -11,6 +11,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+// Mirrors the founder's existing Google Drive data room folder structure
+// (kept as a local constant, not imported from src/lib/dataroom.js — that
+// file pulls in server-only deps like mongodb, which can't bundle into a
+// "use client" page).
+const CATEGORIES = ["Executive Documents", "Fundraising", "Operations", "Product & Demo", "Technical"];
+
+function groupByCategory(documents) {
+  const groups = new Map(CATEGORIES.map((c) => [c, []]));
+  for (const doc of documents) {
+    const key = groups.has(doc.category) ? doc.category : doc.category || "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(doc);
+  }
+  return [...groups.entries()].filter(([, docs]) => docs.length > 0);
+}
+
 function formatBytes(bytes) {
   if (!bytes) return "";
   const units = ["B", "KB", "MB", "GB"];
@@ -44,7 +60,7 @@ export default function DataRoomAdminPage() {
   const [loadError, setLoadError] = useState("");
 
   const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("");
+  const [uploadCategory, setUploadCategory] = useState(CATEGORIES[0]);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -107,7 +123,7 @@ export default function DataRoomAdminPage() {
       if (!res.ok) throw new Error(data.error || "Upload failed.");
 
       setUploadTitle("");
-      setUploadCategory("");
+      setUploadCategory(CATEGORIES[0]);
       setUploadFile(null);
       e.target.reset();
       await loadData();
@@ -186,12 +202,15 @@ export default function DataRoomAdminPage() {
                 placeholder="Title (e.g. Q3 Financials)"
                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
               />
-              <input
+              <select
                 value={uploadCategory}
                 onChange={(e) => setUploadCategory(e.target.value)}
-                placeholder="Category (e.g. Financials, Legal, Product)"
                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
-              />
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c} className="bg-[#0b1120]">{c}</option>
+                ))}
+              </select>
               <input
                 required
                 type="file"
@@ -208,14 +227,23 @@ export default function DataRoomAdminPage() {
               </button>
             </form>
 
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div key={doc._id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-white text-sm font-semibold">{doc.title}</p>
-                    <p className="text-[#64748b] text-[11px] font-mono mt-1">{doc.category} · {formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</p>
+            <div className="space-y-6">
+              {groupByCategory(documents).map(([category, docs]) => (
+                <div key={category}>
+                  <h3 className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    📁 {category}
+                  </h3>
+                  <div className="space-y-2">
+                    {docs.map((doc) => (
+                      <div key={doc._id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-white text-sm font-semibold">{doc.title}</p>
+                          <p className="text-[#64748b] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</p>
+                        </div>
+                        <button onClick={() => handleDeleteDocument(doc._id)} className="text-red-400 hover:text-red-300 text-xs font-bold">Remove</button>
+                      </div>
+                    ))}
                   </div>
-                  <button onClick={() => handleDeleteDocument(doc._id)} className="text-red-400 hover:text-red-300 text-xs font-bold">Remove</button>
                 </div>
               ))}
               {documents.length === 0 && <p className="text-[#64748b] text-sm">No documents uploaded yet.</p>}

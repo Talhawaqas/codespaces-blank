@@ -14,6 +14,19 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const HEARTBEAT_INTERVAL_MS = 15000;
 
+// Mirrors the founder's existing Google Drive data room folder structure.
+const CATEGORIES = ["Executive Documents", "Fundraising", "Operations", "Product & Demo", "Technical"];
+
+function groupByCategory(documents) {
+  const groups = new Map(CATEGORIES.map((c) => [c, []]));
+  for (const doc of documents) {
+    const key = groups.has(doc.category) ? doc.category : doc.category || "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(doc);
+  }
+  return [...groups.entries()].filter(([, docs]) => docs.length > 0);
+}
+
 function formatBytes(bytes) {
   if (!bytes) return "";
   const units = ["B", "KB", "MB", "GB"];
@@ -266,22 +279,34 @@ export default function DataRoomPage() {
           <div>
             <h1 className="text-xl font-extrabold text-white mb-1">Data Room</h1>
             <p className="text-[#94a3b8] text-sm mb-6">Welcome back, {visitor?.name}.</p>
-            <div className="space-y-3">
-              {documents.length === 0 && <p className="text-[#64748b] text-sm">No documents have been uploaded yet.</p>}
-              {documents.map((doc) => (
-                <button
-                  key={doc.id}
-                  onClick={() => openDocument(doc)}
-                  className="w-full text-left bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/40 rounded-xl p-4 flex items-center justify-between transition-all"
-                >
-                  <div>
-                    <p className="text-white text-sm font-semibold">{doc.title}</p>
-                    <p className="text-[#64748b] text-[11px] font-mono mt-1">{doc.category} · {formatBytes(doc.sizeBytes)}</p>
+            {documents.length === 0 ? (
+              <p className="text-[#64748b] text-sm">No documents have been uploaded yet.</p>
+            ) : (
+              <div className="space-y-6">
+                {groupByCategory(documents).map(([category, docs]) => (
+                  <div key={category}>
+                    <h2 className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      📁 {category}
+                    </h2>
+                    <div className="space-y-2">
+                      {docs.map((doc) => (
+                        <button
+                          key={doc.id}
+                          onClick={() => openDocument(doc)}
+                          className="w-full text-left bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/40 rounded-xl p-4 flex items-center justify-between transition-all"
+                        >
+                          <div>
+                            <p className="text-white text-sm font-semibold">{doc.title}</p>
+                            <p className="text-[#64748b] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)}</p>
+                          </div>
+                          <span className="text-[#00f2fe] text-xs font-bold">View →</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-[#00f2fe] text-xs font-bold">View →</span>
-                </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

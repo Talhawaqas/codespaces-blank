@@ -33,6 +33,13 @@ export const DATAROOM_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — 
 const MAX_TITLE_LEN = 200;
 const MAX_CATEGORY_LEN = 100;
 const MAX_NAME_LEN = 200;
+
+// Mirrors the founder's existing Google Drive data room folder structure,
+// so migrating off Drive doesn't also mean re-inventing how documents are
+// organized. The admin upload form offers these as a dropdown; validation
+// itself stays permissive (any non-empty string under the length cap) so
+// a one-off category doesn't hard-block an upload.
+export const DATAROOM_CATEGORIES = ["Executive Documents", "Fundraising", "Operations", "Product & Demo", "Technical"];
 export const MAX_DOCUMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50MB — generous enough for a financial model PDF
 export const ALLOWED_DOCUMENT_MIME_TYPES = [
   "application/pdf",
