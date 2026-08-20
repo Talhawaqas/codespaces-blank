@@ -56,21 +56,29 @@ const BRAND_FOOTER = `
 `;
 
 /** The one email template every magic-link flow in this codebase sends (org login,
- *  org invite, and reusable for anything else that's just "click to continue"). */
+ *  org invite, data room access verification, and reusable for anything else
+ *  that's just "click to continue"). */
 export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName }) {
   const isInvite = purpose === "invite";
-  const subject = isInvite ? `You've been invited to join ${orgName} on Inaya` : "Your Inaya sign-in link";
-  const heading = isInvite ? `Join ${orgName} on Inaya` : "Sign in to Inaya";
+  const isDataroom = purpose === "dataroom_verify";
+  const subject = isInvite
+    ? `You've been invited to join ${orgName} on Inaya`
+    : isDataroom
+      ? "Verify your email to access the Inaya data room"
+      : "Your Inaya sign-in link";
+  const heading = isInvite ? `Join ${orgName} on Inaya` : isDataroom ? "Access the Inaya Data Room" : "Sign in to Inaya";
   const body = isInvite
     ? `You've been invited to join <b>${orgName}</b>. Click below to accept the invite and sign in.`
-    : "Click below to sign in — no password needed.";
+    : isDataroom
+      ? "Click below to verify your email and continue to the data room."
+      : "Click below to sign in — no password needed.";
 
   const html = `
     ${BRAND_HEADER}
     <h1 style="font-size: 20px; margin: 16px 0 8px; color: #10151f;">${heading}</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #3a4250;">${body}</p>
     <a href="${url}" style="display: inline-block; margin: 16px 0; padding: 12px 22px; background: #007a8f; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
-      ${isInvite ? "Accept invite" : "Sign in"}
+      ${isInvite ? "Accept invite" : isDataroom ? "Verify & continue" : "Sign in"}
     </a>
     <p style="font-size: 12px; color: #8a93a3; word-break: break-all;">${url}</p>
     ${BRAND_FOOTER}
