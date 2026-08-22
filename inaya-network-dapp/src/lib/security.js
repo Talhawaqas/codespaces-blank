@@ -527,6 +527,22 @@ export async function getSecurityFeed(sinceIso) {
   return { items, generatedAt: new Date().toISOString() };
 }
 
+/** Aggregate, public-safe network stats for the public transparency page (/security) — counts
+ *  and an average only, never raw node addresses (those stay admin-only, see
+ *  adminListNodeReputations). */
+export async function getPublicSecurityStats() {
+  const { threats, reputationCache } = await getSecurityCollections();
+  const [confirmedThreatsCount, reportingNodesCount, repDocs] = await Promise.all([
+    threats.countDocuments({ status: SECURITY_STATUS.CONFIRMED }),
+    reputationCache.countDocuments({}),
+    reputationCache.find({}, { projection: { scoreBps: 1 } }).toArray(),
+  ]);
+  const avgReputationBps = repDocs.length
+    ? Math.round(repDocs.reduce((sum, d) => sum + (d.scoreBps || 0), 0) / repDocs.length)
+    : null;
+  return { confirmedThreatsCount, reportingNodesCount, avgReputationBps };
+}
+
 export async function recordSecurityEvent(input) {
   const clean = validateSecurityEventInput(input);
   const { events } = await getSecurityCollections();
