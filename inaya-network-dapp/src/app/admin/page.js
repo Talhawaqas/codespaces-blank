@@ -134,6 +134,12 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-bold text-xl">Enterprise Dashboard</h1>
         <div className="flex items-center gap-3">
+          <a href="/admin/dataroom" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Data Room
+          </a>
+          <a href="/admin/security" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Security Layer
+          </a>
           <button onClick={loadDashboardData} disabled={loading} className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             {loading ? "Refreshing..." : "Refresh"}
           </button>
