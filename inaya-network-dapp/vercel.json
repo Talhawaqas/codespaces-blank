@@ -3,6 +3,10 @@
     {
       "path": "/api/nodes/settlements/release",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/security/cron/checkpoint-reputation",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

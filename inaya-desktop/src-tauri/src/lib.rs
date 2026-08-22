@@ -17,6 +17,116 @@ use tauri_plugin_updater::UpdaterExt;
 
 const APP_URL: &str = "https://www.inayanetwork.com/business";
 
+// Security Layer client (Security Layer SOW): follows the exact same idiom
+// as the pending-approvals poller above rather than adding a native HTTP
+// client crate -- the webview already has a same-origin fetch() session,
+// so feed sync and threat lookups happen in JS, and the Rust side is only
+// invoked for the two genuinely NATIVE actions: a block/warn notification,
+// and an actual OS firewall rule. This deliberately keeps the "thin
+// wrapper" philosophy at the top of this file intact.
+//
+// Only navigations initiated by clicking a link *inside the Business
+// Workspace* are checked here (chat links, shared documents, etc.) --
+// this is the desktop MVP's real, safe enforcement surface, same scope
+// decision as the mobile app's in-app-link-check (full OS-wide traffic
+// interception is explicitly out of scope for this pass, see the plan's
+// "Explicitly deferred" section). A stable per-install device id is
+// generated once and cached in localStorage so /api/security/events has
+// a consistent identityId across restarts.
+const SECURITY_FEED_POLL_SCRIPT: &str = r#"
+(function () {
+  if (window.__inayaSecurityLayer) return;
+  window.__inayaSecurityLayer = true;
+  var FEED_POLL_MS = 5 * 60 * 1000;
+  var confirmedThreats = new Map(); // indicator (lowercased) -> threat record
+  var lastSince = null;
+
+  function deviceId() {
+    try {
+      var id = localStorage.getItem('inaya_desktop_device_id');
+      if (!id) {
+        id = 'desktop-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem('inaya_desktop_device_id', id);
+      }
+      return id;
+    } catch (e) {
+      return 'desktop-unknown';
+    }
+  }
+
+  function isIpLiteral(s) {
+    return /^\d{1,3}(\.\d{1,3}){3}$/.test(s);
+  }
+
+  function syncFeed() {
+    var url = '/api/security/feed' + (lastSince ? ('?since=' + encodeURIComponent(lastSince)) : '');
+    fetch(url, { credentials: 'same-origin' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.items)) return;
+        data.items.forEach(function (t) {
+          if (t.status === 1 && t.indicator) confirmedThreats.set(String(t.indicator).toLowerCase(), t);
+        });
+        lastSince = data.generatedAt || lastSince;
+      })
+      .catch(function () {});
+  }
+
+  function logEvent(eventType, destination, decision, reason, threat) {
+    fetch('/api/security/events', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identityId: deviceId(),
+        surface: 'desktop',
+        eventType: eventType,
+        destination: destination,
+        decision: decision,
+        reason: reason,
+        confidenceBps: threat ? threat.confidenceBps : null,
+        category: threat ? threat.category : null,
+      }),
+    }).catch(function () {});
+  }
+
+  document.addEventListener(
+    'click',
+    function (event) {
+      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      var host;
+      try {
+        host = new URL(link.href, window.location.href).hostname.toLowerCase();
+      } catch (e) {
+        return;
+      }
+      var threat = confirmedThreats.get(host);
+      if (!threat) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      logEvent('block', host, 'block', 'Confirmed threat via Inaya Security Layer', threat);
+      if (window.__TAURI__) {
+        window.__TAURI__.core
+          .invoke('notify_security_event', {
+            title: 'Inaya Security Layer',
+            body: 'Blocked a link to "' + host + '" -- reported malicious by ' + (threat.contributingNodes ? threat.contributingNodes.length : 'multiple') + ' independent Inaya nodes.',
+          })
+          .catch(function () {});
+        if (isIpLiteral(host)) {
+          window.__TAURI__.core.invoke('block_ip', { ip: host, label: String(threat._id || host).slice(0, 16) }).catch(function () {});
+        }
+      }
+    },
+    true
+  );
+
+  syncFeed();
+  setInterval(syncFeed, FEED_POLL_MS);
+})();
+"#;
+
 // Injected into the webview before the page loads. Polls the existing
 // GET /api/orgs/pending-approvals route (added specifically to support
 // this -- see that route's own comment for why it can't reuse
@@ -68,6 +178,89 @@ fn notify_pending_approvals(app: tauri::AppHandle, count: u32, filename: String,
         .body(body)
         .show()
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn notify_security_event(app: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
+    app.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
+}
+
+// Real OS-level enforcement for a CONFIRMED malicious IP (Security Layer SOW §11/§24) --
+// deliberately IP-only, not domain-based: netsh/iptables block by address, and resolving a
+// domain first would need its own DNS logic and could disagree with what a browser actually
+// connects to. Rule name embeds the threat id so add/delete stay paired and the rule is
+// auditable via `netsh advfirewall firewall show rule name=...` (see the plan's Verification
+// section -- this is only ever invoked for the user's own explicit block action or a
+// Protect/Strict-mode confirmed threat, never silently).
+#[tauri::command]
+fn block_ip(ip: String, label: String) -> Result<String, String> {
+    if !ip.chars().all(|c| c.is_ascii_digit() || c == '.') {
+        return Err("Refusing to block a non-IPv4-literal value.".into());
+    }
+    let rule_name = format!("Inaya-Block-{}", label);
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("netsh")
+            .args(["advfirewall", "firewall", "add", "rule", &format!("name={}", rule_name), "dir=out", "action=block", &format!("remoteip={}", ip)])
+            .output()
+            .map_err(|e| e.to_string())?;
+        return if output.status.success() {
+            Ok(format!("Blocked {} via Windows Firewall rule \"{}\".", ip, rule_name))
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
+        };
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let output = std::process::Command::new("iptables")
+            .args(["-A", "OUTPUT", "-d", &ip, "-j", "DROP"])
+            .output()
+            .map_err(|e| e.to_string())?;
+        return if output.status.success() {
+            Ok(format!("Blocked {} via iptables.", ip))
+        } else {
+            Err("Requires elevated privileges (run as root) to modify iptables rules.".into())
+        };
+    }
+
+    #[allow(unreachable_code)]
+    Err("OS-level blocking isn't supported on this platform in this build.".into())
+}
+
+#[tauri::command]
+fn unblock_ip(ip: String, label: String) -> Result<String, String> {
+    let rule_name = format!("Inaya-Block-{}", label);
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("netsh")
+            .args(["advfirewall", "firewall", "delete", "rule", &format!("name={}", rule_name)])
+            .output()
+            .map_err(|e| e.to_string())?;
+        return if output.status.success() {
+            Ok(format!("Removed the Windows Firewall rule \"{}\".", rule_name))
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
+        };
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let output = std::process::Command::new("iptables")
+            .args(["-D", "OUTPUT", "-d", &ip, "-j", "DROP"])
+            .output()
+            .map_err(|e| e.to_string())?;
+        return if output.status.success() {
+            Ok(format!("Unblocked {} via iptables.", ip))
+        } else {
+            Err("Requires elevated privileges (run as root) to modify iptables rules.".into())
+        };
+    }
+
+    #[allow(unreachable_code)]
+    Err("OS-level blocking isn't supported on this platform in this build.".into())
 }
 
 // Checked once on startup (not polled -- a business tool people relaunch
@@ -124,7 +317,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![notify_pending_approvals])
+        .invoke_handler(tauri::generate_handler![notify_pending_approvals, notify_security_event, block_ip, unblock_ip])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -144,6 +337,7 @@ pub fn run() {
                 .inner_size(1280.0, 800.0)
                 .resizable(true)
                 .initialization_script(PENDING_APPROVALS_POLL_SCRIPT)
+                .initialization_script(SECURITY_FEED_POLL_SCRIPT)
                 // Google's Sign-In popup (and any other window.open() call) is
                 // refused by default -- WebView2 doesn't create a real popup
                 // window unless something handles the request. Allow uses
