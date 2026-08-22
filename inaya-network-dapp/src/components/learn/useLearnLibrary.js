@@ -155,3 +155,7 @@ export async function getLearnVideo(videoId, relatedCategoryId) {
   const qs = relatedCategoryId ? `?related=${encodeURIComponent(relatedCategoryId)}` : '';
   return apiRequest(`/api/learn/video/${encodeURIComponent(videoId)}${qs}`);
 }
+
+export async function askLearnTutor({ walletAddress, videoContext, messages }) {
+  return apiRequest('/api/ai/learn-chat', { method: 'POST', body: { walletAddress, videoContext, messages } });
+}

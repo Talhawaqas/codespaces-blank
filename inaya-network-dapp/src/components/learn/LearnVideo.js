@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import YoutubePlayer from './YoutubePlayer';
 import VideoCard from './VideoCard';
-import { getLearnVideo, reportLearnVideo, logLearnEvent } from './useLearnLibrary';
+import { getLearnVideo, reportLearnVideo, logLearnEvent, askLearnTutor } from './useLearnLibrary';
 
 const PROGRESS_SYNC_INTERVAL_MS = 8000;
 const COMPLETE_THRESHOLD = 0.92;
@@ -29,6 +29,11 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
   const [reportSent, setReportSent] = useState(false);
   const [markedComplete, setMarkedComplete] = useState(false);
 
+  const [tutorOpen, setTutorOpen] = useState(false);
+  const [tutorMessages, setTutorMessages] = useState([]);
+  const [tutorInput, setTutorInput] = useState('');
+  const [tutorSending, setTutorSending] = useState(false);
+
   const playerInstanceRef = useRef(null);
   const hasSeekedRef = useRef(false);
   const syncTimerRef = useRef(null);
@@ -38,6 +43,8 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
     setLoading(true);
     setMarkedComplete(false);
     hasSeekedRef.current = false;
+    setTutorMessages([]);
+    setTutorOpen(false);
     (async () => {
       try {
         const data = await getLearnVideo(videoId, categoryId);
@@ -124,6 +131,27 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
     }
   };
 
+  const handleSendTutorMessage = async () => {
+    const text = tutorInput.trim();
+    if (!text || tutorSending) return;
+    const nextMessages = [...tutorMessages, { role: 'user', content: text }];
+    setTutorMessages(nextMessages);
+    setTutorInput('');
+    setTutorSending(true);
+    try {
+      const data = await askLearnTutor({
+        walletAddress,
+        videoContext: video ? { title: video.title, channelTitle: video.channelTitle, categoryId, description: video.description } : null,
+        messages: nextMessages,
+      });
+      setTutorMessages([...nextMessages, { role: 'assistant', content: data.reply || "Sorry, I couldn't come up with an answer for that." }]);
+    } catch {
+      setTutorMessages([...nextMessages, { role: 'assistant', content: 'The tutor is temporarily unavailable — please try again in a moment.' }]);
+    } finally {
+      setTutorSending(false);
+    }
+  };
+
   if (loading) return <div className="max-w-3xl mx-auto"><p className="text-[#64748b] text-xs font-mono">Loading…</p></div>;
   if (error || !video) return <div className="max-w-3xl mx-auto"><p className="text-red-400 text-sm">{error || 'This video is unavailable.'}</p></div>;
 
@@ -161,6 +189,63 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
       {video.description && (
         <p className="text-[#94a3b8] text-xs leading-relaxed whitespace-pre-wrap line-clamp-6">{video.description}</p>
       )}
+
+      <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setTutorOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <span className="flex items-center gap-2 text-white text-sm font-bold">
+            <span>🎓</span> Ask AI Tutor
+          </span>
+          <span className="text-[#64748b] text-xs">{tutorOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {tutorOpen && (
+          <div className="px-4 pb-4 space-y-3">
+            {tutorMessages.length === 0 && (
+              <p className="text-[#64748b] text-xs">
+                Ask me anything about this video, or any question you have while learning.
+              </p>
+            )}
+
+            {tutorMessages.length > 0 && (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {tutorMessages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                        m.role === 'user' ? 'bg-[#00f2fe]/10 text-[#e2e8f0]' : 'bg-white/5 text-[#94a3b8]'
+                      }`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                {tutorSending && <p className="text-[#64748b] text-xs">Thinking…</p>}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                value={tutorInput}
+                onChange={(e) => setTutorInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !tutorSending) handleSendTutorMessage(); }}
+                placeholder="Ask a question about this video…"
+                disabled={tutorSending}
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendTutorMessage}
+                disabled={tutorSending || !tutorInput.trim()}
+                className="bg-[#00f2fe]/10 text-[#00f2fe] text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {more.length > 0 && (
         <div>

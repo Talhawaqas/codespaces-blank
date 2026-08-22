@@ -34,6 +34,21 @@ export default function SecurityTransparencyPage() {
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState(null);
 
+  const [identityId, setIdentityId] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+
+  useEffect(() => {
+    let id = localStorage.getItem("inaya_visitor_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("inaya_visitor_id", id);
+    }
+    setIdentityId(id);
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoadError("");
     try {
@@ -65,6 +80,29 @@ export default function SecurityTransparencyPage() {
       setCheckResult({ error: err.message });
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function handleSendChat() {
+    const text = chatInput.trim();
+    if (!text || !identityId || chatSending) return;
+    const nextMessages = [...chatMessages, { role: "user", content: text }];
+    setChatMessages(nextMessages);
+    setChatInput("");
+    setChatSending(true);
+    try {
+      const res = await fetch("/api/ai/security-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identityId, messages: nextMessages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Chat failed.");
+      setChatMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+    } catch (err) {
+      setChatMessages([...nextMessages, { role: "assistant", content: `Sorry, I couldn't answer that: ${err.message}` }]);
+    } finally {
+      setChatSending(false);
     }
   }
 
@@ -153,6 +191,63 @@ export default function SecurityTransparencyPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden mb-10">
+          <button
+            onClick={() => setChatOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-6 py-4 text-left"
+          >
+            <span className="flex items-center gap-2 text-white text-sm font-bold">
+              <span>🛡️</span> Ask the Security Assistant
+            </span>
+            <span className="text-[#64748b] text-xs">{chatOpen ? "▲" : "▼"}</span>
+          </button>
+
+          {chatOpen && (
+            <div className="px-6 pb-6 space-y-3">
+              {chatMessages.length === 0 && (
+                <p className="text-[#64748b] text-xs">
+                  Ask about a threat, a category, or how the confirmation process works.
+                </p>
+              )}
+
+              {chatMessages.length > 0 && (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {chatMessages.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                          m.role === "user" ? "bg-[#00f2fe]/10 text-[#e2e8f0]" : "bg-white/5 text-[#94a3b8]"
+                        }`}
+                      >
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {chatSending && <p className="text-[#64748b] text-xs">Thinking…</p>}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !chatSending) handleSendChat(); }}
+                  placeholder="Ask a question…"
+                  disabled={chatSending}
+                  className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendChat}
+                  disabled={chatSending || !chatInput.trim()}
+                  className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-xs rounded-lg px-4 py-2 disabled:opacity-50 whitespace-nowrap"
+                >
+                  Send
+                </button>
+              </div>
             </div>
           )}
         </div>
