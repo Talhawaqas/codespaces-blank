@@ -18,16 +18,18 @@ import LearnSearchResults from './LearnSearchResults';
 import LearnVideo from './LearnVideo';
 import LearnMyLearning from './LearnMyLearning';
 import LearnCategory from './LearnCategory';
+import LearnTutorWidget from './LearnTutorWidget';
 
 export default function LearnSection({ walletAddress }) {
   const [view, setView] = useState({ name: 'home' });
+  const [currentVideo, setCurrentVideo] = useState(null);
   const { saved, progress, isVideoSaved, getVideoProgress, toggleSave, updateProgress } = useLearnLibrary(walletAddress);
 
-  const openHome = useCallback(() => setView({ name: 'home' }), []);
-  const openSearch = useCallback((query, categoryId) => setView({ name: 'search', query, categoryId }), []);
+  const openHome = useCallback(() => { setView({ name: 'home' }); setCurrentVideo(null); }, []);
+  const openSearch = useCallback((query, categoryId) => { setView({ name: 'search', query, categoryId }); setCurrentVideo(null); }, []);
   const openVideo = useCallback((videoId, categoryId) => setView({ name: 'video', videoId, categoryId }), []);
-  const openCategory = useCallback((categoryId) => setView({ name: 'category', categoryId }), []);
-  const openMyLearning = useCallback(() => setView({ name: 'myLearning' }), []);
+  const openCategory = useCallback((categoryId) => { setView({ name: 'category', categoryId }); setCurrentVideo(null); }, []);
+  const openMyLearning = useCallback(() => { setView({ name: 'myLearning' }); setCurrentVideo(null); }, []);
 
   return (
     <div>
@@ -60,6 +62,7 @@ export default function LearnSection({ walletAddress }) {
           getVideoProgress={getVideoProgress}
           updateProgress={updateProgress}
           onOpenVideo={openVideo}
+          onVideoLoaded={setCurrentVideo}
         />
       )}
       {view.name === 'myLearning' && (
@@ -74,6 +77,8 @@ export default function LearnSection({ walletAddress }) {
           onSearch={openSearch}
         />
       )}
+
+      <LearnTutorWidget walletAddress={walletAddress} videoContext={currentVideo} />
     </div>
   );
 }
