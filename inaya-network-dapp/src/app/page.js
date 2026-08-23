@@ -4898,13 +4898,11 @@ export default function Home() {
               </a>
               {/* Real, crawlable, server-rendered pages -- SEO's answer to
                   the fact that the tabs above are JS state on "/", not
-                  indexable URLs. Same content, shareable link. */}
-              <a href="/about" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
-                About ↗
-              </a>
-              <a href="/whitepaper" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
-                Whitepaper ↗
-              </a>
+                  indexable URLs. /about and /whitepaper are deliberately NOT
+                  linked here too -- "About Us" and "White Paper" tabs above
+                  already cover that content; duplicating them in the same
+                  nav row just confused users. Those routes still exist and
+                  stay in sitemap.js for crawlability, just not double-linked. */}
               <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
                 FAQ ↗
               </a>
