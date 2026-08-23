@@ -2068,65 +2068,12 @@ export default function Home() {
     };
   }, [isUpdatesDrawerOpen]);
 
-  // ========================================================
-  // 🔔 NOTIFICATION CENTER — merges two sources:
-  //  1. Server-computed referral/KYC events (email-identified, fetched
-  //     from /api/notifications) — the referral program has no wallet
-  //     identity, so this is the only source that can see it.
-  //  2. Client-computed wallet events (staking unlock ready, Genesis
-  //     Airdrop cap reached) — derived from state this component
-  //     already fetches on-chain; no need for a server round-trip or a
-  //     duplicate on-chain read.
-  // "Unread" is a plain localStorage timestamp comparison, not a
-  // server-tracked read-state — avoids needing a stored notification
-  // log at all. Same ACTIVATED_EMAIL_KEY string as ReferralSection.js
-  // (must stay in sync — that's the one place a referrer's email gets
-  // persisted after activation).
-  // ========================================================
-  const [serverNotifications, setServerNotifications] = useState([]);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notificationsLastSeen, setNotificationsLastSeen] = useState(0);
-
-  useEffect(() => {
-    try {
-      setNotificationsLastSeen(Number(localStorage.getItem('inaya_notifications_last_seen') || 0));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      let activatedEmail = '';
-      try { activatedEmail = localStorage.getItem('inaya_referral_activated_email') || ''; } catch {}
-      if (!activatedEmail) return;
-      try {
-        const res = await fetch(`/api/notifications?email=${encodeURIComponent(activatedEmail)}`);
-        const data = await res.json();
-        if (!cancelled && Array.isArray(data.notifications)) setServerNotifications(data.notifications);
-      } catch {
-        // Fire-and-forget — a failed notifications fetch should never block the rest of the app.
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isConnected]);
-
-  // clientNotifications/allNotifications/unreadNotificationsCount are
-  // computed further down, right after vaultHistory and the
-  // UPLOAD_REWARD_* constants are declared (this block runs during the
-  // same render pass, so it can't reference them before that point —
-  // see the notification-center note near vaultHistory's declaration).
-
-  function openNotificationsPanel() {
-    setIsNotificationsOpen((open) => {
-      const next = !open;
-      if (next) {
-        const now = Date.now();
-        setNotificationsLastSeen(now);
-        try { localStorage.setItem('inaya_notifications_last_seen', String(now)); } catch {}
-      }
-      return next;
-    });
-  }
+  // Notification center's state/effects/handler live further down, right
+  // after isConnected is declared (this block used to sit here and
+  // reference isConnected in a useEffect dependency array before it
+  // existed in this render pass — a real "Cannot access before
+  // initialization" crash in production, not just a lint nitpick. See
+  // the full block next to isConnected's declaration.)
 
   // Same enum values as src/lib/feedback.js — duplicated here (not
   // imported) because that file also imports mongodb.js, which can't be
@@ -2397,6 +2344,64 @@ export default function Home() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [selectedWalletName, setSelectedWalletName] = useState('');
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
+
+  // ========================================================
+  // 🔔 NOTIFICATION CENTER — merges two sources:
+  //  1. Server-computed referral/KYC events (email-identified, fetched
+  //     from /api/notifications) — the referral program has no wallet
+  //     identity, so this is the only source that can see it.
+  //  2. Client-computed wallet events (staking unlock ready, Genesis
+  //     Airdrop cap reached) — derived from state this component
+  //     already fetches on-chain; no need for a server round-trip or a
+  //     duplicate on-chain read.
+  // "Unread" is a plain localStorage timestamp comparison, not a
+  // server-tracked read-state — avoids needing a stored notification
+  // log at all. Same ACTIVATED_EMAIL_KEY string as ReferralSection.js
+  // (must stay in sync — that's the one place a referrer's email gets
+  // persisted after activation). Deliberately declared here, right
+  // after isConnected, and NOT earlier in the component — the fetch
+  // effect below depends on isConnected, and referencing it before this
+  // point is a genuine "Cannot access before initialization" crash in
+  // production (const isn't hoisted), not just a lint nitpick.
+  // ========================================================
+  const [serverNotifications, setServerNotifications] = useState([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationsLastSeen, setNotificationsLastSeen] = useState(0);
+
+  useEffect(() => {
+    try {
+      setNotificationsLastSeen(Number(localStorage.getItem('inaya_notifications_last_seen') || 0));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let activatedEmail = '';
+      try { activatedEmail = localStorage.getItem('inaya_referral_activated_email') || ''; } catch {}
+      if (!activatedEmail) return;
+      try {
+        const res = await fetch(`/api/notifications?email=${encodeURIComponent(activatedEmail)}`);
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.notifications)) setServerNotifications(data.notifications);
+      } catch {
+        // Fire-and-forget — a failed notifications fetch should never block the rest of the app.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isConnected]);
+
+  function openNotificationsPanel() {
+    setIsNotificationsOpen((open) => {
+      const next = !open;
+      if (next) {
+        const now = Date.now();
+        setNotificationsLastSeen(now);
+        try { localStorage.setItem('inaya_notifications_last_seen', String(now)); } catch {}
+      }
+      return next;
+    });
+  }
 
   // window.__TAURI__ is undefined during SSR (window doesn't exist yet) —
   // reading it directly in render caused a client/server hydration mismatch
