@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { getLearnConfig } from './useLearnLibrary';
 import VideoCard from './VideoCard';
 
-export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVideo }) {
+export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVideo, onOpenTutor }) {
   const [query, setQuery] = useState('');
   const [config, setConfig] = useState(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -48,6 +48,23 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
           className="flex-1 bg-transparent outline-none text-white text-sm placeholder:text-[#64748b]"
         />
       </form>
+
+      <button onClick={onOpenTutor} className="relative w-full text-left group">
+        <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-[#00f2fe] via-[#4facfe] to-[#c084fc] opacity-60 blur-[2px] group-hover:opacity-90 transition-opacity" />
+        <div className="relative bg-[#0a0f1e] rounded-2xl px-5 py-4 flex items-center gap-4">
+          <span className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-2xl shrink-0">🎓</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-white text-base font-extrabold">Ask the Inaya Learn AI Tutor</span>
+              <span className="text-[9px] font-bold tracking-wider text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-full px-2 py-0.5">
+                AI-POWERED
+              </span>
+            </div>
+            <p className="text-[#94a3b8] text-xs mt-0.5">Explain a concept, quiz yourself, or get help with anything you&apos;re learning</p>
+          </div>
+          <span className="text-[#00f2fe] text-sm font-bold shrink-0 hidden sm:block">Ask now →</span>
+        </div>
+      </button>
 
       {continuing.length > 0 && (
         <div>

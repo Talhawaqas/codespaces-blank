@@ -16,7 +16,7 @@
 // — most visitors have no idea a chat-grounded security explainer exists
 // until they see it.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import NetworkVisualization from "../../components/security/NetworkVisualization";
 
 const CATEGORY_META = [
@@ -63,6 +63,9 @@ export default function SecurityTransparencyPage() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+
+  const assistantRef = useRef(null);
+  const scrollToAssistant = () => assistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   useEffect(() => {
     let id = localStorage.getItem("inaya_visitor_id");
@@ -140,6 +143,18 @@ export default function SecurityTransparencyPage() {
       </div>
 
       <div className="relative max-w-4xl mx-auto">
+        <button
+          onClick={scrollToAssistant}
+          className="w-full text-left mb-6 rounded-2xl overflow-hidden border border-[#f2a900]/20 hover:border-[#f2a900]/40 transition-colors"
+          title="Explore the Inaya Firewall"
+        >
+          <img
+            src="/inaya-firewall-banner.jpg"
+            alt="Inaya Firewall — Smarter Protection. Greater Control. The decentralized firewall that protects your data, detects threats, and keeps you one step ahead."
+            className="w-full h-auto block"
+          />
+        </button>
+
         <div className="relative overflow-hidden bg-[#050810] border border-white/10 rounded-2xl mb-8">
           <NetworkVisualization height={280} />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-[#050810]/70">
@@ -169,7 +184,7 @@ export default function SecurityTransparencyPage() {
         {/* ============================================================
             🛡️ AI SECURITY ASSISTANT — flagship feature, front and center
            ============================================================ */}
-        <div className="relative mb-10">
+        <div ref={assistantRef} className="relative mb-10 scroll-mt-6">
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-[#00f2fe] via-[#4facfe] to-[#c084fc] opacity-60 blur-[2px]" />
           <div className="relative bg-[#0a0f1e] rounded-2xl overflow-hidden">
             <button

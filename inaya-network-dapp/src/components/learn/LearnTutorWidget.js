@@ -23,8 +23,7 @@ const SUGGESTED_QUESTIONS_GENERAL = [
   'Quiz me on what I just watched',
 ];
 
-export default function LearnTutorWidget({ walletAddress, videoContext }) {
-  const [open, setOpen] = useState(false);
+export default function LearnTutorWidget({ walletAddress, videoContext, open, onOpenChange }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -53,12 +52,18 @@ export default function LearnTutorWidget({ walletAddress, videoContext }) {
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-5 left-5 z-[9998] flex items-center gap-2 pl-3 pr-4 h-14 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] shadow-[0_0_25px_rgba(0,242,254,0.35)] active:scale-95 transition-transform hover:brightness-110"
+        onClick={() => onOpenChange(true)}
+        className="fixed bottom-5 left-5 z-[9998] flex items-center gap-2.5 pl-3.5 pr-5 h-16 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] shadow-[0_0_35px_rgba(0,242,254,0.55)] active:scale-95 transition-transform hover:brightness-110"
         title="Ask the Inaya Learn AI Tutor"
       >
-        <span className="text-2xl">🎓</span>
-        <span className="text-xs font-bold hidden sm:inline">Ask AI Tutor</span>
+        <span className="relative flex h-16 w-16 -m-1 items-center justify-center shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f2fe] opacity-30" />
+          <span className="relative text-3xl">🎓</span>
+        </span>
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-[13px] font-extrabold">Ask AI Tutor</span>
+          <span className="text-[9px] font-semibold opacity-70">Learn anything, anytime</span>
+        </span>
       </button>
     );
   }
@@ -75,7 +80,7 @@ export default function LearnTutorWidget({ walletAddress, videoContext }) {
             </div>
           </div>
         </div>
-        <button onClick={() => setOpen(false)} className="text-[#64748b] hover:text-white text-sm shrink-0 px-1">✕</button>
+        <button onClick={() => onOpenChange(false)} className="text-[#64748b] hover:text-white text-sm shrink-0 px-1">✕</button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">

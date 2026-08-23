@@ -23,6 +23,7 @@ import LearnTutorWidget from './LearnTutorWidget';
 export default function LearnSection({ walletAddress }) {
   const [view, setView] = useState({ name: 'home' });
   const [currentVideo, setCurrentVideo] = useState(null);
+  const [tutorOpen, setTutorOpen] = useState(false);
   const { saved, progress, isVideoSaved, getVideoProgress, toggleSave, updateProgress } = useLearnLibrary(walletAddress);
 
   const openHome = useCallback(() => { setView({ name: 'home' }); setCurrentVideo(null); }, []);
@@ -41,7 +42,7 @@ export default function LearnSection({ walletAddress }) {
       </div>
 
       {view.name === 'home' && (
-        <LearnHome progress={progress} onSearch={openSearch} onOpenCategory={openCategory} onOpenVideo={openVideo} />
+        <LearnHome progress={progress} onSearch={openSearch} onOpenCategory={openCategory} onOpenVideo={openVideo} onOpenTutor={() => setTutorOpen(true)} />
       )}
       {view.name === 'search' && (
         <LearnSearchResults
@@ -78,7 +79,7 @@ export default function LearnSection({ walletAddress }) {
         />
       )}
 
-      <LearnTutorWidget walletAddress={walletAddress} videoContext={currentVideo} />
+      <LearnTutorWidget walletAddress={walletAddress} videoContext={currentVideo} open={tutorOpen} onOpenChange={setTutorOpen} />
     </div>
   );
 }
