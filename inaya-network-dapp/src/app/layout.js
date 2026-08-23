@@ -5,12 +5,12 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata = {
-  title: "Inaya Network — Sovereign DePIN Data Storage",
-  description: "Decentralized Sovereign Custody Network — client-side encrypted, sharded storage anchored on BNB Chain. Enterprise-grade custody with no central point of failure.",
+  title: "Inaya Network — Sovereign Data Infrastructure",
+  description: "Ahead of its time. A decentralized ecosystem for sovereign data storage, business infrastructure, security intelligence, and AI — client-side encrypted, sharded, and anchored on BNB Chain Testnet.",
   metadataBase: new URL("https://www.inayanetwork.com"),
   openGraph: {
-    title: "Inaya Network",
-    description: "Sovereign, encrypted, decentralized storage — BNB Chain Testnet.",
+    title: "Inaya Network — Ahead of Its Time",
+    description: "Sovereign storage, business infrastructure, decentralized security, and AI — built on BNB Chain Testnet.",
     url: "https://www.inayanetwork.com",
     siteName: "Inaya Network",
     images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
@@ -18,8 +18,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Inaya Network",
-    description: "Sovereign, encrypted, decentralized storage — BNB Chain Testnet.",
+    title: "Inaya Network — Ahead of Its Time",
+    description: "Sovereign storage, business infrastructure, decentralized security, and AI — built on BNB Chain Testnet.",
     images: ["/og-banner.png"],
   },
 };

@@ -32,6 +32,9 @@ export default function NetworkVisualization({ height = 320 }) {
 
     const nodeCount = width < 640 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP;
     const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    const reducedMotion = typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
 
     function resize() {
       width = canvas.clientWidth;
@@ -104,7 +107,10 @@ export default function NetworkVisualization({ height = 320 }) {
         ctx.fill();
       }
 
-      animationFrame = requestAnimationFrame(step);
+      // Reduced-motion visitors get one static frame instead of a
+      // continuous drifting/pulsing loop — still shows the graphic, just
+      // never moves.
+      if (!reducedMotion) animationFrame = requestAnimationFrame(step);
     }
 
     animationFrame = requestAnimationFrame(step);

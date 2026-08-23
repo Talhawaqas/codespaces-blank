@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
 import LearnSection from '../components/learn/LearnSection';
+import NetworkVisualization from '../components/security/NetworkVisualization';
 import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
@@ -2336,6 +2337,15 @@ export default function Home() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [selectedWalletName, setSelectedWalletName] = useState('');
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
+
+  // window.__TAURI__ is undefined during SSR (window doesn't exist yet) —
+  // reading it directly in render caused a client/server hydration mismatch
+  // on every load. Defaulting false and only flipping it after mount keeps
+  // the first client render identical to the server render.
+  const [isTauriApp, setIsTauriApp] = useState(false);
+  useEffect(() => {
+    setIsTauriApp(typeof window !== 'undefined' && !!window.__TAURI__);
+  }, []);
 
   // ========================================================
   // 📊 DAU/WAU ACTIVITY PING — fire-and-forget, never blocks the UI.
@@ -5152,16 +5162,83 @@ export default function Home() {
           {/* VIEWPORT AREA 1: HOME PANEL */}
           {currentPage === 'Network Home' && (
             <div className="max-w-5xl mx-auto space-y-6">
-              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">Sovereign Data Storage Networks</h2>
-              <p className="text-[#94a3b8] text-sm mb-2">Client-side encrypted storage with on-chain attestation — no central server ever holds your data whole.</p>
 
-              {/* Primary CTA — gets retail testers straight into the core upload/encrypt flow instead of leading with enterprise pricing */}
-              <button
-                onClick={() => setCurrentPage('Sovereign Vault')}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-sm px-6 py-3.5 rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.25)] hover:brightness-110 active:scale-95 transition-all mb-6"
-              >
-                🔐 Try the Encrypted Vault — Upload &amp; Decrypt a Test File
-              </button>
+              {/* ============================================================
+                  🚀 HERO — "Ahead of Its Time" brand positioning. Reuses the
+                  existing Sovereign Vault CTA action and the existing
+                  NetworkVisualization canvas (already built for /security) —
+                  no new routes, no new dependency, same dark-navy/cyan/gold
+                  visual system as the rest of the app.
+                 ============================================================ */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-center pb-2">
+                <div>
+                  <span className="inline-block text-[10px] font-mono font-bold tracking-[0.2em] text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+                    INAYA NETWORK
+                  </span>
+
+                  <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-[1.1] mb-4">
+                    Building the Infrastructure of a Sovereign Digital Future.
+                  </h1>
+
+                  <p className="text-xl sm:text-2xl font-extrabold leading-tight mb-4">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2fe] via-[#4facfe] to-[#c9a24d] whitespace-nowrap">Ahead of Its Time.</span>{' '}
+                    <span className="text-white">Built for What Comes Next.</span>
+                  </p>
+
+                  <p className="text-[#94a3b8] text-sm leading-relaxed max-w-xl mb-5">
+                    A decentralized ecosystem for sovereign data storage, business infrastructure, security intelligence, AI, and decentralized participation — built around user-controlled data and verifiable infrastructure.
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    {/* Primary CTA — gets retail testers straight into the core upload/encrypt flow instead of leading with enterprise pricing */}
+                    <button
+                      onClick={() => setCurrentPage('Sovereign Vault')}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-sm px-6 py-3.5 rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.25)] hover:brightness-110 active:scale-95 transition-all"
+                    >
+                      🔐 Try the Encrypted Vault — Upload &amp; Decrypt a Test File
+                    </button>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 whitespace-nowrap">
+                      🧪 BNB Chain Testnet — Live &amp; Testable Today
+                    </span>
+                  </div>
+                </div>
+
+                <div className="hidden lg:block relative overflow-hidden bg-[#050810] border border-white/10 rounded-2xl">
+                  <NetworkVisualization height={320} />
+                </div>
+              </div>
+
+              {/* ============================================================
+                  🌐 ECOSYSTEM CONTEXT — only categories that are actually
+                  live in this codebase today, each linking into its real
+                  existing tab/route (no invented navigation).
+                 ============================================================ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { icon: '🔐', label: 'Sovereign Storage', desc: 'Client-side encryption, sharding, and decentralized custody.', action: () => setCurrentPage('Sovereign Vault') },
+                  { icon: '🏢', label: 'Business Workspace', desc: 'Encrypted business documents, permissions, workflows, and secure sharing.', href: '/business' },
+                  { icon: '🛡️', label: 'Inaya Firewall', desc: 'Decentralized threat intelligence and on-chain security verification.', href: '/security' },
+                  { icon: '🤖', label: 'AI', desc: 'Product-grounded AI assistants for Docs, Security, and Learn.' },
+                  { icon: '🎓', label: 'Inaya Learn', desc: 'Web3, AI, and programming learning with an integrated AI tutor.', action: () => setCurrentPage('Learn') },
+                  { icon: '📱', label: 'Mobile & Desktop', desc: 'Native applications for accessing the Inaya ecosystem.', href: '/download' },
+                  { icon: '🤝', label: 'Network Participation', desc: 'Watcher Pioneer, node staking, and referrals — real participation, real rewards.', action: () => setCurrentPage('Referrals') },
+                ].map((item) => {
+                  const isInteractive = !!(item.action || item.href);
+                  const Tag = isInteractive ? 'button' : 'div';
+                  return (
+                    <Tag
+                      key={item.label}
+                      onClick={item.action || (item.href ? () => window.open(item.href, '_blank', 'noopener,noreferrer') : undefined)}
+                      aria-label={isInteractive ? `${item.label} — ${item.desc}` : undefined}
+                      className={`text-left bg-[#090d16]/80 border border-white/5 rounded-xl p-4 ${isInteractive ? 'hover:border-[#00f2fe]/30 hover:bg-white/[0.02] cursor-pointer' : ''} transition-colors`}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <div className="text-white font-bold text-xs mt-1.5">{item.label}</div>
+                      <p className="text-[#64748b] text-[11px] leading-relaxed mt-1">{item.desc}</p>
+                    </Tag>
+                  );
+                })}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
@@ -5297,7 +5374,7 @@ export default function Home() {
               {/* Desktop app cross-promotion -- hidden when already running
                   inside the desktop app itself (window.__TAURI__), same
                   reasoning as the Business Workspace dashboard's banner. */}
-              {typeof window !== 'undefined' && !window.__TAURI__ && (
+              {!isTauriApp && (
                 <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
