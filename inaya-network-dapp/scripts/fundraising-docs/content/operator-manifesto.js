@@ -157,6 +157,11 @@ export const operatorManifesto = {
           body: "Operators who maintain 95%+ uptime for at least 90 consecutive days on the testnet Watcher Program earn priority access when mainnet node assignments open.",
         },
         {
+          type: "subsection",
+          heading: "New: Contribute to the Security Layer",
+          body: "The same node-daemon you're already running now supports a second, independent way to contribute: inaya-node-daemon report <indicator> submits a signed observation to Inaya's decentralized threat-intelligence network — the same reputation-weighted, on-chain-confirmed system that powers the public Inaya Firewall. It's a separate track from storage commissions, using the identity you've already registered.",
+        },
+        {
           type: "quote",
           text: "Ready to deploy? Install the Inaya Node Daemon and register your wallet to begin.",
         },

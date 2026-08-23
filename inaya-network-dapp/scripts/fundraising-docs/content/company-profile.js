@@ -1,0 +1,121 @@
+// Corporate Profile — editable content. Source of truth for
+// public/documents/inaya-company-profile.pdf. Edit this file, then run
+// `node scripts/fundraising-docs/generate.mjs`. See README.md.
+
+export const companyProfile = {
+  cover: {
+    company: "INAYA NETWORK",
+    classification: "PUBLIC",
+    kicker: "CORPORATE PROFILE",
+    title: "Inaya Network",
+    subtitle: "Re-establishing absolute client-side data sovereignty — Web3 infrastructure and DePIN, built on BNB Chain.",
+    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · August 2026",
+  },
+  docId: "INAYA-PROFILE-2026-V2",
+  sections: [
+    {
+      number: "01",
+      title: "Executive Summary",
+      blocks: [
+        {
+          type: "lead",
+          text: "Inaya Network is a next-generation Decentralized Physical Infrastructure Network (DePIN) built to eliminate the vendor lock-in, data monopolies, and single-point-of-failure risk inherent in legacy centralized cloud storage.",
+        },
+        {
+          type: "columns",
+          items: [
+            { heading: "Industry", body: "Web3 Infrastructure / DePIN" },
+            { heading: "Focus", body: "Cryptographic Data Custody" },
+            { heading: "Chain", body: "BNB Chain Testnet (EVM-native)" },
+          ],
+        },
+      ],
+    },
+    {
+      number: "02",
+      title: "Core Technology",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            { heading: "Client-side encryption.", body: "Every file is encrypted locally (AES-GCM-256, PBKDF2 key derivation) before it ever leaves the device. Plaintext never traverses the network." },
+            { heading: "Binary sharding.", body: "The encrypted file is split into two independent halves, distributed to independent storage nodes — neither half is meaningful alone." },
+            { heading: "On-chain ownership anchoring.", body: "A tamper-evident ownership record — never the file itself — is written to a BNB Chain smart contract, permanent by design." },
+          ],
+        },
+      ],
+    },
+    {
+      number: "03",
+      title: "Product Ecosystem",
+      blocks: [
+        {
+          type: "lead",
+          text: "What began as a storage protocol has grown into a full product ecosystem, spanning consumer, developer, and enterprise surfaces — all on the same underlying infrastructure.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Web dApp — faucet, encrypted vault upload/download, staking, referrals, and a live Corporate Reserve purchase flow.",
+            "Business Workspace — a standalone B2B SaaS product (organizations, departments, projects, documents, workflow, permissions, billing), web and mobile.",
+            "Security Layer (\"Inaya Firewall\") — decentralized, node-reported threat intelligence with on-chain-confirmed verdicts, surfaced publicly, on mobile, and enforced at the OS level on desktop.",
+            "Inaya Learn — an educational video platform with an AI tutor, on web and mobile.",
+            "Investor Data Room — access-controlled document sharing with per-visitor engagement analytics.",
+            "Mobile app — a full superset of the web dApp's features, plus Business Workspace, Learn, and Security.",
+            "Two native desktop apps (Windows + Linux) — one for the Business Workspace, one for the main dApp.",
+            "Developer SDK & CLI — the custody-sdk client library plus a published node-operator daemon.",
+            "Three purpose-built AI assistants (Business, Security, Learn) — Gemini-powered, each with a guardrail philosophy suited to its job.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "04",
+      title: "Leadership",
+      blocks: [
+        {
+          type: "profile",
+          name: "Talha Waqas — Founder & CTO",
+          paragraphs: [
+            "Core system architect and lead full-stack engineer. Deep specialization in browser-layer cryptographic engineering, EVM smart contract design, zero-knowledge storage protocols, and node telemetry systems — driving core codebase development end to end.",
+          ],
+        },
+        {
+          type: "profile",
+          name: "Fibha Urooj — Co-Founder & CMO",
+          paragraphs: [
+            "Leads corporate operations and ecosystem growth. Background in commercial finance and educational program design, applied to translating cryptographic infrastructure into accessible onboarding for mainstream users — manages alpha-tester recruitment, marketing funnels, and cross-regional community programs.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "05",
+      title: "Roadmap",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            { heading: "Phase 01 — Deployment & Audit Proof.", body: "EVM contract deployment across BNB Chain scaling infrastructure, block-range scanning, and third-party security audits ahead of mainnet." },
+            { heading: "Phase 02 — Incentivized Alpha & Sybil Resistance.", body: "Anti-sybil validation for edge-node operators, hardware identity verification, and active transaction-tracking pipelines." },
+            { heading: "Phase 03 — TGE & Cross-Chain Expansion.", body: "Token Generation Event for $INAYA, cross-chain bridge deployment, and global expansion of the storage node network." },
+          ],
+        },
+        {
+          type: "note",
+          text: "[VERIFY] These three phases were the original roadmap framing — worth a fresh pass with the founders to confirm sequencing still matches current priorities, since the application layer (Section 03) has since become a significant, independently-scoped body of work not originally on this roadmap.",
+        },
+      ],
+    },
+    {
+      number: "06",
+      title: "Closing",
+      blocks: [
+        {
+          type: "quote",
+          text: "Absolute Protection, Vigilant Care, and Functional Grace — the guiding principles of a network built to guard what matters most.",
+        },
+      ],
+    },
+  ],
+};

@@ -124,6 +124,14 @@ export const investmentMemorandum = {
             "Open Source Ecosystem — core file management components are publicly verifiable, ensuring trust and community-driven security review.",
             // Approved addition. See fundraising docs SOW §5.
             "Business Workspace — a B2B SaaS layer for companies: organizations, departments, projects, and documents with server-enforced approval workflows, VIEW/EDIT/MANAGE permissions, secure external sharing, full audit history, and a permission-aware AI assistant. Email-based sign-in, no wallet required — available on web and mobile.",
+            // New addition, ecosystem-doc audit pass, August 2026 — factual,
+            // no financial claims, mirrors the same additive pattern as the
+            // Business Workspace line above.
+            "Security Layer (\"Inaya Firewall\") — decentralized, node-reported threat intelligence with reputation-weighted, on-chain-confirmed verdicts. Public web transparency page, mobile protection screen, and real OS-level firewall enforcement on desktop.",
+            "Inaya Learn — an educational video platform with a built-in AI tutor, on web and mobile, built to make the product a daily-use destination beyond storage and staking.",
+            "Investor Data Room — a branded, access-controlled document room for sharing investor materials, with per-visitor engagement tracking.",
+            "Two native desktop apps (Windows + Linux) — thin Tauri wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
+            "Three purpose-built AI assistants — Business, Security, and Learn — sharing one Gemini-powered tool-calling architecture, each with a guardrail philosophy suited to its job.",
           ],
         },
         {

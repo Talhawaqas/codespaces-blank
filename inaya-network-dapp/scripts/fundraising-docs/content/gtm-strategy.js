@@ -45,6 +45,13 @@
 // 11/13/17 exists in this document; the closest analogues (Section 29
 // "Twenty-Four Month Roadmap," Section 30 "Capital Allocation Strategy")
 // are qualitative, not touched, and transcribed verbatim below.
+//
+// LATEST ADDITIVE EDIT (August 2026, ecosystem-doc audit pass) — Section
+// 01's "Current Position" bullet list only mentioned the storage/DePIN
+// product surface as of the prior edit. Added one line naming the product
+// lines shipped since (Security Layer, Inaya Learn, Investor Data Room,
+// desktop apps, AI assistants) — a factual addition, no numbers, no
+// competitive claims, doesn't touch anything PROTECTED or FLAGGED above.
 
 export const gtmStrategy = {
   cover: {
@@ -109,6 +116,7 @@ export const gtmStrategy = {
             "Published npm packages",
             "Open-source developer resources",
             "Enterprise-oriented product architecture",
+            "Beyond storage: a Business Workspace SaaS product, a decentralized Security Layer (\"Inaya Firewall\"), Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and three purpose-built AI assistants — all live on the same infrastructure",
           ],
         },
         {
