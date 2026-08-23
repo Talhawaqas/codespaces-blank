@@ -5,10 +5,18 @@ dotenv.config();
 
 export default {
   solidity: {
-    version: "0.8.20",
-    settings: {
-      optimizer: { enabled: true, runs: 200 }
-    }
+    // Two compilers: 0.8.20 stays pinned for the 9 already-deployed/verified
+    // contracts (do not bump their bytecode). 0.8.24 is added only for the
+    // new governance/ contracts, which need it for OZ v5's ERC20Votes/Governor.
+    // Hardhat picks the matching compiler per file based on its pragma.
+    compilers: [
+      { version: "0.8.20", settings: { optimizer: { enabled: true, runs: 200 } } },
+      // evmVersion "cancun" -- OZ v5's Bytes.sol uses the MCOPY opcode (EIP-5656),
+      // which isn't in the default "paris" target. BSC mainnet/testnet enabled
+      // Cancun-equivalent opcodes at the 2024 Fusaka-aligned hard fork, so this
+      // is deployable there when Phase 2 actually ships.
+      { version: "0.8.24", settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "cancun" } }
+    ]
   },
   networks: {
     bscTestnet: {

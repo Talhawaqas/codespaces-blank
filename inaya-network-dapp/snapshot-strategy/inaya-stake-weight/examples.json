@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Inaya stake-weighted voting example (BSC testnet)",
+    "strategy": {
+      "name": "inaya-stake-weight",
+      "params": {
+        "stakingAddress": "0xc465279444Cb0E10c69D0769CDae31E457eA660f"
+      }
+    },
+    "network": "97",
+    "addresses": [
+      "0x4BA0a7c39154e7B7fA72288D29D7fdaf0248b1F2",
+      "0x9DBb5F70a8bfA3Da470ed6Ac7F6322A5101a5B38",
+      "0x618f429bF27Ef458B60c1211b9ca8b3CD5d9C175"
+    ],
+    "snapshot": 126830503
+  }
+]
