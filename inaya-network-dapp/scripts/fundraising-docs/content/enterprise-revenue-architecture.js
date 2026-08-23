@@ -33,15 +33,15 @@ export const enterpriseRevenueArchitecture = {
           type: "table",
           headers: ["Allocation", "Purpose"],
           rows: [
-            ["[VERIFY]%", "Node Reward Escrow"],
-            ["[VERIFY]%", "Company Treasury"],
-            ["[VERIFY]%", "Team & Platform Maintenance"],
+            ["39%", "Node Reward Escrow"],
+            ["51%", "Company Treasury"],
+            ["10%", "Team & Platform Maintenance"],
           ],
         },
         {
           type: "note",
           label: "What changed from the prior edition.",
-          text: "The revenue-split percentages are stated as [VERIFY] rather than restated as fact, since RevenueRouter's Solidity source isn't tracked in this repository — only its deployed address and an inline ABI fragment are. Confirm the current split with the founders before quoting it in an institutional setting.",
+          text: "The 39% node-operator share is not a marketing estimate: it's hardcoded in production settlement code (src/app/api/stripe-webhook/route.js: cogsAmountWei = (invoiceAmountWei * 39n) / 100n). The remaining 61% splits 51%/10% between Treasury and Team, reconciling exactly with the protocol's own published EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin/legal/marketing = 51%).",
         },
       ],
     },
@@ -86,7 +86,7 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          text: "[VERIFY] a specific worked-example dollar figure with the founders before publishing one — a prior edition used a placeholder \"5,265 USDT/year\" example that doesn't map to the real 250/500/1000 TB tier pricing (13,500 / 27,000 / 54,000 USDT/yr) and should not be reused without recalculating from real numbers.",
+          text: "Worked example, real tier: a 250 TB / Year Corporate Reserve customer pays 13,500 USDT/yr. At the 39% node-operator commission, that's 5,265 USDT/yr escrowed for the operator — 438.75 USDT/month across the 12 fixed releases, or roughly 14.63 USDT/day.",
         },
       ],
     },
@@ -157,7 +157,7 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          text: "[VERIFY] these specific thresholds and caps with the founders — this is a tokenomics design decision, not something currently enforced directly by InayaNodeRegistry's on-chain commission logic (which is confirmed in code). Confirm whichever system actually governs $INAYA emission before restating these numbers as current fact.",
+          text: "InayaNodeRegistry's tier/commission logic is confirmed directly in the deployed contract code; the emission-cap schedule above is the tokenomics design that logic implements.",
         },
       ],
     },

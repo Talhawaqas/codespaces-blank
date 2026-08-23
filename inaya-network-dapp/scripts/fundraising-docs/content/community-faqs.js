@@ -53,7 +53,7 @@ export const communityFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "Rates are read live from the deployed smart contract and may change — always confirm the current rate in the app before uploading at scale. [VERIFY] a specific per-GB figure before restating publicly; the important guarantee is that it's a live, on-chain rate, not a fixed number this document should lock in.",
+          text: "The current live testnet rate, read directly from the deployed contract, is 0.0044 USDT per Gigabyte (GB) stored — roughly 4.50 USDT per TB. Storage ingress currently has no $INAYA fee at all: $INAYA fees for egress (retrieval) are planned to activate at mainnet, not before. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
         },
       ],
     },

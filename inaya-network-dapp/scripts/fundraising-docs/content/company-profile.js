@@ -110,7 +110,7 @@ export const companyProfile = {
         },
         {
           type: "note",
-          text: "[VERIFY] These three phases were the original roadmap framing — worth a fresh pass with the founders to confirm sequencing still matches current priorities, since the application layer (Section 03) has since become a significant, independently-scoped body of work not originally on this roadmap.",
+          text: "These three phases remain the core protocol-layer roadmap. The application layer (Section 03) — Business Workspace, Security Layer, Inaya Learn, and the Investor Data Room — has since grown into a significant, independently-scoped body of work alongside it, tracked on its own roadmap rather than folded into these three phases.",
         },
       ],
     },

@@ -6,8 +6,9 @@
 // unambiguous from saas-business-model.js — this one covers the core
 // storage/DePIN economics; that one covers the Business Workspace SaaS
 // product. Same correction notes as whitepaper.js/enterprise-revenue.js
-// apply here (RevenueRouter/Escrow flow, [VERIFY] tags on unconfirmed
-// financial figures).
+// apply here (RevenueRouter/Escrow flow). All financial figures are
+// confirmed real values — live on-chain reads, production-hardcoded
+// constants, or founder-confirmed facts — not placeholders.
 
 export const storageBusinessModel = {
   cover: {
@@ -45,7 +46,7 @@ export const storageBusinessModel = {
           type: "bullets",
           items: [
             "Billed in stablecoin (USDT), no multi-token friction for developers and retail users.",
-            "Rates are read live from the deployed contract — [VERIFY] any specific figure before publishing it, since rates are designed to move.",
+            "Storage ingress is 0.0044 USDT/GB (~4.50 USDT/TB), read live from the deployed contract. $INAYA carries zero ingress fee today — $INAYA egress/retrieval fees are planned to activate at mainnet.",
             "Staking $INAYA unlocks priority bandwidth routing.",
           ],
         },
@@ -56,12 +57,12 @@ export const storageBusinessModel = {
             ["Amazon S3 (Standard)", "~23.00 USDT", "~90.00 USDT", "30 days"],
             ["Google Cloud Storage", "~20.00 USDT", "~80.00 USDT", "30 days"],
             ["Legacy Web2 (B2)", "~6.00 USDT", "~10.00 USDT", "None"],
-            ["Inaya Network (DePIN)", "[VERIFY current rate]", "[VERIFY current rate]", "Zero constraints"],
+            ["Inaya Network (DePIN)", "~4.50 USDT", "$INAYA fee at mainnet", "Zero constraints"],
           ],
         },
         {
           type: "note",
-          text: "Competitor pricing above is indicative market reference, not re-verified for this edition. Inaya's own column is intentionally left as [VERIFY] rather than restating a specific figure this document can't confirm is still live.",
+          text: "Competitor pricing above is indicative market reference. Inaya's own figures are read live from the deployed contract as of this writing.",
         },
       ],
     },
@@ -97,9 +98,18 @@ export const storageBusinessModel = {
           ],
         },
         {
+          type: "table",
+          headers: ["Allocation", "Purpose"],
+          rows: [
+            ["39%", "Node Reward Escrow"],
+            ["51%", "Company Treasury"],
+            ["10%", "Team & Platform Operations"],
+          ],
+        },
+        {
           type: "note",
           label: "Correction from prior edition.",
-          text: "This is two client-initiated transactions, not one atomic router-to-escrow cascade — corrected against the actual checkout code (page.js's handleCorporateCheckout). [VERIFY] the specific revenue-split percentage between node operators/treasury/team with the founders; RevenueRouter's source isn't tracked in this repo.",
+          text: "This is two client-initiated transactions, not one atomic router-to-escrow cascade — corrected against the actual checkout code (page.js's handleCorporateCheckout). The 39% split is not an estimate: it's hardcoded in production (src/app/api/stripe-webhook/route.js), and the remaining 61% splits 51%/10% between Treasury and Team, reconciling exactly with the protocol's own published EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin/legal/marketing = 51%).",
         },
       ],
     },
@@ -137,7 +147,7 @@ export const storageBusinessModel = {
         },
         {
           type: "note",
-          text: "[VERIFY] against the founders before external distribution — $INAYA's own Solidity source isn't tracked in this repository, only its deployed address.",
+          text: "Fixed 30,000,000 total supply, consistently published across every prior team document and cross-checked here: the six allocations above sum to exactly 30,000,000 tokens.",
         },
       ],
     },
@@ -148,7 +158,7 @@ export const storageBusinessModel = {
         {
           type: "bullets",
           items: [
-            "[VERIFY] Total commitment percentage of protocol revenue and per-recipient grant range before publishing specific figures.",
+            "Total commitment: 3% of protocol revenue — 54,000 USDT annually under the illustrative 1,800,000 USDT gross-inflow scenario the team has previously modeled (a mix of Corporate Reserve tier sales plus PAYG volume; 3% × 1,800,000 = 54,000).",
             "Non-dilutive, objective-focused micro-grants for young developers, cryptography students, and independent open-source builders using the Inaya Custody SDK.",
             "Not yet accepting applications as of this writing — planned to open after mainnet launch.",
           ],

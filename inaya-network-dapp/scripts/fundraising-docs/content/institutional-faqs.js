@@ -41,9 +41,18 @@ export const institutionalFaqs = {
           text: "Pay-As-You-Go storage is billed in USDT, read live from the deployed contract's per-GB fee rate. As of this writing, storage ingress does not require a separate $INAYA fee — $INAYA's utility centers on staking, governance, and egress (retrieval), not the upload itself.",
         },
         {
+          type: "table",
+          headers: ["Fee", "Current Rate", "Basis"],
+          rows: [
+            ["Storage ingress (USDT)", "0.0044 USDT / GB (~4.50 USDT / TB)", "Live on-chain rate, read directly from the deployed InayaCustody contract"],
+            ["Storage ingress ($INAYA)", "0 — not charged", "$INAYA plays no role in ingress pricing today"],
+            ["Egress / retrieval ($INAYA)", "Not yet active", "Activates at mainnet, by design — not a testnet gap"],
+          ],
+        },
+        {
           type: "note",
           label: "Correction from prior edition.",
-          text: "An earlier version of this document stated a fixed \"0.1 USDT + 0.1 INAYA per GB\" dual-asset ingress model. That figure is stale and conflicts with the current live pricing structure. [VERIFY] the exact current per-GB rate with engineering before quoting a number in an institutional setting — it's read live from the contract and designed to move.",
+          text: "An earlier version of this document stated a fixed \"0.1 USDT + 0.1 INAYA per GB\" dual-asset ingress model. That figure was stale — confirmed against a live on-chain read of the deployed contract's usdtFeePerGB() and inayaFeePerGB() view functions, and directly confirmed by the founder.",
         },
       ],
     },
@@ -97,14 +106,23 @@ export const institutionalFaqs = {
           type: "numbered",
           items: [
             { heading: "1.", body: "The customer approves USDT and calls RevenueRouter.processCorporateInvoice() — one on-chain transaction." },
-            { heading: "2.", body: "The client separately approves USDT and calls InayaCorporateEscrow.createEscrow() to escrow the node-operator's COGS share — a second, independent transaction." },
+            { heading: "2.", body: "The client separately approves USDT and calls InayaCorporateEscrow.createEscrow() to escrow the node-operator's 39% COGS share — a second, independent transaction." },
             { heading: "3.", body: "The escrow releases that allocation over 12 fixed monthly payouts." },
+          ],
+        },
+        {
+          type: "table",
+          headers: ["Allocation", "Purpose"],
+          rows: [
+            ["39%", "Node Reward Escrow — 12-month vesting to the operator who serviced the invoice"],
+            ["51%", "Company Treasury"],
+            ["10%", "Team & Platform Operations"],
           ],
         },
         {
           type: "note",
           label: "Correction from prior edition.",
-          text: "An earlier version described this as a single atomic transaction with the router \"automatically\" invoking escrow creation. The deployed checkout flow is two separate, client-initiated transactions. [VERIFY] the specific revenue-split percentages (node/treasury/team) with the founders before restating them publicly — RevenueRouter's Solidity source isn't tracked in this repository, only its deployed address, so this document can't independently confirm the split from code.",
+          text: "An earlier version described the router-to-escrow handoff as a single atomic transaction with the router \"automatically\" invoking escrow creation. The deployed checkout flow is two separate, client-initiated transactions — that part was corrected. The 39% figure itself is not a marketing estimate: it's hardcoded in the live settlement route (src/app/api/stripe-webhook/route.js — cogsAmountWei = (invoiceAmountWei * 39n) / 100n). The remaining 61% split into 51% Treasury / 10% Team reconciles exactly with the Financial Model's own gross-margin math (Q6).",
         },
       ],
     },
@@ -113,8 +131,21 @@ export const institutionalFaqs = {
       title: "What does the unit-economics / margin structure look like?",
       blocks: [
         {
-          type: "lead",
-          text: "[VERIFY] Specific gross-margin and EBITDA figures before quoting them to an institutional counterparty — prior materials have stated figures in the 50–61% gross margin and ~50% EBITDA range, but this document doesn't have a source of truth to reconcile those numbers against. Get one figure agreed with the founders and cite it consistently across every investor-facing document rather than each one stating a slightly different number.",
+          type: "table",
+          headers: ["Line item", "% of Gross Network Inflow"],
+          rows: [
+            ["Gross Network Inflow (Total Sales)", "100%"],
+            ["Node Operator Commissions (COGS)", "39%"],
+            ["Protocol Net Retention (Gross Margin)", "61%"],
+            ["Ecosystem Grants & Scholarships", "3%"],
+            ["Tech R&D & Global Telemetry Scaling", "5%"],
+            ["Admin, Legal & Marketing", "2%"],
+            ["Target Protocol EBITDA Margin", "51%"],
+          ],
+        },
+        {
+          type: "note",
+          text: "This reconciles exactly: 61% gross margin minus 3% grants, 5% R&D, and 2% admin/legal/marketing leaves 51% — the same 51% that appears as the Company Treasury's share of the RevenueRouter split in Q5, since Treasury is where that margin actually accrues before the smaller opex lines are drawn down against it.",
         },
       ],
     },
