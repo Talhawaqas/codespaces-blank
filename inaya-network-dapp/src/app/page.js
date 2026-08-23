@@ -2742,6 +2742,15 @@ export default function Home() {
         { text: "Desktop app (Business Workspace) — Native desktop notifications for pending approvals", done: true },
         { text: "Desktop app (Business Workspace) — Google Sign-In & magic-link sign-in support", done: true },
         { text: "Combined Windows/Linux download hub for both desktop apps", done: true },
+        // Added August 2026, ecosystem-doc audit pass — these had shipped
+        // but were never reflected in this roadmap.
+        { text: "Inaya Learn — educational video platform with AI tutor (web + mobile)", done: true },
+        { text: "Investor Data Room — access-controlled document sharing with per-visitor engagement tracking", done: true },
+        { text: "Watcher Pioneer program", done: true },
+        { text: "Referrals system (email + KYC verified, no wallet required)", done: true },
+        { text: "DAU/WAU active-user analytics across dApp, Business Workspace, and mobile", done: true },
+        { text: "AI Business Assistant — permission-aware, web + mobile", done: true },
+        { text: "AI Learn Tutor — grounded in the user's own saved videos/progress", done: true },
       ],
     },
     {
@@ -2754,14 +2763,27 @@ export default function Home() {
         { text: "Staking launch", done: true }, // Effectively live — not from this session's work specifically: real stake/unstake/claim verified working against the corrected InayaStaking contract ABI from the earlier mobile UI session
         { text: "Explorer launch", done: false },
         { text: "Governance framework", done: false },
-        { text: "Enterprise dashboard", done: false },
         { text: "Production infrastructure", done: false },
         { text: "Storage analytics", done: true }, // Verified against a real anchored file — exact byte match, honest null handling when a file's size is unknown rather than a fabricated total
         { text: "File statistics", done: true }, // Per-wallet file counts, reconciled file-by-file against on-chain state rather than trusting the off-chain list blindly
-        { text: "Team workspaces", done: false },
-        { text: "Organization management", done: false },
-        { text: "Multi-user permissions", done: false },
+        { text: "Team workspaces", done: true }, // Business Workspace — org/department/project/document hierarchy, shipped
+        { text: "Organization management", done: true }, // Business Workspace — role-based org membership, magic-link + Google sign-in
+        { text: "Multi-user permissions", done: true }, // Business Workspace — VIEW/EDIT/MANAGE, per-document grants, expiring share links
+        { text: "Enterprise dashboard", done: true }, // /admin Enterprise Dashboard — revenue, usage, DAU/WAU, feedback
         { text: "Shared storage", done: true }, // Real E2E test — two real wallets, a real file, a real on-chain anchor, correct decrypt/reject/revoke behavior all confirmed, not mocked
+        // Added August 2026, ecosystem-doc audit pass — Security Layer
+        // ("Inaya Firewall"), a genuinely new infrastructure surface built
+        // this cycle, belongs here alongside the rest of mainnet-readiness
+        // work rather than in Phase 2.
+        { text: "Security Layer — 4 smart contracts deployed & verified on BSC Testnet", done: true },
+        { text: "Security Layer — decentralized threat reporting, reputation-weighted confirmation", done: true },
+        { text: "Security AI Assistant — public web, mobile", done: true },
+        { text: "Public Security transparency page (\"Inaya Firewall\")", done: true },
+        { text: "Mobile Security screen — protection mode, destination checker, allow/blocklist", done: true },
+        // Written and code-reviewed, not yet run against a real machine —
+        // same honesty standard as every other unverified claim in this
+        // roadmap (see e.g. "Protocol stress testing"'s comment above).
+        { text: "Desktop OS-level firewall enforcement (Windows/Linux) — built, not yet verified on real hardware", done: false },
       ],
     },
     {
@@ -6446,6 +6468,9 @@ export default function Home() {
                     <p className="text-slate-500 mt-1">State variables are locked into EVM registers on the BNB Chain, maintaining bulletproof transactional lineage tracking.</p>
                   </div>
                 </div>
+                <p className="text-sm text-[#94a3b8] font-mono leading-relaxed pt-2 border-t border-white/5">
+                  What started as a storage protocol has grown into a full ecosystem on the same infrastructure: the <span className="text-white">Business Workspace</span> (encrypted document management &amp; workflow for companies), a decentralized <span className="text-white">Security Layer</span> (&quot;Inaya Firewall&quot; — node-reported, reputation-weighted, on-chain-confirmed threat intelligence), <span className="text-white">Inaya Learn</span> (an AI-tutored educational platform), an <span className="text-white">Investor Data Room</span>, native <span className="text-white">desktop apps</span> for Windows &amp; Linux, and three purpose-built <span className="text-white">AI assistants</span> — all live today, all built on the same zero-knowledge foundation.
+                </p>
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">

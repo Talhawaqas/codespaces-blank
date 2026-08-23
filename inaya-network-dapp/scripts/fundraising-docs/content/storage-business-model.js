@@ -180,8 +180,13 @@ export const storageBusinessModel = {
         },
         {
           type: "profile",
-          name: "Fibha Urooj — Co-Founder & CMO",
-          paragraphs: ["Drives commercial operations, enterprise B2B partner acquisition, and ecosystem growth."],
+          name: "Yakub Adnan — Co-Founder & Growth Lead",
+          paragraphs: ["Drives growth architecture, community operations, and campaign distribution across the ecosystem."],
+        },
+        {
+          type: "profile",
+          name: "Fibha Urooj — CFO",
+          paragraphs: ["Leads financial planning, budgeting, compliance, and operational finance."],
         },
       ],
     },

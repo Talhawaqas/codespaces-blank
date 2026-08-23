@@ -32,13 +32,16 @@
 // The Table of Contents and Part II divider section-list reflect the new
 // numbering.
 //
-// FLAGGED, NOT FIXED — needs a founder decision, out of scope for this
-// pass: Section 31 "Hiring Strategy" (old Section 30) states current
-// leadership as "Founder & CEO/CTO, Co-Founder & CFO." This contradicts
-// the solo-founder-with-AI narrative established everywhere else in this
-// document set (Investment Memorandum Section 16, Executive Summary) and
-// wasn't part of the four approved edits — transcribed verbatim below,
-// unedited, pending explicit direction.
+// RESOLVED (August 2026, ecosystem-doc audit pass) — Section 31's team
+// description previously read "Founder & CEO/CTO, Co-Founder & CFO"
+// without naming anyone, flagged at the time as contradicting the
+// solo-founder narrative elsewhere in this document set. The founder has
+// since confirmed the actual current team directly: Talha Waqas (Founder &
+// CTO), Yakub Adnan (Co-Founder & Growth Lead), Fibha Urooj (CFO) — the
+// same roster already live on the website's About Us page. Updated below
+// and propagated to Investment Memorandum Section 16 / Executive Summary's
+// Team section in the same pass, so the narrative is now consistent
+// everywhere rather than merely no-longer-contradictory.
 //
 // PROTECTED — no numeric financial-projection table or explicit
 // mainnet-readiness claim equivalent to Investment Memorandum Sections
@@ -1350,13 +1353,10 @@ export const gtmStrategy = {
           items: ["Accelerate product development", "Improve developer experience", "Increase enterprise adoption", "Expand ecosystem partnerships", "Strengthen operational excellence"],
         },
         {
-          // FLAGGED, NOT EDITED — see module header comment. Transcribed
-          // verbatim from the original document; contradicts the
-          // solo-founder narrative established elsewhere and was not part
-          // of the four approved edits.
+          // RESOLVED — see module header comment.
           type: "subsection",
           heading: "Phase One Team (Current)",
-          body: "Current leadership consists of: Founder & CEO/CTO, Co-Founder & CFO. During the early stage, founders continue performing multiple responsibilities across product, engineering, business development, marketing, community, and investor relations — a founder-led approach that maximizes capital efficiency while ensuring rapid decision-making.",
+          body: "Current leadership: Talha Waqas (Founder & CTO), Yakub Adnan (Co-Founder & Growth Lead), and Fibha Urooj (CFO). During the early stage, the founding team continues performing multiple responsibilities across product, engineering, business development, marketing, community, and investor relations — a founder-led approach that maximizes capital efficiency while ensuring rapid decision-making, with AI-assisted development remaining a core part of the technical execution model.",
         },
         {
           type: "subsection",

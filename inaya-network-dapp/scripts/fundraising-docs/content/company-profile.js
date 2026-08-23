@@ -82,9 +82,16 @@ export const companyProfile = {
         },
         {
           type: "profile",
-          name: "Fibha Urooj — Co-Founder & CMO",
+          name: "Yakub Adnan — Co-Founder & Growth Lead",
           paragraphs: [
-            "Leads corporate operations and ecosystem growth. Background in commercial finance and educational program design, applied to translating cryptographic infrastructure into accessible onboarding for mainstream users — manages alpha-tester recruitment, marketing funnels, and cross-regional community programs.",
+            "Web3 growth operator and community strategist. Specializes in DePIN, user acquisition, and AI-driven ecosystem scaling — leads growth architecture, community operations, and campaign distribution, bridging complex protocol features with on-chain adoption.",
+          ],
+        },
+        {
+          type: "profile",
+          name: "Fibha Urooj — CFO",
+          paragraphs: [
+            "B.Com in Accounting & Finance. Leads financial planning, budgeting, compliance, and operational finance — building the financial foundation supporting Inaya Network's long-term growth.",
           ],
         },
       ],

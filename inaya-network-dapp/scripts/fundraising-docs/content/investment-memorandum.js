@@ -365,9 +365,27 @@ export const investmentMemorandum = {
           name: "Talha Waqas — Founder & CTO",
           paragraphs: [
             "Talha brings deep technical leadership to Inaya, with core expertise architecting secure cryptocurrency wallet operations, orchestrating complex blockchain testnets, and designing robust tokenomic models. A strong track record resolving intricate codebase issues, managing secure server configurations, and streamlining modern web deployments via GitHub and Vercel gives him the blend of Web2 infrastructure knowledge and Web3 protocol design Inaya's roadmap requires.",
-            // REQUIRED CORRECTION (fundraising docs SOW §3) — replaces the
-            // previous, inaccurate "wider engineering team" sentence.
-            "Inaya is founder-led, with AI-assisted development as a core part of the execution model — not a supplementary tool, but the mechanism that let one technical founder ship a full product surface (web dApp, mobile app, SDK ecosystem, and now a complete B2B Business Workspace) in under two months. This velocity is a genuine, current differentiator, and expanding the human team is an explicit, funded use of Seed proceeds — not a gap being obscured.",
+            // Updated (August 2026, ecosystem-doc audit pass) — the prior
+            // edition described Talha as the sole founder shipping
+            // everything alone; the team has since grown to three. AI-
+            // assisted development remains real and load-bearing to the
+            // velocity described below, it's just no longer attributed to
+            // one person working solo.
+            "AI-assisted development remains a core part of Inaya's execution model — not a supplementary tool, but a genuine mechanism behind shipping a full product surface (web dApp, mobile app, SDK ecosystem, a complete B2B Business Workspace, a decentralized Security Layer, and more) at this pace with a small founding team. This velocity is a genuine, current differentiator, and expanding the broader team is an explicit, funded use of Seed proceeds.",
+          ],
+        },
+        {
+          type: "profile",
+          name: "Yakub Adnan — Co-Founder & Growth Lead",
+          paragraphs: [
+            "Web3 growth operator and community strategist specializing in DePIN, user acquisition, and AI-driven ecosystem scaling. Leads growth architecture, community operations, and campaign distribution — bridging complex protocol features with on-chain adoption.",
+          ],
+        },
+        {
+          type: "profile",
+          name: "Fibha Urooj — CFO",
+          paragraphs: [
+            "B.Com in Accounting & Finance. Leads financial planning, budgeting, compliance, and operational finance — building the financial foundation supporting Inaya Network's long-term growth.",
           ],
         },
       ],

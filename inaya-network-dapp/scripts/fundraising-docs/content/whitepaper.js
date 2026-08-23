@@ -249,8 +249,13 @@ export const whitepaper = {
         },
         {
           type: "profile",
-          name: "Fibha Urooj — Co-Founder & CMO",
-          paragraphs: ["Leads commercial operations, enterprise partnerships, and ecosystem growth — translating the protocol's cryptographic depth into a mass-market onboarding experience."],
+          name: "Yakub Adnan — Co-Founder & Growth Lead",
+          paragraphs: ["Web3 growth operator and community strategist specializing in DePIN, user acquisition, and AI-driven ecosystem scaling. Leads growth architecture, community operations, and campaign distribution."],
+        },
+        {
+          type: "profile",
+          name: "Fibha Urooj — CFO",
+          paragraphs: ["Leads financial planning, budgeting, compliance, and operational finance — building the financial foundation supporting Inaya Network's long-term growth."],
         },
       ],
     },

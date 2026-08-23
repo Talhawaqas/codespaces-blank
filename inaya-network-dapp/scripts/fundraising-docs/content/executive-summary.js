@@ -50,7 +50,7 @@ export const executiveSummary = {
       },
       {
         heading: "Team",
-        body: "Founder-led with AI-assisted development. Extremely high execution velocity — a full product surface and developer platform shipped in under two months. Expanding the team is a core use of proceeds.",
+        body: "Talha Waqas (Founder & CTO), Yakub Adnan (Co-Founder & Growth Lead), Fibha Urooj (CFO). Founder-led with AI-assisted development driving extremely high execution velocity — a full product surface and developer platform shipped in under two months. Expanding the broader team is a core use of proceeds.",
       },
       {
         heading: "Fundraising Objective",
