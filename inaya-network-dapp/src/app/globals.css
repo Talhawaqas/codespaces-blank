@@ -21,3 +21,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* WebKitGTK (the engine behind the Linux desktop apps — Business Workspace
+   and the dApp desktop app both run on it via Tauri) renders <select> using
+   the native GTK widget instead of CSS by default, including a GTK-theme
+   focus ring (orange/amber on most themes) that our Tailwind border/shadow
+   classes can't touch. appearance:none hands rendering to CSS instead, so
+   it draws like every other browser — this also needs a hand-rolled arrow
+   since the native one goes away with it. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Cpath d='M6 8l4 4 4-4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 0.7rem;
+  padding-right: 1.75rem !important;
+}
+
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.4);
+}
