@@ -19,6 +19,7 @@ export default function sitemap() {
     { path: "/whitepaper", priority: 0.8, changeFrequency: "monthly" },
     { path: "/faq", priority: 0.7, changeFrequency: "monthly" },
     { path: "/security", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/stats", priority: 0.6, changeFrequency: "daily" },
     { path: "/business", priority: 0.7, changeFrequency: "monthly" },
     { path: "/business/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/business/roadmap", priority: 0.6, changeFrequency: "monthly" },

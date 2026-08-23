@@ -2068,6 +2068,66 @@ export default function Home() {
     };
   }, [isUpdatesDrawerOpen]);
 
+  // ========================================================
+  // 🔔 NOTIFICATION CENTER — merges two sources:
+  //  1. Server-computed referral/KYC events (email-identified, fetched
+  //     from /api/notifications) — the referral program has no wallet
+  //     identity, so this is the only source that can see it.
+  //  2. Client-computed wallet events (staking unlock ready, Genesis
+  //     Airdrop cap reached) — derived from state this component
+  //     already fetches on-chain; no need for a server round-trip or a
+  //     duplicate on-chain read.
+  // "Unread" is a plain localStorage timestamp comparison, not a
+  // server-tracked read-state — avoids needing a stored notification
+  // log at all. Same ACTIVATED_EMAIL_KEY string as ReferralSection.js
+  // (must stay in sync — that's the one place a referrer's email gets
+  // persisted after activation).
+  // ========================================================
+  const [serverNotifications, setServerNotifications] = useState([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationsLastSeen, setNotificationsLastSeen] = useState(0);
+
+  useEffect(() => {
+    try {
+      setNotificationsLastSeen(Number(localStorage.getItem('inaya_notifications_last_seen') || 0));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let activatedEmail = '';
+      try { activatedEmail = localStorage.getItem('inaya_referral_activated_email') || ''; } catch {}
+      if (!activatedEmail) return;
+      try {
+        const res = await fetch(`/api/notifications?email=${encodeURIComponent(activatedEmail)}`);
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.notifications)) setServerNotifications(data.notifications);
+      } catch {
+        // Fire-and-forget — a failed notifications fetch should never block the rest of the app.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isConnected]);
+
+  // clientNotifications/allNotifications/unreadNotificationsCount are
+  // computed further down, right after vaultHistory and the
+  // UPLOAD_REWARD_* constants are declared (this block runs during the
+  // same render pass, so it can't reference them before that point —
+  // see the notification-center note near vaultHistory's declaration).
+
+  function openNotificationsPanel() {
+    setIsNotificationsOpen((open) => {
+      const next = !open;
+      if (next) {
+        const now = Date.now();
+        setNotificationsLastSeen(now);
+        try { localStorage.setItem('inaya_notifications_last_seen', String(now)); } catch {}
+      }
+      return next;
+    });
+  }
+
   // Same enum values as src/lib/feedback.js — duplicated here (not
   // imported) because that file also imports mongodb.js, which can't be
   // bundled into client-side JS.
@@ -2443,6 +2503,43 @@ export default function Home() {
   // 6. ON-CHAIN EVM EVENT HISTORY REGISTERS
   // ========================================================
   const [vaultHistory, setVaultHistory] = useState([]);
+
+  // Notification center's client-computed events -- see the state/effect
+  // block near isUpdatesDrawerOpen for why this lives here: it needs
+  // stakingOverview, vaultHistory, and UPLOAD_REWARD_* to already exist
+  // in this render pass, and const declarations aren't hoisted.
+  const clientNotifications = (() => {
+    const items = [];
+    if (isConnected) {
+      const stakedAmount = parseFloat(stakingOverview.myStakedBalance || '0');
+      if (stakedAmount > 0 && stakingOverview.lockExpiryTimestamp > 0 && stakingOverview.lockExpiryTimestamp <= Date.now()) {
+        items.push({
+          id: 'staking-unlock-ready',
+          icon: '🥩',
+          title: 'Your stake is ready to unlock',
+          body: `${stakingOverview.myStakedBalance} $INAYA can be unstaked now.`,
+          occurredAt: new Date(stakingOverview.lockExpiryTimestamp).toISOString(),
+        });
+      }
+      const uploadReward = Math.min((vaultHistory?.length || 0) * UPLOAD_REWARD_PER_FILE, UPLOAD_REWARD_CAP_PER_USER);
+      if (uploadReward >= UPLOAD_REWARD_CAP_PER_USER) {
+        items.push({
+          id: 'airdrop-cap-reached',
+          icon: '🎁',
+          title: 'Genesis Airdrop upload cap reached',
+          body: `You've earned the full ${UPLOAD_REWARD_CAP_PER_USER} $INAYA available from uploads.`,
+          occurredAt: new Date().toISOString(),
+        });
+      }
+    }
+    return items;
+  })();
+
+  const allNotifications = [...serverNotifications, ...clientNotifications].sort(
+    (a, b) => new Date(b.occurredAt) - new Date(a.occurredAt)
+  );
+  const unreadNotificationsCount = allNotifications.filter((n) => new Date(n.occurredAt).getTime() > notificationsLastSeen).length;
+
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [faucetLog, setFaucetLog] = useState('');
   const [isFauceting, setIsFauceting] = useState(false);
@@ -4687,6 +4784,50 @@ export default function Home() {
             <span className="text-[10px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* 🔔 NOTIFICATION CENTER — see the state block near
+                isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
+                are computed. */}
+            <div className="relative">
+              <button
+                onClick={openNotificationsPanel}
+                aria-label="Notifications"
+                title="Notifications"
+                className="relative flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+              >
+                🔔
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-[#f87171] to-[#ef4444] text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+              {isNotificationsOpen && (
+                <>
+                  <div className="fixed inset-0 z-[80]" onClick={() => setIsNotificationsOpen(false)} />
+                  <div className="absolute right-0 top-11 w-80 max-h-96 overflow-y-auto bg-[#0a0f1e] border border-white/10 rounded-2xl shadow-2xl z-[90] p-2">
+                    <div className="px-3 py-2 text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest">Notifications</div>
+                    {allNotifications.length === 0 ? (
+                      <div className="px-3 py-6 text-center text-xs text-[#64748b] italic">
+                        {isConnected ? "You're all caught up." : 'Connect your wallet to see activity.'}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {allNotifications.map((n) => (
+                          <div key={n.id} className="flex items-start gap-2.5 p-3 rounded-xl hover:bg-white/5 transition-colors">
+                            <span className="text-lg shrink-0">{n.icon}</span>
+                            <div className="min-w-0">
+                              <div className="text-white text-xs font-bold">{n.title}</div>
+                              <div className="text-[#94a3b8] text-[11px] mt-0.5">{n.body}</div>
+                              <div className="text-[#64748b] text-[9px] font-mono mt-1">{new Date(n.occurredAt).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={() => setIsUpdatesDrawerOpen(true)}
               aria-label="Open updates and knowledge base"
@@ -4761,6 +4902,9 @@ export default function Home() {
               </a>
               <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
                 FAQ ↗
+              </a>
+              <a href="/stats" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Network Stats ↗
               </a>
             </div>
           </div>
