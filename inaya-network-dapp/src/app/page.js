@@ -4750,6 +4750,18 @@ export default function Home() {
               <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
                 Security Layer ↗
               </a>
+              {/* Real, crawlable, server-rendered pages -- SEO's answer to
+                  the fact that the tabs above are JS state on "/", not
+                  indexable URLs. Same content, shareable link. */}
+              <a href="/about" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                About ↗
+              </a>
+              <a href="/whitepaper" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Whitepaper ↗
+              </a>
+              <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                FAQ ↗
+              </a>
             </div>
           </div>
         </nav>
@@ -5397,7 +5409,9 @@ export default function Home() {
               )}
 
               {/* Product overview video — embedded from YouTube (adaptive quality per
-                  visitor's connection, no repo bloat, feeds the existing channel). */}
+                  visitor's connection, no repo bloat, feeds the existing channel).
+                  VideoObject structured data lets this show up as a video result
+                  in search, separate from the page's own ranking. */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 sm:p-6 space-y-3">
                 <h3 className="text-sm font-bold text-white">▶ Watch: 2-Minute Product Overview</h3>
                 <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-white/10 bg-black">
@@ -5410,6 +5424,20 @@ export default function Home() {
                     allowFullScreen
                   />
                 </div>
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                      "@context": "https://schema.org",
+                      "@type": "VideoObject",
+                      name: "Inaya Network — 2-Minute Product Overview",
+                      description: "A short walkthrough of Inaya Network's sovereign data storage, client-side encryption, and decentralized custody architecture.",
+                      thumbnailUrl: "https://img.youtube.com/vi/i4P4YfiWpow/maxresdefault.jpg",
+                      uploadDate: "2026-01-01",
+                      embedUrl: "https://www.youtube.com/embed/i4P4YfiWpow",
+                    }),
+                  }}
+                />
               </div>
             </div>
           )}
@@ -6870,6 +6898,15 @@ export default function Home() {
 
               <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
                 <p>All addresses above route to the Inaya Network team. For time-sensitive support requests, use <span className="text-[#00f2fe] font-bold">support@inayanetwork.com</span> — for institutional or enterprise discussions, use <span className="text-[#00f2fe] font-bold">partners@inayanetwork.com</span> or <span className="text-[#00f2fe] font-bold">investors@inayanetwork.com</span>.</p>
+              </div>
+
+              {/* LEGAL */}
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-mono text-[#64748b] pt-2">
+                <a href="/privacy" className="hover:text-[#00f2fe] transition-colors">Privacy Policy</a>
+                <span className="text-white/10">·</span>
+                <a href="/terms" className="hover:text-[#00f2fe] transition-colors">Terms of Service</a>
+                <span className="text-white/10">·</span>
+                <a href="/.well-known/security.txt" className="hover:text-[#00f2fe] transition-colors">security.txt</a>
               </div>
             </div>
           )}

@@ -1,0 +1,6 @@
+Contact: mailto:contact@inayanetwork.com
+Contact: https://www.inayanetwork.com/security
+Expires: 2027-08-23T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://www.inayanetwork.com/.well-known/security.txt
+Policy: https://www.inayanetwork.com/security
