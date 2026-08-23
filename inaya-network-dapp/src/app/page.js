@@ -4666,42 +4666,84 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       
-      {/* GLOBAL TOP HEADER DISPLAY LAYER */}
-      <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/80 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
-          <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
-          <span className="text-[10px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsUpdatesDrawerOpen(true)}
-            aria-label="Open updates and knowledge base"
-            className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
-          >
-            📣 Knowledge Base
-          </button>
-          <button
-            onClick={() => openFeedbackModal('bug')}
-            aria-label="Report a bug"
-            title="Report a bug"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
-          >
-            🐛 Report Bug
-          </button>
-          <button
-            onClick={() => openFeedbackModal('idea')}
-            aria-label="Suggest an idea"
-            title="Suggest an idea"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
-          >
-            💡 Suggest Idea
-          </button>
-          <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
-            {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
-          </button>
-        </div>
-      </header>
+      {/* GLOBAL TOP HEADER + PRIMARY NAV — pinned together as a single sticky
+          unit at the extreme top of the viewport, always visible, never
+          buried below the sidebar/content like the old in-page nav was. */}
+      <div className="sticky top-0 z-50">
+        <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
+            <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
+            <span className="text-[10px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsUpdatesDrawerOpen(true)}
+              aria-label="Open updates and knowledge base"
+              className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
+            >
+              📣 Knowledge Base
+            </button>
+            <button
+              onClick={() => openFeedbackModal('bug')}
+              aria-label="Report a bug"
+              title="Report a bug"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+            >
+              🐛 Report Bug
+            </button>
+            <button
+              onClick={() => openFeedbackModal('idea')}
+              aria-label="Suggest an idea"
+              title="Suggest an idea"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+            >
+              💡 Suggest Idea
+            </button>
+            <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
+              {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
+            </button>
+          </div>
+        </header>
+
+        {/* PRIMARY MENU — moved up from inside the main content column so it
+            reads as the site's actual top menu, directly under the logo bar,
+            not something you scroll past the sidebar to find. */}
+        <nav className="bg-[#0a0f1e]/95 border-b border-white/5 backdrop-blur-xl px-4 md:px-10 py-3">
+          <div className="max-w-6xl mx-auto space-y-2.5">
+            {/* Row 1: things you do inside the wallet dApp itself */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn'].map((tab) => (
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+              ))}
+            </div>
+
+            <div className="border-t border-white/5" />
+
+            {/* Row 2: informational pages + the separate Business suite links */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {['Business Model', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+              ))}
+              {/* /business is a genuinely separate Next.js route (its own email+
+                  magic-link auth, no wallet) — a real link, not a setCurrentPage
+                  tab like everything else in this nav. Opens in a new tab
+                  (target="_blank") so switching into the Business Workspace
+                  never navigates away from the wallet dApp — both stay open
+                  as separate tabs instead of needing a "back" button. */}
+              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Business Workspace ↗
+              </a>
+              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Business SaaS ↗
+              </a>
+              <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+                Security Layer ↗
+              </a>
+            </div>
+          </div>
+        </nav>
+      </div>
 
       {/* ======================================================
           📣 UPDATES & KNOWLEDGE BASE — slide-out drawer
@@ -4788,8 +4830,10 @@ export default function Home() {
       {/* FRAME CONTROLLER DOCK PLATFORM */}
       <div className="flex flex-col md:flex-row w-full">
         
-        {/* ASIDE SECURITY MODULE */}
-        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md space-y-7">
+        {/* ASIDE SECURITY MODULE — pinned to the right on desktop via flex
+            order (md:order-2), main content takes the left (md:order-1),
+            so the whole Security Dock box reads on the right-hand side. */}
+        <aside className="md:order-2 w-full md:w-80 border-b md:border-b-0 md:border-l border-white/5 bg-[#080c18]/60 p-6 min-h-auto md:min-h-[calc(100vh-80px)] backdrop-blur-md space-y-7">
 
           {/* DOCK HEADER */}
           <div className="flex items-center gap-2.5 pb-1">
@@ -5104,39 +5148,6 @@ export default function Home() {
 
         {/* MAIN ROUTER ROUTING INTERFACE HOOK */}
         <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
-          
-          <nav className="max-w-5xl mx-auto mb-10 bg-[#090d15]/60 border border-white/5 rounded-xl backdrop-blur-md p-3 space-y-2.5">
-            {/* Row 1: things you do inside the wallet dApp itself */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
-              ))}
-            </div>
-
-            <div className="border-t border-white/5" />
-
-            {/* Row 2: informational pages + the separate Business suite links */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {['Business Model', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
-              ))}
-              {/* /business is a genuinely separate Next.js route (its own email+
-                  magic-link auth, no wallet) — a real link, not a setCurrentPage
-                  tab like everything else in this nav. Opens in a new tab
-                  (target="_blank") so switching into the Business Workspace
-                  never navigates away from the wallet dApp — both stay open
-                  as separate tabs instead of needing a "back" button. */}
-              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
-                Business Workspace ↗
-              </a>
-              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
-                Business SaaS ↗
-              </a>
-              <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
-                Security Layer ↗
-              </a>
-            </div>
-          </nav>
 
           {/* VIEWPORT AREA 1: HOME PANEL */}
           {currentPage === 'Network Home' && (
@@ -5156,6 +5167,96 @@ export default function Home() {
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Supply Cap Weight</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">RPC Connection Status</div></div>
+              </div>
+
+              {/* ============================================================
+                  🏆 WHY CHOOSE INAYA — every figure below is a real, sourced
+                  fact (live contract reads / on-chain tokenomics / hardcoded
+                  program constants), not marketing filler.
+                 ============================================================ */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 sm:p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 items-start">
+
+                  <div>
+                    <div className="flex items-center gap-5 mb-4">
+                      <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Why Choose Inaya?</h2>
+                      <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-14 h-14 rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.3)] shrink-0 lg:hidden" />
+                    </div>
+                    <p className="text-[#94a3b8] text-sm leading-relaxed mb-6">
+                      In a market where cloud storage means unpredictable egress fees and a single company holding a complete copy of your data, Inaya is built differently. Files are encrypted and sharded on your own device before anything reaches the network — no server, node, or administrator ever holds a complete, decryptable copy. Every fee, allocation, and settlement flow below is read from the same deployed contracts and production code the network actually runs on.
+                    </p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 font-mono">
+                      <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                        <div className="text-white font-bold text-sm">4.5 USDT</div>
+                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">Storage / TB / Month</div>
+                      </div>
+                      <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                        <div className="text-white font-bold text-sm">30,000,000</div>
+                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">$INAYA Hard Cap</div>
+                      </div>
+                      <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                        <div className="text-white font-bold text-sm">40.0%</div>
+                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">To Swarm Reserve (Nodes)</div>
+                      </div>
+                      <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                        <div className="text-white font-bold text-sm">BNB Chain</div>
+                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">Live On Testnet</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-black/20 border border-cyan-500/20 p-4 rounded-xl">
+                        <span className="text-[#00f2fe] font-bold text-sm">🔐 Zero-Knowledge Encryption</span>
+                        <p className="text-[#94a3b8] text-xs mt-1.5 leading-relaxed">
+                          Files are encrypted with AES-256-GCM and split into independent shards inside your own browser before upload — plaintext never traverses the network intact, and no single node ever holds a complete, readable copy.
+                        </p>
+                      </div>
+                      <div className="bg-black/20 border border-emerald-500/20 p-4 rounded-xl">
+                        <span className="text-emerald-400 font-bold text-sm">⛓️ On-Chain Anchored &amp; Auditable</span>
+                        <p className="text-[#94a3b8] text-xs mt-1.5 leading-relaxed">
+                          Custody metadata, revenue settlement, and threat confirmations are all anchored immutably on BNB Chain — verifiable by anyone, not just claimed in a whitepaper.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setCurrentPage('Genesis Airdrop')}
+                      className="w-full text-left bg-gradient-to-br from-pink-500/10 to-transparent border border-pink-500/20 hover:border-pink-500/40 rounded-2xl p-5 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="w-11 h-11 rounded-full bg-pink-500/15 border border-pink-500/30 flex items-center justify-center text-lg shrink-0">🎁</span>
+                        <span className="text-white font-bold text-sm">Genesis Airdrop</span>
+                      </div>
+                      <p className="text-[#94a3b8] text-xs mt-1">1,000,000 $INAYA pool (3.3% of hard cap) — automatic upload rewards plus developer &amp; community contributor tracks.</p>
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage('Referrals')}
+                      className="w-full text-left bg-gradient-to-br from-violet-500/10 to-transparent border border-violet-500/20 hover:border-violet-500/40 rounded-2xl p-5 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="w-11 h-11 rounded-full bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-lg shrink-0">🤝</span>
+                        <span className="text-white font-bold text-sm">Referral Program</span>
+                      </div>
+                      <p className="text-[#94a3b8] text-xs mt-1">150,000 $INAYA program pool — 0.5 $INAYA per verified referral, split between you and the person you invite.</p>
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage('Staking')}
+                      className="w-full text-left bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/20 hover:border-cyan-500/40 rounded-2xl p-5 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="w-11 h-11 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-lg shrink-0">🥩</span>
+                        <span className="text-white font-bold text-sm">Staking Rewards</span>
+                      </div>
+                      <p className="text-[#94a3b8] text-xs mt-1">8,000,000 $INAYA pool (26.7% of hard cap) — 0/30/90-day lock tiers at 1.00x/1.25x/1.50x reward multipliers.</p>
+                    </button>
+                  </div>
+
+                </div>
               </div>
 
               {/* Business Workspace / SaaS cross-promotion — converts
