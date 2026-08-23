@@ -4,11 +4,14 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-// SEO note: og:image / twitter:image are intentionally NOT set manually
-// here — app/opengraph-image.js (next/og) generates that image at request
-// time and Next.js wires it into this metadata automatically. The old
-// manual reference to /og-banner.png pointed at a file that never
-// existed in /public, so every shared link rendered a blank preview.
+// SEO note: og:image / twitter:image point at /public/og-banner.png,
+// which does NOT exist yet — see the SEO handoff guide for how to create
+// it (1200x630). This reference is safe to leave in ahead of time: an
+// unresolved static-file path in metadata doesn't fail the build (unlike
+// the dynamic next/og generator this project tried first, which crashed
+// on a @vercel/og bug in this environment and was removed). The moment
+// og-banner.png is added to /public, previews start working with no
+// further code changes.
 export const metadata = {
   title: "Inaya Network — Sovereign Data Infrastructure",
   description: "Ahead of its time. A decentralized ecosystem for sovereign data storage, business infrastructure, security intelligence, and AI — client-side encrypted, sharded, and anchored on BNB Chain Testnet.",
@@ -23,12 +26,14 @@ export const metadata = {
     description: "Sovereign storage, business infrastructure, decentralized security, and AI — built on BNB Chain Testnet.",
     url: "https://www.inayanetwork.com",
     siteName: "Inaya Network",
+    images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Inaya Network — Ahead of Its Time",
     description: "Sovereign storage, business infrastructure, decentralized security, and AI — built on BNB Chain Testnet.",
+    images: ["/og-banner.png"],
   },
 };
 
