@@ -51,3 +51,16 @@ export async function verifyOnChainFileOwner(fileHash, claimedAddress) {
     throw new Error("Signer is not the on-chain owner of this file.");
   }
 }
+
+/** Folders have no on-chain anchor (see metadata.js's module comment) — ownership is only ever
+ *  whatever this collection recorded at createFolder() time. Cross-checks against THAT instead
+ *  of a chain read. Returns the folder doc so callers that already need it (move/delete) don't
+ *  have to re-query. */
+export async function verifyDbFolderOwner(db, folderId, claimedAddress) {
+  const folder = await db.collection("metadata_folders").findOne({ folderId });
+  if (!folder) throw new Error(`No folder found with folderId "${folderId}".`);
+  if (folder.owner.toLowerCase() !== claimedAddress.toLowerCase()) {
+    throw new Error("Signer is not the owner of this folder.");
+  }
+  return folder;
+}

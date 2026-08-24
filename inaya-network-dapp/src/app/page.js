@@ -2875,10 +2875,10 @@ export default function Home() {
       items: [
         { text: "Security audit", done: false },
         { text: "Protocol stress testing", done: true }, // Full report, real numbers (real BNB testnet writes/reads, two independent runs), honest bracketing of the RPC read-concurrency ceiling, no overreach — see custody-sdk/STRESS_TEST_REPORT.md
-        { text: "Node software release", done: false },
+        { text: "Node software release", done: true }, // @inaya-network/node-daemon published to npm — login/register/start/service install-uninstall, verified end-to-end on real Windows against live BSC Testnet
         { text: "Staking launch", done: true }, // Effectively live — not from this session's work specifically: real stake/unstake/claim verified working against the corrected InayaStaking contract ABI from the earlier mobile UI session
         { text: "Explorer launch", done: false },
-        { text: "Governance framework", done: false },
+        { text: "Governance framework — charter + Phase 0/1/2 tooling built, on-chain execution pending", done: false }, // Governance Charter published, ownership-audit + migration scripts written and verified (dry-run only), Snapshot stake-weight strategy verified against live chain data, InayaGovernor/InayaVotingPower written and passing a full propose->vote->queue->execute test -- none of this has been executed on real keys/deployed yet, by deliberate choice
         { text: "Production infrastructure", done: false },
         { text: "Storage analytics", done: true }, // Verified against a real anchored file — exact byte match, honest null handling when a file's size is unknown rather than a fabricated total
         { text: "File statistics", done: true }, // Per-wallet file counts, reconciled file-by-file against on-chain state rather than trusting the off-chain list blindly
