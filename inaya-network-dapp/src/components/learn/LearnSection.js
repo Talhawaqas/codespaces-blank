@@ -67,7 +67,7 @@ export default function LearnSection({ walletAddress }) {
         />
       )}
       {view.name === 'myLearning' && (
-        <LearnMyLearning saved={saved} progress={progress} isVideoSaved={isVideoSaved} toggleSave={toggleSave} onOpenVideo={openVideo} />
+        <LearnMyLearning saved={saved} progress={progress} isVideoSaved={isVideoSaved} toggleSave={toggleSave} onOpenVideo={openVideo} onGoHome={openHome} />
       )}
       {view.name === 'category' && (
         <LearnCategory

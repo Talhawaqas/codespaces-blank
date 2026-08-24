@@ -94,6 +94,9 @@ export default function NetworkStatsPage() {
             <div className="bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#00f2fe]/60 rounded-xl p-5">
               <div className="text-3xl font-extrabold text-white">{stats ? stats.security.reportingNodesCount : "—"}</div>
               <div className="text-[#64748b] text-xs mt-1">Reporting Nodes</div>
+              {stats && stats.security.reportingNodesCount === 0 && (
+                <div className="text-[#64748b]/70 text-[10px] mt-2 italic">Security Layer just launched — be one of the first to report.</div>
+              )}
             </div>
             <div className="bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#c084fc]/60 rounded-xl p-5">
               <div className="text-3xl font-extrabold text-white">{stats && stats.security.avgReputationBps != null ? `${(stats.security.avgReputationBps / 100).toFixed(1)}%` : "—"}</div>

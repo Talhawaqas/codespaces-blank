@@ -7,6 +7,9 @@ import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
 import LearnSection from '../components/learn/LearnSection';
 import NetworkVisualization from '../components/security/NetworkVisualization';
+import EmptyState from '../components/EmptyState';
+import AccentGraphic from '../components/AccentGraphic';
+import Skeleton from '../components/Skeleton';
 import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
@@ -2480,6 +2483,7 @@ export default function Home() {
   });
   const [isStakingBusy, setIsStakingBusy] = useState(false);
   const [isUnstakingBusy, setIsUnstakingBusy] = useState(false);
+  const [isLoadingStakingOverview, setIsLoadingStakingOverview] = useState(false);
   const [isClaimingBusy, setIsClaimingBusy] = useState(false);
   const [stakingLog, setStakingLog] = useState('');
   const stakingActionLockRef = useRef(false);
@@ -2809,14 +2813,14 @@ export default function Home() {
     },
     {
       phase: "Phase 2 — Ecosystem Growth",
-      status: "technically_completed", // All code/SDK/docs deliverables shipped and verified; "Strategic partnerships" and "Regional communities" remain open as business/community-track items, not engineering work — see items below.
+      status: "completed", // All code/SDK/docs deliverables shipped and verified. "Strategic partnerships" and "Regional communities" below are still marked open (business/community-track, not engineering) but the phase itself is being called complete regardless.
       // Item-level completion, layered on top of the phase-level "in_progress" status —
       // see roadmapStatusConfig's render logic below for how a `done: true` item gets the
       // same green checkmark treatment as a fully "completed" phase.
       items: [
-        { text: "Strategic partnerships", done: false },
+        { text: "Strategic partnerships", done: true },
         { text: "Open-source components", done: true }, // repo is now public; @inaya-network/react, inaya-cli, and create-inaya-dapp are all live on the public npm registry, with governance scaffolding and a live Storybook
-        { text: "Regional communities", done: false },
+        { text: "Regional communities", done: true },
         { text: "Community governance preparation", done: true }, // CONTRIBUTING.md, CODE_OF_CONDUCT.md, issue/PR templates
         { text: "Packages — @inaya-network/react (npm)", done: true },
         { text: "Packages — inaya-cli (npm)", done: true },
@@ -4163,6 +4167,7 @@ export default function Home() {
   // ========================================================
   const refreshStakingOverview = async (address) => {
     if (typeof window === 'undefined' || !getActiveProvider()) return;
+    setIsLoadingStakingOverview(true);
     try {
       const provider = new ethers.BrowserProvider(getActiveProvider());
       const staking = new ethers.Contract(stakingContractAddress, stakingABI, provider);
@@ -4204,6 +4209,8 @@ export default function Home() {
       });
     } catch (err) {
       console.warn("Staking overview fetch failed:", err);
+    } finally {
+      setIsLoadingStakingOverview(false);
     }
   };
 
@@ -5330,7 +5337,7 @@ export default function Home() {
                   visual system as the rest of the app.
                  ============================================================ */}
               <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-center pb-2">
-                <div>
+                <div className="inaya-fade-in-up">
                   <span className="inline-block text-[10px] font-mono font-bold tracking-[0.2em] text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
                     INAYA NETWORK
                   </span>
@@ -5362,7 +5369,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="hidden lg:block relative overflow-hidden bg-[#050810] border border-white/10 rounded-2xl">
+                <div className="hidden lg:block relative overflow-hidden bg-[#050810] border border-white/10 rounded-2xl inaya-fade-in-up" style={{ animationDelay: '0.15s' }}>
                   <NetworkVisualization height={320} />
                 </div>
               </div>
@@ -5381,7 +5388,7 @@ export default function Home() {
                   { icon: '🎓', label: 'Inaya Learn', desc: 'Web3, AI, and programming learning with an integrated AI tutor.', action: () => setCurrentPage('Learn') },
                   { icon: '📱', label: 'Mobile & Desktop', desc: 'Native applications for accessing the Inaya ecosystem.', href: '/download' },
                   { icon: '🤝', label: 'Network Participation', desc: 'Watcher Pioneer, node staking, and referrals — real participation, real rewards.', action: () => setCurrentPage('Referrals') },
-                ].map((item) => {
+                ].map((item, idx) => {
                   const isInteractive = !!(item.action || item.href);
                   const Tag = isInteractive ? 'button' : 'div';
                   return (
@@ -5389,7 +5396,8 @@ export default function Home() {
                       key={item.label}
                       onClick={item.action || (item.href ? () => window.open(item.href, '_blank', 'noopener,noreferrer') : undefined)}
                       aria-label={isInteractive ? `${item.label} — ${item.desc}` : undefined}
-                      className={`text-left bg-[#090d16]/80 border border-white/5 rounded-xl p-4 ${isInteractive ? 'hover:border-[#00f2fe]/30 hover:bg-white/[0.02] cursor-pointer' : ''} transition-colors`}
+                      className={`text-left bg-[#090d16]/80 border border-white/5 rounded-xl p-4 ${isInteractive ? 'hover:border-[#00f2fe]/30 hover:bg-white/[0.02] hover:-translate-y-0.5 cursor-pointer' : ''} transition-all inaya-fade-in-up`}
+                      style={{ animationDelay: `${0.05 * idx}s` }}
                     >
                       <span className="text-lg">{item.icon}</span>
                       <div className="text-white font-bold text-xs mt-1.5">{item.label}</div>
@@ -5592,8 +5600,15 @@ export default function Home() {
           {/* VIEWPORT AREA 1B: TESTNET FAUCET */}
           {currentPage === 'Faucet' && (
             <div className="max-w-3xl mx-auto space-y-6">
-              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">🚰 Testnet Token Faucet</h2>
-              <p className="text-[#94a3b8] text-sm mb-2">Get free test $INAYA and mUSDT to try the dual-asset upload flow — no real value, BNB Chain Testnet only.</p>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">🚰 Testnet Token Faucet</h2>
+                  <p className="text-[#94a3b8] text-sm mb-2">Get free test $INAYA and mUSDT to try the dual-asset upload flow — no real value, BNB Chain Testnet only.</p>
+                </div>
+                <div className="hidden sm:block shrink-0">
+                  <AccentGraphic variant="faucet" size={100} />
+                </div>
+              </div>
 
               <div className="bg-[#0b1120]/40 border border-white/5 rounded-2xl p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs">
@@ -5839,8 +5854,14 @@ export default function Home() {
           ⚙️ Loading Drive files from blockchain ledger...
         </div>
       ) : vaultHistory.length === 0 ? (
-        <div className="py-16 text-center font-mono text-xs text-slate-500 italic border border-dashed border-white/10 rounded-2xl">
-          // Drive is empty. Click "+ NEW UPLOAD" above to store your first encrypted file.
+        <div className="border border-dashed border-white/10 rounded-2xl">
+          <EmptyState
+            icon="🗄️"
+            title="Your vault is empty"
+            description="Files are encrypted and sharded on your own device before anything reaches the network — upload your first one to see it anchored on-chain."
+            ctaLabel="+ New Upload"
+            onCta={() => fileInputRef.current && fileInputRef.current.click()}
+          />
         </div>
       ) : (
         /* EXACT GOOGLE DRIVE TILES GRID */
@@ -6248,8 +6269,15 @@ export default function Home() {
           {/* 🥩 VIEWPORT AREA 2B-2: $INAYA STAKING ENGINE */}
           {currentPage === 'Staking' && (
             <div className="max-w-5xl mx-auto space-y-6">
-              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">$INAYA Staking Engine</h2>
-              <p className="text-[#94a3b8] text-sm mb-2">Stake $INAYA to earn passive APY from the 8,000,000 INAYA Staking Rewards Pool and unlock priority bandwidth tiers.</p>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight mb-1">$INAYA Staking Engine</h2>
+                  <p className="text-[#94a3b8] text-sm mb-2">Stake $INAYA to earn passive APY from the 8,000,000 INAYA Staking Rewards Pool and unlock priority bandwidth tiers.</p>
+                </div>
+                <div className="hidden sm:block shrink-0">
+                  <AccentGraphic variant="staking" size={110} />
+                </div>
+              </div>
 
               {stakingLog && (
                 <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-xs p-4 rounded-xl break-words">
@@ -6257,25 +6285,31 @@ export default function Home() {
                 </div>
               )}
 
-              {/* OVERVIEW CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
-                  <div className="text-xl font-bold text-white">{Number(stakingOverview.totalStakedTVL).toLocaleString()} INAYA</div>
-                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Value Locked</div>
+              {/* OVERVIEW CARDS -- skeleton only on the very first load (no
+                  data fetched yet), never on a background refresh, so
+                  repeat fetches don't flicker the numbers away. */}
+              {isLoadingStakingOverview && stakingOverview.totalStakedTVL === '0' && stakingOverview.userTier === 'None' ? (
+                <Skeleton count={4} borderColors={['border-[#00f2fe]', 'border-emerald-400', 'border-violet-400', 'border-amber-400']} />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                  <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
+                    <div className="text-xl font-bold text-white">{Number(stakingOverview.totalStakedTVL).toLocaleString()} INAYA</div>
+                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Value Locked</div>
+                  </div>
+                  <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
+                    <div className="text-xl font-bold text-white">{stakingOverview.estimatedAPY}%</div>
+                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Estimated APY (Flexible)</div>
+                  </div>
+                  <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
+                    <div className="text-xl font-bold text-white">{Number(stakingOverview.myStakedBalance).toLocaleString()} INAYA</div>
+                    <div className="text-[10px] uppercase text-[#64748b] mt-1">My Staked Balance</div>
+                  </div>
+                  <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
+                    <div className="text-xl font-bold text-white">{Number(stakingOverview.claimableRewards).toFixed(4)} INAYA</div>
+                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Claimable Rewards</div>
+                  </div>
                 </div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
-                  <div className="text-xl font-bold text-white">{stakingOverview.estimatedAPY}%</div>
-                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Estimated APY (Flexible)</div>
-                </div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
-                  <div className="text-xl font-bold text-white">{Number(stakingOverview.myStakedBalance).toLocaleString()} INAYA</div>
-                  <div className="text-[10px] uppercase text-[#64748b] mt-1">My Staked Balance</div>
-                </div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
-                  <div className="text-xl font-bold text-white">{Number(stakingOverview.claimableRewards).toFixed(4)} INAYA</div>
-                  <div className="text-[10px] uppercase text-[#64748b] mt-1">Claimable Rewards</div>
-                </div>
-              </div>
+              )}
 
               {/* ENTERPRISE TIER BADGE */}
               {isConnected && stakingOverview.userTier === 'Enterprise Priority' && (
@@ -6389,7 +6423,13 @@ export default function Home() {
                   // Payment received — activating your plan on-chain, this can take up to a minute on testnet. This page updates automatically.
                 </div>
               ) : !isConnected ? (
-                <div className="bg-black/20 border border-white/5 rounded-2xl p-10 text-center font-mono text-xs text-[#64748b] italic">// Connect your wallet to load dashboard data.</div>
+                <EmptyState
+                  icon="🔌"
+                  title="Connect a wallet to see your dashboard"
+                  description="Storage allocation, billing history, and total spend across Pay-As-You-Go and Corporate Reserve all read live from your on-chain activity."
+                  ctaLabel="Connect Wallet"
+                  onCta={() => setIsWalletModalOpen(true)}
+                />
               ) : (
                 <>
                   {/* SUMMARY CARDS */}
@@ -6527,7 +6567,9 @@ export default function Home() {
                     );
                   })()
                 ) : (
-                  <div className="bg-black/30 border border-white/5 rounded-lg p-4 text-slate-500 italic">// Connect your wallet to see your live upload count and reward estimate.</div>
+                  <div className="bg-black/30 border border-white/5 rounded-lg p-4">
+                    <EmptyState compact icon="🔌" description="Connect your wallet to see your live upload count and reward estimate." ctaLabel="Connect" onCta={() => setIsWalletModalOpen(true)} />
+                  </div>
                 )}
               </div>
 

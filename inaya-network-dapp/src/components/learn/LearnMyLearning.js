@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import VideoCard from './VideoCard';
+import EmptyState from '../EmptyState';
 
 const SECTIONS = [
   { id: 'watching', label: 'Continue Watching' },
@@ -12,7 +13,13 @@ const SECTIONS = [
   { id: 'saved', label: 'Saved' },
 ];
 
-export default function LearnMyLearning({ saved, progress, isVideoSaved, toggleSave, onOpenVideo }) {
+const EMPTY_COPY = {
+  watching: { icon: '▶️', title: 'Nothing in progress', description: 'Start a video from Learn Home and it shows up here so you can pick up where you left off.' },
+  completed: { icon: '🎓', title: "You haven't finished a video yet", description: 'Completed videos land here once you watch them through — a good way to track real progress.' },
+  saved: { icon: '🔖', title: "Nothing saved yet", description: 'Save any video from Learn Home to build a reading list for later.' },
+};
+
+export default function LearnMyLearning({ saved, progress, isVideoSaved, toggleSave, onOpenVideo, onGoHome }) {
   const [section, setSection] = useState('watching');
 
   let items = [];
@@ -39,11 +46,13 @@ export default function LearnMyLearning({ saved, progress, isVideoSaved, toggleS
       </div>
 
       {items.length === 0 ? (
-        <p className="text-[#64748b] text-sm">
-          {section === 'watching' && 'Nothing in progress yet — start a video from Learn Home.'}
-          {section === 'completed' && "You haven't completed any videos yet."}
-          {section === 'saved' && "You haven't saved any videos yet."}
-        </p>
+        <EmptyState
+          icon={EMPTY_COPY[section].icon}
+          title={EMPTY_COPY[section].title}
+          description={EMPTY_COPY[section].description}
+          ctaLabel={onGoHome ? 'Browse Learn Home' : undefined}
+          onCta={onGoHome}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map((item) => (
