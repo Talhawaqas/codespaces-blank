@@ -25,6 +25,64 @@ export function isValidPlace(place) {
   return VALID_PLACES.has(place);
 }
 
+// This is a testing hackathon, not a build-a-project one: there's nothing to
+// submit except real bugs found across the live ecosystem. These constants
+// are the single source of truth for both the rules copy rendered in
+// HackathonSection.js and the enums the bug-report routes validate against
+// -- keeps "what's in scope" and "what a report is allowed to say" in sync
+// by construction instead of two places that can drift.
+
+export const HACKATHON_TIMELINE = {
+  start: "September 1, 2026",
+  deadline: "November 1, 2026",
+  winnersAnnounced: "Shortly after judging concludes (no fixed date -- triage takes as long as it takes to do properly).",
+};
+
+export const IN_SCOPE_LAYERS = [
+  { id: "dapp-web", label: "dApp Web App" },
+  { id: "business-workspace", label: "Business Workspace" },
+  { id: "mobile-app", label: "Mobile App (Android Alpha)" },
+  { id: "custody-sdk", label: "@inaya-network/custody-sdk (+ React package, CLI, create-inaya-dapp)" },
+  { id: "node-daemon", label: "@inaya-network/node-daemon" },
+  { id: "smart-contracts", label: "Smart Contracts (BSC Testnet)" },
+  { id: "security-layer", label: "Security Layer / Inaya Firewall" },
+  { id: "learn", label: "Inaya Learn" },
+  { id: "metadata-backend", label: "Metadata Backend APIs" },
+  { id: "other", label: "Other / not sure which layer" },
+];
+
+const VALID_LAYER_IDS = new Set(IN_SCOPE_LAYERS.map((l) => l.id));
+
+export function isValidLayer(layerId) {
+  return VALID_LAYER_IDS.has(layerId);
+}
+
+export const SEVERITY_LEVELS = [
+  { id: "critical", label: "Critical", description: "Fund loss, encryption/access-control bypass, or another user's private data exposed." },
+  { id: "high", label: "High", description: "A core flow is broken with no workaround." },
+  { id: "medium", label: "Medium", description: "Degraded but there's a workaround." },
+  { id: "low", label: "Low", description: "Cosmetic, copy, or minor UX issue." },
+];
+
+const VALID_SEVERITY_IDS = new Set(SEVERITY_LEVELS.map((s) => s.id));
+
+export function isValidSeverity(severityId) {
+  return VALID_SEVERITY_IDS.has(severityId);
+}
+
+export const RESPONSIBLE_DISCLOSURE_NOTICE =
+  "Found something Critical -- something that could let someone steal funds, bypass encryption, or access another user's data? Do not post it publicly anywhere (Discord, Telegram, X). Submit it here only. It stays admin-only until it's fixed.";
+
+export const JUDGING_NOTES =
+  "Every report is triaged by the team and scored on severity × report quality (clear repro steps, evidence) × real impact. Duplicate reports are credited to whoever submitted first. The top 5 scored reports plus one Special/Community award fill the 6 prize slots below.";
+
+export const ELIGIBILITY_NOTES = [
+  "Anyone with a wallet can participate.",
+  "One prize per person/team, even if you submit multiple valid reports.",
+  "Reports must reflect original testing performed during the window above.",
+  "Inaya team members and contractors are not eligible to win.",
+];
+
 export async function ensureHackathonIndexes(db) {
   await db.collection("hackathon_winners").createIndex({ place: 1 }, { unique: true });
 }
