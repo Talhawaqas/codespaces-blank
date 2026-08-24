@@ -4789,7 +4789,7 @@ export default function Home() {
           unit at the extreme top of the viewport, always visible, never
           buried below the sidebar/content like the old in-page nav was. */}
       <div className="sticky top-0 z-50">
-        <header className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
+        <header className="relative z-10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
