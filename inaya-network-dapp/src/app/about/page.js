@@ -31,6 +31,14 @@ const leadership = [
   },
 ];
 
+const founderStory = [
+  "I didn't come to this from a blockchain background. For over nine years I worked in enterprise IT and network support, handling access and infrastructure for corporate clients. That work put me on the inside of something most people never see directly: how casually organizations handle the systems that hold other people's data.",
+  "Then came the Google Password Manager breach. It wasn't the first incident I'd followed — for the past four years, data breach headlines have arrived at a pace that stopped feeling like news and started feeling like a pattern. But that one was the moment it stopped being background noise. People don't actually control their own data — they hand it to a platform and hope. That felt backwards. Data should be something you control and are responsible for, not something you entrust and hope survives.",
+  "I'd spent late 2023 teaching myself cloud infrastructure — VMware, GCP, Docker, Azure. In hindsight, that was me building the runway for this without knowing it yet.",
+  "In mid-June 2026, that thought turned into action. I've been building Inaya every day since — the core zero-knowledge data custody layer went from an idea to a shipped Alpha in about two months: files encrypted and sharded on your own device before anything reaches the network, so no server, node, or administrator ever holds a complete, decryptable copy. I'm also the one directly answering questions on X and Telegram, every day — I'm not building this at a distance from the people using it.",
+  "I'm not doing this alone. Yakub Adnan drives our growth and community presence. Fibha Urooj keeps our financial decisions disciplined, not just ambitious.",
+];
+
 const roadmap = [
   { phase: "Phase 01 — Deployment & Audit Proof", desc: "EVM contract deployment across BNB Chain scaling infrastructure, block-range scanning, and third-party security audits ahead of mainnet." },
   { phase: "Phase 02 — Incentivized Alpha & Sybil Resistance", desc: "Anti-sybil validation for edge-node operators, hardware identity verification, and active transaction-tracking pipelines." },
@@ -104,6 +112,23 @@ export default function AboutPage() {
                 <p className="text-[#94a3b8] text-sm leading-relaxed mt-2">{p.bio}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="mb-14">
+          <h2 className="text-xl font-bold text-white mb-5">Founder Story</h2>
+          <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 sm:p-8">
+            <div className="text-white font-bold text-sm mb-4">Talha Waqas — Founder &amp; CTO</div>
+            <div className="space-y-4">
+              {founderStory.map((p, i) => (
+                <p key={i} className="text-[#94a3b8] text-sm leading-relaxed">{p}</p>
+              ))}
+            </div>
+            <div className="border-l-4 border-[#00f2fe] pl-4 mt-6">
+              <p className="text-white text-sm leading-relaxed italic">
+                I believe the fix is structural: take the complete, decryptable copy away from every intermediary, and give control back to the person the data actually belongs to.
+              </p>
+            </div>
           </div>
         </section>
 
