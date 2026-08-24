@@ -33,6 +33,7 @@ import { PricingCard } from "./PricingCard";
 import EmptyState from "../../components/EmptyState";
 import AccentGraphic from "../../components/AccentGraphic";
 import Skeleton from "../../components/Skeleton";
+import WorkflowVisualization from "../../components/business/WorkflowVisualization";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -1412,11 +1413,10 @@ function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialP
             />
           ) : (
             <Column title="Documents">
-              <EmptyState
-                compact
-                icon="👈"
-                description={selectedDeptId ? "Select a project to see its documents." : "Select a department, then a project, to see its documents."}
-              />
+              <WorkflowVisualization />
+              <p className="text-[#94a3b8] text-xs text-center mt-1">
+                {selectedDeptId ? "Select a project to see its documents." : "Select a department, then a project, to see its documents."}
+              </p>
             </Column>
           )}
         </div>

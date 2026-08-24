@@ -84,3 +84,47 @@ select:focus {
     opacity: 0.2;
   }
 }
+
+/* WorkflowVisualization (Business Workspace browse view) -- a node
+   gently breathing (the workflow step you're at) and a dot flowing down
+   the connector line between steps (the document moving through the
+   pipeline: Department -> Project -> Document -> Encrypted & Secured). */
+@keyframes inaya-workflow-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.25); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(0, 242, 254, 0); }
+}
+
+.inaya-workflow-pulse {
+  animation: inaya-workflow-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes inaya-workflow-flow {
+  0% { top: -4px; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.inaya-workflow-flow {
+  animation: inaya-workflow-flow 1.8s ease-in-out infinite;
+}
+
+/* File-securing mini animation (a document splitting into two encrypted
+   shards, then reassembling) -- shown at the base of WorkflowVisualization. */
+@keyframes inaya-shard-split {
+  0%, 15% { transform: translateX(0) rotate(0deg); opacity: 1; }
+  45%, 55% { transform: translateX(var(--shard-x, -10px)) rotate(var(--shard-r, -6deg)); opacity: 0.85; }
+  85%, 100% { transform: translateX(0) rotate(0deg); opacity: 1; }
+}
+
+.inaya-shard-split {
+  animation: inaya-shard-split 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inaya-workflow-pulse,
+  .inaya-workflow-flow,
+  .inaya-shard-split {
+    animation: none;
+  }
+}
