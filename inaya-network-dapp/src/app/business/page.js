@@ -787,6 +787,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 
   return (
     <div className="flex min-h-screen">
+      <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
       <Sidebar
         orgName={membership.orgName}
         role={role}
@@ -1365,36 +1366,60 @@ function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialP
   return (
     <div>
       {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
+      {/* Always render all 3 columns -- previously ProjectColumn/DocumentColumn
+          were omitted entirely until something upstream was selected, which
+          left a grid-cols-3 layout with only 1 column filled and a huge
+          empty void next to it (a real user flagged exactly this). Showing
+          a "select something" placeholder in the unfilled columns keeps the
+          3-column structure intact and makes the next step obvious. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <DepartmentColumn
-          orgId={orgId}
-          departments={visibleDepartments}
-          selectedDeptId={selectedDeptId}
-          onSelect={handleSelectDept}
-          canManage={canManage}
-          onCreated={loadDepartments}
-        />
-        {selectedDeptId && (
-          <ProjectColumn
+        <div className="inaya-fade-in-up">
+          <DepartmentColumn
             orgId={orgId}
-            departmentId={selectedDeptId}
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            onSelect={setSelectedProjectId}
+            departments={visibleDepartments}
+            selectedDeptId={selectedDeptId}
+            onSelect={handleSelectDept}
             canManage={canManage}
-            onCreated={() => loadProjects(selectedDeptId)}
+            onCreated={loadDepartments}
           />
-        )}
-        {selectedProjectId && (
-          <DocumentColumn
-            orgId={orgId}
-            departmentId={selectedDeptId}
-            projectId={selectedProjectId}
-            documents={documents}
-            canManage={canManage}
-            onUploaded={() => loadDocuments(selectedDeptId, selectedProjectId)}
-          />
-        )}
+        </div>
+        <div className="inaya-fade-in-up" style={{ animationDelay: "0.06s" }}>
+          {selectedDeptId ? (
+            <ProjectColumn
+              orgId={orgId}
+              departmentId={selectedDeptId}
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onSelect={setSelectedProjectId}
+              canManage={canManage}
+              onCreated={() => loadProjects(selectedDeptId)}
+            />
+          ) : (
+            <Column title="Projects">
+              <EmptyState compact icon="👈" description="Select a department to see its projects." />
+            </Column>
+          )}
+        </div>
+        <div className="inaya-fade-in-up" style={{ animationDelay: "0.12s" }}>
+          {selectedDeptId && selectedProjectId ? (
+            <DocumentColumn
+              orgId={orgId}
+              departmentId={selectedDeptId}
+              projectId={selectedProjectId}
+              documents={documents}
+              canManage={canManage}
+              onUploaded={() => loadDocuments(selectedDeptId, selectedProjectId)}
+            />
+          ) : (
+            <Column title="Documents">
+              <EmptyState
+                compact
+                icon="👈"
+                description={selectedDeptId ? "Select a project to see its documents." : "Select a department, then a project, to see its documents."}
+              />
+            </Column>
+          )}
+        </div>
       </div>
     </div>
   );
