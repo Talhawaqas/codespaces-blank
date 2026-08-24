@@ -34,6 +34,7 @@ import EmptyState from "../../components/EmptyState";
 import AccentGraphic from "../../components/AccentGraphic";
 import Skeleton from "../../components/Skeleton";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
+import AIWidget from "../../components/business/AIWidget";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -789,6 +790,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   return (
     <div className="flex min-h-screen">
       <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
+      {/* Hidden on the dedicated AI Assistant tab itself -- showing the
+          floating bubble/panel on top of that full page would be redundant. */}
+      {activeView !== "ai" && <AIWidget orgId={orgId} />}
       <Sidebar
         orgName={membership.orgName}
         role={role}

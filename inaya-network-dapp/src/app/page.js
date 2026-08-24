@@ -4734,6 +4734,21 @@ export default function Home() {
     }
   }, [isChatOpen]);
 
+  // Proactively open the docs assistant a few seconds after a visitor
+  // lands, once per browser session (sessionStorage, not localStorage --
+  // this should offer help again on a fresh visit, just not re-interrupt
+  // every SPA navigation within the same session, and never fight a visitor
+  // who already closed it once this session).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('inaya_ai_auto_opened')) return;
+    const timer = setTimeout(() => {
+      setIsChatOpen(true);
+      sessionStorage.setItem('inaya_ai_auto_opened', '1');
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', (accs) => {
