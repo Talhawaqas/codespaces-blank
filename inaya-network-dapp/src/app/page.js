@@ -5,6 +5,7 @@ import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if li
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
+import HackathonSection from '../components/HackathonSection';
 import LearnSection from '../components/learn/LearnSection';
 import NetworkVisualization from '../components/security/NetworkVisualization';
 import EmptyState from '../components/EmptyState';
@@ -4876,7 +4877,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto space-y-2.5">
             {/* Row 1: things you do inside the wallet dApp itself */}
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn'].map((tab) => (
+              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn', 'Hackathon'].map((tab) => (
                 <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
               ))}
             </div>
@@ -6523,6 +6524,8 @@ export default function Home() {
           {currentPage === 'Referrals' && <ReferralSection />}
 
           {currentPage === 'Learn' && <LearnSection walletAddress={walletAddress} />}
+
+          {currentPage === 'Hackathon' && <HackathonSection walletAddress={walletAddress} getActiveProvider={getActiveProvider} />}
 
           {/* VIEWPORT AREA 3: GENESIS AIRDROP CALCULATOR METRICS */}
           {currentPage === 'Genesis Airdrop' && (

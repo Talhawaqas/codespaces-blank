@@ -23,6 +23,14 @@ export default {
       url: process.env.BSC_TESTNET_RPC || "https://data-seed-prebsc-1-s1.binance.org:8545/",
       chainId: 97,
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
+    },
+    // Not used by anything yet -- added so scripts/deploy-hackathon-rewards.js
+    // (and any other future mainnet deploy) has a real --network target to
+    // point at once mainnet actually launches. Same accounts/key as bscTestnet.
+    bscMainnet: {
+      url: process.env.BSC_MAINNET_RPC || "https://bsc-dataseed.binance.org/",
+      chainId: 56,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
     }
   },
   etherscan: {

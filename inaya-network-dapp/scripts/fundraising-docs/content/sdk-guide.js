@@ -2,10 +2,13 @@
 // public/documents/inaya-sdk-guide.pdf. Edit this file, then run
 // `node scripts/fundraising-docs/generate.mjs`. See README.md.
 //
-// This one was already accurate (a prior "Corrected Edition," verified
-// against source August 2, 2026) — carried forward largely as-is, with one
-// addition: a section on node-daemon, the separate published-npm CLI for
-// node operators, which didn't exist when this guide was last written.
+// (Updated 2026-08-24) @inaya-network/custody-sdk is now actually published
+// to the public npm registry (both `beta` and `latest` tags point at
+// 1.0.5-beta) — the "private repo, git install only" installation section
+// below was accurate when this guide was first written but is not anymore,
+// so it's corrected here rather than left stale on a PDF the live dApp
+// links to. Also carries forward the earlier addition of a section on
+// node-daemon, the separate published-npm CLI for node operators.
 
 export const sdkGuide = {
   cover: {
@@ -14,7 +17,7 @@ export const sdkGuide = {
     kicker: "SDK & INTEGRATION GUIDE",
     title: "Inaya Custody SDK",
     subtitle: "Client-side cryptographic sovereignty for distributed applications.",
-    docLine: "@inaya-network/custody-sdk · v1.0.4-beta · BNB Chain Testnet · August 2026",
+    docLine: "@inaya-network/custody-sdk · v1.0.5-beta · BNB Chain Testnet · August 2026",
   },
   docId: "INAYA-SDK-2026-V3",
   sections: [
@@ -32,15 +35,15 @@ export const sdkGuide = {
         },
         {
           type: "code",
-          label: "Installation — not yet on the public npm registry",
-          text: "$ npm install github:Talhawaqas/custody-sdk ethers",
+          label: "Installation",
+          text: "$ npm install @inaya-network/custody-sdk ethers",
         },
         {
           type: "bullets",
           items: [
             "Requirements: Node.js 18+, ethers v6 as a peer dependency.",
             "Two modes: browser (via InayaKernel.connectWallet()) or Node.js/server-side (pass a raw ethers.Wallet directly).",
-            "Private repository — collaborator access + git auth (SSH key or PAT) required today. A public npm publish is planned but has not happened for this package yet — don't assume @inaya-network/custody-sdk installs from npm directly.",
+            "Published on the public npm registry — both the `beta` and `latest` dist-tags currently point at the same 1.0.5-beta release, so a plain install with no tag suffix works.",
           ],
         },
       ],
