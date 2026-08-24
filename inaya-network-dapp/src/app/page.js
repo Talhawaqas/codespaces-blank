@@ -6912,6 +6912,27 @@ export default function Home() {
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-base font-bold text-white mb-1">📖 FOUNDER STORY</h3>
+                <p className="text-[11px] text-slate-500 italic font-mono mb-4">Talha Waqas — Founder &amp; CTO</p>
+                <div className="space-y-3">
+                  {[
+                    "I didn't come to this from a blockchain background. For over nine years I worked in enterprise IT and network support, handling access and infrastructure for corporate clients. That work put me on the inside of something most people never see directly: how casually organizations handle the systems that hold other people's data.",
+                    "Then came the Google Password Manager breach. It wasn't the first incident I'd followed — for the past four years, data breach headlines have arrived at a pace that stopped feeling like news and started feeling like a pattern. But that one was the moment it stopped being background noise. People don't actually control their own data — they hand it to a platform and hope. That felt backwards. Data should be something you control and are responsible for, not something you entrust and hope survives.",
+                    "I'd spent late 2023 teaching myself cloud infrastructure — VMware, GCP, Docker, Azure. In hindsight, that was me building the runway for this without knowing it yet.",
+                    "In mid-June 2026, that thought turned into action. I've been building Inaya every day since — the core zero-knowledge data custody layer went from an idea to a shipped Alpha in about two months: files encrypted and sharded on your own device before anything reaches the network, so no server, node, or administrator ever holds a complete, decryptable copy. I'm also the one directly answering questions on X and Telegram, every day — I'm not building this at a distance from the people using it.",
+                    "I'm not doing this alone. Yakub Adnan drives our growth and community presence. Fibha Urooj keeps our financial decisions disciplined, not just ambitious.",
+                  ].map((p, i) => (
+                    <p key={i} className="text-xs text-[#94a3b8] font-mono leading-relaxed">{p}</p>
+                  ))}
+                </div>
+                <div className="border-l-4 border-[#00f2fe] pl-4 mt-4">
+                  <p className="text-xs text-white font-mono leading-relaxed italic">
+                    I believe the fix is structural: take the complete, decryptable copy away from every intermediary, and give control back to the person the data actually belongs to.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-4">🗺️ TACTICAL PROJECT DEVELOPMENT ROADMAP</h3>
                 <div className="space-y-4">
                   {roadmapPhases.map((p) => {
