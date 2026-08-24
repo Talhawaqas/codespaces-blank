@@ -22,6 +22,12 @@ const VARIANTS = {
     color: "#4facfe",
     accent: "#00f2fe",
   },
+  business: {
+    label: "Concentric rings representing a company's nested document structure",
+    rings: [26, 42, 58],
+    color: "#a78bfa",
+    accent: "#00f2fe",
+  },
 };
 
 export default function AccentGraphic({ variant = "staking", size = 140 }) {

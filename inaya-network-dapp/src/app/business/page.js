@@ -31,6 +31,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PricingCard } from "./PricingCard";
 import EmptyState from "../../components/EmptyState";
+import AccentGraphic from "../../components/AccentGraphic";
+import Skeleton from "../../components/Skeleton";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -376,8 +378,12 @@ function PlanSelectionGate({ email, membership, onLogout }) {
 
 function CenteredShell({ children }) {
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
-      <div className="max-w-6xl mx-auto">{children}</div>
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10 relative overflow-hidden">
+      {/* Ambient glow -- purely decorative, matches the dashboard promo banner's
+          cyan/violet gradient so the sign-in screen doesn't read as a flat,
+          separate product from the rest of the workspace. */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-[#00f2fe]/10 via-violet-500/10 to-transparent blur-3xl" aria-hidden="true" />
+      <div className="max-w-6xl mx-auto relative">{children}</div>
     </div>
   );
 }
@@ -460,60 +466,85 @@ function AuthScreen({ notice, onAuthed }) {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-16">
-      <a href="/" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-8">← Inaya Network</a>
-      <h1 className="text-2xl font-extrabold text-white text-center mb-1">Business Records</h1>
-      <p className="text-[#94a3b8] text-sm text-center mb-8">Encrypted document management for your company, built on Inaya's storage infrastructure.</p>
+    <div className="mt-8 md:mt-16 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+      {/* LEFT — the actual sign-in form */}
+      <div className="max-w-md md:mx-0 mx-auto w-full inaya-fade-in-up">
+        <a href="/" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-8">← Inaya Network</a>
+        <h1 className="text-2xl font-extrabold text-white mb-1">Business Records</h1>
+        <p className="text-[#94a3b8] text-sm mb-8">Encrypted document management for your company, built on Inaya's storage infrastructure.</p>
 
-      {notice && <div className="bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs rounded-lg p-3 mb-4">{notice}</div>}
+        {notice && <div className="bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs rounded-lg p-3 mb-4">{notice}</div>}
 
-      <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 mb-6">
-        <button onClick={() => setMode("signin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "signin" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Sign in</button>
-        <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Create a company</button>
+        <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 mb-6">
+          <button onClick={() => setMode("signin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "signin" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Sign in</button>
+          <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Create a company</button>
+        </div>
+
+        <div ref={googleButtonRef} className="flex justify-center mb-2" />
+        {googleError && <p className="text-red-400 text-xs text-center mb-3">{googleError}</p>}
+        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[10px] text-[#64748b] uppercase font-bold">or</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {mode === "create" && (
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
+          )}
+          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
+          <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
+            {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
+          </button>
+        </form>
+
+        {error && <p className="text-red-400 text-xs mt-4">{error}</p>}
+        {message && <p className="text-emerald-400 text-xs mt-4">{message}</p>}
+        {fallbackUrl && (
+          <div className="mt-3 bg-black/20 border border-white/10 rounded-xl p-4">
+            <p className="text-slate-400 text-xs mb-2">Email delivery isn't fully set up yet — use this link directly:</p>
+            <a href={fallbackUrl} className="text-[#00f2fe] underline text-xs break-all">{fallbackUrl}</a>
+          </div>
+        )}
+
+        <a
+          href="/docs/business-workspace-guide.md"
+          download
+          className="mt-8 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+        >
+          <span aria-hidden>↓</span> Download the step-by-step setup guide
+        </a>
+        <a
+          href="/business/download"
+          className="mt-2 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+        >
+          <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
+        </a>
       </div>
 
-      <div ref={googleButtonRef} className="flex justify-center mb-2" />
-      {googleError && <p className="text-red-400 text-xs text-center mb-3">{googleError}</p>}
-      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-[10px] text-[#64748b] uppercase font-bold">or</span>
-          <div className="flex-1 h-px bg-white/10" />
+      {/* RIGHT — visual panel, hidden below md. Grounded in the real data model
+          (Company -> Department -> Project -> Document, see this file's top
+          comment) rather than generic decoration. */}
+      <div className="hidden md:flex flex-col items-center text-center inaya-fade-in-up" style={{ animationDelay: "0.15s" }}>
+        <AccentGraphic variant="business" size={180} />
+        <div className="mt-8 space-y-5 max-w-xs">
+          {[
+            { icon: "🔒", title: "Client-side encrypted", desc: "Files are encrypted and sharded before they ever leave the browser." },
+            { icon: "🗂️", title: "Company → Department → Project → Document", desc: "The same structure your org already thinks in — nothing to relearn." },
+            { icon: "✅", title: "Built-in approvals", desc: "Review and sign off on documents without leaving the workspace." },
+          ].map((f) => (
+            <div key={f.title} className="flex items-start gap-3 text-left">
+              <span className="text-xl shrink-0" aria-hidden>{f.icon}</span>
+              <div>
+                <p className="text-white text-sm font-bold leading-tight">{f.title}</p>
+                <p className="text-[#94a3b8] text-xs mt-0.5">{f.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {mode === "create" && (
-          <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
-        )}
-        <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
-        <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
-          {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
-        </button>
-      </form>
-
-      {error && <p className="text-red-400 text-xs mt-4">{error}</p>}
-      {message && <p className="text-emerald-400 text-xs mt-4">{message}</p>}
-      {fallbackUrl && (
-        <div className="mt-3 bg-black/20 border border-white/10 rounded-xl p-4">
-          <p className="text-slate-400 text-xs mb-2">Email delivery isn't fully set up yet — use this link directly:</p>
-          <a href={fallbackUrl} className="text-[#00f2fe] underline text-xs break-all">{fallbackUrl}</a>
-        </div>
-      )}
-
-      <a
-        href="/docs/business-workspace-guide.md"
-        download
-        className="mt-8 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
-      >
-        <span aria-hidden>↓</span> Download the step-by-step setup guide
-      </a>
-      <a
-        href="/business/download"
-        className="mt-2 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
-      >
-        <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
-      </a>
+      </div>
     </div>
   );
 }
@@ -901,7 +932,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
   useEffect(() => { load(); }, [load]);
 
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
+  if (!data) return <Skeleton count={3} borderColors={["border-[#00f2fe]", "border-violet-400", "border-[#00f2fe]"]} />;
 
   const isDesktopApp = typeof window !== "undefined" && !!window.__TAURI__;
 
@@ -911,8 +942,11 @@ function DashboardView({ orgId, canManage, onNavigate }) {
           the desktop app itself, same reasoning as not showing "Explore"
           for a product you're already in. */}
       {!isDesktopApp && (
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inaya-fade-in-up">
+          <div className="pointer-events-none absolute -right-6 -top-6 opacity-40 hidden sm:block" aria-hidden="true">
+            <AccentGraphic variant="business" size={120} />
+          </div>
+          <div className="relative">
             <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
               New · Desktop App
             </span>
@@ -921,7 +955,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
               Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
             </p>
           </div>
-          <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+          <div className="relative flex gap-2 shrink-0 w-full sm:w-auto">
             <a
               href="/business/download"
               className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110"
@@ -933,9 +967,15 @@ function DashboardView({ orgId, canManage, onNavigate }) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon="departments" label="Departments" value={data.counts.departments} sub="Active departments" />
-        <StatCard icon="projects" label="Projects" value={data.counts.projects} sub="Active projects" />
-        <StatCard icon="documents" label="Documents" value={data.counts.documents} sub="Encrypted & secured" />
+        <div className="inaya-fade-in-up" style={{ animationDelay: "0.05s" }}>
+          <StatCard icon="departments" label="Departments" value={data.counts.departments} sub="Active departments" />
+        </div>
+        <div className="inaya-fade-in-up" style={{ animationDelay: "0.1s" }}>
+          <StatCard icon="projects" label="Projects" value={data.counts.projects} sub="Active projects" />
+        </div>
+        <div className="inaya-fade-in-up" style={{ animationDelay: "0.15s" }}>
+          <StatCard icon="documents" label="Documents" value={data.counts.documents} sub="Encrypted & secured" />
+        </div>
       </div>
 
       {canManage && data.pendingApprovals.length > 0 && (
