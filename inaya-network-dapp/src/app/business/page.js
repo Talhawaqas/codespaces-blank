@@ -30,6 +30,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PricingCard } from "./PricingCard";
+import EmptyState from "../../components/EmptyState";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -957,7 +958,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DashboardCard title="Recent Departments" onViewAll={() => onNavigate("departments")}>
           {data.recentDepartments.length === 0 ? (
-            <p className="text-[#475569] text-xs italic">No departments yet.</p>
+            <EmptyState compact icon="🏢" description="No departments yet." ctaLabel="Create one" onCta={() => onNavigate("departments")} />
           ) : (
             <div className="space-y-1">
               {data.recentDepartments.map((d) => (
@@ -981,7 +982,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
 
         <DashboardCard title="Recent Projects" onViewAll={() => onNavigate("projects")}>
           {data.recentProjects.length === 0 ? (
-            <p className="text-[#475569] text-xs italic">No projects yet.</p>
+            <EmptyState compact icon="📁" description="No projects yet." ctaLabel="Create one" onCta={() => onNavigate("projects")} />
           ) : (
             <div className="space-y-1">
               {data.recentProjects.map((p) => (
@@ -1006,7 +1007,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
 
       <DashboardCard title="Encrypted Documents" onViewAll={() => onNavigate("documents")}>
         {data.recentDocuments.length === 0 ? (
-          <p className="text-[#475569] text-xs italic">No documents yet.</p>
+          <EmptyState compact icon="🔐" description="No documents yet." ctaLabel="Upload one" onCta={() => onNavigate("documents")} />
         ) : (
           <div className="space-y-1">
             {data.recentDocuments.map((d) => (
@@ -1078,7 +1079,7 @@ function ApprovalsView({ orgId, onNavigate }) {
     <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Documents awaiting your review</h3>
       {data.length === 0 ? (
-        <p className="text-[#475569] text-xs italic">Nothing needs your attention right now.</p>
+        <EmptyState compact icon="✅" description="Nothing needs your attention right now — you're all caught up." />
       ) : (
         <div className="space-y-2">
           {data.map((d) => (
@@ -1146,7 +1147,7 @@ function ActivityView({ orgId }) {
     <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Recent activity</h3>
       {activity.length === 0 ? (
-        <p className="text-[#475569] text-xs italic">No activity recorded yet.</p>
+        <EmptyState compact icon="📜" description="No activity recorded yet — actions on documents in this org will show up here." />
       ) : (
         <div className="space-y-2.5">
           {activity.map((e) => (
@@ -1399,7 +1400,7 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
       )}
       {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
       {departments.length === 0 ? (
-        <p className="text-[#475569] text-xs italic">No departments yet.</p>
+        <EmptyState compact icon="🏢" description="No departments yet." ctaLabel={canManage ? "+ Create one" : undefined} onCta={canManage ? () => setCreating(true) : undefined} />
       ) : (
         <div className="space-y-1">
           {departments.map((d) => (
@@ -1441,7 +1442,7 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
       )}
       {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
       {projects.length === 0 ? (
-        <p className="text-[#475569] text-xs italic">No projects yet.</p>
+        <EmptyState compact icon="📁" description="No projects yet." ctaLabel={canManage ? "+ Create one" : undefined} onCta={canManage ? () => setCreating(true) : undefined} />
       ) : (
         <div className="space-y-1">
           {projects.map((p) => (
@@ -1534,7 +1535,7 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
       </form>
       {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
       {documents.length === 0 ? (
-        <p className="text-[#475569] text-xs italic">No documents yet.</p>
+        <EmptyState compact icon="🔐" description="No documents yet — use the upload form above." />
       ) : (
         <div className="space-y-2">
           {documents.map((d) => (
