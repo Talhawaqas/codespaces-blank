@@ -508,6 +508,46 @@ export const ecosystemArchitecture = {
     },
     {
       number: "21",
+      title: "Oracle & Automation Layer",
+      blocks: [
+        {
+          type: "lead",
+          text: "A third, independent subsystem alongside the core protocol and Security Layer: an on-chain registry of approved external data sources, an adapter that validates every submission before trusting it, and an off-chain keeper that executes pre-approved contract actions under smart-contract rules — never arbitrary admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
+        },
+        {
+          type: "table",
+          headers: ["Contract", "Address", "Job"],
+          rows: [
+            ["InayaOracleRegistry", "0x0b4695...FdD90", "Owner-approved data sources: which address may submit for which data type, active/inactive, emergency disable. Holds no data itself."],
+            ["InayaOracleAdapter", "0x44E9E1...4789", "The actual data store other contracts read. Every submission is validated on-chain — not from the future, not already stale, not faster than the source's minimum interval, not an outlier beyond a configurable max deviation from the previous value. A submission failing any check reverts; nothing partially-invalid is ever recorded."],
+            ["InayaAutomationRegistry", "0xa24Eae...ADf53", "A transparent record of approved automated tasks and what they've actually done — deliberately holds no special calling rights over any target contract and never forwards a call. The off-chain worker calls target functions directly, under whatever access control they already enforce."],
+          ],
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Real data, not a simulated demo.",
+              body: "The oracle source live today is the INAYA/USDT spot price, read directly from the live PancakeSwap testnet pool's reserves — the same price computation the egress checkout flow already uses. Not a fabricated number for demonstration purposes.",
+            },
+            {
+              heading: "Real automation target, not a toy example.",
+              body: "InayaNodeRegistry's releaseSettlementsBatch() was already permissionless and time-locked — anyone could call it once a settlement's 36-hour delay passed, but nothing was calling it automatically. The keeper now does, on a schedule, running against a genuine existing function rather than one built just for this demo. The first real run found and released an actual previously-unclaimed settlement.",
+            },
+            {
+              heading: "Fails safe, not silently.",
+              body: "If oracle data goes stale, dependent automation skips that pass rather than acting on unverified data — proven live by deliberately lowering the staleness threshold and confirming the system correctly detects and reports it, then restoring normal operation.",
+            },
+          ],
+        },
+        {
+          type: "note",
+          text: "The keeper is a standalone script an operator runs (manually or on their own schedule) with their own key — not a hosted service with standing infrastructure access. Its on-chain authority is narrow by construction: it can only submit to oracle sources it's explicitly registered for, and it can only call functions that are already safe to call permissionlessly.",
+        },
+      ],
+    },
+    {
+      number: "22",
       title: "Where Everything Lives",
       blocks: [
         {
@@ -516,7 +556,9 @@ export const ecosystemArchitecture = {
           rows: [
             ["Core protocol contracts", "contracts/ (repo root) — InayaStaking.sol, InayaEgressTimelockVault.sol, InayaCorporateEscrow.sol, InayaNodeRegistry.sol, InayaProofRegistry.sol, MockINAYA.sol"],
             ["Security Layer contracts", "contracts/InayaThreat{Registry,Reporter}.sol, InayaNodeReputation.sol, InayaSecurityPolicy.sol"],
-            ["Deploy scripts", "scripts/deploy.js, deploy-staking.cjs, deploy-vault.cjs, deploy-escrow.cjs, deploy-node-registry.cjs, deploy-verifier-safe.cjs, deploy-security-layer.js"],
+            ["Oracle & Automation contracts", "contracts/oracle/InayaOracleRegistry.sol, InayaOracleAdapter.sol, contracts/automation/InayaAutomationRegistry.sol"],
+            ["Deploy scripts", "scripts/deploy.js, deploy-staking.cjs, deploy-vault.cjs, deploy-escrow.cjs, deploy-node-registry.cjs, deploy-verifier-safe.cjs, deploy-security-layer.js, deploy-oracle-automation.js"],
+            ["Automation keeper + tests", "scripts/automation-worker.mjs, scripts/test-automation-worker.mjs, test/OracleAutomation.test.js"],
             ["Client-side crypto SDK", "inaya-network-dapp/custody-sdk/src/ (crypto.js, index.js, contracts.js)"],
             ["Node operator CLI", "inaya-network-dapp/custody-sdk/packages/node-daemon/"],
             ["Backend + web dApp + Business Workspace", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],

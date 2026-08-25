@@ -165,6 +165,24 @@ export const ecosystemOverview = {
     },
     {
       number: "09",
+      title: "Oracle & Automation — Infrastructure That Runs Itself",
+      blocks: [
+        {
+          type: "lead",
+          text: "A third independent subsystem: an on-chain registry of approved data sources, and a keeper that executes pre-approved contract actions automatically — under smart-contract rules, never arbitrary admin commands. Live on BSC Testnet today, publicly verifiable at inayanetwork.com/automation.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "The live demo isn't simulated: the price feed reads the real PancakeSwap testnet pool for INAYA/USDT, and the automated action is a real, already-existing node-settlement release function on InayaNodeRegistry — the first run found and released an actual previously-unclaimed payout.",
+            "If the data feeding an automated action goes stale, the system skips that action rather than acting on unverified information — proven live, not just claimed.",
+            "The keeper never holds broad authority — it can only submit data it's explicitly registered for, and only call functions that are already safe for anyone to call.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "10",
       title: "How It All Actually Connects",
       blocks: [
         {

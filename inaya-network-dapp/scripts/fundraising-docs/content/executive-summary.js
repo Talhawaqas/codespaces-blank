@@ -34,7 +34,7 @@ export const executiveSummary = {
           "Knowledge Base covering DePIN, encryption, and digital sovereignty",
           "Staking interface and business/pricing flows implemented",
           "Full interactive Proof-of-Storage scheduled for mainnet",
-          "Also live: a decentralized Security Layer, Inaya Learn, an Investor Data Room, two desktop apps, and three AI assistants",
+          "Also live: a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, and three AI assistants",
         ],
         // Approved addition (2 sentences, see fundraising docs SOW §5) —
         // deliberately prose, not more bullets, to keep this a compression

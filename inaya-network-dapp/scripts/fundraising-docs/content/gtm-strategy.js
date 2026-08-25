@@ -119,7 +119,7 @@ export const gtmStrategy = {
             "Published npm packages",
             "Open-source developer resources",
             "Enterprise-oriented product architecture",
-            "Beyond storage: a Business Workspace SaaS product, a decentralized Security Layer (\"Inaya Firewall\"), Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and three purpose-built AI assistants — all live on the same infrastructure",
+            "Beyond storage: a Business Workspace SaaS product, a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and three purpose-built AI assistants — all live on the same infrastructure",
           ],
         },
         {

@@ -65,6 +65,7 @@ export const companyProfile = {
             "Two native desktop apps (Windows + Linux) — one for the Business Workspace, one for the main dApp.",
             "Developer SDK & CLI — the custody-sdk client library plus a published node-operator daemon.",
             "Three purpose-built AI assistants (Business, Security, Learn) — Gemini-powered, each with a guardrail philosophy suited to its job.",
+            "Oracle & Automation Layer — an on-chain data registry and a self-operating keeper that executes pre-approved contract actions automatically, live on BSC Testnet.",
           ],
         },
       ],

@@ -2901,6 +2901,12 @@ export default function Home() {
         // same honesty standard as every other unverified claim in this
         // roadmap (see e.g. "Protocol stress testing"'s comment above).
         { text: "Desktop OS-level firewall enforcement (Windows/Linux) — built, not yet verified on real hardware", done: false },
+        // Added August 2026 — Oracle & Automation Layer: on-chain oracle
+        // registry + adapter, an automation task registry, and an
+        // off-chain keeper, deployed and verified live on BSC Testnet
+        // (not a local-only demo — see /automation).
+        { text: "Oracle & Automation Layer — 3 smart contracts deployed & verified on BSC Testnet, live at /automation", done: true },
+        { text: "Oracle & Automation Layer — real on-chain price feed + automated node settlement release, running end-to-end", done: true },
       ],
     },
     {

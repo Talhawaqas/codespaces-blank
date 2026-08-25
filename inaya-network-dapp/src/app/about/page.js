@@ -52,6 +52,7 @@ const products = [
   { icon: "🎓", name: "Inaya Learn", desc: "Web3, AI, and programming education with an integrated AI tutor for every video." },
   { icon: "📁", name: "Investor Data Room", desc: "NDA-gated, per-visitor-tracked document viewing for investors." },
   { icon: "🖥️", name: "Desktop & Mobile Apps", desc: "Native apps for Windows, Linux, and Android, running the full ecosystem outside the browser." },
+  { icon: "⚙️", name: "Oracle & Automation Layer", desc: "An on-chain registry of approved data sources and a self-operating keeper that executes pre-approved contract actions automatically — live on BSC Testnet." },
 ];
 
 const personJsonLd = leadership.map((p) => ({

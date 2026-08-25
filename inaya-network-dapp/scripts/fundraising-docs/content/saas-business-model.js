@@ -35,7 +35,7 @@ export const saasBusinessModel = {
           text: [
             "Inaya Network operates two complementary engines. The Web3/DePIN engine turns users into node operators and storage demand into on-chain network activity. The Business SaaS engine — Business Workspace — turns that same zero-knowledge storage infrastructure into a recurring-revenue product for companies: document management, team collaboration, and an AI business assistant, all encrypted client-side before it ever reaches a server.",
             "Business Workspace is not a hypothetical roadmap item. Company/department/project/document hierarchy, role-based permissions, secure sharing, a full document approval workflow, and a permission-aware AI assistant are built and live today. This document covers that product specifically: what it does, who it's for, how it's priced, and how it generates revenue.",
-            "It's one of several products now built on Inaya's infrastructure alongside the core DePIN storage layer — a decentralized Security Layer, Inaya Learn, an Investor Data Room, and two desktop apps — each covered in its own dedicated document; this one stays scoped to Business Workspace specifically.",
+            "It's one of several products now built on Inaya's infrastructure alongside the core DePIN storage layer — a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, and two desktop apps — each covered in its own dedicated document; this one stays scoped to Business Workspace specifically.",
           ],
         },
       ],

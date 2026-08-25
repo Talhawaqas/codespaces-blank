@@ -132,6 +132,10 @@ export const investmentMemorandum = {
             "Investor Data Room — a branded, access-controlled document room for sharing investor materials, with per-visitor engagement tracking.",
             "Two native desktop apps (Windows + Linux) — thin Tauri wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
             "Three purpose-built AI assistants — Business, Security, and Learn — sharing one Gemini-powered tool-calling architecture, each with a guardrail philosophy suited to its job.",
+            // New addition, ecosystem-doc audit pass, August 2026 — same
+            // factual, no-financial-claims pattern as the Security Layer
+            // and Business Workspace lines above.
+            "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
           ],
         },
         {

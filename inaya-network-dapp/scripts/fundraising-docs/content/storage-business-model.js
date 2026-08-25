@@ -171,7 +171,7 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line), the Security Layer, Inaya Learn, an Investor Data Room, two desktop apps, and three AI assistants.",
+          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, and three AI assistants.",
         },
         {
           type: "note",

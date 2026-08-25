@@ -229,6 +229,7 @@ export const whitepaper = {
             "Investor Data Room — a branded, access-controlled document room with per-visitor engagement tracking.",
             "Two Tauri desktop apps — thin native wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
             "Three Gemini-powered AI assistants — Business, Security, and Learn — sharing one technical pattern but opposite guardrail philosophies suited to their purpose (see the Ecosystem Architecture document for full detail).",
+            "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
           ],
         },
         {
