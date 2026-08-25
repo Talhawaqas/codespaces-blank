@@ -2051,7 +2051,11 @@ const NAV_GROUPS = [
   {
     title: 'Web 3 Infrastructure',
     items: [
-      { label: 'Network Home', icon: '🏠' },
+      // `value` is what actually drives setCurrentPage/isActive -- the
+      // rest of this file still checks `currentPage === 'Network Home'`
+      // everywhere (including the initial useState default), so `label`
+      // can show "Home" without touching every one of those call sites.
+      { label: 'Home', value: 'Network Home', icon: '🏠' },
       { label: 'Faucet', icon: '🚰' },
       { label: 'Sovereign Vault', icon: '🔐' },
       { label: 'Staking', icon: '📈' },
@@ -2067,8 +2071,12 @@ const NAV_GROUPS = [
     items: [
       { label: 'Business Workspace', icon: '🏢', href: '/business' },
       { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
+    ],
+  },
+  {
+    title: 'Security',
+    items: [
       { label: 'Security Layer', icon: '🛡️', href: '/security' },
-      { label: 'Network Stats', icon: '📉', href: '/stats' },
     ],
   },
   {
@@ -2079,6 +2087,7 @@ const NAV_GROUPS = [
       { label: 'About Us', icon: 'ℹ️' },
       { label: 'Contact Us', icon: '✉️' },
       { label: 'FAQ', icon: '❓', href: '/faq' },
+      { label: 'Network Stats', icon: '📉', href: '/stats' },
     ],
   },
 ];
@@ -4891,7 +4900,12 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-self-center">
             <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
-            <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
+            {/* Hidden below lg: with the header's outer columns forced equal
+                width (grid-cols-[1fr_auto_1fr], needed for true centering),
+                this pill's ~300px was eating into the room the busier
+                right-side action cluster needs, forcing it to wrap onto two
+                rows. Decorative marketing copy, not critical navigation. */}
+            <span className="hidden 2xl:inline-block text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-self-end">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
@@ -4938,28 +4952,33 @@ export default function Home() {
                 </>
               )}
             </div>
+            {/* Text labels hidden below lg for the same reason as the badge
+                above -- keeps this cluster in one row instead of wrapping
+                inside its half of the now-equal-width header columns. Icon +
+                aria-label/title still make each button's purpose clear. */}
             <button
               onClick={() => setIsUpdatesDrawerOpen(true)}
               aria-label="Open updates and knowledge base"
-              className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
+              title="Knowledge Base"
+              className="relative flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
             >
-              📣 Knowledge Base
+              📣 <span className="hidden 2xl:inline">Knowledge Base</span>
             </button>
             <button
               onClick={() => openFeedbackModal('bug')}
               aria-label="Report a bug"
               title="Report a bug"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
             >
-              🐛 Report Bug
+              🐛 <span className="hidden 2xl:inline">Report Bug</span>
             </button>
             <button
               onClick={() => openFeedbackModal('idea')}
               aria-label="Suggest an idea"
               title="Suggest an idea"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
             >
-              💡 Suggest Idea
+              💡 <span className="hidden 2xl:inline">Suggest Idea</span>
             </button>
             <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
               {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
@@ -5010,13 +5029,14 @@ export default function Home() {
               <div className="px-3 text-[11px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2">{group.title}</div>
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = !item.href && currentPage === item.label;
+                  const pageValue = item.value || item.label;
+                  const isActive = !item.href && currentPage === pageValue;
                   const Tag = item.href ? 'a' : 'button';
                   return (
                     <Tag
                       key={item.label}
                       {...(item.href ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' } : {})}
-                      onClick={() => { if (!item.href) setCurrentPage(item.label); setIsNavMenuOpen(false); }}
+                      onClick={() => { if (!item.href) setCurrentPage(pageValue); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
                         isActive
                           ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border-[#00f2fe]/40'
