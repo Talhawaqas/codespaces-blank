@@ -48,40 +48,62 @@ const BRAND_HEADER = `
       INAYA <span style="color: #007a8f;">NETWORK</span>
     </div>
 `;
-const BRAND_FOOTER = `
+// "Expires in 30 minutes, one-time use" is only true for this app's own
+// magic-link tokens (login/invite/dataroom_verify) -- the referral purpose
+// links to a Didit-hosted KYC session instead, which this app doesn't
+// control the expiry of and reuses across repeat calls (see
+// api/referrals/initiate's existingReferral.diditSessionUrl reuse), so
+// that claim would be inaccurate for referral emails specifically.
+function brandFooter({ isReferral } = {}) {
+  const expiryNote = isReferral
+    ? "If you weren't expecting this, you can ignore this email."
+    : "This link expires in 30 minutes and can only be used once. If you didn't request it, you can ignore this email.";
+  return `
     <p style="margin-top: 32px; font-size: 12px; color: #8a93a3;">
-      This link expires in 30 minutes and can only be used once. If you didn't request it, you can ignore this email.
+      ${expiryNote}
     </p>
   </div>
 `;
+}
 
 /** The one email template every magic-link flow in this codebase sends (org login,
  *  org invite, data room access verification, and reusable for anything else
  *  that's just "click to continue"). */
-export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName }) {
+export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName, referrerEmail }) {
   const isInvite = purpose === "invite";
   const isDataroom = purpose === "dataroom_verify";
+  const isReferral = purpose === "referral";
   const subject = isInvite
     ? `You've been invited to join ${orgName} on Inaya`
     : isDataroom
       ? "Verify your email to access the Inaya data room"
-      : "Your Inaya sign-in link";
-  const heading = isInvite ? `Join ${orgName} on Inaya` : isDataroom ? "Access the Inaya Data Room" : "Sign in to Inaya";
+      : isReferral
+        ? "You've been invited to Inaya Network"
+        : "Your Inaya sign-in link";
+  const heading = isInvite
+    ? `Join ${orgName} on Inaya`
+    : isDataroom
+      ? "Access the Inaya Data Room"
+      : isReferral
+        ? "You're invited to Inaya Network"
+        : "Sign in to Inaya";
   const body = isInvite
     ? `You've been invited to join <b>${orgName}</b>. Click below to accept the invite and sign in.`
     : isDataroom
       ? "Click below to verify your email and continue to the data room."
-      : "Click below to sign in — no password needed.";
+      : isReferral
+        ? `${referrerEmail ? `<b>${referrerEmail}</b> thinks` : "Someone thinks"} you'd like Inaya — a private, encrypted vault for your files, with no single company (not even Inaya) ever holding a readable copy. Click below to verify your identity and get started.`
+        : "Click below to sign in — no password needed.";
 
   const html = `
     ${BRAND_HEADER}
     <h1 style="font-size: 20px; margin: 16px 0 8px; color: #10151f;">${heading}</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #3a4250;">${body}</p>
     <a href="${url}" style="display: inline-block; margin: 16px 0; padding: 12px 22px; background: #007a8f; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
-      ${isInvite ? "Accept invite" : isDataroom ? "Verify & continue" : "Sign in"}
+      ${isInvite ? "Accept invite" : isDataroom ? "Verify & continue" : isReferral ? "Verify & get started" : "Sign in"}
     </a>
     <p style="font-size: 12px; color: #8a93a3; word-break: break-all;">${url}</p>
-    ${BRAND_FOOTER}
+    ${brandFooter({ isReferral })}
   `;
   const text = `${heading}\n\n${body.replace(/<[^>]+>/g, "")}\n\n${url}`;
 

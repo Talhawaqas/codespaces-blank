@@ -14,6 +14,7 @@
 
 import { NextResponse } from "next/server";
 import { createDiditSession } from "../../../../lib/didit.js";
+import { sendMagicLinkEmail } from "../../../../lib/email.js";
 import {
   getReferralCollections,
   ensureReferralIndexes,
@@ -63,11 +64,15 @@ export async function POST(req) {
       return NextResponse.json({ error: "This person has already completed a referral with you." }, { status: 409 });
     }
     if (existingReferral?.status === "pending" && existingReferral.diditSessionUrl) {
+      // Same idempotent invite, resent -- e.g. the referred person lost the
+      // original email or the referrer clicked "Send invite" again.
+      const { sent } = await sendMagicLinkEmail({ to: referredEmail, url: existingReferral.diditSessionUrl, purpose: "referral", referrerEmail });
       return NextResponse.json({
         status: "pending",
         url: existingReferral.diditSessionUrl,
         referralCode: referrer.referralCode,
         referralId: existingReferral._id.toString(),
+        emailSent: sent,
       });
     }
 
@@ -86,7 +91,13 @@ export async function POST(req) {
       { $set: { diditSessionId: session.sessionId, diditSessionUrl: session.url, status: "pending", updatedAt: now } }
     );
 
-    return NextResponse.json({ status: "pending", url: session.url, referralCode: referrer.referralCode, referralId: referralDoc._id.toString() });
+    // Best-effort -- sendEmail() itself never throws (see lib/email.js), and
+    // the link is always returned in the response below either way, so a
+    // missing RESEND_API_KEY or provider hiccup never blocks the referral
+    // from being created, only whether the referred person gets emailed it.
+    const { sent } = await sendMagicLinkEmail({ to: referredEmail, url: session.url, purpose: "referral", referrerEmail });
+
+    return NextResponse.json({ status: "pending", url: session.url, referralCode: referrer.referralCode, referralId: referralDoc._id.toString(), emailSent: sent });
   } catch (err) {
     console.error("referrals/initiate failed:", err);
     return NextResponse.json({ error: "Could not start the referral. Please try again." }, { status: 500 });

@@ -15,11 +15,11 @@
 //   2. Once verified, you get a referralCode and can enter a referred
 //      person's email -> POST /api/referrals/initiate -> a Didit KYC link
 //      for THEM.
-//   3. No automated email delivery is wired up here — there's no email-
-//      sending service in this codebase yet (SendGrid/Postmark/etc. — the
-//      SOW itself flagged delivery mechanism as unconfirmed). The
-//      verification link is shown with a copy button for the referrer to
-//      send however they'd normally reach that person.
+//   3. That link is also emailed automatically via lib/email.js (Resend) —
+//      best-effort, never blocks the referral itself. Still shown with a
+//      copy button too, both because it's a good fallback if RESEND_API_KEY
+//      isn't configured (sendEmail() no-ops rather than failing) and because
+//      the referrer may just want to send it themselves anyway.
 //   4. Own history + running INAYA total, plus the global Top-50
 //      leaderboard (ranked strictly by successful-referral count).
 
@@ -67,6 +67,7 @@ export default function ReferralSection() {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
+  const [inviteEmailSent, setInviteEmailSent] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
 
   const [history, setHistory] = useState(null);
@@ -231,6 +232,7 @@ export default function ReferralSection() {
     setInviting(true);
     setInviteError('');
     setInviteUrl('');
+    setInviteEmailSent(false);
     setInviteCopied(false);
     try {
       const res = await fetch('/api/referrals/initiate', {
@@ -241,6 +243,7 @@ export default function ReferralSection() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not start the referral.');
       if (data.url) setInviteUrl(data.url);
+      setInviteEmailSent(!!data.emailSent);
       setReferredEmail('');
       refreshHistory(activatedEmail);
     } catch (err) {
@@ -474,7 +477,11 @@ export default function ReferralSection() {
           {inviteError && <p className="text-red-400 text-xs mt-3">{inviteError}</p>}
           {inviteUrl && (
             <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-4">
-              <p className="text-slate-400 text-xs mb-2">Share this verification link with them — we don't send it automatically:</p>
+              <p className="text-slate-400 text-xs mb-2">
+                {inviteEmailSent
+                  ? "✓ We've emailed them a verification link. You can also share it directly:"
+                  : "Share this verification link with them — email delivery isn't configured yet, so it wasn't sent automatically:"}
+              </p>
               <div className="flex items-center gap-2">
                 <span className="text-[#00f2fe] text-xs break-all font-mono">{inviteUrl}</span>
                 <button onClick={copyInviteUrl} type="button" className="shrink-0 text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-white/10">
