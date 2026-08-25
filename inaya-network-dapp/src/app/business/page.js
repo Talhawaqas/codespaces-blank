@@ -872,7 +872,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}
           {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
-          {activeView === "settings" && canManage && <TeamView orgId={orgId} />}
+          {activeView === "settings" && canManage && <TeamView orgId={orgId} email={email} />}
         </main>
       </div>
     </div>
@@ -2106,7 +2106,7 @@ function BillingView({ orgId, canManage }) {
   );
 }
 
-function TeamView({ orgId }) {
+function TeamView({ orgId, email }) {
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [error, setError] = useState("");
@@ -2115,6 +2115,7 @@ function TeamView({ orgId }) {
   const [inviteDeptIds, setInviteDeptIds] = useState([]);
   const [inviting, setInviting] = useState(false);
   const [inviteResult, setInviteResult] = useState(null);
+  const [savingNotifyPref, setSavingNotifyPref] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -2155,6 +2156,23 @@ function TeamView({ orgId }) {
     setInviteDeptIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  async function handleToggleNotify(next) {
+    setSavingNotifyPref(true);
+    try {
+      await api("/api/orgs/members/notify-preference", {
+        method: "POST",
+        body: JSON.stringify({ orgId, notifyOnApprovals: next }),
+      });
+      setMembers((prev) => prev.map((m) => (m.email === email ? { ...m, notifyOnApprovals: next } : m)));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingNotifyPref(false);
+    }
+  }
+
+  const ownMembership = members.find((m) => m.email === email);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
@@ -2190,6 +2208,23 @@ function TeamView({ orgId }) {
 
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Members</h3>
+
+        {ownMembership && (ownMembership.role === "owner" || ownMembership.role === "admin") && (
+          <div className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 mb-3">
+            <div className="min-w-0">
+              <p className="text-xs text-white">Email me when something needs my approval</p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
+            </div>
+            <button
+              onClick={() => handleToggleNotify(!ownMembership.notifyOnApprovals)}
+              disabled={savingNotifyPref}
+              className={`shrink-0 relative w-10 h-6 rounded-full transition-colors disabled:opacity-40 ${ownMembership.notifyOnApprovals ? "bg-[#00f2fe]/60" : "bg-white/10"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${ownMembership.notifyOnApprovals ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        )}
+
         <div className="space-y-2">
           {members.map((m) => (
             <div key={m.email} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg p-2.5">

@@ -27,6 +27,7 @@ export async function GET(req) {
         departmentIds: (m.departmentIds || []).map((id) => id.toString()),
         invitedAt: m.invitedAt,
         joinedAt: m.joinedAt || null,
+        notifyOnApprovals: m.notifyOnApprovals !== false,
       })),
     });
   } catch (err) {

@@ -69,38 +69,45 @@ function brandFooter({ isReferral } = {}) {
 /** The one email template every magic-link flow in this codebase sends (org login,
  *  org invite, data room access verification, and reusable for anything else
  *  that's just "click to continue"). */
-export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName, referrerEmail }) {
+export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName, referrerEmail, documentLabel }) {
   const isInvite = purpose === "invite";
   const isDataroom = purpose === "dataroom_verify";
   const isReferral = purpose === "referral";
+  const isApprovalNotify = purpose === "approval_notify";
   const subject = isInvite
     ? `You've been invited to join ${orgName} on Inaya`
     : isDataroom
       ? "Verify your email to access the Inaya data room"
       : isReferral
         ? "You've been invited to Inaya Network"
-        : "Your Inaya sign-in link";
+        : isApprovalNotify
+          ? `Pending your approval — ${orgName}`
+          : "Your Inaya sign-in link";
   const heading = isInvite
     ? `Join ${orgName} on Inaya`
     : isDataroom
       ? "Access the Inaya Data Room"
       : isReferral
         ? "You're invited to Inaya Network"
-        : "Sign in to Inaya";
+        : isApprovalNotify
+          ? "A document needs your approval"
+          : "Sign in to Inaya";
   const body = isInvite
     ? `You've been invited to join <b>${orgName}</b>. Click below to accept the invite and sign in.`
     : isDataroom
       ? "Click below to verify your email and continue to the data room."
       : isReferral
         ? `${referrerEmail ? `<b>${referrerEmail}</b> thinks` : "Someone thinks"} you'd like Inaya — a private, encrypted vault for your files, with no single company (not even Inaya) ever holding a readable copy. Click below to verify your identity and get started.`
-        : "Click below to sign in — no password needed.";
+        : isApprovalNotify
+          ? `<b>${documentLabel || "A document"}</b> was just submitted in <b>${orgName}</b> and is waiting on your review. Click below to sign in and take a look.`
+          : "Click below to sign in — no password needed.";
 
   const html = `
     ${BRAND_HEADER}
     <h1 style="font-size: 20px; margin: 16px 0 8px; color: #10151f;">${heading}</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #3a4250;">${body}</p>
     <a href="${url}" style="display: inline-block; margin: 16px 0; padding: 12px 22px; background: #007a8f; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
-      ${isInvite ? "Accept invite" : isDataroom ? "Verify & continue" : isReferral ? "Verify & get started" : "Sign in"}
+      ${isInvite ? "Accept invite" : isDataroom ? "Verify & continue" : isReferral ? "Verify & get started" : isApprovalNotify ? "Review document" : "Sign in"}
     </a>
     <p style="font-size: 12px; color: #8a93a3; word-break: break-all;">${url}</p>
     ${brandFooter({ isReferral })}

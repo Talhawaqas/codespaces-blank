@@ -36,9 +36,10 @@
 // only ever calls documentActivity.insertOne(). There is no update/delete
 // path for this collection anywhere in the codebase — don't add one.
 
-import { getOrgCollections, canManageOrg, toObjectId } from "./orgs.js";
+import { getOrgCollections, canManageOrg, toObjectId, generateToken, hashToken, MAGIC_LINK_TTL_MS } from "./orgs.js";
 import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
 import { logDocumentActivity } from "./activity-log.js";
+import { sendMagicLinkEmail } from "./email.js";
 
 export { logDocumentActivity }; // re-exported — existing imports across the codebase use this path
 
@@ -53,6 +54,56 @@ export const TRANSITIONS = {
   archive: { from: "APPROVED", to: "ARCHIVED", requiresManage: true, activityAction: "ARCHIVED" },
   restore: { from: "ARCHIVED", to: "APPROVED", requiresManage: true, activityAction: "RESTORED" },
 };
+
+/** Best-effort — never throws, never blocks the transition that already
+ *  succeeded before this is called. Emails every active owner/admin (the
+ *  only roles that can ever act on a PENDING document, see this file's
+ *  ROLES comment) a real magic-link login, except the person who just
+ *  submitted it and anyone who's opted out via notifyOnApprovals: false
+ *  (org_members, default true when the field is absent — see
+ *  api/orgs/members/notify-preference). Immediate-per-submission rather
+ *  than a digest: this codebase has no scheduled-job infrastructure to
+ *  batch on, and the opt-out is the pressure valve for teams where that's
+ *  too noisy. */
+async function notifyApproversOfSubmission({ orgObjectId, doc, actorEmail }) {
+  try {
+    const { orgs, orgMembers, magicLinks } = await getOrgCollections();
+    const [org, approvers] = await Promise.all([
+      orgs.findOne({ _id: orgObjectId }),
+      orgMembers
+        .find({ orgId: orgObjectId, role: { $in: ["owner", "admin"] }, status: "active", notifyOnApprovals: { $ne: false } })
+        .toArray(),
+    ]);
+    if (!org) return;
+
+    const origin = process.env.NEXT_PUBLIC_APP_URL;
+    if (!origin) {
+      console.warn("notifyApproversOfSubmission: NEXT_PUBLIC_APP_URL not set — skipping approval emails.");
+      return;
+    }
+
+    await Promise.all(
+      approvers
+        .filter((a) => a.email !== actorEmail)
+        .map(async (approver) => {
+          const token = generateToken();
+          await magicLinks.insertOne({
+            tokenHash: hashToken(token),
+            email: approver.email,
+            orgId: null,
+            purpose: "login",
+            expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_MS).toISOString(),
+            usedAt: null,
+            createdAt: new Date().toISOString(),
+          });
+          const loginUrl = `${origin}/api/orgs/login/consume?token=${token}`;
+          await sendMagicLinkEmail({ to: approver.email, url: loginUrl, purpose: "approval_notify", orgName: org.name, documentLabel: doc.filename });
+        })
+    );
+  } catch (err) {
+    console.error("notifyApproversOfSubmission failed (non-fatal):", err.message);
+  }
+}
 
 /** The single enforcement point for every document state change. Returns
  *  { document } on success, or { error, status } on failure — callers
@@ -110,6 +161,16 @@ export async function transitionDocument({ orgId, documentId, action, membership
     newState: definition.to,
     metadata: note ? { note } : {},
   });
+
+  if (action === "submit") {
+    // Awaited (not fire-and-forget) -- a serverless function can be frozen
+    // right after its response is sent, so an un-awaited promise here risks
+    // never actually completing. notifyApproversOfSubmission() can't throw
+    // (see its own try/catch), so this adds latency, never a new failure
+    // mode, and the transition below already succeeded regardless of what
+    // this returns.
+    await notifyApproversOfSubmission({ orgObjectId, doc: updated, actorEmail });
+  }
 
   return { document: updated };
 }
