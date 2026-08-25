@@ -10,6 +10,7 @@
     "test": "node --test --test-timeout=20000 test/*.test.mjs"
   },
   "dependencies": {
+    "@inaya-network/custody-sdk": "file:./custody-sdk",
     "@google/genai": "^2.13.0",
     "@supabase/supabase-js": "^2.44.4",
     "@tailwindcss/postcss": "^4.3.3",

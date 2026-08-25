@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
+import { createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -2521,6 +2522,217 @@ export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [masterPasskey, setMasterPasskey] = useState('');
   const [queryAssetId, setQueryAssetId] = useState('');
+
+  // ========================================================
+  // 🔐 MASTER NODE PASSKEY — BACKUP & RECOVERY (User-Controlled Key
+  // Recovery). Every crypto operation here runs through custody-sdk's
+  // createPasskeyBackup/restorePasskeyBackup (custody-sdk/src/passkeyBackup.js)
+  // — pure local crypto, zero network calls on any path. Backup files are
+  // downloaded via a client-side Blob + <a download>, never uploaded;
+  // restore reads a locally-picked file via FileReader. Inaya never
+  // receives the passkey, the backup password, or the derived key.
+  // ========================================================
+  const [backupModal, setBackupModal] = useState(null); // null | 'create' | 'restore' | 'manage'
+  const [backupPasswordForm, setBackupPasswordForm] = useState({ password: '', confirm: '' });
+  const [backupError, setBackupError] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupSuccessMsg, setBackupSuccessMsg] = useState('');
+  const [restoreFileText, setRestoreFileText] = useState(''); // raw text content of the picked backup file
+  const [restoreFileName, setRestoreFileName] = useState('');
+  const [restorePassword, setRestorePassword] = useState('');
+  const [restoreChecklist, setRestoreChecklist] = useState(null); // set on successful restore — see the modal's Restore body
+  const [secureStorageStatus, setSecureStorageStatus] = useState(''); // Manage Secure Storage panel's own status line (Tauri only)
+
+  // typeof window !== 'undefined' && '__TAURI__' in window is the standard
+  // Tauri v2 idiom for detecting this page is running inside the desktop
+  // app rather than a plain browser tab — page.js is the SAME code either
+  // way (both inaya-desktop and inaya-dapp-desktop just render this page
+  // in a native window), so this gate is the only thing distinguishing
+  // "OS secure storage is available" from "plain browser, memory only."
+  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+
+  function openBackupModal(mode) {
+    setBackupModal(mode);
+    setBackupError('');
+    setBackupSuccessMsg('');
+    setRestoreChecklist(null);
+    setSecureStorageStatus('');
+    setBackupPasswordForm({ password: '', confirm: '' });
+    setRestorePassword('');
+    setRestoreFileText('');
+    setRestoreFileName('');
+  }
+
+  function closeBackupModal() {
+    setBackupModal(null);
+    // Clear every password/passkey-adjacent field the instant the modal
+    // closes — nothing here should linger in state any longer than the
+    // modal is actually open.
+    setBackupPasswordForm({ password: '', confirm: '' });
+    setRestorePassword('');
+    setRestoreFileText('');
+    setRestoreFileName('');
+    setBackupError('');
+  }
+
+  async function handleCreateBackup(e) {
+    e.preventDefault();
+    setBackupError('');
+    if (!masterPasskey) {
+      setBackupError('Enter your Master Node Passkey in the sidebar first.');
+      return;
+    }
+    if (backupPasswordForm.password !== backupPasswordForm.confirm) {
+      setBackupError("Passwords don't match.");
+      return;
+    }
+    setBackupBusy(true);
+    try {
+      // createPasskeyBackup() is pure local crypto — zero network calls on
+      // any path (see custody-sdk/src/passkeyBackup.js). Everything below
+      // this line is a client-side Blob download; there is no upload code
+      // path here to accidentally trigger.
+      // .inayakey / octet-stream, not .json — the returned text is an
+      // opaque FILE_PREFIX+base64 blob (see passkeyBackup.js), deliberately
+      // not readable JSON, so the exported file doesn't open as plain text
+      // in Notepad/Notepad++/Word and invite casual poking at it.
+      const blob = await createPasskeyBackup(masterPasskey, backupPasswordForm.password);
+      const file = new Blob([blob], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inaya-passkey-backup-${Date.now()}.inayakey`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setBackupPasswordForm({ password: '', confirm: '' });
+      setBackupSuccessMsg('✅ Encrypted backup downloaded. Store it somewhere only you control — Inaya never received a copy.');
+    } catch (err) {
+      setBackupError(err.message || 'Could not create the backup.');
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  function handleRestoreFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBackupError('');
+    setRestoreChecklist(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      // Fast, friendly rejection of an obviously-wrong file (a random JSON
+      // blob, an image picked by mistake) before ever asking for a password.
+      if (!isPasskeyBackupEnvelope(text)) {
+        setBackupError("This doesn't look like an Inaya passkey backup file.");
+        setRestoreFileText('');
+        setRestoreFileName('');
+        return;
+      }
+      setRestoreFileText(text);
+      setRestoreFileName(file.name);
+    };
+    reader.onerror = () => setBackupError('Could not read that file.');
+    reader.readAsText(file);
+  }
+
+  async function handleRestoreBackup(e) {
+    e.preventDefault();
+    setBackupError('');
+    if (!restoreFileText) {
+      setBackupError('Select an encrypted backup file first.');
+      return;
+    }
+    setBackupBusy(true);
+    try {
+      // restorePasskeyBackup() is pure local crypto — zero network calls on
+      // any path. Throws InayaDecryptionError with the exact SOW-mandated
+      // "Unable to decrypt backup..." message on a wrong password or a
+      // corrupted/tampered file — rendered as err.message below, no
+      // re-mapping needed.
+      const recovered = await restorePasskeyBackup(restoreFileText, restorePassword);
+
+      // Recovery validation checklist (SOW §8) — every line here is a real
+      // guarantee this codebase already provides, not a decorative
+      // checkmark: format/integrity are both proven by restorePasskeyBackup()
+      // having returned at all rather than throwing (a non-empty string is
+      // literally its only non-throwing return value, and the AES-GCM auth
+      // tag check inside it IS the integrity check). Node identity is
+      // unaffected by construction — this passkey is never used to derive
+      // wallet/node identity anywhere in this app (that's the separate
+      // connected wallet address); restoring it never touches
+      // isConnected/isSignedUp. And restorePasskeyBackup() has no code path
+      // that generates a new passkey — only createPasskeyBackup() calls
+      // crypto.getRandomValues(), for the backup's own salt/iv.
+      setRestoreChecklist([
+        '✓ Passkey format valid',
+        '✓ Backup integrity verified (AES-GCM authentication passed)',
+        '✓ Node identity unchanged (this only affects file encryption, not your wallet)',
+      ]);
+      setMasterPasskey(recovered);
+      setRestorePassword('');
+      setRestoreFileText('');
+      setRestoreFileName('');
+      setBackupSuccessMsg('✅ Master Node Passkey recovered and loaded into the sidebar.');
+    } catch (err) {
+      setBackupError(err.message || 'Could not restore the backup.');
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  // The three Manage Secure Storage handlers below only ever run when
+  // isTauri is true (gated in the modal's JSX) — window.__TAURI__.core.invoke
+  // is the injected Tauri v2 IPC bridge to the store_passkey_secure /
+  // retrieve_passkey_secure / clear_passkey_secure Rust commands (see
+  // src-tauri/src/lib.rs in inaya-desktop and inaya-dapp-desktop), which
+  // read/write the OS's own credential store (Windows Credential Manager /
+  // Linux Secret Service) via the `keyring` crate. Using the injected
+  // global rather than a static @tauri-apps/api import so this same
+  // page.js keeps working unmodified in a plain browser tab.
+  async function handleTauriStorePasskey() {
+    setBackupError('');
+    setSecureStorageStatus('');
+    if (!masterPasskey) {
+      setBackupError('Enter your Master Node Passkey in the sidebar first.');
+      return;
+    }
+    try {
+      await window.__TAURI__.core.invoke('store_passkey_secure', { passkey: masterPasskey });
+      setSecureStorageStatus('✅ Stored in your OS secure credential storage.');
+    } catch (err) {
+      setSecureStorageStatus(`⚠️ Could not store: ${String(err)}`);
+    }
+  }
+
+  async function handleTauriRetrievePasskey() {
+    setBackupError('');
+    setSecureStorageStatus('');
+    try {
+      const stored = await window.__TAURI__.core.invoke('retrieve_passkey_secure');
+      if (!stored) {
+        setSecureStorageStatus('No passkey is currently stored in secure storage on this device.');
+        return;
+      }
+      setMasterPasskey(stored);
+      setSecureStorageStatus('✅ Loaded from your OS secure credential storage into the sidebar.');
+    } catch (err) {
+      setSecureStorageStatus(`⚠️ Could not retrieve: ${String(err)}`);
+    }
+  }
+
+  async function handleTauriClearPasskey() {
+    setBackupError('');
+    setSecureStorageStatus('');
+    try {
+      await window.__TAURI__.core.invoke('clear_passkey_secure');
+      setSecureStorageStatus('✅ Cleared from your OS secure credential storage.');
+    } catch (err) {
+      setSecureStorageStatus(`⚠️ Could not clear: ${String(err)}`);
+    }
+  }
 
   // ========================================================
   // 🌳 PROOF-OF-STORAGE LOOKUP PANEL STATE
@@ -5452,11 +5664,41 @@ export default function Home() {
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a96ab] text-xs">🔒</span>
               <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
             </div>
+            {/* Discoverable right at the point a new-device user actually
+                looks for it — they don't have a passkey to type, they have
+                a backup file. Opens the same Restore modal as the button
+                in the section below; this is just a second, more visible
+                entry point into it. */}
+            <button type="button" onClick={() => openBackupModal('restore')} className="mt-2 text-[11px] text-[#00f2fe] hover:underline font-mono">
+              📁 Switched devices? Restore from your backup file
+            </button>
             <div className="flex gap-2 mt-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
               <span className="text-amber-400 text-xs shrink-0">⚠️</span>
               <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
                 Never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
               </p>
+            </div>
+          </div>
+
+          {/* MASTER NODE PASSKEY — BACKUP & RECOVERY (User-Controlled Key
+              Recovery). "Your key. Your backup. Your recovery. Inaya never
+              holds it." */}
+          <div>
+            <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">🔐 Master Node Passkey</div>
+            <div className="border border-[#00f2fe]/20 bg-gradient-to-b from-[#0c162b]/80 to-[#0c162b]/40 p-4 rounded-xl space-y-2.5">
+              <p className="text-[11px] text-[#8a96ab] font-mono">Secure your recovery</p>
+              <p className="text-[11px] text-[#94a3b8] font-mono leading-relaxed">
+                The encrypted backup file is saved to <span className="text-white font-bold">your own device's storage</span> — Downloads, a USB drive, wherever you choose. It is never uploaded to Inaya, automatically or otherwise.
+              </p>
+              <button onClick={() => openBackupModal('create')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Create Encrypted Backup</button>
+              <button onClick={() => openBackupModal('restore')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Restore From Backup</button>
+              <button onClick={() => openBackupModal('manage')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Manage Secure Storage</button>
+              <div className="flex gap-2 mt-1 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
+                <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+                <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
+                  Inaya cannot recover your Master Node Passkey. Keep your encrypted backup and recovery password safe. Losing both may result in permanent loss of access.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -7323,6 +7565,149 @@ export default function Home() {
                 This dApp runs on <strong>BNB Chain Testnet</strong>. Not every mobile wallet exposes testnets over WalletConnect — that's the wallet's own choice, not something this site controls. <strong>MetaMask</strong> (and browsers with a built-in wallet, like Brave) currently offer the most reliable connection. If <strong>Coinbase Wallet</strong> opens to its home screen instead of this site, manually type <span className="text-amber-300">inayanetwork.com</span> into Coinbase's built-in browser and tap Connect Wallet again from there.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 MASTER NODE PASSKEY — BACKUP & RECOVERY MODAL. Three body
+          variants keyed on backupModal, same fixed-inset overlay pattern
+          as the feedback modal below. Every crypto call inside runs
+          through custody-sdk's passkeyBackup.js — zero network calls on
+          any path (see that file's header comment). */}
+      {backupModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-[#090e1a] border border-[#00f2fe]/20 w-full max-w-md rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onClick={closeBackupModal} className="absolute top-4 right-4 text-[#8a96ab] font-mono hover:text-white">✕</button>
+            <div className="text-center mb-5">
+              <h3 className="text-white font-bold">
+                {backupModal === 'create' ? '🔐 Create Encrypted Backup' : backupModal === 'restore' ? '📂 Restore From Backup' : '🗄️ Manage Secure Storage'}
+              </h3>
+              <p className="text-[12px] text-[#8a96ab] font-mono mt-1">Your key. Your backup. Your recovery. Inaya never holds it.</p>
+            </div>
+
+            {backupError && <p className="text-red-400 text-xs mb-3 text-center">⚠ {backupError}</p>}
+
+            {backupModal === 'create' && (
+              backupSuccessMsg ? (
+                <div className="text-center py-6">
+                  <p className="text-emerald-400 font-bold text-sm">{backupSuccessMsg}</p>
+                  <button onClick={closeBackupModal} className="mt-4 text-xs text-[#00f2fe] hover:underline">Done</button>
+                </div>
+              ) : (
+                <form onSubmit={handleCreateBackup} className="space-y-3">
+                  <p className="text-[12px] text-[#94a3b8] font-mono leading-relaxed">
+                    Choose a backup password — separate from your Master Node Passkey. It encrypts the backup file locally, right here in your browser; Inaya never sees it. You'll need it again to restore.
+                  </p>
+                  <div>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Backup password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={backupPasswordForm.password}
+                      onChange={(e) => setBackupPasswordForm((f) => ({ ...f, password: e.target.value }))}
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
+                      placeholder="At least 8 characters"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Confirm backup password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={backupPasswordForm.confirm}
+                      onChange={(e) => setBackupPasswordForm((f) => ({ ...f, confirm: e.target.value }))}
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
+                      placeholder="Re-enter the password"
+                    />
+                  </div>
+                  <div className="flex gap-2 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
+                    <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+                    <p className="text-[11px] text-amber-400/80 font-mono leading-relaxed">
+                      Inaya cannot recover your Master Node Passkey. Keep your encrypted backup and recovery password safe. Losing both may result in permanent loss of access.
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={backupBusy}
+                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {backupBusy ? 'ENCRYPTING…' : 'DOWNLOAD ENCRYPTED BACKUP'}
+                  </button>
+                </form>
+              )
+            )}
+
+            {backupModal === 'restore' && (
+              backupSuccessMsg ? (
+                <div className="text-center py-6">
+                  <p className="text-emerald-400 font-bold text-sm">{backupSuccessMsg}</p>
+                  {restoreChecklist && (
+                    <ul className="mt-3 space-y-1 text-left inline-block">
+                      {restoreChecklist.map((line) => (
+                        <li key={line} className="text-[12px] text-[#94a3b8] font-mono">{line}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div>
+                    <button onClick={closeBackupModal} className="mt-4 text-xs text-[#00f2fe] hover:underline">Done</button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleRestoreBackup} className="space-y-3">
+                  <p className="text-[12px] text-[#94a3b8] font-mono leading-relaxed">
+                    Select the encrypted backup file from your device, then enter the backup password you set when you created it.
+                  </p>
+                  <div>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Encrypted backup file</label>
+                    <input
+                      type="file"
+                      accept=".inayakey,application/octet-stream"
+                      onChange={handleRestoreFileChange}
+                      className="w-full mt-1 text-xs text-[#94a3b8] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-white/10 file:text-white file:text-xs"
+                    />
+                    {restoreFileName && <p className="text-[12px] text-emerald-400 mt-1">✓ Selected: {restoreFileName}</p>}
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Backup password</label>
+                    <input
+                      type="password"
+                      required
+                      value={restorePassword}
+                      onChange={(e) => setRestorePassword(e.target.value)}
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={backupBusy || !restoreFileText}
+                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {backupBusy ? 'DECRYPTING…' : 'RESTORE PASSKEY'}
+                  </button>
+                </form>
+              )
+            )}
+
+            {backupModal === 'manage' && (
+              isTauri ? (
+                <div className="space-y-3">
+                  <p className="text-[12px] text-[#94a3b8] font-mono leading-relaxed">
+                    Store your Master Node Passkey in this device's OS-backed secure credential storage (Windows Credential Manager / Linux Secret Service), so you don't have to re-type it every session.
+                  </p>
+                  <button onClick={handleTauriStorePasskey} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Store Current Passkey Securely</button>
+                  <button onClick={handleTauriRetrievePasskey} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Load Passkey From Secure Storage</button>
+                  <button onClick={handleTauriClearPasskey} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-bold transition-colors">Clear Secure Storage</button>
+                  {secureStorageStatus && <p className="text-[12px] text-center text-[#94a3b8] font-mono">{secureStorageStatus}</p>}
+                </div>
+              ) : (
+                <p className="text-[12px] text-[#94a3b8] font-mono leading-relaxed text-center py-4">
+                  Secure OS storage is only available in the Inaya Desktop app. In your browser, your passkey stays in memory for this session only, which is already the safest option a browser can offer.
+                </p>
+              )
+            )}
           </div>
         </div>
       )}
