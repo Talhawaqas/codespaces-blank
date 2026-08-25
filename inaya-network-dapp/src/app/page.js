@@ -4868,14 +4868,10 @@ export default function Home() {
       <div className="sticky top-0 z-50">
         <header className="relative z-10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
-            <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
-            <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
-          </div>
-          <div className="flex items-center gap-3">
             {/* ☰ SITE NAV — opens the grouped menu drawer (see NAV_GROUPS)
                 instead of the old always-visible two-row, 18-button pill bar.
-                Doubles as a "you are here" indicator via currentPage. */}
+                Doubles as a "you are here" indicator via currentPage. Sits
+                left of the logo, the conventional hamburger position. */}
             <button
               onClick={() => setIsNavMenuOpen(true)}
               aria-label="Open site menu"
@@ -4889,6 +4885,11 @@ export default function Home() {
               </span>
               <span className="text-xs font-mono font-bold text-white whitespace-nowrap">{currentPage}</span>
             </button>
+            <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
+            <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
+            <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
+          </div>
+          <div className="flex items-center gap-3">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
@@ -4981,8 +4982,8 @@ export default function Home() {
         role="dialog"
         aria-modal="true"
         aria-label="Site menu"
-        className={`fixed top-0 right-0 z-[70] h-full w-full sm:w-96 bg-[#0a0f1e] border-l border-[#00f2fe]/15 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isNavMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 left-0 z-[70] h-full w-full sm:w-96 bg-[#0a0f1e] border-r border-[#00f2fe]/15 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+          isNavMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#00f2fe]/15 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-xl">
