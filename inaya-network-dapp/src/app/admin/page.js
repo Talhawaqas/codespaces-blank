@@ -140,6 +140,9 @@ export default function AdminDashboard() {
           <a href="/admin/security" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Security Layer
           </a>
+          <a href="/admin/hackathon" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Hackathon
+          </a>
           <button onClick={loadDashboardData} disabled={loading} className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             {loading ? "Refreshing..." : "Refresh"}
           </button>
