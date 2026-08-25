@@ -4907,7 +4907,7 @@ export default function Home() {
                 rows. Decorative marketing copy, not critical navigation. */}
             <span className="hidden 2xl:inline-block text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-self-end">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-self-end">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
@@ -4955,32 +4955,37 @@ export default function Home() {
             {/* Text labels hidden below lg for the same reason as the badge
                 above -- keeps this cluster in one row instead of wrapping
                 inside its half of the now-equal-width header columns. Icon +
-                aria-label/title still make each button's purpose clear. */}
+                aria-label/title still make each button's purpose clear. Kept
+                icon-only permanently (not just below some breakpoint) --
+                the equal-width grid columns mean this cluster is capped at
+                half of whatever space the header has left after the center
+                brand block, and even at very wide viewports that's not
+                enough room for the full-text version without wrapping. */}
             <button
               onClick={() => setIsUpdatesDrawerOpen(true)}
               aria-label="Open updates and knowledge base"
               title="Knowledge Base"
-              className="relative flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#00f2fe]/30 bg-cyan-500/10 text-[#00f2fe] hover:bg-cyan-500/20 transition-colors"
             >
-              📣 <span className="hidden 2xl:inline">Knowledge Base</span>
+              📣
             </button>
             <button
               onClick={() => openFeedbackModal('bug')}
               aria-label="Report a bug"
               title="Report a bug"
-              className="flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
             >
-              🐛 <span className="hidden 2xl:inline">Report Bug</span>
+              🐛
             </button>
             <button
               onClick={() => openFeedbackModal('idea')}
               aria-label="Suggest an idea"
               title="Suggest an idea"
-              className="flex items-center gap-1.5 px-3 2xl:px-4 py-2 rounded-full text-xs font-mono font-bold border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
             >
-              💡 <span className="hidden 2xl:inline">Suggest Idea</span>
+              💡
             </button>
-            <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-6 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95">
+            <button onClick={() => isConnected ? null : setIsWalletModalOpen(true)} className="px-5 py-2 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] transition-transform active:scale-95 whitespace-nowrap">
               {isConnected ? `🛡️ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4).toUpperCase()}` : '🔌 CONNECT WALLET'}
             </button>
           </div>
