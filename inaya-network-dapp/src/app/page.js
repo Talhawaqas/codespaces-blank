@@ -2049,7 +2049,7 @@ Frequently Asked Questions (FAQs)
 // dApp state); items without one are setCurrentPage tabs on this page.
 const NAV_GROUPS = [
   {
-    title: 'Network',
+    title: 'Web 3 Infrastructure',
     items: [
       { label: 'Network Home', icon: '🏠' },
       { label: 'Faucet', icon: '🚰' },
@@ -2063,21 +2063,21 @@ const NAV_GROUPS = [
     ],
   },
   {
-    title: 'Company',
+    title: 'About Us',
     items: [
       { label: 'Business Model', icon: '📄' },
       { label: 'White Paper', icon: '📘' },
       { label: 'About Us', icon: 'ℹ️' },
       { label: 'Contact Us', icon: '✉️' },
+      { label: 'FAQ', icon: '❓', href: '/faq' },
     ],
   },
   {
-    title: 'Ecosystem',
+    title: 'Business Document Management SaaS',
     items: [
       { label: 'Business Workspace', icon: '🏢', href: '/business' },
       { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
       { label: 'Security Layer', icon: '🛡️', href: '/security' },
-      { label: 'FAQ', icon: '❓', href: '/faq' },
       { label: 'Network Stats', icon: '📉', href: '/stats' },
     ],
   },
@@ -2639,10 +2639,10 @@ export default function Home() {
   const chatScrollRef = useRef(null);
   const chatInputRef = useRef(null);
   const SUGGESTED_CHAT_PROMPTS = [
-    "Explain the tokenomics",
+    "What is Inaya Network? (Simply, then technically)",
+    "What does Inaya Network do for individuals and businesses?",
     "How does sharded storage work?",
     "What are the pricing tiers?",
-    "How do I stake $INAYA?",
   ];
 
   // Dynamic Cost States for Frontend Math
@@ -4875,8 +4875,9 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* ☰ SITE NAV — opens the grouped menu drawer (see NAV_GROUPS)
                 instead of the old always-visible two-row, 18-button pill bar.
-                Doubles as a "you are here" indicator via currentPage. Sits
-                left of the logo, the conventional hamburger position. */}
+                Label is a fixed "Inaya Ecosystem", not currentPage -- kept
+                static per request instead of doubling as a page indicator.
+                Sits left of the logo, the conventional hamburger position. */}
             <button
               onClick={() => setIsNavMenuOpen(true)}
               aria-label="Open site menu"
@@ -4888,7 +4889,7 @@ export default function Home() {
                 <span className="block h-[2px] w-4 rounded-full bg-[#00f2fe]" />
                 <span className="block h-[2px] w-2.5 rounded-full bg-[#00f2fe] ml-auto" />
               </span>
-              <span className="text-xs font-mono font-bold text-white whitespace-nowrap">{currentPage}</span>
+              <span className="text-xs font-mono font-bold text-white whitespace-nowrap">Inaya Ecosystem</span>
             </button>
             <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
