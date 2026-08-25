@@ -2063,6 +2063,15 @@ const NAV_GROUPS = [
     ],
   },
   {
+    title: 'Business Document Management SaaS',
+    items: [
+      { label: 'Business Workspace', icon: '🏢', href: '/business' },
+      { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
+      { label: 'Security Layer', icon: '🛡️', href: '/security' },
+      { label: 'Network Stats', icon: '📉', href: '/stats' },
+    ],
+  },
+  {
     title: 'About Us',
     items: [
       { label: 'Business Model', icon: '📄' },
@@ -2070,15 +2079,6 @@ const NAV_GROUPS = [
       { label: 'About Us', icon: 'ℹ️' },
       { label: 'Contact Us', icon: '✉️' },
       { label: 'FAQ', icon: '❓', href: '/faq' },
-    ],
-  },
-  {
-    title: 'Business Document Management SaaS',
-    items: [
-      { label: 'Business Workspace', icon: '🏢', href: '/business' },
-      { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
-      { label: 'Security Layer', icon: '🛡️', href: '/security' },
-      { label: 'Network Stats', icon: '📉', href: '/stats' },
     ],
   },
 ];
@@ -4866,36 +4866,34 @@ export default function Home() {
           always visible. The ☰ button inside it opens the site menu
           drawer (rendered as a sibling below) instead of an in-header nav. */}
       <div className="sticky top-0 z-50">
-        <header className="relative z-10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
-          {/* flex-wrap on both clusters below: on narrow mobile widths the
-              right cluster (bell + 3 buttons + Connect Wallet) is 587px wide
-              on its own and was silently overflowing off-screen without
-              this, making Connect Wallet unreachable. Wrapping keeps every
-              button reachable instead of clipped past the viewport edge. */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {/* ☰ SITE NAV — opens the grouped menu drawer (see NAV_GROUPS)
-                instead of the old always-visible two-row, 18-button pill bar.
-                Label is a fixed "Inaya Ecosystem", not currentPage -- kept
-                static per request instead of doubling as a page indicator.
-                Sits left of the logo, the conventional hamburger position. */}
-            <button
-              onClick={() => setIsNavMenuOpen(true)}
-              aria-label="Open site menu"
-              aria-expanded={isNavMenuOpen}
-              className="flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full border border-white/10 bg-white/5 hover:border-[#00f2fe]/40 hover:bg-white/10 transition-colors"
-            >
-              <span className="flex flex-col justify-center gap-[3px]">
-                <span className="block h-[2px] w-4 rounded-full bg-[#00f2fe]" />
-                <span className="block h-[2px] w-4 rounded-full bg-[#00f2fe]" />
-                <span className="block h-[2px] w-2.5 rounded-full bg-[#00f2fe] ml-auto" />
-              </span>
-              <span className="text-xs font-mono font-bold text-white whitespace-nowrap">Inaya Ecosystem</span>
-            </button>
+        <header className="relative z-10 flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] gap-4 justify-center items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
+          {/* ☰ SITE NAV — its own column so the brand block can sit in a
+              true center column (grid-cols-[auto_1fr_auto], not just
+              flex justify-between, which only centers relative to the two
+              side blocks' own widths). Bigger/more prominent than before
+              since this is now the site's only nav entry point. */}
+          <button
+            onClick={() => setIsNavMenuOpen(true)}
+            aria-label="Open site menu"
+            aria-expanded={isNavMenuOpen}
+            className="flex items-center gap-3 pl-4 pr-6 py-3 rounded-full border border-[#00f2fe]/25 bg-white/5 hover:border-[#00f2fe]/50 hover:bg-white/10 transition-colors shadow-[0_0_16px_rgba(0,242,254,0.12)] sm:justify-self-start"
+          >
+            <span className="flex flex-col justify-center gap-1">
+              <span className="block h-[3px] w-6 rounded-full bg-[#00f2fe]" />
+              <span className="block h-[3px] w-6 rounded-full bg-[#00f2fe]" />
+              <span className="block h-[3px] w-4 rounded-full bg-[#00f2fe] ml-auto" />
+            </span>
+            <span className="text-sm font-mono font-bold text-white whitespace-nowrap">Inaya Ecosystem</span>
+          </button>
+
+          {/* Brand block — centered in its own grid column instead of
+              pinned to the left edge next to the menu button. */}
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-self-center">
             <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
             <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-self-end">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
@@ -5528,6 +5526,22 @@ export default function Home() {
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">Wallet Core Status</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">Supply Cap Weight</div></div>
                 <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">RPC Connection Status</div></div>
+              </div>
+
+              {/* ============================================================
+                  ❓ WHAT IS INAYA NETWORK — same simple-then-technical framing
+                  used to ground the AI Docs Assistant (see the "WHAT IS INAYA
+                  NETWORK" section of lib/inaya-knowledge.js), so a visitor
+                  gets the accurate full-ecosystem answer without asking.
+                 ============================================================ */}
+              <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 sm:p-8">
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-4">What is Inaya Network?</h2>
+                <p className="text-[#94a3b8] text-sm leading-relaxed mb-4">
+                  <span className="text-white font-bold">Simply put:</span> Inaya Network is a decentralized platform where you own and control your own data — files are encrypted on your own device before they ever leave it, so no one, not even Inaya, can read them. Beyond storage, it's a full ecosystem: encrypted tools for businesses, an AI-powered security layer, a learning platform, and real token rewards for taking part in the network.
+                </p>
+                <p className="text-[#94a3b8] text-sm leading-relaxed">
+                  <span className="text-white font-bold">Technically:</span> Inaya Network is a DePIN (Decentralized Physical Infrastructure Network) combining eight integrated products — Sovereign Storage (client-side AES-256-GCM encryption, IPFS sharding, on-chain proof-of-storage), Business Workspace (zero-knowledge document management for teams), the Inaya Firewall Security Layer (on-chain threat verification and fraud/abuse protection), product-grounded AI assistants, Inaya Learn, an Oracle &amp; Automation Layer (validated on-chain data and permissionless automated settlement), Network Participation (staking, referrals, Genesis Airdrop, Hackathon), and native Mobile &amp; Desktop apps — all built on BNB Chain.
+                </p>
               </div>
 
               {/* ============================================================
