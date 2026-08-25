@@ -2044,6 +2044,45 @@ Frequently Asked Questions (FAQs)
   },
 ];
 
+// Primary site nav, grouped by purpose for the hamburger menu drawer. Items
+// with an `href` are real routes (open in a new tab, unaffected by wallet
+// dApp state); items without one are setCurrentPage tabs on this page.
+const NAV_GROUPS = [
+  {
+    title: 'App',
+    items: [
+      { label: 'Network Home', icon: '🏠' },
+      { label: 'Faucet', icon: '🚰' },
+      { label: 'Sovereign Vault', icon: '🔐' },
+      { label: 'Staking', icon: '📈' },
+      { label: 'My Dashboard', icon: '📊' },
+      { label: 'Referrals', icon: '🤝' },
+      { label: 'Genesis Airdrop', icon: '🎁' },
+      { label: 'Learn', icon: '🎓' },
+      { label: 'Hackathon', icon: '🏆' },
+    ],
+  },
+  {
+    title: 'Company',
+    items: [
+      { label: 'Business Model', icon: '📄' },
+      { label: 'White Paper', icon: '📘' },
+      { label: 'About Us', icon: 'ℹ️' },
+      { label: 'Contact Us', icon: '✉️' },
+    ],
+  },
+  {
+    title: 'Ecosystem',
+    items: [
+      { label: 'Business Workspace', icon: '🏢', href: '/business' },
+      { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
+      { label: 'Security Layer', icon: '🛡️', href: '/security' },
+      { label: 'FAQ', icon: '❓', href: '/faq' },
+      { label: 'Network Stats', icon: '📉', href: '/stats' },
+    ],
+  },
+];
+
 export default function Home() {
   // ========================================================
   // 1. SYSTEM ROUTING & CONTROL STATES
@@ -2071,6 +2110,22 @@ export default function Home() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isUpdatesDrawerOpen]);
+
+  // Primary site nav — collapsed into a single hamburger drawer instead of
+  // the old always-visible two-row, 18-button pill bar (users reported it
+  // as overwhelming). Same destinations, just grouped and revealed on demand.
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!isNavMenuOpen) return;
+    const handleKeyDown = (e) => { if (e.key === 'Escape') setIsNavMenuOpen(false); };
+    window.addEventListener('keydown', handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isNavMenuOpen]);
 
   // Notification center's state/effects/handler live further down, right
   // after isConnected is declared (this block used to sit here and
@@ -4807,9 +4862,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
       
-      {/* GLOBAL TOP HEADER + PRIMARY NAV — pinned together as a single sticky
-          unit at the extreme top of the viewport, always visible, never
-          buried below the sidebar/content like the old in-page nav was. */}
+      {/* GLOBAL TOP HEADER — sticky at the extreme top of the viewport,
+          always visible. The ☰ button inside it opens the site menu
+          drawer (rendered as a sibling below) instead of an in-header nav. */}
       <div className="sticky top-0 z-50">
         <header className="relative z-10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
           <div className="flex items-center gap-3">
@@ -4818,6 +4873,22 @@ export default function Home() {
             <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* ☰ SITE NAV — opens the grouped menu drawer (see NAV_GROUPS)
+                instead of the old always-visible two-row, 18-button pill bar.
+                Doubles as a "you are here" indicator via currentPage. */}
+            <button
+              onClick={() => setIsNavMenuOpen(true)}
+              aria-label="Open site menu"
+              aria-expanded={isNavMenuOpen}
+              className="flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full border border-white/10 bg-white/5 hover:border-[#00f2fe]/40 hover:bg-white/10 transition-colors"
+            >
+              <span className="flex flex-col justify-center gap-[3px]">
+                <span className="block h-[2px] w-4 rounded-full bg-[#00f2fe]" />
+                <span className="block h-[2px] w-4 rounded-full bg-[#00f2fe]" />
+                <span className="block h-[2px] w-2.5 rounded-full bg-[#00f2fe] ml-auto" />
+              </span>
+              <span className="text-xs font-mono font-bold text-white whitespace-nowrap">{currentPage}</span>
+            </button>
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
@@ -4890,58 +4961,75 @@ export default function Home() {
             </button>
           </div>
         </header>
-
-        {/* PRIMARY MENU — moved up from inside the main content column so it
-            reads as the site's actual top menu, directly under the logo bar,
-            not something you scroll past the sidebar to find. */}
-        <nav className="bg-[#0a0f1e]/95 border-b border-white/5 backdrop-blur-xl px-4 md:px-10 py-3">
-          <div className="max-w-6xl mx-auto space-y-2.5">
-            {/* Row 1: things you do inside the wallet dApp itself */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn', 'Hackathon'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#8a96ab] hover:text-slate-300'}`}>{tab}</button>
-              ))}
-            </div>
-
-            <div className="border-t border-white/5" />
-
-            {/* Row 2: informational pages + the separate Business suite links */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {['Business Model', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#8a96ab] hover:text-slate-300'}`}>{tab}</button>
-              ))}
-              {/* /business is a genuinely separate Next.js route (its own email+
-                  magic-link auth, no wallet) — a real link, not a setCurrentPage
-                  tab like everything else in this nav. Opens in a new tab
-                  (target="_blank") so switching into the Business Workspace
-                  never navigates away from the wallet dApp — both stay open
-                  as separate tabs instead of needing a "back" button. */}
-              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
-                Business Workspace ↗
-              </a>
-              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
-                Business SaaS ↗
-              </a>
-              <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
-                Security Layer ↗
-              </a>
-              {/* Real, crawlable, server-rendered pages -- SEO's answer to
-                  the fact that the tabs above are JS state on "/", not
-                  indexable URLs. /about and /whitepaper are deliberately NOT
-                  linked here too -- "About Us" and "White Paper" tabs above
-                  already cover that content; duplicating them in the same
-                  nav row just confused users. Those routes still exist and
-                  stay in sitemap.js for crawlability, just not double-linked. */}
-              <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
-                FAQ ↗
-              </a>
-              <a href="/stats" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
-                Network Stats ↗
-              </a>
-            </div>
-          </div>
-        </nav>
       </div>
+
+      {/* ======================================================
+          ☰ SITE MENU — hamburger drawer replacing the old always-
+          visible two-row pill nav. Same NAV_GROUPS destinations,
+          grouped by purpose (App / Company / Ecosystem) so 18
+          separate buttons read as one clean menu instead of clutter.
+          Mirrors the Updates drawer's overlay/transform pattern.
+          ====================================================== */}
+      <div
+        className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
+          isNavMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsNavMenuOpen(false)}
+        aria-hidden={!isNavMenuOpen}
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Site menu"
+        className={`fixed top-0 right-0 z-[70] h-full w-full sm:w-96 bg-[#0a0f1e] border-l border-[#00f2fe]/15 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+          isNavMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#00f2fe]/15 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5">
+            <img src="/inaya-logo.png" alt="" className="w-7 h-7 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
+            <h2 className="text-white font-extrabold text-lg tracking-wide">Menu</h2>
+          </div>
+          <button
+            onClick={() => setIsNavMenuOpen(false)}
+            aria-label="Close menu"
+            className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 space-y-6">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title}>
+              <div className="px-3 text-[11px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2">{group.title}</div>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = !item.href && currentPage === item.label;
+                  const Tag = item.href ? 'a' : 'button';
+                  return (
+                    <Tag
+                      key={item.label}
+                      {...(item.href ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      onClick={() => { if (!item.href) setCurrentPage(item.label); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
+                        isActive
+                          ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border-[#00f2fe]/40'
+                          : 'text-[#c3ccdb] hover:bg-white/5 border-transparent'
+                      }`}
+                    >
+                      <span className="text-base shrink-0">{item.icon}</span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.href && <span className="text-[#8a96ab] text-xs shrink-0">↗</span>}
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#00f2fe] shadow-[0_0_6px_rgba(0,242,254,0.8)] shrink-0" />}
+                    </Tag>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
 
       {/* ======================================================
           📣 UPDATES & KNOWLEDGE BASE — slide-out drawer
