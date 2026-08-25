@@ -49,7 +49,7 @@ function StatusPill({ status }) {
     verified: ['bg-emerald-400/10 text-emerald-400 border-emerald-400/30', '✅ Verified'],
     pending: ['bg-amber-400/10 text-amber-400 border-amber-400/30', '⏳ Pending KYC'],
     rejected: ['bg-red-400/10 text-red-400 border-red-400/30', '❌ Rejected'],
-    not_started: ['bg-white/5 text-[#64748b] border-white/10', 'Not started'],
+    not_started: ['bg-white/5 text-[#8a96ab] border-white/10', 'Not started'],
   };
   const [cls, label] = map[status] || map.not_started;
   return <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${cls}`}>{label}</span>;
@@ -326,7 +326,7 @@ export default function ReferralSection() {
           <h3 className="text-sm font-bold text-white mb-1">
             {redeemCode ? <>You were invited with code <span className="text-[#00f2fe]">{redeemCode}</span></> : 'Resume your verification'}
           </h3>
-          <p className="text-[#64748b] text-xs mb-4">Enter your email{redeemCode ? '' : ' and referral code'} to start — or pick back up where you left off if you already started.</p>
+          <p className="text-[#8a96ab] text-xs mb-4">Enter your email{redeemCode ? '' : ' and referral code'} to start — or pick back up where you left off if you already started.</p>
           <form onSubmit={handleRedeem} className="flex flex-col sm:flex-row gap-3">
             {!redeemCode && (
               <input
@@ -335,7 +335,7 @@ export default function ReferralSection() {
                 value={redeemCode}
                 onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                 placeholder="REFERRAL CODE"
-                className="sm:w-40 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                className="sm:w-40 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
               />
             )}
             <input
@@ -344,7 +344,7 @@ export default function ReferralSection() {
               value={redeemEmail}
               onChange={(e) => setRedeemEmail(e.target.value)}
               placeholder="you@example.com"
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
             />
             <button
               type="submit"
@@ -365,7 +365,7 @@ export default function ReferralSection() {
             <p className="text-amber-400 text-xs font-bold mb-2">Complete your verification here:</p>
           )}
           <a href={redeemUrl} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline text-xs break-all">{redeemUrl}</a>
-          <p className="text-[#64748b] text-xs mt-2">This page checks automatically every few seconds — you can safely close this tab and come back later, this link stays valid.</p>
+          <p className="text-[#8a96ab] text-xs mt-2">This page checks automatically every few seconds — you can safely close this tab and come back later, this link stays valid.</p>
         </div>
       )}
       {redeemResolvedStatus === 'verified' && (
@@ -385,7 +385,7 @@ export default function ReferralSection() {
           <h3 className="text-sm font-bold text-white">1. Verify your own identity</h3>
           {referrerStatus && <StatusPill status={referrerStatus.status} />}
         </div>
-        <p className="text-[#64748b] text-xs mb-4">
+        <p className="text-[#8a96ab] text-xs mb-4">
           A one-time identity check (ID + liveness, via Didit) is required before you can refer anyone — this is what lets us actually
           detect and block self-referral, instead of just trusting an email address.
         </p>
@@ -398,7 +398,7 @@ export default function ReferralSection() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
             />
             <button
               type="submit"
@@ -464,7 +464,7 @@ export default function ReferralSection() {
               value={referredEmail}
               onChange={(e) => setReferredEmail(e.target.value)}
               placeholder="their-email@example.com"
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
             />
             <button
               type="submit"
@@ -500,15 +500,15 @@ export default function ReferralSection() {
           <div className="grid grid-cols-2 gap-4 font-mono text-xs mb-5">
             <div className="bg-black/20 border-l-4 border-[#00f2fe] p-4 rounded-r-xl">
               <div className="text-xl font-bold text-white">{history.successfulReferralCount}</div>
-              <div className="text-[10px] uppercase text-[#64748b] mt-1">Successful Referrals</div>
+              <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Successful Referrals</div>
             </div>
             <div className="bg-black/20 border-l-4 border-emerald-400 p-4 rounded-r-xl">
               <div className="text-xl font-bold text-white">{history.totalInayaEarned.toFixed(2)} INAYA</div>
-              <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Earned</div>
+              <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Earned</div>
             </div>
           </div>
           {history.referrals.length === 0 ? (
-            <p className="text-[#64748b] text-xs italic">No referrals yet — invite someone above.</p>
+            <p className="text-[#8a96ab] text-xs italic">No referrals yet — invite someone above.</p>
           ) : (
             <table className="w-full text-left font-mono text-xs border-collapse">
               <thead>
@@ -536,9 +536,9 @@ export default function ReferralSection() {
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
         <h3 className="text-sm font-bold text-white mb-4">🏆 Top 50 Referrers</h3>
         {loadingLeaderboard ? (
-          <p className="text-[#64748b] text-xs">Loading…</p>
+          <p className="text-[#8a96ab] text-xs">Loading…</p>
         ) : leaderboard.length === 0 ? (
-          <p className="text-[#64748b] text-xs italic">No successful referrals yet — be the first.</p>
+          <p className="text-[#8a96ab] text-xs italic">No successful referrals yet — be the first.</p>
         ) : (
           <table className="w-full text-left font-mono text-xs border-collapse">
             <thead>

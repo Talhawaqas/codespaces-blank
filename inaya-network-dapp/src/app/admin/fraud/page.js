@@ -122,7 +122,7 @@ export default function FraudAdminPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-white">Fraud &amp; Abuse Protection</h1>
-            <p className="text-[#64748b] text-xs mt-0.5">Detection only — nothing here enforces anything yet (Phase 2).</p>
+            <p className="text-[#8a96ab] text-xs mt-0.5">Detection only — nothing here enforces anything yet (Phase 2).</p>
           </div>
           <div className="flex items-center gap-2">
             <a href="/admin" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
@@ -138,12 +138,12 @@ export default function FraudAdminPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Total Assessments</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Total Assessments</div>
             <div className="text-2xl font-bold">{stats?.total ?? "—"}</div>
           </div>
           {["LOW", "MEDIUM", "HIGH"].map((level) => (
             <div key={level} className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-              <div className="text-[#64748b] text-xs mb-1">{level} Risk</div>
+              <div className="text-[#8a96ab] text-xs mb-1">{level} Risk</div>
               <div className={`text-2xl font-bold ${LEVEL_COLORS[level].split(" ")[0]}`}>{stats?.byLevel?.[level] ?? 0}</div>
             </div>
           ))}
@@ -160,7 +160,7 @@ export default function FraudAdminPage() {
         <div className="bg-[#0a0f1e] border border-white/10 rounded-xl overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-[#64748b] uppercase border-b border-white/10">
+              <tr className="text-left text-[#8a96ab] uppercase border-b border-white/10">
                 <th className="px-4 py-3">IP</th>
                 <th className="px-4 py-3">Classification</th>
                 <th className="px-4 py-3">Reputation</th>
@@ -187,12 +187,12 @@ export default function FraudAdminPage() {
                   <td className={`px-4 py-3 font-bold ${ACTION_COLORS[a.recommendedAction] || ""}`}>{a.recommendedAction}</td>
                   <td className="px-4 py-3 text-[#94a3b8]">{a.surface}</td>
                   <td className="px-4 py-3 text-[#94a3b8] font-mono truncate max-w-[160px]">{a.identityId || "—"}</td>
-                  <td className="px-4 py-3 text-[#64748b] font-mono">{formatDate(a.createdAt)}</td>
+                  <td className="px-4 py-3 text-[#8a96ab] font-mono">{formatDate(a.createdAt)}</td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-[#64748b]">No risk assessments recorded yet.</td>
+                  <td colSpan={9} className="px-4 py-6 text-center text-[#8a96ab]">No risk assessments recorded yet.</td>
                 </tr>
               )}
             </tbody>

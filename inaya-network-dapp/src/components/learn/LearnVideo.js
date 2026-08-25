@@ -125,7 +125,7 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
     }
   };
 
-  if (loading) return <div className="max-w-3xl mx-auto"><p className="text-[#64748b] text-xs font-mono">Loading…</p></div>;
+  if (loading) return <div className="max-w-3xl mx-auto"><p className="text-[#8a96ab] text-xs font-mono">Loading…</p></div>;
   if (error || !video) return <div className="max-w-3xl mx-auto"><p className="text-red-400 text-sm">{error || 'This video is unavailable.'}</p></div>;
 
   return (
@@ -144,7 +144,7 @@ export default function LearnVideo({ videoId, categoryId, walletAddress, isVideo
         <button onClick={() => syncProgress('completed')} disabled={markedComplete} className={`flex items-center gap-1.5 ${markedComplete ? 'text-emerald-400' : 'text-[#94a3b8] hover:text-slate-300'}`}>
           <span>{markedComplete ? '✅' : '⭕'}</span> {markedComplete ? 'Completed' : 'Mark complete'}
         </button>
-        <button onClick={() => setReportOpen((o) => !o)} disabled={reportSent} className="flex items-center gap-1.5 text-[#64748b] hover:text-slate-300">
+        <button onClick={() => setReportOpen((o) => !o)} disabled={reportSent} className="flex items-center gap-1.5 text-[#8a96ab] hover:text-slate-300">
           <span>🚩</span> {reportSent ? 'Reported' : 'Report'}
         </button>
       </div>

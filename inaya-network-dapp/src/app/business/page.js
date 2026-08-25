@@ -487,16 +487,16 @@ function AuthScreen({ notice, onAuthed }) {
         {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-[10px] text-[#64748b] uppercase font-bold">or</span>
+            <span className="text-[10px] text-[#8a96ab] uppercase font-bold">or</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "create" && (
-            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]" />
           )}
-          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]" />
           <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
             {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
           </button>
@@ -594,7 +594,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           onChange={(e) => setOrgName(e.target.value)}
           required
           placeholder="Company name"
-          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]"
+          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]"
         />
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -1201,7 +1201,7 @@ function ActivityView({ orgId }) {
               <span className="text-slate-200 font-bold">{e.filename}</span>
               <span className="text-[#94a3b8]"> · {e.action}</span>
               {e.previousState && <span className="text-[#94a3b8] font-mono"> · {e.previousState} → {e.newState}</span>}
-              <div className="text-[10px] font-mono text-[#475569] mt-0.5">
+              <div className="text-[10px] font-mono text-[#8a96ab] mt-0.5">
                 {e.actorId} · {new Date(e.timestamp).toLocaleString()}
                 {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
               </div>
@@ -1294,7 +1294,7 @@ function AIAssistantView({ orgId }) {
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Ask about your company's documents, approvals, or activity…"
           disabled={sending}
-          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#64748b]"
+          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]"
         />
         <button
           onClick={() => send()}
@@ -1757,7 +1757,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       {showActivity && (
         <div className="mt-2 border-t border-white/5 pt-2 space-y-1">
           {loadingActivity ? (
-            <p className="text-[#475569] text-[10px] italic">Loading…</p>
+            <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
           ) : activity && activity.length > 0 ? (
             activity.map((e) => (
               <div key={e.eventId} className="text-[10px] font-mono text-[#94a3b8]">
@@ -1768,7 +1768,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               </div>
             ))
           ) : (
-            <p className="text-[#475569] text-[10px] italic">No activity recorded.</p>
+            <p className="text-[#8a96ab] text-[10px] italic">No activity recorded.</p>
           )}
         </div>
       )}
@@ -1840,7 +1840,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
         <span className="text-[#94a3b8] font-mono">Owner</span>
       </div>
       {grants === null ? (
-        <p className="text-[#475569] text-[10px] italic">Loading…</p>
+        <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
       ) : (
         grants.map((g) => (
           <div key={g.email} className="flex items-center justify-between gap-2 text-[10px] py-1">
@@ -1948,9 +1948,9 @@ function SharePanel({ documentId, orgId }) {
 
       <div className="mt-2 space-y-1">
         {shares === null ? (
-          <p className="text-[#475569] text-[10px] italic">Loading…</p>
+          <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
         ) : shares.length === 0 ? (
-          <p className="text-[#475569] text-[10px] italic">No share links yet.</p>
+          <p className="text-[#8a96ab] text-[10px] italic">No share links yet.</p>
         ) : (
           shares.map((s) => (
             <div key={s.shareId} className="flex items-center justify-between gap-2 text-[10px] bg-black/20 rounded px-2 py-1">

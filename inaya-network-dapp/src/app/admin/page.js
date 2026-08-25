@@ -107,7 +107,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-[#060913] flex items-center justify-center p-6">
         <form onSubmit={handleLogin} className="w-full max-w-sm bg-[#0a0f1e] border border-[#00f2fe]/15 rounded-2xl p-8 space-y-4">
           <h1 className="text-white font-bold text-lg">Inaya Network — Internal Dashboard</h1>
-          <p className="text-[#64748b] text-xs">Operator access only. Not the customer-facing dashboard.</p>
+          <p className="text-[#8a96ab] text-xs">Operator access only. Not the customer-facing dashboard.</p>
           <input
             type="password"
             value={passphrase}
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
         <h2 className="text-[#00f2fe] font-mono text-xs font-bold tracking-widest uppercase mb-3">Revenue Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Corporate Reserve</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Corporate Reserve</div>
             <div className="text-2xl font-bold">{revenue ? formatUsd(revenue.corporateReserve.totalUsd) : "—"}</div>
             {revenue && (
               <div className="mt-3 space-y-1 text-xs text-[#94a3b8]">
@@ -172,12 +172,12 @@ export default function AdminDashboard() {
                     <span>{formatUsd(amt)}</span>
                   </div>
                 ))}
-                <div className="pt-1 text-[#64748b]">{revenue.corporateReserve.planCount} plan(s) total</div>
+                <div className="pt-1 text-[#8a96ab]">{revenue.corporateReserve.planCount} plan(s) total</div>
               </div>
             )}
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Pay-As-You-Go</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Pay-As-You-Go</div>
             <div className="text-2xl font-bold">{revenue ? formatUsd(revenue.payg.totalUsd) : "—"}</div>
             {revenue && (
               <div className="mt-3 text-xs text-[#94a3b8]">
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Egress</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Egress</div>
             <div className="text-2xl font-bold">{revenue ? formatUsd(revenue.egress.totalUsd) : "—"}</div>
             {revenue && (
               <div className="mt-3 text-xs text-[#94a3b8]">
@@ -205,15 +205,15 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[["dapp", "dApp"], ["business", "Business Workspace"], ["mobile", "Mobile App"]].map(([key, label]) => (
             <div key={key} className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-              <div className="text-[#64748b] text-xs mb-1">{label}</div>
+              <div className="text-[#8a96ab] text-xs mb-1">{label}</div>
               <div className="flex items-end gap-4 mt-2">
                 <div>
                   <div className="text-2xl font-bold">{activity ? activity[key].dau : "—"}</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5">DAU today</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wide mt-0.5">DAU today</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold text-[#94a3b8]">{activity ? activity[key].wau : "—"}</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5">WAU (7d)</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wide mt-0.5">WAU (7d)</div>
                 </div>
               </div>
             </div>
@@ -226,15 +226,15 @@ export default function AdminDashboard() {
         <h2 className="text-[#00f2fe] font-mono text-xs font-bold tracking-widest uppercase mb-3">Usage Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Total Files Stored</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Total Files Stored</div>
             <div className="text-2xl font-bold">{usage ? usage.totalFilesStored.toLocaleString() : "—"}</div>
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Total Storage Used</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Total Storage Used</div>
             <div className="text-2xl font-bold">{usage ? formatBytes(usage.totalBytesStored) : "—"}</div>
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Wallets With Files</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Wallets With Files</div>
             <div className="text-2xl font-bold">{usage ? usage.totalWallets.toLocaleString() : "—"}</div>
             {usage && usage.totalUnreconciledAcrossAllWallets > 0 && (
               <div className="text-amber-400 text-xs mt-2">{usage.totalUnreconciledAcrossAllWallets} unreconciled record(s) excluded</div>
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
         <div className="bg-[#0a0f1e] border border-white/10 rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[#64748b] text-xs uppercase border-b border-white/10">
+              <tr className="text-left text-[#8a96ab] text-xs uppercase border-b border-white/10">
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Tier</th>
                 <th className="px-4 py-3">Status</th>
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
                   <td className="px-4 py-3">{c.email}</td>
                   <td className="px-4 py-3">{c.tier}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${c.status === "active" ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#64748b] border-white/10 bg-white/5"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${c.status === "active" ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
                       {c.status}
                     </span>
                   </td>
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
               ))}
               {customers && customers.customers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-[#64748b]">No Corporate Reserve customers yet.</td>
+                  <td colSpan={6} className="px-4 py-6 text-center text-[#8a96ab]">No Corporate Reserve customers yet.</td>
                 </tr>
               )}
             </tbody>

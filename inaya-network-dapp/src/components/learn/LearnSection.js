@@ -35,7 +35,7 @@ export default function LearnSection({ walletAddress }) {
   return (
     <div>
       <div className="max-w-5xl mx-auto flex items-center justify-between mb-6">
-        <button onClick={openHome} className="text-xs text-[#64748b] hover:text-slate-300 font-mono">← Inaya Learn</button>
+        <button onClick={openHome} className="text-xs text-[#8a96ab] hover:text-slate-300 font-mono">← Inaya Learn</button>
         <button onClick={openMyLearning} className="text-xs font-bold text-[#00f2fe] hover:text-white flex items-center gap-1.5">
           📚 My Learning
         </button>

@@ -76,7 +76,7 @@ export default function AboutPage() {
       ))}
 
       <div className="relative max-w-4xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -95,7 +95,7 @@ export default function AboutPage() {
               <div key={p.name} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
                 <span className="text-xl">{p.icon}</span>
                 <div className="text-white font-bold text-sm mt-2">{p.name}</div>
-                <p className="text-[#64748b] text-xs leading-relaxed mt-1">{p.desc}</p>
+                <p className="text-[#8a96ab] text-xs leading-relaxed mt-1">{p.desc}</p>
               </div>
             ))}
           </div>
@@ -139,7 +139,7 @@ export default function AboutPage() {
             {roadmap.map((r) => (
               <div key={r.phase} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
                 <div className="text-white font-bold text-sm">{r.phase}</div>
-                <p className="text-[#64748b] text-xs leading-relaxed mt-1.5">{r.desc}</p>
+                <p className="text-[#8a96ab] text-xs leading-relaxed mt-1.5">{r.desc}</p>
               </div>
             ))}
           </div>

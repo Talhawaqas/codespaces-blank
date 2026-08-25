@@ -39,13 +39,13 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
       </div>
 
       <form onSubmit={runSearch} className="flex items-center gap-2 bg-[#090d16]/80 border border-white/5 focus-within:border-[#00f2fe]/40 rounded-xl px-4 py-3">
-        <span className="text-[#64748b]">🔎</span>
+        <span className="text-[#8a96ab]">🔎</span>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search courses, topics and lessons"
-          className="flex-1 bg-transparent outline-none text-white text-sm placeholder:text-[#64748b]"
+          className="flex-1 bg-transparent outline-none text-white text-sm placeholder:text-[#8a96ab]"
         />
       </form>
 
@@ -87,7 +87,7 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
       <div>
         <h3 className="text-white font-bold text-sm mb-3">Recommended Categories</h3>
         {loadingConfig ? (
-          <p className="text-[#64748b] text-xs font-mono">Loading…</p>
+          <p className="text-[#8a96ab] text-xs font-mono">Loading…</p>
         ) : (
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {config.categories.map((cat) => (
@@ -116,7 +116,7 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
               >
                 <p className="text-[#00f2fe] font-bold text-sm">{col.title}</p>
                 <p className="text-[#94a3b8] text-xs mt-1 leading-relaxed">{col.description}</p>
-                <p className="text-[#64748b] text-[10px] font-mono mt-3">{col.topics.map((t) => t.title).join(' · ')}</p>
+                <p className="text-[#8a96ab] text-[10px] font-mono mt-3">{col.topics.map((t) => t.title).join(' · ')}</p>
               </button>
             ))}
           </div>

@@ -43,7 +43,7 @@ const HACKATHON_REWARDS_ABI = [
 const REPORT_STATUS_LABELS = {
   submitted: { label: 'Submitted', color: 'text-amber-400' },
   confirmed: { label: 'Confirmed', color: 'text-emerald-400' },
-  duplicate: { label: 'Duplicate', color: 'text-[#64748b]' },
+  duplicate: { label: 'Duplicate', color: 'text-[#8a96ab]' },
   rejected: { label: 'Rejected', color: 'text-red-400' },
   fixed: { label: 'Fixed', color: 'text-emerald-400' },
 };
@@ -209,7 +209,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
   };
 
   if (loading) {
-    return <div className="max-w-4xl mx-auto text-center text-[#64748b] text-xs py-16">Loading hackathon status…</div>;
+    return <div className="max-w-4xl mx-auto text-center text-[#8a96ab] text-xs py-16">Loading hackathon status…</div>;
   }
 
   if (error) {
@@ -253,8 +253,8 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           <div className="grid sm:grid-cols-2 gap-2 font-mono text-[11px]">
             {SEVERITY_LEVELS.map((s) => (
               <div key={s.id} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                <span className={s.id === 'critical' ? 'text-red-400 font-bold' : s.id === 'high' ? 'text-amber-400 font-bold' : s.id === 'medium' ? 'text-[#00f2fe] font-bold' : 'text-[#64748b] font-bold'}>{s.label}</span>
-                <span className="text-[#64748b]"> — {s.description}</span>
+                <span className={s.id === 'critical' ? 'text-red-400 font-bold' : s.id === 'high' ? 'text-amber-400 font-bold' : s.id === 'medium' ? 'text-[#00f2fe] font-bold' : 'text-[#8a96ab] font-bold'}>{s.label}</span>
+                <span className="text-[#8a96ab]"> — {s.description}</span>
               </div>
             ))}
           </div>
@@ -278,7 +278,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           </div>
         </div>
 
-        <div className="font-mono text-[11px] text-[#64748b] border-t border-white/5 pt-4">
+        <div className="font-mono text-[11px] text-[#8a96ab] border-t border-white/5 pt-4">
           Testing window: <span className="text-white">{HACKATHON_TIMELINE.start} – {HACKATHON_TIMELINE.deadline}</span>. Winners announced: {HACKATHON_TIMELINE.winnersAnnounced}
         </div>
       </div>
@@ -293,7 +293,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
       <div className="bg-black/20 border border-white/5 rounded-2xl overflow-hidden">
         <table className="w-full text-xs font-mono">
           <thead>
-            <tr className="border-b border-white/5 text-[#64748b]">
+            <tr className="border-b border-white/5 text-[#8a96ab]">
               <th className="text-left px-4 py-3 font-semibold">Place</th>
               <th className="text-left px-4 py-3 font-semibold">Winner</th>
               <th className="text-right px-4 py-3 font-semibold">Reward</th>
@@ -307,12 +307,12 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
                 <td className="px-4 py-3 text-[#94a3b8]">
                   {w.walletAddress
                     ? (w.projectName ? `${w.projectName} — ${truncateAddress(w.walletAddress)}` : truncateAddress(w.walletAddress))
-                    : <span className="text-[#475569] italic">To be announced</span>}
+                    : <span className="text-[#8a96ab] italic">To be announced</span>}
                 </td>
                 <td className="px-4 py-3 text-right text-[#00f2fe] font-bold">{w.amount.toLocaleString()} INAYA</td>
                 <td className="px-4 py-3 text-right">
                   {!w.walletAddress ? (
-                    <span className="text-[#475569]">—</span>
+                    <span className="text-[#8a96ab]">—</span>
                   ) : w.claimed ? (
                     <span className="text-emerald-400">Claimed</span>
                   ) : (
@@ -337,9 +337,9 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           {alreadyClaimed ? (
             <div className="text-emerald-400 text-xs font-mono">✓ Already claimed.</div>
           ) : !HACKATHON_REWARDS_ADDRESS ? (
-            <div className="text-[#64748b] text-xs font-mono">Reward contract not yet deployed — claiming opens once mainnet launches.</div>
+            <div className="text-[#8a96ab] text-xs font-mono">Reward contract not yet deployed — claiming opens once mainnet launches.</div>
           ) : !mainnetActive ? (
-            <button disabled className="px-5 py-2 rounded-full text-xs font-mono font-bold bg-white/5 text-[#475569] cursor-not-allowed">
+            <button disabled className="px-5 py-2 rounded-full text-xs font-mono font-bold bg-white/5 text-[#8a96ab] cursor-not-allowed">
               Rewards unlock at Mainnet launch
             </button>
           ) : (
@@ -360,7 +360,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
       <div className="bg-black/20 border border-white/5 rounded-2xl p-6 space-y-4">
         <div>
           <h3 className="text-white font-bold text-sm">🐛 Report a Bug</h3>
-          <p className="text-[#64748b] text-xs mt-1">Signed with your wallet so the report is provably yours — no gas, just a signature.</p>
+          <p className="text-[#8a96ab] text-xs mt-1">Signed with your wallet so the report is provably yours — no gas, just a signature.</p>
         </div>
 
         {!walletAddress ? (
@@ -373,7 +373,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
               placeholder={'Short title, e.g. "Upload stalls at 90% on Sovereign Vault"'}
               value={reportForm.title}
               onChange={(e) => handleReportFieldChange('title', e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#475569] focus:outline-none focus:border-[#00f2fe]/40"
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40"
             />
 
             <div className="grid sm:grid-cols-2 gap-3">
@@ -399,7 +399,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
               value={reportForm.description}
               onChange={(e) => handleReportFieldChange('description', e.target.value)}
               rows={3}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#475569] focus:outline-none focus:border-[#00f2fe]/40 resize-none"
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40 resize-none"
             />
 
             <textarea
@@ -407,7 +407,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
               value={reportForm.stepsToReproduce}
               onChange={(e) => handleReportFieldChange('stepsToReproduce', e.target.value)}
               rows={2}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#475569] focus:outline-none focus:border-[#00f2fe]/40 resize-none"
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40 resize-none"
             />
 
             <input
@@ -415,7 +415,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
               placeholder="Evidence link — screenshot, video, log (optional)"
               value={reportForm.evidenceUrl}
               onChange={(e) => handleReportFieldChange('evidenceUrl', e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#475569] focus:outline-none focus:border-[#00f2fe]/40"
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40"
             />
 
             <button
@@ -439,7 +439,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           <div className="px-4 py-3 border-b border-white/5 text-white font-bold text-sm">My Reports</div>
           <table className="w-full text-xs font-mono">
             <thead>
-              <tr className="border-b border-white/5 text-[#64748b]">
+              <tr className="border-b border-white/5 text-[#8a96ab]">
                 <th className="text-left px-4 py-2 font-semibold">Title</th>
                 <th className="text-left px-4 py-2 font-semibold">Layer</th>
                 <th className="text-left px-4 py-2 font-semibold">Severity</th>

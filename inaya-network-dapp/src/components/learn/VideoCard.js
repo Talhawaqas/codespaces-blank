@@ -28,7 +28,7 @@ export default function VideoCard({ title, channelTitle, thumbnailUrl, durationS
           // eslint-disable-next-line @next/next/no-img-element
           <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#64748b] text-lg">🎓</div>
+          <div className="w-full h-full flex items-center justify-center text-[#8a96ab] text-lg">🎓</div>
         )}
         {duration && (
           <span className="absolute right-1 bottom-1 bg-black/75 text-white text-[9px] font-mono px-1 rounded">{duration}</span>
@@ -43,7 +43,7 @@ export default function VideoCard({ title, channelTitle, thumbnailUrl, durationS
             <div className="h-[3px] rounded-full bg-white/10 overflow-hidden">
               <div className="h-full bg-[#00f2fe]" style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }} />
             </div>
-            <span className="text-[9px] text-[#64748b] font-mono">{Math.round(progressPercent)}% complete</span>
+            <span className="text-[9px] text-[#8a96ab] font-mono">{Math.round(progressPercent)}% complete</span>
           </div>
         )}
       </div>
@@ -51,7 +51,7 @@ export default function VideoCard({ title, channelTitle, thumbnailUrl, durationS
       {onToggleSave && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSave(); }}
-          className={`text-lg leading-none shrink-0 ${saved ? 'text-[#00f2fe]' : 'text-[#64748b] hover:text-slate-300'}`}
+          className={`text-lg leading-none shrink-0 ${saved ? 'text-[#00f2fe]' : 'text-[#8a96ab] hover:text-slate-300'}`}
           title={saved ? 'Remove from saved' : 'Save'}
         >
           {saved ? '🔖' : '🏷️'}

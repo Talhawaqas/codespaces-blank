@@ -9,7 +9,7 @@
 export default function EmptyState({ icon = "📭", title, description, ctaLabel, onCta, compact = false }) {
   if (compact) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-[#64748b] font-mono italic">
+      <div className="flex items-center gap-2 text-[11px] text-[#8a96ab] font-mono italic">
         <span className="not-italic">{icon}</span>
         <span>{description || title}</span>
         {ctaLabel && onCta && (
@@ -26,7 +26,7 @@ export default function EmptyState({ icon = "📭", title, description, ctaLabel
       <span className="text-3xl opacity-70">{icon}</span>
       <div>
         <div className="text-white font-bold text-sm">{title}</div>
-        {description && <p className="text-[#64748b] text-xs mt-1.5 max-w-sm mx-auto">{description}</p>}
+        {description && <p className="text-[#8a96ab] text-xs mt-1.5 max-w-sm mx-auto">{description}</p>}
       </div>
       {ctaLabel && onCta && (
         <button

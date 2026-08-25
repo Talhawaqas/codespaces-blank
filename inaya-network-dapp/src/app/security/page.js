@@ -176,7 +176,7 @@ export default function SecurityTransparencyPage() {
           Decentralized threat intelligence backed by independent Inaya nodes — a destination is only ever marked
           confirmed once several reputation-weighted, independent reports agree, and every confirmation is anchored
           on-chain so the record can&apos;t quietly change later.{" "}
-          <span className="text-[#64748b]">Currently running on BNB Chain Testnet.</span>
+          <span className="text-[#8a96ab]">Currently running on BNB Chain Testnet.</span>
         </p>
 
         {loadError && <p className="text-red-400 text-sm mb-6">{loadError}</p>}
@@ -202,10 +202,10 @@ export default function SecurityTransparencyPage() {
                       AI-POWERED
                     </span>
                   </span>
-                  <span className="block text-[#64748b] text-xs mt-0.5">Grounded in real network data — never invents evidence</span>
+                  <span className="block text-[#8a96ab] text-xs mt-0.5">Grounded in real network data — never invents evidence</span>
                 </span>
               </span>
-              <span className="text-[#64748b] text-xs shrink-0 ml-2">{chatOpen ? "▲" : "▼"}</span>
+              <span className="text-[#8a96ab] text-xs shrink-0 ml-2">{chatOpen ? "▲" : "▼"}</span>
             </button>
 
             {chatOpen && (
@@ -241,7 +241,7 @@ export default function SecurityTransparencyPage() {
                         </div>
                       </div>
                     ))}
-                    {chatSending && <p className="text-[#64748b] text-xs">Thinking…</p>}
+                    {chatSending && <p className="text-[#8a96ab] text-xs">Thinking…</p>}
                   </div>
                 )}
 
@@ -252,7 +252,7 @@ export default function SecurityTransparencyPage() {
                     onKeyDown={(e) => { if (e.key === "Enter" && !chatSending) handleSendChat(); }}
                     placeholder="Ask about a threat, a category, or how confirmation works…"
                     disabled={chatSending}
-                    className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
+                    className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
                   />
                   <button
                     onClick={() => handleSendChat()}
@@ -271,32 +271,32 @@ export default function SecurityTransparencyPage() {
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#f87171]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">🎯</span>
-              <span className="text-[#64748b] text-[10px] uppercase tracking-wider">Confirmed</span>
+              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Confirmed</span>
             </div>
             <div className="text-3xl font-extrabold text-[#f87171]">{stats ? stats.confirmedThreatsCount : "—"}</div>
-            <div className="text-[#64748b] text-xs mt-1">Confirmed Threats</div>
+            <div className="text-[#8a96ab] text-xs mt-1">Confirmed Threats</div>
           </div>
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#00f2fe]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">🌐</span>
-              <span className="text-[#64748b] text-[10px] uppercase tracking-wider">Active</span>
+              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Active</span>
             </div>
             <div className="text-3xl font-extrabold text-white">{stats ? stats.reportingNodesCount : "—"}</div>
-            <div className="text-[#64748b] text-xs mt-1">Reporting Nodes</div>
+            <div className="text-[#8a96ab] text-xs mt-1">Reporting Nodes</div>
           </div>
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#c084fc]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">⭐</span>
-              <span className="text-[#64748b] text-[10px] uppercase tracking-wider">Trust</span>
+              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Trust</span>
             </div>
             <div className="text-3xl font-extrabold text-white">{stats ? formatPct(stats.avgReputationBps) : "—"}</div>
-            <div className="text-[#64748b] text-xs mt-1">Avg Node Reputation</div>
+            <div className="text-[#8a96ab] text-xs mt-1">Avg Node Reputation</div>
           </div>
         </div>
 
         <div className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6 mb-10">
           <h2 className="text-white font-bold text-sm mb-1 flex items-center gap-2"><span>🔍</span> Check a destination</h2>
-          <p className="text-[#64748b] text-xs mb-4">See whether a domain or IP has been reported and confirmed by the network.</p>
+          <p className="text-[#8a96ab] text-xs mb-4">See whether a domain or IP has been reported and confirmed by the network.</p>
           <form onSubmit={handleCheck} className="flex flex-col sm:flex-row gap-3">
             <input
               value={checkInput}
@@ -326,7 +326,7 @@ export default function SecurityTransparencyPage() {
                   <p className={`font-bold text-lg ${checkResult.statusLabel === "confirmed" ? "text-[#f87171]" : "text-[#94a3b8]"}`}>
                     {checkResult.statusLabel.toUpperCase()}
                   </p>
-                  <p className="text-[#64748b] text-xs mt-1">
+                  <p className="text-[#8a96ab] text-xs mt-1">
                     {categoryMeta(checkResult.category).icon} {categoryMeta(checkResult.category).label} · {formatPct(checkResult.confidenceBps)} confidence ·{" "}
                     {(checkResult.contributingNodes || []).length} independent reporter(s)
                   </p>
@@ -361,19 +361,19 @@ export default function SecurityTransparencyPage() {
                     <span className="text-lg">{meta.icon}</span>
                     <div>
                       <p className="text-white text-sm font-semibold">{t.indicator}</p>
-                      <p className="text-[#64748b] text-[11px] font-mono mt-0.5">
+                      <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
                         <span style={{ color: meta.color }}>{meta.label}</span> · {(t.contributingNodes || []).length} independent reporter(s)
                       </p>
                     </div>
                   </div>
                   <div className="text-right text-xs">
                     <p className="text-[#f87171] font-bold">{formatPct(t.confidenceBps)}</p>
-                    <p className="text-[#64748b] font-mono text-[10px]">{formatDate(t.lastUpdated)}</p>
+                    <p className="text-[#8a96ab] font-mono text-[10px]">{formatDate(t.lastUpdated)}</p>
                   </div>
                 </div>
               );
             })}
-            {feed.length === 0 && <p className="text-[#64748b] text-sm">No confirmed threats yet.</p>}
+            {feed.length === 0 && <p className="text-[#8a96ab] text-sm">No confirmed threats yet.</p>}
           </div>
         </div>
       </div>

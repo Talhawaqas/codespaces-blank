@@ -53,7 +53,7 @@ export default function AutomationTransparencyPage() {
       </div>
 
       <div className="relative max-w-5xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -69,7 +69,7 @@ export default function AutomationTransparencyPage() {
         </div>
 
         {error && <p className="text-red-400 text-sm mb-6">{error}</p>}
-        {!status && !error && <p className="text-[#64748b] text-sm">Loading…</p>}
+        {!status && !error && <p className="text-[#8a96ab] text-sm">Loading…</p>}
 
         {status && (
           <>
@@ -88,7 +88,7 @@ export default function AutomationTransparencyPage() {
                     rel="noreferrer"
                     className="bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/30 rounded-xl p-4 transition-colors"
                   >
-                    <p className="text-[#64748b] text-[10px] uppercase font-bold mb-1">{label}</p>
+                    <p className="text-[#8a96ab] text-[10px] uppercase font-bold mb-1">{label}</p>
                     <p className="text-[#00f2fe] text-xs font-mono break-all">{shortAddr(addr)} ↗</p>
                   </a>
                 ))}
@@ -105,10 +105,10 @@ export default function AutomationTransparencyPage() {
                     <div className="flex items-start justify-between flex-wrap gap-3">
                       <div>
                         <p className="text-white font-bold text-sm">{s.dataType}</p>
-                        <p className="text-[#64748b] text-[11px] font-mono mt-0.5">Submitter: {shortAddr(s.submitter)} · updates every {s.updateFrequencySeconds}s min</p>
+                        <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">Submitter: {shortAddr(s.submitter)} · updates every {s.updateFrequencySeconds}s min</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border ${s.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#64748b] border-white/10 bg-white/5"}`}>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border ${s.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
                           {s.active ? "Active" : "Inactive"}
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border ${s.stale ? "text-red-400 border-red-400/30 bg-red-400/10" : "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"}`}>
@@ -118,21 +118,21 @@ export default function AutomationTransparencyPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 font-mono text-xs">
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Latest Value</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Latest Value</p>
                         <p className="text-[#00f2fe] font-bold">{formatFixed18(s.latestValue)}</p>
                       </div>
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Last Update</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Last Update</p>
                         <p className="text-slate-300">{formatDate(s.lastUpdate)}</p>
                       </div>
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Max Staleness</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Max Staleness</p>
                         <p className="text-slate-300">{status.maxStalenessSeconds}s</p>
                       </div>
                     </div>
                   </div>
                 ))}
-                {status.sources.length === 0 && <p className="text-[#64748b] text-sm">No oracle sources registered yet.</p>}
+                {status.sources.length === 0 && <p className="text-[#8a96ab] text-sm">No oracle sources registered yet.</p>}
               </div>
             </section>
 
@@ -150,32 +150,32 @@ export default function AutomationTransparencyPage() {
                           href={`https://testnet.bscscan.com/address/${t.targetContract}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#64748b] hover:text-[#00f2fe] text-[11px] font-mono mt-0.5 inline-block"
+                          className="text-[#8a96ab] hover:text-[#00f2fe] text-[11px] font-mono mt-0.5 inline-block"
                         >
                           Target: {shortAddr(t.targetContract)} ↗
                         </a>
                       </div>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${t.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#64748b] border-white/10 bg-white/5"}`}>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${t.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
                         {t.active ? "Active" : "Inactive"}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 font-mono text-xs">
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Last Execution</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Last Execution</p>
                         <p className="text-slate-300">{formatDate(t.lastExecution)}</p>
                       </div>
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Next Eligible Check</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Next Eligible Check</p>
                         <p className="text-slate-300">{formatDate(t.nextEligible)}</p>
                       </div>
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase mb-0.5">Consecutive Failures</p>
+                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Consecutive Failures</p>
                         <p className={t.consecutiveFailures > 0 ? "text-amber-400 font-bold" : "text-emerald-400"}>{t.consecutiveFailures}</p>
                       </div>
                     </div>
                   </div>
                 ))}
-                {status.tasks.length === 0 && <p className="text-[#64748b] text-sm">No automation tasks registered yet.</p>}
+                {status.tasks.length === 0 && <p className="text-[#8a96ab] text-sm">No automation tasks registered yet.</p>}
               </div>
             </section>
           </>

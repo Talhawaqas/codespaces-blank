@@ -75,12 +75,12 @@ export default function LearnTutorWidget({ walletAddress, videoContext, open, on
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-base shrink-0">🎓</span>
           <div className="min-w-0">
             <div className="text-white text-xs font-bold truncate">Inaya Learn AI Tutor</div>
-            <div className="text-[9px] text-[#64748b] font-mono truncate">
+            <div className="text-[9px] text-[#8a96ab] font-mono truncate">
               {videoContext ? `Grounded in: ${videoContext.title}` : 'Ask me anything, I\'m here to teach'}
             </div>
           </div>
         </div>
-        <button onClick={() => onOpenChange(false)} className="text-[#64748b] hover:text-white text-sm shrink-0 px-1">✕</button>
+        <button onClick={() => onOpenChange(false)} className="text-[#8a96ab] hover:text-white text-sm shrink-0 px-1">✕</button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
@@ -115,7 +115,7 @@ export default function LearnTutorWidget({ walletAddress, videoContext, open, on
             </div>
           </div>
         ))}
-        {sending && <p className="text-[#64748b] text-xs">Thinking…</p>}
+        {sending && <p className="text-[#8a96ab] text-xs">Thinking…</p>}
       </div>
 
       <div className="flex items-center gap-2 px-4 py-3 border-t border-white/10 shrink-0">
@@ -125,7 +125,7 @@ export default function LearnTutorWidget({ walletAddress, videoContext, open, on
           onKeyDown={(e) => { if (e.key === 'Enter' && !sending) send(); }}
           placeholder="Ask a question…"
           disabled={sending}
-          className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
+          className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/40 disabled:opacity-50"
         />
         <button
           onClick={() => send()}

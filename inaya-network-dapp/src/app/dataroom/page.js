@@ -183,10 +183,10 @@ export default function DataRoomPage() {
             <span className="text-black font-extrabold text-sm">I</span>
           </div>
           <span className="text-white font-extrabold tracking-wide">INAYA</span>
-          <span className="text-[#64748b] text-xs font-mono ml-2">Investor Data Room</span>
+          <span className="text-[#8a96ab] text-xs font-mono ml-2">Investor Data Room</span>
         </div>
 
-        {view === "loading" && <p className="text-[#64748b] text-xs font-mono">Loading…</p>}
+        {view === "loading" && <p className="text-[#8a96ab] text-xs font-mono">Loading…</p>}
 
         {view === "error" && (
           <div className="bg-[#090d16]/80 border border-red-500/20 rounded-xl p-6">
@@ -200,7 +200,7 @@ export default function DataRoomPage() {
             <p className="text-[#94a3b8] text-sm mb-6">Enter your name and email to verify your identity and continue to the data room.</p>
             <form onSubmit={handleRequestAccess} className="space-y-4">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] block mb-1.5">Full name</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Full name</label>
                 <input
                   required
                   value={nameInput}
@@ -210,7 +210,7 @@ export default function DataRoomPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] block mb-1.5">Email</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Email</label>
                 <input
                   required
                   type="email"
@@ -273,19 +273,19 @@ export default function DataRoomPage() {
           </div>
         )}
 
-        {(view === "documentsPending") && <p className="text-[#64748b] text-xs font-mono">Loading documents…</p>}
+        {(view === "documentsPending") && <p className="text-[#8a96ab] text-xs font-mono">Loading documents…</p>}
 
         {view === "documents" && (
           <div>
             <h1 className="text-xl font-extrabold text-white mb-1">Data Room</h1>
             <p className="text-[#94a3b8] text-sm mb-6">Welcome back, {visitor?.name}.</p>
             {documents.length === 0 ? (
-              <p className="text-[#64748b] text-sm">No documents have been uploaded yet.</p>
+              <p className="text-[#8a96ab] text-sm">No documents have been uploaded yet.</p>
             ) : (
               <div className="space-y-6">
                 {groupByCategory(documents).map(([category, docs]) => (
                   <div key={category}>
-                    <h2 className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <h2 className="text-[#8a96ab] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
                       📁 {category}
                     </h2>
                     <div className="space-y-2">
@@ -297,7 +297,7 @@ export default function DataRoomPage() {
                         >
                           <div>
                             <p className="text-white text-sm font-semibold">{doc.title}</p>
-                            <p className="text-[#64748b] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)}</p>
+                            <p className="text-[#8a96ab] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)}</p>
                           </div>
                           <span className="text-[#00f2fe] text-xs font-bold">View →</span>
                         </button>
@@ -312,7 +312,7 @@ export default function DataRoomPage() {
 
         {view === "viewer" && activeDocument && (
           <div>
-            <button onClick={closeViewer} className="text-[#64748b] hover:text-slate-300 text-xs font-mono mb-4">← Back to documents</button>
+            <button onClick={closeViewer} className="text-[#8a96ab] hover:text-slate-300 text-xs font-mono mb-4">← Back to documents</button>
             <h1 className="text-lg font-bold text-white mb-3">{activeDocument.title}</h1>
             {activeDocument.mimeType === "application/pdf" ? (
               <iframe

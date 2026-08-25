@@ -2945,8 +2945,8 @@ export default function Home() {
     // an accurate phase can't claim "Completed" while those are still unchecked below.
     technically_completed: { label: "Technically Complete", emoji: "🛠️", text: "text-cyan-400", border: "border-cyan-400/30", tint: "bg-cyan-400/[0.03]", badge: "bg-cyan-400/10 border-cyan-400/30 text-cyan-400", bullet: "✓", item: "text-slate-300" },
     in_progress: { label: "In Progress", emoji: "🚧", text: "text-amber-400",   border: "border-amber-400/30",   tint: "bg-amber-400/[0.03]",   badge: "bg-amber-400/10 border-amber-400/30 text-amber-400",     bullet: "◐", item: "text-slate-300" },
-    planned:     { label: "Planned",     emoji: "⏳", text: "text-sky-400",     border: "border-sky-400/30",     tint: "bg-sky-400/[0.03]",     badge: "bg-sky-400/10 border-sky-400/30 text-sky-400",           bullet: "○", item: "text-[#64748b]" },
-    future:      { label: "Future",      emoji: "🔮", text: "text-violet-400",  border: "border-violet-400/30",  tint: "bg-violet-400/[0.03]",  badge: "bg-violet-400/10 border-violet-400/30 text-violet-400", bullet: "◇", item: "text-[#64748b]" },
+    planned:     { label: "Planned",     emoji: "⏳", text: "text-sky-400",     border: "border-sky-400/30",     tint: "bg-sky-400/[0.03]",     badge: "bg-sky-400/10 border-sky-400/30 text-sky-400",           bullet: "○", item: "text-[#8a96ab]" },
+    future:      { label: "Future",      emoji: "🔮", text: "text-violet-400",  border: "border-violet-400/30",  tint: "bg-violet-400/[0.03]",  badge: "bg-violet-400/10 border-violet-400/30 text-violet-400", bullet: "◇", item: "text-[#8a96ab]" },
   };
 
   // ========================================================
@@ -4839,9 +4839,9 @@ export default function Home() {
                 <>
                   <div className="fixed inset-0 z-[80]" onClick={() => setIsNotificationsOpen(false)} />
                   <div className="absolute right-0 top-11 w-80 max-h-96 overflow-y-auto bg-[#0a0f1e] border border-white/10 rounded-2xl shadow-2xl z-[90] p-2">
-                    <div className="px-3 py-2 text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest">Notifications</div>
+                    <div className="px-3 py-2 text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Notifications</div>
                     {allNotifications.length === 0 ? (
-                      <div className="px-3 py-6 text-center text-xs text-[#64748b] italic">
+                      <div className="px-3 py-6 text-center text-xs text-[#8a96ab] italic">
                         {isConnected ? "You're all caught up." : 'Connect your wallet to see activity.'}
                       </div>
                     ) : (
@@ -4852,7 +4852,7 @@ export default function Home() {
                             <div className="min-w-0">
                               <div className="text-white text-xs font-bold">{n.title}</div>
                               <div className="text-[#94a3b8] text-[11px] mt-0.5">{n.body}</div>
-                              <div className="text-[#64748b] text-[9px] font-mono mt-1">{new Date(n.occurredAt).toLocaleString()}</div>
+                              <div className="text-[#8a96ab] text-[9px] font-mono mt-1">{new Date(n.occurredAt).toLocaleString()}</div>
                             </div>
                           </div>
                         ))}
@@ -4899,7 +4899,7 @@ export default function Home() {
             {/* Row 1: things you do inside the wallet dApp itself */}
             <div className="flex flex-wrap items-center justify-center gap-2">
               {['Network Home', 'Faucet', 'Sovereign Vault', 'Staking', 'My Dashboard', 'Referrals', 'Genesis Airdrop', 'Learn', 'Hackathon'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#8a96ab] hover:text-slate-300'}`}>{tab}</button>
               ))}
             </div>
 
@@ -4908,7 +4908,7 @@ export default function Home() {
             {/* Row 2: informational pages + the separate Business suite links */}
             <div className="flex flex-wrap items-center justify-center gap-2">
               {['Business Model', 'White Paper', 'About Us', 'Contact Us'].map((tab) => (
-                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#64748b] hover:text-slate-300'}`}>{tab}</button>
+                <button key={tab} onClick={() => setCurrentPage(tab)} className={`px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap ${currentPage === tab ? 'text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40' : 'text-[#8a96ab] hover:text-slate-300'}`}>{tab}</button>
               ))}
               {/* /business is a genuinely separate Next.js route (its own email+
                   magic-link auth, no wallet) — a real link, not a setCurrentPage
@@ -4916,13 +4916,13 @@ export default function Home() {
                   (target="_blank") so switching into the Business Workspace
                   never navigates away from the wallet dApp — both stay open
                   as separate tabs instead of needing a "back" button. */}
-              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+              <a href="/business" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
                 Business Workspace ↗
               </a>
-              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+              <a href="/business/roadmap" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
                 Business SaaS ↗
               </a>
-              <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+              <a href="/security" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
                 Security Layer ↗
               </a>
               {/* Real, crawlable, server-rendered pages -- SEO's answer to
@@ -4932,10 +4932,10 @@ export default function Home() {
                   already cover that content; duplicating them in the same
                   nav row just confused users. Those routes still exist and
                   stay in sitemap.js for crawlability, just not double-linked. */}
-              <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+              <a href="/faq" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
                 FAQ ↗
               </a>
-              <a href="/stats" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#64748b] hover:text-slate-300">
+              <a href="/stats" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold rounded-lg tracking-wide transition-all whitespace-nowrap text-[#8a96ab] hover:text-slate-300">
                 Network Stats ↗
               </a>
             </div>
@@ -5040,7 +5040,7 @@ export default function Home() {
             </div>
             <div>
               <div className="text-white text-sm font-bold tracking-wide leading-tight">Security Dock</div>
-              <div className="text-[9px] text-[#64748b] uppercase tracking-wider">Network diagnostics &amp; identity</div>
+              <div className="text-[9px] text-[#8a96ab] uppercase tracking-wider">Network diagnostics &amp; identity</div>
             </div>
           </div>
 
@@ -5068,7 +5068,7 @@ export default function Home() {
 
           {/* DEPLOYED CONTRACTS */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Deployed Contracts</div>
+            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Deployed Contracts</div>
             <div className="bg-white/[0.02] border border-white/5 rounded-xl divide-y divide-white/5 overflow-hidden">
 
               {/* Core Contract Row */}
@@ -5091,7 +5091,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(liveContractAddress, 'core')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'core' ? '✅' : '📋'}
@@ -5100,13 +5100,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Mock USDT Row */}
@@ -5129,7 +5129,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(usdtTokenAddress, 'usdt')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'usdt' ? '✅' : '📋'}
@@ -5138,13 +5138,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${usdtTokenAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Token Contract Row */}
@@ -5167,7 +5167,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(inayaTokenAddress, 'token')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'token' ? '✅' : '📋'}
@@ -5176,13 +5176,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${inayaTokenAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Inaya Node Registry Row */}
@@ -5205,7 +5205,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(nodeRegistryAddress, 'nodeRegistry')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'nodeRegistry' ? '✅' : '📋'}
@@ -5214,13 +5214,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${nodeRegistryAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Inaya Revenue Router Row */}
@@ -5243,7 +5243,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(revenueRouterAddress, 'revenueRouter')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'revenueRouter' ? '✅' : '📋'}
@@ -5252,13 +5252,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${revenueRouterAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Proof Registry Row */}
@@ -5281,7 +5281,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(proofRegistryAddress, 'proofregistry')}
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'proofregistry' ? '✅' : '📋'}
@@ -5290,13 +5290,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${proofRegistryAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#64748b] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
             </div>
@@ -5304,7 +5304,7 @@ export default function Home() {
 
           {/* NODE IDENTITY */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Node Identity</div>
+            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Node Identity</div>
             <div className="border border-[#00f2fe]/20 bg-gradient-to-b from-[#0c162b]/80 to-[#0c162b]/40 p-4 rounded-xl">
               <div className="flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-[#64748b]'}`}></span>
@@ -5321,17 +5321,17 @@ export default function Home() {
                   </button>
                 )
               ) : (
-                <div className="text-[#64748b] text-[11px] italic mt-3 font-mono">// Connect wallet to sign up.</div>
+                <div className="text-[#8a96ab] text-[11px] italic mt-3 font-mono">// Connect wallet to sign up.</div>
               )}
             </div>
           </div>
 
           {/* VAULT ACCESS */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#64748b] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
+            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
             <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey</label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b] text-xs">🔒</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a96ab] text-xs">🔒</span>
               <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
             </div>
             <div className="flex gap-2 mt-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
@@ -5423,16 +5423,16 @@ export default function Home() {
                     >
                       <span className="text-lg">{item.icon}</span>
                       <div className="text-white font-bold text-xs mt-1.5">{item.label}</div>
-                      <p className="text-[#64748b] text-[11px] leading-relaxed mt-1">{item.desc}</p>
+                      <p className="text-[#8a96ab] text-[11px] leading-relaxed mt-1">{item.desc}</p>
                     </Tag>
                   );
                 })}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Wallet Core Status</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#64748b] mt-1">Supply Cap Weight</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#64748b] mt-1">RPC Connection Status</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">Wallet Core Status</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">Supply Cap Weight</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">RPC Connection Status</div></div>
               </div>
 
               {/* ============================================================
@@ -5455,19 +5455,19 @@ export default function Home() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 font-mono">
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">4.5 USDT</div>
-                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">Storage / TB / Month</div>
+                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">Storage / TB / Month</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">30,000,000</div>
-                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">$INAYA Hard Cap</div>
+                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">$INAYA Hard Cap</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">40.0%</div>
-                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">To Swarm Reserve (Nodes)</div>
+                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">To Swarm Reserve (Nodes)</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">BNB Chain</div>
-                        <div className="text-[9px] uppercase text-[#64748b] mt-0.5">Live On Testnet</div>
+                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">Live On Testnet</div>
                       </div>
                     </div>
 
@@ -5636,11 +5636,11 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs">
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-emerald-400">500</div>
-                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">$INAYA per request</div>
+                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">$INAYA per request</div>
                   </div>
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-[#00f2fe]">100</div>
-                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">mUSDT per request</div>
+                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">mUSDT per request</div>
                   </div>
                 </div>
 
@@ -5658,12 +5658,12 @@ export default function Home() {
                   {isFauceting ? "DISPENSING..." : isConnected ? "REQUEST TEST TOKENS" : "CONNECT WALLET FIRST"}
                 </button>
 
-                <p className="text-[10px] text-[#64748b] font-mono">
+                <p className="text-[10px] text-[#8a96ab] font-mono">
                   The faucet skips a token if your wallet already holds enough for testing — this keeps the treasury available for everyone.
                 </p>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-1"><span className="text-amber-400/80 font-bold">⛽ Need gas (tBNB) too?</span> This faucet only covers $INAYA and mUSDT.</p>
                 <p>Get free testnet BNB here: <a href="https://faucet.zalalena.com/bsc" target="_blank" rel="noopener noreferrer" className="text-[#00f2fe] underline hover:text-cyan-300">faucet.zalalena.com/bsc</a></p>
               </div>
@@ -5963,7 +5963,7 @@ export default function Home() {
       {/* Asset Proof Status Lookup */}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-white">🌳 Asset Proof Status</h3>
-        <p className="text-[10px] text-[#64748b] font-mono leading-relaxed">Look up the on-chain Merkle root + challenge history for an Asset Tracking ID (InayaProofRegistry).</p>
+        <p className="text-[10px] text-[#8a96ab] font-mono leading-relaxed">Look up the on-chain Merkle root + challenge history for an Asset Tracking ID (InayaProofRegistry).</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -5988,11 +5988,11 @@ export default function Home() {
             </div>
           ) : (
             <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
-              <div className="flex justify-between"><span className="text-[#64748b]">Merkle Root</span><span className="text-[#00f2fe] truncate max-w-[60%]" title={proofLookupResult.merkleRoot}>{truncateAddress(proofLookupResult.merkleRoot)}</span></div>
-              <div className="flex justify-between"><span className="text-[#64748b]">Chunk Count</span><span className="text-white">{proofLookupResult.chunkCount}</span></div>
-              <div className="flex justify-between"><span className="text-[#64748b]">Assigned Node</span><span className="text-white truncate max-w-[60%]" title={proofLookupResult.node}>{proofLookupResult.node === ethers.ZeroAddress ? '— unassigned —' : truncateAddress(proofLookupResult.node)}</span></div>
-              <div className="flex justify-between"><span className="text-[#64748b]">Registered At</span><span className="text-white">{proofLookupResult.registeredAt ? new Date(proofLookupResult.registeredAt * 1000).toLocaleString() : '—'}</span></div>
-              <div className="flex justify-between"><span className="text-[#64748b]">Last Verified</span><span className="text-white">{proofLookupResult.lastVerifiedAt ? new Date(proofLookupResult.lastVerifiedAt * 1000).toLocaleString() : 'Never'}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Merkle Root</span><span className="text-[#00f2fe] truncate max-w-[60%]" title={proofLookupResult.merkleRoot}>{truncateAddress(proofLookupResult.merkleRoot)}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Chunk Count</span><span className="text-white">{proofLookupResult.chunkCount}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Assigned Node</span><span className="text-white truncate max-w-[60%]" title={proofLookupResult.node}>{proofLookupResult.node === ethers.ZeroAddress ? '— unassigned —' : truncateAddress(proofLookupResult.node)}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Registered At</span><span className="text-white">{proofLookupResult.registeredAt ? new Date(proofLookupResult.registeredAt * 1000).toLocaleString() : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Last Verified</span><span className="text-white">{proofLookupResult.lastVerifiedAt ? new Date(proofLookupResult.lastVerifiedAt * 1000).toLocaleString() : 'Never'}</span></div>
               <div className="flex justify-between"><span className="text-emerald-400">Challenges Passed</span><span className="text-emerald-400 font-bold">{proofLookupResult.challengesPassed}</span></div>
               <div className="flex justify-between"><span className="text-red-400">Challenges Failed</span><span className="text-red-400 font-bold">{proofLookupResult.challengesFailed}</span></div>
             </div>
@@ -6003,7 +6003,7 @@ export default function Home() {
       {/* Node Reliability Lookup */}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-white">🛡️ Node Reliability</h3>
-        <p className="text-[10px] text-[#64748b] font-mono leading-relaxed">Check any storage node operator's aggregate pass/fail challenge history across every asset they've hosted.</p>
+        <p className="text-[10px] text-[#8a96ab] font-mono leading-relaxed">Check any storage node operator's aggregate pass/fail challenge history across every asset they've hosted.</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -6028,7 +6028,7 @@ export default function Home() {
             <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
               <div className="flex justify-between"><span className="text-emerald-400">Challenges Passed</span><span className="text-emerald-400 font-bold">{nodeLookupResult.passed}</span></div>
               <div className="flex justify-between"><span className="text-red-400">Challenges Failed</span><span className="text-red-400 font-bold">{nodeLookupResult.failed}</span></div>
-              <div className="flex justify-between"><span className="text-[#64748b]">Reliability Rate</span><span className="text-white font-bold">{rate !== null ? `${rate}%` : 'No challenges yet'}</span></div>
+              <div className="flex justify-between"><span className="text-[#8a96ab]">Reliability Rate</span><span className="text-white font-bold">{rate !== null ? `${rate}%` : 'No challenges yet'}</span></div>
             </div>
           );
         })()}
@@ -6053,19 +6053,19 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-[#00f2fe] font-bold text-lg">4.5 USDT</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-emerald-400 font-bold text-lg">5 INAYA</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-amber-400 font-bold text-lg">5 USDT</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-violet-400 font-bold text-lg">26.7%</div>
-                  <div className="text-[10px] text-[#64748b] uppercase tracking-wider mt-1">Staking Rewards Pool APY Source</div>
+                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Staking Rewards Pool APY Source</div>
                 </div>
               </div>
 
@@ -6086,7 +6086,7 @@ export default function Home() {
 
                   {/* STORAGE SUBSCRIPTION */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Storage Subscription (30 Days)</div>
+                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Storage Subscription (30 Days)</div>
                     <div className="text-white font-bold text-sm">{paygPricing.storagePerTB} USDT / TB</div>
                     <input
                       type="number"
@@ -6107,7 +6107,7 @@ export default function Home() {
 
                   {/* EGRESS FEE */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Egress / Retrieval Fee</div>
+                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Egress / Retrieval Fee</div>
                     <div className="text-white font-bold text-sm">{paygPricing.egressPerHalfTB} INAYA / 0.5 TB</div>
                     <input
                       type="number"
@@ -6128,7 +6128,7 @@ export default function Home() {
 
                   {/* ANNUAL MAINTENANCE */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#64748b] uppercase tracking-wider">Annual Maintenance</div>
+                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Annual Maintenance</div>
                     <div className="text-white font-bold text-sm">{paygPricing.maintenanceFee} USDT / Year</div>
                     <div className="text-[10px] text-slate-500 py-2">
                       {paygStatus.maintenanceCurrent ? (
@@ -6316,19 +6316,19 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                   <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.totalStakedTVL).toLocaleString()} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Value Locked</div>
+                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Value Locked</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{stakingOverview.estimatedAPY}%</div>
-                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Estimated APY (Flexible)</div>
+                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Estimated APY (Flexible)</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.myStakedBalance).toLocaleString()} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#64748b] mt-1">My Staked Balance</div>
+                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">My Staked Balance</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.claimableRewards).toFixed(4)} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#64748b] mt-1">Claimable Rewards</div>
+                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Claimable Rewards</div>
                   </div>
                 </div>
               )}
@@ -6458,19 +6458,19 @@ export default function Home() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                     <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{totalSpaceAllocatedTB.toLocaleString()} TB</div>
-                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total Space Allocated</div>
+                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Space Allocated</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygTotalUsdtSpent.toFixed(4)} USDT</div>
-                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total PAYG Spent (USDT)</div>
+                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (USDT)</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygTotalInayaSpent.toFixed(4)} INAYA</div>
-                      <div className="text-[10px] uppercase text-[#64748b] mt-1">Total PAYG Spent (INAYA)</div>
+                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (INAYA)</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygHistory.length}</div>
-                      <div className="text-[10px] uppercase text-[#64748b] mt-1">PAYG Transactions Logged</div>
+                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">PAYG Transactions Logged</div>
                     </div>
                   </div>
 
@@ -6479,7 +6479,7 @@ export default function Home() {
                     <h3 className="text-sm font-bold text-white mb-4">🗄️ Storage Space Allocation</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
                       <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                        <div className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">Pay-As-You-Go Commitment</div>
+                        <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mb-1">Pay-As-You-Go Commitment</div>
                         <div className="text-white font-bold text-lg">{paygStatus.tbCommitted} TB</div>
                         <div className="mt-1">
                           Storage: {paygStatus.storageActive ? <span className="text-emerald-400 font-bold">ACTIVE</span> : <span className="text-amber-400 font-bold">LAPSED</span>}
@@ -6487,7 +6487,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                        <div className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">Corporate Reserve Allocation</div>
+                        <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mb-1">Corporate Reserve Allocation</div>
                         <div className="text-white font-bold text-lg">{corporateAllocatedTB.toLocaleString()} TB</div>
                         <div className="mt-1">
                           {activeCorporatePlan ? (
@@ -6507,9 +6507,9 @@ export default function Home() {
                       <button onClick={() => fetchPaygHistory(walletAddress)} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH</button>
                     </div>
                     {isLoadingPaygHistory ? (
-                      <div className="py-6 text-center font-mono text-xs text-[#64748b]">⚙️ Syncing PAYG ledger events...</div>
+                      <div className="py-6 text-center font-mono text-xs text-[#8a96ab]">⚙️ Syncing PAYG ledger events...</div>
                     ) : paygHistory.length === 0 ? (
-                      <div className="py-6 text-center font-mono text-xs text-[#64748b] italic">// No Pay-As-You-Go transactions found in the current ledger block window.</div>
+                      <div className="py-6 text-center font-mono text-xs text-[#8a96ab] italic">// No Pay-As-You-Go transactions found in the current ledger block window.</div>
                     ) : (
                       <table className="w-full text-left font-mono text-xs border-collapse">
                         <thead>
@@ -6689,7 +6689,7 @@ export default function Home() {
               
               <div className="flex flex-wrap gap-2 border-b border-white/5 pb-3">
                 {['Abstract', 'The Problem', 'Architecture', 'Vision', 'Tokenomics Matrix'].map((sec) => (
-                  <button key={sec} onClick={() => setActivePaperSection(sec)} className={`px-4 py-2 text-xs font-mono font-bold rounded-lg transition-all ${activePaperSection === sec ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe]' : 'text-[#64748b] bg-white/[0.01] hover:text-slate-300'}`}>{sec}</button>
+                  <button key={sec} onClick={() => setActivePaperSection(sec)} className={`px-4 py-2 text-xs font-mono font-bold rounded-lg transition-all ${activePaperSection === sec ? 'bg-[#00f2fe]/10 border border-[#00f2fe] text-[#00f2fe]' : 'text-[#8a96ab] bg-white/[0.01] hover:text-slate-300'}`}>{sec}</button>
                 ))}
               </div>
 
@@ -6731,7 +6731,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <span className="text-[9px] font-mono font-bold text-[#64748b] uppercase tracking-widest">Tactical Project Development Roadmap</span>
+                      <span className="text-[9px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Tactical Project Development Roadmap</span>
                       <div className="space-y-2.5 mt-2">
                         {roadmapPhases.map((p) => {
                           const s = roadmapStatusConfig[p.status];
@@ -6774,7 +6774,7 @@ export default function Home() {
                     </div>
 
                     <div className="bg-gradient-to-r from-[#0a1124] to-[#080d1a] border border-[#00f2fe]/20 rounded-xl p-4">
-                      <span className="text-[9px] font-mono font-bold text-[#64748b] uppercase tracking-widest">Ultimate Goal</span>
+                      <span className="text-[9px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Ultimate Goal</span>
                       <p className="text-white text-xs italic mt-1.5 leading-relaxed">Establish Inaya Network as foundational trust infrastructure for the next generation of the internet, prioritizing privacy, user ownership, resilience, and decentralization.</p>
                     </div>
                   </div>
@@ -6787,7 +6787,7 @@ export default function Home() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
                       
                       <div className="w-full border border-white/10 bg-[#060913] rounded-xl p-5 flex flex-col justify-center space-y-4">
-                        <span className="text-[10px] font-mono text-[#64748b] uppercase tracking-widest">Visual Asset Weight Distribution</span>
+                        <span className="text-[10px] font-mono text-[#8a96ab] uppercase tracking-widest">Visual Asset Weight Distribution</span>
                         
                         <div className="w-full h-8 rounded-lg overflow-hidden flex border border-white/5 shadow-inner">
                           <div className="bg-[#4facfe] h-full transition-all" style={{ width: '40.0%' }} title="Swarm Reserve: 40.0%"></div>
@@ -6995,7 +6995,7 @@ export default function Home() {
                       </video>
                       <div className="p-4">
                         <div className="text-sm font-bold text-white">{demo.title}</div>
-                        <p className="text-[11px] text-[#64748b] font-mono mt-1 leading-relaxed">{demo.desc}</p>
+                        <p className="text-[11px] text-[#8a96ab] font-mono mt-1 leading-relaxed">{demo.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -7018,7 +7018,7 @@ export default function Home() {
                         <div className="text-sm font-bold text-white group-hover:text-[#00f2fe] transition-colors">
                           {doc.title}
                         </div>
-                        <p className="text-[11px] text-[#64748b] font-mono mt-1 leading-relaxed">
+                        <p className="text-[11px] text-[#8a96ab] font-mono mt-1 leading-relaxed">
                           {doc.desc}
                         </p>
                         <span className="inline-block mt-2 text-[10px] font-mono font-bold text-[#00f2fe]">
@@ -7039,12 +7039,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-2"><span className="text-amber-400/80 font-bold">⚠ Deployment Status:</span> Inaya Network is currently deployed on BNB Chain Testnet only. No mainnet funds, tokens, or production data should be used with this interface.</p>
                 <p>By connecting a wallet, you acknowledge that Genesis Airdrop rewards earned during the testnet phase — whether through the automatic upload reward or an approved contributor application — will convert into $INAYA mainnet token allocations at TGE, subject to the program's eligibility criteria and anti-sybil verification requirements. Wallet addresses and application details submitted are used solely for ecosystem contribution tracking.</p>
               </div>
 
-              <div className="bg-black/20 border border-[#00f2fe]/15 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
+              <div className="bg-black/20 border border-[#00f2fe]/15 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-2"><span className="text-[#00f2fe] font-bold">🧪 Testers &amp; Developers Disclaimer:</span></p>
                 <p>Inaya Network is presently operating on BNB Chain Testnet as part of an active testing and development phase. Wallet connectivity can vary by provider during this phase: because most wallet apps do not expose test networks through WalletConnect by default, some mobile wallets (including Trust Wallet, Binance Wallet, SafePal, and Best Wallet) may be unable to complete a testnet connection at this time. This is a deliberate policy made by each wallet provider — not a limitation of the Inaya Network protocol or interface. MetaMask, along with browsers offering a built-in wallet such as Brave, currently provide the most consistent connection experience for testers and developers. Full, unrestricted wallet compatibility is expected at mainnet launch, when these same connections run on production networks that every major wallet supports natively. We appreciate testers' and developers' patience navigating these testnet-specific constraints as the protocol progresses toward mainnet.</p>
               </div>
@@ -7073,7 +7073,7 @@ export default function Home() {
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-lg leading-none shrink-0">{contact.icon}</span>
                         <div className="min-w-0">
-                          <div className="text-[10px] text-[#64748b] font-mono uppercase tracking-wider">{contact.label}</div>
+                          <div className="text-[10px] text-[#8a96ab] font-mono uppercase tracking-wider">{contact.label}</div>
                           <div className="text-sm font-bold text-white group-hover:text-[#00f2fe] transition-colors truncate">{contact.email}</div>
                         </div>
                       </div>
@@ -7081,7 +7081,7 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); copyToClipboard(contact.email, `contact-${contact.email}`); }}
-                          className="text-[10px] text-[#64748b] hover:text-[#00f2fe] transition-colors px-1.5"
+                          className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors px-1.5"
                           title="Copy email"
                         >
                           {copiedField === `contact-${contact.email}` ? '✅' : '📋'}
@@ -7130,12 +7130,12 @@ export default function Home() {
                 </a>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#64748b] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
                 <p>All addresses above route to the Inaya Network team. For time-sensitive support requests, use <span className="text-[#00f2fe] font-bold">support@inayanetwork.com</span> — for institutional or enterprise discussions, use <span className="text-[#00f2fe] font-bold">partners@inayanetwork.com</span> or <span className="text-[#00f2fe] font-bold">investors@inayanetwork.com</span>.</p>
               </div>
 
               {/* LEGAL */}
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-mono text-[#64748b] pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-mono text-[#8a96ab] pt-2">
                 <a href="/privacy" className="hover:text-[#00f2fe] transition-colors">Privacy Policy</a>
                 <span className="text-white/10">·</span>
                 <a href="/terms" className="hover:text-[#00f2fe] transition-colors">Terms of Service</a>
@@ -7151,7 +7151,7 @@ export default function Home() {
       {isWalletModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
           <div className="bg-[#090e1a] border border-[#00f2fe]/20 w-full max-w-sm rounded-2xl p-6 relative">
-            <button onClick={() => setIsWalletModalOpen(false)} className="absolute top-4 right-4 text-[#64748b] font-mono hover:text-white">✕</button>
+            <button onClick={() => setIsWalletModalOpen(false)} className="absolute top-4 right-4 text-[#8a96ab] font-mono hover:text-white">✕</button>
             <div className="text-center mb-5"><h3 className="text-white font-bold">Select Gateway Access</h3></div>
             <div className="space-y-2">
               {(typeof window !== 'undefined' && window.__TAURI__
@@ -7197,10 +7197,10 @@ export default function Home() {
       {feedbackModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
           <div className="bg-[#090e1a] border border-[#00f2fe]/20 w-full max-w-md rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setFeedbackModal(null)} className="absolute top-4 right-4 text-[#64748b] font-mono hover:text-white">✕</button>
+            <button onClick={() => setFeedbackModal(null)} className="absolute top-4 right-4 text-[#8a96ab] font-mono hover:text-white">✕</button>
             <div className="text-center mb-5">
               <h3 className="text-white font-bold">{feedbackModal === 'bug' ? '🐛 Report a Bug' : '💡 Suggest an Idea'}</h3>
-              <p className="text-[10px] text-[#64748b] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
+              <p className="text-[10px] text-[#8a96ab] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
             </div>
 
             {feedbackSuccess ? (
@@ -7210,34 +7210,34 @@ export default function Home() {
             ) : (
               <form onSubmit={handleFeedbackSubmit} className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Title</label>
+                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Title</label>
                   <input
                     type="text"
                     required
                     maxLength={200}
                     value={feedbackForm.title}
                     onChange={(e) => setFeedbackForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
                     placeholder={feedbackModal === 'bug' ? 'Short summary of the bug' : 'Short summary of the idea'}
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Description</label>
+                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Description</label>
                   <textarea
                     required
                     maxLength={5000}
                     rows={4}
                     value={feedbackForm.description}
                     onChange={(e) => setFeedbackForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                    className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
                     placeholder="What happened / what you'd like to see"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-[#64748b] font-mono uppercase">Category</label>
+                    <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Category</label>
                     <select
                       value={feedbackForm.category}
                       onChange={(e) => setFeedbackForm((f) => ({ ...f, category: e.target.value }))}
@@ -7248,7 +7248,7 @@ export default function Home() {
                   </div>
                   {feedbackModal === 'bug' && (
                     <div>
-                      <label className="text-[10px] text-[#64748b] font-mono uppercase">Severity</label>
+                      <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Severity</label>
                       <select
                         value={feedbackForm.severity}
                         onChange={(e) => setFeedbackForm((f) => ({ ...f, severity: e.target.value }))}
@@ -7262,20 +7262,20 @@ export default function Home() {
 
                 {feedbackModal === 'bug' && (
                   <div>
-                    <label className="text-[10px] text-[#64748b] font-mono uppercase">Steps to reproduce (optional)</label>
+                    <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Steps to reproduce (optional)</label>
                     <textarea
                       maxLength={3000}
                       rows={3}
                       value={feedbackForm.reproductionSteps}
                       onChange={(e) => setFeedbackForm((f) => ({ ...f, reproductionSteps: e.target.value }))}
-                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#00f2fe]/50"
+                      className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[#8a96ab] focus:outline-none focus:border-[#00f2fe]/50"
                       placeholder={'1. Go to...\n2. Click...\n3. See error'}
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[10px] text-[#64748b] font-mono uppercase">Screenshot / file (optional)</label>
+                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Screenshot / file (optional)</label>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
@@ -7326,10 +7326,10 @@ export default function Home() {
               <img src="/inaya-logo.png" alt="Inaya" className="w-7 h-7 rounded-lg shrink-0 border border-[#00f2fe]/30" />
               <div className="min-w-0">
                 <div className="text-white text-xs font-bold font-mono truncate">Inaya Docs Assistant</div>
-                <div className="text-[9px] text-[#64748b] font-mono">Gemini-powered · FAQ &amp; docs</div>
+                <div className="text-[9px] text-[#8a96ab] font-mono">Gemini-powered · FAQ &amp; docs</div>
               </div>
             </div>
-            <button onClick={() => setIsChatOpen(false)} className="text-[#64748b] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
+            <button onClick={() => setIsChatOpen(false)} className="text-[#8a96ab] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
           </div>
 
           {/* Message Transcript */}
@@ -7356,7 +7356,7 @@ export default function Home() {
 
             {isChatSending && !isChatStreaming && (
               <div className="flex justify-start">
-                <div className="bg-white/[0.04] border border-white/10 text-[#64748b] rounded-2xl px-3.5 py-2.5 text-xs font-mono flex items-center gap-1.5">
+                <div className="bg-white/[0.04] border border-white/10 text-[#8a96ab] rounded-2xl px-3.5 py-2.5 text-xs font-mono flex items-center gap-1.5">
                   <span className="animate-pulse">●</span>
                   <span className="animate-pulse [animation-delay:150ms]">●</span>
                   <span className="animate-pulse [animation-delay:300ms]">●</span>

@@ -65,9 +65,9 @@ export default function LearnCategory({ categoryId, isVideoSaved, toggleSave, on
       <div>
         <h3 className="text-white font-bold text-sm mb-3">Recommended Videos</h3>
         {loading ? (
-          <p className="text-[#64748b] text-xs font-mono">Loading…</p>
+          <p className="text-[#8a96ab] text-xs font-mono">Loading…</p>
         ) : results.length === 0 ? (
-          <p className="text-[#64748b] text-sm">No educational results found for this category yet.</p>
+          <p className="text-[#8a96ab] text-sm">No educational results found for this category yet.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {results.map((item) => (

@@ -46,14 +46,14 @@ function WorkflowDiagram() {
         {linear.map((step, i) => (
           <span key={step.id} className="flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-200">{step.label}</span>
-            {i < linear.length - 1 && <span className="text-[#475569]">→</span>}
+            {i < linear.length - 1 && <span className="text-[#8a96ab]">→</span>}
           </span>
         ))}
       </div>
       <div className="mt-3 pl-4 border-l border-white/10 space-y-2">
         {splits.map((s) => (
           <div key={s.to} className="flex items-center gap-2">
-            <span className="text-[#475569]">↳ {s.label} →</span>
+            <span className="text-[#8a96ab]">↳ {s.label} →</span>
             <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-200">
               {s.to.replace("_", " ")}
             </span>
@@ -63,7 +63,7 @@ function WorkflowDiagram() {
       <div className="mt-3 pl-4 border-l border-white/10 space-y-2">
         {loops.map((l) => (
           <div key={`${l.from}-${l.to}`} className="flex items-center gap-2">
-            <span className="text-[#475569]">
+            <span className="text-[#8a96ab]">
               {l.from.replace("_", " ")} — {l.label} →
             </span>
             <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-200">
@@ -85,7 +85,7 @@ function StageCard({ stage }) {
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[#475569] text-sm">{String(stage.number).padStart(2, "0")}</span>
+          <span className="font-mono text-[#8a96ab] text-sm">{String(stage.number).padStart(2, "0")}</span>
           <h3 className="text-lg md:text-xl font-extrabold text-white tracking-tight">{stage.title}</h3>
         </div>
         <StatusBadge status={stage.status} />
@@ -114,11 +114,11 @@ function StageCard({ stage }) {
         <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           {stage.groups.map((g) => (
             <div key={g.title} className="bg-black/20 border border-white/5 rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-2">{g.title}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">{g.title}</p>
               <ul className="space-y-1.5">
                 {g.items.map((item) => (
                   <li key={item} className="text-sm text-slate-300 flex items-start gap-2">
-                    <span className="text-[#475569] mt-0.5">•</span>
+                    <span className="text-[#8a96ab] mt-0.5">•</span>
                     {item}
                   </li>
                 ))}
@@ -130,7 +130,7 @@ function StageCard({ stage }) {
 
       {stage.tools && (
         <div className="mt-5">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-2">Implemented AI tools</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">Implemented AI tools</p>
           <div className="flex flex-wrap gap-2">
             {stage.tools.map((t) => (
               <code key={t} className="text-[11px] font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-md px-2 py-1">
@@ -152,11 +152,11 @@ function StageCard({ stage }) {
               </li>
             ))}
           </ul>
-          {stage.examplesNote && <p className="text-[10px] text-[#64748b] mt-3">{stage.examplesNote}</p>}
+          {stage.examplesNote && <p className="text-[10px] text-[#8a96ab] mt-3">{stage.examplesNote}</p>}
         </div>
       )}
 
-      {stage.notes && <p className="text-xs text-[#64748b] italic mt-5 leading-relaxed">{stage.notes}</p>}
+      {stage.notes && <p className="text-xs text-[#8a96ab] italic mt-5 leading-relaxed">{stage.notes}</p>}
     </div>
   );
 }
@@ -166,7 +166,7 @@ export default function RoadmapPage() {
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-4xl mx-auto">
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-10 text-xs font-mono text-[#64748b]">
+        <div className="flex items-center justify-between mb-10 text-xs font-mono text-[#8a96ab]">
           <a href="/" className="hover:text-slate-300">← Inaya Network</a>
           <a href="/business" className="hover:text-slate-300">Business Workspace →</a>
         </div>
@@ -177,12 +177,12 @@ export default function RoadmapPage() {
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Business SaaS Roadmap</h1>
           <p className="text-[#94a3b8] text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed">{POSITIONING_STATEMENT}</p>
-          <p className="text-[#64748b] text-xs md:text-sm mt-2 max-w-xl mx-auto leading-relaxed">{POSITIONING_SUBTEXT}</p>
+          <p className="text-[#8a96ab] text-xs md:text-sm mt-2 max-w-xl mx-auto leading-relaxed">{POSITIONING_SUBTEXT}</p>
         </div>
 
         {/* ARCHITECTURE FLOW */}
         <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 md:p-8 mb-14">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-5 text-center">Architecture</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-5 text-center">Architecture</p>
           <div className="flex flex-col items-center gap-1.5">
             {ARCHITECTURE_LAYERS.map((layer, i) => (
               <div key={layer} className="flex flex-col items-center">
@@ -195,7 +195,7 @@ export default function RoadmapPage() {
                 >
                   {layer}
                 </div>
-                {i < ARCHITECTURE_LAYERS.length - 1 && <span className="text-[#475569] text-lg leading-none my-1">↓</span>}
+                {i < ARCHITECTURE_LAYERS.length - 1 && <span className="text-[#8a96ab] text-lg leading-none my-1">↓</span>}
               </div>
             ))}
           </div>

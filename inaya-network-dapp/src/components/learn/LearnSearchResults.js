@@ -50,16 +50,16 @@ export default function LearnSearchResults({ query, categoryId, isVideoSaved, to
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <p className="text-[#64748b] text-[10px] font-mono uppercase tracking-widest">Educational results for</p>
+        <p className="text-[#8a96ab] text-[10px] font-mono uppercase tracking-widest">Educational results for</p>
         <h2 className="text-white text-xl font-extrabold">“{query}”</h2>
       </div>
 
       {loading ? (
-        <p className="text-[#64748b] text-xs font-mono">Searching…</p>
+        <p className="text-[#8a96ab] text-xs font-mono">Searching…</p>
       ) : error ? (
         <p className="text-red-400 text-sm">{error}</p>
       ) : results.length === 0 ? (
-        <p className="text-[#64748b] text-sm">No educational results found. Try a different search.</p>
+        <p className="text-[#8a96ab] text-sm">No educational results found. Try a different search.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

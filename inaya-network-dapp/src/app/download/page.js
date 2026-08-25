@@ -106,7 +106,7 @@ export default function DownloadHubPage() {
         {APPS.map((app) => (
           <div key={app.id} className="mb-14">
             <h2 className="text-xl md:text-2xl font-extrabold text-white mb-1">
-              {app.name} <span className="text-[#64748b] font-semibold">— {app.tagline}</span>
+              {app.name} <span className="text-[#8a96ab] font-semibold">— {app.tagline}</span>
             </h2>
             <p className="text-[#94a3b8] text-sm mb-2 max-w-2xl">{app.description}</p>
             {app.note && (
@@ -121,7 +121,7 @@ export default function DownloadHubPage() {
                 <div key={d.file} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6 flex flex-col">
                   <div className="text-3xl mb-3">{d.icon}</div>
                   <h3 className="text-white font-bold text-lg mb-1">{d.os}</h3>
-                  <p className="text-[#64748b] text-xs font-mono mb-4">{d.sub}</p>
+                  <p className="text-[#8a96ab] text-xs font-mono mb-4">{d.sub}</p>
                   <a
                     href={d.file}
                     download

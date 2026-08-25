@@ -60,7 +60,7 @@ export default function BusinessWorkspaceDownloadPage() {
             <div key={d.file} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6 flex flex-col">
               <div className="text-3xl mb-3">{d.icon}</div>
               <h2 className="text-white font-bold text-lg mb-1">{d.os}</h2>
-              <p className="text-[#64748b] text-xs font-mono mb-4">{d.sub}</p>
+              <p className="text-[#8a96ab] text-xs font-mono mb-4">{d.sub}</p>
               <a
                 href={d.file}
                 download

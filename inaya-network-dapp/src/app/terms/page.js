@@ -77,7 +77,7 @@ export default function TermsOfServicePage() {
       </div>
 
       <div className="relative max-w-3xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -85,7 +85,7 @@ export default function TermsOfServicePage() {
           LEGAL
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">Terms of Service</h1>
-        <p className="text-[#64748b] text-xs font-mono mb-10">Last updated: August 2026</p>
+        <p className="text-[#8a96ab] text-xs font-mono mb-10">Last updated: August 2026</p>
 
         <div className="space-y-8">
           {sections.map((s) => (
@@ -106,7 +106,7 @@ export default function TermsOfServicePage() {
           ))}
         </div>
 
-        <p className="text-[#64748b] text-xs mt-10">
+        <p className="text-[#8a96ab] text-xs mt-10">
           See also our <a href="/privacy" className="text-[#00f2fe] hover:underline">Privacy Policy</a>.
         </p>
       </div>

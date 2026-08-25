@@ -75,7 +75,7 @@ export default function FaqPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="relative max-w-3xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -87,7 +87,7 @@ export default function FaqPage() {
           <p className="text-[#94a3b8] text-base mb-1 max-w-xl">
             Real answers about real, verifiable infrastructure — no marketing fluff, just what's actually deployed and live on BNB Chain today.
           </p>
-          <p className="text-[#64748b] text-xs mb-8">Tap a question to expand it.</p>
+          <p className="text-[#8a96ab] text-xs mb-8">Tap a question to expand it.</p>
 
           <div className="flex flex-wrap gap-3 mb-10">
             <a
@@ -119,7 +119,7 @@ export default function FaqPage() {
                 </span>
                 <h2 className="text-white font-bold text-base flex-1">{f.q}</h2>
                 <svg
-                  className="w-4 h-4 text-[#64748b] shrink-0 transition-transform duration-200 group-open:rotate-180 group-open:text-[#00f2fe]"
+                  className="w-4 h-4 text-[#8a96ab] shrink-0 transition-transform duration-200 group-open:rotate-180 group-open:text-[#00f2fe]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -134,7 +134,7 @@ export default function FaqPage() {
           ))}
         </div>
 
-        <p className="text-[#64748b] text-xs mt-8">
+        <p className="text-[#8a96ab] text-xs mt-8">
           More detail: <a href="/whitepaper" className="text-[#00f2fe] hover:underline">Whitepaper</a> · <a href="/about" className="text-[#00f2fe] hover:underline">About</a> · <a href="/security" className="text-[#00f2fe] hover:underline">Security</a>
         </p>
       </div>

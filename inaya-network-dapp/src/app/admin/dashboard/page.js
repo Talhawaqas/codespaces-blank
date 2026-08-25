@@ -24,7 +24,7 @@ function StatTile({ label, value }) {
   return (
     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
       <div className="text-lg font-extrabold text-white">{value}</div>
-      <div className="text-[9px] uppercase tracking-wide text-[#64748b] mt-0.5">{label}</div>
+      <div className="text-[9px] uppercase tracking-wide text-[#8a96ab] mt-0.5">{label}</div>
     </div>
   );
 }
@@ -39,7 +39,7 @@ function FilterChips({ options, value, onChange }) {
           className={`text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
             value === opt.value
               ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/40"
-              : "bg-white/5 text-[#64748b] border-white/10 hover:text-slate-300"
+              : "bg-white/5 text-[#8a96ab] border-white/10 hover:text-slate-300"
           }`}
         >
           {opt.label}{opt.count != null ? ` (${opt.count})` : ""}
@@ -95,7 +95,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
             <span className="font-bold text-white truncate">{item.title}</span>
             {item.severity && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ color: severityColor, background: `${severityColor}1a` }}>{item.severity}</span>}
           </div>
-          <p className="text-[10px] text-[#64748b] font-mono mt-1">{item.category} · {new Date(item.createdAt).toLocaleString()}</p>
+          <p className="text-[10px] text-[#8a96ab] font-mono mt-1">{item.category} · {new Date(item.createdAt).toLocaleString()}</p>
         </div>
         <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border bg-white/5 text-slate-300 border-white/10 shrink-0">{item.status}</span>
       </div>
@@ -105,7 +105,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
           <p className="text-slate-300 whitespace-pre-wrap">{item.description}</p>
           {item.reproductionSteps && (
             <div>
-              <p className="text-[#64748b] font-bold uppercase text-[9px] mb-1">Steps to reproduce</p>
+              <p className="text-[#8a96ab] font-bold uppercase text-[9px] mb-1">Steps to reproduce</p>
               <p className="text-slate-300 whitespace-pre-wrap font-mono">{item.reproductionSteps}</p>
             </div>
           )}
@@ -135,7 +135,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
           </div>
 
           <div>
-            <p className="text-[#64748b] font-bold uppercase text-[9px] mb-1">Admin notes</p>
+            <p className="text-[#8a96ab] font-bold uppercase text-[9px] mb-1">Admin notes</p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -283,16 +283,16 @@ export default function AdminDashboardPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-extrabold text-white">Admin Dashboard</h1>
-          <p className="text-[#64748b] text-xs font-mono mt-1">Private view — not linked publicly.</p>
+          <p className="text-[#8a96ab] text-xs font-mono mt-1">Private view — not linked publicly.</p>
         </div>
 
         {data.mobileDownloads && (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#64748b] font-bold">📱 Mobile App (.apk) Downloads</p>
+              <p className="text-[10px] uppercase tracking-wide text-[#8a96ab] font-bold">📱 Mobile App (.apk) Downloads</p>
               <p className="text-xl font-extrabold text-white mt-0.5">{data.mobileDownloads.total.toLocaleString()}</p>
             </div>
-            <span className="text-[10px] text-[#64748b] font-mono">
+            <span className="text-[10px] text-[#8a96ab] font-mono">
               Latest release: {data.mobileDownloads.latestVersion || "—"} · counted by GitHub Releases
             </span>
           </div>
@@ -301,12 +301,12 @@ export default function AdminDashboardPage() {
         {data.nodeOperators && (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#64748b] font-bold">🖥️ Inaya Node Daemon Operators</p>
+              <p className="text-[10px] uppercase tracking-wide text-[#8a96ab] font-bold">🖥️ Inaya Node Daemon Operators</p>
               <p className="text-xl font-extrabold text-white mt-0.5">
                 {data.nodeOperators.active.toLocaleString()} <span className="text-emerald-400 text-sm font-bold">running now</span>
               </p>
             </div>
-            <span className="text-[10px] text-[#64748b] font-mono">
+            <span className="text-[10px] text-[#8a96ab] font-mono">
               {data.nodeOperators.total.toLocaleString()} registered total · "running now" = heartbeat in the last 10 min
             </span>
           </div>
@@ -332,7 +332,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Referral Dashboard</h2>
-              <span className="text-[10px] text-[#64748b] font-mono">{filteredReferrers.length} of {data.referrers.length} referrers</span>
+              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredReferrers.length} of {data.referrers.length} referrers</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -347,7 +347,7 @@ export default function AdminDashboardPage() {
               />
             </div>
             {filteredReferrers.length === 0 ? (
-              <p className="text-[#64748b] text-xs italic">No referrers match this filter.</p>
+              <p className="text-[#8a96ab] text-xs italic">No referrers match this filter.</p>
             ) : (
               <div className="space-y-3">
                 {filteredReferrers.map((r) => (
@@ -359,7 +359,7 @@ export default function AdminDashboardPage() {
                       </div>
                       <Bar value={r.referrals} max={maxReferrals} color="#00f2fe" />
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#64748b] w-16 text-right">{r.status}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#8a96ab] w-16 text-right">{r.status}</span>
                   </div>
                 ))}
               </div>
@@ -372,7 +372,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Watcher Node Analytics</h2>
-              <span className="text-[10px] text-[#64748b] font-mono">{filteredWatchers.length} of {data.watchers.length} wallets</span>
+              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredWatchers.length} of {data.watchers.length} wallets</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -386,7 +386,7 @@ export default function AdminDashboardPage() {
               />
             </div>
             {filteredWatchers.length === 0 ? (
-              <p className="text-[#64748b] text-xs italic">No wallets match this filter.</p>
+              <p className="text-[#8a96ab] text-xs italic">No wallets match this filter.</p>
             ) : (
               <div className="space-y-3">
                 {filteredWatchers.map((w) => (
@@ -396,7 +396,7 @@ export default function AdminDashboardPage() {
                         <span className="font-mono text-slate-300 truncate">{w.walletAddress}</span>
                         <span className="font-mono ml-3 shrink-0">
                           <span className="font-bold text-emerald-400">{w.points.toLocaleString()} pts</span>
-                          <span className="text-[#64748b]"> · {w.inaya.toFixed(2)} INAYA</span>
+                          <span className="text-[#8a96ab]"> · {w.inaya.toFixed(2)} INAYA</span>
                         </span>
                       </div>
                       <Bar value={w.points} max={maxPoints} color="#34d399" />
@@ -405,7 +405,7 @@ export default function AdminDashboardPage() {
                       className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
                         w.active
                           ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
-                          : "bg-white/5 text-[#64748b] border-white/10"
+                          : "bg-white/5 text-[#8a96ab] border-white/10"
                       }`}
                     >
                       {w.active ? "Active" : "Inactive"}
@@ -422,7 +422,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Node Daemon Operators</h2>
-              <span className="text-[10px] text-[#64748b] font-mono">
+              <span className="text-[10px] text-[#8a96ab] font-mono">
                 {filteredNodeOperators.length} of {nodeOperatorList.length} nodes
               </span>
             </div>
@@ -438,7 +438,7 @@ export default function AdminDashboardPage() {
               />
             </div>
             {filteredNodeOperators.length === 0 ? (
-              <p className="text-[#64748b] text-xs italic">No nodes match this filter.</p>
+              <p className="text-[#8a96ab] text-xs italic">No nodes match this filter.</p>
             ) : (
               <div className="space-y-3">
                 {filteredNodeOperators.map((n) => (
@@ -450,7 +450,7 @@ export default function AdminDashboardPage() {
                           {n.tier}
                         </span>
                       </div>
-                      <p className="text-[10px] text-[#64748b] font-mono mt-1">
+                      <p className="text-[10px] text-[#8a96ab] font-mono mt-1">
                         {n.totalCapacityGB.toLocaleString()} GB declared · last heartbeat:{" "}
                         {n.lastHeartbeatAt ? new Date(n.lastHeartbeatAt).toLocaleString() : "never"}
                       </p>
@@ -459,7 +459,7 @@ export default function AdminDashboardPage() {
                       className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
                         n.active
                           ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
-                          : "bg-white/5 text-[#64748b] border-white/10"
+                          : "bg-white/5 text-[#8a96ab] border-white/10"
                       }`}
                     >
                       {n.active ? "Running now" : "Not running"}
@@ -476,7 +476,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Business Customers</h2>
-              <span className="text-[10px] text-[#64748b] font-mono">{filteredBusinesses.length} of {data.businesses.length} companies</span>
+              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredBusinesses.length} of {data.businesses.length} companies</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -493,7 +493,7 @@ export default function AdminDashboardPage() {
               />
             </div>
             {filteredBusinesses.length === 0 ? (
-              <p className="text-[#64748b] text-xs italic">No companies match this filter.</p>
+              <p className="text-[#8a96ab] text-xs italic">No companies match this filter.</p>
             ) : (
               <div className="space-y-3">
                 {filteredBusinesses.map((b) => {
@@ -519,12 +519,12 @@ export default function AdminDashboardPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-[#64748b] font-mono mt-1 truncate">
+                        <p className="text-[10px] text-[#8a96ab] font-mono mt-1 truncate">
                           {b.ownerEmail} · {b.memberCount} {b.memberCount === 1 ? "user" : "users"}
                           {b.billingInterval ? ` · ${b.billingInterval}ly` : ""}
                         </p>
                       </div>
-                      <span className="text-[9px] font-mono text-[#64748b] shrink-0">
+                      <span className="text-[9px] font-mono text-[#8a96ab] shrink-0">
                         {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "—"}
                       </span>
                     </div>
@@ -543,7 +543,7 @@ export default function AdminDashboardPage() {
             {feedbackError ? (
               <p className="text-red-400 text-xs">⚠ {feedbackError}</p>
             ) : !feedback ? (
-              <p className="text-[#64748b] text-xs">Loading…</p>
+              <p className="text-[#8a96ab] text-xs">Loading…</p>
             ) : (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
@@ -555,7 +555,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {feedback.length === 0 ? (
-                  <p className="text-[#64748b] text-xs italic">No feedback submitted yet.</p>
+                  <p className="text-[#8a96ab] text-xs italic">No feedback submitted yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {feedback.map((item) => (

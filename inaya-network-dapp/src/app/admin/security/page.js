@@ -21,7 +21,7 @@ import { useState, useEffect, useCallback } from "react";
 // server-only deps like mongodb, which can't bundle into a "use client" page).
 const CATEGORIES = ["unknown", "phishing", "malware", "scam", "botnet_c2", "spam", "other"];
 const STATUS_LABELS = ["Unverified", "Confirmed", "Disputed", "Cleared"];
-const STATUS_COLORS = ["text-[#64748b]", "text-[#f87171]", "text-[#fbbf24]", "text-[#94a3b8]"];
+const STATUS_COLORS = ["text-[#8a96ab]", "text-[#f87171]", "text-[#fbbf24]", "text-[#94a3b8]"];
 
 function formatPct(bps) {
   return `${((bps || 0) / 100).toFixed(1)}%`;
@@ -155,19 +155,19 @@ export default function SecurityAdminPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Confirmed Threats</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Confirmed Threats</div>
             <div className="text-2xl font-bold text-[#f87171]">{confirmedCount}</div>
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Unverified / Collecting</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Unverified / Collecting</div>
             <div className="text-2xl font-bold">{unverifiedCount}</div>
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Reporting Nodes</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Reporting Nodes</div>
             <div className="text-2xl font-bold">{nodes.length}</div>
           </div>
           <div className="bg-[#0a0f1e] border border-white/10 rounded-xl p-5">
-            <div className="text-[#64748b] text-xs mb-1">Avg Node Reputation</div>
+            <div className="text-[#8a96ab] text-xs mb-1">Avg Node Reputation</div>
             <div className="text-2xl font-bold">{avgReputation != null ? formatPct(avgReputation) : "—"}</div>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function SecurityAdminPage() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${tab === id ? "text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40" : "text-[#64748b] border border-white/5 hover:text-slate-300"}`}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${tab === id ? "text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40" : "text-[#8a96ab] border border-white/5 hover:text-slate-300"}`}
             >
               {label}
             </button>
@@ -191,14 +191,14 @@ export default function SecurityAdminPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <p className="text-white text-sm font-semibold">{t.indicator}</p>
-                    <p className="text-[#64748b] text-[11px] font-mono mt-0.5">
+                    <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
                       {CATEGORIES[t.category] || "unknown"} · {(t.contributingNodes || []).length} independent reporter(s)
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-right">
                       <p className={`font-bold ${STATUS_COLORS[t.status] || ""}`}>{STATUS_LABELS[t.status] || "Unknown"}</p>
-                      <p className="text-[#64748b] font-mono text-[10px]">{formatPct(t.confidenceBps)} confidence</p>
+                      <p className="text-[#8a96ab] font-mono text-[10px]">{formatPct(t.confidenceBps)} confidence</p>
                     </div>
                     <div className="flex gap-1">
                       {t.status !== 1 && (
@@ -222,7 +222,7 @@ export default function SecurityAdminPage() {
                     </div>
                   </div>
                 </div>
-                <p className="text-[#64748b] text-[10px] font-mono mt-2">
+                <p className="text-[#8a96ab] text-[10px] font-mono mt-2">
                   First seen: {formatDate(t.firstSeen)} · Last updated: {formatDate(t.lastUpdated)}
                   {t.onChainTxHash && (
                     <>
@@ -240,7 +240,7 @@ export default function SecurityAdminPage() {
                 </p>
               </div>
             ))}
-            {threats.length === 0 && <p className="text-[#64748b] text-sm">No threats reported yet.</p>}
+            {threats.length === 0 && <p className="text-[#8a96ab] text-sm">No threats reported yet.</p>}
           </div>
         )}
 
@@ -250,19 +250,19 @@ export default function SecurityAdminPage() {
               <div key={n._id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-white text-sm font-mono font-semibold">{shortAddr(n._id)}</p>
-                  <p className="text-[#64748b] text-[11px] font-mono mt-0.5">
+                  <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
                     {n.totalConfirmed || 0} confirmed · {n.totalFalsePositive || 0} false positive
                   </p>
                 </div>
                 <div className="text-right text-xs">
                   <p className="text-[#00f2fe] font-bold">{formatPct(n.scoreBps)}</p>
-                  <p className="text-[#64748b] font-mono text-[10px]">
+                  <p className="text-[#8a96ab] font-mono text-[10px]">
                     {n.checkpointedAt ? `checkpointed ${formatDate(n.checkpointedAt)}` : "not yet checkpointed on-chain"}
                   </p>
                 </div>
               </div>
             ))}
-            {nodes.length === 0 && <p className="text-[#64748b] text-sm">No reporting nodes yet.</p>}
+            {nodes.length === 0 && <p className="text-[#8a96ab] text-sm">No reporting nodes yet.</p>}
           </div>
         )}
       </div>

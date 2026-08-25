@@ -85,20 +85,20 @@ export default function SharePage({ params }) {
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans flex items-center justify-center px-4">
       <div className="max-w-sm w-full">
         <h1 className="text-lg font-extrabold text-white text-center mb-1">INAYA <span className="text-[#00f2fe]">NETWORK</span></h1>
-        <p className="text-[#64748b] text-xs text-center mb-8">Shared document</p>
+        <p className="text-[#8a96ab] text-xs text-center mb-8">Shared document</p>
 
         {loading ? (
-          <p className="text-[#64748b] text-sm text-center">Loading…</p>
+          <p className="text-[#8a96ab] text-sm text-center">Loading…</p>
         ) : error ? (
           <div className="bg-red-400/10 border border-red-400/20 rounded-2xl p-6 text-center">
             <p className="text-red-400 text-sm">{error}</p>
-            <p className="text-[#64748b] text-xs mt-2">Ask whoever shared this with you for a new link.</p>
+            <p className="text-[#8a96ab] text-xs mt-2">Ask whoever shared this with you for a new link.</p>
           </div>
         ) : (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Document</p>
+            <p className="text-xs text-[#8a96ab] uppercase tracking-wider mb-1">Document</p>
             <p className="text-white text-sm mb-1 truncate">{info.filename}</p>
-            <p className="text-[#64748b] text-xs mb-5">{(info.sizeBytes / 1024).toFixed(1)} KB</p>
+            <p className="text-[#8a96ab] text-xs mb-5">{(info.sizeBytes / 1024).toFixed(1)} KB</p>
 
             <form onSubmit={handleDecrypt} className="space-y-2">
               <input
@@ -106,14 +106,14 @@ export default function SharePage({ params }) {
                 value={passkey}
                 onChange={(e) => setPasskey(e.target.value)}
                 placeholder="Encryption passkey"
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569]"
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]"
               />
               <button disabled={decrypting || !passkey} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
                 {decrypting ? "Decrypting…" : "Decrypt & download"}
               </button>
             </form>
             {decryptError && <p className="text-red-400 text-xs mt-3">{decryptError}</p>}
-            <p className="text-[#475569] text-[10px] mt-4 text-center">Don't have the passkey? Ask whoever shared this document with you.</p>
+            <p className="text-[#8a96ab] text-[10px] mt-4 text-center">Don't have the passkey? Ask whoever shared this document with you.</p>
           </div>
         )}
       </div>

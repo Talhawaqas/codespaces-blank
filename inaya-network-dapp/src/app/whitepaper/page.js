@@ -35,7 +35,7 @@ export default function WhitepaperPage() {
       </div>
 
       <div className="relative max-w-4xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -61,7 +61,7 @@ export default function WhitepaperPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-[#64748b] text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-white/5 text-[#8a96ab] text-[10px] uppercase tracking-wider">
                   <th className="p-4 font-bold">Allocation</th>
                   <th className="p-4 font-bold">%</th>
                   <th className="p-4 font-bold">Tokens</th>
@@ -78,7 +78,7 @@ export default function WhitepaperPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-[#64748b] text-xs mt-2">Fixed 30,000,000 total supply — the six allocations above sum to exactly 30,000,000 tokens.</p>
+          <p className="text-[#8a96ab] text-xs mt-2">Fixed 30,000,000 total supply — the six allocations above sum to exactly 30,000,000 tokens.</p>
         </section>
 
         <section className="mb-10">
@@ -86,7 +86,7 @@ export default function WhitepaperPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden mb-3">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-[#64748b] text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-white/5 text-[#8a96ab] text-[10px] uppercase tracking-wider">
                   <th className="p-4 font-bold">Allocation</th>
                   <th className="p-4 font-bold">%</th>
                 </tr>
@@ -101,7 +101,7 @@ export default function WhitepaperPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-[#64748b] text-xs leading-relaxed">
+          <p className="text-[#8a96ab] text-xs leading-relaxed">
             The 39% node-operator share is not a marketing estimate — it's hardcoded in production settlement code. Corporate invoices settle via RevenueRouter, then a second transaction escrows the node-operator share over a 12-month vesting schedule.
           </p>
         </section>

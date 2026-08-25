@@ -99,7 +99,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <p className="text-center text-[#64748b] text-[10px] font-mono mt-8">
+        <p className="text-center text-[#8a96ab] text-[10px] font-mono mt-8">
           Decentralized. Private. Secure. Scalable. — Inaya puts you in control of your data, always.
         </p>
       </div>

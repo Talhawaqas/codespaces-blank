@@ -72,7 +72,7 @@ export default function ChangelogPage() {
       </div>
 
       <div className="relative max-w-3xl mx-auto">
-        <a href="/" className="inline-flex items-center gap-2 text-[#64748b] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
+        <a href="/" className="inline-flex items-center gap-2 text-[#8a96ab] hover:text-[#00f2fe] text-xs font-mono mb-8 transition-colors">
           ← Back to Inaya Network
         </a>
 
@@ -80,7 +80,7 @@ export default function ChangelogPage() {
           CHANGELOG
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">What's Shipped</h1>
-        <p className="text-[#64748b] text-sm mb-10">BNB Chain Testnet · updated as features ship</p>
+        <p className="text-[#8a96ab] text-sm mb-10">BNB Chain Testnet · updated as features ship</p>
 
         <div className="space-y-8">
           {entries.map((e) => (

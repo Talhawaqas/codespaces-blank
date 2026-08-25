@@ -96,10 +96,10 @@ export default function AIWidget({ orgId }) {
           <div className="w-7 h-7 rounded-lg shrink-0 bg-violet-400/15 border border-violet-400/30 flex items-center justify-center text-sm">🤖</div>
           <div className="min-w-0">
             <div className="text-white text-xs font-bold font-mono truncate">Business AI Assistant</div>
-            <div className="text-[9px] text-[#64748b] font-mono">Grounded in your org's real data</div>
+            <div className="text-[9px] text-[#8a96ab] font-mono">Grounded in your org's real data</div>
           </div>
         </div>
-        <button onClick={() => setIsOpen(false)} className="text-[#64748b] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
+        <button onClick={() => setIsOpen(false)} className="text-[#8a96ab] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 pb-6 space-y-3 overscroll-contain">
@@ -116,7 +116,7 @@ export default function AIWidget({ orgId }) {
         ))}
         {sending && (
           <div className="flex justify-start">
-            <div className="bg-white/[0.04] border border-white/10 text-[#64748b] rounded-2xl px-3.5 py-2.5 text-xs font-mono flex items-center gap-1.5">
+            <div className="bg-white/[0.04] border border-white/10 text-[#8a96ab] rounded-2xl px-3.5 py-2.5 text-xs font-mono flex items-center gap-1.5">
               <span className="animate-pulse">●</span> Thinking…
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function AIWidget({ orgId }) {
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Ask about documents, approvals, activity…"
           disabled={sending}
-          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#64748b]"
+          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#8a96ab]"
         />
         <button
           onClick={() => send()}

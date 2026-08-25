@@ -29,7 +29,7 @@ export default function WorkflowVisualization() {
             >
               {step.icon}
             </div>
-            <p className="text-[9px] text-[#64748b] font-mono uppercase tracking-wide mt-1.5">{step.label}</p>
+            <p className="text-[9px] text-[#8a96ab] font-mono uppercase tracking-wide mt-1.5">{step.label}</p>
             <div className="relative w-px h-7 bg-gradient-to-b from-[#00f2fe]/30 to-[#00f2fe]/5 my-1 overflow-visible">
               <div
                 className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#00f2fe] inaya-workflow-flow"

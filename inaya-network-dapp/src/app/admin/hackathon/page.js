@@ -26,7 +26,7 @@ const REPORT_STATUSES = ["submitted", "confirmed", "duplicate", "rejected", "fix
 const STATUS_COLORS = {
   submitted: "text-amber-400 border-amber-400/30 bg-amber-400/10",
   confirmed: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
-  duplicate: "text-[#64748b] border-white/10 bg-white/5",
+  duplicate: "text-[#8a96ab] border-white/10 bg-white/5",
   rejected: "text-red-400 border-red-400/30 bg-red-400/10",
   fixed: "text-[#00f2fe] border-[#00f2fe]/30 bg-[#00f2fe]/10",
 };
@@ -177,7 +177,7 @@ export default function HackathonAdminPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-white">Hackathon</h1>
-            <p className="text-[#64748b] text-xs mt-0.5">Sept 1 – Nov 1, 2026 · 100,000 INAYA prize pool</p>
+            <p className="text-[#8a96ab] text-xs mt-0.5">Sept 1 – Nov 1, 2026 · 100,000 INAYA prize pool</p>
           </div>
           <div className="flex items-center gap-2">
             <a href="/admin" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
@@ -199,7 +199,7 @@ export default function HackathonAdminPage() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${tab === id ? "text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40" : "text-[#64748b] border border-white/5 hover:text-slate-300"}`}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${tab === id ? "text-white bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/5 border border-[#00f2fe]/40" : "text-[#8a96ab] border border-white/5 hover:text-slate-300"}`}
             >
               {label}
             </button>
@@ -220,7 +220,7 @@ export default function HackathonAdminPage() {
             {reports.map((r) => (
               <ReportRow key={r.id} report={r} onUpdate={updateReport} />
             ))}
-            {reports.length === 0 && <p className="text-[#64748b] text-sm">No bug reports submitted yet.</p>}
+            {reports.length === 0 && <p className="text-[#8a96ab] text-sm">No bug reports submitted yet.</p>}
           </div>
         )}
       </div>
@@ -267,7 +267,7 @@ function WinnerRow({ slot, winner, onSave, onClear }) {
         {saving ? "Saving…" : "Save"}
       </button>
       {winner.walletAddress && (
-        <button onClick={() => onClear(slot.place)} className="text-xs font-bold px-3 py-2 text-[#64748b] hover:text-red-400 border border-white/10 rounded-lg">
+        <button onClick={() => onClear(slot.place)} className="text-xs font-bold px-3 py-2 text-[#8a96ab] hover:text-red-400 border border-white/10 rounded-lg">
           Clear
         </button>
       )}
@@ -285,7 +285,7 @@ function ReportRow({ report, onUpdate }) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <button onClick={() => setExpanded((v) => !v)} className="text-left flex-1 min-w-[240px]">
           <p className="text-white text-sm font-semibold">{report.title}</p>
-          <p className="text-[#64748b] text-[11px] font-mono mt-0.5">
+          <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
             {layerLabel(report.layer)} · {severityLabel(report.finalSeverity || report.severity)}
             {report.finalSeverity && report.finalSeverity !== report.severity && (
               <span className="text-amber-400"> (reported as {severityLabel(report.severity)})</span>
@@ -304,7 +304,7 @@ function ReportRow({ report, onUpdate }) {
           <p className="text-slate-300 text-xs whitespace-pre-wrap">{report.description}</p>
           {report.stepsToReproduce && (
             <div>
-              <p className="text-[#64748b] text-[10px] font-bold uppercase mb-1">Steps to reproduce</p>
+              <p className="text-[#8a96ab] text-[10px] font-bold uppercase mb-1">Steps to reproduce</p>
               <p className="text-slate-300 text-xs whitespace-pre-wrap">{report.stepsToReproduce}</p>
             </div>
           )}
@@ -333,7 +333,7 @@ function ReportRow({ report, onUpdate }) {
                 key={s.id}
                 onClick={() => onUpdate(report.id, { finalSeverity: s.id })}
                 disabled={(report.finalSeverity || report.severity) === s.id}
-                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${(report.finalSeverity || report.severity) === s.id ? "text-white bg-white/10 border-white/20" : "text-[#64748b] border-white/10 hover:text-slate-300"}`}
+                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${(report.finalSeverity || report.severity) === s.id ? "text-white bg-white/10 border-white/20" : "text-[#8a96ab] border-white/10 hover:text-slate-300"}`}
               >
                 Set severity: {s.label}
               </button>
