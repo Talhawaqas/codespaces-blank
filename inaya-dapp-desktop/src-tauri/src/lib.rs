@@ -18,10 +18,49 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
+use keyring::Entry;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_updater::UpdaterExt;
 
 const APP_URL: &str = "https://www.inayanetwork.com/";
+
+// User-Controlled Master Node Passkey Backup & Recovery (SOW section 1,
+// "Local Secure Storage") -- the actual OS-backed credential store
+// (Windows Credential Manager / Linux Secret Service via libsecret), not
+// Tauri's own Stronghold vault: Stronghold would need its own separate
+// password to manage, which is redundant with the backup password the
+// encrypted-export flow (page.js, custody-sdk/src/passkeyBackup.js)
+// already asks for. These three commands are the entire native surface
+// for this feature -- the encryption/decryption of the *backup file* all
+// happens in the webview via passkeyBackup.js; this only stores/retrieves
+// the plaintext passkey locally so a user doesn't have to re-type it
+// every session. The passkey never leaves this device either way.
+const KEYRING_SERVICE: &str = "com.inayanetwork.dapp";
+const KEYRING_ACCOUNT: &str = "master-node-passkey";
+
+#[tauri::command]
+fn store_passkey_secure(passkey: String) -> Result<(), String> {
+    Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
+        .and_then(|e| e.set_password(&passkey))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn retrieve_passkey_secure() -> Result<Option<String>, String> {
+    match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.get_password()) {
+        Ok(passkey) => Ok(Some(passkey)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+fn clear_passkey_secure() -> Result<(), String> {
+    match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.delete_credential()) {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
 
 // Checked once on startup. Prompts before installing rather than
 // installing silently, since download_and_install() replaces the running
@@ -72,6 +111,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![
+            store_passkey_secure,
+            retrieve_passkey_secure,
+            clear_passkey_secure
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
