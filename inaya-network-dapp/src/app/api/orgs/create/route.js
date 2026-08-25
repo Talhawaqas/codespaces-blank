@@ -29,6 +29,7 @@ import {
   MAGIC_LINK_TTL_MS,
 } from "../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
+import { assessRisk } from "../../../../lib/fraudRisk.js";
 
 export async function POST(req) {
   try {
@@ -42,6 +43,12 @@ export async function POST(req) {
     if (!ownerEmail || !isValidEmail(ownerEmail)) {
       return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
     }
+
+    // Fraud & Abuse Protection Layer, Phase 2 -- monitor-only, same
+    // reasoning as orgs/login/request: this is a paying B2B product,
+    // corporate VPNs and travelling employees are ordinary legitimate use,
+    // so this never blocks org creation, only records the assessment.
+    await assessRisk({ req, identityId: ownerEmail, surface: "business" });
 
     await ensureOrgIndexes();
     const { orgs, orgMembers, magicLinks } = await getOrgCollections();

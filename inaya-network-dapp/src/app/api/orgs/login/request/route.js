@@ -27,6 +27,7 @@ import {
   MAGIC_LINK_TTL_MS,
 } from "../../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../../lib/email.js";
+import { assessRisk } from "../../../../../lib/fraudRisk.js";
 
 export async function POST(req) {
   try {
@@ -43,6 +44,20 @@ export async function POST(req) {
     if (!hasActiveMembership) {
       return NextResponse.json({ sent: true }); // generic response, see module comment
     }
+
+    // Fraud & Abuse Protection Layer, Phase 2 -- monitor-only for Business
+    // Workspace, deliberately never blocking. This is a paying B2B product
+    // where corporate VPNs, mobile carrier NAT, and travelling employees
+    // are ordinary, legitimate access patterns (the SOW's own section 8
+    // names exactly these as cases that must never be auto-penalized) --
+    // gating login itself would be actively harmful. The assessment is
+    // still recorded (visible in /admin/fraud) so a genuinely abnormal
+    // pattern is discoverable, just never auto-enforced here. Awaited (not
+    // fire-and-forget) since a serverless function can be frozen right
+    // after its response is sent -- assessRisk() itself never throws (see
+    // its own comment), so this only ever adds latency, never a new
+    // failure mode.
+    await assessRisk({ req, identityId: email, surface: "business" });
 
     const token = generateToken();
     await magicLinks.insertOne({

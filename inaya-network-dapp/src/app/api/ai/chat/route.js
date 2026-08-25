@@ -5,13 +5,17 @@
 //  - Streaming, per-request client creation, and correct model/token config
 //    (fixes already established earlier in this project — see notes below)
 //
-// 1. RATE LIMITING — a simple in-memory sliding-window limiter per IP address.
-//    CAVEAT: this resets on every cold start and is NOT shared across serverless
-//    instances — on Vercel that means it's a soft speed bump, not a hard guarantee.
-//    It's still worth having (stops a single runaway browser tab or basic script),
-//    but if you need a real guarantee later, move this to Vercel KV / Upstash Redis
-//    (same interface, persists across instances) — flagged here so it's not mistaken
-//    for a hard limit.
+// 1. RATE LIMITING — a simple in-memory sliding-window limiter per IP address,
+//    now risk-aware (Fraud & Abuse Protection Layer, Phase 2): the per-IP limit
+//    tightens for MEDIUM/HIGH-risk connections (VPN/proxy/Tor/datacenter alone
+//    only ever tightens the limit, never blocks -- see lib/fraudRisk.js's
+//    false-positive guarantee) and only a CONFIRMED reputation signal rejects
+//    outright. CAVEAT: this resets on every cold start and is NOT shared across
+//    serverless instances — on Vercel that means it's a soft speed bump, not a
+//    hard guarantee. It's still worth having (stops a single runaway browser tab
+//    or basic script), but if you need a real guarantee later, move this to
+//    Vercel KV / Upstash Redis (same interface, persists across instances) —
+//    flagged here so it's not mistaken for a hard limit.
 //
 // 2. WALLET CONTEXT — accepts an optional `walletContext` object (built client-side
 //    from state the frontend already fetched — no extra RPC calls here) and folds it
@@ -34,15 +38,55 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { INAYA_KNOWLEDGE_BASE } from '@/lib/inaya-knowledge';
+import { assessRisk } from '@/lib/fraudRisk';
 
 // ============================================================
 // Rate limiter — in-memory sliding window, per IP
 // ============================================================
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 12;     // 12 messages / minute / IP
+const RATE_LIMIT_MAX_REQUESTS = 12;     // 12 messages / minute / IP, for a normal/unflagged IP
 const requestLog = new Map(); // ip -> array of timestamps
 
-function isRateLimited(ip) {
+// Fraud & Abuse Protection Layer, Phase 2 -- the "apply rate limits to
+// high-risk traffic" integration point from the SOW. Risk is cached per IP
+// (not assessed per message) so a busy legitimate chat session doesn't
+// trigger an IPQS lookup on every single message -- only once per
+// RISK_CACHE_TTL_MS. Same "simple in-memory, not distributed across
+// serverless instances" caveat as requestLog above; a soft speed bump, not
+// a hard guarantee, consistent with this route's existing rate limiter.
+const RISK_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const riskCache = new Map(); // ip -> { action, cachedAt }
+
+async function getCachedRiskAction(req, ip) {
+  const cached = riskCache.get(ip);
+  if (cached && Date.now() - cached.cachedAt < RISK_CACHE_TTL_MS) return cached.action;
+
+  // assessRisk() never throws (fails open to ALLOW internally) -- worst
+  // case this adds one lookup's worth of latency to the first message from
+  // a given IP every 10 minutes, never a new failure mode.
+  const assessment = await assessRisk({ req, identityId: ip, surface: "api" });
+  riskCache.set(ip, { action: assessment.recommendedAction, cachedAt: Date.now() });
+  if (riskCache.size > 5000) {
+    for (const [key, entry] of riskCache.entries()) {
+      if (Date.now() - entry.cachedAt > RISK_CACHE_TTL_MS) riskCache.delete(key);
+    }
+  }
+  return assessment.recommendedAction;
+}
+
+// RESTRICT/TEMPORARILY_BLOCK require a CONFIRMED reputation signal (see
+// lib/fraudRisk.js) -- connection type (VPN/proxy/Tor/datacenter) alone
+// can only ever reach VERIFY, which tightens the limit rather than
+// blocking, keeping this consistent with every other Phase 2 integration
+// point's false-positive guarantee.
+function rateLimitForAction(action) {
+  if (action === "RESTRICT" || action === "TEMPORARILY_BLOCK") return 0;
+  if (action === "VERIFY") return Math.ceil(RATE_LIMIT_MAX_REQUESTS / 4); // 3 / minute
+  if (action === "MONITOR") return Math.ceil(RATE_LIMIT_MAX_REQUESTS / 2); // 6 / minute
+  return RATE_LIMIT_MAX_REQUESTS; // ALLOW -- normal limit
+}
+
+function isRateLimited(ip, maxRequests) {
   const now = Date.now();
   const timestamps = (requestLog.get(ip) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
   timestamps.push(now);
@@ -55,7 +99,7 @@ function isRateLimited(ip) {
     }
   }
 
-  return timestamps.length > RATE_LIMIT_MAX_REQUESTS;
+  return timestamps.length > maxRequests;
 }
 
 function getClientIp(req) {
@@ -115,7 +159,15 @@ function getGeminiClient() {
 export async function POST(req) {
   try {
     const clientIp = getClientIp(req);
-    if (isRateLimited(clientIp)) {
+    const riskAction = await getCachedRiskAction(req, clientIp);
+    const effectiveLimit = rateLimitForAction(riskAction);
+    if (effectiveLimit === 0) {
+      return Response.json(
+        { error: "This request couldn't be completed from your current network. If you believe this is a mistake, please try again later or contact support." },
+        { status: 403 }
+      );
+    }
+    if (isRateLimited(clientIp, effectiveLimit)) {
       return Response.json(
         { error: "You're sending messages a bit fast — please wait a moment and try again." },
         { status: 429 }

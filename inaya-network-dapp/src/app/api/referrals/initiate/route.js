@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import { createDiditSession } from "../../../../lib/didit.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
+import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 import {
   getReferralCollections,
   ensureReferralIndexes,
@@ -40,6 +41,16 @@ export async function POST(req) {
     // decision is in — this just blocks the trivial "same address twice" case fast.
     if (referrerEmail === referredEmail) {
       return NextResponse.json({ error: "You can't refer your own email address." }, { status: 400 });
+    }
+
+    // Phase 2 of the Fraud & Abuse Protection Layer -- only rejects at the
+    // RESTRICT/TEMPORARILY_BLOCK tier, which per lib/fraudRisk.js's own
+    // design requires a CONFIRMED reputation signal, never VPN/proxy
+    // detection alone. Assessed against the referrer (the identity that's
+    // already completed KYC and is the one performing the action).
+    const risk = await enforceRiskGate({ req, identityId: referrerEmail, surface: "referral" });
+    if (!risk.allowed) {
+      return NextResponse.json({ error: RISK_GATE_REJECTION.error }, { status: RISK_GATE_REJECTION.status });
     }
 
     await ensureReferralIndexes();

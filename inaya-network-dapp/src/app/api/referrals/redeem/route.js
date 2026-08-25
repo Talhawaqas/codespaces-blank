@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createDiditSession } from "../../../../lib/didit.js";
+import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 import {
   getReferralCollections,
   ensureReferralIndexes,
@@ -32,6 +33,16 @@ export async function POST(req) {
 
     if (!code || !referredEmail || !isValidEmail(referredEmail)) {
       return NextResponse.json({ error: "A valid referral code and email are required." }, { status: 400 });
+    }
+
+    // Phase 2 of the Fraud & Abuse Protection Layer. This is the more
+    // Sybil-prone of the two referral entry points -- a public link where
+    // one IP can attempt many different emails -- but the gate is
+    // identical: only rejects at RESTRICT/TEMPORARILY_BLOCK, which
+    // requires a CONFIRMED reputation signal, never VPN detection alone.
+    const risk = await enforceRiskGate({ req, identityId: referredEmail, surface: "referral" });
+    if (!risk.allowed) {
+      return NextResponse.json({ error: RISK_GATE_REJECTION.error }, { status: RISK_GATE_REJECTION.status });
     }
 
     await ensureReferralIndexes();

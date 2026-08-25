@@ -16,6 +16,7 @@ import {
   enrollWallet,
   normalizeWallet,
 } from "../../../../lib/watcherPioneer.js";
+import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,15 @@ export async function POST(req) {
       });
     } catch (authErr) {
       return NextResponse.json({ error: authErr.message }, { status: 400 });
+    }
+
+    // Phase 2 of the Fraud & Abuse Protection Layer -- after signature
+    // verification (so this never gates an unauthenticated/malformed
+    // request), before the one-per-wallet enrollment write. Same
+    // RESTRICT/TEMPORARILY_BLOCK-only gate as the referral program.
+    const risk = await enforceRiskGate({ req, identityId: wallet, surface: "watcher" });
+    if (!risk.allowed) {
+      return NextResponse.json({ error: RISK_GATE_REJECTION.error }, { status: RISK_GATE_REJECTION.status });
     }
 
     await ensureWatcherIndexes();
