@@ -2070,7 +2070,7 @@ const NAV_GROUPS = [
     title: 'Business Document Management SaaS',
     items: [
       { label: 'Business Workspace', icon: '🏢', href: '/business' },
-      { label: 'Business SaaS', icon: '🧩', href: '/business/roadmap' },
+      { label: 'Business Workspace Roadmap', icon: '🧩', href: '/business/roadmap' },
     ],
   },
   {
