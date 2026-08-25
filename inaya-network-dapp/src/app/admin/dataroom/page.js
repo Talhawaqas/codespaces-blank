@@ -230,7 +230,7 @@ export default function DataRoomAdminPage() {
             <div className="space-y-6">
               {groupByCategory(documents).map(([category, docs]) => (
                 <div key={category}>
-                  <h3 className="text-[#8a96ab] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <h3 className="text-[#8a96ab] text-[12px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
                     📁 {category}
                   </h3>
                   <div className="space-y-2">
@@ -238,7 +238,7 @@ export default function DataRoomAdminPage() {
                       <div key={doc._id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 flex items-center justify-between">
                         <div>
                           <p className="text-white text-sm font-semibold">{doc.title}</p>
-                          <p className="text-[#8a96ab] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</p>
+                          <p className="text-[#8a96ab] text-[13px] font-mono mt-1">{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</p>
                         </div>
                         <button onClick={() => handleDeleteDocument(doc._id)} className="text-red-400 hover:text-red-300 text-xs font-bold">Remove</button>
                       </div>
@@ -257,13 +257,13 @@ export default function DataRoomAdminPage() {
               <div key={v.visitorId} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <p className="text-white text-sm font-semibold">{v.name} {v.revokedAt && <span className="text-red-400 text-[10px] font-mono ml-2">REVOKED</span>}</p>
-                    <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">{v.email}</p>
+                    <p className="text-white text-sm font-semibold">{v.name} {v.revokedAt && <span className="text-red-400 text-[12px] font-mono ml-2">REVOKED</span>}</p>
+                    <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">{v.email}</p>
                   </div>
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-right">
                       <p className="text-[#00f2fe] font-bold">{v.totalViews} view{v.totalViews === 1 ? "" : "s"}</p>
-                      <p className="text-[#8a96ab] font-mono text-[10px]">{formatDuration(v.totalDurationMs)} total</p>
+                      <p className="text-[#8a96ab] font-mono text-[12px]">{formatDuration(v.totalDurationMs)} total</p>
                     </div>
                     <button
                       onClick={() => setExpandedVisitor(expandedVisitor === v.visitorId ? null : v.visitorId)}
@@ -276,7 +276,7 @@ export default function DataRoomAdminPage() {
                     )}
                   </div>
                 </div>
-                <p className="text-[#8a96ab] text-[10px] font-mono mt-2">
+                <p className="text-[#8a96ab] text-[12px] font-mono mt-2">
                   NDA: {v.ndaAcceptedAt ? `accepted ${formatDate(v.ndaAcceptedAt)}` : "not accepted"} · Last active: {formatDate(v.lastActiveAt)}
                 </p>
 

@@ -68,7 +68,7 @@ export default function BusinessWorkspaceDownloadPage() {
               >
                 {d.label}
               </a>
-              <pre className="text-[10px] text-[#94a3b8] font-mono whitespace-pre-wrap leading-relaxed bg-black/30 border border-white/5 rounded-lg p-3 mt-auto">
+              <pre className="text-[12px] text-[#94a3b8] font-mono whitespace-pre-wrap leading-relaxed bg-black/30 border border-white/5 rounded-lg p-3 mt-auto">
                 {d.instructions}
               </pre>
             </div>

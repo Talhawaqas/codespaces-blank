@@ -62,7 +62,7 @@ export default function LearnTutorWidget({ walletAddress, videoContext, open, on
         </span>
         <span className="flex flex-col items-start leading-tight">
           <span className="text-[13px] font-extrabold">Ask AI Tutor</span>
-          <span className="text-[9px] font-semibold opacity-70">Learn anything, anytime</span>
+          <span className="text-[11px] font-semibold opacity-70">Learn anything, anytime</span>
         </span>
       </button>
     );
@@ -75,7 +75,7 @@ export default function LearnTutorWidget({ walletAddress, videoContext, open, on
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-base shrink-0">🎓</span>
           <div className="min-w-0">
             <div className="text-white text-xs font-bold truncate">Inaya Learn AI Tutor</div>
-            <div className="text-[9px] text-[#8a96ab] font-mono truncate">
+            <div className="text-[11px] text-[#8a96ab] font-mono truncate">
               {videoContext ? `Grounded in: ${videoContext.title}` : 'Ask me anything, I\'m here to teach'}
             </div>
           </div>

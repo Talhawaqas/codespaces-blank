@@ -36,7 +36,7 @@ export default function LearnMyLearning({ saved, progress, isVideoSaved, toggleS
           <button
             key={s.id}
             onClick={() => setSection(s.id)}
-            className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold border transition-all ${
+            className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-all ${
               section === s.id ? 'text-[#00f2fe] border-[#00f2fe]/40 bg-[#00f2fe]/10' : 'text-[#8a96ab] border-white/10 hover:text-slate-300'
             }`}
           >

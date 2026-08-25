@@ -57,14 +57,14 @@ export default function AutomationTransparencyPage() {
           ← Back to Inaya Network
         </a>
 
-        <span className="inline-block text-[10px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+        <span className="inline-block text-[12px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
           ORACLE &amp; AUTOMATION
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">Oracle &amp; Automation Status</h1>
         <p className="text-[#94a3b8] text-base mb-2 max-w-2xl">
           Live on-chain data feeding Inaya's contracts, and the self-operating tasks running against them — every number below is read directly from BSC Testnet, not a cached snapshot.
         </p>
-        <div className="inline-flex items-center gap-2 text-[11px] font-mono bg-amber-400/10 border border-amber-400/30 text-amber-300 rounded-full px-3 py-1 mb-10">
+        <div className="inline-flex items-center gap-2 text-[13px] font-mono bg-amber-400/10 border border-amber-400/30 text-amber-300 rounded-full px-3 py-1 mb-10">
           🧪 BSC Testnet only — no real-value automation enabled
         </div>
 
@@ -88,7 +88,7 @@ export default function AutomationTransparencyPage() {
                     rel="noreferrer"
                     className="bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/30 rounded-xl p-4 transition-colors"
                   >
-                    <p className="text-[#8a96ab] text-[10px] uppercase font-bold mb-1">{label}</p>
+                    <p className="text-[#8a96ab] text-[12px] uppercase font-bold mb-1">{label}</p>
                     <p className="text-[#00f2fe] text-xs font-mono break-all">{shortAddr(addr)} ↗</p>
                   </a>
                 ))}
@@ -105,28 +105,28 @@ export default function AutomationTransparencyPage() {
                     <div className="flex items-start justify-between flex-wrap gap-3">
                       <div>
                         <p className="text-white font-bold text-sm">{s.dataType}</p>
-                        <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">Submitter: {shortAddr(s.submitter)} · updates every {s.updateFrequencySeconds}s min</p>
+                        <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">Submitter: {shortAddr(s.submitter)} · updates every {s.updateFrequencySeconds}s min</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border ${s.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
+                        <span className={`text-[12px] font-bold uppercase px-2 py-1 rounded-full border ${s.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
                           {s.active ? "Active" : "Inactive"}
                         </span>
-                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border ${s.stale ? "text-red-400 border-red-400/30 bg-red-400/10" : "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"}`}>
+                        <span className={`text-[12px] font-bold uppercase px-2 py-1 rounded-full border ${s.stale ? "text-red-400 border-red-400/30 bg-red-400/10" : "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"}`}>
                           {s.stale ? "Stale" : "Fresh"}
                         </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 font-mono text-xs">
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Latest Value</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Latest Value</p>
                         <p className="text-[#00f2fe] font-bold">{formatFixed18(s.latestValue)}</p>
                       </div>
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Last Update</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Last Update</p>
                         <p className="text-slate-300">{formatDate(s.lastUpdate)}</p>
                       </div>
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Max Staleness</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Max Staleness</p>
                         <p className="text-slate-300">{status.maxStalenessSeconds}s</p>
                       </div>
                     </div>
@@ -150,26 +150,26 @@ export default function AutomationTransparencyPage() {
                           href={`https://testnet.bscscan.com/address/${t.targetContract}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#8a96ab] hover:text-[#00f2fe] text-[11px] font-mono mt-0.5 inline-block"
+                          className="text-[#8a96ab] hover:text-[#00f2fe] text-[13px] font-mono mt-0.5 inline-block"
                         >
                           Target: {shortAddr(t.targetContract)} ↗
                         </a>
                       </div>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${t.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
+                      <span className={`text-[12px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${t.active ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : "text-[#8a96ab] border-white/10 bg-white/5"}`}>
                         {t.active ? "Active" : "Inactive"}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 font-mono text-xs">
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Last Execution</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Last Execution</p>
                         <p className="text-slate-300">{formatDate(t.lastExecution)}</p>
                       </div>
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Next Eligible Check</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Next Eligible Check</p>
                         <p className="text-slate-300">{formatDate(t.nextEligible)}</p>
                       </div>
                       <div>
-                        <p className="text-[#8a96ab] text-[10px] uppercase mb-0.5">Consecutive Failures</p>
+                        <p className="text-[#8a96ab] text-[12px] uppercase mb-0.5">Consecutive Failures</p>
                         <p className={t.consecutiveFailures > 0 ? "text-amber-400 font-bold" : "text-emerald-400"}>{t.consecutiveFailures}</p>
                       </div>
                     </div>

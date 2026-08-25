@@ -52,7 +52,7 @@ function StatusPill({ status }) {
     not_started: ['bg-white/5 text-[#8a96ab] border-white/10', 'Not started'],
   };
   const [cls, label] = map[status] || map.not_started;
-  return <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${cls}`}>{label}</span>;
+  return <span className={`inline-block text-[12px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${cls}`}>{label}</span>;
 }
 
 export default function ReferralSection() {
@@ -444,7 +444,7 @@ export default function ReferralSection() {
                 <span className="text-[#00f2fe] text-xs break-all font-mono">
                   {typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?ref=${referrerStatus.referralCode}` : ''}
                 </span>
-                <button onClick={copyShareLink} type="button" className="shrink-0 text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-white/10">
+                <button onClick={copyShareLink} type="button" className="shrink-0 text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-white/10">
                   {shareLinkCopied ? 'Copied ✓' : 'Copy'}
                 </button>
               </div>
@@ -484,7 +484,7 @@ export default function ReferralSection() {
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-[#00f2fe] text-xs break-all font-mono">{inviteUrl}</span>
-                <button onClick={copyInviteUrl} type="button" className="shrink-0 text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-white/10">
+                <button onClick={copyInviteUrl} type="button" className="shrink-0 text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-white/10">
                   {inviteCopied ? 'Copied ✓' : 'Copy'}
                 </button>
               </div>
@@ -500,11 +500,11 @@ export default function ReferralSection() {
           <div className="grid grid-cols-2 gap-4 font-mono text-xs mb-5">
             <div className="bg-black/20 border-l-4 border-[#00f2fe] p-4 rounded-r-xl">
               <div className="text-xl font-bold text-white">{history.successfulReferralCount}</div>
-              <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Successful Referrals</div>
+              <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Successful Referrals</div>
             </div>
             <div className="bg-black/20 border-l-4 border-emerald-400 p-4 rounded-r-xl">
               <div className="text-xl font-bold text-white">{history.totalInayaEarned.toFixed(2)} INAYA</div>
-              <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Earned</div>
+              <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Total Earned</div>
             </div>
           </div>
           {history.referrals.length === 0 ? (
@@ -512,7 +512,7 @@ export default function ReferralSection() {
           ) : (
             <table className="w-full text-left font-mono text-xs border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 text-[10px] uppercase">
+                <tr className="border-b border-white/10 text-slate-400 text-[12px] uppercase">
                   <th className="p-2 font-bold">Email</th>
                   <th className="p-2 font-bold">Status</th>
                   <th className="p-2 font-bold">Sent</th>
@@ -542,7 +542,7 @@ export default function ReferralSection() {
         ) : (
           <table className="w-full text-left font-mono text-xs border-collapse">
             <thead>
-              <tr className="border-b border-white/10 text-slate-400 text-[10px] uppercase">
+              <tr className="border-b border-white/10 text-slate-400 text-[12px] uppercase">
                 <th className="p-2 font-bold">Rank</th>
                 <th className="p-2 font-bold">Referrer</th>
                 <th className="p-2 font-bold">Successful Referrals</th>

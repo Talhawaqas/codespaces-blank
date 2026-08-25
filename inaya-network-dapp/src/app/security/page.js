@@ -163,7 +163,7 @@ export default function SecurityTransparencyPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
-              <span className="text-emerald-300 text-[10px] font-bold tracking-wider">LIVE NETWORK</span>
+              <span className="text-emerald-300 text-[12px] font-bold tracking-wider">LIVE NETWORK</span>
             </div>
             <h1 className="text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">Inaya Security Layer</h1>
             <p className="text-[#cbd5e1] text-xs sm:text-sm mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
@@ -198,7 +198,7 @@ export default function SecurityTransparencyPage() {
                 <span>
                   <span className="flex items-center gap-2">
                     <span className="text-white text-base font-extrabold">Ask the Security Assistant</span>
-                    <span className="text-[9px] font-bold tracking-wider text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-full px-2 py-0.5">
+                    <span className="text-[11px] font-bold tracking-wider text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-full px-2 py-0.5">
                       AI-POWERED
                     </span>
                   </span>
@@ -271,7 +271,7 @@ export default function SecurityTransparencyPage() {
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#f87171]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">🎯</span>
-              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Confirmed</span>
+              <span className="text-[#8a96ab] text-[12px] uppercase tracking-wider">Confirmed</span>
             </div>
             <div className="text-3xl font-extrabold text-[#f87171]">{stats ? stats.confirmedThreatsCount : "—"}</div>
             <div className="text-[#8a96ab] text-xs mt-1">Confirmed Threats</div>
@@ -279,7 +279,7 @@ export default function SecurityTransparencyPage() {
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#00f2fe]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">🌐</span>
-              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Active</span>
+              <span className="text-[#8a96ab] text-[12px] uppercase tracking-wider">Active</span>
             </div>
             <div className="text-3xl font-extrabold text-white">{stats ? stats.reportingNodesCount : "—"}</div>
             <div className="text-[#8a96ab] text-xs mt-1">Reporting Nodes</div>
@@ -287,7 +287,7 @@ export default function SecurityTransparencyPage() {
           <div className="group bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#c084fc]/60 rounded-xl p-5 hover:-translate-y-0.5 hover:border-white/20 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">⭐</span>
-              <span className="text-[#8a96ab] text-[10px] uppercase tracking-wider">Trust</span>
+              <span className="text-[#8a96ab] text-[12px] uppercase tracking-wider">Trust</span>
             </div>
             <div className="text-3xl font-extrabold text-white">{stats ? formatPct(stats.avgReputationBps) : "—"}</div>
             <div className="text-[#8a96ab] text-xs mt-1">Avg Node Reputation</div>
@@ -361,14 +361,14 @@ export default function SecurityTransparencyPage() {
                     <span className="text-lg">{meta.icon}</span>
                     <div>
                       <p className="text-white text-sm font-semibold">{t.indicator}</p>
-                      <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
+                      <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">
                         <span style={{ color: meta.color }}>{meta.label}</span> · {(t.contributingNodes || []).length} independent reporter(s)
                       </p>
                     </div>
                   </div>
                   <div className="text-right text-xs">
                     <p className="text-[#f87171] font-bold">{formatPct(t.confidenceBps)}</p>
-                    <p className="text-[#8a96ab] font-mono text-[10px]">{formatDate(t.lastUpdated)}</p>
+                    <p className="text-[#8a96ab] font-mono text-[12px]">{formatDate(t.lastUpdated)}</p>
                   </div>
                 </div>
               );

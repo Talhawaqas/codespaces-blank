@@ -346,7 +346,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
               Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
             </p>
           </div>
-          <button onClick={onLogout} className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 shrink-0">
+          <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 shrink-0">
             Sign out
           </button>
         </div>
@@ -487,7 +487,7 @@ function AuthScreen({ notice, onAuthed }) {
         {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-[10px] text-[#8a96ab] uppercase font-bold">or</span>
+            <span className="text-[12px] text-[#8a96ab] uppercase font-bold">or</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
         )}
@@ -581,7 +581,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
     <div className="max-w-md mx-auto mt-16">
       <div className="flex items-center justify-between mb-8">
         <p className="text-[#94a3b8] text-xs font-mono truncate">{email}</p>
-        <button onClick={onLogout} className="text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 shrink-0 ml-2">
+        <button onClick={onLogout} className="text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 shrink-0 ml-2">
           Sign out
         </button>
       </div>
@@ -725,12 +725,12 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
             </div>
             <div className="min-w-0">
               <p className="text-white font-extrabold text-sm leading-tight truncate">Inaya Network</p>
-              <p className="text-[#94a3b8] text-[10px] font-mono uppercase tracking-wide">Business Workspace</p>
+              <p className="text-[#94a3b8] text-[12px] font-mono uppercase tracking-wide">Business Workspace</p>
             </div>
           </div>
           <div className="mt-4 bg-black/30 border border-white/5 rounded-lg px-3 py-2">
             <p className="text-slate-200 text-xs font-bold truncate">{orgName}</p>
-            <p className="text-[#00f2fe] text-[10px] font-mono uppercase tracking-wide mt-0.5">{ROLE_LABELS[role] || role}</p>
+            <p className="text-[#00f2fe] text-[12px] font-mono uppercase tracking-wide mt-0.5">{ROLE_LABELS[role] || role}</p>
           </div>
         </div>
 
@@ -753,8 +753,8 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
           <div className="flex items-center gap-2 px-3 py-3 rounded-lg bg-emerald-400/5 border border-emerald-400/15">
             <Icon path={ICONS.lock} className="w-4 h-4 text-emerald-400 shrink-0" />
             <div className="min-w-0">
-              <p className="text-emerald-300 text-[10px] font-bold uppercase tracking-wide">End-to-end encrypted</p>
-              <p className="text-[#94a3b8] text-[9px] font-mono">AES-256 · client-side</p>
+              <p className="text-emerald-300 text-[12px] font-bold uppercase tracking-wide">End-to-end encrypted</p>
+              <p className="text-[#94a3b8] text-[11px] font-mono">AES-256 · client-side</p>
             </div>
           </div>
         </div>
@@ -811,28 +811,28 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             </button>
             <div className="min-w-0">
               <h1 className="text-lg font-extrabold text-white tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
-              <p className="text-[#94a3b8] text-[11px] font-mono truncate">{email}</p>
+              <p className="text-[#94a3b8] text-[13px] font-mono truncate">{email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <a
               href="/docs/business-workspace-guide.md"
               download
-              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
               title="Download the step-by-step setup guide"
             >
               ↓ Guide
             </a>
             <a
               href="/business/download"
-              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
               title="Get the Business Workspace desktop app"
             >
               🖥️ Desktop App
             </a>
             <a
               href="/"
-              className="hidden sm:inline-block text-[10px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
               title="Back to the Inaya Network dApp"
             >
               ← dApp
@@ -848,7 +848,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
                 ))}
               </select>
             )}
-            <button onClick={onLogout} className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10">
+            <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10">
               Sign out
             </button>
           </div>
@@ -898,9 +898,9 @@ function StatCard({ icon, label, value, sub }) {
         <Icon path={ICONS[icon]} className="w-5 h-5 text-[#00f2fe]" />
       </div>
       <div className="min-w-0">
-        <p className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">{label}</p>
         <p className="text-white text-2xl font-extrabold leading-tight">{value}</p>
-        {sub && <p className="text-[#94a3b8] text-[10px] font-mono">{sub}</p>}
+        {sub && <p className="text-[#94a3b8] text-[12px] font-mono">{sub}</p>}
       </div>
     </div>
   );
@@ -912,7 +912,7 @@ function DashboardCard({ title, onViewAll, children }) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">{title}</h3>
         {onViewAll && (
-          <button onClick={onViewAll} className="text-[10px] font-bold text-[#00f2fe] flex items-center gap-0.5">
+          <button onClick={onViewAll} className="text-[12px] font-bold text-[#00f2fe] flex items-center gap-0.5">
             View all <Icon path={ICONS.chevronRight} className="w-3 h-3" />
           </button>
         )}
@@ -953,7 +953,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
             <AccentGraphic variant="business" size={120} />
           </div>
           <div className="relative">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
+            <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
               New · Desktop App
             </span>
             <h3 className="text-white font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
@@ -994,7 +994,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-left"
               >
                 <span className="text-slate-300 text-xs truncate">{d.filename}</span>
-                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
+                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
               </button>
             ))}
           </div>
@@ -1018,7 +1018,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-slate-200 text-xs font-bold truncate">{d.name}</p>
-                    <p className="text-[#94a3b8] text-[10px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
+                    <p className="text-[#94a3b8] text-[12px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
                   </div>
                 </button>
               ))}
@@ -1039,9 +1039,9 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 >
                   <div className="min-w-0">
                     <p className="text-slate-200 text-xs font-bold truncate">{p.name}</p>
-                    <p className="text-[#94a3b8] text-[10px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
+                    <p className="text-[#94a3b8] text-[12px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
                   </div>
-                  <span className="flex items-center gap-1 text-[9px] font-bold uppercase text-emerald-400 shrink-0">
+                  <span className="flex items-center gap-1 text-[11px] font-bold uppercase text-emerald-400 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
                   </span>
                 </button>
@@ -1067,13 +1067,13 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-slate-200 text-xs font-bold truncate">{d.filename}</p>
-                  <p className="text-[#94a3b8] text-[10px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
+                  <p className="text-[#94a3b8] text-[12px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status] || STATUS_STYLES.DRAFT}`}>
+                  <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status] || STATUS_STYLES.DRAFT}`}>
                     {d.status.replace("_", " ")}
                   </span>
-                  <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400">
+                  <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400">
                     <Icon path={ICONS.lock} className="w-2.5 h-2.5" /> Encrypted
                   </span>
                 </div>
@@ -1132,15 +1132,15 @@ function ApprovalsView({ orgId, onNavigate }) {
             <div key={d.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
               <button onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })} className="min-w-0 text-left">
                 <p className="text-white text-sm truncate">{d.filename}</p>
-                <p className="text-[#94a3b8] text-[10px] font-mono">{d.departmentName} · {d.projectName}</p>
+                <p className="text-[#94a3b8] text-[12px] font-mono">{d.departmentName} · {d.projectName}</p>
               </button>
               <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
+                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
                 {d.status === "PENDING" && (
                   <button
                     onClick={() => handleAction(d.id, "startReview")}
                     disabled={!!acting}
-                    className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40"
+                    className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40"
                   >
                     {acting === d.id + "startReview" ? "…" : "Start review"}
                   </button>
@@ -1150,14 +1150,14 @@ function ApprovalsView({ orgId, onNavigate }) {
                     <button
                       onClick={() => handleAction(d.id, "approve")}
                       disabled={!!acting}
-                      className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40"
+                      className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40"
                     >
                       {acting === d.id + "approve" ? "…" : "Approve"}
                     </button>
                     <button
                       onClick={() => handleAction(d.id, "reject")}
                       disabled={!!acting}
-                      className="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 disabled:opacity-40"
+                      className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 disabled:opacity-40"
                     >
                       {acting === d.id + "reject" ? "…" : "Reject"}
                     </button>
@@ -1201,7 +1201,7 @@ function ActivityView({ orgId }) {
               <span className="text-slate-200 font-bold">{e.filename}</span>
               <span className="text-[#94a3b8]"> · {e.action}</span>
               {e.previousState && <span className="text-[#94a3b8] font-mono"> · {e.previousState} → {e.newState}</span>}
-              <div className="text-[10px] font-mono text-[#8a96ab] mt-0.5">
+              <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">
                 {e.actorId} · {new Date(e.timestamp).toLocaleString()}
                 {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
               </div>
@@ -1278,7 +1278,7 @@ function AIAssistantView({ orgId }) {
       {messages.length <= 1 && (
         <div className="flex flex-wrap gap-2 py-3 border-t border-white/5 mt-3">
           {AI_SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => send(s)} className="text-[10px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+            <button key={s} onClick={() => send(s)} className="text-[12px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
               {s}
             </button>
           ))}
@@ -1460,14 +1460,14 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
   }
 
   return (
-    <Column title="Departments" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[10px] font-bold text-[#00f2fe]">+ New</button>}>
+    <Column title="Departments" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finance" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
-          <button className="text-[10px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
+          <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
-      {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mb-2">{error}</p>}
       {departments.length === 0 ? (
         <EmptyState compact icon="🏢" description="No departments yet." ctaLabel={canManage ? "+ Create one" : undefined} onCta={canManage ? () => setCreating(true) : undefined} />
       ) : (
@@ -1502,14 +1502,14 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
   }
 
   return (
-    <Column title="Projects" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[10px] font-bold text-[#00f2fe]">+ New</button>}>
+    <Column title="Projects" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Q3 Audit" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
-          <button className="text-[10px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
+          <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
-      {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mb-2">{error}</p>}
       {projects.length === 0 ? (
         <EmptyState compact icon="📁" description="No projects yet." ctaLabel={canManage ? "+ Create one" : undefined} onCta={canManage ? () => setCreating(true) : undefined} />
       ) : (
@@ -1590,19 +1590,19 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
   return (
     <Column title="Documents">
       <form onSubmit={handleUpload} className="mb-4 space-y-2">
-        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[10px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
+        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[12px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
         <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
         <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white">
           <option value="PRIVATE">Private</option>
           <option value="DEPARTMENT">Department</option>
           <option value="PROJECT">Project</option>
         </select>
-        <p className="text-[9px] text-[#94a3b8]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
-        <button disabled={uploading || !file || !passkey} className="w-full text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] py-2 rounded-lg disabled:opacity-40">
+        <p className="text-[11px] text-[#94a3b8]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
+        <button disabled={uploading || !file || !passkey} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] py-2 rounded-lg disabled:opacity-40">
           {uploading ? "Encrypting & uploading…" : "Upload document"}
         </button>
       </form>
-      {error && <p className="text-red-400 text-[10px] mb-2">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mb-2">{error}</p>}
       {documents.length === 0 ? (
         <EmptyState compact icon="🔐" description="No documents yet — use the upload form above." />
       ) : (
@@ -1695,13 +1695,13 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-xs text-white truncate">{doc.filename}</div>
-          <div className="text-[10px] text-[#94a3b8] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
+          <div className="text-[12px] text-[#94a3b8] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
+          <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
             {doc.status.replace("_", " ")}
           </span>
-          <span className="text-[8px] font-mono text-[#94a3b8]">{doc.accessLevel}</span>
+          <span className="text-[10px] font-mono text-[#94a3b8]">{doc.accessLevel}</span>
         </div>
       </div>
 
@@ -1711,30 +1711,30 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             key={action}
             onClick={() => handleAction(action)}
             disabled={!!acting}
-            className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
           >
             {acting === action ? "…" : label}
           </button>
         ))}
-        <button onClick={() => setShowDownload((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+        <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
           Download
         </button>
         {canManageThisDoc && (
           <>
-            <button onClick={() => setShowPermissions((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+            <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
               Permissions
             </button>
-            <button onClick={() => setShowShare((v) => !v)} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+            <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
               Share
             </button>
           </>
         )}
-        <button onClick={toggleActivity} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md text-[#94a3b8] hover:text-slate-300 ml-auto">
+        <button onClick={toggleActivity} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md text-[#94a3b8] hover:text-slate-300 ml-auto">
           {showActivity ? "Hide history" : "History"}
         </button>
       </div>
 
-      {error && <p className="text-red-400 text-[10px] mt-1.5">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mt-1.5">{error}</p>}
 
       {showDownload && (
         <div className="mt-2 border-t border-white/5 pt-2 flex gap-2">
@@ -1745,7 +1745,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             placeholder="Encryption passkey"
             className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white"
           />
-          <button onClick={handleDownload} disabled={downloading || !downloadPasskey} className="text-[9px] font-bold uppercase px-3 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
+          <button onClick={handleDownload} disabled={downloading || !downloadPasskey} className="text-[11px] font-bold uppercase px-3 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
             {downloading ? "…" : "Go"}
           </button>
         </div>
@@ -1757,10 +1757,10 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       {showActivity && (
         <div className="mt-2 border-t border-white/5 pt-2 space-y-1">
           {loadingActivity ? (
-            <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
+            <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
           ) : activity && activity.length > 0 ? (
             activity.map((e) => (
-              <div key={e.eventId} className="text-[10px] font-mono text-[#94a3b8]">
+              <div key={e.eventId} className="text-[12px] font-mono text-[#94a3b8]">
                 <span className="text-slate-300">{e.action}</span>
                 {e.previousState && <span> · {e.previousState} → {e.newState}</span>}
                 <span> · {e.actorId} · {new Date(e.timestamp).toLocaleString()}</span>
@@ -1768,7 +1768,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               </div>
             ))
           ) : (
-            <p className="text-[#8a96ab] text-[10px] italic">No activity recorded.</p>
+            <p className="text-[#8a96ab] text-[12px] italic">No activity recorded.</p>
           )}
         </div>
       )}
@@ -1834,38 +1834,38 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
 
   return (
     <div className="mt-2 border-t border-white/5 pt-2">
-      <p className="text-[9px] font-bold uppercase text-[#94a3b8] mb-1.5">People with access</p>
-      <div className="flex items-center justify-between text-[10px] py-1">
+      <p className="text-[11px] font-bold uppercase text-[#94a3b8] mb-1.5">People with access</p>
+      <div className="flex items-center justify-between text-[12px] py-1">
         <span className="text-slate-300 truncate">{ownerEmail}</span>
         <span className="text-[#94a3b8] font-mono">Owner</span>
       </div>
       {grants === null ? (
-        <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
+        <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
       ) : (
         grants.map((g) => (
-          <div key={g.email} className="flex items-center justify-between gap-2 text-[10px] py-1">
+          <div key={g.email} className="flex items-center justify-between gap-2 text-[12px] py-1">
             <span className="text-slate-300 truncate">{g.email}</span>
             <div className="flex items-center gap-1 shrink-0">
-              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[9px] text-white">
+              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[11px] text-white">
                 <option value="VIEW">View</option>
                 <option value="EDIT">Edit</option>
                 <option value="MANAGE">Manage</option>
               </select>
-              <button onClick={() => handleRevoke(g.email)} className="text-red-400 hover:text-red-300 text-[9px] font-bold uppercase px-1.5">Revoke</button>
+              <button onClick={() => handleRevoke(g.email)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase px-1.5">Revoke</button>
             </div>
           </div>
         ))
       )}
       <form onSubmit={handleAdd} className="flex items-center gap-1.5 mt-2">
-        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-white" />
-        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-1 text-[9px] text-white">
+        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-white" />
+        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-1 text-[11px] text-white">
           <option value="VIEW">View</option>
           <option value="EDIT">Edit</option>
           <option value="MANAGE">Manage</option>
         </select>
-        <button disabled={submitting} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">+ Add</button>
+        <button disabled={submitting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">+ Add</button>
       </form>
-      {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mt-1">{error}</p>}
     </div>
   );
 }
@@ -1923,42 +1923,42 @@ function SharePanel({ documentId, orgId }) {
 
   return (
     <div className="mt-2 border-t border-white/5 pt-2">
-      <p className="text-[9px] font-bold uppercase text-[#94a3b8] mb-1.5">Secure sharing</p>
+      <p className="text-[11px] font-bold uppercase text-[#94a3b8] mb-1.5">Secure sharing</p>
       <form onSubmit={handleCreate} className="flex items-center gap-1.5">
-        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1.5 py-1 text-[9px] text-white">
+        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1.5 py-1 text-[11px] text-white">
           <option value="1h">Expires in 1 hour</option>
           <option value="24h">Expires in 24 hours</option>
           <option value="7d">Expires in 7 days</option>
           <option value="30d">Expires in 30 days</option>
         </select>
-        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-white" />
-        <button disabled={creating} className="text-[9px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
+        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-white" />
+        <button disabled={creating} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
           {creating ? "…" : "Create link"}
         </button>
       </form>
 
       {newShareUrl && (
         <div className="mt-2 bg-black/20 border border-white/10 rounded-lg p-2">
-          <p className="text-[9px] text-[#94a3b8] mb-1">Share this link — it won't be shown again:</p>
-          <p className="text-[10px] text-[#00f2fe] break-all font-mono">{newShareUrl}</p>
+          <p className="text-[11px] text-[#94a3b8] mb-1">Share this link — it won't be shown again:</p>
+          <p className="text-[12px] text-[#00f2fe] break-all font-mono">{newShareUrl}</p>
         </div>
       )}
 
-      {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] mt-1">{error}</p>}
 
       <div className="mt-2 space-y-1">
         {shares === null ? (
-          <p className="text-[#8a96ab] text-[10px] italic">Loading…</p>
+          <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
         ) : shares.length === 0 ? (
-          <p className="text-[#8a96ab] text-[10px] italic">No share links yet.</p>
+          <p className="text-[#8a96ab] text-[12px] italic">No share links yet.</p>
         ) : (
           shares.map((s) => (
-            <div key={s.shareId} className="flex items-center justify-between gap-2 text-[10px] bg-black/20 rounded px-2 py-1">
+            <div key={s.shareId} className="flex items-center justify-between gap-2 text-[12px] bg-black/20 rounded px-2 py-1">
               <span className="text-slate-300">
                 {s.status} · {s.useCount}{s.maxUses !== null ? `/${s.maxUses}` : ""} uses · expires {new Date(s.expiresAt).toLocaleString()}
               </span>
               {s.status === "active" && (
-                <button onClick={() => handleRevoke(s.shareId)} className="text-red-400 hover:text-red-300 text-[9px] font-bold uppercase shrink-0">Revoke</button>
+                <button onClick={() => handleRevoke(s.shareId)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase shrink-0">Revoke</button>
               )}
             </div>
           ))
@@ -1981,7 +1981,7 @@ function UsageBar({ label, used, max, unit = "" }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">{label}</p>
         <p className="text-white text-xs font-mono">{unlimited ? `${used}${unit} · Unlimited` : `${used}${unit} / ${max}${unit}`}</p>
       </div>
       <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
@@ -2048,10 +2048,10 @@ function BillingView({ orgId, canManage }) {
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
-            <p className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wide">Current plan</p>
+            <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">Current plan</p>
             <p className="text-white text-xl font-extrabold">{plan.name}</p>
             {subscription && (
-              <p className="text-[#94a3b8] text-[11px] font-mono mt-0.5">
+              <p className="text-[#94a3b8] text-[13px] font-mono mt-0.5">
                 {subscription.status}
                 {subscription.currentPeriodEnd ? ` · renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ""}
               </p>
@@ -2061,7 +2061,7 @@ function BillingView({ orgId, canManage }) {
             <button
               onClick={handlePortal}
               disabled={portalLoading}
-              className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40"
+              className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40"
             >
               {portalLoading ? "Opening…" : "Manage billing"}
             </button>
@@ -2079,7 +2079,7 @@ function BillingView({ orgId, canManage }) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">Change plan</h3>
-            <a href="/business/pricing" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#00f2fe]">
+            <a href="/business/pricing" target="_blank" rel="noopener noreferrer" className="text-[12px] font-bold text-[#00f2fe]">
               Full pricing page ↗
             </a>
           </div>
@@ -2184,10 +2184,10 @@ function TeamView({ orgId, email }) {
             <option value="admin">Admin</option>
           </select>
           <div>
-            <p className="text-[10px] text-[#94a3b8] uppercase mb-1.5">Departments</p>
+            <p className="text-[12px] text-[#94a3b8] uppercase mb-1.5">Departments</p>
             <div className="flex flex-wrap gap-1.5">
               {departments.map((d) => (
-                <button type="button" key={d.id} onClick={() => toggleDept(d.id)} className={`text-[10px] px-2.5 py-1 rounded-full border ${inviteDeptIds.includes(d.id) ? "bg-[#00f2fe]/15 border-[#00f2fe]/40 text-[#00f2fe]" : "border-white/10 text-slate-400"}`}>
+                <button type="button" key={d.id} onClick={() => toggleDept(d.id)} className={`text-[12px] px-2.5 py-1 rounded-full border ${inviteDeptIds.includes(d.id) ? "bg-[#00f2fe]/15 border-[#00f2fe]/40 text-[#00f2fe]" : "border-white/10 text-slate-400"}`}>
                   {d.name}
                 </button>
               ))}
@@ -2201,7 +2201,7 @@ function TeamView({ orgId, email }) {
         {inviteResult && (
           <div className="mt-3 bg-black/20 border border-white/10 rounded-lg p-3">
             <p className="text-slate-400 text-xs mb-1">{inviteResult.emailSent ? "Invite emailed." : "Share this invite link:"}</p>
-            <a href={inviteResult.inviteUrl} className="text-[#00f2fe] underline text-[10px] break-all">{inviteResult.inviteUrl}</a>
+            <a href={inviteResult.inviteUrl} className="text-[#00f2fe] underline text-[12px] break-all">{inviteResult.inviteUrl}</a>
           </div>
         )}
       </div>
@@ -2213,7 +2213,7 @@ function TeamView({ orgId, email }) {
           <div className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 mb-3">
             <div className="min-w-0">
               <p className="text-xs text-white">Email me when something needs my approval</p>
-              <p className="text-[10px] text-[#94a3b8] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
+              <p className="text-[12px] text-[#94a3b8] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
             </div>
             <button
               onClick={() => handleToggleNotify(!ownMembership.notifyOnApprovals)}
@@ -2230,7 +2230,7 @@ function TeamView({ orgId, email }) {
             <div key={m.email} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg p-2.5">
               <div className="min-w-0">
                 <div className="text-xs text-white truncate">{m.email}</div>
-                <div className="text-[10px] text-[#94a3b8] font-mono">{ROLE_LABELS[m.role]} · {m.status === "active" ? "Active" : "Invited"}</div>
+                <div className="text-[12px] text-[#94a3b8] font-mono">{ROLE_LABELS[m.role]} · {m.status === "active" ? "Active" : "Invited"}</div>
               </div>
             </div>
           ))}

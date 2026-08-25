@@ -50,7 +50,7 @@ export default function LearnSearchResults({ query, categoryId, isVideoSaved, to
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <p className="text-[#8a96ab] text-[10px] font-mono uppercase tracking-widest">Educational results for</p>
+        <p className="text-[#8a96ab] text-[12px] font-mono uppercase tracking-widest">Educational results for</p>
         <h2 className="text-white text-xl font-extrabold">“{query}”</h2>
       </div>
 

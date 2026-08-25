@@ -9,7 +9,7 @@
 export default function EmptyState({ icon = "📭", title, description, ctaLabel, onCta, compact = false }) {
   if (compact) {
     return (
-      <div className="flex items-center gap-2 text-[11px] text-[#8a96ab] font-mono italic">
+      <div className="flex items-center gap-2 text-[13px] text-[#8a96ab] font-mono italic">
         <span className="not-italic">{icon}</span>
         <span>{description || title}</span>
         {ctaLabel && onCta && (

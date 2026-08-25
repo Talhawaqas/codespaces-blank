@@ -191,21 +191,21 @@ export default function SecurityAdminPage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <p className="text-white text-sm font-semibold">{t.indicator}</p>
-                    <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
+                    <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">
                       {CATEGORIES[t.category] || "unknown"} · {(t.contributingNodes || []).length} independent reporter(s)
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-right">
                       <p className={`font-bold ${STATUS_COLORS[t.status] || ""}`}>{STATUS_LABELS[t.status] || "Unknown"}</p>
-                      <p className="text-[#8a96ab] font-mono text-[10px]">{formatPct(t.confidenceBps)} confidence</p>
+                      <p className="text-[#8a96ab] font-mono text-[12px]">{formatPct(t.confidenceBps)} confidence</p>
                     </div>
                     <div className="flex gap-1">
                       {t.status !== 1 && (
                         <button
                           disabled={overridingId === t._id}
                           onClick={() => handleOverride(t._id, 1)}
-                          className="text-[#00f2fe] hover:text-white font-bold text-[10px] px-2 py-1 border border-[#00f2fe]/30 rounded"
+                          className="text-[#00f2fe] hover:text-white font-bold text-[12px] px-2 py-1 border border-[#00f2fe]/30 rounded"
                         >
                           Confirm
                         </button>
@@ -214,7 +214,7 @@ export default function SecurityAdminPage() {
                         <button
                           disabled={overridingId === t._id}
                           onClick={() => handleOverride(t._id, 3)}
-                          className="text-[#94a3b8] hover:text-white font-bold text-[10px] px-2 py-1 border border-white/10 rounded"
+                          className="text-[#94a3b8] hover:text-white font-bold text-[12px] px-2 py-1 border border-white/10 rounded"
                         >
                           Clear
                         </button>
@@ -222,7 +222,7 @@ export default function SecurityAdminPage() {
                     </div>
                   </div>
                 </div>
-                <p className="text-[#8a96ab] text-[10px] font-mono mt-2">
+                <p className="text-[#8a96ab] text-[12px] font-mono mt-2">
                   First seen: {formatDate(t.firstSeen)} · Last updated: {formatDate(t.lastUpdated)}
                   {t.onChainTxHash && (
                     <>
@@ -250,13 +250,13 @@ export default function SecurityAdminPage() {
               <div key={n._id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-white text-sm font-mono font-semibold">{shortAddr(n._id)}</p>
-                  <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
+                  <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">
                     {n.totalConfirmed || 0} confirmed · {n.totalFalsePositive || 0} false positive
                   </p>
                 </div>
                 <div className="text-right text-xs">
                   <p className="text-[#00f2fe] font-bold">{formatPct(n.scoreBps)}</p>
-                  <p className="text-[#8a96ab] font-mono text-[10px]">
+                  <p className="text-[#8a96ab] font-mono text-[12px]">
                     {n.checkpointedAt ? `checkpointed ${formatDate(n.checkpointedAt)}` : "not yet checkpointed on-chain"}
                   </p>
                 </div>

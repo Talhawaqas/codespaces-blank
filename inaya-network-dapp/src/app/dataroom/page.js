@@ -200,7 +200,7 @@ export default function DataRoomPage() {
             <p className="text-[#94a3b8] text-sm mb-6">Enter your name and email to verify your identity and continue to the data room.</p>
             <form onSubmit={handleRequestAccess} className="space-y-4">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Full name</label>
+                <label className="text-[12px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Full name</label>
                 <input
                   required
                   value={nameInput}
@@ -210,7 +210,7 @@ export default function DataRoomPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Email</label>
+                <label className="text-[12px] font-bold uppercase tracking-wider text-[#8a96ab] block mb-1.5">Email</label>
                 <input
                   required
                   type="email"
@@ -240,7 +240,7 @@ export default function DataRoomPage() {
             </p>
             {devVerifyUrl && (
               <div className="mt-4 bg-amber-400/10 border border-amber-400/20 rounded-lg p-3">
-                <p className="text-amber-400 text-[11px] font-mono mb-1">Email delivery isn't configured — use this link directly:</p>
+                <p className="text-amber-400 text-[13px] font-mono mb-1">Email delivery isn't configured — use this link directly:</p>
                 <a href={devVerifyUrl} className="text-[#00f2fe] text-xs break-all underline">{devVerifyUrl}</a>
               </div>
             )}
@@ -285,7 +285,7 @@ export default function DataRoomPage() {
               <div className="space-y-6">
                 {groupByCategory(documents).map(([category, docs]) => (
                   <div key={category}>
-                    <h2 className="text-[#8a96ab] text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <h2 className="text-[#8a96ab] text-[12px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
                       📁 {category}
                     </h2>
                     <div className="space-y-2">
@@ -297,7 +297,7 @@ export default function DataRoomPage() {
                         >
                           <div>
                             <p className="text-white text-sm font-semibold">{doc.title}</p>
-                            <p className="text-[#8a96ab] text-[11px] font-mono mt-1">{formatBytes(doc.sizeBytes)}</p>
+                            <p className="text-[#8a96ab] text-[13px] font-mono mt-1">{formatBytes(doc.sizeBytes)}</p>
                           </div>
                           <span className="text-[#00f2fe] text-xs font-bold">View →</span>
                         </button>

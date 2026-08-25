@@ -78,7 +78,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       } ${current ? "ring-2 ring-offset-0 ring-white/20" : ""}`}
     >
       {plan.popular && !compact && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4facfe] text-black text-[10px] font-extrabold uppercase tracking-wide px-3 py-1 rounded-full">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4facfe] text-black text-[12px] font-extrabold uppercase tracking-wide px-3 py-1 rounded-full">
           Most Popular
         </span>
       )}
@@ -96,7 +96,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
           ${plan.priceMonthly}
           <span className="text-[#94a3b8] text-xs font-medium">/month</span>
         </p>
-        <p className="text-[#94a3b8] text-[10px] font-mono mt-1">
+        <p className="text-[#94a3b8] text-[12px] font-mono mt-1">
           ${plan.priceYearly}/year · save 17% with yearly billing
         </p>
       </div>

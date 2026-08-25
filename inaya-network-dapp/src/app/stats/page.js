@@ -49,7 +49,7 @@ export default function NetworkStatsPage() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
           </span>
-          <span className="text-emerald-300 text-[10px] font-bold tracking-wider">LIVE</span>
+          <span className="text-emerald-300 text-[12px] font-bold tracking-wider">LIVE</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">Network Stats</h1>
         <p className="text-[#94a3b8] text-sm max-w-2xl mb-10">
@@ -68,15 +68,15 @@ export default function NetworkStatsPage() {
               { label: "Mobile", data: stats?.activeUsers?.mobile },
             ].map((s) => (
               <div key={s.label} className="bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#00f2fe]/60 rounded-xl p-5">
-                <div className="text-[#8a96ab] text-[10px] uppercase tracking-wider mb-2">{s.label}</div>
+                <div className="text-[#8a96ab] text-[12px] uppercase tracking-wider mb-2">{s.label}</div>
                 <div className="flex items-baseline gap-4">
                   <div>
                     <div className="text-2xl font-extrabold text-white">{s.data ? s.data.dau : "—"}</div>
-                    <div className="text-[#8a96ab] text-[10px]">DAU</div>
+                    <div className="text-[#8a96ab] text-[12px]">DAU</div>
                   </div>
                   <div>
                     <div className="text-2xl font-extrabold text-white">{s.data ? s.data.wau : "—"}</div>
-                    <div className="text-[#8a96ab] text-[10px]">WAU</div>
+                    <div className="text-[#8a96ab] text-[12px]">WAU</div>
                   </div>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function NetworkStatsPage() {
               <div className="text-3xl font-extrabold text-white">{stats ? stats.security.reportingNodesCount : "—"}</div>
               <div className="text-[#8a96ab] text-xs mt-1">Reporting Nodes</div>
               {stats && stats.security.reportingNodesCount === 0 && (
-                <div className="text-[#8a96ab]/70 text-[10px] mt-2 italic">Security Layer just launched — be one of the first to report.</div>
+                <div className="text-[#8a96ab]/70 text-[12px] mt-2 italic">Security Layer just launched — be one of the first to report.</div>
               )}
             </div>
             <div className="bg-[#0a0f1e] border border-white/10 border-t-2 border-t-[#c084fc]/60 rounded-xl p-5">
@@ -121,7 +121,7 @@ export default function NetworkStatsPage() {
         </section>
 
         {stats?.generatedAt && (
-          <p className="text-[#8a96ab] text-[10px] font-mono">Last updated {new Date(stats.generatedAt).toLocaleString()}</p>
+          <p className="text-[#8a96ab] text-[12px] font-mono">Last updated {new Date(stats.generatedAt).toLocaleString()}</p>
         )}
       </div>
     </div>

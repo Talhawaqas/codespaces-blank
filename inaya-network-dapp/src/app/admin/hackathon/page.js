@@ -271,7 +271,7 @@ function WinnerRow({ slot, winner, onSave, onClear }) {
           Clear
         </button>
       )}
-      {winner.claimed && <span className="text-[10px] font-bold text-emerald-400 uppercase">Claimed</span>}
+      {winner.claimed && <span className="text-[12px] font-bold text-emerald-400 uppercase">Claimed</span>}
     </div>
   );
 }
@@ -285,7 +285,7 @@ function ReportRow({ report, onUpdate }) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <button onClick={() => setExpanded((v) => !v)} className="text-left flex-1 min-w-[240px]">
           <p className="text-white text-sm font-semibold">{report.title}</p>
-          <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">
+          <p className="text-[#8a96ab] text-[13px] font-mono mt-0.5">
             {layerLabel(report.layer)} · {severityLabel(report.finalSeverity || report.severity)}
             {report.finalSeverity && report.finalSeverity !== report.severity && (
               <span className="text-amber-400"> (reported as {severityLabel(report.severity)})</span>
@@ -294,7 +294,7 @@ function ReportRow({ report, onUpdate }) {
             {shortAddr(report.walletAddress)} · {formatDate(report.createdAt)}
           </p>
         </button>
-        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${STATUS_COLORS[report.status] || STATUS_COLORS.submitted}`}>
+        <span className={`text-[12px] font-bold uppercase px-2 py-1 rounded-full border shrink-0 ${STATUS_COLORS[report.status] || STATUS_COLORS.submitted}`}>
           {report.status}
         </span>
       </div>
@@ -304,7 +304,7 @@ function ReportRow({ report, onUpdate }) {
           <p className="text-slate-300 text-xs whitespace-pre-wrap">{report.description}</p>
           {report.stepsToReproduce && (
             <div>
-              <p className="text-[#8a96ab] text-[10px] font-bold uppercase mb-1">Steps to reproduce</p>
+              <p className="text-[#8a96ab] text-[12px] font-bold uppercase mb-1">Steps to reproduce</p>
               <p className="text-slate-300 text-xs whitespace-pre-wrap">{report.stepsToReproduce}</p>
             </div>
           )}
@@ -320,7 +320,7 @@ function ReportRow({ report, onUpdate }) {
                 key={s}
                 onClick={() => onUpdate(report.id, { status: s })}
                 disabled={report.status === s}
-                className={`text-[10px] font-bold uppercase px-2.5 py-1.5 rounded-full border ${report.status === s ? "opacity-40 cursor-default" : "hover:bg-white/5"} ${STATUS_COLORS[s]}`}
+                className={`text-[12px] font-bold uppercase px-2.5 py-1.5 rounded-full border ${report.status === s ? "opacity-40 cursor-default" : "hover:bg-white/5"} ${STATUS_COLORS[s]}`}
               >
                 {s}
               </button>
@@ -333,7 +333,7 @@ function ReportRow({ report, onUpdate }) {
                 key={s.id}
                 onClick={() => onUpdate(report.id, { finalSeverity: s.id })}
                 disabled={(report.finalSeverity || report.severity) === s.id}
-                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${(report.finalSeverity || report.severity) === s.id ? "text-white bg-white/10 border-white/20" : "text-[#8a96ab] border-white/10 hover:text-slate-300"}`}
+                className={`text-[12px] font-bold px-2.5 py-1.5 rounded-lg border ${(report.finalSeverity || report.severity) === s.id ? "text-white bg-white/10 border-white/20" : "text-[#8a96ab] border-white/10 hover:text-slate-300"}`}
               >
                 Set severity: {s.label}
               </button>

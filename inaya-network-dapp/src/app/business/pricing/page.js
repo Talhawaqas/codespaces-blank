@@ -65,7 +65,7 @@ export default function PricingPage() {
           </div>
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl px-4 py-3 text-right shrink-0">
             <p className="text-white text-xs font-bold">Your data. Your control.</p>
-            <p className="text-[#94a3b8] text-[10px] font-mono">Zero-Knowledge. Always.</p>
+            <p className="text-[#94a3b8] text-[12px] font-mono">Zero-Knowledge. Always.</p>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <p className="text-center text-[#8a96ab] text-[10px] font-mono mt-8">
+        <p className="text-center text-[#8a96ab] text-[12px] font-mono mt-8">
           Decentralized. Private. Secure. Scalable. — Inaya puts you in control of your data, always.
         </p>
       </div>

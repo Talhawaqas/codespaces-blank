@@ -22,7 +22,7 @@ const chatMarkdownComponents = {
   li: ({ node, ...props }) => <li {...props} />,
   strong: ({ node, ...props }) => <strong className="text-[#00f2fe] font-bold" {...props} />,
   a: ({ node, ...props }) => <a className="text-[#00f2fe] underline" target="_blank" rel="noreferrer" {...props} />,
-  code: ({ node, ...props }) => <code className="bg-black/30 px-1 py-0.5 rounded text-[10px]" {...props} />,
+  code: ({ node, ...props }) => <code className="bg-black/30 px-1 py-0.5 rounded text-[12px]" {...props} />,
   h1: ({ node, ...props }) => <p className="font-bold text-white mb-1" {...props} />,
   h2: ({ node, ...props }) => <p className="font-bold text-white mb-1" {...props} />,
   h3: ({ node, ...props }) => <p className="font-bold text-white mb-1" {...props} />,
@@ -4815,7 +4815,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <img src="/inaya-logo.png" alt="Inaya Network logo" className="w-8 h-8 rounded-md shadow-[0_0_10px_rgba(0,242,254,0.4)]" />
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
-            <span className="text-[10px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
+            <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
           <div className="flex items-center gap-3">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
@@ -4830,7 +4830,7 @@ export default function Home() {
               >
                 🔔
                 {unreadNotificationsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-[#f87171] to-[#ef4444] text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-[#f87171] to-[#ef4444] text-white text-[11px] font-bold flex items-center justify-center">
                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                   </span>
                 )}
@@ -4839,7 +4839,7 @@ export default function Home() {
                 <>
                   <div className="fixed inset-0 z-[80]" onClick={() => setIsNotificationsOpen(false)} />
                   <div className="absolute right-0 top-11 w-80 max-h-96 overflow-y-auto bg-[#0a0f1e] border border-white/10 rounded-2xl shadow-2xl z-[90] p-2">
-                    <div className="px-3 py-2 text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Notifications</div>
+                    <div className="px-3 py-2 text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Notifications</div>
                     {allNotifications.length === 0 ? (
                       <div className="px-3 py-6 text-center text-xs text-[#8a96ab] italic">
                         {isConnected ? "You're all caught up." : 'Connect your wallet to see activity.'}
@@ -4851,8 +4851,8 @@ export default function Home() {
                             <span className="text-lg shrink-0">{n.icon}</span>
                             <div className="min-w-0">
                               <div className="text-white text-xs font-bold">{n.title}</div>
-                              <div className="text-[#94a3b8] text-[11px] mt-0.5">{n.body}</div>
-                              <div className="text-[#8a96ab] text-[9px] font-mono mt-1">{new Date(n.occurredAt).toLocaleString()}</div>
+                              <div className="text-[#94a3b8] text-[13px] mt-0.5">{n.body}</div>
+                              <div className="text-[#8a96ab] text-[11px] font-mono mt-1">{new Date(n.occurredAt).toLocaleString()}</div>
                             </div>
                           </div>
                         ))}
@@ -5040,12 +5040,12 @@ export default function Home() {
             </div>
             <div>
               <div className="text-white text-sm font-bold tracking-wide leading-tight">Security Dock</div>
-              <div className="text-[9px] text-[#8a96ab] uppercase tracking-wider">Network diagnostics &amp; identity</div>
+              <div className="text-[11px] text-[#8a96ab] uppercase tracking-wider">Network diagnostics &amp; identity</div>
             </div>
           </div>
 
           {/* B2B CORPORATE RESERVE PANEL CHANGER */}
-          <div className="bg-[#0b1426]/70 border border-[#00f2fe]/20 p-4 rounded-xl space-y-3 font-mono text-[11px]">
+          <div className="bg-[#0b1426]/70 border border-[#00f2fe]/20 p-4 rounded-xl space-y-3 font-mono text-[13px]">
             <div className="text-[#00f2fe] font-extrabold text-xs uppercase border-b border-white/5 pb-1">Corporate Reserve Panel</div>
             <div>
               <span className="text-slate-400 block mb-1">Select Active Annual Plan:</span>
@@ -5059,7 +5059,7 @@ export default function Home() {
               <div>• Reserve Fee: <span className="text-white font-bold">{b2bTierData.price}</span></div>
               <div>• Annual Maintenance: <span className="text-white font-bold">{b2bTierData.maintenance}</span></div>
               <div>• Allocation Limit: <span className="text-white font-bold">{b2bTierData.displayLimit}</span></div>
-              <div className="text-[10px] text-slate-500 italic pt-1">{b2bTierData.inclusions}</div>
+              <div className="text-[12px] text-slate-500 italic pt-1">{b2bTierData.inclusions}</div>
             </div>
             <div className="text-[9.5px] text-slate-500 pt-1 border-t border-white/5">
               Retail / pay-as-you-go storage remains available at the baseline <span className="text-[#00f2fe] font-bold">4.5 USDT / TB / month</span> rate outside of a Corporate Reserve plan.
@@ -5068,14 +5068,14 @@ export default function Home() {
 
           {/* DEPLOYED CONTRACTS */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Deployed Contracts</div>
+            <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Deployed Contracts</div>
             <div className="bg-white/[0.02] border border-white/5 rounded-xl divide-y divide-white/5 overflow-hidden">
 
               {/* Core Contract Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Core Custody Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">Core Custody Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5091,7 +5091,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(liveContractAddress, 'core')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'core' ? '✅' : '📋'}
@@ -5100,20 +5100,20 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${liveContractAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Mock USDT Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Mock USDT Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">Mock USDT Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5129,7 +5129,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(usdtTokenAddress, 'usdt')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'usdt' ? '✅' : '📋'}
@@ -5138,20 +5138,20 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${usdtTokenAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Token Contract Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">$INAYA Token Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">$INAYA Token Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5167,7 +5167,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(inayaTokenAddress, 'token')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'token' ? '✅' : '📋'}
@@ -5176,20 +5176,20 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${inayaTokenAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Inaya Node Registry Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Node Registry Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">Node Registry Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5205,7 +5205,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(nodeRegistryAddress, 'nodeRegistry')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'nodeRegistry' ? '✅' : '📋'}
@@ -5214,20 +5214,20 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${nodeRegistryAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Inaya Revenue Router Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Revenue Router Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">Revenue Router Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5243,7 +5243,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(revenueRouterAddress, 'revenueRouter')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'revenueRouter' ? '✅' : '📋'}
@@ -5252,20 +5252,20 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${revenueRouterAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
               {/* Proof Registry Row */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-[#94a3b8] font-semibold">Proof Registry Contract</span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[12px] font-mono text-[#94a3b8] font-semibold">Proof Registry Contract</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
                     ✓ Verified
                   </span>
                 </div>
@@ -5281,7 +5281,7 @@ export default function Home() {
                   </a>
                   <button
                     onClick={() => copyToClipboard(proofRegistryAddress, 'proofregistry')}
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0 px-1.5"
                     title="Copy address"
                   >
                     {copiedField === 'proofregistry' ? '✅' : '📋'}
@@ -5290,13 +5290,13 @@ export default function Home() {
                     href={`https://testnet.bscscan.com/address/${proofRegistryAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
+                    className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors shrink-0"
                     title="View on BscScan"
                   >
                     ↗
                   </a>
                 </div>
-                <div className="text-[9px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
+                <div className="text-[11px] text-[#8a96ab] mt-1.5 font-mono">BNB Chain Testnet</div>
               </div>
 
             </div>
@@ -5304,11 +5304,11 @@ export default function Home() {
 
           {/* NODE IDENTITY */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Node Identity</div>
+            <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Node Identity</div>
             <div className="border border-[#00f2fe]/20 bg-gradient-to-b from-[#0c162b]/80 to-[#0c162b]/40 p-4 rounded-xl">
               <div className="flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-[#64748b]'}`}></span>
-                <span className="text-[#00f2fe] font-mono text-[10px] font-bold uppercase tracking-wide">Node Authentication</span>
+                <span className="text-[#00f2fe] font-mono text-[12px] font-bold uppercase tracking-wide">Node Authentication</span>
               </div>
               {isConnected ? (
                 isSignedUp ? (
@@ -5321,14 +5321,14 @@ export default function Home() {
                   </button>
                 )
               ) : (
-                <div className="text-[#8a96ab] text-[11px] italic mt-3 font-mono">// Connect wallet to sign up.</div>
+                <div className="text-[#8a96ab] text-[13px] italic mt-3 font-mono">// Connect wallet to sign up.</div>
               )}
             </div>
           </div>
 
           {/* VAULT ACCESS */}
           <div>
-            <div className="text-[10px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
+            <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
             <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey</label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a96ab] text-xs">🔒</span>
@@ -5336,7 +5336,7 @@ export default function Home() {
             </div>
             <div className="flex gap-2 mt-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
               <span className="text-amber-400 text-xs shrink-0">⚠️</span>
-              <p className="text-[10px] text-amber-400/80 font-mono leading-relaxed">
+              <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
                 Never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
               </p>
             </div>
@@ -5360,7 +5360,7 @@ export default function Home() {
                  ============================================================ */}
               <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-center pb-2">
                 <div className="inaya-fade-in-up">
-                  <span className="inline-block text-[10px] font-mono font-bold tracking-[0.2em] text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+                  <span className="inline-block text-[12px] font-mono font-bold tracking-[0.2em] text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
                     INAYA NETWORK
                   </span>
 
@@ -5385,7 +5385,7 @@ export default function Home() {
                     >
                       🔐 Try the Encrypted Vault — Upload &amp; Decrypt a Test File
                     </button>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 whitespace-nowrap">
                       🧪 BNB Chain Testnet — Live &amp; Testable Today
                     </span>
                   </div>
@@ -5423,16 +5423,16 @@ export default function Home() {
                     >
                       <span className="text-lg">{item.icon}</span>
                       <div className="text-white font-bold text-xs mt-1.5">{item.label}</div>
-                      <p className="text-[#8a96ab] text-[11px] leading-relaxed mt-1">{item.desc}</p>
+                      <p className="text-[#8a96ab] text-[13px] leading-relaxed mt-1">{item.desc}</p>
                     </Tag>
                   );
                 })}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">Wallet Core Status</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">Supply Cap Weight</div></div>
-                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[10px] uppercase text-[#8a96ab] mt-1">RPC Connection Status</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? (isSignedUp ? "ACTIVE_NODE" : "UNVERIFIED_SIGNUP") : "WAITING_AUTH"}</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">Wallet Core Status</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">30,000,000</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">Supply Cap Weight</div></div>
+                <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl"><div className="font-mono text-xl font-bold text-white">{isConnected ? "LIVE" : "IDLE"}</div><div className="text-[12px] uppercase text-[#8a96ab] mt-1">RPC Connection Status</div></div>
               </div>
 
               {/* ============================================================
@@ -5455,19 +5455,19 @@ export default function Home() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 font-mono">
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">4.5 USDT</div>
-                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">Storage / TB / Month</div>
+                        <div className="text-[11px] uppercase text-[#8a96ab] mt-0.5">Storage / TB / Month</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">30,000,000</div>
-                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">$INAYA Hard Cap</div>
+                        <div className="text-[11px] uppercase text-[#8a96ab] mt-0.5">$INAYA Hard Cap</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">40.0%</div>
-                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">To Swarm Reserve (Nodes)</div>
+                        <div className="text-[11px] uppercase text-[#8a96ab] mt-0.5">To Swarm Reserve (Nodes)</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
                         <div className="text-white font-bold text-sm">BNB Chain</div>
-                        <div className="text-[9px] uppercase text-[#8a96ab] mt-0.5">Live On Testnet</div>
+                        <div className="text-[11px] uppercase text-[#8a96ab] mt-0.5">Live On Testnet</div>
                       </div>
                     </div>
 
@@ -5532,7 +5532,7 @@ export default function Home() {
                   shouldn't navigate the visitor away from the wallet dApp. */}
               <div className="relative overflow-hidden bg-gradient-to-r from-violet-500/10 via-[#090d16] to-[#00f2fe]/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-violet-300 bg-violet-400/10 border border-violet-400/20 rounded-full px-2.5 py-1 mb-2">
+                  <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-violet-300 bg-violet-400/10 border border-violet-400/20 rounded-full px-2.5 py-1 mb-2">
                     New · For Teams &amp; Companies
                   </span>
                   <h3 className="text-white font-extrabold text-base sm:text-lg">Run your company on Inaya, not just your files</h3>
@@ -5566,7 +5566,7 @@ export default function Home() {
               {!isTauriApp && (
                 <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
+                    <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
                       New · Desktop App
                     </span>
                     <h3 className="text-white font-extrabold text-base sm:text-lg">🖥️ Inaya Network, now on your desktop</h3>
@@ -5636,11 +5636,11 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs">
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-emerald-400">500</div>
-                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">$INAYA per request</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">$INAYA per request</div>
                   </div>
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-[#00f2fe]">100</div>
-                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">mUSDT per request</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">mUSDT per request</div>
                   </div>
                 </div>
 
@@ -5658,12 +5658,12 @@ export default function Home() {
                   {isFauceting ? "DISPENSING..." : isConnected ? "REQUEST TEST TOKENS" : "CONNECT WALLET FIRST"}
                 </button>
 
-                <p className="text-[10px] text-[#8a96ab] font-mono">
+                <p className="text-[12px] text-[#8a96ab] font-mono">
                   The faucet skips a token if your wallet already holds enough for testing — this keeps the treasury available for everyone.
                 </p>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[12px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-1"><span className="text-amber-400/80 font-bold">⛽ Need gas (tBNB) too?</span> This faucet only covers $INAYA and mUSDT.</p>
                 <p>Get free testnet BNB here: <a href="https://faucet.zalalena.com/bsc" target="_blank" rel="noopener noreferrer" className="text-[#00f2fe] underline hover:text-cyan-300">faucet.zalalena.com/bsc</a></p>
               </div>
@@ -5677,8 +5677,8 @@ export default function Home() {
     {!isConnected && cardCustomerEmail && (
       <div className="bg-[#0b101d]/90 border border-emerald-400/30 rounded-2xl p-5 space-y-4">
         <div>
-          <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Pay-As-You-Go — Card Upload (No Wallet)</span>
-          <p className="text-[11px] text-slate-500 mt-1">Encrypt, shard, and upload a file — billed at the live per-GB rate via card, no wallet required. Signed in as {cardCustomerEmail}.</p>
+          <span className="text-[12px] uppercase tracking-widest text-emerald-400 font-bold">Pay-As-You-Go — Card Upload (No Wallet)</span>
+          <p className="text-[13px] text-slate-500 mt-1">Encrypt, shard, and upload a file — billed at the live per-GB rate via card, no wallet required. Signed in as {cardCustomerEmail}.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <input
@@ -5701,25 +5701,25 @@ export default function Home() {
             {isCardUploadProcessing ? "PROCESSING..." : "💳 ENCRYPT & PAY"}
           </button>
         </div>
-        {cardUploadStatus && <p className="text-[11px] text-amber-400 font-mono">// {cardUploadStatus}</p>}
+        {cardUploadStatus && <p className="text-[13px] text-amber-400 font-mono">// {cardUploadStatus}</p>}
         <div className="bg-amber-400/10 border border-amber-400/40 rounded-lg px-3 py-2 flex items-center gap-2">
           <span className="text-amber-400 text-sm">⚠️</span>
-          <p className="text-[11px] text-amber-300 font-bold font-mono">TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC/ZIP.</p>
+          <p className="text-[13px] text-amber-300 font-bold font-mono">TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC/ZIP.</p>
         </div>
 
         {cardUploadAssets.length > 0 && (
           <div className="border-t border-white/10 pt-4">
-            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">My Files</span>
+            <span className="text-[12px] uppercase tracking-widest text-slate-400 font-bold">My Files</span>
             <div className="mt-2 space-y-2">
               {cardUploadAssets.map((a) => (
                 <div key={a.fileHash} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg px-3 py-2">
                   <div>
                     <div className="text-white text-xs font-bold">{a.filename}</div>
-                    <div className="text-[10px] text-slate-500">{(a.sizeBytes / 1048576).toFixed(2)} MB · {new Date(a.uploadedAt).toLocaleDateString()}</div>
+                    <div className="text-[12px] text-slate-500">{(a.sizeBytes / 1048576).toFixed(2)} MB · {new Date(a.uploadedAt).toLocaleDateString()}</div>
                   </div>
                   <button
                     onClick={() => handleCardReconstruct(a.fileHash, a.filename, a.sizeBytes)}
-                    className="px-3 py-1.5 bg-[#00f2fe]/10 border border-[#00f2fe]/30 text-[#00f2fe] text-[10px] font-bold rounded-lg hover:bg-[#00f2fe]/20 transition-all"
+                    className="px-3 py-1.5 bg-[#00f2fe]/10 border border-[#00f2fe]/30 text-[#00f2fe] text-[12px] font-bold rounded-lg hover:bg-[#00f2fe]/20 transition-all"
                   >
                     🧩 RECONSTRUCT
                   </button>
@@ -5749,14 +5749,14 @@ export default function Home() {
           />
           <button 
             onClick={() => handleRetrievalSequence('')}
-            className="hidden sm:block absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#00f2fe] text-[#060913] font-bold text-[11px] rounded-full hover:brightness-110 transition-all"
+            className="hidden sm:block absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#00f2fe] text-[#060913] font-bold text-[13px] rounded-full hover:brightness-110 transition-all"
           >
             🧩 RECONSTRUCT
           </button>
         </div>
         <button 
           onClick={() => handleRetrievalSequence('')}
-          className="sm:hidden w-full py-2.5 bg-[#00f2fe] text-[#060913] font-bold text-[11px] rounded-full hover:brightness-110 active:scale-95 transition-all"
+          className="sm:hidden w-full py-2.5 bg-[#00f2fe] text-[#060913] font-bold text-[13px] rounded-full hover:brightness-110 active:scale-95 transition-all"
         >
           🧩 RECONSTRUCT
         </button>
@@ -5821,13 +5821,13 @@ export default function Home() {
                     <span>{getFileIcon(f.name)}</span>
                     <span className="text-white font-bold truncate">{meta.base}</span>
                   </div>
-                  <span className="text-[9px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 py-0.5 rounded border border-[#00f2fe]/30">.{meta.ext}</span>
+                  <span className="text-[11px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 py-0.5 rounded border border-[#00f2fe]/30">.{meta.ext}</span>
                 </div>
               );
             })}
           </div>
 
-          <div className="bg-[#040711] border border-white/10 rounded-xl p-3 flex flex-col justify-between font-mono text-[11px]">
+          <div className="bg-[#040711] border border-white/10 rounded-xl p-3 flex flex-col justify-between font-mono text-[13px]">
             <div className="space-y-1">
               <input 
                 type="text" 
@@ -5900,7 +5900,7 @@ export default function Home() {
               >
                 {/* Top Tile Bar: File Badge + Title + Options Menu */}
                 <div className="flex items-center gap-2 mb-2 min-w-0">
-                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
+                  <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
                     isPdf ? 'bg-red-500/10 text-red-400 border-red-500/30' : isImg ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30'
                   }`}>
                     {fileMeta.ext}
@@ -5931,9 +5931,9 @@ export default function Home() {
                 </div>
 
                 {/* Bottom Metadata Bar (Google Drive Owner Avatar & Reconstruct Action) */}
-                <div className="flex justify-between items-center pt-2 border-t border-white/5 font-mono text-[10px]">
+                <div className="flex justify-between items-center pt-2 border-t border-white/5 font-mono text-[12px]">
                   <div className="flex items-center gap-1.5 text-slate-400 min-w-0">
-                    <span className="w-4 h-4 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-[8px] text-[#060913] font-black shrink-0">
+                    <span className="w-4 h-4 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] flex items-center justify-center text-[10px] text-[#060913] font-black shrink-0">
                       I
                     </span>
                     <span className="truncate text-slate-400">
@@ -5963,7 +5963,7 @@ export default function Home() {
       {/* Asset Proof Status Lookup */}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-white">🌳 Asset Proof Status</h3>
-        <p className="text-[10px] text-[#8a96ab] font-mono leading-relaxed">Look up the on-chain Merkle root + challenge history for an Asset Tracking ID (InayaProofRegistry).</p>
+        <p className="text-[12px] text-[#8a96ab] font-mono leading-relaxed">Look up the on-chain Merkle root + challenge history for an Asset Tracking ID (InayaProofRegistry).</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -5983,11 +5983,11 @@ export default function Home() {
 
         {proofLookupResult && (
           proofLookupResult.notFound ? (
-            <div className="text-[11px] font-mono text-amber-400/80 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-3">
+            <div className="text-[13px] font-mono text-amber-400/80 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-3">
               No Merkle root registered on-chain for this asset yet.
             </div>
           ) : (
-            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
+            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[13px]">
               <div className="flex justify-between"><span className="text-[#8a96ab]">Merkle Root</span><span className="text-[#00f2fe] truncate max-w-[60%]" title={proofLookupResult.merkleRoot}>{truncateAddress(proofLookupResult.merkleRoot)}</span></div>
               <div className="flex justify-between"><span className="text-[#8a96ab]">Chunk Count</span><span className="text-white">{proofLookupResult.chunkCount}</span></div>
               <div className="flex justify-between"><span className="text-[#8a96ab]">Assigned Node</span><span className="text-white truncate max-w-[60%]" title={proofLookupResult.node}>{proofLookupResult.node === ethers.ZeroAddress ? '— unassigned —' : truncateAddress(proofLookupResult.node)}</span></div>
@@ -6003,7 +6003,7 @@ export default function Home() {
       {/* Node Reliability Lookup */}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-white">🛡️ Node Reliability</h3>
-        <p className="text-[10px] text-[#8a96ab] font-mono leading-relaxed">Check any storage node operator's aggregate pass/fail challenge history across every asset they've hosted.</p>
+        <p className="text-[12px] text-[#8a96ab] font-mono leading-relaxed">Check any storage node operator's aggregate pass/fail challenge history across every asset they've hosted.</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -6025,7 +6025,7 @@ export default function Home() {
           const total = nodeLookupResult.passed + nodeLookupResult.failed;
           const rate = total > 0 ? ((nodeLookupResult.passed / total) * 100).toFixed(1) : null;
           return (
-            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[11px]">
+            <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-2 font-mono text-[13px]">
               <div className="flex justify-between"><span className="text-emerald-400">Challenges Passed</span><span className="text-emerald-400 font-bold">{nodeLookupResult.passed}</span></div>
               <div className="flex justify-between"><span className="text-red-400">Challenges Failed</span><span className="text-red-400 font-bold">{nodeLookupResult.failed}</span></div>
               <div className="flex justify-between"><span className="text-[#8a96ab]">Reliability Rate</span><span className="text-white font-bold">{rate !== null ? `${rate}%` : 'No challenges yet'}</span></div>
@@ -6053,19 +6053,19 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-[#00f2fe] font-bold text-lg">4.5 USDT</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-emerald-400 font-bold text-lg">5 INAYA</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-amber-400 font-bold text-lg">5 USDT</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
                   <div className="text-violet-400 font-bold text-lg">26.7%</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mt-1">Staking Rewards Pool APY Source</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Staking Rewards Pool APY Source</div>
                 </div>
               </div>
 
@@ -6073,11 +6073,11 @@ export default function Home() {
               <div className="bg-[#090d16]/80 border border-[#00f2fe]/20 rounded-2xl p-6 space-y-5">
                 <div>
                   <h3 className="text-sm font-bold text-white mb-1">💵 Pay-As-You-Go Live Billing</h3>
-                  <p className="text-[10px] text-slate-500 font-mono">Retail metered billing settled directly on-chain against the PAYG contract — independent of the Corporate Reserve checkout below.</p>
+                  <p className="text-[12px] text-slate-500 font-mono">Retail metered billing settled directly on-chain against the PAYG contract — independent of the Corporate Reserve checkout below.</p>
                 </div>
 
                 {paygLog && (
-                  <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-[11px] p-3.5 rounded-xl break-words">
+                  <div className="bg-[#0d1527] border border-[#00f2fe]/20 text-[#00f2fe] font-mono text-[13px] p-3.5 rounded-xl break-words">
                     {paygLog}
                   </div>
                 )}
@@ -6086,7 +6086,7 @@ export default function Home() {
 
                   {/* STORAGE SUBSCRIPTION */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Storage Subscription (30 Days)</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider">Storage Subscription (30 Days)</div>
                     <div className="text-white font-bold text-sm">{paygPricing.storagePerTB} USDT / TB</div>
                     <input
                       type="number"
@@ -6099,7 +6099,7 @@ export default function Home() {
                     <button
                       onClick={handlePaygStorageSubscription}
                       disabled={isPaygStorageBusy || !isConnected}
-                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[13px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {isPaygStorageBusy ? "PROCESSING..." : "💵 PAY STORAGE (PAYG)"}
                     </button>
@@ -6107,7 +6107,7 @@ export default function Home() {
 
                   {/* EGRESS FEE */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Egress / Retrieval Fee</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider">Egress / Retrieval Fee</div>
                     <div className="text-white font-bold text-sm">{paygPricing.egressPerHalfTB} INAYA / 0.5 TB</div>
                     <input
                       type="number"
@@ -6120,7 +6120,7 @@ export default function Home() {
                     <button
                       onClick={handlePaygEgressFee}
                       disabled={isPaygEgressBusy || !isConnected}
-                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[13px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {isPaygEgressBusy ? "PROCESSING..." : "💵 PAY EGRESS (PAYG)"}
                     </button>
@@ -6128,9 +6128,9 @@ export default function Home() {
 
                   {/* ANNUAL MAINTENANCE */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider">Annual Maintenance</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider">Annual Maintenance</div>
                     <div className="text-white font-bold text-sm">{paygPricing.maintenanceFee} USDT / Year</div>
-                    <div className="text-[10px] text-slate-500 py-2">
+                    <div className="text-[12px] text-slate-500 py-2">
                       {paygStatus.maintenanceCurrent ? (
                         <span className="text-emerald-400 font-bold">✓ Current through {new Date(paygStatus.lastMaintenancePaidAt + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
                       ) : (
@@ -6140,7 +6140,7 @@ export default function Home() {
                     <button
                       onClick={handlePaygAnnualMaintenance}
                       disabled={isPaygMaintenanceBusy || !isConnected}
-                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[13px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {isPaygMaintenanceBusy ? "PROCESSING..." : "💵 PAY MAINTENANCE (PAYG)"}
                     </button>
@@ -6160,7 +6160,7 @@ export default function Home() {
                 <h3 className="text-sm font-bold text-white mb-4">📉 Market Pricing Comparison</h3>
                 <table className="w-full text-left font-mono text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[12px] uppercase">
                       <th className="p-4 font-bold">Provider</th>
                       <th className="p-4 font-bold">Storage (1 TB / Month)</th>
                       <th className="p-4 font-bold">Egress (1 TB Download)</th>
@@ -6183,17 +6183,17 @@ export default function Home() {
                     <span className="text-white font-bold ml-2">{activeCorporatePlan.tier}</span>
                     <span className="text-slate-500 ml-2">— valid until {new Date(activeCorporatePlan.expiresAt).toLocaleDateString()}</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">Re-purchasing before this date will prompt a duplicate-purchase confirmation.</span>
+                  <span className="text-[12px] text-slate-500">Re-purchasing before this date will prompt a duplicate-purchase confirmation.</span>
                 </div>
               )}
 
               {/* CORPORATE RESERVE PLANS TABLE */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
                 <h3 className="text-sm font-bold text-white mb-1">🏢 Corporate Reserve Plans (Annual)</h3>
-                <p className="text-[10px] text-slate-500 font-mono mb-4">Fixed annual allocation, billed in USDT, with system maintenance settled natively in INAYA.</p>
+                <p className="text-[12px] text-slate-500 font-mono mb-4">Fixed annual allocation, billed in USDT, with system maintenance settled natively in INAYA.</p>
                 <table className="w-full text-left font-mono text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[12px] uppercase">
                       <th className="p-4 font-bold">Total Allocated Data</th>
                       <th className="p-4 font-bold">Legacy AWS S3 Cost</th>
                       <th className="p-4 font-bold">Competitor B2 Reserve</th>
@@ -6233,7 +6233,7 @@ export default function Home() {
                     <p className="text-sm text-white font-extrabold mt-1">
                       Selected Allocation: <span className="text-amber-400">{selectedB2BTier}</span>
                     </p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[13px] text-slate-500">
                       Billed via trustless multi-shard settlement router.
                     </p>
                   </div>
@@ -6266,7 +6266,7 @@ export default function Home() {
               {/* PROFESSIONAL NETWORK FUNDAMENTALS */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
                 <h3 className="text-sm font-bold text-white mb-4">✅ Professional Network Fundamentals</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-[11px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-[13px]">
                   <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
                     <span className="text-[#00f2fe] font-bold">Always-Hot Performance Storage</span>
                     <p className="text-slate-500 mt-1">Data shards stay permanently ready for concurrent retrieval — no cold-archive latency gaps.</p>
@@ -6316,19 +6316,19 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                   <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.totalStakedTVL).toLocaleString()} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Value Locked</div>
+                    <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Total Value Locked</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{stakingOverview.estimatedAPY}%</div>
-                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Estimated APY (Flexible)</div>
+                    <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Estimated APY (Flexible)</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.myStakedBalance).toLocaleString()} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">My Staked Balance</div>
+                    <div className="text-[12px] uppercase text-[#8a96ab] mt-1">My Staked Balance</div>
                   </div>
                   <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
                     <div className="text-xl font-bold text-white">{Number(stakingOverview.claimableRewards).toFixed(4)} INAYA</div>
-                    <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Claimable Rewards</div>
+                    <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Claimable Rewards</div>
                   </div>
                 </div>
               )}
@@ -6357,17 +6357,17 @@ export default function Home() {
                       <button
                         key={tier.value}
                         onClick={() => setSelectedLockTier(tier.value)}
-                        className={`py-1.5 text-[10px] font-bold rounded-lg border transition-all ${selectedLockTier === tier.value ? 'bg-[#00f2fe] text-[#060913] border-[#00f2fe]' : 'bg-black/20 text-slate-400 border-white/10'}`}
+                        className={`py-1.5 text-[12px] font-bold rounded-lg border transition-all ${selectedLockTier === tier.value ? 'bg-[#00f2fe] text-[#060913] border-[#00f2fe]' : 'bg-black/20 text-slate-400 border-white/10'}`}
                       >
                         {tier.label}
                       </button>
                     ))}
                   </div>
-                  <p className="text-[9px] text-slate-500">Flexible = 1.00x · 30 Days = 1.25x · 90 Days = 1.50x reward multiplier.</p>
+                  <p className="text-[11px] text-slate-500">Flexible = 1.00x · 30 Days = 1.25x · 90 Days = 1.50x reward multiplier.</p>
                   <button
                     onClick={handleStakeInaya}
                     disabled={isStakingBusy || !isConnected}
-                    className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
+                    className="w-full py-2.5 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-[13px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
                   >
                     {isStakingBusy ? "STAKING..." : "⚡ APPROVE & STAKE"}
                   </button>
@@ -6383,12 +6383,12 @@ export default function Home() {
                     className="w-full bg-[#060913] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#00f2fe]/40"
                   />
                   {stakingOverview.lockExpiryTimestamp > Date.now() && (
-                    <p className="text-[10px] text-amber-400 font-bold">🔒 Locked until {new Date(stakingOverview.lockExpiryTimestamp).toLocaleString()}</p>
+                    <p className="text-[12px] text-amber-400 font-bold">🔒 Locked until {new Date(stakingOverview.lockExpiryTimestamp).toLocaleString()}</p>
                   )}
                   <button
                     onClick={handleUnstakeInaya}
                     disabled={isUnstakingBusy || !isConnected}
-                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[11px] rounded-lg transition-all disabled:opacity-40"
+                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[13px] rounded-lg transition-all disabled:opacity-40"
                   >
                     {isUnstakingBusy ? "WITHDRAWING..." : "WITHDRAW"}
                   </button>
@@ -6399,12 +6399,12 @@ export default function Home() {
                   <div>
                     <h3 className="text-sm font-bold text-white mb-2">🎁 Claim Rewards</h3>
                     <div className="text-2xl font-extrabold text-emerald-400">{Number(stakingOverview.claimableRewards).toFixed(4)}</div>
-                    <div className="text-[10px] text-slate-500">$INAYA available to claim</div>
+                    <div className="text-[12px] text-slate-500">$INAYA available to claim</div>
                   </div>
                   <button
                     onClick={handleClaimStakingReward}
                     disabled={isClaimingBusy || !isConnected || parseFloat(stakingOverview.claimableRewards) <= 0}
-                    className="w-full py-2.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-bold text-[11px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
+                    className="w-full py-2.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-bold text-[13px] rounded-lg hover:brightness-110 transition-all disabled:opacity-40"
                   >
                     {isClaimingBusy ? "CLAIMING..." : "CLAIM REWARDS"}
                   </button>
@@ -6423,17 +6423,17 @@ export default function Home() {
               {!isConnected && cardCustomerPlan ? (
                 <div className="max-w-2xl">
                   <div className="bg-black/20 border border-emerald-400/20 rounded-2xl p-6 mb-4">
-                    <div className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-2">Corporate Reserve — Card Payment</div>
+                    <div className="text-[12px] uppercase tracking-widest text-emerald-400 font-bold mb-2">Corporate Reserve — Card Payment</div>
                     <div className="text-white font-bold text-lg">{cardCustomerPlan.tier}</div>
                     <div className="text-sm text-slate-400 mt-1">
                       <span className="text-emerald-400 font-bold">ACTIVE</span> · valid until {new Date(cardCustomerPlan.expiresAt).toLocaleDateString()}
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-3 font-mono">
+                    <div className="text-[13px] text-slate-500 mt-3 font-mono">
                       Router tx: <a className="text-[#00f2fe] underline" href={`https://testnet.bscscan.com/tx/${cardCustomerPlan.routerTxHash}`} target="_blank" rel="noreferrer">{cardCustomerPlan.routerTxHash?.slice(0, 14)}...</a>
                       <br />Escrow tx: <a className="text-[#00f2fe] underline" href={`https://testnet.bscscan.com/tx/${cardCustomerPlan.escrowTxHash}`} target="_blank" rel="noreferrer">{cardCustomerPlan.escrowTxHash?.slice(0, 14)}...</a>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 italic">Signed in as {cardCustomerEmail} · no wallet connected. Connect a wallet any time to also see Pay-As-You-Go activity.</p>
+                  <p className="text-[13px] text-slate-500 italic">Signed in as {cardCustomerEmail} · no wallet connected. Connect a wallet any time to also see Pay-As-You-Go activity.</p>
                 </div>
               ) : !isConnected && cardCustomerEmail && cardCustomerPlanTimedOut ? (
                 <div className="bg-black/20 border border-red-400/20 rounded-2xl p-10 text-center font-mono text-xs text-red-400 italic">
@@ -6458,19 +6458,19 @@ export default function Home() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                     <div className="bg-[#0b1120]/40 border-l-4 border-[#00f2fe] p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{totalSpaceAllocatedTB.toLocaleString()} TB</div>
-                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total Space Allocated</div>
+                      <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Total Space Allocated</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-emerald-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygTotalUsdtSpent.toFixed(4)} USDT</div>
-                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (USDT)</div>
+                      <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (USDT)</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-violet-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygTotalInayaSpent.toFixed(4)} INAYA</div>
-                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (INAYA)</div>
+                      <div className="text-[12px] uppercase text-[#8a96ab] mt-1">Total PAYG Spent (INAYA)</div>
                     </div>
                     <div className="bg-[#0b1120]/40 border-l-4 border-amber-400 p-5 rounded-r-xl">
                       <div className="text-xl font-bold text-white">{paygHistory.length}</div>
-                      <div className="text-[10px] uppercase text-[#8a96ab] mt-1">PAYG Transactions Logged</div>
+                      <div className="text-[12px] uppercase text-[#8a96ab] mt-1">PAYG Transactions Logged</div>
                     </div>
                   </div>
 
@@ -6479,7 +6479,7 @@ export default function Home() {
                     <h3 className="text-sm font-bold text-white mb-4">🗄️ Storage Space Allocation</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
                       <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                        <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mb-1">Pay-As-You-Go Commitment</div>
+                        <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mb-1">Pay-As-You-Go Commitment</div>
                         <div className="text-white font-bold text-lg">{paygStatus.tbCommitted} TB</div>
                         <div className="mt-1">
                           Storage: {paygStatus.storageActive ? <span className="text-emerald-400 font-bold">ACTIVE</span> : <span className="text-amber-400 font-bold">LAPSED</span>}
@@ -6487,7 +6487,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                        <div className="text-[10px] text-[#8a96ab] uppercase tracking-wider mb-1">Corporate Reserve Allocation</div>
+                        <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mb-1">Corporate Reserve Allocation</div>
                         <div className="text-white font-bold text-lg">{corporateAllocatedTB.toLocaleString()} TB</div>
                         <div className="mt-1">
                           {activeCorporatePlan ? (
@@ -6504,7 +6504,7 @@ export default function Home() {
                   <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 overflow-x-auto">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-sm font-bold text-white">🧾 Pay-As-You-Go Transactions</h3>
-                      <button onClick={() => fetchPaygHistory(walletAddress)} className="text-[10px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH</button>
+                      <button onClick={() => fetchPaygHistory(walletAddress)} className="text-[12px] font-mono bg-white/5 text-[#00f2fe] border border-white/10 px-3 py-1 rounded-lg hover:bg-white/10 transition-colors">🔄 REFRESH</button>
                     </div>
                     {isLoadingPaygHistory ? (
                       <div className="py-6 text-center font-mono text-xs text-[#8a96ab]">⚙️ Syncing PAYG ledger events...</div>
@@ -6513,7 +6513,7 @@ export default function Home() {
                     ) : (
                       <table className="w-full text-left font-mono text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[10px] uppercase">
+                          <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[12px] uppercase">
                             <th className="p-3 font-bold">Type</th>
                             <th className="p-3 font-bold">Units</th>
                             <th className="p-3 font-bold">Amount</th>
@@ -6583,7 +6583,7 @@ export default function Home() {
                         <div className="w-full bg-black/40 rounded-full h-1.5 border border-white/5 overflow-hidden">
                           <div className="bg-gradient-to-r from-[#00f2fe] to-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(0,242,254,0.4)]" style={{ width: `${pctOfCap}%` }}></div>
                         </div>
-                        <div className="flex justify-between text-[10px] text-slate-500">
+                        <div className="flex justify-between text-[12px] text-slate-500">
                           <span>0 $INAYA</span>
                           {capped ? <span className="text-emerald-400 font-bold">✓ Cap reached ({UPLOAD_REWARD_CAP_PER_USER} $INAYA)</span> : <span>{UPLOAD_REWARD_CAP_PER_USER} $INAYA cap</span>}
                         </div>
@@ -6600,7 +6600,7 @@ export default function Home() {
               {/* CONTRIBUTOR ALLOCATION BREAKDOWN */}
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 space-y-4">
                 <h3 className="text-sm font-bold text-white">🎯 Contributor Allocation</h3>
-                <p className="text-[10px] text-slate-500 font-mono -mt-2">These three groups apply directly rather than accruing points — see the application forms below.</p>
+                <p className="text-[12px] text-slate-500 font-mono -mt-2">These three groups apply directly rather than accruing points — see the application forms below.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {contributorAllocationList.map((c) => (
                     <div key={c.label} className="bg-black/20 border border-white/5 rounded-xl p-4 font-mono space-y-2 flex flex-col">
@@ -6612,10 +6612,10 @@ export default function Home() {
                       <div className="w-full bg-black/40 rounded-full h-1.5 border border-white/5 overflow-hidden">
                         <div className="bg-gradient-to-r from-[#00f2fe] to-emerald-500 h-full rounded-full" style={{ width: `${c.pct}%` }}></div>
                       </div>
-                      <p className="text-[10px] text-slate-500 leading-relaxed flex-1">{c.desc}</p>
+                      <p className="text-[12px] text-slate-500 leading-relaxed flex-1">{c.desc}</p>
                       <button
                         onClick={() => setSelectedAirdropForm(c.key)}
-                        className="mt-1 text-[10px] font-bold text-[#00f2fe] border border-[#00f2fe]/30 rounded-lg py-1.5 hover:bg-[#00f2fe]/10 transition-colors"
+                        className="mt-1 text-[12px] font-bold text-[#00f2fe] border border-[#00f2fe]/30 rounded-lg py-1.5 hover:bg-[#00f2fe]/10 transition-colors"
                       >
                         APPLY →
                       </button>
@@ -6721,17 +6721,17 @@ export default function Home() {
 
                     <div className="bg-[#060913] border border-white/10 rounded-xl p-4 space-y-3">
                       <div>
-                        <span className="text-[9px] font-mono font-bold text-[#00f2fe] uppercase tracking-widest">Mission</span>
+                        <span className="text-[11px] font-mono font-bold text-[#00f2fe] uppercase tracking-widest">Mission</span>
                         <p className="text-slate-300 text-xs italic mt-1">To build the world's most trusted decentralized digital infrastructure where individuals, businesses, and AI systems own, protect, and control their data without relying on centralized cloud providers.</p>
                       </div>
                       <div>
-                        <span className="text-[9px] font-mono font-bold text-[#00f2fe] uppercase tracking-widest">Vision Statement</span>
+                        <span className="text-[11px] font-mono font-bold text-[#00f2fe] uppercase tracking-widest">Vision Statement</span>
                         <p className="text-slate-300 text-xs italic mt-1">Inaya Network aims to become the decentralized trust layer for the internet — where files, identities, AI, and digital assets remain private, verifiable, and permanently under user control.</p>
                       </div>
                     </div>
 
                     <div>
-                      <span className="text-[9px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Tactical Project Development Roadmap</span>
+                      <span className="text-[11px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Tactical Project Development Roadmap</span>
                       <div className="space-y-2.5 mt-2">
                         {roadmapPhases.map((p) => {
                           const s = roadmapStatusConfig[p.status];
@@ -6739,14 +6739,14 @@ export default function Home() {
                             <div key={p.phase} className={`border rounded-lg p-3.5 border-l-2 ${s.border} bg-black/20`}>
                               <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
                                 <span className="text-white font-bold text-xs">{p.phase}</span>
-                                <span className={`text-[8px] font-mono font-bold uppercase tracking-widest rounded px-1.5 py-0.5 border ${s.badge}`}>{s.emoji} {s.label}</span>
+                                <span className={`text-[10px] font-mono font-bold uppercase tracking-widest rounded px-1.5 py-0.5 border ${s.badge}`}>{s.emoji} {s.label}</span>
                               </div>
                               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                                 {p.items.map((item) => {
                                   const text = typeof item === 'string' ? item : item.text;
                                   const done = typeof item === 'object' && item.done;
                                   return (
-                                    <li key={text} className={`text-[11px] flex items-start gap-1.5 ${done ? 'text-slate-300' : s.item}`}>
+                                    <li key={text} className={`text-[13px] flex items-start gap-1.5 ${done ? 'text-slate-300' : s.item}`}>
                                       <span className={done ? 'text-emerald-400' : s.text}>{done ? '✓' : s.bullet}</span>
                                       {text}
                                     </li>
@@ -6767,14 +6767,14 @@ export default function Home() {
                         { label: "Economic Vision", desc: "$INAYA powers node incentives, staking, governance, payments, enterprise usage, and ecosystem growth through real utility." },
                       ].map((v) => (
                         <div key={v.label} className="bg-black/20 border border-white/5 rounded-lg p-3">
-                          <span className="text-[#00f2fe] font-bold text-[10px]">{v.label}</span>
+                          <span className="text-[#00f2fe] font-bold text-[12px]">{v.label}</span>
                           <p className="text-slate-500 text-[10.5px] leading-relaxed mt-1">{v.desc}</p>
                         </div>
                       ))}
                     </div>
 
                     <div className="bg-gradient-to-r from-[#0a1124] to-[#080d1a] border border-[#00f2fe]/20 rounded-xl p-4">
-                      <span className="text-[9px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Ultimate Goal</span>
+                      <span className="text-[11px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest">Ultimate Goal</span>
                       <p className="text-white text-xs italic mt-1.5 leading-relaxed">Establish Inaya Network as foundational trust infrastructure for the next generation of the internet, prioritizing privacy, user ownership, resilience, and decentralization.</p>
                     </div>
                   </div>
@@ -6783,11 +6783,11 @@ export default function Home() {
                 {activePaperSection === 'Tokenomics Matrix' && (
                   <div className="space-y-4 font-sans">
                     <h3 className="text-white font-bold text-xs font-mono">// 4.0 ALLOCATION DISPOSAL DATA</h3>
-                    <p className="text-[10px] text-slate-500 italic font-mono -mt-2">Verified against the Strategic Business Model &amp; Financial Architecture (INAYA-EXEC-2026-V1).</p>
+                    <p className="text-[12px] text-slate-500 italic font-mono -mt-2">Verified against the Strategic Business Model &amp; Financial Architecture (INAYA-EXEC-2026-V1).</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
                       
                       <div className="w-full border border-white/10 bg-[#060913] rounded-xl p-5 flex flex-col justify-center space-y-4">
-                        <span className="text-[10px] font-mono text-[#8a96ab] uppercase tracking-widest">Visual Asset Weight Distribution</span>
+                        <span className="text-[12px] font-mono text-[#8a96ab] uppercase tracking-widest">Visual Asset Weight Distribution</span>
                         
                         <div className="w-full h-8 rounded-lg overflow-hidden flex border border-white/5 shadow-inner">
                           <div className="bg-[#4facfe] h-full transition-all" style={{ width: '40.0%' }} title="Swarm Reserve: 40.0%"></div>
@@ -6798,7 +6798,7 @@ export default function Home() {
                           <div className="bg-emerald-400 h-full transition-all" style={{ width: '3.3%' }} title="Genesis Airdrop: 3.3%"></div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 font-mono text-[9px]">
+                        <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4facfe]"></span> <span className="text-slate-400">Swarm Reserve (40.0%)</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-violet-500"></span> <span className="text-slate-400">Staking Rewards (26.7%)</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-cyan-400"></span> <span className="text-slate-400">Liquidity (21.7%)</span></div>
@@ -6818,7 +6818,7 @@ export default function Home() {
                           <div className="flex justify-between border-b border-white/5 pb-1"><span>🌱 Ecosystem Fund:</span><span className="text-amber-400 font-bold">3.3% (1M)</span></div>
                           <div className="flex justify-between"><span>🎁 Genesis Airdrop Portals:</span><span className="text-emerald-400 font-bold">3.3% (1M)</span></div>
                         </div>
-                        <p className="text-[9px] text-slate-600 pt-1 italic">Figures reconciled directly against the verified $INAYA token contract allocations on BNB Testnet.</p>
+                        <p className="text-[11px] text-slate-600 pt-1 italic">Figures reconciled directly against the verified $INAYA token contract allocations on BNB Testnet.</p>
                       </div>
 
                     </div>
@@ -6834,7 +6834,7 @@ export default function Home() {
 
               <div className="bg-gradient-to-r from-[#0e1830] to-[#0a0e14] border border-[#c9a24d]/30 rounded-2xl p-6 backdrop-blur-md shadow-xl">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[10px] uppercase tracking-widest text-[#c9a24d] font-bold bg-[#c9a24d]/10 border border-[#c9a24d]/30 rounded-full px-3 py-1">📣 Announcement</span>
+                  <span className="text-[12px] uppercase tracking-widest text-[#c9a24d] font-bold bg-[#c9a24d]/10 border border-[#c9a24d]/30 rounded-full px-3 py-1">📣 Announcement</span>
                 </div>
                 <h3 className="text-lg font-extrabold text-white tracking-wide mb-3">Developer SDK — Now Available. Mobile App Launched Today!</h3>
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed mb-4">
@@ -6864,7 +6864,7 @@ export default function Home() {
                     👨‍💻 View Developer SDK on GitHub
                   </a>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-3 font-mono">
+                <p className="text-[12px] text-slate-500 mt-3 font-mono">
                   SDK access is currently by invite — contact us for collaborator access.
                 </p>
               </div>
@@ -6877,7 +6877,7 @@ export default function Home() {
                 <p className="text-sm text-[#94a3b8] font-mono leading-relaxed">
                   Our protocol uses client-side cryptographic sharding backed by PBKDF2 key derivation and AES-GCM encryption. Files are encrypted and split into independent fragments before they ever leave the browser — no single node, server, or administrator holds a complete, decryptable copy of your data.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-mono pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] font-mono pt-2">
                   <div className="bg-black/40 border border-cyan-500/20 p-4 rounded-xl">
                     <span className="text-[#00f2fe] font-bold">✓ Client-Side Encrypted:</span>
                     <p className="text-slate-500 mt-1">Files are encrypted locally before upload. Plaintext never traverses the network pipelines intact.</p>
@@ -6899,10 +6899,10 @@ export default function Home() {
                   <div className="border border-[#00f2fe]/20 bg-black/20 rounded-xl p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                       <span className="text-white font-bold text-base">Talha Waqas</span>
-                      <span className="text-[9px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Founder &amp; CTO</span>
+                      <span className="text-[11px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Founder &amp; CTO</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 italic font-mono mb-3">Core System Architect, Smart Contract Architect &amp; Lead Web3 Full-Stack Engineer</p>
-                    <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
+                    <p className="text-[13px] text-slate-500 italic font-mono mb-3">Core System Architect, Smart Contract Architect &amp; Lead Web3 Full-Stack Engineer</p>
+                    <div className="text-[11px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
                     <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
                       Deep specialization in browser-layer cryptographic engineering, EVM smart contract architecture, client-side encrypted storage protocols, and node telemetry networks. Leads technical execution of the decentralized storage kernels, automated gas estimation pipelines, and public ledger sync operations — along with core codebase development and security parameter optimization for the Inaya stack.
                     </p>
@@ -6911,10 +6911,10 @@ export default function Home() {
                   <div className="border border-white/10 bg-black/20 rounded-xl p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                       <span className="text-white font-bold text-base">Yakub Adnan</span>
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Co-Founder &amp; Growth Lead</span>
+                      <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Co-Founder &amp; Growth Lead</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 italic font-mono mb-3">Web3 Growth Operator &amp; Community Strategist</p>
-                    <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
+                    <p className="text-[13px] text-slate-500 italic font-mono mb-3">Web3 Growth Operator &amp; Community Strategist</p>
+                    <div className="text-[11px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
                     <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
                       Specializes in DePIN, user acquisition, and AI-driven ecosystem scaling. Leads Inaya Network's growth architecture, community operations, and campaign distribution — bridging complex protocol features with viral on-chain adoption.
                     </p>
@@ -6923,10 +6923,10 @@ export default function Home() {
                   <div className="border border-white/10 bg-black/20 rounded-xl p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                       <span className="text-white font-bold text-base">Fibha Urooj</span>
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Chief Financial Officer</span>
+                      <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wide">Chief Financial Officer</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 italic font-mono mb-3">B.Com — Accounting &amp; Finance</p>
-                    <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
+                    <p className="text-[13px] text-slate-500 italic font-mono mb-3">B.Com — Accounting &amp; Finance</p>
+                    <div className="text-[11px] font-bold text-amber-400/80 uppercase tracking-widest mb-1.5">Professional Expertise</div>
                     <p className="text-xs text-[#94a3b8] font-mono leading-relaxed">
                       Leads financial planning, budgeting, compliance, and operational finance. Committed to building a strong financial foundation that supports Inaya Network's long-term growth and mission to deliver AI-powered digital sovereignty solutions.
                     </p>
@@ -6937,7 +6937,7 @@ export default function Home() {
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-base font-bold text-white mb-1">📖 FOUNDER STORY</h3>
-                <p className="text-[11px] text-slate-500 italic font-mono mb-4">Talha Waqas — Founder &amp; CTO</p>
+                <p className="text-[13px] text-slate-500 italic font-mono mb-4">Talha Waqas — Founder &amp; CTO</p>
                 <div className="space-y-3">
                   {[
                     "I didn't come to this from a blockchain background. For over nine years I worked in enterprise IT and network support, handling access and infrastructure for corporate clients. That work put me on the inside of something most people never see directly: how casually organizations handle the systems that hold other people's data.",
@@ -6965,14 +6965,14 @@ export default function Home() {
                       <div key={p.phase} className={`p-4 rounded-xl border font-mono text-xs ${s.tint} ${s.border}`}>
                         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                           <span className={`font-bold text-sm ${s.text}`}>{p.phase}</span>
-                          <span className={`text-[8px] font-bold uppercase tracking-widest rounded px-1.5 py-0.5 border ${s.badge}`}>{s.emoji} {s.label}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest rounded px-1.5 py-0.5 border ${s.badge}`}>{s.emoji} {s.label}</span>
                         </div>
                         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1.5">
                           {p.items.map((item) => {
                             const text = typeof item === 'string' ? item : item.text;
                             const done = typeof item === 'object' && item.done;
                             return (
-                              <li key={text} className={`text-[11px] flex items-start gap-1.5 ${done ? 'text-slate-300' : s.item}`}>
+                              <li key={text} className={`text-[13px] flex items-start gap-1.5 ${done ? 'text-slate-300' : s.item}`}>
                                 <span className={done ? 'text-emerald-400' : s.text}>{done ? '✓' : s.bullet}</span>
                                 {text}
                               </li>
@@ -6995,7 +6995,7 @@ export default function Home() {
                       </video>
                       <div className="p-4">
                         <div className="text-sm font-bold text-white">{demo.title}</div>
-                        <p className="text-[11px] text-[#8a96ab] font-mono mt-1 leading-relaxed">{demo.desc}</p>
+                        <p className="text-[13px] text-[#8a96ab] font-mono mt-1 leading-relaxed">{demo.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -7018,10 +7018,10 @@ export default function Home() {
                         <div className="text-sm font-bold text-white group-hover:text-[#00f2fe] transition-colors">
                           {doc.title}
                         </div>
-                        <p className="text-[11px] text-[#8a96ab] font-mono mt-1 leading-relaxed">
+                        <p className="text-[13px] text-[#8a96ab] font-mono mt-1 leading-relaxed">
                           {doc.desc}
                         </p>
-                        <span className="inline-block mt-2 text-[10px] font-mono font-bold text-[#00f2fe]">
+                        <span className="inline-block mt-2 text-[12px] font-mono font-bold text-[#00f2fe]">
                           {doc.linkLabel || "VIEW / DOWNLOAD PDF →"}
                         </span>
                       </div>
@@ -7039,12 +7039,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[12px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-2"><span className="text-amber-400/80 font-bold">⚠ Deployment Status:</span> Inaya Network is currently deployed on BNB Chain Testnet only. No mainnet funds, tokens, or production data should be used with this interface.</p>
                 <p>By connecting a wallet, you acknowledge that Genesis Airdrop rewards earned during the testnet phase — whether through the automatic upload reward or an approved contributor application — will convert into $INAYA mainnet token allocations at TGE, subject to the program's eligibility criteria and anti-sybil verification requirements. Wallet addresses and application details submitted are used solely for ecosystem contribution tracking.</p>
               </div>
 
-              <div className="bg-black/20 border border-[#00f2fe]/15 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
+              <div className="bg-black/20 border border-[#00f2fe]/15 rounded-2xl p-5 font-mono text-[12px] text-[#8a96ab] leading-relaxed">
                 <p className="mb-2"><span className="text-[#00f2fe] font-bold">🧪 Testers &amp; Developers Disclaimer:</span></p>
                 <p>Inaya Network is presently operating on BNB Chain Testnet as part of an active testing and development phase. Wallet connectivity can vary by provider during this phase: because most wallet apps do not expose test networks through WalletConnect by default, some mobile wallets (including Trust Wallet, Binance Wallet, SafePal, and Best Wallet) may be unable to complete a testnet connection at this time. This is a deliberate policy made by each wallet provider — not a limitation of the Inaya Network protocol or interface. MetaMask, along with browsers offering a built-in wallet such as Brave, currently provide the most consistent connection experience for testers and developers. Full, unrestricted wallet compatibility is expected at mainnet launch, when these same connections run on production networks that every major wallet supports natively. We appreciate testers' and developers' patience navigating these testnet-specific constraints as the protocol progresses toward mainnet.</p>
               </div>
@@ -7073,7 +7073,7 @@ export default function Home() {
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-lg leading-none shrink-0">{contact.icon}</span>
                         <div className="min-w-0">
-                          <div className="text-[10px] text-[#8a96ab] font-mono uppercase tracking-wider">{contact.label}</div>
+                          <div className="text-[12px] text-[#8a96ab] font-mono uppercase tracking-wider">{contact.label}</div>
                           <div className="text-sm font-bold text-white group-hover:text-[#00f2fe] transition-colors truncate">{contact.email}</div>
                         </div>
                       </div>
@@ -7081,12 +7081,12 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); copyToClipboard(contact.email, `contact-${contact.email}`); }}
-                          className="text-[10px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors px-1.5"
+                          className="text-[12px] text-[#8a96ab] hover:text-[#00f2fe] transition-colors px-1.5"
                           title="Copy email"
                         >
                           {copiedField === `contact-${contact.email}` ? '✅' : '📋'}
                         </button>
-                        <span className="text-[10px] font-mono font-bold text-[#00f2fe] opacity-0 group-hover:opacity-100 transition-opacity">EMAIL →</span>
+                        <span className="text-[12px] font-mono font-bold text-[#00f2fe] opacity-0 group-hover:opacity-100 transition-opacity">EMAIL →</span>
                       </div>
                     </a>
                   ))}
@@ -7107,7 +7107,7 @@ export default function Home() {
                     >
                       <span className="text-3xl">{social.icon}</span>
                       <span className="text-xs font-mono font-bold text-white">{social.label}</span>
-                      <span className="text-[9px] font-mono font-bold text-[#00f2fe]">VISIT →</span>
+                      <span className="text-[11px] font-mono font-bold text-[#00f2fe]">VISIT →</span>
                     </a>
                   ))}
                 </div>
@@ -7130,7 +7130,7 @@ export default function Home() {
                 </a>
               </div>
 
-              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[10px] text-[#8a96ab] leading-relaxed">
+              <div className="bg-black/20 border border-white/5 rounded-2xl p-5 font-mono text-[12px] text-[#8a96ab] leading-relaxed">
                 <p>All addresses above route to the Inaya Network team. For time-sensitive support requests, use <span className="text-[#00f2fe] font-bold">support@inayanetwork.com</span> — for institutional or enterprise discussions, use <span className="text-[#00f2fe] font-bold">partners@inayanetwork.com</span> or <span className="text-[#00f2fe] font-bold">investors@inayanetwork.com</span>.</p>
               </div>
 
@@ -7179,13 +7179,13 @@ export default function Home() {
                   className={`w-full bg-white/[0.02] border border-white/5 p-3.5 rounded-xl transition-all flex items-center justify-between gap-2 ${w.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-[#00f2fe] hover:bg-white/5'}`}
                 >
                   <span className="text-left text-xs text-white font-bold">{w.name}</span>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${w.badgeClass}`}>{w.badge}</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${w.badgeClass}`}>{w.badge}</span>
                 </button>
               ))}
             </div>
             <div className="mt-4 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-3 flex gap-2">
               <span className="text-amber-400 text-xs shrink-0">ℹ️</span>
-              <p className="text-[10px] text-amber-400/80 font-mono leading-relaxed">
+              <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
                 This dApp runs on <strong>BNB Chain Testnet</strong>. Not every mobile wallet exposes testnets over WalletConnect — that's the wallet's own choice, not something this site controls. <strong>MetaMask</strong> (and browsers with a built-in wallet, like Brave) currently offer the most reliable connection. If <strong>Coinbase Wallet</strong> opens to its home screen instead of this site, manually type <span className="text-amber-300">inayanetwork.com</span> into Coinbase's built-in browser and tap Connect Wallet again from there.
               </p>
             </div>
@@ -7200,7 +7200,7 @@ export default function Home() {
             <button onClick={() => setFeedbackModal(null)} className="absolute top-4 right-4 text-[#8a96ab] font-mono hover:text-white">✕</button>
             <div className="text-center mb-5">
               <h3 className="text-white font-bold">{feedbackModal === 'bug' ? '🐛 Report a Bug' : '💡 Suggest an Idea'}</h3>
-              <p className="text-[10px] text-[#8a96ab] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
+              <p className="text-[12px] text-[#8a96ab] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
             </div>
 
             {feedbackSuccess ? (
@@ -7210,7 +7210,7 @@ export default function Home() {
             ) : (
               <form onSubmit={handleFeedbackSubmit} className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Title</label>
+                  <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Title</label>
                   <input
                     type="text"
                     required
@@ -7223,7 +7223,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Description</label>
+                  <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Description</label>
                   <textarea
                     required
                     maxLength={5000}
@@ -7237,7 +7237,7 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Category</label>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Category</label>
                     <select
                       value={feedbackForm.category}
                       onChange={(e) => setFeedbackForm((f) => ({ ...f, category: e.target.value }))}
@@ -7248,7 +7248,7 @@ export default function Home() {
                   </div>
                   {feedbackModal === 'bug' && (
                     <div>
-                      <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Severity</label>
+                      <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Severity</label>
                       <select
                         value={feedbackForm.severity}
                         onChange={(e) => setFeedbackForm((f) => ({ ...f, severity: e.target.value }))}
@@ -7262,7 +7262,7 @@ export default function Home() {
 
                 {feedbackModal === 'bug' && (
                   <div>
-                    <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Steps to reproduce (optional)</label>
+                    <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Steps to reproduce (optional)</label>
                     <textarea
                       maxLength={3000}
                       rows={3}
@@ -7275,15 +7275,15 @@ export default function Home() {
                 )}
 
                 <div>
-                  <label className="text-[10px] text-[#8a96ab] font-mono uppercase">Screenshot / file (optional)</label>
+                  <label className="text-[12px] text-[#8a96ab] font-mono uppercase">Screenshot / file (optional)</label>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
                     onChange={handleFeedbackFileChange}
                     className="w-full mt-1 text-xs text-[#94a3b8] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-white/10 file:text-white file:text-xs"
                   />
-                  {feedbackUploading && <p className="text-[10px] text-[#00f2fe] mt-1">Uploading…</p>}
-                  {feedbackAttachmentUrl && !feedbackUploading && <p className="text-[10px] text-emerald-400 mt-1">✓ Attached: {feedbackFile?.name}</p>}
+                  {feedbackUploading && <p className="text-[12px] text-[#00f2fe] mt-1">Uploading…</p>}
+                  {feedbackAttachmentUrl && !feedbackUploading && <p className="text-[12px] text-emerald-400 mt-1">✓ Attached: {feedbackFile?.name}</p>}
                 </div>
 
                 {feedbackError && <p className="text-red-400 text-xs">⚠ {feedbackError}</p>}
@@ -7326,7 +7326,7 @@ export default function Home() {
               <img src="/inaya-logo.png" alt="Inaya" className="w-7 h-7 rounded-lg shrink-0 border border-[#00f2fe]/30" />
               <div className="min-w-0">
                 <div className="text-white text-xs font-bold font-mono truncate">Inaya Docs Assistant</div>
-                <div className="text-[9px] text-[#8a96ab] font-mono">Gemini-powered · FAQ &amp; docs</div>
+                <div className="text-[11px] text-[#8a96ab] font-mono">Gemini-powered · FAQ &amp; docs</div>
               </div>
             </div>
             <button onClick={() => setIsChatOpen(false)} className="text-[#8a96ab] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
@@ -7365,7 +7365,7 @@ export default function Home() {
             )}
 
             {chatError && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3.5 py-2.5 text-[10px] font-mono">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3.5 py-2.5 text-[12px] font-mono">
                 ⚠️ {chatError}
               </div>
             )}
@@ -7379,7 +7379,7 @@ export default function Home() {
                   key={prompt}
                   onClick={() => handleSendChatMessage(prompt)}
                   disabled={isChatSending}
-                  className="text-[10px] font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/25 rounded-full px-3 py-1.5 hover:bg-[#00f2fe]/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-[12px] font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/25 rounded-full px-3 py-1.5 hover:bg-[#00f2fe]/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {prompt}
                 </button>

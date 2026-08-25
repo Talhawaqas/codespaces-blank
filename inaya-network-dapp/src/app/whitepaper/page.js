@@ -39,7 +39,7 @@ export default function WhitepaperPage() {
           ← Back to Inaya Network
         </a>
 
-        <span className="inline-block text-[10px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+        <span className="inline-block text-[12px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
           WHITEPAPER
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">Whitepaper &amp; Tokenomics</h1>
@@ -61,7 +61,7 @@ export default function WhitepaperPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-[#8a96ab] text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-white/5 text-[#8a96ab] text-[12px] uppercase tracking-wider">
                   <th className="p-4 font-bold">Allocation</th>
                   <th className="p-4 font-bold">%</th>
                   <th className="p-4 font-bold">Tokens</th>
@@ -86,7 +86,7 @@ export default function WhitepaperPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl overflow-hidden mb-3">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-[#8a96ab] text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-white/5 text-[#8a96ab] text-[12px] uppercase tracking-wider">
                   <th className="p-4 font-bold">Allocation</th>
                   <th className="p-4 font-bold">%</th>
                 </tr>

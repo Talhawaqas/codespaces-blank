@@ -56,7 +56,7 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-white text-base font-extrabold">Ask the Inaya Learn AI Tutor</span>
-              <span className="text-[9px] font-bold tracking-wider text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-full px-2 py-0.5">
+              <span className="text-[11px] font-bold tracking-wider text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-full px-2 py-0.5">
                 AI-POWERED
               </span>
             </div>
@@ -97,7 +97,7 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
                 className="bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/40 rounded-xl p-3 aspect-square flex flex-col items-center justify-center gap-1 transition-all"
               >
                 <span className="text-xl">{cat.icon}</span>
-                <span className="text-[10px] text-[#94a3b8] text-center leading-tight">{cat.name}</span>
+                <span className="text-[12px] text-[#94a3b8] text-center leading-tight">{cat.name}</span>
               </button>
             ))}
           </div>
@@ -116,7 +116,7 @@ export default function LearnHome({ progress, onSearch, onOpenCategory, onOpenVi
               >
                 <p className="text-[#00f2fe] font-bold text-sm">{col.title}</p>
                 <p className="text-[#94a3b8] text-xs mt-1 leading-relaxed">{col.description}</p>
-                <p className="text-[#8a96ab] text-[10px] font-mono mt-3">{col.topics.map((t) => t.title).join(' · ')}</p>
+                <p className="text-[#8a96ab] text-[12px] font-mono mt-3">{col.topics.map((t) => t.title).join(' · ')}</p>
               </button>
             ))}
           </div>

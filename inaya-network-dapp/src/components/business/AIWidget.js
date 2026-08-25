@@ -96,7 +96,7 @@ export default function AIWidget({ orgId }) {
           <div className="w-7 h-7 rounded-lg shrink-0 bg-violet-400/15 border border-violet-400/30 flex items-center justify-center text-sm">🤖</div>
           <div className="min-w-0">
             <div className="text-white text-xs font-bold font-mono truncate">Business AI Assistant</div>
-            <div className="text-[9px] text-[#8a96ab] font-mono">Grounded in your org's real data</div>
+            <div className="text-[11px] text-[#8a96ab] font-mono">Grounded in your org's real data</div>
           </div>
         </div>
         <button onClick={() => setIsOpen(false)} className="text-[#8a96ab] hover:text-white font-mono text-sm shrink-0 px-1">✕</button>
@@ -124,7 +124,7 @@ export default function AIWidget({ orgId }) {
         {messages.length <= 1 && !sending && (
           <div className="flex flex-wrap gap-2 pt-2">
             {SUGGESTIONS.map((s) => (
-              <button key={s} onClick={() => send(s)} className="text-[10px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+              <button key={s} onClick={() => send(s)} className="text-[12px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
                 {s}
               </button>
             ))}
@@ -132,7 +132,7 @@ export default function AIWidget({ orgId }) {
         )}
       </div>
 
-      {error && <p className="text-red-400 text-[10px] px-4 pb-2">{error}</p>}
+      {error && <p className="text-red-400 text-[12px] px-4 pb-2">{error}</p>}
 
       <div className="flex items-center gap-2 p-3 border-t border-white/10 shrink-0">
         <input

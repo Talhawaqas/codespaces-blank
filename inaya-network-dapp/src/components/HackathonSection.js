@@ -243,14 +243,14 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           <div className="text-white font-bold text-sm mb-2">🧩 In scope</div>
           <div className="flex flex-wrap gap-2">
             {IN_SCOPE_LAYERS.filter((l) => l.id !== 'other').map((l) => (
-              <span key={l.id} className="px-3 py-1.5 rounded-full text-[11px] font-mono bg-white/5 border border-white/10 text-[#94a3b8]">{l.label}</span>
+              <span key={l.id} className="px-3 py-1.5 rounded-full text-[13px] font-mono bg-white/5 border border-white/10 text-[#94a3b8]">{l.label}</span>
             ))}
           </div>
         </div>
 
         <div>
           <div className="text-white font-bold text-sm mb-2">🚦 Severity guide</div>
-          <div className="grid sm:grid-cols-2 gap-2 font-mono text-[11px]">
+          <div className="grid sm:grid-cols-2 gap-2 font-mono text-[13px]">
             {SEVERITY_LEVELS.map((s) => (
               <div key={s.id} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
                 <span className={s.id === 'critical' ? 'text-red-400 font-bold' : s.id === 'high' ? 'text-amber-400 font-bold' : s.id === 'medium' ? 'text-[#00f2fe] font-bold' : 'text-[#8a96ab] font-bold'}>{s.label}</span>
@@ -278,7 +278,7 @@ export default function HackathonSection({ walletAddress, getActiveProvider }) {
           </div>
         </div>
 
-        <div className="font-mono text-[11px] text-[#8a96ab] border-t border-white/5 pt-4">
+        <div className="font-mono text-[13px] text-[#8a96ab] border-t border-white/5 pt-4">
           Testing window: <span className="text-white">{HACKATHON_TIMELINE.start} – {HACKATHON_TIMELINE.deadline}</span>. Winners announced: {HACKATHON_TIMELINE.winnersAnnounced}
         </div>
       </div>

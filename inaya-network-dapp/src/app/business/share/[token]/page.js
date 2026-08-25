@@ -113,7 +113,7 @@ export default function SharePage({ params }) {
               </button>
             </form>
             {decryptError && <p className="text-red-400 text-xs mt-3">{decryptError}</p>}
-            <p className="text-[#8a96ab] text-[10px] mt-4 text-center">Don't have the passkey? Ask whoever shared this document with you.</p>
+            <p className="text-[#8a96ab] text-[12px] mt-4 text-center">Don't have the passkey? Ask whoever shared this document with you.</p>
           </div>
         )}
       </div>

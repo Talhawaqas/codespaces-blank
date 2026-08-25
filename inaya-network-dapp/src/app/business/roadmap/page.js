@@ -29,7 +29,7 @@ function StatusBadge({ status }) {
   const color = STATUS_COLORS[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border"
+      className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border"
       style={{ color, borderColor: `${color}55`, backgroundColor: `${color}14` }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -114,7 +114,7 @@ function StageCard({ stage }) {
         <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           {stage.groups.map((g) => (
             <div key={g.title} className="bg-black/20 border border-white/5 rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">{g.title}</p>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">{g.title}</p>
               <ul className="space-y-1.5">
                 {g.items.map((item) => (
                   <li key={item} className="text-sm text-slate-300 flex items-start gap-2">
@@ -130,10 +130,10 @@ function StageCard({ stage }) {
 
       {stage.tools && (
         <div className="mt-5">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">Implemented AI tools</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8a96ab] mb-2">Implemented AI tools</p>
           <div className="flex flex-wrap gap-2">
             {stage.tools.map((t) => (
-              <code key={t} className="text-[11px] font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-md px-2 py-1">
+              <code key={t} className="text-[13px] font-mono text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-md px-2 py-1">
                 {t}
               </code>
             ))}
@@ -152,7 +152,7 @@ function StageCard({ stage }) {
               </li>
             ))}
           </ul>
-          {stage.examplesNote && <p className="text-[10px] text-[#8a96ab] mt-3">{stage.examplesNote}</p>}
+          {stage.examplesNote && <p className="text-[12px] text-[#8a96ab] mt-3">{stage.examplesNote}</p>}
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default function RoadmapPage() {
         </div>
 
         <div className="text-center mb-14">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[#00f2fe] mb-3">
+          <span className="inline-block text-[12px] font-bold uppercase tracking-[0.2em] text-[#00f2fe] mb-3">
             Product Roadmap
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Business SaaS Roadmap</h1>
@@ -182,7 +182,7 @@ export default function RoadmapPage() {
 
         {/* ARCHITECTURE FLOW */}
         <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 md:p-8 mb-14">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8a96ab] mb-5 text-center">Architecture</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8a96ab] mb-5 text-center">Architecture</p>
           <div className="flex flex-col items-center gap-1.5">
             {ARCHITECTURE_LAYERS.map((layer, i) => (
               <div key={layer} className="flex flex-col items-center">

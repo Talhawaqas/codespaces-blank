@@ -80,7 +80,7 @@ export default function FaqPage() {
         </a>
 
         <div className="inaya-fade-in-up">
-          <span className="inline-block text-[10px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+          <span className="inline-block text-[12px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
             FAQ
           </span>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">Frequently Asked Questions</h1>

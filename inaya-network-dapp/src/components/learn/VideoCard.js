@@ -31,19 +31,19 @@ export default function VideoCard({ title, channelTitle, thumbnailUrl, durationS
           <div className="w-full h-full flex items-center justify-center text-[#8a96ab] text-lg">🎓</div>
         )}
         {duration && (
-          <span className="absolute right-1 bottom-1 bg-black/75 text-white text-[9px] font-mono px-1 rounded">{duration}</span>
+          <span className="absolute right-1 bottom-1 bg-black/75 text-white text-[11px] font-mono px-1 rounded">{duration}</span>
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <p className="text-white text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[#00f2fe] transition-colors">{title}</p>
-        {channelTitle && <p className="text-[#94a3b8] text-[11px] mt-0.5 truncate">{channelTitle}</p>}
+        {channelTitle && <p className="text-[#94a3b8] text-[13px] mt-0.5 truncate">{channelTitle}</p>}
         {typeof progressPercent === 'number' && (
           <div className="mt-1.5">
             <div className="h-[3px] rounded-full bg-white/10 overflow-hidden">
               <div className="h-full bg-[#00f2fe]" style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }} />
             </div>
-            <span className="text-[9px] text-[#8a96ab] font-mono">{Math.round(progressPercent)}% complete</span>
+            <span className="text-[11px] text-[#8a96ab] font-mono">{Math.round(progressPercent)}% complete</span>
           </div>
         )}
       </div>

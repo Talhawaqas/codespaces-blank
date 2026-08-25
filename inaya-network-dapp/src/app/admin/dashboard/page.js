@@ -24,7 +24,7 @@ function StatTile({ label, value }) {
   return (
     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
       <div className="text-lg font-extrabold text-white">{value}</div>
-      <div className="text-[9px] uppercase tracking-wide text-[#8a96ab] mt-0.5">{label}</div>
+      <div className="text-[11px] uppercase tracking-wide text-[#8a96ab] mt-0.5">{label}</div>
     </div>
   );
 }
@@ -36,7 +36,7 @@ function FilterChips({ options, value, onChange }) {
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
+          className={`text-[12px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
             value === opt.value
               ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/40"
               : "bg-white/5 text-[#8a96ab] border-white/10 hover:text-slate-300"
@@ -93,11 +93,11 @@ function FeedbackRow({ item, adminKey, onChanged }) {
           <div className="flex items-center gap-2 text-xs">
             <span>{item.type === "bug" ? "🐛" : "💡"}</span>
             <span className="font-bold text-white truncate">{item.title}</span>
-            {item.severity && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ color: severityColor, background: `${severityColor}1a` }}>{item.severity}</span>}
+            {item.severity && <span className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ color: severityColor, background: `${severityColor}1a` }}>{item.severity}</span>}
           </div>
-          <p className="text-[10px] text-[#8a96ab] font-mono mt-1">{item.category} · {new Date(item.createdAt).toLocaleString()}</p>
+          <p className="text-[12px] text-[#8a96ab] font-mono mt-1">{item.category} · {new Date(item.createdAt).toLocaleString()}</p>
         </div>
-        <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border bg-white/5 text-slate-300 border-white/10 shrink-0">{item.status}</span>
+        <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border bg-white/5 text-slate-300 border-white/10 shrink-0">{item.status}</span>
       </div>
 
       {expanded && (
@@ -105,14 +105,14 @@ function FeedbackRow({ item, adminKey, onChanged }) {
           <p className="text-slate-300 whitespace-pre-wrap">{item.description}</p>
           {item.reproductionSteps && (
             <div>
-              <p className="text-[#8a96ab] font-bold uppercase text-[9px] mb-1">Steps to reproduce</p>
+              <p className="text-[#8a96ab] font-bold uppercase text-[11px] mb-1">Steps to reproduce</p>
               <p className="text-slate-300 whitespace-pre-wrap font-mono">{item.reproductionSteps}</p>
             </div>
           )}
           {item.attachmentUrl && (
             <a href={item.attachmentUrl} target="_blank" rel="noreferrer" className="text-[#00f2fe] underline break-all">📎 View attachment</a>
           )}
-          <div className="grid grid-cols-2 gap-2 font-mono text-[10px] text-[#94a3b8] bg-white/5 rounded-lg p-3">
+          <div className="grid grid-cols-2 gap-2 font-mono text-[12px] text-[#94a3b8] bg-white/5 rounded-lg p-3">
             <span>Wallet: {item.walletAddress || "—"}</span>
             <span>Route: {item.route || "—"}</span>
             <span>Device: {item.device || "—"}</span>
@@ -125,23 +125,23 @@ function FeedbackRow({ item, adminKey, onChanged }) {
               value={item.status}
               onChange={(e) => patch({ status: e.target.value })}
               disabled={saving}
-              className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-[11px]"
+              className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-[13px]"
             >
               {FEEDBACK_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            <button onClick={handleDelete} className="text-[10px] font-bold uppercase text-red-400 border border-red-400/30 bg-red-400/10 px-2.5 py-1.5 rounded-lg hover:bg-red-400/20">
+            <button onClick={handleDelete} className="text-[12px] font-bold uppercase text-red-400 border border-red-400/30 bg-red-400/10 px-2.5 py-1.5 rounded-lg hover:bg-red-400/20">
               Delete
             </button>
           </div>
 
           <div>
-            <p className="text-[#8a96ab] font-bold uppercase text-[9px] mb-1">Admin notes</p>
+            <p className="text-[#8a96ab] font-bold uppercase text-[11px] mb-1">Admin notes</p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={() => notes !== (item.adminNotes || "") && patch({ adminNotes: notes })}
               rows={2}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-[11px] focus:outline-none focus:border-[#00f2fe]/50"
+              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] focus:outline-none focus:border-[#00f2fe]/50"
               placeholder="Internal notes…"
             />
           </div>
@@ -289,10 +289,10 @@ export default function AdminDashboardPage() {
         {data.mobileDownloads && (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#8a96ab] font-bold">📱 Mobile App (.apk) Downloads</p>
+              <p className="text-[12px] uppercase tracking-wide text-[#8a96ab] font-bold">📱 Mobile App (.apk) Downloads</p>
               <p className="text-xl font-extrabold text-white mt-0.5">{data.mobileDownloads.total.toLocaleString()}</p>
             </div>
-            <span className="text-[10px] text-[#8a96ab] font-mono">
+            <span className="text-[12px] text-[#8a96ab] font-mono">
               Latest release: {data.mobileDownloads.latestVersion || "—"} · counted by GitHub Releases
             </span>
           </div>
@@ -301,12 +301,12 @@ export default function AdminDashboardPage() {
         {data.nodeOperators && (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#8a96ab] font-bold">🖥️ Inaya Node Daemon Operators</p>
+              <p className="text-[12px] uppercase tracking-wide text-[#8a96ab] font-bold">🖥️ Inaya Node Daemon Operators</p>
               <p className="text-xl font-extrabold text-white mt-0.5">
                 {data.nodeOperators.active.toLocaleString()} <span className="text-emerald-400 text-sm font-bold">running now</span>
               </p>
             </div>
-            <span className="text-[10px] text-[#8a96ab] font-mono">
+            <span className="text-[12px] text-[#8a96ab] font-mono">
               {data.nodeOperators.total.toLocaleString()} registered total · "running now" = heartbeat in the last 10 min
             </span>
           </div>
@@ -332,7 +332,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Referral Dashboard</h2>
-              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredReferrers.length} of {data.referrers.length} referrers</span>
+              <span className="text-[12px] text-[#8a96ab] font-mono">{filteredReferrers.length} of {data.referrers.length} referrers</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -359,7 +359,7 @@ export default function AdminDashboardPage() {
                       </div>
                       <Bar value={r.referrals} max={maxReferrals} color="#00f2fe" />
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#8a96ab] w-16 text-right">{r.status}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#8a96ab] w-16 text-right">{r.status}</span>
                   </div>
                 ))}
               </div>
@@ -372,7 +372,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Watcher Node Analytics</h2>
-              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredWatchers.length} of {data.watchers.length} wallets</span>
+              <span className="text-[12px] text-[#8a96ab] font-mono">{filteredWatchers.length} of {data.watchers.length} wallets</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -402,7 +402,7 @@ export default function AdminDashboardPage() {
                       <Bar value={w.points} max={maxPoints} color="#34d399" />
                     </div>
                     <span
-                      className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
+                      className={`text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
                         w.active
                           ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
                           : "bg-white/5 text-[#8a96ab] border-white/10"
@@ -422,7 +422,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Node Daemon Operators</h2>
-              <span className="text-[10px] text-[#8a96ab] font-mono">
+              <span className="text-[12px] text-[#8a96ab] font-mono">
                 {filteredNodeOperators.length} of {nodeOperatorList.length} nodes
               </span>
             </div>
@@ -446,17 +446,17 @@ export default function AdminDashboardPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 text-xs">
                         <span className="font-mono text-slate-300 truncate">{n.operatorWallet || n.nodeId}</span>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 bg-[#00f2fe]/10 text-[#00f2fe]">
+                        <span className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 bg-[#00f2fe]/10 text-[#00f2fe]">
                           {n.tier}
                         </span>
                       </div>
-                      <p className="text-[10px] text-[#8a96ab] font-mono mt-1">
+                      <p className="text-[12px] text-[#8a96ab] font-mono mt-1">
                         {n.totalCapacityGB.toLocaleString()} GB declared · last heartbeat:{" "}
                         {n.lastHeartbeatAt ? new Date(n.lastHeartbeatAt).toLocaleString() : "never"}
                       </p>
                     </div>
                     <span
-                      className={`text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
+                      className={`text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border text-center ${
                         n.active
                           ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
                           : "bg-white/5 text-[#8a96ab] border-white/10"
@@ -476,7 +476,7 @@ export default function AdminDashboardPage() {
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-white">Business Customers</h2>
-              <span className="text-[10px] text-[#8a96ab] font-mono">{filteredBusinesses.length} of {data.businesses.length} companies</span>
+              <span className="text-[12px] text-[#8a96ab] font-mono">{filteredBusinesses.length} of {data.businesses.length} companies</span>
             </div>
             <div className="mb-4">
               <FilterChips
@@ -505,26 +505,26 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center gap-2 text-xs">
                           <span className="font-bold text-white truncate">{b.name}</span>
                           <span
-                            className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
+                            className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
                             style={{ color: planColor, background: `${planColor}1a` }}
                           >
                             {b.planName}
                           </span>
                           {b.subscriptionStatus && (
                             <span
-                              className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
+                              className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0"
                               style={{ color: statusColor, background: `${statusColor}1a` }}
                             >
                               {b.subscriptionStatus.replace("_", " ")}
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-[#8a96ab] font-mono mt-1 truncate">
+                        <p className="text-[12px] text-[#8a96ab] font-mono mt-1 truncate">
                           {b.ownerEmail} · {b.memberCount} {b.memberCount === 1 ? "user" : "users"}
                           {b.billingInterval ? ` · ${b.billingInterval}ly` : ""}
                         </p>
                       </div>
-                      <span className="text-[9px] font-mono text-[#8a96ab] shrink-0">
+                      <span className="text-[11px] font-mono text-[#8a96ab] shrink-0">
                         {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "—"}
                       </span>
                     </div>

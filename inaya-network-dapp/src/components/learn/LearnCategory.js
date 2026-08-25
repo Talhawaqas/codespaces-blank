@@ -53,7 +53,7 @@ export default function LearnCategory({ categoryId, isVideoSaved, toggleSave, on
               <button
                 key={topic.id}
                 onClick={() => onSearch(topic.searchQuery, categoryId)}
-                className="px-3 py-1.5 rounded-full border border-white/10 text-[#94a3b8] hover:border-[#00f2fe]/40 hover:text-white text-[11px] font-semibold transition-all"
+                className="px-3 py-1.5 rounded-full border border-white/10 text-[#94a3b8] hover:border-[#00f2fe]/40 hover:text-white text-[13px] font-semibold transition-all"
               >
                 {topic.title}
               </button>

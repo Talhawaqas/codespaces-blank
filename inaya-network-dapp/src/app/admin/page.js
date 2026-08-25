@@ -209,11 +209,11 @@ export default function AdminDashboard() {
               <div className="flex items-end gap-4 mt-2">
                 <div>
                   <div className="text-2xl font-bold">{activity ? activity[key].dau : "—"}</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wide mt-0.5">DAU today</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wide mt-0.5">DAU today</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold text-[#94a3b8]">{activity ? activity[key].wau : "—"}</div>
-                  <div className="text-[10px] text-[#8a96ab] uppercase tracking-wide mt-0.5">WAU (7d)</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wide mt-0.5">WAU (7d)</div>
                 </div>
               </div>
             </div>

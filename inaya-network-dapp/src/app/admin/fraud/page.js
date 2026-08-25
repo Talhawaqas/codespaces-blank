@@ -151,7 +151,7 @@ export default function FraudAdminPage() {
 
         <div className="flex flex-wrap gap-2 mb-6">
           {Object.entries(CLASSIFICATION_LABELS).map(([key, label]) => (
-            <span key={key} className="text-[10px] font-mono px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#94a3b8]">
+            <span key={key} className="text-[12px] font-mono px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#94a3b8]">
               {label}: {stats?.byClassification?.[key] ?? 0}
             </span>
           ))}
@@ -182,7 +182,7 @@ export default function FraudAdminPage() {
                   </td>
                   <td className="px-4 py-3 font-mono">{a.riskScore}/100</td>
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${LEVEL_COLORS[a.riskLevel] || ""}`}>{a.riskLevel}</span>
+                    <span className={`text-[12px] font-bold uppercase px-2 py-0.5 rounded-full border ${LEVEL_COLORS[a.riskLevel] || ""}`}>{a.riskLevel}</span>
                   </td>
                   <td className={`px-4 py-3 font-bold ${ACTION_COLORS[a.recommendedAction] || ""}`}>{a.recommendedAction}</td>
                   <td className="px-4 py-3 text-[#94a3b8]">{a.surface}</td>

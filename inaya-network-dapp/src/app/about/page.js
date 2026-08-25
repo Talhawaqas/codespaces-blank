@@ -80,7 +80,7 @@ export default function AboutPage() {
           ← Back to Inaya Network
         </a>
 
-        <span className="inline-block text-[10px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
+        <span className="inline-block text-[12px] font-mono font-bold tracking-widest text-[#00f2fe] bg-cyan-500/10 border border-[#00f2fe]/30 rounded-full px-3 py-1 mb-4">
           ABOUT
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">About Inaya Network</h1>
@@ -108,7 +108,7 @@ export default function AboutPage() {
               <div key={p.name} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-white font-bold">{p.name}</span>
-                  <span className="text-[10px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-2.5 py-0.5 rounded-full uppercase tracking-wide">{p.title}</span>
+                  <span className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/30 px-2.5 py-0.5 rounded-full uppercase tracking-wide">{p.title}</span>
                 </div>
                 <p className="text-[#94a3b8] text-sm leading-relaxed mt-2">{p.bio}</p>
               </div>
