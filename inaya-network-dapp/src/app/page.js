@@ -5656,47 +5656,42 @@ export default function Home() {
             </div>
           </div>
 
-          {/* VAULT ACCESS */}
+          {/* VAULT ACCESS — one section, one Master Node Passkey. The input
+              (this session's copy, memory-only) and its backup/recovery
+              actions used to live in two visually-separate boxes, which
+              read as "two different keys" -- merged into one so it's
+              unambiguous it's the same passkey throughout. */}
           <div>
             <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">Vault Access</div>
-            <label className="block text-xs text-[#94a3b8] font-semibold mb-2">Master Node Passkey</label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a96ab] text-xs">🔒</span>
-              <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
-            </div>
-            {/* Discoverable right at the point a new-device user actually
-                looks for it — they don't have a passkey to type, they have
-                a backup file. Opens the same Restore modal as the button
-                in the section below; this is just a second, more visible
-                entry point into it. */}
-            <button type="button" onClick={() => openBackupModal('restore')} className="mt-2 text-[11px] text-[#00f2fe] hover:underline font-mono">
-              📁 Switched devices? Restore from your backup file
-            </button>
-            <div className="flex gap-2 mt-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
-              <span className="text-amber-400 text-xs shrink-0">⚠️</span>
-              <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
-                Never stored or transmitted. If lost, encrypted data cannot be recovered by you or by Inaya Network — there is no backdoor or reset.
-              </p>
-            </div>
-          </div>
-
-          {/* MASTER NODE PASSKEY — BACKUP & RECOVERY (User-Controlled Key
-              Recovery). "Your key. Your backup. Your recovery. Inaya never
-              holds it." */}
-          <div>
-            <div className="text-[12px] font-mono font-bold text-[#8a96ab] uppercase tracking-widest mb-2.5 px-0.5">🔐 Master Node Passkey</div>
             <div className="border border-[#00f2fe]/20 bg-gradient-to-b from-[#0c162b]/80 to-[#0c162b]/40 p-4 rounded-xl space-y-2.5">
-              <p className="text-[11px] text-[#8a96ab] font-mono">Secure your recovery</p>
-              <p className="text-[11px] text-[#94a3b8] font-mono leading-relaxed">
-                The encrypted backup file is saved to <span className="text-white font-bold">your own device's storage</span> — Downloads, a USB drive, wherever you choose. It is never uploaded to Inaya, automatically or otherwise.
-              </p>
-              <button onClick={() => openBackupModal('create')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Create Encrypted Backup</button>
-              <button onClick={() => openBackupModal('restore')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Restore From Backup</button>
-              <button onClick={() => openBackupModal('manage')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Manage Secure Storage</button>
+              <label className="block text-xs text-[#94a3b8] font-semibold">Master Node Passkey</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a96ab] text-xs">🔒</span>
+                <input type="password" value={masterPasskey} onChange={(e) => setMasterPasskey(e.target.value)} placeholder="••••••••" className="w-full bg-[#090d16] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#00f2fe]/40 transition-colors" />
+              </div>
+              {/* Discoverable right at the point a new-device user actually
+                  looks for it — they don't have a passkey to type, they
+                  have a backup file. */}
+              <button type="button" onClick={() => openBackupModal('restore')} className="text-[11px] text-[#00f2fe] hover:underline font-mono">
+                📁 Switched devices? Restore from your backup file
+              </button>
+
+              <div className="border-t border-white/5 pt-2.5 mt-1">
+                <p className="text-[11px] text-[#8a96ab] font-mono mb-1">🔐 Secure your recovery</p>
+                <p className="text-[11px] text-[#94a3b8] font-mono leading-relaxed mb-2.5">
+                  The encrypted backup file is saved to <span className="text-white font-bold">your own device's storage</span> — Downloads, a USB drive, wherever you choose. It is never uploaded to Inaya, automatically or otherwise.
+                </p>
+                <div className="space-y-2">
+                  <button onClick={() => openBackupModal('create')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Create Encrypted Backup</button>
+                  <button onClick={() => openBackupModal('restore')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Restore From Backup</button>
+                  <button onClick={() => openBackupModal('manage')} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-colors">Manage Secure Storage</button>
+                </div>
+              </div>
+
               <div className="flex gap-2 mt-1 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-2.5">
                 <span className="text-amber-400 text-xs shrink-0">⚠️</span>
                 <p className="text-[12px] text-amber-400/80 font-mono leading-relaxed">
-                  Inaya cannot recover your Master Node Passkey. Keep your encrypted backup and recovery password safe. Losing both may result in permanent loss of access.
+                  Never stored or transmitted by Inaya, and Inaya cannot recover it for you. Keep your encrypted backup and recovery password safe — losing both may result in permanent loss of access, with no backdoor or reset.
                 </p>
               </div>
             </div>
