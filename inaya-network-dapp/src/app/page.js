@@ -2049,7 +2049,7 @@ Frequently Asked Questions (FAQs)
 // dApp state); items without one are setCurrentPage tabs on this page.
 const NAV_GROUPS = [
   {
-    title: 'App',
+    title: 'Network',
     items: [
       { label: 'Network Home', icon: '🏠' },
       { label: 'Faucet', icon: '🚰' },
