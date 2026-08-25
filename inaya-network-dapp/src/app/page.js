@@ -4867,7 +4867,12 @@ export default function Home() {
           drawer (rendered as a sibling below) instead of an in-header nav. */}
       <div className="sticky top-0 z-50">
         <header className="relative z-10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#0a0f1e]/90 border-b border-[#00f2fe]/15 px-4 md:px-10 py-4 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
+          {/* flex-wrap on both clusters below: on narrow mobile widths the
+              right cluster (bell + 3 buttons + Connect Wallet) is 587px wide
+              on its own and was silently overflowing off-screen without
+              this, making Connect Wallet unreachable. Wrapping keeps every
+              button reachable instead of clipped past the viewport edge. */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {/* ☰ SITE NAV — opens the grouped menu drawer (see NAV_GROUPS)
                 instead of the old always-visible two-row, 18-button pill bar.
                 Doubles as a "you are here" indicator via currentPage. Sits
@@ -4889,7 +4894,7 @@ export default function Home() {
             <span className="text-white font-extrabold text-lg tracking-wider">INAYA NETWORK</span>
             <span className="text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
