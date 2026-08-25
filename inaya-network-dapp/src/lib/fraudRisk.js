@@ -1,12 +1,11 @@
 // src/lib/fraudRisk.js
 //
-// Inaya Fraud & Abuse Protection Layer -- Phase 1 (detection + risk engine
-// + decision logic + audit log). Ecosystem enforcement (actually gating
-// referrals/airdrop/Watcher enrollment/Business Workspace/API rate limits
-// on the assessments this produces) is Phase 2, deliberately not wired up
-// yet -- see the plan this shipped under. This file only ever COMPUTES and
-// RECORDS a risk assessment; nothing in this pass blocks or restricts
-// anything on its own.
+// Inaya Fraud & Abuse Protection Layer -- detection + risk engine +
+// decision logic + audit log. This file only ever COMPUTES and RECORDS a
+// risk assessment; it never blocks or restricts anything on its own --
+// that's lib/riskGate.js and the individual route call sites (referrals,
+// Watcher enrollment, Business Workspace, api/ai/chat's rate limiter),
+// which decide what to do with what this file returns.
 //
 // CORE PRINCIPLE (directly from the SOW): VPN detection is a risk signal,
 // not a verdict. recommendAction() below enforces this in code, not just
@@ -21,14 +20,15 @@
 // called it). fraud_risk_assessments stores exactly the fields listed
 // below and nothing else.
 //
-// FAILS OPEN: every external dependency (Tor list, IPQualityScore) already
-// degrades to a neutral/unknown result on its own failure (see each
-// module's own comment) -- assessRisk() itself also never throws, so no
-// Phase 2 call site can ever be broken by this layer being unavailable.
+// FAILS OPEN: every external dependency (the free Tor exit-node list,
+// proxycheck.io) already degrades to a neutral/unknown result on its own
+// failure (see each module's own comment) -- assessRisk() itself also
+// never throws, so no call site can ever be broken by this layer being
+// unavailable.
 
 import { connectToDatabase } from "./mongodb.js";
 import { isTorExitNode } from "./torExitNodes.js";
-import { lookupIp } from "./ipQualityScore.js";
+import { lookupIp } from "./proxyCheck.js";
 import { getClientIp } from "./ipAddress.js";
 
 export const CLASSIFICATIONS = ["VPN_DETECTED", "PROXY_DETECTED", "TOR_DETECTED", "DATACENTER_IP", "RESIDENTIAL_IP", "UNKNOWN"];
@@ -75,8 +75,8 @@ export async function ensureFraudIndexes() {
 }
 
 /** Tor list first (free, authoritative for that one classification), then
- *  IPQualityScore for everything else. Returns { classification, reputation }
- *  where reputation is null only when IPQS isn't configured/failed AND the
+ *  proxycheck.io for everything else. Returns { classification, reputation }
+ *  where reputation is null only when proxycheck.io failed AND the
  *  IP wasn't a Tor exit node either -- genuinely no signal available. */
 export async function classifyIp(ip) {
   const isTor = await isTorExitNode(ip);

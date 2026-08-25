@@ -4,7 +4,7 @@
 // publishes a live, plain-text bulk exit list (one IP per line) at
 // https://check.torproject.org/torbulkexitlist, specifically intended for
 // exactly this use case (services that want to identify Tor traffic).
-// No vendor, no API key, no cost -- checked before IPQualityScore in
+// No vendor, no API key, no cost -- checked before proxycheck.io in
 // fraudRisk.js's classifyIp() since it's a free, direct source for this
 // one classification specifically.
 //
@@ -52,7 +52,7 @@ async function ensureFresh() {
 }
 
 /** Fails open to `false` (never Tor) on any fetch failure or before the first
- *  successful fetch -- classifyIp() falls through to IPQS/UNKNOWN in that case,
+ *  successful fetch -- classifyIp() falls through to proxycheck.io/UNKNOWN in that case,
  *  same fail-open philosophy as the rest of this layer. */
 export async function isTorExitNode(ip) {
   if (!ip || ip === "unknown") return false;

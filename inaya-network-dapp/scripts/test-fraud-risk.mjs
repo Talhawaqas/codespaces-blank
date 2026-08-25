@@ -7,7 +7,7 @@
 // This package has no JS unit-test runner configured (Hardhat/chai in the
 // root repo is Solidity-only) -- these are plain assertions against
 // synthetic classification/reputation inputs, no network calls, no
-// database, so they run in milliseconds and never depend on IPQualityScore
+// database, so they run in milliseconds and never depend on proxycheck.io
 // or MongoDB being reachable.
 //
 // Covers the SOW's 10 named test scenarios (section 10) plus a direct,

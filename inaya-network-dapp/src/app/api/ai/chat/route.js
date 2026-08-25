@@ -50,7 +50,7 @@ const requestLog = new Map(); // ip -> array of timestamps
 // Fraud & Abuse Protection Layer, Phase 2 -- the "apply rate limits to
 // high-risk traffic" integration point from the SOW. Risk is cached per IP
 // (not assessed per message) so a busy legitimate chat session doesn't
-// trigger an IPQS lookup on every single message -- only once per
+// trigger a proxycheck.io lookup on every single message -- only once per
 // RISK_CACHE_TTL_MS. Same "simple in-memory, not distributed across
 // serverless instances" caveat as requestLog above; a soft speed bump, not
 // a hard guarantee, consistent with this route's existing rate limiter.
