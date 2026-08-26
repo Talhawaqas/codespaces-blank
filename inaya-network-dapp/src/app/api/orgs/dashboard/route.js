@@ -34,6 +34,7 @@ export async function GET(req) {
     const {
       visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
       visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleProducts,
+      visibleInvoices, visibleExpenses, visibleEmployees,
     } = await getAccessibleScope({
       orgId,
       membership: auth.membership,
@@ -138,6 +139,21 @@ export async function GET(req) {
     }
     const inventorySummary = { totalProducts: visibleProducts.length, lowStockCount };
 
+    const outstandingInvoices = visibleInvoices.filter((i) => ["SENT", "OVERDUE"].includes(i.status));
+    const financeSummary = {
+      outstandingTotal: outstandingInvoices.reduce((sum, i) => sum + (i.total || 0), 0),
+      overdueCount: visibleInvoices.filter((i) => i.status === "OVERDUE").length,
+      pendingExpenseApprovals: visibleExpenses.filter((e) => e.status === "PENDING_APPROVAL").length,
+    };
+
+    let pendingLeaveRequests = 0;
+    if (visibleEmployees.length) {
+      const { leaveRequests } = await getOrgCollections();
+      const employeeIds = visibleEmployees.map((e) => toObjectId(e._id));
+      pendingLeaveRequests = await leaveRequests.countDocuments({ orgId: toObjectId(orgId), employeeId: { $in: employeeIds }, status: "PENDING" });
+    }
+    const hrSummary = { totalEmployees: visibleEmployees.length, pendingLeaveRequests };
+
     return NextResponse.json({
       counts: {
         departments: visibleDepartments.length,
@@ -152,6 +168,8 @@ export async function GET(req) {
       crmSummary,
       procurementSummary,
       inventorySummary,
+      financeSummary,
+      hrSummary,
     });
   } catch (err) {
     console.error("orgs/dashboard failed:", err);

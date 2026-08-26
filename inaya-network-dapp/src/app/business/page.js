@@ -39,6 +39,8 @@ import TasksView from "../../components/business/TasksView";
 import CRMView from "../../components/business/CRMView";
 import ProcurementView from "../../components/business/ProcurementView";
 import InventoryView from "../../components/business/InventoryView";
+import FinanceView from "../../components/business/FinanceView";
+import HRView from "../../components/business/HRView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -716,6 +718,22 @@ const ICONS = {
       <path d="M6 15h4" />
     </>
   ),
+  finance: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10" />
+      <path d="M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 1-3 2.2 0 3 6 1.5 6 4.3 0 1.2-1.3 2.2-3 2.2a3 3 0 0 1-3-1.5" />
+    </>
+  ),
+  hr: (
+    <>
+      <circle cx="8.5" cy="7.5" r="3.2" />
+      <path d="M2.5 20.5a6 6 0 0 1 12 0" />
+      <path d="M16 4.5a3.2 3.2 0 0 1 0 6.4" />
+      <path d="M14.5 14.5c2.8 0 5 1.9 5.5 4.6" />
+      <path d="M18.5 8.5v3M17 10h3" />
+    </>
+  ),
 };
 
 // The gear icon's cutout path above is fiddly to hand-write cleanly; use a
@@ -740,6 +758,8 @@ const NAV_ITEMS = [
   { key: "crm", label: "CRM", icon: "crm" },
   { key: "procurement", label: "Procurement", icon: "procurement" },
   { key: "inventory", label: "Inventory", icon: "inventory" },
+  { key: "finance", label: "Finance", icon: "finance" },
+  { key: "hr", label: "HR", icon: "hr" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "activity", label: "Activity", icon: "activity" },
   { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
@@ -822,6 +842,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     crm: "CRM",
     procurement: "Procurement",
     inventory: "Inventory",
+    finance: "Finance",
+    hr: "HR",
     approvals: "Approvals",
     activity: "Activity",
     ai: "AI Assistant",
@@ -914,6 +936,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
           {activeView === "inventory" && <InventoryView orgId={orgId} />}
+          {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
+          {activeView === "hr" && <HRView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}

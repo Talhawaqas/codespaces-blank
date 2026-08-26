@@ -102,6 +102,21 @@ export async function getOrgCollections() {
     products: db.collection("products"),
     stockLevels: db.collection("stock_levels"),
     stockMovements: db.collection("stock_movements"),
+    // Business Operations, Phase 5 (Finance & HR) — a testnet demonstration/
+    // validation layer per the SOW, not regulated banking/payroll. invoices
+    // link to the existing crmContacts (Customer -> Invoice -> Payment, no
+    // duplicate customer concept); attachments is new rather than reusing
+    // org_documents, since that collection mandates projectId and its whole
+    // permission model is department/project-based — wrong shape for "who
+    // can see this employee's contract" (self + HR roles + org managers,
+    // never department-based) and too risky to bend on the most
+    // foundational, heaviest-depended-on collection in the app.
+    invoices: db.collection("invoices"),
+    expenses: db.collection("expenses"),
+    payments: db.collection("payments"),
+    employees: db.collection("employees"),
+    leaveRequests: db.collection("leave_requests"),
+    attachments: db.collection("attachments"),
   };
 }
 
@@ -114,6 +129,7 @@ export async function ensureOrgIndexes() {
     projectMembers, documentPermissions, documentShares, tasks, orgActivity,
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
     warehouses, products, stockLevels, stockMovements,
+    invoices, expenses, payments, employees, leaveRequests, attachments,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -166,6 +182,20 @@ export async function ensureOrgIndexes() {
     stockLevels.createIndex({ orgId: 1, productId: 1, warehouseId: 1 }, { unique: true }),
     stockMovements.createIndex({ orgId: 1, productId: 1, createdAt: 1 }),
     stockMovements.createIndex({ orgId: 1, relatedPurchaseOrderId: 1 }),
+    // Business Operations, Phase 5 (Finance & HR)
+    invoices.createIndex({ orgId: 1, departmentId: 1 }),
+    invoices.createIndex({ orgId: 1, contactId: 1 }),
+    invoices.createIndex({ orgId: 1, status: 1, dueDate: 1 }),
+    expenses.createIndex({ orgId: 1, departmentId: 1 }),
+    expenses.createIndex({ orgId: 1, status: 1 }),
+    payments.createIndex({ orgId: 1, departmentId: 1 }),
+    payments.createIndex({ orgId: 1, relatedInvoiceId: 1 }),
+    payments.createIndex({ orgId: 1, relatedExpenseId: 1 }),
+    employees.createIndex({ orgId: 1, departmentId: 1 }),
+    employees.createIndex({ orgId: 1, memberEmail: 1 }),
+    leaveRequests.createIndex({ orgId: 1, employeeId: 1 }),
+    leaveRequests.createIndex({ orgId: 1, status: 1 }),
+    attachments.createIndex({ orgId: 1, relatedRecordType: 1, relatedRecordId: 1 }),
   ]);
 
   indexesEnsured = true;
@@ -292,4 +322,54 @@ export function canAccessDepartment(membership, departmentId) {
   if (!membership) return false;
   if (canManageOrg(membership)) return true;
   return (membership.departmentIds || []).some((id) => id.toString() === departmentId.toString());
+}
+
+// ============================================================
+// Business Operations, Phase 5 (Finance & HR) — role model
+//
+// financeRole/hrRole/managedDepartmentIds are new, OPTIONAL fields on the
+// same org_members document, not a restructure of the existing
+// role:"owner"|"admin"|"member" field. That field is checked in exactly
+// one place (canManageOrg, above) and every other Business Operations
+// module (Tasks/CRM/Procurement/Inventory) depends on it staying a
+// stable three-value string — expanding ROLES itself would mean auditing
+// every existing gate for correctness. A member simply has none, one, or
+// both of financeRole/hrRole set alongside their normal role, same
+// spirit as departmentIds already being an orthogonal, additive
+// permission axis on the same doc.
+// ============================================================
+
+export function canManageFinance(membership) {
+  return canManageOrg(membership) || membership?.financeRole === "manager";
+}
+
+export function canAccessFinance(membership) {
+  return canManageFinance(membership) || membership?.financeRole === "staff";
+}
+
+export function canManageHR(membership) {
+  return canManageOrg(membership) || membership?.hrRole === "manager";
+}
+
+export function canAccessHR(membership) {
+  return canManageHR(membership) || membership?.hrRole === "staff";
+}
+
+/** "Department Manager" — a new concept; departments have no manager field
+ *  today (canAccessDepartment above only distinguishes org-wide owner/
+ *  admin from a plain department-scoped member). Grants read access to
+ *  that department's employees without full org-wide HR visibility. */
+export function isDepartmentManager(membership, departmentId) {
+  if (!membership) return false;
+  if (canManageOrg(membership)) return true;
+  return (membership.managedDepartmentIds || []).some((id) => id.toString() === departmentId.toString());
+}
+
+/** "Employee" (the SOW's 7th role, "personal HR information and permitted
+ *  documents") is deliberately NOT a role string — it's a data-scoping
+ *  rule: any active member can always read (never edit) the employees
+ *  record whose memberEmail matches their own session email, regardless
+ *  of hrRole. Callers check this alongside canAccessHR, not instead of it. */
+export function isSelfEmployeeRecord(employee, email) {
+  return !!employee?.memberEmail && !!email && employee.memberEmail === email;
 }

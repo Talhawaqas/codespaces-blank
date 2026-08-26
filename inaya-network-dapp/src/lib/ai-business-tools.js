@@ -31,6 +31,9 @@ import { TASK_STATES } from "./task-workflow.js";
 import { DEAL_STAGES } from "./deal-workflow.js";
 import { PURCHASE_ORDER_STATES } from "./purchase-order-workflow.js";
 import { isLowStock } from "./inventory.js";
+import { INVOICE_STATES } from "./invoice-workflow.js";
+import { EXPENSE_STATES } from "./expense-workflow.js";
+import { EMPLOYMENT_STATES } from "./employee-workflow.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 
@@ -265,6 +268,82 @@ async function listProducts(args, ctx) {
   return { count: results.length, products: results };
 }
 
+function listInvoices(args, ctx) {
+  const { status, departmentName, limit } = args || {};
+  const wantedStatuses = Array.isArray(status) ? status.filter((s) => INVOICE_STATES.includes(s)) : null;
+  const results = ctx.scope.visibleInvoices
+    .filter((i) => {
+      if (wantedStatuses && wantedStatuses.length && !wantedStatuses.includes(i.status)) return false;
+      if (!matchesName(ctx.deptNameById.get(i.departmentId.toString()), departmentName)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((i) => ({
+      invoiceNumber: i.invoiceNumber, status: i.status, total: i.total, currency: i.currency, dueDate: i.dueDate,
+      contactName: ctx.contactNameById.get(i.contactId.toString()) || "Unknown",
+      departmentName: ctx.deptNameById.get(i.departmentId.toString()) || "Unknown",
+    }));
+  return { count: results.length, invoices: results };
+}
+
+function listExpenses(args, ctx) {
+  const { status, category, departmentName, limit } = args || {};
+  const wantedStatuses = Array.isArray(status) ? status.filter((s) => EXPENSE_STATES.includes(s)) : null;
+  const results = ctx.scope.visibleExpenses
+    .filter((e) => {
+      if (wantedStatuses && wantedStatuses.length && !wantedStatuses.includes(e.status)) return false;
+      if (category && !matchesName(e.category, category)) return false;
+      if (!matchesName(ctx.deptNameById.get(e.departmentId.toString()), departmentName)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((e) => ({
+      vendor: e.vendor, category: e.category, amount: e.amount, currency: e.currency, status: e.status,
+      expenseDate: e.expenseDate, departmentName: ctx.deptNameById.get(e.departmentId.toString()) || "Unknown",
+    }));
+  const totalAmount = results.reduce((sum, e) => sum + (e.amount || 0), 0);
+  return { count: results.length, totalAmount, expenses: results };
+}
+
+function listEmployees(args, ctx) {
+  const { departmentName, status, search, limit } = args || {};
+  const wantedStatuses = Array.isArray(status) ? status.filter((s) => EMPLOYMENT_STATES.includes(s)) : null;
+  const results = ctx.scope.visibleEmployees
+    .filter((e) => {
+      if (wantedStatuses && wantedStatuses.length && !wantedStatuses.includes(e.employmentStatus)) return false;
+      if (!matchesName(ctx.deptNameById.get(e.departmentId.toString()), departmentName)) return false;
+      if (search && !matchesName(e.fullName, search) && !matchesName(e.jobTitle, search)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((e) => ({
+      fullName: e.fullName, jobTitle: e.jobTitle || null, employmentStatus: e.employmentStatus,
+      departmentName: ctx.deptNameById.get(e.departmentId.toString()) || "Unknown",
+    }));
+  return { count: results.length, employees: results };
+}
+
+/** Searches employee DOCUMENTS (contracts, IDs, certificates) by employee
+ *  name — restricted to ctx.scope.visibleEmployees, the exact same HR-
+ *  role-or-self boundary every other employee lookup here respects; an
+ *  employee this caller can't see was never a candidate to search
+ *  attachments for in the first place. */
+async function findEmployeeDocument(args, ctx) {
+  const employeeName = args?.employeeName;
+  if (!employeeName) return { error: "employeeName is required." };
+
+  const matches = ctx.scope.visibleEmployees.filter((e) => matchesName(e.fullName, employeeName));
+  if (matches.length === 0) return { notFound: true, employeeName };
+  if (matches.length > 1) return { ambiguous: true, matches: matches.slice(0, 5).map((e) => ({ fullName: e.fullName, jobTitle: e.jobTitle || null })) };
+
+  const employee = matches[0];
+  const { attachments } = await getOrgCollections();
+  const docs = await attachments.find({ orgId: employee.orgId, relatedRecordType: "EMPLOYEE", relatedRecordId: employee._id, deletedAt: null }).sort({ createdAt: -1 }).toArray();
+  if (docs.length === 0) return { found: false, employeeName: employee.fullName, message: "No documents on file for this employee." };
+
+  return { found: true, employeeName: employee.fullName, documents: docs.map((d) => ({ filename: d.filename, uploadedAt: d.createdAt })) };
+}
+
 async function getActivity(args, ctx) {
   const { departmentName, projectName, sinceDays, limit } = args || {};
   const cutoff = Date.now() - Math.min(Math.max(sinceDays || 7, 1), 90) * 24 * 60 * 60 * 1000;
@@ -456,6 +535,53 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "list_invoices",
+    description: "List invoices the caller can see, optionally filtered by status or department — use this for questions like \"show outstanding invoices\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        status: { type: Type.ARRAY, items: { type: Type.STRING, enum: INVOICE_STATES }, description: "Filter to these invoice statuses." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_expenses",
+    description: "List expenses the caller can see, optionally filtered by status, category, or department — use this for questions like \"summarize this month's expenses\" (also returns a real totalAmount for the filtered results).",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        status: { type: Type.ARRAY, items: { type: Type.STRING, enum: EXPENSE_STATES }, description: "Filter to these expense statuses." },
+        category: { type: Type.STRING, description: "Filter to a category whose name contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_employees",
+    description: "List employees the caller can see, optionally filtered by department, employment status, or name/job-title search — use this for questions like \"how many employees are in Engineering\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        status: { type: Type.ARRAY, items: { type: Type.STRING, enum: EMPLOYMENT_STATES }, description: "Filter to these employment statuses." },
+        search: { type: Type.STRING, description: "Filter to employees whose name or job title contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "find_employee_document",
+    description: "Find HR documents on file for a specific employee by name (e.g. \"find the employment document for this employee\"). Only searches employees the caller can already see.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: { employeeName: { type: Type.STRING, description: "The employee's name, or a distinctive part of it." } },
+      required: ["employeeName"],
+    },
+  },
+  {
     name: "get_activity",
     description: "Get recent document activity (submissions, approvals, rejections, shares, etc.), optionally scoped to a department or project and a time window.",
     parameters: {
@@ -493,6 +619,10 @@ const TOOL_IMPLEMENTATIONS = {
   list_suppliers: listSuppliers,
   list_purchase_orders: listPurchaseOrders,
   list_products: listProducts,
+  list_invoices: listInvoices,
+  list_expenses: listExpenses,
+  list_employees: listEmployees,
+  find_employee_document: findEmployeeDocument,
   get_activity: getActivity,
   get_document_access: getDocumentAccess,
 };
@@ -506,7 +636,9 @@ export async function runBusinessTool(name, args, ctx) {
 export function businessSystemInstruction({ orgName, role, isManager }) {
   return `You are the Inaya AI Business Assistant, embedded in the "${orgName}" company's Business Workspace. The person you're talking to signed in as ${role}${isManager ? " (has manage/approval authority)" : " (standard member)"}.
 
-You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), and inventory (products, real current stock levels, low-stock items) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see; if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
+You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), inventory (products, real current stock levels, low-stock items), finance (invoices, expenses, their approval status and totals), and HR (employees, their department/status, and their documents) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see (finance and HR data specifically respect Finance/HR role and department-manager/self-access boundaries) — if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
+
+Finance and HR data is sensitive — never volunteer another employee's personal HR details or another department's financial figures beyond what the tool itself returned; if list_employees or list_invoices/list_expenses comes back empty for a query, that means this person can't see that data (or it doesn't exist), not that you should guess at plausible-sounding figures.
 
 If get_document_access returns permissionDenied, tell the user plainly that they don't have permission to view who has access to that document (only the document's owner, an explicit MANAGE grant, or a company owner/admin can see that) — do not attempt to answer the question any other way, and do not reveal the document's owner or any grant information in that case.
 

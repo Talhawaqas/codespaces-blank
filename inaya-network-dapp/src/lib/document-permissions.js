@@ -54,7 +54,7 @@
 // against a maxUses-limited link race-safe without extra locking.
 
 import { randomBytes, createHash } from "node:crypto";
-import { getOrgCollections, canManageOrg, canAccessDepartment, toObjectId } from "./orgs.js";
+import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, toObjectId } from "./orgs.js";
 import { logDocumentActivity } from "./activity-log.js";
 
 export const PERMISSION_LEVELS = ["VIEW", "EDIT", "MANAGE"];
@@ -168,6 +168,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
   const {
     departments, projects, orgDocuments, projectMembers, tasks,
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders, warehouses, products,
+    invoices, expenses, employees,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -224,9 +225,47 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     visibleDeptIds.length ? products.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
   ]);
 
+  // Business Operations, Phase 5 (Finance & HR) — finance visibility is
+  // gated by canAccessFinance on top of department scope (unlike CRM/
+  // Procurement/Inventory, "any department member sees it" is wrong here —
+  // the SOW explicitly separates Finance Manager/Staff from everyone
+  // else). HR visibility is gated by canAccessHR OR isDepartmentManager
+  // (handled below by unioning managed-department employees in), PLUS the
+  // caller's own employee record is always included regardless of role —
+  // "Employee" self-access (SOW's 7th role) isn't a role check, it's a
+  // guaranteed carve-out.
+  const canSeeFinance = canAccessFinance(membership);
+  const canSeeHR = canAccessHR(membership);
+  // NOT filtered against visibleDeptIds: department-level visibility (via
+  // canAccessDepartment/departmentIds) does NOT imply HR/employee
+  // visibility — those are gated separately by canAccessHR. A Department
+  // Manager whose own departmentIds already include their managed
+  // department must still get employee visibility there via this grant;
+  // the employeeIds Set below already dedupes against hrScopedEmployees.
+  const managedDeptIds = membership?.managedDepartmentIds || [];
+
+  const [visibleInvoices, visibleExpenses, hrScopedEmployees, managedEmployees] = await Promise.all([
+    canSeeFinance && visibleDeptIds.length ? invoices.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    canSeeFinance && visibleDeptIds.length ? expenses.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    canSeeHR && visibleDeptIds.length ? employees.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    managedDeptIds.length ? employees.find({ orgId: orgObjectId, departmentId: { $in: managedDeptIds }, deletedAt: null }).toArray() : [],
+  ]);
+
+  const employeeIds = new Set();
+  let visibleEmployees = [];
+  for (const e of [...hrScopedEmployees, ...managedEmployees]) {
+    const key = e._id.toString();
+    if (!employeeIds.has(key)) { employeeIds.add(key); visibleEmployees.push(e); }
+  }
+  if (email && !visibleEmployees.some((e) => e.memberEmail === email)) {
+    const selfRecord = await employees.findOne({ orgId: orgObjectId, memberEmail: email, deletedAt: null });
+    if (selfRecord) visibleEmployees.push(selfRecord);
+  }
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
+    visibleInvoices, visibleExpenses, visibleEmployees,
   };
 }
 
