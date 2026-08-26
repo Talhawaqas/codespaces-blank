@@ -131,7 +131,10 @@ export const investmentMemorandum = {
             "Inaya Learn — an educational video platform with a built-in AI tutor, on web and mobile, built to make the product a daily-use destination beyond storage and staking.",
             "Investor Data Room — a branded, access-controlled document room for sharing investor materials, with per-visitor engagement tracking.",
             "Two native desktop apps (Windows + Linux) — thin Tauri wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
-            "Three purpose-built AI assistants — Business, Security, and Learn — sharing one Gemini-powered tool-calling architecture, each with a guardrail philosophy suited to its job.",
+            // New addition, Finance & HR Layer SOW, August 2026 — same
+            // factual, no-financial-claims pattern as the lines above.
+            "Business Operations & Finance/HR — Tasks, CRM, Procurement, and Inventory built on the Business Workspace's own permission foundation, plus a Finance & HR layer (invoices, expenses, payments, employee records, leave management) — a testnet demonstration layer, not regulated banking or payroll.",
+            "Four purpose-built AI assistants — Docs, Business, Security, and Learn — sharing one Gemini-powered tool-calling architecture; Docs, Security, and Learn are additionally grounded by a shared retrieval-augmented-generation (RAG) layer over the project's real documentation.",
             // New addition, ecosystem-doc audit pass, August 2026 — same
             // factual, no-financial-claims pattern as the Security Layer
             // and Business Workspace lines above.

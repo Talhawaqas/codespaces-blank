@@ -215,7 +215,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace ships in stages — the first four are live today; the rest extend it toward a full business operations platform.",
+          text: "Business Workspace ships in stages — the first six are live today; the rest extend it toward a full business operations platform.",
         },
         {
           type: "numbered",
@@ -224,8 +224,8 @@ export const saasBusinessModel = {
             { heading: "Document Workflow — LIVE.", body: "Draft/review/approval states with a full activity log." },
             { heading: "Enterprise Permissions & Secure Sharing — LIVE.", body: "Per-document access grants and expiring share links." },
             { heading: "AI Business Assistant — LIVE.", body: "A permission-aware assistant scoped to each user's real access." },
-            { heading: "Business Operations — NEXT.", body: "Projects & tasks, CRM, procurement, and inventory modules." },
-            { heading: "Finance & HR — FUTURE.", body: "Financial records and HR management built on the same secure foundation." },
+            { heading: "Business Operations — LIVE.", body: "Projects & tasks, CRM (unified lead/customer records with a sales pipeline), procurement (purchase requests/orders with a real approval chain), and inventory (real stock movements, including purchase orders that actually move inventory on receipt)." },
+            { heading: "Finance & HR — LIVE (testnet demonstration layer).", body: "Invoices, expenses, payments, and CSV financial reporting; employee records, employee documents, computed leave balances, and Department Manager administration — built on the exact same permission foundation as every earlier stage. Not regulated banking, tax filing, or payroll processing; every screen carries a visible \"Testnet / Beta\" badge." },
             { heading: "Business Intelligence — FUTURE.", body: "Reporting and analytics across everything stored in the workspace." },
             { heading: "AI-Powered Business Operations — FUTURE.", body: "The AI Assistant extends from answering questions to taking action across the platform." },
           ],

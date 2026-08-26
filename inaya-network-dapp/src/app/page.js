@@ -3183,6 +3183,12 @@ export default function Home() {
         // (not a local-only demo — see /automation).
         { text: "Oracle & Automation Layer — 3 smart contracts deployed & verified on BSC Testnet, live at /automation", done: true },
         { text: "Oracle & Automation Layer — real on-chain price feed + automated node settlement release, running end-to-end", done: true },
+        // Added August 2026 — Business Operations (Tasks, CRM, Procurement,
+        // Inventory), a Finance & HR layer, and RAG-grounded AI assistants,
+        // all shipped this cycle but never reflected in this roadmap.
+        { text: "Business Operations — Tasks, CRM, Procurement, Inventory, real permission-scoped AI tools, web + mobile", done: true },
+        { text: "Finance & HR Layer — invoices, expenses, payments, employee records, leave management (testnet demonstration scope, web + mobile)", done: true },
+        { text: "RAG (retrieval-augmented generation) infrastructure — hybrid vector + keyword search on MongoDB Atlas, grounding the Docs, Security, and Learn AI assistants", done: true },
       ],
     },
     {

@@ -36,7 +36,7 @@ export const ecosystemOverview = {
             },
             {
               heading: "The application layer",
-              body: "Everything a person actually opens: the storage dApp, the Business Workspace for companies, the mobile app, two desktop apps, a public security page, an investor data room, and three AI assistants — all talking to the same backend.",
+              body: "Everything a person actually opens: the storage dApp, the Business Workspace for companies (including its own operations, finance, and HR tooling), the mobile app, two desktop apps, a public security page, an investor data room, and four AI assistants — all talking to the same backend.",
             },
           ],
         },
@@ -103,6 +103,10 @@ export const ecosystemOverview = {
           text: "Not every customer wants a blockchain product. Business Workspace is a genuine B2B SaaS tool — organizations, departments, projects, documents — with real approval workflows, granular permissions, secure sharing links, and a permission-aware AI assistant. Sign-in is just an email or a Google account. No wallet, no tokens, no blockchain vocabulary anywhere in the experience.",
         },
         {
+          type: "lead",
+          text: "It has grown well beyond documents: real business operations (Tasks, CRM, Procurement, Inventory) and a Finance & HR layer (invoicing, expense approval, employee records, leave management) now run on the exact same organization/department/permission foundation described above — every new module additive, nothing about the base system had to be restructured to add them. Finance & HR is explicitly a testnet demonstration layer today, not regulated banking or payroll.",
+        },
+        {
           type: "note",
           label: "Why this matters strategically.",
           text: "It's a second, independent revenue engine — priced and sold like any other business software, evaluated by a buyer who will never ask what chain it runs on — while still running on top of the same infrastructure and the same encryption guarantees as the consumer storage product.",
@@ -129,20 +133,26 @@ export const ecosystemOverview = {
     },
     {
       number: "07",
-      title: "The AI Layer — Three Assistants, One Pattern, Different Rules",
+      title: "The AI Layer — Four Assistants, One Pattern, Different Rules",
       blocks: [
         {
           type: "lead",
-          text: "All three assistants (Business, Security, Learn Tutor) are built the same technical way — they can call small, purpose-built tools to look up real data before answering. What's different is the philosophy each one follows.",
+          text: "All four assistants (Docs, Business, Security, Learn Tutor) are built the same technical way — they can call small, purpose-built tools to look up real data before answering. What's different is the philosophy each one follows.",
         },
         {
           type: "table",
           headers: ["Assistant", "Its one rule"],
           rows: [
-            ["Business Assistant", "Never show a user data they aren't actually permitted to see — every answer respects real document/project permissions."],
+            ["Docs Assistant", "Answer grounded in the project's own real documentation — retrieves the relevant passage first, then answers from it, and cites where the answer came from."],
+            ["Business Assistant", "Never show a user data they aren't actually permitted to see — every answer respects real document/project/finance/HR permissions."],
             ["Security Assistant", "Never invent a threat verdict — every specific claim must be backed by real, verified network data."],
             ["Learn AI Tutor", "The opposite of the other two — teach freely using its own knowledge, like a real tutor would; only use tools to check the user's own saved videos and progress."],
           ],
+        },
+        {
+          type: "note",
+          label: "How the Docs, Security, and Learn assistants find the right passage.",
+          text: "A shared retrieval layer (RAG) indexes the project's real documentation and FAQs, embeds it for semantic search, and combines that with plain keyword search — so \"how does the pricing work\" and \"pricing structure\" both find the same real answer, not a static block of hardcoded text that goes stale the moment the product changes.",
         },
       ],
     },

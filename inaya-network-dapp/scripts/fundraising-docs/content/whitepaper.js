@@ -224,11 +224,12 @@ export const whitepaper = {
           type: "bullets",
           items: [
             "Business Workspace — a B2B SaaS product: organizations, departments, projects, and documents with server-enforced approval workflows, granular permissions, secure sharing, and a permission-aware AI assistant. Email sign-in, no wallet required.",
+            "Business Operations & Finance/HR — Tasks, CRM, Procurement, and Inventory on the same permission foundation, plus a Finance & HR layer (invoices, expenses, payments, employee records, leave management) — a testnet demonstration layer today, not regulated banking or payroll.",
             "Security Layer (\"Inaya Firewall\") — a decentralized, node-reported threat-intelligence network with reputation-weighted confirmation and on-chain-anchored verdicts, surfaced on a public web page, in the mobile app, and via real OS-level enforcement on desktop.",
             "Inaya Learn — a YouTube-based educational discovery platform with an AI tutor, built to make the apps a daily-use destination beyond storage and staking.",
             "Investor Data Room — a branded, access-controlled document room with per-visitor engagement tracking.",
             "Two Tauri desktop apps — thin native wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
-            "Three Gemini-powered AI assistants — Business, Security, and Learn — sharing one technical pattern but opposite guardrail philosophies suited to their purpose (see the Ecosystem Architecture document for full detail).",
+            "Four Gemini-powered AI assistants — Docs, Business, Security, and Learn — sharing one technical pattern but different guardrail philosophies suited to their purpose; Docs, Security, and Learn are grounded by a shared RAG retrieval layer (see the Ecosystem Architecture document for full detail).",
             "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
           ],
         },

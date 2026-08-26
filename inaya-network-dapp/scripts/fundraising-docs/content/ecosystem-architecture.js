@@ -262,6 +262,7 @@ export const ecosystemArchitecture = {
             "Storage model: documents here are encrypted client-side before upload using the same passkey-based flow as the Sovereign Vault, then pinned as JSON-shard blobs — NOT the same storage path as the Data Room, which stores plain, unencrypted PDFs for inline viewing (see Section 11 for why that's a deliberate, different choice).",
             "Billing: Stripe subscription plans (orgPlans.js), seat limits enforced server-side on invite, storage-size limits enforced server-side on document upload.",
             "AI: a permission-aware Business Assistant (Section 12) that only ever sees data the requesting user is actually authorized to see.",
+            "Beyond documents: the workspace now covers real business operations on the same org/department/permission foundation — Tasks, CRM, Procurement, Inventory (Section 23), and a Finance & HR layer (Section 24, testnet demonstration scope). None of this required touching the base document/permission model; every module is additive.",
           ],
         },
       ],
@@ -340,19 +341,20 @@ export const ecosystemArchitecture = {
     },
     {
       number: "12",
-      title: "The Three AI Assistants",
+      title: "The AI Assistants",
       blocks: [
         {
           type: "lead",
-          text: "Business, Security, and Learn Tutor all share one architectural pattern (Gemini function-calling, 5-round tool loop, 429/503 retry with backoff) but deliberately opposite guardrail philosophies.",
+          text: "Four assistants — Docs, Business, Security, and Learn Tutor — sharing one architectural pattern (Gemini function-calling, 5-round tool loop, 429/503 retry with backoff) but deliberately different guardrail philosophies. Three of the four (Docs, Security, Learn) are now also grounded by a shared RAG retrieval layer — see Section 25 for how that actually works; this section stays focused on what each assistant is FOR.",
         },
         {
           type: "table",
           headers: ["Assistant", "Where", "Guardrail philosophy"],
           rows: [
-            ["Business Assistant", "Business Workspace sidebar", "Permission-aware — every tool call re-checks the requesting user's actual document/project access; never surfaces data they couldn't otherwise see."],
-            ["Security Assistant", "Public /security page + mobile SecurityScreen", "Strict evidence-grounding — explicitly forbidden from inventing or generalizing beyond verified security_* collection data. \"Explain phishing in general\" is fine; fabricating a specific threat's status is not."],
-            ["Learn AI Tutor", "Web + mobile Learn section", "The opposite on purpose — teaches using its own general knowledge like a real tutor; tools exist only to ground it in the user's own saved videos/progress, never to gate what subject matter it can discuss."],
+            ["Docs Assistant", "Public site-wide chat widget", "Grounded in the project's own docs/FAQ/fundraising-doc corpus via RAG retrieval (Section 25) instead of a static hardcoded knowledge block — answers cite which source they came from."],
+            ["Business Assistant", "Business Workspace sidebar", "Permission-aware — every tool call re-checks the requesting user's actual document/project/finance/HR access; never surfaces data they couldn't otherwise see. Uses direct permission-scoped MongoDB tool-calling, not RAG — this is live, per-org private data, never appropriate to put in a shared vector index."],
+            ["Security Assistant", "Public /security page + mobile SecurityScreen", "Strict evidence-grounding — explicitly forbidden from inventing or generalizing beyond verified security_* collection data (live tool-calling) or the RAG-indexed security policy/explainer docs (Section 25). \"Explain phishing in general\" is fine; fabricating a specific threat's status is not."],
+            ["Learn AI Tutor", "Web + mobile Learn section", "The opposite on purpose — teaches using its own general knowledge like a real tutor; tools (including RAG search over the current video's transcript, Section 25) exist only to ground it in the user's own saved videos/progress, never to gate what subject matter it can discuss."],
           ],
         },
       ],
@@ -502,6 +504,8 @@ export const ecosystemArchitecture = {
             "Neither desktop app is code-signed (Authenticode) — investigated, no free option exists for closed-source software, deferred to mainnet rather than spend on it now.",
             "Genesis Airdrop has no on-chain claim function — both mechanics are display/manual-review only, real distribution happens off-app at TGE.",
             "macOS is out of scope for both desktop apps, per Apple Developer Program cost + notarization constraint.",
+            "Finance & HR (Section 24) is explicitly a testnet demonstration/validation layer — no PDF invoice generation, no multi-currency conversion, no regulated banking/payment-processor integration, no payroll/tax processing.",
+            "RAG (Section 25) deliberately never ingests custody-sdk's own docs or the legacy KNOWLEDGE_ARTICLES collection, and never ingests private per-org Business Workspace data or per-identity Security events into the shared vector index — those stay live, permission-scoped tool calls, by design.",
           ],
         },
       ],
@@ -562,10 +566,133 @@ export const ecosystemArchitecture = {
             ["Client-side crypto SDK", "inaya-network-dapp/custody-sdk/src/ (crypto.js, index.js, contracts.js)"],
             ["Node operator CLI", "inaya-network-dapp/custody-sdk/packages/node-daemon/"],
             ["Backend + web dApp + Business Workspace", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],
+            ["Business Operations (Tasks/CRM/Procurement/Inventory)", "src/lib/{task,deal,purchase-request,purchase-order}-workflow.js, inventory.js; src/app/api/orgs/{tasks,crm,procurement,inventory}/"],
+            ["Finance & HR", "src/lib/{invoice,expense,employee,leave}-workflow.js, attachments.js; src/app/api/orgs/{finance,hr}/"],
+            ["RAG infrastructure", "src/lib/rag/ (chunking, embeddings, vectorStore, retrieve, ingest); src/app/api/admin/rag/, src/app/api/cron/rag-reingest/"],
             ["Mobile app", "inaya-mobile/src/"],
             ["Desktop — Business Workspace wrapper", "inaya-desktop/src-tauri/"],
             ["Desktop — dApp wrapper", "inaya-dapp-desktop/src-tauri/"],
           ],
+        },
+      ],
+    },
+    {
+      number: "23",
+      title: "Business Operations — Tasks, CRM, Procurement, Inventory",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four modules added to the Business Workspace on the exact same org/department/permission foundation Section 08 describes — no new auth system, no new storage system, every record department-scoped through the same canAccessDepartment gate every document already goes through.",
+        },
+        {
+          type: "table",
+          headers: ["Module", "Core objects", "Notable mechanic"],
+          rows: [
+            ["Tasks", "tasks (assignee, dueDate, status)", "Real state-machine workflow, not just a status field — the {from,to,requiresManage,activityAction} transition-table pattern this whole layer reuses everywhere."],
+            ["CRM", "crm_contacts, crm_deals", "A contact IS the unified Lead/Customer record — type flips LEAD→CUSTOMER on conversion rather than the record being recreated, so history/notes/deals stay attached."],
+            ["Procurement", "purchase_requests, purchase_orders, suppliers", "PR→PO approval chain; PO receiving genuinely moves real Inventory stock — the two modules are integrated, not just adjacent."],
+            ["Inventory", "products, warehouses, stock_levels, stock_movements", "stock_levels is a materialized view, only ever changed via $inc; stock_movements is the real append-only ledger — same 'ledger is truth' discipline used elsewhere in this codebase (faucet lifetime-caps, Finance's leave balances)."],
+          ],
+        },
+        {
+          type: "bullets",
+          lead: "Shared infrastructure, not per-module reinvention:",
+          items: [
+            "org_activity — one domain-generic audit log every module's transitions write into, not a bespoke activity table per module.",
+            "getAccessibleScope() (document-permissions.js) — the one function that resolves 'everything this member can see across the whole org,' extended incrementally as each module shipped rather than four separate resolvers.",
+            "AI tools: list_tasks, list_contacts/list_deals, list_suppliers/list_purchase_orders, list_products — all permission-scoped through the same getAccessibleScope() the human-facing routes use, so the Business Assistant never sees more than the requesting user could see themselves.",
+          ],
+        },
+        {
+          type: "note",
+          text: "Full detail (data model, workflow tables, permission model, test coverage, explicit out-of-scope list) in BUSINESS_OPERATIONS_TASKS.md, _CRM.md, _PROCUREMENT.md, and _INVENTORY.md at the repo root.",
+        },
+      ],
+    },
+    {
+      number: "24",
+      title: "Finance & HR Layer",
+      blocks: [
+        {
+          type: "lead",
+          text: "Invoices, Expenses, Payments, and CSV reporting (Finance); Employee records, Employee documents, Leave management, and Department Administration (HR) — a testnet demonstration/validation layer, explicitly not regulated banking, tax filing, or payroll processing. Every Finance/HR screen carries a visible 'Testnet / Beta' badge.",
+        },
+        {
+          type: "subsection",
+          heading: "Roles are additive, not a restructure.",
+          body: "org_members.role stays a single fixed string (owner|admin|member), checked in exactly one place (canManageOrg). Finance and HR each get their own new, OPTIONAL fields on the same document instead: financeRole (null|manager|staff), hrRole (null|manager|staff), managedDepartmentIds (new — Department Manager, a role that didn't exist before this layer). Zero risk to any existing module's gates.",
+        },
+        {
+          type: "table",
+          headers: ["Concept", "Mechanic"],
+          rows: [
+            ["Invoice lifecycle", "DRAFT→SENT→PAID/CANCELLED, plus a cron-driven SENT→OVERDUE (invoices-mark-overdue, nightly, CRON_SECRET-gated) — the one transition in this entire layer that isn't user-invoked. Idempotent: a PAID invoice with a past due date is never touched, because the cron filters on status, not on date."],
+            ["Expense approval", "submit→PENDING_APPROVAL→APPROVED/REJECTED, approve/reject gated by canManageFinance (Finance Manager or org owner/admin) — Finance Staff can submit but not approve their own or anyone else's."],
+            ["Employee identity", "employees.memberEmail is nullable — set when the employee has real workspace login, absent when HR is just tracking someone who never logs in. Either way is a valid record."],
+            ["The 'Employee' role", "Not a role string at all — any member viewing the employees record whose memberEmail matches their own session gets read access to that one record and their own leave requests. A data-scoping rule, not an enum value."],
+            ["Leave balance", "Computed fresh on every read (allocationDays − this year's APPROVED day-spans), never a mutable stored counter — same 'ledger is truth' discipline as Inventory's stock levels (Section 23)."],
+            ["HR/expense documents", "A new attachments collection, deliberately NOT a reuse of org_documents (which mandates a projectId and a department/project permission model wrong for 'who can see this employee's contract') — reuses the same client-side encrypt/shard/pin pipeline, just records metadata differently."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real bug this layer's own tests caught.",
+          text: "getAccessibleScope() originally filtered a Department Manager's managedDepartmentIds against their own already-visible departments before querying, intended as a redundant-query optimization — but department-level visibility doesn't imply HR/employee visibility, which is gated separately. A Department Manager whose own membership already included their managed department (the normal case) ended up with an empty managedDeptIds and silently lost their HR grant. Caught by test/hr-workflow.test.mjs's Department Manager scope test, fixed by removing the incorrect filter — a genuine finding from testing against real Atlas, not a hypothetical.",
+        },
+        {
+          type: "note",
+          text: "Full detail in BUSINESS_OPERATIONS_FINANCE.md and _HR.md at the repo root.",
+        },
+      ],
+    },
+    {
+      number: "25",
+      title: "RAG — Retrieval-Augmented Generation Infrastructure",
+      blocks: [
+        {
+          type: "lead",
+          text: "The shared retrieval layer behind the Docs, Security, and Learn assistants (Section 12) — replaces the Docs Assistant's old static hardcoded knowledge block with real semantic + keyword search over a live, re-ingestable content index. Built on this project's real MongoDB Atlas cluster, not a bolted-on vector-DB vendor.",
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Chunk & embed.",
+              body: "Static sources (docs pages, FAQs, the fundraising-docs content files, the security policy explainer, Learn's curated config, and lazily-ingested YouTube video transcripts) get chunked by heading/paragraph/structured-section as appropriate, then embedded via Gemini's gemini-embedding-001 (768 dimensions), content-hash-cached so re-ingesting unchanged content costs nothing.",
+            },
+            {
+              heading: "Index — native Atlas, both kinds.",
+              body: "rag_chunks carries both an Atlas Vector Search index ($vectorSearch) and an Atlas Search index ($search), both created idempotently in code (collection.createSearchIndex()) — no manual Atlas dashboard step required.",
+            },
+            {
+              heading: "Hybrid retrieve.",
+              body: "retrieveContext() merges vector + keyword results via Reciprocal Rank Fusion in application code (not a native $rankFusion stage, for broader Atlas-tier compatibility), then gates on a relevance threshold calibrated against real measurements on this project's own cluster — DEFAULT_MIN_RELEVANCE = 0.8, set after live-measuring relevant queries scoring ~0.89-0.91 cosine similarity against irrelevant ones at ~0.72-0.77 (a genuinely higher baseline than intuition suggested, and a real bug caught: an earlier 0.55 threshold plus a keyword-match override let an irrelevant query pass).",
+            },
+            {
+              heading: "Attribute the answer.",
+              body: "Every assistant response using RAG-retrieved context appends a formatted attribution of which source(s) it drew from — never a bare answer with no traceable origin.",
+            },
+          ],
+        },
+        {
+          type: "bullets",
+          lead: "Permission-safe by construction:",
+          items: [
+            "Nothing private is ever ingested into the shared rag_chunks index — Security's per-identity events and Learn's per-wallet progress stay live, permission-scoped MongoDB tool calls (Section 12/23's pattern), never embedded text.",
+            "custody-sdk's own docs and the legacy KNOWLEDGE_ARTICLES collection are deliberately excluded from ingestion — documented scope trims, not oversights.",
+          ],
+        },
+        {
+          type: "bullets",
+          lead: "Ops:",
+          items: [
+            "Admin UI at /admin/rag (reingest, stats) plus a nightly cron (rag-reingest, CRON_SECRET-gated, same pattern as every other cron in this codebase).",
+            "rag_query_log and rag_ingestion_runs give an honest record of what was actually retrieved and when content was last (re)indexed — metrics recording is fail-open, never blocks the caller.",
+          ],
+        },
+        {
+          type: "note",
+          text: "Full detail in RAG_INFRASTRUCTURE.md at the repo root.",
         },
       ],
     },
