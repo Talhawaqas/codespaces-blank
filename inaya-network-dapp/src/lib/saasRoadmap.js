@@ -46,8 +46,13 @@
 //     each module actually does and what's explicitly out of scope (no
 //     PDF invoice generation, no payroll/tax processing, no regulated
 //     banking — this is a testnet demonstration/validation layer).
-//   - Stage 8 (BI) is not implemented — no backend, no schema, no routes
-//     exist for any of it. Roadmap direction only.
+//   - Stage 8 (Business Intelligence) is now real and shipped too — the
+//     Inaya Business Insights & KPI Dashboard: KPI cards, period-over-
+//     period comparison, trend charts, and business alerts, computed from
+//     the same permission-scoped data every other module already reads,
+//     plus a dedicated AI tool (get_business_insights). Web + mobile
+//     (mobile has KPIs/alerts, no trend charts yet). See
+//     BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's not.
 
 export const ROADMAP_STATUS = {
   LIVE: "LIVE",
@@ -247,24 +252,25 @@ export const ROADMAP_STAGES = [
   {
     number: 8,
     title: "Business Intelligence",
-    status: ROADMAP_STATUS.FUTURE,
-    description: "Turn business activity into dashboards and AI-generated insight.",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Inaya Business Insights & KPI Dashboard — business activity turned into live dashboards and AI-generated insight.",
     features: [
       "Business dashboards",
-      "Department analytics",
-      "Project analytics",
-      "Financial analytics",
-      "Operational reporting",
+      "KPI cards (revenue, expenses, pipeline, task completion, headcount, low stock, pending approvals)",
+      "Period-over-period comparison",
+      "Revenue/expense/task/deal trend charts",
+      "Business alerts (overdue invoices, low stock, overdue tasks, significant KPI swings)",
       "AI-generated summaries",
       "AI business insights",
       "Natural-language reporting",
     ],
     examples: [
-      "“Show me all pending approvals this month.”",
-      "“Which projects have the most activity?”",
-      "“Summarize Finance department activity.”",
+      "“How's the business doing this month?”",
+      "“Any alerts I should know about?”",
+      "“Explain why revenue changed this period.”",
     ],
-    examplesNote: "These are examples of the intended future direction, not currently available capabilities.",
+    notes:
+      "Real and shipped: KPI cards, period-over-period comparison, trend charts, and business alerts all compute from the same permission-scoped data every other Business Workspace module already reads — no separate, weaker-scoped path. The AI Business Assistant answers KPI/trend/alert questions directly via a dedicated get_business_insights tool. See BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's explicitly not yet (no custom date-range picker, no trend charts on mobile yet).",
   },
   {
     number: 9,
