@@ -88,6 +88,25 @@ async function runRetrieval({ trimmedQuery, domain, sourceId, topK, minRelevance
     const queryEmbedding = await embedQueryText(trimmedQuery);
     const merged = await hybridSearch({ queryText: trimmedQuery, queryEmbedding, domain, sourceId, topK });
 
+    console.log(
+  "RAG DEBUG:",
+  JSON.stringify(
+    {
+      query: trimmedQuery,
+      domain,
+      resultCount: merged.length,
+      results: merged.map((c) => ({
+        title: c.title,
+        section: c.section,
+        vectorScore: c.vectorScore,
+        sourceId: c.sourceId,
+      })),
+    },
+    null,
+    2
+  )
+);
+
     const topVectorScore = merged.reduce((max, c) => (c.vectorScore != null && c.vectorScore > max ? c.vectorScore : max), 0);
     // Gated on vector score ALONE, calibrated against real measurements
     // against this project's own live Atlas cluster + gemini-embedding-001
