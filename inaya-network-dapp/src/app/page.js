@@ -6030,7 +6030,7 @@ export default function Home() {
                 </button>
 
                 <p className="text-[12px] text-[#8a96ab] font-mono">
-                  The faucet skips a token if your wallet already holds enough for testing — this keeps the treasury available for everyone.
+                  $INAYA: 500 per wallet, lifetime — once used, that's it for this wallet. Limited to the first 1,000 wallets on the testnet. mUSDT tops up whenever your balance runs low, same as before.
                 </p>
               </div>
 

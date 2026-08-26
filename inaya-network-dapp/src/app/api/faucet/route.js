@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { ethers } from 'ethers';
+import { getClientIp } from '../../../lib/ipAddress.js';
+import {
+  recordFaucetRequest,
+  getTotalInayaSentToWallet,
+  isNewFaucetWallet,
+  getUniqueWalletCount,
+  FAUCET_INAYA_LIFETIME_CAP,
+  FAUCET_MAX_UNIQUE_WALLETS,
+} from '../../../lib/faucet.js';
 
 const RPC_URL = process.env.BNB_TESTNET_RPC || "https://data-seed-prebsc-1-s1.binance.org:8545/";
 const FAUCET_PRIVATE_KEY = process.env.FAUCET_PRIVATE_KEY;
@@ -15,8 +24,12 @@ const ERC20_ABI = [
 
 const INAYA_DRIP_AMOUNT = "500";
 const USDT_DRIP_AMOUNT = "100";
-const INAYA_SUFFICIENCY_THRESHOLD = "1000";
 const USDT_SUFFICIENCY_THRESHOLD = "20";
+// $INAYA dispensing is gated by the tracked lifetime cap + wallet-count
+// cap below (see lib/faucet.js), not an on-chain balance check — a
+// balance check can't distinguish "already got the full allowance and
+// spent it" from "never requested." mUSDT keeps the simpler
+// balance-threshold top-up behavior since it isn't part of this cap.
 
 export async function POST(request) {
   try {
@@ -40,17 +53,23 @@ export async function POST(request) {
 
     const results = {};
 
-    const inayaDecimals = await inayaToken.decimals();
-    const inayaBalance = await inayaToken.balanceOf(walletAddress);
-    const inayaThreshold = ethers.parseUnits(INAYA_SUFFICIENCY_THRESHOLD, inayaDecimals);
+    const alreadyReceivedInaya = await getTotalInayaSentToWallet(walletAddress);
 
-    if (inayaBalance < inayaThreshold) {
-      const dripAmount = ethers.parseUnits(INAYA_DRIP_AMOUNT, inayaDecimals);
+    if (alreadyReceivedInaya >= FAUCET_INAYA_LIFETIME_CAP) {
+      results.inaya = { sent: false, reason: `This wallet has already received its maximum test $INAYA allowance (${FAUCET_INAYA_LIFETIME_CAP}).` };
+    } else if ((await isNewFaucetWallet(walletAddress)) && (await getUniqueWalletCount()) >= FAUCET_MAX_UNIQUE_WALLETS) {
+      // Global capacity only gates NEW wallets — a wallet that's already
+      // received something before can still top up to its own cap even
+      // once the faucet is "full" to new participants.
+      results.inaya = { sent: false, reason: `The testnet faucet has reached its capacity of ${FAUCET_MAX_UNIQUE_WALLETS} wallets.` };
+    } else {
+      const inayaDecimals = await inayaToken.decimals();
+      const remaining = FAUCET_INAYA_LIFETIME_CAP - alreadyReceivedInaya;
+      const dripAmountStr = String(Math.min(remaining, parseFloat(INAYA_DRIP_AMOUNT)));
+      const dripAmount = ethers.parseUnits(dripAmountStr, inayaDecimals);
       const tx = await inayaToken.transfer(walletAddress, dripAmount);
       await tx.wait();
-      results.inaya = { sent: true, amount: INAYA_DRIP_AMOUNT, txHash: tx.hash };
-    } else {
-      results.inaya = { sent: false, reason: "Wallet already holds sufficient $INAYA for testing." };
+      results.inaya = { sent: true, amount: dripAmountStr, txHash: tx.hash };
     }
 
     const usdtDecimals = await usdtToken.decimals();
@@ -65,6 +84,13 @@ export async function POST(request) {
     } else {
       results.usdt = { sent: false, reason: "Wallet already holds sufficient mUSDT for testing." };
     }
+
+    // Awaited (not fire-and-forget) — a serverless function can freeze
+    // right after the response is sent, same reasoning as everywhere
+    // else in this codebase that writes tracking data before returning.
+    // recordFaucetRequest() itself never throws (fail-open), so this
+    // can't turn a successful dispatch into a failed response.
+    await recordFaucetRequest({ walletAddress, ipAddress: getClientIp(request), results });
 
     return NextResponse.json({ success: true, results });
   } catch (err) {
