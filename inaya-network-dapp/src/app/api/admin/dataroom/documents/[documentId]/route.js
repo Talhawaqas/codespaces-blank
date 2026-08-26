@@ -1,13 +1,13 @@
 // app/api/admin/dataroom/documents/[documentId]/route.js
 //
 // DELETE /api/admin/dataroom/documents/:documentId — removes a document
-// from the room. Does not unpin from Pinata (same "don't bother unpinning"
-// posture as the rest of this codebase's IPFS usage) — just stops it from
-// being listed/streamable to visitors.
+// from the room AND its bytes from GridFS — unlike the old "don't bother
+// unpinning" IPFS posture, this is real database storage, so an admin
+// delete should actually free it rather than leave an orphaned file.
 
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "../../../../../../lib/admin-auth.js";
-import { getDataroomCollections, toObjectId } from "../../../../../../lib/dataroom.js";
+import { getDataroomCollections, toObjectId, deleteDocumentFile } from "../../../../../../lib/dataroom.js";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,15 @@ export async function DELETE(req, { params }) {
   try {
     const { documentId } = params;
     const { documents } = await getDataroomCollections();
+    const doc = await documents.findOne({ _id: toObjectId(documentId) });
+    if (doc?.fileId) {
+      await deleteDocumentFile(doc.fileId).catch((err) => {
+        // A missing/already-gone GridFS file shouldn't block removing the
+        // row itself — log and continue, same fail-open posture the rest
+        // of this codebase uses for non-critical cleanup steps.
+        console.error(`admin/dataroom/documents DELETE: GridFS cleanup failed for fileId ${doc.fileId}:`, err.message);
+      });
+    }
     await documents.deleteOne({ _id: toObjectId(documentId) });
     return NextResponse.json({ removed: true });
   } catch (err) {

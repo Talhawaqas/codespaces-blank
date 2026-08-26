@@ -13,18 +13,26 @@
 // duration tracking, which requires the server to actually be able to
 // serve viewable bytes. Data room documents are therefore stored
 // unencrypted but access-controlled (gated by the visitor-session + NDA
-// layer below, not by encryption) — same PINATA_JWT credential as the
-// rest of this codebase, just the plain-file pinning endpoint instead of
-// the JSON-shard one.
+// layer below, not by encryption).
+//
+// Storage: MongoDB GridFS (the same database this whole app already
+// depends on), not IPFS/Pinata — this feature has no need for a pinning
+// service or a third-party credential at all: it isn't trying to be
+// decentralized (see the paragraph above), it's an admin-only upload of a
+// handful of investor PDFs, and GridFS handles files well past this
+// module's own 50MB cap natively. One less external dependency, one less
+// credential to rotate.
 //
 // Token/session mechanics deliberately reuse orgs.js's exact helpers
 // (hashToken/generateToken/isValidEmail/normalizeEmail) rather than
 // duplicating them — they're pure and generic, not org-coupled.
 
 import { randomBytes, createHash } from "node:crypto";
-import { ObjectId } from "mongodb";
+import { ObjectId, GridFSBucket } from "mongodb";
 import { connectToDatabase } from "./mongodb.js";
 import { hashToken, generateToken, isValidEmail, normalizeEmail } from "./orgs.js";
+
+const GRIDFS_BUCKET_NAME = "dataroom_files";
 
 export const DATAROOM_SESSION_COOKIE = "inaya_dataroom_session";
 export const DATAROOM_MAGIC_LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes, same as org login links
@@ -242,41 +250,45 @@ export async function revokeDataroomVisitor(visitorId) {
 }
 
 // ============================================================
-// Document storage — plain (unencrypted) Pinata pinning
+// Document storage — plain (unencrypted) MongoDB GridFS
 // ============================================================
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required env var: ${name}`);
-  return value;
+async function getDataroomBucket() {
+  const { db } = await connectToDatabase();
+  return new GridFSBucket(db, { bucketName: GRIDFS_BUCKET_NAME });
 }
 
-/** Pins a document's raw bytes to IPFS via Pinata's multipart file-upload
- *  endpoint — the sibling of the pinJSONToIPFS call the encrypted-shard
- *  upload route uses, but for plain files: no client-side encryption/
- *  sharding here, since data room access control is the visitor-session +
- *  NDA gate, not encryption. Same PINATA_JWT credential as the rest of
- *  this codebase. Never surfaces Pinata's raw error body — status only,
- *  same policy as didit.js (the call carries a credential). */
-export async function pinDocumentFile({ buffer, filename, mimeType }) {
-  const pinataJWT = requireEnv("PINATA_JWT");
-
-  const formData = new FormData();
-  formData.append("file", new Blob([buffer], { type: mimeType }), filename);
-  formData.append("pinataMetadata", JSON.stringify({ name: `inaya_dataroom_${filename}` }));
-
-  const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${pinataJWT.trim()}` },
-    body: formData,
+/** Writes a document's raw bytes into GridFS. Returns the file's ObjectId
+ *  (as a string) — stored on the dataroom_documents row as `fileId`,
+ *  replacing what used to be a Pinata CID. */
+export async function storeDocumentFile({ buffer, filename, mimeType }) {
+  const bucket = await getDataroomBucket();
+  return new Promise((resolve, reject) => {
+    const uploadStream = bucket.openUploadStream(filename, { contentType: mimeType });
+    uploadStream.on("error", reject);
+    uploadStream.on("finish", () => resolve(uploadStream.id.toString()));
+    uploadStream.end(buffer);
   });
+}
 
-  if (!res.ok) {
-    throw new Error(`Document upload failed (HTTP ${res.status}).`);
-  }
+/** Reads a document's raw bytes back out of GridFS. Buffered (not a raw
+ *  stream passthrough) for the same reason the old Pinata-gateway proxy
+ *  buffered its response — a consistent body type NextResponse always
+ *  handles correctly, well within budget at this module's 50MB cap. */
+export async function readDocumentFile(fileId) {
+  const bucket = await getDataroomBucket();
+  const downloadStream = bucket.openDownloadStream(toObjectId(fileId));
+  const chunks = [];
+  for await (const chunk of downloadStream) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
 
-  const data = await res.json();
-  return data.IpfsHash;
+/** Deletes a document's bytes from GridFS — called when the admin removes
+ *  a document row, so storage doesn't silently accumulate orphaned files
+ *  the way "don't bother unpinning" was an acceptable posture for IPFS. */
+export async function deleteDocumentFile(fileId) {
+  const bucket = await getDataroomBucket();
+  await bucket.delete(toObjectId(fileId));
 }
 
 // ============================================================

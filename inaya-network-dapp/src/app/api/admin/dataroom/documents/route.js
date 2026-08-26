@@ -2,8 +2,9 @@
 //
 // GET  /api/admin/dataroom/documents — list all data room documents.
 // POST /api/admin/dataroom/documents — upload a new one (multipart:
-//   file, title, category). Pins the raw file to Pinata (unencrypted —
-//   see src/lib/dataroom.js's header comment for why) and registers it.
+//   file, title, category). Stores the raw file in MongoDB GridFS
+//   (unencrypted — see src/lib/dataroom.js's header comment for why) and
+//   registers it.
 //
 // Gated by the current Enterprise Dashboard admin session
 // (isAdminAuthenticated), same as /api/admin/customers etc. — not the
@@ -11,7 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "../../../../../lib/admin-auth.js";
-import { ensureDataroomIndexes, getDataroomCollections, validateDocumentUploadInput, pinDocumentFile } from "../../../../../lib/dataroom.js";
+import { ensureDataroomIndexes, getDataroomCollections, validateDocumentUploadInput, storeDocumentFile } from "../../../../../lib/dataroom.js";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export async function POST(req) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const cid = await pinDocumentFile({ buffer, filename: file.name, mimeType: file.type });
+    const fileId = await storeDocumentFile({ buffer, filename: file.name, mimeType: file.type });
 
     await ensureDataroomIndexes();
     const { documents } = await getDataroomCollections();
@@ -66,7 +67,7 @@ export async function POST(req) {
       title: clean.title,
       category: clean.category,
       filename: file.name,
-      cid,
+      fileId,
       sizeBytes: file.size,
       mimeType: file.type,
       uploadedAt: new Date().toISOString(),
