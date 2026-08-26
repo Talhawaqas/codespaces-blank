@@ -28,6 +28,13 @@ import { ensureOrgIndexes, requireMembership, canManageOrg, getOrgCollections, t
 import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, businessSystemInstruction } from "../../../../lib/ai-business-tools.js";
 
 const MAX_TOOL_ROUNDS = 5;
+// Leaves a buffer under maxDuration=90 to actually return a clean error —
+// observed in production: a round hitting a 503 retry mid-loop can run the
+// whole request past 90s, and Vercel then hard-kills the function with NO
+// response ever reaching the client (the chat just hangs on "Thinking…"
+// forever, worse than a real error). This budget makes that fail fast and
+// visibly instead.
+const SAFETY_BUDGET_MS = 75_000;
 
 // Unlike /api/ai/chat (a single streamed call), this route can make up to
 // MAX_TOOL_ROUNDS sequential Gemini calls plus MongoDB queries before it
@@ -106,8 +113,13 @@ export async function POST(req) {
       parts: [{ text: String(m.content || "").slice(0, 2000) }],
     }));
 
+    const requestStartedAt = Date.now();
     let finalText = "";
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
+        console.warn("business-chat: aborting before the safety budget to avoid a silent hard timeout (Gemini likely under sustained load)");
+        return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
+      }
       let response;
       try {
         response = await generateContentWithRetry(ai, {

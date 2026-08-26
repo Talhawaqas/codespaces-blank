@@ -20,6 +20,10 @@ import { buildSecurityContext, runSecurityTool, SECURITY_TOOL_DECLARATIONS, secu
 import { ensureSecurityIndexes } from "../../../../lib/security.js";
 
 const MAX_TOOL_ROUNDS = 5;
+// See business-chat/route.js's identical constant for why: leaves a buffer
+// under maxDuration=90 to return a clean error instead of a silent hard
+// timeout when Gemini is under sustained load.
+const SAFETY_BUDGET_MS = 75_000;
 
 export const maxDuration = 90;
 
@@ -75,8 +79,13 @@ export async function POST(req) {
       parts: [{ text: String(m.content || "").slice(0, 2000) }],
     }));
 
+    const requestStartedAt = Date.now();
     let finalText = "";
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
+        console.warn("security-chat: aborting before the safety budget to avoid a silent hard timeout");
+        return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
+      }
       let response;
       try {
         response = await generateContentWithRetry(ai, {

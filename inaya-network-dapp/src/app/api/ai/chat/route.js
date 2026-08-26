@@ -164,9 +164,43 @@ function formatWalletContext(walletContext) {
 // Created fresh per request — see note #3 above.
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
-  console.log('DEBUG GEMINI_API_KEY present:', !!apiKey, '| length:', (apiKey || '').length);
   if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
+}
+
+// Unlike business-chat/security-chat/learn-chat, this route streams — so
+// the usual "retry the whole call" pattern doesn't directly apply once
+// bytes have started reaching the client. Observed in production: Gemini's
+// generateContentStream() call itself succeeds (no synchronous throw), but
+// the FIRST chunk pulled from the returned async iterator throws a 503
+// ("currently experiencing high demand") — by then this route had already
+// sent 200 headers and an empty stream, so the client got nothing and no
+// real error. Fix: pull the first chunk here, inside the retry loop,
+// BEFORE the Response (and its headers) is constructed at all — a failure
+// here still has a clean path to a real JSON error.
+const RETRYABLE_STATUSES = new Set([429, 503]);
+const RETRY_DELAYS_MS = [700, 1800];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function startStreamWithRetry(ai, params) {
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const responseStream = await ai.models.generateContentStream(params);
+      const iterator = responseStream[Symbol.asyncIterator]();
+      const first = await iterator.next(); // forces Gemini's first real network response now, not later
+      return { iterator, first };
+    } catch (err) {
+      lastErr = err;
+      if (!RETRYABLE_STATUSES.has(err?.status) || attempt === RETRY_DELAYS_MS.length) throw err;
+      console.warn(`chat: Gemini stream got ${err.status} on first chunk, retrying in ${RETRY_DELAYS_MS[attempt]}ms...`);
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastErr;
 }
 
 export async function POST(req) {
@@ -217,9 +251,13 @@ export async function POST(req) {
     // instead of making the browser wait for the entire reply before showing
     // anything. We forward each chunk's text straight through as plain text,
     // so the widget can render the reply progressively.
-    let responseStream;
+    //
+    // The first chunk is pulled (with retry) BEFORE headers are sent — see
+    // startStreamWithRetry's comment. Only once that succeeds do we commit
+    // to a 200 streaming response.
+    let iterator, first;
     try {
-      responseStream = await ai.models.generateContentStream({
+      ({ iterator, first } = await startStreamWithRetry(ai, {
         model: 'gemini-flash-latest', // auto-updating alias — avoids breaking again on the next model deprecation/shutdown
         contents: trimmedMessages,
         config: {
@@ -229,23 +267,24 @@ export async function POST(req) {
             thinkingLevel: 'low' // this is a simple FAQ/docs bot — it doesn't need deep multi-step reasoning, and keeping this low leaves more of the token budget for the visible reply
           }
         }
-      });
+      }));
     } catch (err) {
-      // Failed before any streaming started (bad key, model not found, network
-      // issue reaching Google) — safe to return a normal JSON error here since
+      // Failed before any streaming started, or every retry on the first
+      // chunk was exhausted — safe to return a normal JSON error here since
       // no response body has gone to the client yet.
-      console.error('Chat route error (before streaming started):', err);
-      return Response.json({ error: 'AI service temporarily unavailable.' }, { status: 502 });
+      console.error('Chat route error (before streaming started, after retries):', err);
+      return Response.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 502 });
     }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of responseStream) {
-            if (chunk.text) {
-              controller.enqueue(encoder.encode(chunk.text));
-            }
+          if (!first.done && first.value?.text) controller.enqueue(encoder.encode(first.value.text));
+          while (true) {
+            const { done, value } = await iterator.next();
+            if (done) break;
+            if (value.text) controller.enqueue(encoder.encode(value.text));
           }
           // Attribution appended after the streamed reply, only for
           // sources actually retrieved and used — never fabricated.
@@ -256,7 +295,7 @@ export async function POST(req) {
           // stream. Log server-side and just end the stream cleanly; the
           // widget will show whatever text made it through, or its own
           // "couldn't generate a response" fallback if nothing did.
-          console.error('Chat route error (mid-stream):', err);
+          console.error('Chat route error (mid-stream, after first chunk):', err);
         } finally {
           controller.close();
         }
