@@ -34,6 +34,7 @@ import { isLowStock } from "./inventory.js";
 import { INVOICE_STATES } from "./invoice-workflow.js";
 import { EXPENSE_STATES } from "./expense-workflow.js";
 import { EMPLOYMENT_STATES } from "./employee-workflow.js";
+import { computeBusinessInsights } from "./business-insights.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 
@@ -421,6 +422,18 @@ async function getDocumentAccess(args, ctx) {
   };
 }
 
+/** Same permission scope as every other tool (getAccessibleScope(), via
+ *  computeBusinessInsights()) — trends (daily arrays) are stripped before
+ *  returning to the model since that's chart data, not something a
+ *  language model needs to reason over token-by-token; KPIs, the
+ *  period-over-period comparison, and alerts are what "explain our KPIs" /
+ *  "how's the business trending" questions actually need. */
+async function getBusinessInsights(args, ctx) {
+  const insights = await computeBusinessInsights({ orgId: ctx.orgId, membership: ctx.membership, email: ctx.email, periodDays: args?.periodDays });
+  const { trends, ...rest } = insights;
+  return rest;
+}
+
 // ============================================================
 // Gemini function-calling declarations + dispatcher
 // ============================================================
@@ -607,6 +620,16 @@ export const BUSINESS_TOOL_DECLARATIONS = [
       required: ["filename"],
     },
   },
+  {
+    name: "get_business_insights",
+    description: "Get KPI summary (revenue, expenses, pipeline, task completion, headcount, etc.), period-over-period comparison, and active business alerts (overdue invoices, low stock, overdue tasks, pending approvals, significant KPI swings). Use this for questions like \"how's the business doing\", \"explain our KPIs\", \"what changed this month\", or \"any alerts I should know about\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        periodDays: { type: Type.INTEGER, description: "Comparison window in days, default 30, max 365." },
+      },
+    },
+  },
 ];
 
 const TOOL_IMPLEMENTATIONS = {
@@ -625,6 +648,7 @@ const TOOL_IMPLEMENTATIONS = {
   find_employee_document: findEmployeeDocument,
   get_activity: getActivity,
   get_document_access: getDocumentAccess,
+  get_business_insights: getBusinessInsights,
 };
 
 export async function runBusinessTool(name, args, ctx) {
@@ -643,6 +667,8 @@ Finance and HR data is sensitive — never volunteer another employee's personal
 If get_document_access returns permissionDenied, tell the user plainly that they don't have permission to view who has access to that document (only the document's owner, an explicit MANAGE grant, or a company owner/admin can see that) — do not attempt to answer the question any other way, and do not reveal the document's owner or any grant information in that case.
 
 Keep answers concise and concrete: reference actual filenames, department/project names, statuses, and dates from the tool results. Use plain language, not raw JSON. If a request is ambiguous (e.g. multiple documents match a name), ask a short clarifying question or list the candidates the tool returned.
+
+For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows.
 
 You cannot take actions (approve, reject, upload, share, change permissions) — you only look things up and summarize. If asked to perform an action, explain that they should use the workspace UI for that.`;
 }

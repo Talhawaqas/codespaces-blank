@@ -41,6 +41,7 @@ import ProcurementView from "../../components/business/ProcurementView";
 import InventoryView from "../../components/business/InventoryView";
 import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
+import InsightsView from "../../components/business/InsightsView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -734,6 +735,13 @@ const ICONS = {
       <path d="M18.5 8.5v3M17 10h3" />
     </>
   ),
+  insights: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M7 15l3-4 3 2.5L17 8" />
+      <circle cx="17" cy="8" r="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
 };
 
 // The gear icon's cutout path above is fiddly to hand-write cleanly; use a
@@ -751,6 +759,7 @@ ICONS.settings = (
 // ============================================================
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { key: "insights", label: "Insights", icon: "insights" },
   { key: "departments", label: "Departments", icon: "departments" },
   { key: "projects", label: "Projects", icon: "projects" },
   { key: "documents", label: "Documents", icon: "documents" },
@@ -837,6 +846,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 
   const VIEW_TITLES = {
     dashboard: "Overview",
+    insights: "Business Insights",
     browse: "Company Records",
     tasks: "Tasks",
     crm: "CRM",
@@ -922,6 +932,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "dashboard" && (
             <DashboardView orgId={orgId} canManage={canManage} onNavigate={navigate} />
           )}
+          {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "browse" && (
             <OrgWorkspace
               key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}
