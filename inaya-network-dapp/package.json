@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test --test-timeout=20000 test/*.test.mjs"
+    "test": "node --env-file=.env.local --test --test-timeout=60000 test/*.test.mjs"
   },
   "dependencies": {
     "@inaya-network/custody-sdk": "^1.0.6-beta",

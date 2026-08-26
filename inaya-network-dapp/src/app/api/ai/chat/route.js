@@ -37,8 +37,21 @@
 //    outage risk for this project specifically.
 
 import { GoogleGenAI } from '@google/genai';
-import { INAYA_KNOWLEDGE_BASE } from '@/lib/inaya-knowledge';
 import { assessRisk } from '@/lib/fraudRisk';
+import { retrieveContext, formatAttribution } from '@/lib/rag/retrieve';
+import { wrapContextBlock } from '@/lib/rag/sanitize';
+
+// RAG grounding instructions — replaces the old static INAYA_KNOWLEDGE_BASE
+// injection. The retrieved context block (wrapped/sanitized by
+// wrapContextBlock) is appended per-request instead of one fixed string,
+// so the assistant is grounded in whatever's actually indexed rather than
+// whatever fit in a hand-maintained prompt constant. Per the SOW: if
+// retrieval comes up empty, the assistant must say so plainly, never
+// fall back to the model's own (unverifiable, possibly stale or wrong)
+// pretrained knowledge about Inaya.
+const DOCS_BASE_INSTRUCTION = `You are the official docs assistant for Inaya Network, embedded as a chat widget on the Inaya Network dApp. Answer user questions using ONLY the retrieved reference material provided below for this specific question — never invent contract addresses, prices, figures, or features that aren't in it. Keep answers short (2-5 sentences unless the user asks for detail), friendly, and technically precise. Do not give financial or investment advice — only factual product information.
+
+If the retrieved material doesn't contain enough information to answer, say plainly that this isn't in Inaya's indexed documentation yet — do not guess, and do not fall back on general knowledge about blockchain/crypto projects to fill the gap. For a genuinely unanswerable question, route the person onward: general product questions → support@inayanetwork.com; bugs/technical issues → support@inayanetwork.com; partnerships → partners@inayanetwork.com; investor/fundraising questions → investors@inayanetwork.com. Live/real-time on-chain figures (exact current balance, today's live APY) should point the user to the relevant dApp tab rather than guessing a number, even if a nearby figure appears in the retrieved material.`;
 
 // ============================================================
 // Rate limiter — in-memory sliding window, per IP
@@ -196,7 +209,9 @@ export async function POST(req) {
       parts: [{ text: String(m.content || '').slice(0, 2000) }]
     }));
 
-    const systemInstruction = INAYA_KNOWLEDGE_BASE + formatWalletContext(walletContext);
+    const latestUserMessage = [...messages].reverse().find((m) => m.role !== 'assistant')?.content || '';
+    const { chunks: ragChunks, hasResults } = await retrieveContext({ query: latestUserMessage, domain: 'docs' });
+    const systemInstruction = DOCS_BASE_INSTRUCTION + wrapContextBlock(ragChunks) + formatWalletContext(walletContext);
 
     // STREAMING: generateContentStream yields chunks as Gemini produces them,
     // instead of making the browser wait for the entire reply before showing
@@ -232,6 +247,9 @@ export async function POST(req) {
               controller.enqueue(encoder.encode(chunk.text));
             }
           }
+          // Attribution appended after the streamed reply, only for
+          // sources actually retrieved and used — never fabricated.
+          if (hasResults) controller.enqueue(encoder.encode(formatAttribution(ragChunks)));
         } catch (err) {
           // Once streaming has begun we can no longer switch to a JSON error
           // body — the browser already received a 200 with a text/plain

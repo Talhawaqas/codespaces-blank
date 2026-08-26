@@ -11,7 +11,10 @@ export const metadata = {
   description: "Answers about Inaya Network's storage pricing, encryption, wallet support, KYC, and the Genesis Airdrop.",
 };
 
-const faqs = [
+// Exported (not just a local const) so src/lib/rag/sources/docsSources.js
+// can ingest the exact same content shown on this page into the Docs RAG
+// knowledge base — one source of truth, not a duplicated copy.
+export const faqs = [
   {
     icon: "🔐",
     q: "What is Inaya Network in simple terms?",

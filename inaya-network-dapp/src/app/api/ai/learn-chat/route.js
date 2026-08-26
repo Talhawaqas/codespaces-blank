@@ -68,7 +68,7 @@ export async function POST(req) {
     }
 
     const ctx = await buildLearnContext({ walletAddress, videoContext });
-    const systemInstruction = learnSystemInstruction({ videoContext: ctx.videoContext });
+    const systemInstruction = learnSystemInstruction({ videoContext: ctx.videoContext, transcriptAvailable: ctx.transcriptAvailable });
 
     let contents = messages.slice(-10).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",

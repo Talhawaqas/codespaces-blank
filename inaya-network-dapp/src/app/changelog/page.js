@@ -13,6 +13,15 @@ export const metadata = {
 
 const entries = [
   {
+    group: "AI Assistants",
+    items: [
+      "Unified RAG (retrieval-augmented generation) infrastructure on MongoDB Atlas Vector Search — one shared knowledge pipeline powering the Docs, Security, and Learn AI assistants with hybrid semantic + keyword search and source attribution.",
+      "Docs Assistant now answers strictly from Inaya's indexed documentation (product knowledge base, Business Workspace guide, FAQs, whitepaper, SDK guide) — it says plainly when something isn't in the indexed knowledge instead of guessing.",
+      "Security Assistant can now also answer conceptual \"how does X work\" questions from indexed documentation, clearly labeled separately from its existing live network-data lookups.",
+      "Learn AI Tutor can now fetch and ground answers in a video's own real transcript when one is open, in addition to its existing general-knowledge teaching.",
+    ],
+  },
+  {
     group: "Security Layer",
     items: [
       "Inaya Firewall public transparency page — check any domain or IP against the network's decentralized threat intelligence, no wallet required.",
@@ -24,7 +33,7 @@ const entries = [
     group: "Inaya Learn",
     items: [
       "Curated Web3, AI, and programming video library with category browsing and search.",
-      "Built-in AI tutor for every video — ask questions grounded in the video's own content.",
+      "Built-in AI tutor for every video — ask questions, with real transcript grounding when a video's captions are available.",
       "Progress tracking, saved videos, and continue-watching across web and mobile.",
     ],
   },
