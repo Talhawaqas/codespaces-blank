@@ -15,3 +15,7 @@ inaya-network-dapp/src/app/page.js.bak-20260802
 # Hardhat build output — regenerable via `npx hardhat compile`
 artifacts/
 cache/
+
+# Portable desktop builds (scripts/build-portable-desktop.ps1) — large
+# regenerable binaries, not source.
+portable-builds/
