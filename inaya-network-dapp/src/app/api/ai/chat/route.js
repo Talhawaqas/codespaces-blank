@@ -168,6 +168,14 @@ function getGeminiClient() {
   return new GoogleGenAI({ apiKey });
 }
 
+// This route had NO explicit maxDuration at all — meaning it ran under
+// whatever Vercel's platform default is (well under a minute), despite
+// doing a RAG retrieval hop AND a Gemini call before anything can stream.
+// Set explicitly now, matching the other three assistants' confirmed-
+// honored 90s ceiling (production logs show that duration IS actually
+// enforced as declared on this account, not silently capped lower).
+export const maxDuration = 60;
+
 // Unlike business-chat/security-chat/learn-chat, this route streams — so
 // the usual "retry the whole call" pattern doesn't directly apply once
 // bytes have started reaching the client. Observed in production: Gemini's
@@ -177,22 +185,38 @@ function getGeminiClient() {
 // sent 200 headers and an empty stream, so the client got nothing and no
 // real error. Fix: pull the first chunk here, inside the retry loop,
 // BEFORE the Response (and its headers) is constructed at all — a failure
-// here still has a clean path to a real JSON error.
+// here still has a clean path to a real JSON error. CALL_TIMEOUT_MS also
+// bounds each attempt, same reasoning as business-chat/route.js — a
+// single call can hang far longer than expected before ever returning a
+// 503, so an un-timeboxed retry can't be trusted to fail in reasonable time.
 const RETRYABLE_STATUSES = new Set([429, 503]);
-const RETRY_DELAYS_MS = [700, 1800];
+const RETRY_DELAYS_MS = [1000];
+const CALL_TIMEOUT_MS = 15_000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withCallTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error(`${label} timed out after ${CALL_TIMEOUT_MS}ms`), { status: 503 })), CALL_TIMEOUT_MS)),
+  ]);
 }
 
 async function startStreamWithRetry(ai, params) {
   let lastErr;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
-      const responseStream = await ai.models.generateContentStream(params);
-      const iterator = responseStream[Symbol.asyncIterator]();
-      const first = await iterator.next(); // forces Gemini's first real network response now, not later
-      return { iterator, first };
+      return await withCallTimeout(
+        (async () => {
+          const responseStream = await ai.models.generateContentStream(params);
+          const iterator = responseStream[Symbol.asyncIterator]();
+          const first = await iterator.next(); // forces Gemini's first real network response now, not later
+          return { iterator, first };
+        })(),
+        "chat: Gemini stream"
+      );
     } catch (err) {
       lastErr = err;
       if (!RETRYABLE_STATUSES.has(err?.status) || attempt === RETRY_DELAYS_MS.length) throw err;

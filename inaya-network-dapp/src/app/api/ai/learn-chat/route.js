@@ -21,10 +21,12 @@ import { buildLearnContext, runLearnTool, LEARN_TOOL_DECLARATIONS, learnSystemIn
 import { ensureLearnIndexes } from "../../../../lib/learn.js";
 
 const MAX_TOOL_ROUNDS = 5;
-// See business-chat/route.js's identical constant for why: leaves a buffer
-// under maxDuration=90 to return a clean error instead of a silent hard
-// timeout when Gemini is under sustained load.
-const SAFETY_BUDGET_MS = 75_000;
+// See business-chat/route.js's identical constants for the full story: a
+// between-round budget check alone wasn't enough because a single Gemini
+// call can hang far longer than expected before returning a 503, so
+// CALL_TIMEOUT_MS bounds each individual attempt too.
+const CALL_TIMEOUT_MS = 15_000;
+const SAFETY_BUDGET_MS = 45_000;
 
 export const maxDuration = 90;
 
@@ -35,17 +37,24 @@ function getGeminiClient() {
 }
 
 const RETRYABLE_STATUSES = new Set([429, 503]);
-const RETRY_DELAYS_MS = [700, 1800];
+const RETRY_DELAYS_MS = [1000];
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withCallTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error(`${label} timed out after ${CALL_TIMEOUT_MS}ms`), { status: 503 })), CALL_TIMEOUT_MS)),
+  ]);
 }
 
 async function generateContentWithRetry(ai, params) {
   let lastErr;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
-      return await ai.models.generateContent(params);
+      return await withCallTimeout(ai.models.generateContent(params), "learn-chat: Gemini call");
     } catch (err) {
       lastErr = err;
       if (!RETRYABLE_STATUSES.has(err?.status) || attempt === RETRY_DELAYS_MS.length) throw err;

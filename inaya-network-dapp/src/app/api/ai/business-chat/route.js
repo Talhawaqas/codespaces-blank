@@ -28,13 +28,19 @@ import { ensureOrgIndexes, requireMembership, canManageOrg, getOrgCollections, t
 import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, businessSystemInstruction } from "../../../../lib/ai-business-tools.js";
 
 const MAX_TOOL_ROUNDS = 5;
-// Leaves a buffer under maxDuration=90 to actually return a clean error —
-// observed in production: a round hitting a 503 retry mid-loop can run the
-// whole request past 90s, and Vercel then hard-kills the function with NO
-// response ever reaching the client (the chat just hangs on "Thinking…"
-// forever, worse than a real error). This budget makes that fail fast and
-// visibly instead.
-const SAFETY_BUDGET_MS = 75_000;
+// The first fix attempt here (a between-round budget check alone) turned
+// out not to be enough: observed in production, a single ai.models.
+// generateContent() call can itself hang far longer than expected before
+// it even RETURNS a 503 — Gemini queues under load rather than failing
+// fast — so the between-round check never got a turn to run before Vercel's
+// own 90s kill fired with literally no response ever reaching the client.
+// CALL_TIMEOUT_MS bounds each individual attempt so that can't happen —
+// combined with SAFETY_BUDGET_MS below, worst case is one full bad round
+// (~2*15s + 1s backoff) before the NEXT round's check reliably bails out
+// with a clean, fast error instead of leaving the request to Vercel's
+// hard kill.
+const CALL_TIMEOUT_MS = 15_000;
+const SAFETY_BUDGET_MS = 45_000;
 
 // Unlike /api/ai/chat (a single streamed call), this route can make up to
 // MAX_TOOL_ROUNDS sequential Gemini calls plus MongoDB queries before it
@@ -51,10 +57,23 @@ function getGeminiClient() {
 }
 
 const RETRYABLE_STATUSES = new Set([429, 503]); // rate-limited / model overloaded — both transient
-const RETRY_DELAYS_MS = [700, 1800]; // two retries: short backoff, then a longer one
+const RETRY_DELAYS_MS = [1000]; // one retry — CALL_TIMEOUT_MS now bounds each attempt, so this no longer needs to carry the whole safety margin alone
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Races a promise against a timer — doesn't cancel the underlying Gemini
+ *  request (fetch has no cheap abort path through this SDK call shape),
+ *  it just stops US waiting on it past CALL_TIMEOUT_MS so a slow-to-fail
+ *  call can't silently eat the whole request budget. Marked status 503 so
+ *  it flows through the same RETRYABLE_STATUSES path as a real overload
+ *  response. */
+function withCallTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error(`${label} timed out after ${CALL_TIMEOUT_MS}ms`), { status: 503 })), CALL_TIMEOUT_MS)),
+  ]);
 }
 
 /** Gemini's flash models intermittently return a 503 "currently experiencing
@@ -66,7 +85,7 @@ async function generateContentWithRetry(ai, params) {
   let lastErr;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
-      return await ai.models.generateContent(params);
+      return await withCallTimeout(ai.models.generateContent(params), "business-chat: Gemini call");
     } catch (err) {
       lastErr = err;
       if (!RETRYABLE_STATUSES.has(err?.status) || attempt === RETRY_DELAYS_MS.length) throw err;
