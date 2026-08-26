@@ -29,6 +29,14 @@ const APPS = [
         instructions: "Run the installer and follow the prompts. Windows may show a SmartScreen warning since this build isn't code-signed yet — click \"More info\" → \"Run anyway\" to proceed.",
       },
       {
+        os: "Windows (Portable)",
+        icon: "🪟",
+        file: "/downloads/dapp/Inaya-Network-Portable-x64.exe",
+        label: "Download Portable",
+        sub: "Single .exe · no install needed",
+        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions.",
+      },
+      {
         os: "Linux (AppImage)",
         icon: "🐧",
         file: "/downloads/dapp/Inaya-Network-x86_64.AppImage",
@@ -61,6 +69,14 @@ const APPS = [
         label: "Download for Windows",
         sub: ".exe installer · x64",
         instructions: "Run the installer and follow the prompts. Windows may show a SmartScreen warning since this build isn't code-signed yet — click \"More info\" → \"Run anyway\" to proceed.",
+      },
+      {
+        os: "Windows (Portable)",
+        icon: "🪟",
+        file: "/downloads/business-workspace/Inaya-Business-Workspace-Portable-x64.exe",
+        label: "Download Portable",
+        sub: "Single .exe · no install needed",
+        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions.",
       },
       {
         os: "Linux (AppImage)",
