@@ -70,6 +70,38 @@ export async function getOrgCollections() {
     projectMembers: db.collection("project_members"),
     documentPermissions: db.collection("document_permissions"),
     documentShares: db.collection("document_shares"),
+    // Business Operations, Phase 1 (Projects & Tasks) — tasks are a child
+    // of the existing `projects` collection, not a new top-level entity.
+    // orgActivity is the new additive audit-log foundation every future
+    // Business Operations module (CRM, Procurement, Inventory) writes to;
+    // documentActivity above is untouched, kept document-scoped exactly
+    // as it already is, zero regression risk to it or its existing tests.
+    tasks: db.collection("tasks"),
+    orgActivity: db.collection("org_activity"),
+    // Business Operations, Phase 2 (CRM) — a contact evolves in place
+    // (type flips LEAD -> CUSTOMER on conversion rather than becoming a
+    // new record), deals FK to both a contact and, optionally, the
+    // existing `projects` collection — that single field is what
+    // completes Customer -> Deal -> Project -> Task -> Document per the
+    // SOW's unified-workspace requirement, no new join table needed.
+    crmContacts: db.collection("crm_contacts"),
+    crmDeals: db.collection("crm_deals"),
+    // Business Operations, Phase 3 (Procurement) — a purchase_request can
+    // optionally graduate into a purchase_order (sourceRequestId), but a
+    // PO can also be created standalone; both share the org/department
+    // scoping every other module here uses.
+    suppliers: db.collection("suppliers"),
+    purchaseRequests: db.collection("purchase_requests"),
+    purchaseOrders: db.collection("purchase_orders"),
+    // Business Operations, Phase 4 (Inventory) — stockLevels is a
+    // materialized view (one doc per product+warehouse) updated ONLY via
+    // $inc from stockMovements (append-only, the real audit trail) —
+    // never set directly, same "never overwrite the ledger" discipline
+    // sessions/magicLinks already follow for their own append-only data.
+    warehouses: db.collection("warehouses"),
+    products: db.collection("products"),
+    stockLevels: db.collection("stock_levels"),
+    stockMovements: db.collection("stock_movements"),
   };
 }
 
@@ -79,7 +111,9 @@ export async function ensureOrgIndexes() {
   if (indexesEnsured) return;
   const {
     orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity,
-    projectMembers, documentPermissions, documentShares,
+    projectMembers, documentPermissions, documentShares, tasks, orgActivity,
+    crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
+    warehouses, products, stockLevels, stockMovements,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -103,6 +137,35 @@ export async function ensureOrgIndexes() {
     documentShares.createIndex({ tokenHash: 1 }, { unique: true }),
     documentShares.createIndex({ documentId: 1 }),
     documentShares.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    // Business Operations, Phase 1 (Projects & Tasks)
+    tasks.createIndex({ orgId: 1, projectId: 1 }),
+    tasks.createIndex({ orgId: 1, departmentId: 1 }),
+    tasks.createIndex({ orgId: 1, assigneeEmail: 1, status: 1 }),
+    tasks.createIndex({ orgId: 1, dueDate: 1 }),
+    orgActivity.createIndex({ eventId: 1 }, { unique: true }),
+    orgActivity.createIndex({ orgId: 1, recordType: 1, recordId: 1, timestamp: 1 }),
+    orgActivity.createIndex({ orgId: 1, timestamp: 1 }),
+    // Business Operations, Phase 2 (CRM)
+    crmContacts.createIndex({ orgId: 1, departmentId: 1 }),
+    crmContacts.createIndex({ orgId: 1, type: 1 }),
+    crmDeals.createIndex({ orgId: 1, departmentId: 1 }),
+    crmDeals.createIndex({ orgId: 1, contactId: 1 }),
+    crmDeals.createIndex({ orgId: 1, projectId: 1 }),
+    crmDeals.createIndex({ orgId: 1, stage: 1 }),
+    // Business Operations, Phase 3 (Procurement)
+    suppliers.createIndex({ orgId: 1, departmentId: 1 }),
+    purchaseRequests.createIndex({ orgId: 1, departmentId: 1 }),
+    purchaseRequests.createIndex({ orgId: 1, status: 1 }),
+    purchaseOrders.createIndex({ orgId: 1, departmentId: 1 }),
+    purchaseOrders.createIndex({ orgId: 1, supplierId: 1 }),
+    purchaseOrders.createIndex({ orgId: 1, status: 1 }),
+    // Business Operations, Phase 4 (Inventory)
+    warehouses.createIndex({ orgId: 1, departmentId: 1 }),
+    products.createIndex({ orgId: 1, sku: 1 }, { unique: true }),
+    products.createIndex({ orgId: 1, departmentId: 1 }),
+    stockLevels.createIndex({ orgId: 1, productId: 1, warehouseId: 1 }, { unique: true }),
+    stockMovements.createIndex({ orgId: 1, productId: 1, createdAt: 1 }),
+    stockMovements.createIndex({ orgId: 1, relatedPurchaseOrderId: 1 }),
   ]);
 
   indexesEnsured = true;

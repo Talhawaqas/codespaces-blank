@@ -27,9 +27,19 @@
 //     tools. The mobile app's separate, older "Ask AI" screen (a general
 //     docs assistant, /api/ai/chat) is unrelated and still exists
 //     alongside it for non-business questions.
-//   - Stages 5-8 (Business Operations, Finance/HR, BI, AI-powered
-//     operations) are none of them implemented — no backend, no schema,
-//     no routes exist for any of it. They're roadmap direction only.
+//   - Stage 6 (Business Operations) is now fully real and shipped —
+//     Projects & Tasks, CRM, Procurement, and Inventory all have a real
+//     schema, workflow/permission enforcement, API routes, an org-wide
+//     activity log, dashboard summaries, AI tools, and web+mobile UI.
+//     See BUSINESS_OPERATIONS_TASKS.md, _CRM.md, _PROCUREMENT.md, and
+//     _INVENTORY.md at the repo root for what each module actually does
+//     and what's still explicitly out of scope within it (e.g. no
+//     warehouse-transfer UI yet, no PO line-item editing after creation).
+//     Procurement's PO receiving genuinely moves real Inventory stock —
+//     the two modules aren't just adjacent, they're integrated.
+//   - Stages 7-8 (Finance/HR, BI) are none of them implemented — no
+//     backend, no schema, no routes exist for any of it. Roadmap
+//     direction only.
 
 export const ROADMAP_STATUS = {
   LIVE: "LIVE",
@@ -197,14 +207,16 @@ export const ROADMAP_STAGES = [
   {
     number: 6,
     title: "Business Operations",
-    status: ROADMAP_STATUS.NEXT,
-    description: "Expand Inaya from document management into the operational systems businesses use every day.",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Manage projects, tasks, customers, purchasing, and inventory from the same secure workspace as your documents.",
     groups: [
       { title: "Projects & Tasks", items: ["Tasks", "Assignments", "Deadlines", "Status tracking", "Team collaboration"] },
       { title: "CRM", items: ["Customers", "Leads", "Deals", "Customer records", "Sales pipeline"] },
       { title: "Procurement", items: ["Suppliers", "Purchase requests", "Purchase orders", "Approval workflows"] },
       { title: "Inventory", items: ["Products / items", "Stock levels", "Warehouses", "Stock movements"] },
     ],
+    notes:
+      "All four modules are real and shipped: task status workflows, a unified Lead/Customer CRM with a sales pipeline, purchase requests/orders with a real approval chain, and inventory with real stock movements — including purchase orders that actually move inventory when received. Every record is department-scoped and queryable by the AI assistant. See BUSINESS_OPERATIONS_TASKS.md, _CRM.md, _PROCUREMENT.md, and _INVENTORY.md for what's covered and what's explicitly not yet (e.g. warehouse-to-warehouse transfer UI, PO line-item editing after creation).",
   },
   {
     number: 7,

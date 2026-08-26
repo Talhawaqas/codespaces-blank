@@ -165,7 +165,10 @@ export async function getBulkDocumentAccess({ orgId, email, membership, docs }) 
  *  everything, since canAccessDepartment/getBulkDocumentAccess already
  *  bypass every check for them. */
 export async function getAccessibleScope({ orgId, membership, email }) {
-  const { departments, projects, orgDocuments, projectMembers } = await getOrgCollections();
+  const {
+    departments, projects, orgDocuments, projectMembers, tasks,
+    crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders, warehouses, products,
+  } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
 
@@ -196,7 +199,35 @@ export async function getAccessibleScope({ orgId, membership, email }) {
   const accessByDoc = await getBulkDocumentAccess({ orgId, email, membership, docs });
   const visibleDocuments = docs.filter((d) => accessByDoc.get(d._id.toString()));
 
-  return { visibleDepartments, visibleProjects, visibleDocuments };
+  // Business Operations, Phase 1 — tasks have no per-record accessLevel/grant
+  // table (see task-workflow.js's header comment: department-level access
+  // is the whole permission story for Phase 1), so project-membership
+  // visibility via the same projectIds above is sufficient, no bulk-access
+  // resolution step needed the way documents require.
+  const visibleTasks = projectIds.length
+    ? await tasks.find({ orgId: orgObjectId, projectId: { $in: projectIds }, deletedAt: null }).sort({ createdAt: -1 }).toArray()
+    : [];
+
+  // Business Operations, Phases 2-4 (CRM/Procurement/Inventory) — none of
+  // these have a project the way tasks/documents do; they're scoped
+  // directly by departmentId, the same department-level model every
+  // other Business Operations record in this file uses. Empty when
+  // visibleDeptIds is empty, same short-circuit as projectsInDepts above.
+  const deptScopedQuery = (extra = {}) => (visibleDeptIds.length ? { orgId: orgObjectId, departmentId: { $in: visibleDeptIds }, deletedAt: null, ...extra } : null);
+  const [visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts] = await Promise.all([
+    visibleDeptIds.length ? crmContacts.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? crmDeals.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? suppliers.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? purchaseRequests.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? purchaseOrders.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? warehouses.find({ orgId: orgObjectId, departmentId: { $in: visibleDeptIds } }).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? products.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+  ]);
+
+  return {
+    visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
+    visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
+  };
 }
 
 /** The full chain for a single-document route: load the document (scoped to

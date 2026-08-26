@@ -35,6 +35,10 @@ import AccentGraphic from "../../components/AccentGraphic";
 import Skeleton from "../../components/Skeleton";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
 import AIWidget from "../../components/business/AIWidget";
+import TasksView from "../../components/business/TasksView";
+import CRMView from "../../components/business/CRMView";
+import ProcurementView from "../../components/business/ProcurementView";
+import InventoryView from "../../components/business/InventoryView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -648,6 +652,36 @@ const ICONS = {
       <path d="M8 12.5l2.5 2.5L16 9.5" />
     </>
   ),
+  tasks: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
+      <path d="M7.5 9l1.8 1.8L12.5 7.5" />
+      <path d="M15 8.5h4" />
+      <path d="M7.5 16h9" />
+    </>
+  ),
+  crm: (
+    <>
+      <circle cx="9" cy="7.5" r="3" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M16.5 8.5a2.5 2.5 0 1 0 0-5" />
+      <path d="M15.5 15c3.5 0 5 2 5 5" />
+    </>
+  ),
+  procurement: (
+    <>
+      <path d="M3 7l2-4h14l2 4" />
+      <path d="M3 7h18v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z" />
+      <path d="M8 11a4 4 0 0 0 8 0" />
+    </>
+  ),
+  inventory: (
+    <>
+      <path d="M3 8l9-5 9 5-9 5-9-5Z" />
+      <path d="M3 8v9l9 5 9-5V8" />
+      <path d="M12 13v9" />
+    </>
+  ),
   activity: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -702,6 +736,10 @@ const NAV_ITEMS = [
   { key: "departments", label: "Departments", icon: "departments" },
   { key: "projects", label: "Projects", icon: "projects" },
   { key: "documents", label: "Documents", icon: "documents" },
+  { key: "tasks", label: "Tasks", icon: "tasks" },
+  { key: "crm", label: "CRM", icon: "crm" },
+  { key: "procurement", label: "Procurement", icon: "procurement" },
+  { key: "inventory", label: "Inventory", icon: "inventory" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "activity", label: "Activity", icon: "activity" },
   { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
@@ -780,6 +818,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const VIEW_TITLES = {
     dashboard: "Overview",
     browse: "Company Records",
+    tasks: "Tasks",
+    crm: "CRM",
+    procurement: "Procurement",
+    inventory: "Inventory",
     approvals: "Approvals",
     activity: "Activity",
     ai: "AI Assistant",
@@ -868,6 +910,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               initialProjectId={browseTarget?.projectId || null}
             />
           )}
+          {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
+          {activeView === "inventory" && <InventoryView orgId={orgId} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}

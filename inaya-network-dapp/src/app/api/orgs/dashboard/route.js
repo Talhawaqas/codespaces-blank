@@ -18,8 +18,9 @@
 // invented status fields.
 
 import { NextResponse } from "next/server";
-import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
+import { ensureOrgIndexes, requireMembership, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../lib/document-permissions.js";
+import { isLowStock } from "../../../../lib/inventory.js";
 
 export async function GET(req) {
   try {
@@ -30,7 +31,10 @@ export async function GET(req) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const { visibleDepartments, visibleProjects, visibleDocuments } = await getAccessibleScope({
+    const {
+      visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
+      visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleProducts,
+    } = await getAccessibleScope({
       orgId,
       membership: auth.membership,
       email: auth.session.email,
@@ -91,6 +95,49 @@ export async function GET(req) {
         projectName: projNameById.get(d.projectId.toString()) || "Unknown",
       }));
 
+    const now = Date.now();
+    const dueSoonMs = 3 * 24 * 60 * 60 * 1000; // 3 days
+    const openTasks = visibleTasks.filter((t) => !["DONE", "CANCELLED"].includes(t.status));
+    const byStatus = {};
+    for (const t of visibleTasks) byStatus[t.status] = (byStatus[t.status] || 0) + 1;
+    const taskSummary = {
+      totalOpen: openTasks.length,
+      overdueCount: openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() < now).length,
+      dueSoonCount: openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() >= now && new Date(t.dueDate).getTime() < now + dueSoonMs).length,
+      byStatus,
+    };
+
+    const openDeals = visibleDeals.filter((d) => !["WON", "LOST"].includes(d.status));
+    const crmSummary = {
+      totalContacts: visibleContacts.length,
+      totalLeads: visibleContacts.filter((c) => c.type === "LEAD").length,
+      totalCustomers: visibleContacts.filter((c) => c.type === "CUSTOMER").length,
+      openDealsCount: openDeals.length,
+      openDealsValue: openDeals.reduce((sum, d) => sum + (d.value || 0), 0),
+      wonDealsCount: visibleDeals.filter((d) => d.status === "WON").length,
+    };
+
+    const procurementSummary = {
+      totalSuppliers: visibleSuppliers.length,
+      pendingRequestApprovals: visiblePurchaseRequests.filter((r) => r.status === "PENDING_APPROVAL").length,
+      pendingOrderApprovals: visiblePurchaseOrders.filter((po) => po.status === "PENDING_APPROVAL").length,
+      openOrdersCount: visiblePurchaseOrders.filter((po) => ["APPROVED", "ORDERED", "PARTIALLY_RECEIVED"].includes(po.status)).length,
+    };
+
+    let lowStockCount = 0;
+    if (visibleProducts.length) {
+      const { stockLevels } = await getOrgCollections();
+      const productIds = visibleProducts.map((p) => toObjectId(p._id));
+      const levels = await stockLevels.find({ orgId: toObjectId(orgId), productId: { $in: productIds } }).toArray();
+      const totalByProduct = new Map();
+      for (const l of levels) {
+        const key = l.productId.toString();
+        totalByProduct.set(key, (totalByProduct.get(key) || 0) + l.quantity);
+      }
+      lowStockCount = visibleProducts.filter((p) => isLowStock(p, totalByProduct.get(p._id.toString()) || 0)).length;
+    }
+    const inventorySummary = { totalProducts: visibleProducts.length, lowStockCount };
+
     return NextResponse.json({
       counts: {
         departments: visibleDepartments.length,
@@ -101,6 +148,10 @@ export async function GET(req) {
       recentProjects,
       recentDocuments,
       pendingApprovals,
+      taskSummary,
+      crmSummary,
+      procurementSummary,
+      inventorySummary,
     });
   } catch (err) {
     console.error("orgs/dashboard failed:", err);

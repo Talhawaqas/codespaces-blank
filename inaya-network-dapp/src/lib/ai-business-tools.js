@@ -27,6 +27,10 @@
 import { Type } from "@google/genai";
 import { getOrgCollections } from "./orgs.js";
 import { getAccessibleScope, requireDocumentAccess } from "./document-permissions.js";
+import { TASK_STATES } from "./task-workflow.js";
+import { DEAL_STAGES } from "./deal-workflow.js";
+import { PURCHASE_ORDER_STATES } from "./purchase-order-workflow.js";
+import { isLowStock } from "./inventory.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 
@@ -36,7 +40,9 @@ export async function buildBusinessContext({ orgId, membership, email }) {
   const deptNameById = new Map(scope.visibleDepartments.map((d) => [d._id.toString(), d.name]));
   const projNameById = new Map(scope.visibleProjects.map((p) => [p._id.toString(), p.name]));
   const projDeptById = new Map(scope.visibleProjects.map((p) => [p._id.toString(), p.departmentId.toString()]));
-  return { orgId, membership, email, scope, deptNameById, projNameById, projDeptById };
+  const contactNameById = new Map(scope.visibleContacts.map((c) => [c._id.toString(), c.name]));
+  const supplierNameById = new Map(scope.visibleSuppliers.map((s) => [s._id.toString(), s.name]));
+  return { orgId, membership, email, scope, deptNameById, projNameById, projDeptById, contactNameById, supplierNameById };
 }
 
 function matchesName(actualName, wanted) {
@@ -122,6 +128,141 @@ function listProjects(args, ctx) {
     }));
 
   return { count: results.length, projects: results };
+}
+
+function listTasks(args, ctx) {
+  const { status, assigneeEmail, projectName, departmentName, overdueOnly, limit } = args || {};
+  const wantedStatuses = Array.isArray(status) ? status.filter((s) => TASK_STATES.includes(s)) : null;
+  const now = Date.now();
+  const normalizedAssignee = assigneeEmail ? assigneeEmail.trim().toLowerCase() : null;
+
+  const results = ctx.scope.visibleTasks
+    .filter((t) => {
+      if (wantedStatuses && wantedStatuses.length && !wantedStatuses.includes(t.status)) return false;
+      if (normalizedAssignee && (t.assigneeEmail || "").toLowerCase() !== normalizedAssignee) return false;
+      if (!matchesName(ctx.deptNameById.get(t.departmentId.toString()), departmentName)) return false;
+      if (!matchesName(ctx.projNameById.get(t.projectId.toString()), projectName)) return false;
+      if (overdueOnly && !(t.dueDate && new Date(t.dueDate).getTime() < now && !["DONE", "CANCELLED"].includes(t.status))) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((t) => ({
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      assigneeEmail: t.assigneeEmail || null,
+      dueDate: t.dueDate || null,
+      departmentName: ctx.deptNameById.get(t.departmentId.toString()) || "Unknown",
+      projectName: ctx.projNameById.get(t.projectId.toString()) || "Unknown",
+      createdAt: t.createdAt,
+    }));
+
+  return { count: results.length, tasks: results };
+}
+
+function listContacts(args, ctx) {
+  const { type, search, departmentName, limit } = args || {};
+  const results = ctx.scope.visibleContacts
+    .filter((c) => {
+      if (type && c.type !== type) return false;
+      if (!matchesName(ctx.deptNameById.get(c.departmentId.toString()), departmentName)) return false;
+      if (search && !matchesName(c.name, search) && !matchesName(c.company, search) && !matchesName(c.email, search)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((c) => ({
+      name: c.name, type: c.type, email: c.email || null, company: c.company || null,
+      departmentName: ctx.deptNameById.get(c.departmentId.toString()) || "Unknown", createdAt: c.createdAt,
+    }));
+  return { count: results.length, contacts: results };
+}
+
+function listDeals(args, ctx) {
+  const { stage, contactName, departmentName, limit } = args || {};
+  const wantedStages = Array.isArray(stage) ? stage.filter((s) => DEAL_STAGES.includes(s)) : null;
+  const results = ctx.scope.visibleDeals
+    .filter((d) => {
+      if (wantedStages && wantedStages.length && !wantedStages.includes(d.status)) return false;
+      if (!matchesName(ctx.deptNameById.get(d.departmentId.toString()), departmentName)) return false;
+      if (contactName && !matchesName(ctx.contactNameById.get(d.contactId.toString()), contactName)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((d) => ({
+      title: d.title, stage: d.status, value: d.value ?? null,
+      contactName: ctx.contactNameById.get(d.contactId.toString()) || "Unknown",
+      departmentName: ctx.deptNameById.get(d.departmentId.toString()) || "Unknown",
+      projectName: d.projectId ? ctx.projNameById.get(d.projectId.toString()) || "Unknown" : null,
+      createdAt: d.createdAt, closedAt: d.closedAt || null,
+    }));
+  return { count: results.length, deals: results };
+}
+
+function listSuppliers(args, ctx) {
+  const { search, departmentName, limit } = args || {};
+  const results = ctx.scope.visibleSuppliers
+    .filter((s) => {
+      if (!matchesName(ctx.deptNameById.get(s.departmentId.toString()), departmentName)) return false;
+      if (search && !matchesName(s.name, search)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((s) => ({ name: s.name, status: s.status, contactEmail: s.contactEmail || null, departmentName: ctx.deptNameById.get(s.departmentId.toString()) || "Unknown" }));
+  return { count: results.length, suppliers: results };
+}
+
+function listPurchaseOrders(args, ctx) {
+  const { status, supplierName, departmentName, limit } = args || {};
+  const wantedStatuses = Array.isArray(status) ? status.filter((s) => PURCHASE_ORDER_STATES.includes(s)) : null;
+  const results = ctx.scope.visiblePurchaseOrders
+    .filter((po) => {
+      if (wantedStatuses && wantedStatuses.length && !wantedStatuses.includes(po.status)) return false;
+      if (!matchesName(ctx.deptNameById.get(po.departmentId.toString()), departmentName)) return false;
+      if (supplierName && !matchesName(ctx.supplierNameById.get(po.supplierId.toString()), supplierName)) return false;
+      return true;
+    })
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((po) => ({
+      status: po.status, supplierName: ctx.supplierNameById.get(po.supplierId.toString()) || "Unknown",
+      itemCount: po.items.length, departmentName: ctx.deptNameById.get(po.departmentId.toString()) || "Unknown", createdAt: po.createdAt,
+    }));
+  return { count: results.length, purchaseOrders: results };
+}
+
+async function listProducts(args, ctx) {
+  const { search, lowStockOnly, departmentName, limit } = args || {};
+  let candidates = ctx.scope.visibleProducts.filter((p) => {
+    if (!matchesName(ctx.deptNameById.get(p.departmentId.toString()), departmentName)) return false;
+    if (search && !matchesName(p.name, search) && !matchesName(p.sku, search)) return false;
+    return true;
+  });
+
+  // Real stock totals, not guessed — same one-extra-query pattern
+  // products/route.js's GET handler uses, so lowStockOnly reflects the
+  // actual current cross-warehouse quantity, never just reorderThreshold
+  // being set.
+  let totalByProduct = new Map();
+  if (candidates.length) {
+    const { stockLevels } = await getOrgCollections();
+    const productIds = candidates.map((p) => p._id);
+    const levels = await stockLevels.find({ productId: { $in: productIds } }).toArray();
+    for (const l of levels) {
+      const key = l.productId.toString();
+      totalByProduct.set(key, (totalByProduct.get(key) || 0) + l.quantity);
+    }
+  }
+
+  if (lowStockOnly) {
+    candidates = candidates.filter((p) => isLowStock(p, totalByProduct.get(p._id.toString()) || 0));
+  }
+
+  const results = candidates
+    .slice(0, Math.min(Math.max(limit || 10, 1), 25))
+    .map((p) => ({
+      sku: p.sku, name: p.name, status: p.status, totalStock: totalByProduct.get(p._id.toString()) || 0,
+      reorderThreshold: p.reorderThreshold || 0, departmentName: ctx.deptNameById.get(p.departmentId.toString()) || "Unknown",
+    }));
+  return { count: results.length, products: results };
 }
 
 async function getActivity(args, ctx) {
@@ -236,6 +377,85 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "list_tasks",
+    description: "List tasks the caller can see, optionally filtered by status, assignee, project, department, or overdue-only.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        status: { type: Type.ARRAY, items: { type: Type.STRING, enum: TASK_STATES }, description: "Filter to these task statuses." },
+        assigneeEmail: { type: Type.STRING, description: "Filter to tasks assigned to this exact email." },
+        projectName: { type: Type.STRING, description: "Filter to a project whose name contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        overdueOnly: { type: Type.BOOLEAN, description: "If true, only include tasks past their due date that aren't done or cancelled." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_contacts",
+    description: "List CRM contacts (leads and customers) the caller can see, optionally filtered by type, a search term, or department.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        type: { type: Type.STRING, enum: ["LEAD", "CUSTOMER"], description: "Filter to only leads or only customers." },
+        search: { type: Type.STRING, description: "Filter to contacts whose name, company, or email contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_deals",
+    description: "List sales pipeline deals the caller can see, optionally filtered by stage, contact name, or department.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        stage: { type: Type.ARRAY, items: { type: Type.STRING, enum: DEAL_STAGES }, description: "Filter to these pipeline stages." },
+        contactName: { type: Type.STRING, description: "Filter to deals for a contact whose name contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_suppliers",
+    description: "List procurement suppliers the caller can see, optionally filtered by a search term or department.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        search: { type: Type.STRING, description: "Filter to suppliers whose name contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_purchase_orders",
+    description: "List purchase orders the caller can see, optionally filtered by status, supplier name, or department — use this for questions like \"which POs are awaiting approval\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        status: { type: Type.ARRAY, items: { type: Type.STRING, enum: PURCHASE_ORDER_STATES }, description: "Filter to these PO statuses." },
+        supplierName: { type: Type.STRING, description: "Filter to a supplier whose name contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
+    name: "list_products",
+    description: "List inventory products the caller can see, with real current stock totals, optionally filtered by a search term, department, or low-stock-only.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        search: { type: Type.STRING, description: "Filter to products whose name or SKU contains this text." },
+        departmentName: { type: Type.STRING, description: "Filter to a department whose name contains this text." },
+        lowStockOnly: { type: Type.BOOLEAN, description: "If true, only include products whose real current total stock is at or below their reorder threshold." },
+        limit: { type: Type.INTEGER, description: "Max results, default 10, max 25." },
+      },
+    },
+  },
+  {
     name: "get_activity",
     description: "Get recent document activity (submissions, approvals, rejections, shares, etc.), optionally scoped to a department or project and a time window.",
     parameters: {
@@ -267,6 +487,12 @@ const TOOL_IMPLEMENTATIONS = {
   list_documents: listDocuments,
   list_departments: listDepartments,
   list_projects: listProjects,
+  list_tasks: listTasks,
+  list_contacts: listContacts,
+  list_deals: listDeals,
+  list_suppliers: listSuppliers,
+  list_purchase_orders: listPurchaseOrders,
+  list_products: listProducts,
   get_activity: getActivity,
   get_document_access: getDocumentAccess,
 };
@@ -280,7 +506,7 @@ export async function runBusinessTool(name, args, ctx) {
 export function businessSystemInstruction({ orgName, role, isManager }) {
   return `You are the Inaya AI Business Assistant, embedded in the "${orgName}" company's Business Workspace. The person you're talking to signed in as ${role}${isManager ? " (has manage/approval authority)" : " (standard member)"}.
 
-You answer questions about this company's departments, projects, documents, workflow status, and activity by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see; if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
+You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), and inventory (products, real current stock levels, low-stock items) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see; if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
 
 If get_document_access returns permissionDenied, tell the user plainly that they don't have permission to view who has access to that document (only the document's owner, an explicit MANAGE grant, or a company owner/admin can see that) — do not attempt to answer the question any other way, and do not reveal the document's owner or any grant information in that case.
 
