@@ -5,8 +5,15 @@
 // Fraud & Abuse Protection Layer admin dashboard (SOW section 6) — same
 // passphrase-gated session as every other /admin/* page. Read-only: this
 // page shows what src/lib/fraudRisk.js's assessRisk() has recorded so far.
-// Nothing here enforces anything yet (Phase 2, not built this pass) —
-// see the module comment at the top of fraudRisk.js.
+//
+// Phase 2 (lib/riskGate.js) is live: Watcher enrollment, both referral
+// routes, and the Docs AI chat rate limiter all reject a request when
+// the assessment resolves to RESTRICT/TEMPORARILY_BLOCK — which, per
+// fraudRisk.js's false-positive guarantee, only a CONFIRMED reputation
+// signal can ever reach, never VPN/proxy/Tor/datacenter alone. Business
+// Workspace (org creation, magic-link login) stays detection-only by
+// deliberate design — see those routes' own comments (ordinary corporate
+// VPN use shouldn't block a paying B2B customer).
 
 import { useState, useEffect, useCallback } from "react";
 
@@ -122,7 +129,9 @@ export default function FraudAdminPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-white">Fraud &amp; Abuse Protection</h1>
-            <p className="text-[#8a96ab] text-xs mt-0.5">Detection only — nothing here enforces anything yet (Phase 2).</p>
+            <p className="text-[#8a96ab] text-xs mt-0.5">
+              Phase 2 enforcement is live for <span className="text-slate-300">watcher</span>, <span className="text-slate-300">referral</span>, and <span className="text-slate-300">api</span> (Docs AI chat) — RESTRICT/TEMPORARILY_BLOCK rejects the request. <span className="text-slate-300">business</span> (org creation, login) stays detection-only by design.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <a href="/admin" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
