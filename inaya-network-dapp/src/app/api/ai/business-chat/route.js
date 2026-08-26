@@ -142,7 +142,7 @@ export async function POST(req) {
       let response;
       try {
         response = await generateContentWithRetry(ai, {
-          model: "gemini-flash-latest",
+          model: "gemini-3.5-flash-lite",
           contents,
           config: {
             systemInstruction,
