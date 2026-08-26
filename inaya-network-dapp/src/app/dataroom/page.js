@@ -321,6 +321,14 @@ export default function DataRoomPage() {
                 style={{ height: "80vh" }}
                 title={activeDocument.title}
               />
+            ) : activeDocument.mimeType === "video/mp4" ? (
+              <video
+                key={activeDocument.id}
+                src={`/api/dataroom/documents/${activeDocument.id}/stream`}
+                controls
+                className="w-full rounded-xl border border-white/5 bg-black"
+                style={{ maxHeight: "80vh" }}
+              />
             ) : (
               <div className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6">
                 <p className="text-[#94a3b8] text-sm mb-4">This file type doesn't support inline preview.</p>

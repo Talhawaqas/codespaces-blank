@@ -12,7 +12,7 @@
 // triggering a download.
 
 import { NextResponse } from "next/server";
-import { getDataroomVisitor, getDataroomCollections, toObjectId, recordViewOpened, readDocumentFile } from "../../../../../../lib/dataroom.js";
+import { getDataroomVisitor, getDataroomCollections, toObjectId, recordViewOpened, readDocumentFile, readVideoFile } from "../../../../../../lib/dataroom.js";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +29,9 @@ export async function GET(req, { params }) {
 
     let buffer;
     try {
-      buffer = await readDocumentFile(doc.fileId);
+      buffer = doc.storageType === "blob" ? await readVideoFile(doc.blobPathname) : await readDocumentFile(doc.fileId);
     } catch (err) {
-      console.error(`dataroom/documents/stream: GridFS read failed for fileId ${doc.fileId}:`, err.message);
+      console.error(`dataroom/documents/stream: read failed for document ${doc._id}:`, err.message);
       return NextResponse.json({ error: "Could not load this document. Please try again." }, { status: 502 });
     }
 

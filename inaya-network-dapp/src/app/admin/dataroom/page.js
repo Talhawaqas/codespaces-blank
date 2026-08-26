@@ -10,6 +10,7 @@
 // it server-side.
 
 import { useState, useEffect, useCallback } from "react";
+import { upload as uploadToBlob } from "@vercel/blob/client";
 
 // Mirrors the founder's existing Google Drive data room folder structure
 // (kept as a local constant, not imported from src/lib/dataroom.js — that
@@ -64,6 +65,13 @@ export default function DataRoomAdminPage() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoCategory, setVideoCategory] = useState("Product & Demo");
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState("");
 
   const loadData = useCallback(async () => {
     setLoadError("");
@@ -131,6 +139,42 @@ export default function DataRoomAdminPage() {
       setUploadError(err.message);
     } finally {
       setUploading(false);
+    }
+  }
+
+  // Videos upload directly from this browser to Vercel Blob — see this
+  // repo's api/admin/dataroom/videos/upload-token/route.js header comment
+  // for why (Vercel serverless functions cap request bodies around 4.5MB,
+  // and demo videos run well past that). The dataroom_documents row itself
+  // gets created server-side once the upload finishes (onUploadCompleted
+  // in that same route), not by this function — so on a real deployment
+  // this resolves, loadData() picks up the new row, done. In local dev
+  // that completion webhook can't reach this machine, so a video "uploads"
+  // successfully to Blob but never appears in the list here — expected,
+  // not a bug; test video uploads against a real deployment.
+  async function handleVideoUpload(e) {
+    e.preventDefault();
+    if (!videoFile) return;
+    setVideoUploading(true);
+    setVideoProgress(0);
+    setVideoError("");
+    try {
+      await uploadToBlob(videoFile.name, videoFile, {
+        access: "private",
+        handleUploadUrl: "/api/admin/dataroom/videos/upload-token",
+        clientPayload: JSON.stringify({ title: videoTitle, category: videoCategory || "Product & Demo", filename: videoFile.name }),
+        onUploadProgress: ({ percentage }) => setVideoProgress(percentage),
+      });
+
+      setVideoTitle("");
+      setVideoCategory("Product & Demo");
+      setVideoFile(null);
+      e.target.reset();
+      await loadData();
+    } catch (err) {
+      setVideoError(err.message || "Video upload failed.");
+    } finally {
+      setVideoUploading(false);
     }
   }
 
@@ -224,6 +268,46 @@ export default function DataRoomAdminPage() {
                 className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-xs rounded-xl px-4 py-2.5 disabled:opacity-50"
               >
                 {uploading ? "Uploading…" : "Upload"}
+              </button>
+            </form>
+
+            <form onSubmit={handleVideoUpload} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-5 space-y-3">
+              <h2 className="text-white font-bold text-sm mb-2">Upload a video (MP4, up to 500MB)</h2>
+              <input
+                required
+                value={videoTitle}
+                onChange={(e) => setVideoTitle(e.target.value)}
+                placeholder="Title (e.g. Mobile Demo)"
+                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
+              />
+              <select
+                value={videoCategory}
+                onChange={(e) => setVideoCategory(e.target.value)}
+                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c} className="bg-[#0b1120]">{c}</option>
+                ))}
+              </select>
+              <input
+                required
+                type="file"
+                accept="video/mp4"
+                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                className="w-full text-xs text-[#94a3b8]"
+              />
+              {videoUploading && (
+                <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] h-full transition-all" style={{ width: `${videoProgress}%` }} />
+                </div>
+              )}
+              {videoError && <p className="text-red-400 text-xs">{videoError}</p>}
+              <button
+                type="submit"
+                disabled={videoUploading}
+                className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-xs rounded-xl px-4 py-2.5 disabled:opacity-50"
+              >
+                {videoUploading ? `Uploading… ${videoProgress}%` : "Upload video"}
               </button>
             </form>
 

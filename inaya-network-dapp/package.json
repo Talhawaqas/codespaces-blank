@@ -10,11 +10,12 @@
     "test": "node --env-file=.env.local --test --test-timeout=60000 test/*.test.mjs"
   },
   "dependencies": {
-    "@inaya-network/custody-sdk": "^1.0.6-beta",
     "@google/genai": "^2.13.0",
+    "@inaya-network/custody-sdk": "^1.0.6-beta",
     "@supabase/supabase-js": "^2.44.4",
     "@tailwindcss/postcss": "^4.3.3",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "^2.8.0",
     "@vercel/speed-insights": "^2.0.0",
     "@walletconnect/ethereum-provider": "^2.23.10",
     "autoprefixer": "^10.4.19",

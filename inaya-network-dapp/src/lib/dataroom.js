@@ -29,6 +29,7 @@
 
 import { randomBytes, createHash } from "node:crypto";
 import { ObjectId, GridFSBucket } from "mongodb";
+import { get as getBlob, del as deleteBlob } from "@vercel/blob";
 import { connectToDatabase } from "./mongodb.js";
 import { hashToken, generateToken, isValidEmail, normalizeEmail } from "./orgs.js";
 
@@ -57,6 +58,34 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
   "image/png",
   "image/jpeg",
 ];
+
+// Video demo files (Product & Demo category) go through a completely
+// different storage path than the document types above — see the header
+// comment on storeVideoFile() below for why. Kept as a separate list/cap
+// rather than folding into ALLOWED_DOCUMENT_MIME_TYPES/MAX_DOCUMENT_SIZE_
+// BYTES, since a 50MB document cap would reject nearly every demo video.
+export const ALLOWED_VIDEO_MIME_TYPES = ["video/mp4"];
+export const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024; // 500MB — comfortable headroom over the largest current demo (~130MB)
+
+export function validateVideoUploadInput(input) {
+  const { title, category, sizeBytes, mimeType } = input || {};
+  if (!isNonEmptyString(title, MAX_TITLE_LEN)) {
+    throw new Error(`Title is required (max ${MAX_TITLE_LEN} characters).`);
+  }
+  if (category != null && !isNonEmptyString(category, MAX_CATEGORY_LEN)) {
+    throw new Error(`Category must be under ${MAX_CATEGORY_LEN} characters.`);
+  }
+  if (typeof sizeBytes !== "number" || sizeBytes <= 0) {
+    throw new Error("File is empty or unreadable.");
+  }
+  if (sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+    throw new Error(`Video is too large (max ${MAX_VIDEO_SIZE_BYTES / (1024 * 1024)}MB).`);
+  }
+  if (!ALLOWED_VIDEO_MIME_TYPES.includes(mimeType)) {
+    throw new Error("Unsupported video type. Upload an MP4.");
+  }
+  return { title: title.trim(), category: category ? category.trim() : "Product & Demo" };
+}
 
 export async function getDataroomCollections() {
   const { db } = await connectToDatabase();
@@ -289,6 +318,45 @@ export async function readDocumentFile(fileId) {
 export async function deleteDocumentFile(fileId) {
   const bucket = await getDataroomBucket();
   await bucket.delete(toObjectId(fileId));
+}
+
+// ============================================================
+// Video storage — Vercel Blob (private store)
+// ============================================================
+//
+// Demo videos (Product & Demo category) don't fit through the same path
+// as documents above: a single request into a Vercel serverless function
+// is capped at roughly 4.5MB, and these are 2-130MB MP4s — a platform
+// limit, unaffected by which storage backend receives the bytes.
+//
+// So video upload is a genuinely different flow: the admin's browser
+// uploads DIRECTLY to Vercel Blob (see api/admin/dataroom/videos/
+// upload-token/route.js's handleUpload, which only ever hands out a
+// short-lived signed upload token — our server never touches the video
+// bytes on the way in). The store itself was created with --access
+// private, so a bare blob URL isn't independently fetchable; readVideoFile
+// below still requires BLOB_READ_WRITE_TOKEN, which only our server has —
+// preserving the same "investor never gets a bare shareable link" property
+// documents already have, via the visitor-session + NDA gate in the
+// stream route, same as before.
+
+/** Reads a video's bytes back out of the private Blob store. Buffered for
+ *  the same reason readDocumentFile() is — this codebase has already hit
+ *  a documented Vercel runtime inconsistency piping a raw fetch stream
+ *  straight into NextResponse (see the git history on the old Pinata
+ *  gateway proxy), so buffering is the deliberately boring, reliable
+ *  choice here too, video size notwithstanding. */
+export async function readVideoFile(pathname) {
+  const result = await getBlob(pathname, { access: "private", token: process.env.BLOB_READ_WRITE_TOKEN });
+  if (!result) throw new Error("Video not found in storage.");
+  const arrayBuffer = await new Response(result.stream).arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+/** Deletes a video's bytes from Blob storage — same "an admin delete
+ *  should actually free the storage" posture as deleteDocumentFile(). */
+export async function deleteVideoFile(pathname) {
+  await deleteBlob(pathname, { token: process.env.BLOB_READ_WRITE_TOKEN });
 }
 
 // ============================================================
