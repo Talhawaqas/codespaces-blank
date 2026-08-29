@@ -3,3 +3,4 @@ target/
 node_modules/
 test-ledger/
 .DS_Store
+devnet-id.json

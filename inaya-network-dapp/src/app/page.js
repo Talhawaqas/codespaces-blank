@@ -3183,6 +3183,14 @@ export default function Home() {
         // (not a local-only demo — see /automation).
         { text: "Oracle & Automation Layer — 3 smart contracts deployed & verified on BSC Testnet, live at /automation", done: true },
         { text: "Oracle & Automation Layer — real on-chain price feed + automated node settlement release, running end-to-end", done: true },
+        // Added August 2026 — Cross-Chain Bridge & Cross-Chain Staking (SOW-1):
+        // hub-and-spoke bridge, home ledger on BSC Testnet, M-of-N validator-signed
+        // messages, real deployments + a live relayer dry run on real testnets.
+        { text: "Cross-chain bridge — 9 new smart contracts (chain registry, validator set, messenger, token bridges, staking gateways), deployed live on BSC Testnet, Ethereum Sepolia, and Avalanche Fuji", done: true },
+        { text: "Cross-chain staking — one unified staking position across every chain, existing Flexible/30-day/90-day tiers unchanged", done: true },
+        { text: "Cross-chain relayer — real end-to-end dry run confirmed on live testnets (validator signatures + relayer submission, BSC Testnet -> Sepolia)", done: true },
+        { text: "Solana (non-EVM) bridge — Anchor program written, built, and deployed live to Solana Devnet with on-chain wiring confirmed; anchor test suite and a live receive_message call still pending", done: false },
+        { text: "Polygon Amoy spoke — contracts partially deployed, paused pending additional testnet gas funding", done: false },
         // Added August 2026 — Business Operations (Tasks, CRM, Procurement,
         // Inventory), a Finance & HR layer, and RAG-grounded AI assistants,
         // all shipped this cycle but never reflected in this roadmap.
@@ -3209,7 +3217,6 @@ export default function Home() {
       items: [
         "AI-powered storage intelligence",
         "Decentralized Identity (DID)",
-        "Cross-chain interoperability",
         "Enterprise APIs",
         "Mobile applications",
         "Global node expansion",

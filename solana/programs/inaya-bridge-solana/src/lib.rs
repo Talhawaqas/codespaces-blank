@@ -15,9 +15,20 @@
 //! `sysvar::instructions` re-exports moved into standalone crates
 //! (`solana-keccak-hasher`/`solana-sdk-ids`/`solana-instructions-sysvar`) -- all fixed. Verified
 //! with `anchor build`: both the on-chain SBF binary (`target/deploy/inaya_bridge_solana.so`)
-//! and the IDL (`target/idl/inaya_bridge_solana.json`) build successfully. `anchor test`
-//! (see `solana/tests/inaya-bridge.ts`) has NOT been run yet -- do that, and a real devnet
-//! deploy dry run, before treating this as production-ready.
+//! and the IDL (`target/idl/inaya_bridge_solana.json`) build successfully.
+//!
+//! LIVE ON DEVNET: deployed and wired for real -- program id
+//! `76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn`, `initialize`/`add_trusted_chain(BSC
+//! Testnet)`/`set_home_addresses` all executed and confirmed on real Solana Devnet (see
+//! `solana/wire-devnet.mjs`). A real cross-chain relayer dry run (validator signing + relayer
+//! submission, the exact logic the cron routes use) was also confirmed live between BSC Testnet
+//! and Sepolia (see `scripts/relayer-dry-run.mjs`).
+//!
+//! NOT YET DONE: `anchor test` (see `solana/tests/inaya-bridge.ts`) requires a local-validator
+//! tool (`surfpool`) not installed in this environment -- the mocha suite itself was never run.
+//! A `receive_message` call (secp256k1 signature path) has not been exercised against the
+//! deployed devnet program either. Both are the natural next verification step before treating
+//! this as production-ready.
 
 use anchor_lang::prelude::*;
 
