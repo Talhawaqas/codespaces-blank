@@ -1,0 +1,249 @@
+{
+  "address": "76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn",
+  "metadata": {
+    "name": "inaya_bridge_solana",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Inaya Network cross-chain bridge -- Solana (non-EVM spoke) side, SOW-1"
+  },
+  "instructions": [
+    {
+      "name": "add_trusted_chain",
+      "discriminator": [189, 225, 143, 105, 140, 117, 156, 16],
+      "accounts": [
+        { "name": "admin", "writable": true, "signer": true, "relations": ["bridge_config"] },
+        { "name": "bridge_config", "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "trusted_chain", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [116,114,117,115,116,101,100,95,99,104,97,105,110] }, { "kind": "arg", "path": "chain_id" }] } },
+        { "name": "nonce_tracker", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [110,111,110,99,101,95,116,114,97,99,107,101,114] }, { "kind": "arg", "path": "chain_id" }] } },
+        { "name": "system_program", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [{ "name": "chain_id", "type": "u64" }, { "name": "is_active", "type": "bool" }]
+    },
+    {
+      "name": "bridge_to_home",
+      "docs": ["Outbound: burn + notify home to unlock (route_to_chain_id = 0) or relay on to a", "different EVM spoke (route_to_chain_id = that spoke's real chainId)."],
+      "discriminator": [37, 85, 129, 142, 230, 1, 254, 209],
+      "accounts": [
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "user_token_account", "writable": true },
+        { "name": "mint", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,100,95,105,110,97,121,97,95,109,105,110,116] }] } },
+        { "name": "bridge_config", "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "outbound_nonce_counter", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [111,117,116,98,111,117,110,100,95,110,111,110,99,101] }] } },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
+      ],
+      "args": [
+        { "name": "recipient", "type": { "array": ["u8", 32] } },
+        { "name": "amount_evm18", "type": "u128" },
+        { "name": "route_to_chain_id", "type": "u64" }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "accounts": [
+        { "name": "payer", "writable": true, "signer": true },
+        { "name": "bridge_config", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "validator_set", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118,97,108,105,100,97,116,111,114,95,115,101,116] }] } },
+        { "name": "mint", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,100,95,105,110,97,121,97,95,109,105,110,116] }] } },
+        { "name": "mint_authority", "pda": { "seeds": [{ "kind": "const", "value": [109,105,110,116,95,97,117,116,104,111,114,105,116,121] }] } },
+        { "name": "outbound_nonce_counter", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [111,117,116,98,111,117,110,100,95,110,111,110,99,101] }] } },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+        { "name": "system_program", "address": "11111111111111111111111111111111" },
+        { "name": "rent", "address": "SysvarRent111111111111111111111111111111111" }
+      ],
+      "args": [
+        { "name": "admin", "type": "pubkey" },
+        { "name": "self_chain_id", "type": "u64" },
+        { "name": "home_chain_id", "type": "u64" },
+        { "name": "threshold", "type": "u8" },
+        { "name": "initial_validators", "type": { "vec": { "array": ["u8", 20] } } }
+      ]
+    },
+    {
+      "name": "pause",
+      "discriminator": [211, 22, 221, 251, 74, 121, 193, 47],
+      "accounts": [
+        { "name": "admin", "signer": true, "relations": ["bridge_config"] },
+        { "name": "bridge_config", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } }
+      ],
+      "args": []
+    },
+    {
+      "name": "receive_message",
+      "docs": ["Inbound: the only message type this program ever receives (TOKEN_MINT), threshold-signed", "by the shared validator committee, permissionless submission."],
+      "discriminator": [38, 144, 127, 225, 31, 225, 238, 25],
+      "accounts": [
+        { "name": "relayer", "writable": true, "signer": true },
+        { "name": "bridge_config", "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "validator_set", "pda": { "seeds": [{ "kind": "const", "value": [118,97,108,105,100,97,116,111,114,95,115,101,116] }] } },
+        { "name": "trusted_chain", "pda": { "seeds": [{ "kind": "const", "value": [116,114,117,115,116,101,100,95,99,104,97,105,110] }, { "kind": "arg", "path": "message.source_chain_id" }] } },
+        { "name": "nonce_tracker", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [110,111,110,99,101,95,116,114,97,99,107,101,114] }, { "kind": "arg", "path": "message.source_chain_id" }] } },
+        { "name": "mint", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,100,95,105,110,97,121,97,95,109,105,110,116] }] } },
+        { "name": "mint_authority", "pda": { "seeds": [{ "kind": "const", "value": [109,105,110,116,95,97,117,116,104,111,114,105,116,121] }] } },
+        { "name": "recipient_token_account", "writable": true, "pda": { "seeds": [{ "kind": "account", "path": "recipient" }, { "kind": "const", "value": [6,221,246,225,215,101,161,147,217,203,225,70,206,235,121,172,28,180,133,237,95,91,55,145,58,140,245,133,126,255,0,169] }, { "kind": "account", "path": "mint" }], "program": { "kind": "const", "value": [140,151,37,143,78,36,137,241,187,61,16,41,20,142,13,131,11,90,19,153,218,255,16,132,4,142,123,216,219,233,248,89] } } },
+        { "name": "recipient" },
+        { "name": "instructions_sysvar", "address": "Sysvar1nstructions1111111111111111111111111" },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+        { "name": "associated_token_program", "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" },
+        { "name": "system_program", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [
+        { "name": "message", "type": { "defined": { "name": "BridgeMessage" } } },
+        { "name": "num_signers", "type": "u8" }
+      ]
+    },
+    {
+      "name": "set_home_addresses",
+      "discriminator": [88, 238, 152, 170, 244, 15, 180, 106],
+      "accounts": [
+        { "name": "admin", "signer": true, "relations": ["bridge_config"] },
+        { "name": "bridge_config", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } }
+      ],
+      "args": [
+        { "name": "home_bridge_address", "type": { "array": ["u8", 32] } },
+        { "name": "home_staking_gateway_address", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "stake_cross_chain",
+      "docs": ["Outbound: burn + request home credit `evm_beneficiary` in the one canonical", "InayaStaking ledger. Solana only ever originates this -- never receives it."],
+      "discriminator": [162, 41, 0, 138, 114, 86, 237, 206],
+      "accounts": [
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "user_token_account", "writable": true },
+        { "name": "mint", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,100,95,105,110,97,121,97,95,109,105,110,116] }] } },
+        { "name": "bridge_config", "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "outbound_nonce_counter", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [111,117,116,98,111,117,110,100,95,110,111,110,99,101] }] } },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
+      ],
+      "args": [
+        { "name": "evm_beneficiary", "type": { "array": ["u8", 20] } },
+        { "name": "amount_evm18", "type": "u128" },
+        { "name": "lock_period_days", "type": "u64" }
+      ]
+    },
+    {
+      "name": "unpause",
+      "discriminator": [169, 144, 4, 38, 10, 141, 188, 255],
+      "accounts": [
+        { "name": "admin", "signer": true, "relations": ["bridge_config"] },
+        { "name": "bridge_config", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_validators",
+      "discriminator": [211, 66, 122, 122, 121, 107, 148, 111],
+      "accounts": [
+        { "name": "admin", "signer": true, "relations": ["bridge_config"] },
+        { "name": "bridge_config", "pda": { "seeds": [{ "kind": "const", "value": [98,114,105,100,103,101,95,99,111,110,102,105,103] }] } },
+        { "name": "validator_set", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118,97,108,105,100,97,116,111,114,95,115,101,116] }] } }
+      ],
+      "args": [
+        { "name": "new_validators", "type": { "vec": { "array": ["u8", 20] } } },
+        { "name": "new_threshold", "type": "u8" }
+      ]
+    }
+  ],
+  "accounts": [
+    { "name": "BridgeConfig", "discriminator": [40, 206, 51, 233, 246, 40, 178, 85] },
+    { "name": "NonceTracker", "discriminator": [244, 104, 52, 45, 43, 120, 94, 13] },
+    { "name": "OutboundNonceCounter", "discriminator": [94, 222, 87, 0, 129, 113, 115, 201] },
+    { "name": "TrustedChain", "discriminator": [147, 185, 190, 210, 54, 113, 36, 230] },
+    { "name": "ValidatorSet", "discriminator": [35, 206, 97, 202, 43, 11, 11, 127] }
+  ],
+  "events": [
+    { "name": "MessageReceived", "discriminator": [231, 68, 47, 77, 173, 241, 157, 166] },
+    { "name": "MessageSent", "discriminator": [116, 70, 224, 76, 128, 28, 110, 55] },
+    { "name": "StakeRequestSent", "discriminator": [60, 50, 48, 0, 194, 19, 205, 106] }
+  ],
+  "errors": [
+    { "code": 6000, "name": "Paused", "msg": "Bridge is paused" },
+    { "code": 6001, "name": "Unauthorized", "msg": "Caller is not the admin" },
+    { "code": 6002, "name": "TooManyValidators", "msg": "Too many validators (max 16)" },
+    { "code": 6003, "name": "InvalidThreshold", "msg": "Threshold must be > 0 and <= validator count" },
+    { "code": 6004, "name": "DuplicateValidator", "msg": "Duplicate validator address in the set" },
+    { "code": 6005, "name": "WrongDestinationChain", "msg": "Destination chain does not match this program's configured chain id" },
+    { "code": 6006, "name": "ChainNotTrusted", "msg": "Source chain is not registered/trusted" },
+    { "code": 6007, "name": "ZeroAmount", "msg": "Amount must be greater than 0" },
+    { "code": 6008, "name": "AmountTooSmallAfterConversion", "msg": "Amount is too small to survive 18->9 decimal conversion (rounds to 0)" },
+    { "code": 6009, "name": "InvalidAction", "msg": "Invalid action type in payload" },
+    { "code": 6010, "name": "InvalidLockPeriod", "msg": "Invalid lock period -- must be 0, 30, or 90" },
+    { "code": 6011, "name": "AlreadyProcessed", "msg": "Message already processed (replay)" },
+    { "code": 6012, "name": "NonceOutOfWindow", "msg": "Nonce is beyond the replay-protection window -- deliver missing lower nonces first" },
+    { "code": 6013, "name": "InsufficientSignatures", "msg": "Not enough valid threshold signatures" },
+    { "code": 6014, "name": "InvalidSecp256k1Instruction", "msg": "A preceding instruction is not a valid secp256k1 program verification" },
+    { "code": 6015, "name": "UnknownValidatorSigner", "msg": "Recovered signer is not a registered validator" },
+    { "code": 6016, "name": "InvalidActionForReceive", "msg": "Solana may only originate a stake request, never receive one" },
+    { "code": 6017, "name": "PayloadDecodeError", "msg": "Payload could not be decoded" }
+  ],
+  "types": [
+    { "name": "BridgeConfig", "type": { "kind": "struct", "fields": [
+      { "name": "admin", "type": "pubkey" },
+      { "name": "mint", "type": "pubkey" },
+      { "name": "self_chain_id", "type": "u64" },
+      { "name": "home_chain_id", "type": "u64" },
+      { "name": "home_bridge_address", "type": { "array": ["u8", 32] } },
+      { "name": "home_staking_gateway_address", "type": { "array": ["u8", 32] } },
+      { "name": "paused", "type": "bool" },
+      { "name": "bump", "type": "u8" }
+    ] } },
+    { "name": "BridgeMessage", "type": { "kind": "struct", "fields": [
+      { "name": "source_chain_id", "type": "u64" },
+      { "name": "source_contract", "type": { "array": ["u8", 32] } },
+      { "name": "dest_chain_id", "type": "u64" },
+      { "name": "dest_contract", "type": { "array": ["u8", 32] } },
+      { "name": "nonce", "type": "u64" },
+      { "name": "msg_type", "type": "u8" },
+      { "name": "payload", "type": "bytes" }
+    ] } },
+    { "name": "MessageReceived", "type": { "kind": "struct", "fields": [
+      { "name": "message_hash", "type": { "array": ["u8", 32] } },
+      { "name": "source_chain_id", "type": "u64" },
+      { "name": "nonce", "type": "u64" },
+      { "name": "recipient", "type": "pubkey" },
+      { "name": "amount_solana", "type": "u64" }
+    ] } },
+    { "name": "MessageSent", "type": { "kind": "struct", "fields": [
+      { "name": "message_hash", "type": { "array": ["u8", 32] } },
+      { "name": "source_chain_id", "type": "u64" },
+      { "name": "source_contract", "type": { "array": ["u8", 32] } },
+      { "name": "dest_chain_id", "type": "u64" },
+      { "name": "dest_contract", "type": { "array": ["u8", 32] } },
+      { "name": "nonce", "type": "u64" },
+      { "name": "msg_type", "type": "u8" },
+      { "name": "payload", "type": "bytes" }
+    ] } },
+    { "name": "NonceTracker", "type": { "kind": "struct", "fields": [
+      { "name": "chain_id", "type": "u64" },
+      { "name": "high_water_mark", "type": "u64" },
+      { "name": "bitmap", "type": { "array": ["u8", 128] } },
+      { "name": "bump", "type": "u8" }
+    ] } },
+    { "name": "OutboundNonceCounter", "type": { "kind": "struct", "fields": [
+      { "name": "next_nonce", "type": "u64" },
+      { "name": "bump", "type": "u8" }
+    ] } },
+    { "name": "StakeRequestSent", "type": { "kind": "struct", "fields": [
+      { "name": "message_hash", "type": { "array": ["u8", 32] } },
+      { "name": "source_chain_id", "type": "u64" },
+      { "name": "source_contract", "type": { "array": ["u8", 32] } },
+      { "name": "dest_chain_id", "type": "u64" },
+      { "name": "dest_contract", "type": { "array": ["u8", 32] } },
+      { "name": "nonce", "type": "u64" },
+      { "name": "msg_type", "type": "u8" },
+      { "name": "payload", "type": "bytes" }
+    ] } },
+    { "name": "TrustedChain", "type": { "kind": "struct", "fields": [
+      { "name": "chain_id", "type": "u64" },
+      { "name": "is_active", "type": "bool" },
+      { "name": "bump", "type": "u8" }
+    ] } },
+    { "name": "ValidatorSet", "type": { "kind": "struct", "fields": [
+      { "name": "validators", "type": { "array": [{ "array": ["u8", 20] }, 16] } },
+      { "name": "validator_count", "type": "u8" },
+      { "name": "threshold", "type": "u8" },
+      { "name": "bump", "type": "u8" }
+    ] } }
+  ]
+}

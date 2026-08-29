@@ -8,7 +8,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { PublicKey } from "@solana/web3.js";
 import { CHAINS, CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID, ensureChain, getChain } from "@/lib/chains";
+import SolanaBridgePanel from "@/components/bridge/SolanaBridgePanel";
 
 const BRIDGE_HOME_ABI = [
   "function bridgeOut(uint256 destChainId, bytes32 recipient, uint256 amount) external returns (bytes32 messageId)",
@@ -101,7 +103,10 @@ export default function BridgePage() {
       const amountWei = ethers.parseUnits(amount || "0", 18);
       if (amountWei <= 0n) throw new Error("Enter an amount");
 
-      const recipientBytes32 = ethers.zeroPadValue(recipient, 32);
+      const recipientBytes32 =
+        destChainId === SOLANA_DEVNET_CHAIN_ID
+          ? ethers.hexlify(new PublicKey(recipient).toBytes())
+          : ethers.zeroPadValue(recipient, 32);
       let tx;
 
       if (isHome) {
@@ -188,14 +193,15 @@ export default function BridgePage() {
         </label>
         <label>
           Recipient address
-          <input value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="0x..." />
+          <input
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder={destChainId === SOLANA_DEVNET_CHAIN_ID ? "Solana base58 address..." : "0x..."}
+          />
         </label>
-        <button onClick={handleTransfer} disabled={!account || destChainId === SOLANA_DEVNET_CHAIN_ID}>
+        <button onClick={handleTransfer} disabled={!account}>
           Bridge
         </button>
-        {destChainId === SOLANA_DEVNET_CHAIN_ID && (
-          <p style={{ color: "#a60" }}>Solana bridging needs a Phantom/Solflare-connected panel -- not wired into this form yet.</p>
-        )}
         {status && <p>{status}</p>}
         {transferStatus && (
           <div style={{ border: "1px solid #ddd", padding: 12 }}>
@@ -205,6 +211,8 @@ export default function BridgePage() {
           </div>
         )}
       </div>
+
+      <SolanaBridgePanel evmRecipientDefault={account} />
 
       {position && (
         <div style={{ marginTop: 32 }}>

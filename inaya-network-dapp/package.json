@@ -10,8 +10,16 @@
     "test": "node --env-file=.env.local --test --test-timeout=60000 test/*.test.mjs"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@google/genai": "^2.13.0",
     "@inaya-network/custody-sdk": "^1.0.6-beta",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-phantom": "^0.9.29",
+    "@solana/wallet-adapter-solflare": "^0.6.33",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.95.3",
     "@supabase/supabase-js": "^2.44.4",
     "@tailwindcss/postcss": "^4.3.3",
     "@vercel/analytics": "^2.0.1",
