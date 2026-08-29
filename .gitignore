@@ -19,3 +19,5 @@ cache/
 # Portable desktop builds (scripts/build-portable-desktop.ps1) — large
 # regenerable binaries, not source.
 portable-builds/
+
+.env*

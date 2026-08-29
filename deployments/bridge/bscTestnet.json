@@ -1,0 +1,12 @@
+{
+  "role": "home",
+  "network": "bscTestnet",
+  "chainId": 97,
+  "inayaToken": "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e",
+  "chainRegistry": "0x09a96A2b0ac45C89454fA8cf8dF0D2dF4422220A",
+  "validatorSet": "0xA7C1076942835Bc0432208155F003d5a8a929B89",
+  "messenger": "0x76284248308B1BA0B4759308Bf4aEdb43698C01B",
+  "bridge": "0xaF1341ea8a5284D561aD2F1287698DAFE180c484",
+  "staking": "0x580E341CdA3cb18809ba587EFc2145a3bD147ffE",
+  "stakingGateway": "0x300F4352C497D78385bCceaEE6668C11ab9320Af"
+}

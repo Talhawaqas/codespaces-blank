@@ -1,0 +1,9 @@
+{
+  "role": "spoke",
+  "network": "solanaDevnet",
+  "chainId": 1000000002,
+  "programId": "76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn",
+  "upgradeAuthority": "FF7HjxkCDzfCtPK8p41ELKNV4VZdKapUvTwZj9Y7TPAE",
+  "cluster": "https://api.devnet.solana.com",
+  "notes": "Program binary deployed and verified live via `solana program show`. On-chain state (initialize/add_trusted_chain/set_home_addresses) not yet run -- home bridge/staking-gateway addresses and validator set still need wiring. anchor test not yet run."
+}

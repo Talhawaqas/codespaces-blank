@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "./bridge/IInayaStakingGatewayHome.sol";
 
 // ============================================================
 // INAYA STAKING ENGINE
@@ -19,7 +21,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // contract's raw token balanceOf(), so a claim can never accidentally
 // drain user principal even though both live in the same token.
 // ============================================================
-contract InayaStaking is ReentrancyGuard, Ownable {
+contract InayaStaking is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stakingToken; // $INAYA
@@ -51,6 +53,22 @@ contract InayaStaking is ReentrancyGuard, Ownable {
     // it something on-chain to read.
     uint256 public enterpriseTierThreshold = 50_000 * 1e18; // 50,000 INAYA
 
+    // 0.001 INAYA -- comfortably above $INAYA's real 0.0001 flat transfer fee. See
+    // withdrawTo/claimRewardTo's comments for what this covers.
+    uint256 private constant CROSS_CHAIN_FEE_MARGIN = 1e15;
+
+    // ---------------- Cross-chain state ----------------
+    // The one trusted address allowed to call stakeFor() -- normally InayaStakingGatewayHome.
+    address public crossChainGateway;
+    address public emergencyPauser;
+
+    // Lifetime INAYA ever staked via a given origin chain, per user. Increment-only (never
+    // decremented on withdrawal) -- a stake that entered via chain A and later withdraws
+    // toward chain B has no single correct "origin" to decrement once merged into one fungible
+    // balance, so this is documented as an analytics/breakdown field for "where did your
+    // position come from," not a live per-chain balance. Reward math never reads this.
+    mapping(address => mapping(uint256 => uint256)) public userStakedByChain;
+
     // ---------------- Events ----------------
     event Staked(address indexed user, uint256 amount, uint256 lockPeriodDays);
     event Withdrawn(address indexed user, uint256 amount);
@@ -58,6 +76,16 @@ contract InayaStaking is ReentrancyGuard, Ownable {
     event RewardRateUpdated(uint256 newRate, uint256 periodFinish);
     event RewardPoolFunded(uint256 amount, uint256 newPoolBalance);
     event EnterpriseTierThresholdUpdated(uint256 newThreshold);
+    event CrossChainGatewayUpdated(address indexed newGateway);
+    event StakedCrossChain(address indexed user, uint256 amount, uint256 lockPeriodDays, uint256 indexed originChainId);
+    event WithdrawnCrossChain(address indexed user, uint256 amount, uint256 indexed destChainId, bytes32 destRecipient, bytes32 messageId);
+    event RewardPaidCrossChain(address indexed user, uint256 reward, uint256 indexed destChainId, bytes32 destRecipient, bytes32 messageId);
+    event EmergencyPauserUpdated(address newPauser);
+
+    modifier onlyGateway() {
+        require(msg.sender == crossChainGateway, "Caller is not the cross-chain gateway");
+        _;
+    }
 
     constructor(address _stakingToken, address _rewardToken) Ownable(msg.sender) {
         require(_stakingToken != address(0) && _rewardToken != address(0), "Zero address not allowed");
@@ -114,9 +142,9 @@ contract InayaStaking is ReentrancyGuard, Ownable {
     // User actions
     // ============================================================
 
-    /// @param amount Amount of $INAYA to stake (18 decimals).
-    /// @param lockPeriodDays Must be 0 (flexible), 30, or 90.
-    function stake(uint256 amount, uint256 lockPeriodDays) external nonReentrant updateReward(msg.sender) {
+    /// @dev Shared bookkeeping for stake()/stakeFor() -- no token movement, no event, so both
+    ///      callers stay in charge of exactly where the tokens come from and what they emit.
+    function _stake(address user, uint256 amount, uint256 lockPeriodDays) internal {
         require(amount > 0, "Cannot stake 0");
         require(
             lockPeriodDays == 0 || lockPeriodDays == 30 || lockPeriodDays == 90,
@@ -127,31 +155,56 @@ contract InayaStaking is ReentrancyGuard, Ownable {
             ? TIER90_MULTIPLIER_BPS
             : (lockPeriodDays == 30 ? TIER30_MULTIPLIER_BPS : FLEXIBLE_MULTIPLIER_BPS);
 
-        if (userStakedBalance[msg.sender] == 0) {
+        if (userStakedBalance[user] == 0) {
             // First stake in this "session" — lock in the tier.
-            lockMultiplierBps[msg.sender] = requestedMultiplier;
+            lockMultiplierBps[user] = requestedMultiplier;
         } else {
             // Topping up an existing stake: keep accounting simple and honest
             // by requiring the same tier as the original stake. To switch
             // tiers, withdraw fully first (once unlocked), then re-stake.
             require(
-                requestedMultiplier == lockMultiplierBps[msg.sender],
+                requestedMultiplier == lockMultiplierBps[user],
                 "Must match your existing lock tier to top up; withdraw fully to switch tiers"
             );
         }
 
         if (lockPeriodDays > 0) {
             uint256 newExpiry = block.timestamp + (lockPeriodDays * 1 days);
-            if (newExpiry > lockExpiry[msg.sender]) {
-                lockExpiry[msg.sender] = newExpiry;
+            if (newExpiry > lockExpiry[user]) {
+                lockExpiry[user] = newExpiry;
             }
         }
 
         totalStaked += amount;
-        userStakedBalance[msg.sender] += amount;
+        userStakedBalance[user] += amount;
+    }
 
+    /// @param amount Amount of $INAYA to stake (18 decimals).
+    /// @param lockPeriodDays Must be 0 (flexible), 30, or 90.
+    function stake(uint256 amount, uint256 lockPeriodDays) external nonReentrant updateReward(msg.sender) {
+        _stake(msg.sender, amount, lockPeriodDays);
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount, lockPeriodDays);
+    }
+
+    /// @notice Credits a stake requested from another chain. Only callable by the trusted
+    ///         cross-chain gateway, which must already hold `amount` of real $INAYA (unlocked
+    ///         from the origin chain's lock) and have it ready to transfer in here.
+    /// @param originChainId The chain the user actually requested this stake from (per
+    ///        ChainIds.sol / the Solana sentinel range) -- recorded for reporting only, see
+    ///        userStakedByChain's doc comment.
+    function stakeFor(address user, uint256 amount, uint256 lockPeriodDays, uint256 originChainId)
+        external
+        onlyGateway
+        nonReentrant
+        whenNotPaused
+        updateReward(user)
+    {
+        _stake(user, amount, lockPeriodDays);
+        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
+        userStakedByChain[user][originChainId] += amount;
+        emit Staked(user, amount, lockPeriodDays);
+        emit StakedCrossChain(user, amount, lockPeriodDays, originChainId);
     }
 
     function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
@@ -192,6 +245,79 @@ contract InayaStaking is ReentrancyGuard, Ownable {
     }
 
     // ============================================================
+    // Cross-chain withdraw / claim
+    // Routed through crossChainGateway -> InayaTokenBridgeHome instead of a plain local
+    // transfer. Scoped Pausable: these three cross-chain entry points (stakeFor above,
+    // withdrawTo, claimRewardTo below) can be paused independently of stake/withdraw/
+    // claimReward/exit, which never carry whenNotPaused -- pausing cross-chain never blocks
+    // local same-chain staking.
+    // ============================================================
+
+    /// @notice Withdraws `amount` from the caller's position and has it minted/unlocked to
+    ///         `destRecipient` on `destChainId` instead of transferred locally. Use withdraw()
+    ///         for a same-chain payout.
+    function withdrawTo(uint256 amount, uint256 destChainId, bytes32 destRecipient)
+        external
+        nonReentrant
+        whenNotPaused
+        updateReward(msg.sender)
+        returns (bytes32 messageId)
+    {
+        require(destChainId != block.chainid, "Use withdraw() for the home chain");
+        require(amount > 0, "Cannot withdraw 0");
+        require(amount <= userStakedBalance[msg.sender], "Insufficient staked balance");
+        require(block.timestamp >= lockExpiry[msg.sender], "Tokens Locked");
+
+        totalStaked -= amount;
+        userStakedBalance[msg.sender] -= amount;
+
+        if (userStakedBalance[msg.sender] == 0) {
+            lockMultiplierBps[msg.sender] = 0;
+            lockExpiry[msg.sender] = 0;
+        }
+
+        // +CROSS_CHAIN_FEE_MARGIN: the bridge's receiveAndLock pulls `amount` via transferFrom,
+        // which (like every $INAYA transfer) additionally deducts the token's own flat fee from
+        // this contract's balance -- the approval (and this contract's real balance) must cover
+        // that too. KNOWN LIMITATION: that fee is paid out of this contract's general balance
+        // without a matching decrement anywhere in totalStaked/rewardPoolBalance -- a slow,
+        // bounded leak (a fraction of a cent per cross-chain withdrawal) absorbed by the reward
+        // pool's funded slack, same operational assumption as InayaTokenBridgeHome's fee buffer.
+        address bridgeAddr = IInayaStakingGatewayHome(crossChainGateway).bridge();
+        stakingToken.forceApprove(bridgeAddr, amount + CROSS_CHAIN_FEE_MARGIN);
+        messageId = IInayaStakingGatewayHome(crossChainGateway).forwardWithdrawal(msg.sender, amount, destChainId, destRecipient);
+
+        emit WithdrawnCrossChain(msg.sender, amount, destChainId, destRecipient, messageId);
+    }
+
+    /// @notice Claims the caller's pending reward and has it minted/unlocked to `destRecipient`
+    ///         on `destChainId` instead of transferred locally. Use claimReward() for a
+    ///         same-chain payout. Same zero-then-pay-out ordering as claimReward() -- the
+    ///         reward is zeroed before the cross-chain call, so a retried/failed message can
+    ///         never double-pay.
+    function claimRewardTo(uint256 destChainId, bytes32 destRecipient)
+        external
+        nonReentrant
+        whenNotPaused
+        updateReward(msg.sender)
+        returns (bytes32 messageId)
+    {
+        require(destChainId != block.chainid, "Use claimReward() for the home chain");
+        uint256 reward = rewards[msg.sender];
+        require(reward > 0, "No rewards to claim");
+        require(reward <= rewardPoolBalance, "Reward pool underfunded - ask admin to fundRewardPool()");
+
+        rewards[msg.sender] = 0;
+        rewardPoolBalance -= reward;
+
+        address bridgeAddr = IInayaStakingGatewayHome(crossChainGateway).bridge();
+        rewardToken.forceApprove(bridgeAddr, reward + CROSS_CHAIN_FEE_MARGIN);
+        messageId = IInayaStakingGatewayHome(crossChainGateway).forwardClaim(msg.sender, reward, destChainId, destRecipient);
+
+        emit RewardPaidCrossChain(msg.sender, reward, destChainId, destRecipient, messageId);
+    }
+
+    // ============================================================
     // Admin functions
     // ============================================================
 
@@ -222,6 +348,30 @@ contract InayaStaking is ReentrancyGuard, Ownable {
     function setEnterpriseTierThreshold(uint256 _threshold) external onlyOwner {
         enterpriseTierThreshold = _threshold;
         emit EnterpriseTierThresholdUpdated(_threshold);
+    }
+
+    /// @notice The trusted address allowed to call stakeFor() -- normally InayaStakingGatewayHome.
+    ///         Deployed with this left at its zero default and corrected once the gateway
+    ///         exists, same placeholder-then-setter pattern as InayaThreatRegistry/InayaThreatReporter.
+    function setCrossChainGateway(address _gateway) external onlyOwner {
+        crossChainGateway = _gateway;
+        emit CrossChainGatewayUpdated(_gateway);
+    }
+
+    function setEmergencyPauser(address pauser) external onlyOwner {
+        emergencyPauser = pauser;
+        emit EmergencyPauserUpdated(pauser);
+    }
+
+    /// @notice Pauses ONLY stakeFor/withdrawTo/claimRewardTo -- stake/withdraw/claimReward/exit
+    ///         are never gated by this and keep working while cross-chain is paused.
+    function pauseCrossChain() external {
+        require(msg.sender == owner() || msg.sender == emergencyPauser, "Not authorized to pause");
+        _pause();
+    }
+
+    function unpauseCrossChain() external onlyOwner {
+        _unpause();
     }
 
     /// @notice Rescue any ERC-20 accidentally sent to this contract EXCEPT the

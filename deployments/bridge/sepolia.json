@@ -1,0 +1,12 @@
+{
+  "role": "spoke",
+  "network": "sepolia",
+  "chainId": 11155111,
+  "homeChainId": 97,
+  "wrappedToken": "0x5bD412582Fbbed5C6d8D4b531a9CB8F913fF4e81",
+  "chainRegistry": "0xb2350FD7f00058ec322D4B98e4c8cF6E1d62E8c9",
+  "validatorSet": "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3",
+  "messenger": "0xD4cE8BF06c8E22482262ab1712847C322c2499f7",
+  "bridge": "0xc8780daE7de676F81904D3118DD30c7c81c85f37",
+  "stakingGateway": "0x871229a40d58A89545270B8d059B8E0F481f1d55"
+}

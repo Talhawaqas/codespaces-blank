@@ -15,6 +15,14 @@
     {
       "path": "/api/cron/invoices-mark-overdue",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/bridge/cron/index-events",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/bridge/cron/relay-messages",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
