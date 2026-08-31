@@ -125,6 +125,13 @@ export async function getOrgCollections() {
     // append-only chain itself.
     auditChainEntries: db.collection("audit_chain_entries"),
     auditChainHeads: db.collection("audit_chain_heads"),
+    // Phase 3/4 — Guarded Execution. An AI-proposed action request never
+    // executes the real transitionX() itself — it's a row here that a
+    // human with the same authority the real action would require must
+    // approve, after which a 36h unlockAt (mirroring InayaNodeRegistry.sol's
+    // SETTLEMENT_DELAY) must pass before a cron executor calls the real
+    // workflow function. See src/lib/ai-action-requests.js.
+    aiActionRequests: db.collection("ai_action_requests"),
   };
 }
 
@@ -138,7 +145,7 @@ export async function ensureOrgIndexes() {
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
-    auditChainEntries, auditChainHeads,
+    auditChainEntries, auditChainHeads, aiActionRequests,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -209,6 +216,10 @@ export async function ensureOrgIndexes() {
     auditChainEntries.createIndex({ orgId: 1, seq: 1 }, { unique: true }),
     auditChainEntries.createIndex({ orgId: 1, timestamp: 1 }),
     auditChainHeads.createIndex({ orgId: 1 }, { unique: true }),
+    // Phase 3/4 — Guarded Execution
+    aiActionRequests.createIndex({ orgId: 1, status: 1 }),
+    aiActionRequests.createIndex({ orgId: 1, unlockAt: 1 }),
+    aiActionRequests.createIndex({ idempotencyKey: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;
