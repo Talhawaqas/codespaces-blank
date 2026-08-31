@@ -11,6 +11,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import ConfirmButton from "./ConfirmButton";
+
+const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -43,9 +46,10 @@ const PO_ACTIONS = {
 export default function ProcurementView({ orgId, canManage }) {
   const [tab, setTab] = useState("suppliers");
   const [departments, setDepartments] = useState([]);
+  const [departmentsError, setDepartmentsError] = useState("");
 
   useEffect(() => {
-    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => setDepartments(d.departments)).catch(() => {});
+    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => { setDepartments(d.departments); setDepartmentsError(""); }).catch((err) => setDepartmentsError(`Couldn't load departments: ${err.message}`));
   }, [orgId]);
 
   return (
@@ -55,6 +59,7 @@ export default function ProcurementView({ orgId, canManage }) {
           <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
         ))}
       </div>
+      {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "suppliers" && <SuppliersTab orgId={orgId} departments={departments} />}
       {tab === "requests" && <RequestsTab orgId={orgId} departments={departments} />}
       {tab === "orders" && <OrdersTab orgId={orgId} departments={departments} />}
@@ -69,6 +74,7 @@ function SuppliersTab({ orgId, departments }) {
   const [suppliers, setSuppliers] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -80,16 +86,23 @@ function SuppliersTab({ orgId, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = (suppliers || []).filter((s) => !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase()) || (s.contactEmail || "").toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center"><button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New supplier</button></div>
+      <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suppliers…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New supplier</button>
+      </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         {!suppliers ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : suppliers.length === 0 ? (
           <EmptyState compact icon="🏭" description="No suppliers yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
+        ) : filtered.length === 0 ? (
+          <p className="text-[#94a3b8] text-xs">No suppliers match "{search}".</p>
         ) : (
           <div className="space-y-2">
-            {suppliers.map((s) => (
+            {filtered.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
                 <div className="min-w-0">
                   <span className="text-white text-sm">{s.name}</span>
@@ -152,6 +165,7 @@ function RequestsTab({ orgId, departments }) {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [acting, setActing] = useState("");
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -176,16 +190,23 @@ function RequestsTab({ orgId, departments }) {
     }
   }
 
+  const filtered = (requests || []).filter((r) => !search.trim() || r.title.toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center"><button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New request</button></div>
+      <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New request</button>
+      </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         {!requests ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : requests.length === 0 ? (
           <EmptyState compact icon="📝" description="No purchase requests yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
+        ) : filtered.length === 0 ? (
+          <p className="text-[#94a3b8] text-xs">No requests match "{search}".</p>
         ) : (
           <div className="space-y-2">
-            {requests.map((r) => (
+            {filtered.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
                 <div className="min-w-0">
                   <span className="text-white text-sm">{r.title}</span>
@@ -193,11 +214,17 @@ function RequestsTab({ orgId, departments }) {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${PR_STATUS_STYLES[r.status]}`}>{r.status.replace("_", " ")}</span>
-                  {(PR_ACTIONS[r.status] || []).map(([action, label]) => (
-                    <button key={action} onClick={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
-                      {acting === r.id + action ? "…" : label}
-                    </button>
-                  ))}
+                  {(PR_ACTIONS[r.status] || []).map(([action, label]) =>
+                    DESTRUCTIVE_ACTIONS.has(action) ? (
+                      <ConfirmButton key={action} onConfirm={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                        {acting === r.id + action ? "…" : label}
+                      </ConfirmButton>
+                    ) : (
+                      <button key={action} onClick={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                        {acting === r.id + action ? "…" : label}
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ))}
@@ -303,7 +330,7 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
 
   useEffect(() => {
     if (!departmentId) { setSuppliers([]); setSupplierId(""); return; }
-    api(`/api/orgs/procurement/suppliers?orgId=${orgId}&departmentId=${departmentId}`).then((d) => setSuppliers(d.suppliers)).catch(() => setSuppliers([]));
+    api(`/api/orgs/procurement/suppliers?orgId=${orgId}&departmentId=${departmentId}`).then((d) => { setSuppliers(d.suppliers); setError(""); }).catch((err) => { setSuppliers([]); setError(`Couldn't load suppliers: ${err.message}`); });
     setSupplierId("");
   }, [orgId, departmentId]);
 
@@ -439,11 +466,17 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {(PO_ACTIONS[po.status] || []).map(([action, label]) => (
-            <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
-              {acting === action ? "…" : label}
-            </button>
-          ))}
+          {(PO_ACTIONS[po.status] || []).map(([action, label]) =>
+            DESTRUCTIVE_ACTIONS.has(action) ? (
+              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                {acting === action ? "…" : label}
+              </ConfirmButton>
+            ) : (
+              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                {acting === action ? "…" : label}
+              </button>
+            )
+          )}
         </div>
         {error && <p className="text-red-400 text-xs">{error}</p>}
       </div>

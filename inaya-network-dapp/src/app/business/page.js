@@ -10,13 +10,11 @@
 // product surface (a business/SaaS document system) that happens to reuse
 // the same encrypt/shard/pin/on-chain-hash storage pipeline underneath.
 //
-// Document encryption/pinning intentionally duplicates the two small pure
-// functions page.js already has (encryptData, and a wrapper around
-// /api/upload) rather than importing from page.js — there's nothing to
-// import from (they're closures inside that component, not an exported
-// module), and encryptData is pure Web Crypto with no dependency on any
-// wallet state, so duplicating ~15 lines here is lower-risk than
-// refactoring the already-shipped upload flow just to share it.
+// Document upload's encrypt/shard/pin pipeline lives in
+// ../../lib/clientCrypto.js — shared with FinanceView/HRView, which do the
+// exact same thing for receipts/employee documents. decryptData and
+// fetchShardFromIPFS (below) stay local: they're this file's own, not
+// duplicated anywhere else.
 //
 // LAYOUT: a fixed left sidebar (Dashboard/Departments/Projects/Documents/
 // Approvals/Activity/Settings) + a scrollable content area, replacing the
@@ -42,6 +40,7 @@ import InventoryView from "../../components/business/InventoryView";
 import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
 import InsightsView from "../../components/business/InsightsView";
+import { encryptAndShardFile } from "../../lib/clientCrypto";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -53,22 +52,6 @@ const ROLE_LABELS = { owner: "Owner", admin: "Admin", member: "Member" };
 // ============================================================
 // Client-side crypto + pinning — see module comment above.
 // ============================================================
-async function encryptData(text, password) {
-  const enc = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-  const salt = window.crypto.getRandomValues(new Uint8Array(16));
-  const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text));
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
-  combined.set(salt, 0);
-  combined.set(iv, salt.length);
-  combined.set(new Uint8Array(encrypted), salt.length + iv.length);
-  let binary = "";
-  for (let i = 0; i < combined.byteLength; i++) binary += String.fromCharCode(combined[i]);
-  return window.btoa(binary);
-}
-
 async function decryptData(base64Str, password) {
   const binaryStr = window.atob(base64Str);
   const combined = new Uint8Array(binaryStr.length);
@@ -95,35 +78,6 @@ async function fetchShardFromIPFS(cid) {
     const json = await res.json();
     return json.shard;
   }
-}
-
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadShardToPinata(encryptedShard, filename, elementTag) {
-  // No walletAddress/selectedTier passed — /api/upload skips its billing-
-  // tier logic entirely when walletAddress is absent, so this is a clean,
-  // unmodified reuse of the existing pinning route.
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ encryptedShard, filename, elementTag }),
-  });
-  const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || data.pinata || "IPFS pinning failed.");
-  return data.IpfsHash;
-}
-
-async function sha256Hex(text) {
-  const enc = new TextEncoder();
-  const digest = await window.crypto.subtle.digest("SHA-256", enc.encode(text));
-  return "0x" + Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ============================================================
@@ -1643,19 +1597,11 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
     setUploading(true);
     setError("");
     try {
-      const dataUrl = await readFileAsDataURL(file);
-      const cipherText = await encryptData(dataUrl, passkey);
-      const fileHash = await sha256Hex(cipherText);
-      const midpoint = Math.ceil(cipherText.length / 2);
-
-      const [cidAlpha, cidBeta] = await Promise.all([
-        uploadShardToPinata(cipherText.slice(0, midpoint), file.name, "Alpha"),
-        uploadShardToPinata(cipherText.slice(midpoint), file.name, "Beta"),
-      ]);
+      const { fileHash, sizeBytes, cidAlpha, cidBeta } = await encryptAndShardFile(file, passkey);
 
       await api("/api/orgs/documents", {
         method: "POST",
-        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes: file.size, cidAlpha, cidBeta, accessLevel }),
+        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel }),
       });
 
       setFile(null);
