@@ -26,6 +26,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { ensureOrgIndexes, requireMembership, canManageOrg, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
 import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, businessSystemInstruction } from "../../../../lib/ai-business-tools.js";
+import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
 
 const MAX_TOOL_ROUNDS = 5;
 // The first fix attempt here (a between-round budget check alone) turned
@@ -96,6 +97,54 @@ async function generateContentWithRetry(ai, params) {
   throw lastErr;
 }
 
+/** The Gemini tool-calling loop, factored out so POST can catch a total
+ *  failure (safety budget exceeded, or retries exhausted) and fall back to
+ *  Groq instead of giving up immediately — throws rather than returning a
+ *  Response on failure, since only the caller knows whether a fallback is
+ *  available. */
+async function runGeminiLoop(ai, contents, systemInstruction, ctx) {
+  const requestStartedAt = Date.now();
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
+      throw Object.assign(new Error("business-chat: aborting before the safety budget to avoid a silent hard timeout (Gemini likely under sustained load)"), { status: 503 });
+    }
+    const response = await generateContentWithRetry(ai, {
+      model: "gemini-3.5-flash-lite",
+      contents,
+      config: {
+        systemInstruction,
+        tools: [{ functionDeclarations: BUSINESS_TOOL_DECLARATIONS }],
+        maxOutputTokens: 800,
+        thinkingConfig: { thinkingLevel: "low" },
+      },
+    });
+
+    const calls = response.functionCalls;
+    if (!calls || calls.length === 0) return response.text || "";
+
+    // Push the model's own turn (the function call request) verbatim,
+    // then run each tool through the SAME permission-scoped context and
+    // push the results back as the next turn, per Gemini's function-
+    // calling protocol.
+    const modelContent = response.candidates?.[0]?.content;
+    contents.push(modelContent || { role: "model", parts: calls.map((c) => ({ functionCall: c })) });
+
+    const responseParts = [];
+    for (const call of calls) {
+      let result;
+      try {
+        result = await runBusinessTool(call.name, call.args, ctx);
+      } catch (err) {
+        console.error(`business-chat: tool ${call.name} failed:`, err);
+        result = { error: "This lookup failed unexpectedly." };
+      }
+      responseParts.push({ functionResponse: { name: call.name, response: result } });
+    }
+    contents.push({ role: "user", parts: responseParts });
+  }
+  return ""; // ran out of rounds without a plain-text answer
+}
+
 export async function POST(req) {
   try {
     const { orgId, messages } = await req.json();
@@ -109,8 +158,8 @@ export async function POST(req) {
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const ai = getGeminiClient();
-    if (!ai) {
-      console.error("business-chat: GEMINI_API_KEY is missing.");
+    if (!ai && !isGroqConfigured()) {
+      console.error("business-chat: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
       return NextResponse.json({ error: "AI service is not configured." }, { status: 500 });
     }
 
@@ -127,60 +176,34 @@ export async function POST(req) {
 
     // Same trimming discipline as /api/ai/chat — cap history length and
     // message size so a runaway client can't blow up API costs.
-    let contents = messages.slice(-10).map((m) => ({
+    const contents = messages.slice(-10).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: String(m.content || "").slice(0, 2000) }],
     }));
 
-    const requestStartedAt = Date.now();
     let finalText = "";
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
-        console.warn("business-chat: aborting before the safety budget to avoid a silent hard timeout (Gemini likely under sustained load)");
+    try {
+      if (!ai) throw Object.assign(new Error("business-chat: GEMINI_API_KEY is missing."), { status: 500 });
+      finalText = await runGeminiLoop(ai, contents, systemInstruction, ctx);
+    } catch (err) {
+      console.error("business-chat: Gemini path failed:", err.message);
+      if (!isGroqConfigured()) {
         return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
       }
-      let response;
+      console.warn("business-chat: falling back to Groq...");
       try {
-        response = await generateContentWithRetry(ai, {
-          model: "gemini-3.5-flash-lite",
-          contents,
-          config: {
-            systemInstruction,
-            tools: [{ functionDeclarations: BUSINESS_TOOL_DECLARATIONS }],
-            maxOutputTokens: 800,
-            thinkingConfig: { thinkingLevel: "low" },
-          },
+        finalText = await runGroqToolLoop({
+          systemInstruction,
+          geminiToolDeclarations: BUSINESS_TOOL_DECLARATIONS,
+          initialContents: contents,
+          runTool: runBusinessTool,
+          ctx,
+          maxRounds: MAX_TOOL_ROUNDS,
         });
-      } catch (err) {
-        console.error("business-chat: Gemini call failed:", err);
-        return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });
+      } catch (groqErr) {
+        console.error("business-chat: Groq fallback also failed:", groqErr.message);
+        return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
       }
-
-      const calls = response.functionCalls;
-      if (!calls || calls.length === 0) {
-        finalText = response.text || "";
-        break;
-      }
-
-      // Push the model's own turn (the function call request) verbatim,
-      // then run each tool through the SAME permission-scoped context and
-      // push the results back as the next turn, per Gemini's function-
-      // calling protocol.
-      const modelContent = response.candidates?.[0]?.content;
-      contents.push(modelContent || { role: "model", parts: calls.map((c) => ({ functionCall: c })) });
-
-      const responseParts = [];
-      for (const call of calls) {
-        let result;
-        try {
-          result = await runBusinessTool(call.name, call.args, ctx);
-        } catch (err) {
-          console.error(`business-chat: tool ${call.name} failed:`, err);
-          result = { error: "This lookup failed unexpectedly." };
-        }
-        responseParts.push({ functionResponse: { name: call.name, response: result } });
-      }
-      contents.push({ role: "user", parts: responseParts });
     }
 
     if (!finalText) {

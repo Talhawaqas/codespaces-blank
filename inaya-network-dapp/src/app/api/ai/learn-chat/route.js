@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { buildLearnContext, runLearnTool, LEARN_TOOL_DECLARATIONS, learnSystemInstruction } from "../../../../lib/ai-learn-tools.js";
 import { ensureLearnIndexes } from "../../../../lib/learn.js";
+import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
 
 const MAX_TOOL_ROUNDS = 5;
 // See business-chat/route.js's identical constants for the full story: a
@@ -65,6 +66,45 @@ async function generateContentWithRetry(ai, params) {
   throw lastErr;
 }
 
+async function runGeminiLoop(ai, contents, systemInstruction, ctx) {
+  const requestStartedAt = Date.now();
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
+      throw Object.assign(new Error("learn-chat: aborting before the safety budget to avoid a silent hard timeout"), { status: 503 });
+    }
+    const response = await generateContentWithRetry(ai, {
+      model: "gemini-3.5-flash-lite",
+      contents,
+      config: {
+        systemInstruction,
+        tools: [{ functionDeclarations: LEARN_TOOL_DECLARATIONS }],
+        maxOutputTokens: 800,
+        thinkingConfig: { thinkingLevel: "low" },
+      },
+    });
+
+    const calls = response.functionCalls;
+    if (!calls || calls.length === 0) return response.text || "";
+
+    const modelContent = response.candidates?.[0]?.content;
+    contents.push(modelContent || { role: "model", parts: calls.map((c) => ({ functionCall: c })) });
+
+    const responseParts = [];
+    for (const call of calls) {
+      let result;
+      try {
+        result = await runLearnTool(call.name, call.args, ctx);
+      } catch (err) {
+        console.error(`learn-chat: tool ${call.name} failed:`, err);
+        result = { error: "This lookup failed unexpectedly." };
+      }
+      responseParts.push({ functionResponse: { name: call.name, response: result } });
+    }
+    contents.push({ role: "user", parts: responseParts });
+  }
+  return "";
+}
+
 export async function POST(req) {
   try {
     const { walletAddress, videoContext, messages } = await req.json();
@@ -75,64 +115,42 @@ export async function POST(req) {
     await ensureLearnIndexes();
 
     const ai = getGeminiClient();
-    if (!ai) {
-      console.error("learn-chat: GEMINI_API_KEY is missing.");
+    if (!ai && !isGroqConfigured()) {
+      console.error("learn-chat: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
       return NextResponse.json({ error: "AI service is not configured." }, { status: 500 });
     }
 
     const ctx = await buildLearnContext({ walletAddress, videoContext });
     const systemInstruction = learnSystemInstruction({ videoContext: ctx.videoContext, transcriptAvailable: ctx.transcriptAvailable });
 
-    let contents = messages.slice(-10).map((m) => ({
+    const contents = messages.slice(-10).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: String(m.content || "").slice(0, 2000) }],
     }));
 
-    const requestStartedAt = Date.now();
     let finalText = "";
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      if (Date.now() - requestStartedAt > SAFETY_BUDGET_MS) {
-        console.warn("learn-chat: aborting before the safety budget to avoid a silent hard timeout");
+    try {
+      if (!ai) throw Object.assign(new Error("learn-chat: GEMINI_API_KEY is missing."), { status: 500 });
+      finalText = await runGeminiLoop(ai, contents, systemInstruction, ctx);
+    } catch (err) {
+      console.error("learn-chat: Gemini path failed:", err.message);
+      if (!isGroqConfigured()) {
         return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
       }
-      let response;
+      console.warn("learn-chat: falling back to Groq...");
       try {
-        response = await generateContentWithRetry(ai, {
-          model: "gemini-3.5-flash-lite",
-          contents,
-          config: {
-            systemInstruction,
-            tools: [{ functionDeclarations: LEARN_TOOL_DECLARATIONS }],
-            maxOutputTokens: 800,
-            thinkingConfig: { thinkingLevel: "low" },
-          },
+        finalText = await runGroqToolLoop({
+          systemInstruction,
+          geminiToolDeclarations: LEARN_TOOL_DECLARATIONS,
+          initialContents: contents,
+          runTool: runLearnTool,
+          ctx,
+          maxRounds: MAX_TOOL_ROUNDS,
         });
-      } catch (err) {
-        console.error("learn-chat: Gemini call failed:", err);
-        return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });
+      } catch (groqErr) {
+        console.error("learn-chat: Groq fallback also failed:", groqErr.message);
+        return NextResponse.json({ error: "The AI is taking longer than usual to respond right now — please try again in a moment." }, { status: 503 });
       }
-
-      const calls = response.functionCalls;
-      if (!calls || calls.length === 0) {
-        finalText = response.text || "";
-        break;
-      }
-
-      const modelContent = response.candidates?.[0]?.content;
-      contents.push(modelContent || { role: "model", parts: calls.map((c) => ({ functionCall: c })) });
-
-      const responseParts = [];
-      for (const call of calls) {
-        let result;
-        try {
-          result = await runLearnTool(call.name, call.args, ctx);
-        } catch (err) {
-          console.error(`learn-chat: tool ${call.name} failed:`, err);
-          result = { error: "This lookup failed unexpectedly." };
-        }
-        responseParts.push({ functionResponse: { name: call.name, response: result } });
-      }
-      contents.push({ role: "user", parts: responseParts });
     }
 
     if (!finalText) {
