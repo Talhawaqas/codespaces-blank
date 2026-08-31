@@ -60,17 +60,17 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
   useEffect(() => { load(); }, [load]);
 
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
+  if (!data) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
 
   const noDataYet = Object.values(data.kpis).every((kpi) => !kpi.value) && data.alerts.length === 0;
   if (noDataYet) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase text-[#94a3b8]">Period</span>
-          <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1">
+          <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Period</span>
+          <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
             {PERIOD_OPTIONS.map(([value, label]) => (
-              <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
+              <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
             ))}
           </div>
         </div>
@@ -82,17 +82,17 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold uppercase text-[#94a3b8]">Period</span>
-        <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1">
+        <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Period</span>
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
           {PERIOD_OPTIONS.map(([value, label]) => (
-            <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
+            <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
       </div>
 
       {data.alerts.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase text-[#94a3b8]">Business Alerts</p>
+          <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Business Alerts</p>
           {data.alerts.map((a, i) => (
             <button
               key={i}
@@ -108,9 +108,9 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {Object.entries(data.kpis).map(([key, kpi]) => (
-          <div key={key} className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4">
+          <div key={key} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
             <p className="text-[#8a96ab] text-[11px] font-mono mb-1">{kpi.label}</p>
-            <p className="text-white text-xl font-bold tabular-nums">{formatKpiValue(key, kpi.value)}</p>
+            <p className="text-[var(--inaya-text-primary)] text-xl font-bold tabular-nums">{formatKpiValue(key, kpi.value)}</p>
           </div>
         ))}
       </div>
@@ -160,10 +160,10 @@ function ComparisonCard({ title, comparison, currency }) {
   const up = comparison.changePct >= 0;
   const fmt = (v) => (currency ? `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : v.toLocaleString());
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
       <p className="text-[#8a96ab] text-[11px] font-mono mb-1">{title} vs. prior period</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-white text-lg font-bold tabular-nums">{fmt(comparison.current)}</span>
+        <span className="text-[var(--inaya-text-primary)] text-lg font-bold tabular-nums">{fmt(comparison.current)}</span>
         <span className={`text-xs font-bold ${up ? "text-emerald-400" : "text-red-400"}`}>{up ? "▲" : "▼"} {Math.abs(comparison.changePct)}%</span>
       </div>
       <p className="text-[#8a96ab] text-[11px] font-mono mt-0.5">Prior: {fmt(comparison.previous)}</p>
@@ -180,10 +180,10 @@ function TrendChart({ title, series, color, currency }) {
   const total = series.reduce((s, p) => s + p.value, 0);
 
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[#8a96ab] text-[11px] font-mono">{title}</p>
-        <p className="text-white text-xs font-bold tabular-nums">{currency ? `$${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : total.toLocaleString()}</p>
+        <p className="text-[var(--inaya-text-primary)] text-xs font-bold tabular-nums">{currency ? `$${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : total.toLocaleString()}</p>
       </div>
       {series.length === 0 || total === 0 ? (
         <p className="text-[#8a96ab] text-xs italic py-4">No activity in this period.</p>
@@ -198,7 +198,7 @@ function TrendChart({ title, series, color, currency }) {
 
 function DrillList({ title, onView, children }) {
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-4">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[#8a96ab] text-[11px] font-bold uppercase">{title}</p>
         <button onClick={onView} className="text-[#00f2fe] text-[11px] font-bold">View →</button>

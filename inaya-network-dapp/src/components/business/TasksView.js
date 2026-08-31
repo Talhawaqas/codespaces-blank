@@ -33,14 +33,14 @@ async function api(path, options) {
 const STATUS_LABELS = { TODO: "To do", IN_PROGRESS: "In progress", BLOCKED: "Blocked", DONE: "Done", CANCELLED: "Cancelled" };
 const STATUS_ORDER = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELLED"];
 const STATUS_STYLES = {
-  TODO: "bg-white/5 text-[#94a3b8] border-white/10",
+  TODO: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
   IN_PROGRESS: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   BLOCKED: "bg-amber-400/10 text-amber-400 border-amber-400/30",
   DONE: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
   CANCELLED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
 };
 const PRIORITY_STYLES = {
-  LOW: "text-[#94a3b8]",
+  LOW: "text-[var(--inaya-text-muted)]",
   MEDIUM: "text-[#00f2fe]",
   HIGH: "text-amber-400",
   URGENT: "text-red-400",
@@ -118,27 +118,27 @@ export default function TasksView({ orgId, canManage, email }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <select value={filterDeptId} onChange={(e) => setFilterDeptId(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={filterDeptId} onChange={(e) => setFilterDeptId(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">All departments</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <select value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)} disabled={!filterDeptId} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white disabled:opacity-40">
+        <select value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)} disabled={!filterDeptId} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
           <option value="">All projects</option>
           {filterProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Any status</option>
           {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
         </select>
         <button
           onClick={() => setMineOnly((v) => !v)}
-          className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${mineOnly ? "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30" : "bg-black/45 text-[#94a3b8] border-white/15"}`}
+          className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${mineOnly ? "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}
         >
           My tasks
         </button>
         <button
           onClick={() => setOverdueOnly((v) => !v)}
-          className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${overdueOnly ? "bg-red-400/10 text-red-400 border-red-400/30" : "bg-black/45 text-[#94a3b8] border-white/15"}`}
+          className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${overdueOnly ? "bg-red-400/10 text-red-400 border-red-400/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}
         >
           Overdue
         </button>
@@ -162,9 +162,9 @@ export default function TasksView({ orgId, canManage, email }) {
 
       {error && <p className="text-red-400 text-xs">{error}</p>}
 
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
         {!tasks ? (
-          <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>
+          <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
         ) : tasks.length === 0 ? (
           <EmptyState compact icon="✅" description="No tasks match these filters." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : (
@@ -206,9 +206,9 @@ function TaskRow({ task, onOpen }) {
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-bold uppercase ${PRIORITY_STYLES[task.priority]}`}>●</span>
-          <span className="text-white text-sm truncate">{task.title}</span>
+          <span className="text-[var(--inaya-text-primary)] text-sm truncate">{task.title}</span>
         </div>
-        <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5 truncate">
+        <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5 truncate">
           {task.departmentName || task.projectName ? `${task.departmentName || ""}` : null}
           {task.assigneeEmail ? ` · ${task.assigneeEmail}` : " · Unassigned"}
           {task.dueDate ? ` · ${overdue ? "Overdue " : "Due "}${formatDueDate(task.dueDate)}` : ""}
@@ -267,27 +267,27 @@ function CreateTaskModal({ orgId, departments, onClose, onCreated }) {
     <Modal onClose={onClose} title="New task">
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Department…</option>
             {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required disabled={!departmentId} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white disabled:opacity-40">
+          <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required disabled={!departmentId} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
             <option value="">Project…</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Task title" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab] resize-none" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Task title" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab] resize-none" />
         <div className="grid grid-cols-2 gap-2">
-          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="LOW">Low priority</option>
             <option value="MEDIUM">Medium priority</option>
             <option value="HIGH">High priority</option>
             <option value="URGENT">Urgent</option>
           </select>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white" />
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
         </div>
-        <input value={assigneeEmail} onChange={(e) => setAssigneeEmail(e.target.value)} type="email" placeholder="Assignee email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+        <input value={assigneeEmail} onChange={(e) => setAssigneeEmail(e.target.value)} type="email" placeholder="Assignee email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
 
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !projectId || !title.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
@@ -337,7 +337,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
   if (!task) {
     return (
       <Modal onClose={onClose} title="Task">
-        {error ? <p className="text-red-400 text-xs">{error}</p> : <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>}
+        {error ? <p className="text-red-400 text-xs">{error}</p> : <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>}
       </Modal>
     );
   }
@@ -352,7 +352,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
           <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[task.status]}`}>{STATUS_LABELS[task.status]}</span>
           <span className={`text-[11px] font-bold uppercase ${PRIORITY_STYLES[task.priority]}`}>{task.priority}</span>
           {task.dueDate && (
-            <span className={`text-[11px] font-mono ${overdue ? "text-red-400" : "text-[#94a3b8]"}`}>
+            <span className={`text-[11px] font-mono ${overdue ? "text-red-400" : "text-[var(--inaya-text-muted)]"}`}>
               {overdue ? "Overdue — " : "Due "}{formatDueDate(task.dueDate)}
             </span>
           )}
@@ -360,7 +360,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
 
         {task.description && <p className="text-slate-300 text-sm whitespace-pre-wrap">{task.description}</p>}
 
-        <div className="text-[12px] font-mono text-[#94a3b8] space-y-0.5">
+        <div className="text-[12px] font-mono text-[var(--inaya-text-muted)] space-y-0.5">
           <p>Assignee: {task.assigneeEmail || "Unassigned"}</p>
           <p>Created by {task.createdByEmail}</p>
         </div>
@@ -394,9 +394,9 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
         {error && <p className="text-red-400 text-xs">{error}</p>}
 
         <div>
-          <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] mb-2">History</h4>
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-2">History</h4>
           {!activity ? (
-            <p className="text-[#94a3b8] font-mono text-xs">Loading…</p>
+            <p className="text-[var(--inaya-text-muted)] font-mono text-xs">Loading…</p>
           ) : activity.length === 0 ? (
             <p className="text-[#8a96ab] text-xs italic">No activity yet.</p>
           ) : (
@@ -404,7 +404,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
               {activity.map((e) => (
                 <div key={e.eventId} className="text-xs border-b border-white/5 pb-2 last:border-0 last:pb-0">
                   <span className="text-slate-200">{e.action.replaceAll("_", " ").toLowerCase()}</span>
-                  {e.previousState && <span className="text-[#94a3b8] font-mono"> · {e.previousState} → {e.newState}</span>}
+                  {e.previousState && <span className="text-[var(--inaya-text-muted)] font-mono"> · {e.previousState} → {e.newState}</span>}
                   <div className="text-[11px] font-mono text-[#8a96ab] mt-0.5">
                     {e.actorEmail} · {new Date(e.timestamp).toLocaleString()}
                   </div>
@@ -421,10 +421,10 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-[#090d16] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
+      <div onClick={(e) => e.stopPropagation()} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-white font-bold text-sm truncate">{title}</h3>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white text-lg leading-none shrink-0">×</button>
+          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm truncate">{title}</h3>
+          <button onClick={onClose} className="text-[var(--inaya-text-muted)] hover:text-[var(--inaya-text-primary)] text-lg leading-none shrink-0">×</button>
         </div>
         {children}
       </div>

@@ -28,8 +28,8 @@ const STATUS_STYLES = {
   REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
   QUEUED: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   EXECUTED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
-  EXPIRED: "bg-white/5 text-[#94a3b8] border-white/10",
-  CANCELLED: "bg-white/5 text-[#94a3b8] border-white/10",
+  EXPIRED: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
+  CANCELLED: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
 };
 
 function formatCountdown(unlockAt) {
@@ -92,15 +92,15 @@ export default function AIActionRequestsView({ orgId }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-white font-bold text-sm">AI Action Requests</h3>
-        <p className="text-[#94a3b8] text-xs mt-0.5">
+        <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm">AI Action Requests</h3>
+        <p className="text-[var(--inaya-text-muted)] text-xs mt-0.5">
           Actions the AI Business Assistant proposed on someone's behalf. Nothing here executes automatically — an approver with the same authority the real action would require must approve it, and even then it only runs 36 hours later.
         </p>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
         {!requests ? (
-          <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>
+          <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
         ) : requests.length === 0 ? (
           <EmptyState compact icon="🤖" description="No AI-proposed actions yet." />
         ) : (
@@ -109,8 +109,8 @@ export default function AIActionRequestsView({ orgId }) {
               <div key={r.id} className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-white text-sm truncate">{r.requestedContextSummary || `${r.proposedAction} · ${r.targetRecordType}`}</p>
-                    <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">
+                    <p className="text-[var(--inaya-text-primary)] text-sm truncate">{r.requestedContextSummary || `${r.proposedAction} · ${r.targetRecordType}`}</p>
+                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">
                       Requested by {r.requestedByEmail || "assistant"} · {new Date(r.requestedAt).toLocaleString()}
                     </p>
                   </div>

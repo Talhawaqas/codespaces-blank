@@ -180,7 +180,7 @@ export default function BusinessPage() {
   if (sessionLoading) {
     return (
       <CenteredShell>
-        <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>
+        <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
       </CenteredShell>
     );
   }
@@ -304,9 +304,9 @@ function PlanSelectionGate({ email, membership, onLogout }) {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
-            <p className="text-[#94a3b8] text-xs font-mono">{email} · {membership.orgName}</p>
-            <h1 className="text-2xl font-extrabold text-white mt-1">Activate your workspace</h1>
-            <p className="text-[#94a3b8] text-sm mt-1 max-w-xl">
+            <p className="text-[var(--inaya-text-muted)] text-xs font-mono">{email} · {membership.orgName}</p>
+            <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] mt-1">Activate your workspace</h1>
+            <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
               Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
             </p>
           </div>
@@ -328,7 +328,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
           </div>
         )}
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-        {!plans && !error && <p className="text-[#94a3b8] text-sm">Loading plans…</p>}
+        {!plans && !error && <p className="text-[var(--inaya-text-muted)] text-sm">Loading plans…</p>}
 
         {plans && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -435,15 +435,15 @@ function AuthScreen({ notice, onAuthed }) {
     <div className="mt-8 md:mt-16 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
       {/* LEFT — the actual sign-in form */}
       <div className="max-w-md md:mx-0 mx-auto w-full inaya-fade-in-up">
-        <a href="/" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-8">← Inaya Network</a>
-        <h1 className="text-2xl font-extrabold text-white mb-1">Business Records</h1>
-        <p className="text-[#94a3b8] text-sm mb-8">Encrypted document management for your company, built on Inaya's storage infrastructure.</p>
+        <a href="/" className="inline-block text-[var(--inaya-text-muted)] hover:text-slate-300 text-xs font-mono mb-8">← Inaya Network</a>
+        <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] mb-1">Business Records</h1>
+        <p className="text-[var(--inaya-text-muted)] text-sm mb-8">Encrypted document management for your company, built on Inaya's storage infrastructure.</p>
 
         {notice && <div className="bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs rounded-lg p-3 mb-4">{notice}</div>}
 
-        <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 mb-6">
-          <button onClick={() => setMode("signin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "signin" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Sign in</button>
-          <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Create a company</button>
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 mb-6">
+          <button onClick={() => setMode("signin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "signin" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Sign in</button>
+          <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Create a company</button>
         </div>
 
         <div ref={googleButtonRef} className="flex justify-center mb-2" />
@@ -458,9 +458,9 @@ function AuthScreen({ notice, onAuthed }) {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "create" && (
-            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]" />
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           )}
-          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
             {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
           </button>
@@ -478,13 +478,13 @@ function AuthScreen({ notice, onAuthed }) {
         <a
           href="/docs/business-workspace-guide.md"
           download
-          className="mt-8 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+          className="mt-8 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
         >
           <span aria-hidden>↓</span> Download the step-by-step setup guide
         </a>
         <a
           href="/business/download"
-          className="mt-2 flex items-center justify-center gap-2 text-xs text-[#94a3b8] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+          className="mt-2 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
         >
           <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
         </a>
@@ -504,8 +504,8 @@ function AuthScreen({ notice, onAuthed }) {
             <div key={f.title} className="flex items-start gap-3 text-left">
               <span className="text-xl shrink-0" aria-hidden>{f.icon}</span>
               <div>
-                <p className="text-white text-sm font-bold leading-tight">{f.title}</p>
-                <p className="text-[#94a3b8] text-xs mt-0.5">{f.desc}</p>
+                <p className="text-[var(--inaya-text-primary)] text-sm font-bold leading-tight">{f.title}</p>
+                <p className="text-[var(--inaya-text-muted)] text-xs mt-0.5">{f.desc}</p>
               </div>
             </div>
           ))}
@@ -544,13 +544,13 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
   return (
     <div className="max-w-md mx-auto mt-16">
       <div className="flex items-center justify-between mb-8">
-        <p className="text-[#94a3b8] text-xs font-mono truncate">{email}</p>
-        <button onClick={onLogout} className="text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 shrink-0 ml-2">
+        <p className="text-[var(--inaya-text-muted)] text-xs font-mono truncate">{email}</p>
+        <button onClick={onLogout} className="text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 shrink-0 ml-2">
           Sign out
         </button>
       </div>
-      <h1 className="text-2xl font-extrabold text-white text-center mb-1">Name your company</h1>
-      <p className="text-[#94a3b8] text-sm text-center mb-8">You're signed in but not part of any company yet — create one to get started.</p>
+      <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] text-center mb-1">Name your company</h1>
+      <p className="text-[var(--inaya-text-muted)] text-sm text-center mb-8">You're signed in but not part of any company yet — create one to get started.</p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
@@ -558,7 +558,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           onChange={(e) => setOrgName(e.target.value)}
           required
           placeholder="Company name"
-          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]"
+          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
         />
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -749,8 +749,8 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
               <span className="text-black font-extrabold text-sm">I</span>
             </div>
             <div className="min-w-0">
-              <p className="text-white font-extrabold text-sm leading-tight truncate">Inaya Network</p>
-              <p className="text-[#94a3b8] text-[12px] font-mono uppercase tracking-wide">Business Workspace</p>
+              <p className="text-[var(--inaya-text-primary)] font-extrabold text-sm leading-tight truncate">Inaya Network</p>
+              <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono uppercase tracking-wide">Business Workspace</p>
             </div>
           </div>
           <div className="mt-4 bg-black/30 border border-white/5 rounded-lg px-3 py-2">
@@ -765,7 +765,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
               key={item.key}
               onClick={() => onNavigate(item.key)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[#94a3b8] hover:bg-white/5 hover:text-slate-200"
+                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-muted)] hover:bg-white/5 hover:text-slate-200"
               }`}
             >
               <Icon path={ICONS[item.icon]} />
@@ -779,7 +779,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
             <Icon path={ICONS.lock} className="w-4 h-4 text-emerald-400 shrink-0" />
             <div className="min-w-0">
               <p className="text-emerald-300 text-[12px] font-bold uppercase tracking-wide">End-to-end encrypted</p>
-              <p className="text-[#94a3b8] text-[11px] font-mono">AES-256 · client-side</p>
+              <p className="text-[var(--inaya-text-muted)] text-[11px] font-mono">AES-256 · client-side</p>
             </div>
           </div>
         </div>
@@ -837,36 +837,36 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       />
 
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-[var(--inaya-bg)]/90 backdrop-blur border-b border-[var(--inaya-border)] px-5 py-4 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 bg-[var(--inaya-bg)]/90 backdrop-blur border-b border-[var(--inaya-border)] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-slate-300 p-1">
               <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
             </button>
             <div className="min-w-0">
               <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
-              <p className="text-[#94a3b8] text-[13px] font-mono truncate">{email}</p>
+              <p className="text-[var(--inaya-text-muted)] text-[13px] font-mono truncate">{email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
             <a
               href="/docs/business-workspace-guide.md"
               download
-              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
               title="Download the step-by-step setup guide"
             >
               ↓ Guide
             </a>
             <a
               href="/business/download"
-              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
               title="Get the Business Workspace desktop app"
             >
               🖥️ Desktop App
             </a>
             <a
               href="/"
-              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[#94a3b8] hover:text-slate-300 px-2 py-2"
+              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
               title="Back to the Inaya Network dApp"
             >
               ← dApp
@@ -875,7 +875,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <select
                 value={selectedOrgId || ""}
                 onChange={(e) => onSwitchOrg(e.target.value)}
-                className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white"
+                className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]"
               >
                 {orgs.map((o) => (
                   <option key={o.orgId} value={o.orgId}>{o.orgName}</option>
@@ -925,7 +925,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 // DASHBOARD — overview cards + recent departments/projects/documents.
 // ============================================================
 const STATUS_STYLES = {
-  DRAFT: "bg-white/5 text-[#94a3b8] border-white/10",
+  DRAFT: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
   PENDING: "bg-amber-400/10 text-amber-400 border-amber-400/30",
   UNDER_REVIEW: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
@@ -935,14 +935,14 @@ const STATUS_STYLES = {
 
 function StatCard({ icon, label, value, sub }) {
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
       <div className="w-11 h-11 rounded-xl bg-[#00f2fe]/10 flex items-center justify-center shrink-0">
         <Icon path={ICONS[icon]} className="w-5 h-5 text-[#00f2fe]" />
       </div>
       <div className="min-w-0">
-        <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">{label}</p>
-        <p className="text-white text-2xl font-extrabold leading-tight">{value}</p>
-        {sub && <p className="text-[#94a3b8] text-[12px] font-mono">{sub}</p>}
+        <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-[var(--inaya-text-primary)] text-2xl font-extrabold leading-tight">{value}</p>
+        {sub && <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{sub}</p>}
       </div>
     </div>
   );
@@ -950,9 +950,9 @@ function StatCard({ icon, label, value, sub }) {
 
 function DashboardCard({ title, onViewAll, children }) {
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">{title}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{title}</h3>
         {onViewAll && (
           <button onClick={onViewAll} className="text-[12px] font-bold text-[#00f2fe] flex items-center gap-0.5">
             View all <Icon path={ICONS.chevronRight} className="w-3 h-3" />
@@ -998,8 +998,8 @@ function DashboardView({ orgId, canManage, onNavigate }) {
             <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
               New · Desktop App
             </span>
-            <h3 className="text-white font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
-            <p className="text-[#94a3b8] text-xs sm:text-sm mt-1 max-w-lg">
+            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
+            <p className="text-[var(--inaya-text-muted)] text-xs sm:text-sm mt-1 max-w-lg">
               Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
             </p>
           </div>
@@ -1056,11 +1056,11 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
                 >
                   <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                    <Icon path={ICONS.departments} className="w-4 h-4 text-[#94a3b8]" />
+                    <Icon path={ICONS.departments} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-slate-200 text-xs font-bold truncate">{d.name}</p>
-                    <p className="text-[#94a3b8] text-[12px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
+                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
                   </div>
                 </button>
               ))}
@@ -1081,7 +1081,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 >
                   <div className="min-w-0">
                     <p className="text-slate-200 text-xs font-bold truncate">{p.name}</p>
-                    <p className="text-[#94a3b8] text-[12px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
+                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
                   </div>
                   <span className="flex items-center gap-1 text-[11px] font-bold uppercase text-emerald-400 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
@@ -1105,11 +1105,11 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
               >
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                  <Icon path={ICONS.documents} className="w-4 h-4 text-[#94a3b8]" />
+                  <Icon path={ICONS.documents} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-slate-200 text-xs font-bold truncate">{d.filename}</p>
-                  <p className="text-[#94a3b8] text-[12px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status] || STATUS_STYLES.DRAFT}`}>
@@ -1188,14 +1188,14 @@ function ApprovalsView({ orgId, onNavigate }) {
   }
 
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
+  if (!data) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
 
   const selectableIds = data.filter((d) => d.status === "UNDER_REVIEW").map((d) => d.id);
 
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">Documents awaiting your review</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">Documents awaiting your review</h3>
         {selected.size > 0 && (
           <button
             onClick={handleApproveSelected}
@@ -1217,8 +1217,8 @@ function ApprovalsView({ orgId, onNavigate }) {
                   <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleSelected(d.id)} className="shrink-0" />
                 )}
                 <button onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })} className="min-w-0 text-left">
-                  <p className="text-white text-sm truncate">{d.filename}</p>
-                  <p className="text-[#94a3b8] text-[12px] font-mono">{d.departmentName} · {d.projectName}</p>
+                  <p className="text-[var(--inaya-text-primary)] text-sm truncate">{d.filename}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{d.departmentName} · {d.projectName}</p>
                 </button>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1276,13 +1276,13 @@ function ActivityView({ orgId }) {
   }, [orgId]);
 
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!activity) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
+  if (!activity) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
 
   const capped = activity.slice(0, ACTIVITY_FEED_CAP);
 
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Recent activity</h3>
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Recent activity</h3>
       {activity.length === 0 ? (
         <EmptyState compact icon="📜" description="No activity recorded yet — actions on documents in this org will show up here." />
       ) : (
@@ -1291,8 +1291,8 @@ function ActivityView({ orgId }) {
           {capped.map((e) => (
             <div key={e.eventId} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
               <span className="text-slate-200 font-bold">{e.filename}</span>
-              <span className="text-[#94a3b8]"> · {e.action}</span>
-              {e.previousState && <span className="text-[#94a3b8] font-mono"> · {e.previousState} → {e.newState}</span>}
+              <span className="text-[var(--inaya-text-muted)]"> · {e.action}</span>
+              {e.previousState && <span className="text-[var(--inaya-text-muted)] font-mono"> · {e.previousState} → {e.newState}</span>}
               <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">
                 {e.actorId} · {new Date(e.timestamp).toLocaleString()}
                 {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
@@ -1347,13 +1347,13 @@ function AIAssistantView({ orgId }) {
   }
 
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "bg-[#00f2fe]/15 text-white" : "bg-white/5 text-slate-200"
+                m.role === "user" ? "bg-[#00f2fe]/15 text-[var(--inaya-text-primary)]" : "bg-white/5 text-slate-200"
               }`}
             >
               {m.content}
@@ -1362,7 +1362,7 @@ function AIAssistantView({ orgId }) {
         ))}
         {sending && (
           <div className="flex justify-start">
-            <div className="bg-white/5 text-[#94a3b8] rounded-2xl px-4 py-2.5 text-sm italic">Thinking…</div>
+            <div className="bg-white/5 text-[var(--inaya-text-muted)] rounded-2xl px-4 py-2.5 text-sm italic">Thinking…</div>
           </div>
         )}
       </div>
@@ -1386,7 +1386,7 @@ function AIAssistantView({ orgId }) {
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Ask about your company's documents, approvals, or activity…"
           disabled={sending}
-          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]"
+          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
         />
         <button
           onClick={() => send()}
@@ -1510,7 +1510,7 @@ function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialP
           ) : (
             <Column title="Documents">
               <WorkflowVisualization />
-              <p className="text-[#94a3b8] text-xs text-center mt-1">
+              <p className="text-[var(--inaya-text-muted)] text-xs text-center mt-1">
                 {selectedDeptId ? "Select a project to see its documents." : "Select a department, then a project, to see its documents."}
               </p>
             </Column>
@@ -1523,9 +1523,9 @@ function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialP
 
 function Column({ title, children, action }) {
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">{title}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{title}</h3>
         {action}
       </div>
       {children}
@@ -1555,7 +1555,7 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
     <Column title="Departments" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finance" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finance" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
@@ -1597,7 +1597,7 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
     <Column title="Projects" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Q3 Audit" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Q3 Audit" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
@@ -1675,13 +1675,13 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
     <Column title="Documents">
       <form onSubmit={handleUpload} className="mb-4 space-y-2">
         <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[12px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
-        <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
-        <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white">
+        <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+        <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]">
           <option value="PRIVATE">Private</option>
           <option value="DEPARTMENT">Department</option>
           <option value="PROJECT">Project</option>
         </select>
-        <p className="text-[11px] text-[#94a3b8]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
+        <p className="text-[11px] text-[var(--inaya-text-muted)]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
         <button disabled={uploading || !file || !passkey} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] py-2 rounded-lg disabled:opacity-40">
           {uploading ? "Encrypting & uploading…" : "Upload document"}
         </button>
@@ -1778,14 +1778,14 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
     <div className="bg-black/20 border border-white/5 rounded-lg p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-xs text-white truncate">{doc.filename}</div>
-          <div className="text-[12px] text-[#94a3b8] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
+          <div className="text-xs text-[var(--inaya-text-primary)] truncate">{doc.filename}</div>
+          <div className="text-[12px] text-[var(--inaya-text-muted)] font-mono mt-0.5">{(doc.sizeBytes / 1024).toFixed(1)} KB · {doc.uploadedByEmail}</div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status] || STATUS_STYLES.DRAFT}`}>
             {doc.status.replace("_", " ")}
           </span>
-          <span className="text-[10px] font-mono text-[#94a3b8]">{doc.accessLevel}</span>
+          <span className="text-[10px] font-mono text-[var(--inaya-text-muted)]">{doc.accessLevel}</span>
         </div>
       </div>
 
@@ -1824,7 +1824,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             </button>
           </>
         )}
-        <button onClick={toggleActivity} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md text-[#94a3b8] hover:text-slate-300 ml-auto">
+        <button onClick={toggleActivity} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md text-[var(--inaya-text-muted)] hover:text-slate-300 ml-auto">
           {showActivity ? "Hide history" : "History"}
         </button>
       </div>
@@ -1838,7 +1838,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             value={downloadPasskey}
             onChange={(e) => setDownloadPasskey(e.target.value)}
             placeholder="Encryption passkey"
-            className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white"
+            className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]"
           />
           <button onClick={handleDownload} disabled={downloading || !downloadPasskey} className="text-[11px] font-bold uppercase px-3 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
             {downloading ? "…" : "Go"}
@@ -1855,7 +1855,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
           ) : activity && activity.length > 0 ? (
             activity.map((e) => (
-              <div key={e.eventId} className="text-[12px] font-mono text-[#94a3b8]">
+              <div key={e.eventId} className="text-[12px] font-mono text-[var(--inaya-text-muted)]">
                 <span className="text-slate-300">{e.action}</span>
                 {e.previousState && <span> · {e.previousState} → {e.newState}</span>}
                 <span> · {e.actorId} · {new Date(e.timestamp).toLocaleString()}</span>
@@ -1929,10 +1929,10 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
 
   return (
     <div className="mt-2 border-t border-white/5 pt-2">
-      <p className="text-[11px] font-bold uppercase text-[#94a3b8] mb-1.5">People with access</p>
+      <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)] mb-1.5">People with access</p>
       <div className="flex items-center justify-between text-[12px] py-1">
         <span className="text-slate-300 truncate">{ownerEmail}</span>
-        <span className="text-[#94a3b8] font-mono">Owner</span>
+        <span className="text-[var(--inaya-text-muted)] font-mono">Owner</span>
       </div>
       {grants === null ? (
         <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
@@ -1941,7 +1941,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
           <div key={g.email} className="flex items-center justify-between gap-2 text-[12px] py-1">
             <span className="text-slate-300 truncate">{g.email}</span>
             <div className="flex items-center gap-1 shrink-0">
-              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[11px] text-white">
+              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[11px] text-[var(--inaya-text-primary)]">
                 <option value="VIEW">View</option>
                 <option value="EDIT">Edit</option>
                 <option value="MANAGE">Manage</option>
@@ -1952,8 +1952,8 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
         ))
       )}
       <form onSubmit={handleAdd} className="flex items-center gap-1.5 mt-2">
-        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-white" />
-        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-1 text-[11px] text-white">
+        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
+        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-1 text-[11px] text-[var(--inaya-text-primary)]">
           <option value="VIEW">View</option>
           <option value="EDIT">Edit</option>
           <option value="MANAGE">Manage</option>
@@ -2018,15 +2018,15 @@ function SharePanel({ documentId, orgId }) {
 
   return (
     <div className="mt-2 border-t border-white/5 pt-2">
-      <p className="text-[11px] font-bold uppercase text-[#94a3b8] mb-1.5">Secure sharing</p>
+      <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)] mb-1.5">Secure sharing</p>
       <form onSubmit={handleCreate} className="flex items-center gap-1.5">
-        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1.5 py-1 text-[11px] text-white">
+        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1.5 py-1 text-[11px] text-[var(--inaya-text-primary)]">
           <option value="1h">Expires in 1 hour</option>
           <option value="24h">Expires in 24 hours</option>
           <option value="7d">Expires in 7 days</option>
           <option value="30d">Expires in 30 days</option>
         </select>
-        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-white" />
+        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
         <button disabled={creating} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
           {creating ? "…" : "Create link"}
         </button>
@@ -2034,7 +2034,7 @@ function SharePanel({ documentId, orgId }) {
 
       {newShareUrl && (
         <div className="mt-2 bg-black/20 border border-white/10 rounded-lg p-2">
-          <p className="text-[11px] text-[#94a3b8] mb-1">Share this link — it won't be shown again:</p>
+          <p className="text-[11px] text-[var(--inaya-text-muted)] mb-1">Share this link — it won't be shown again:</p>
           <p className="text-[12px] text-[#00f2fe] break-all font-mono">{newShareUrl}</p>
         </div>
       )}
@@ -2076,8 +2076,8 @@ function UsageBar({ label, used, max, unit = "" }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">{label}</p>
-        <p className="text-white text-xs font-mono">{unlimited ? `${used}${unit} · Unlimited` : `${used}${unit} / ${max}${unit}`}</p>
+        <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">{label}</p>
+        <p className="text-[var(--inaya-text-primary)] text-xs font-mono">{unlimited ? `${used}${unit} · Unlimited` : `${used}${unit} / ${max}${unit}`}</p>
       </div>
       <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${unlimited ? "bg-[#00f2fe]/25" : barColor}`} style={{ width: unlimited ? "100%" : `${pct}%` }} />
@@ -2133,20 +2133,20 @@ function BillingView({ orgId, canManage }) {
   }
 
   if (!data) {
-    return <p className="text-[#94a3b8] text-sm">{error || "Loading…"}</p>;
+    return <p className="text-[var(--inaya-text-muted)] text-sm">{error || "Loading…"}</p>;
   }
 
   const { plan, usage, subscription, availablePlans } = data;
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
-            <p className="text-[#94a3b8] text-[12px] font-bold uppercase tracking-wide">Current plan</p>
-            <p className="text-white text-xl font-extrabold">{plan.name}</p>
+            <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Current plan</p>
+            <p className="text-[var(--inaya-text-primary)] text-xl font-extrabold">{plan.name}</p>
             {subscription && (
-              <p className="text-[#94a3b8] text-[13px] font-mono mt-0.5">
+              <p className="text-[var(--inaya-text-muted)] text-[13px] font-mono mt-0.5">
                 {subscription.status}
                 {subscription.currentPeriodEnd ? ` · renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ""}
               </p>
@@ -2173,7 +2173,7 @@ function BillingView({ orgId, canManage }) {
       {canManage && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">Change plan</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">Change plan</h3>
             <a href="/business/pricing" target="_blank" rel="noopener noreferrer" className="text-[12px] font-bold text-[#00f2fe]">
               Full pricing page ↗
             </a>
@@ -2270,16 +2270,16 @@ function TeamView({ orgId, email }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Invite someone</h3>
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Invite someone</h3>
         <form onSubmit={handleInvite} className="space-y-3">
-          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required type="email" placeholder="colleague@company.com" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white" />
-          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white">
+          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required type="email" placeholder="colleague@company.com" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
+          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]">
             <option value="member">Member</option>
             <option value="admin">Admin</option>
           </select>
           <div>
-            <p className="text-[12px] text-[#94a3b8] uppercase mb-1.5">Departments</p>
+            <p className="text-[12px] text-[var(--inaya-text-muted)] uppercase mb-1.5">Departments</p>
             <div className="flex flex-wrap gap-1.5">
               {departments.map((d) => (
                 <button type="button" key={d.id} onClick={() => toggleDept(d.id)} className={`text-[12px] px-2.5 py-1 rounded-full border ${inviteDeptIds.includes(d.id) ? "bg-[#00f2fe]/15 border-[#00f2fe]/40 text-[#00f2fe]" : "border-white/10 text-slate-400"}`}>
@@ -2301,14 +2301,14 @@ function TeamView({ orgId, email }) {
         )}
       </div>
 
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Members</h3>
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Members</h3>
 
         {ownMembership && (ownMembership.role === "owner" || ownMembership.role === "admin") && (
           <div className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 mb-3">
             <div className="min-w-0">
-              <p className="text-xs text-white">Email me when something needs my approval</p>
-              <p className="text-[12px] text-[#94a3b8] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
+              <p className="text-xs text-[var(--inaya-text-primary)]">Email me when something needs my approval</p>
+              <p className="text-[12px] text-[var(--inaya-text-muted)] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
             </div>
             <button
               onClick={() => handleToggleNotify(!ownMembership.notifyOnApprovals)}
@@ -2324,8 +2324,8 @@ function TeamView({ orgId, email }) {
           {members.map((m) => (
             <div key={m.email} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg p-2.5">
               <div className="min-w-0">
-                <div className="text-xs text-white truncate">{m.email}</div>
-                <div className="text-[12px] text-[#94a3b8] font-mono">{ROLE_LABELS[m.role]} · {m.status === "active" ? "Active" : "Invited"}</div>
+                <div className="text-xs text-[var(--inaya-text-primary)] truncate">{m.email}</div>
+                <div className="text-[12px] text-[var(--inaya-text-muted)] font-mono">{ROLE_LABELS[m.role]} · {m.status === "active" ? "Active" : "Invited"}</div>
               </div>
             </div>
           ))}

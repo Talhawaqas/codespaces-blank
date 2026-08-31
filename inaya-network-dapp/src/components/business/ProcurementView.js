@@ -23,7 +23,7 @@ async function api(path, options) {
 }
 
 const PR_STATUS_STYLES = {
-  DRAFT: "bg-white/5 text-[#94a3b8] border-white/10",
+  DRAFT: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
   PENDING_APPROVAL: "bg-amber-400/10 text-amber-400 border-amber-400/30",
   APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
   REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
@@ -54,9 +54,9 @@ export default function ProcurementView({ orgId, canManage }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 w-fit">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
         {[["suppliers", "Suppliers"], ["requests", "Requests"], ["orders", "Orders"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
+          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
         ))}
       </div>
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
@@ -91,24 +91,24 @@ function SuppliersTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suppliers…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suppliers…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New supplier</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        {!suppliers ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : suppliers.length === 0 ? (
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!suppliers ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : suppliers.length === 0 ? (
           <EmptyState compact icon="🏭" description="No suppliers yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
-          <p className="text-[#94a3b8] text-xs">No suppliers match "{search}".</p>
+          <p className="text-[var(--inaya-text-muted)] text-xs">No suppliers match "{search}".</p>
         ) : (
           <div className="space-y-2">
             {filtered.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
                 <div className="min-w-0">
-                  <span className="text-white text-sm">{s.name}</span>
-                  <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">{s.contactEmail || "No contact email"}</p>
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{s.name}</span>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{s.contactEmail || "No contact email"}</p>
                 </div>
-                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${s.status === "ACTIVE" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-white/5 text-[#94a3b8] border-white/10"}`}>{s.status}</span>
+                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${s.status === "ACTIVE" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-white/5 text-[var(--inaya-text-muted)] border-white/10"}`}>{s.status}</span>
               </div>
             ))}
           </div>
@@ -144,12 +144,12 @@ function CreateSupplierModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New supplier" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Supplier name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Contact email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Supplier name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Contact email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create supplier"}</button>
       </form>
@@ -195,22 +195,22 @@ function RequestsTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New request</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        {!requests ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : requests.length === 0 ? (
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!requests ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : requests.length === 0 ? (
           <EmptyState compact icon="📝" description="No purchase requests yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
-          <p className="text-[#94a3b8] text-xs">No requests match "{search}".</p>
+          <p className="text-[var(--inaya-text-muted)] text-xs">No requests match "{search}".</p>
         ) : (
           <div className="space-y-2">
             {filtered.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
                 <div className="min-w-0">
-                  <span className="text-white text-sm">{r.title}</span>
-                  <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">{r.estimatedCost ? `$${r.estimatedCost.toLocaleString()}` : "No estimate"}</p>
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{r.title}</span>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{r.estimatedCost ? `$${r.estimatedCost.toLocaleString()}` : "No estimate"}</p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${PR_STATUS_STYLES[r.status]}`}>{r.status.replace("_", " ")}</span>
@@ -261,12 +261,12 @@ function CreateRequestModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New purchase request" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="What do you need to buy?" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <input value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} type="number" min="0" placeholder="Estimated cost in USD (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="What do you need to buy?" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} type="number" min="0" placeholder="Estimated cost in USD (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !title.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create request"}</button>
       </form>
@@ -297,16 +297,16 @@ function OrdersTab({ orgId, departments }) {
     <div className="space-y-4">
       <div className="flex items-center"><button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New PO</button></div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        {!orders ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : orders.length === 0 ? (
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!orders ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : orders.length === 0 ? (
           <EmptyState compact icon="📦" description="No purchase orders yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : (
           <div className="space-y-2">
             {orders.map((po) => (
               <button key={po.id} onClick={() => setSelectedId(po.id)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
-                  <span className="text-white text-sm">{po.items.length} item{po.items.length === 1 ? "" : "s"}</span>
-                  <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">{new Date(po.createdAt).toLocaleDateString()}</p>
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{po.items.length} item{po.items.length === 1 ? "" : "s"}</span>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{new Date(po.createdAt).toLocaleDateString()}</p>
                 </div>
                 <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${PO_STATUS_STYLES[po.status]}`}>{po.status.replace("_", " ")}</span>
               </button>
@@ -364,22 +364,22 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New purchase order" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white disabled:opacity-40">
+        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
           <option value="">Supplier…</option>
           {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
 
         <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase text-[#94a3b8]">Line items</p>
+          <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Line items</p>
           {items.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_60px_70px] gap-1.5">
-              <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white placeholder-[#8a96ab]" />
-              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
-              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-white" />
+              <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             </div>
           ))}
           <button type="button" onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add item</button>
@@ -439,7 +439,7 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
     }
   }
 
-  if (!po) return <Modal title="Purchase order" onClose={onClose}>{error ? <p className="text-red-400 text-xs">{error}</p> : <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>}</Modal>;
+  if (!po) return <Modal title="Purchase order" onClose={onClose}>{error ? <p className="text-red-400 text-xs">{error}</p> : <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>}</Modal>;
 
   const canReceive = ["ORDERED", "PARTIALLY_RECEIVED"].includes(po.status);
 
@@ -451,11 +451,11 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
         <div className="space-y-1.5">
           {po.items.map((item, i) => (
             <div key={i} className="bg-black/20 border border-white/5 rounded-lg p-2.5">
-              <p className="text-white text-xs">{item.description}</p>
-              <p className="text-[#94a3b8] text-[11px] font-mono mt-0.5">Qty {item.quantity}{item.unitPrice ? ` · $${item.unitPrice}/unit` : ""} · Received {item.receivedQuantity}/{item.quantity}</p>
+              <p className="text-[var(--inaya-text-primary)] text-xs">{item.description}</p>
+              <p className="text-[var(--inaya-text-muted)] text-[11px] font-mono mt-0.5">Qty {item.quantity}{item.unitPrice ? ` · $${item.unitPrice}/unit` : ""} · Received {item.receivedQuantity}/{item.quantity}</p>
               {canReceive && item.receivedQuantity < item.quantity && (
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <input value={receiveQty[i] || ""} onChange={(e) => setReceiveQty((prev) => ({ ...prev, [i]: e.target.value }))} type="number" min="1" max={item.quantity - item.receivedQuantity} placeholder="Qty received" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-xs text-white w-28" />
+                  <input value={receiveQty[i] || ""} onChange={(e) => setReceiveQty((prev) => ({ ...prev, [i]: e.target.value }))} type="number" min="1" max={item.quantity - item.receivedQuantity} placeholder="Qty received" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-xs text-[var(--inaya-text-primary)] w-28" />
                   <button onClick={() => handleReceive(i)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40">
                     {acting === `receive-${i}` ? "…" : "Receive"}
                   </button>
@@ -487,10 +487,10 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-[#090d16] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
+      <div onClick={(e) => e.stopPropagation()} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-white font-bold text-sm truncate">{title}</h3>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white text-lg leading-none shrink-0">×</button>
+          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm truncate">{title}</h3>
+          <button onClick={onClose} className="text-[var(--inaya-text-muted)] hover:text-[var(--inaya-text-primary)] text-lg leading-none shrink-0">×</button>
         </div>
         {children}
       </div>

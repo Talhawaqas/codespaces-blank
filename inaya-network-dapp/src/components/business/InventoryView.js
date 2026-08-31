@@ -30,9 +30,9 @@ export default function InventoryView({ orgId }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1 w-fit">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
         {[["products", "Products"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
+          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
         ))}
       </div>
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
@@ -71,26 +71,26 @@ function ProductsTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
-        <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[#94a3b8] border-white/15"}`}>Low stock only</button>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>Low stock only</button>
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        {!products ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : products.length === 0 ? (
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!products ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : products.length === 0 ? (
           <EmptyState compact icon="📦" description="No products match these filters." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
-          <p className="text-[#94a3b8] text-xs">No products match "{search}".</p>
+          <p className="text-[var(--inaya-text-muted)] text-xs">No products match "{search}".</p>
         ) : (
           <div className="space-y-2">
             {filtered.map((p) => (
               <button key={p.id} onClick={() => setSelected(p)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
-                  <span className="text-white text-sm">{p.name}</span>
-                  <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">SKU {p.sku}</p>
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{p.name}</span>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-white text-sm font-mono tabular-nums">{p.totalStock}</span>
+                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}</span>
                   {p.lowStock && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Low stock</span>}
                 </div>
               </button>
@@ -130,13 +130,13 @@ function CreateProductModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New product" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={sku} onChange={(e) => setSku(e.target.value)} required placeholder="SKU" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Product name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <input value={reorderThreshold} onChange={(e) => setReorderThreshold(e.target.value)} type="number" min="0" placeholder="Reorder threshold (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+        <input value={sku} onChange={(e) => setSku(e.target.value)} required placeholder="SKU" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Product name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={reorderThreshold} onChange={(e) => setReorderThreshold(e.target.value)} type="number" min="0" placeholder="Reorder threshold (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !sku.trim() || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create product"}</button>
       </form>
@@ -188,42 +188,42 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
   return (
     <Modal title={product.name} onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-[12px] font-mono text-[#94a3b8]">SKU {product.sku} · Reorder at {product.reorderThreshold}</p>
+        <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">SKU {product.sku} · Reorder at {product.reorderThreshold}</p>
 
         {stock && (
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase text-[#94a3b8]">Stock by warehouse</p>
+            <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Stock by warehouse</p>
             {stock.levels.length === 0 ? <p className="text-[#8a96ab] text-xs italic">No stock recorded yet.</p> : stock.levels.map((l) => (
               <div key={l.warehouseId} className="flex items-center justify-between text-xs">
                 <span className="text-slate-300">{l.warehouseName}</span>
-                <span className="text-white font-mono tabular-nums">{l.quantity}</span>
+                <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">{l.quantity}</span>
               </div>
             ))}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-2 border-t border-white/5 pt-3">
-          <p className="text-[11px] font-bold uppercase text-[#94a3b8]">Record a movement</p>
-          <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+          <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Record a movement</p>
+          <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Warehouse…</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           <div className="grid grid-cols-2 gap-2">
-            <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+            <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
               <option value="RECEIPT">Stock in</option>
               <option value="ISSUE">Stock out</option>
               <option value="ADJUSTMENT">Adjustment (+/-)</option>
             </select>
-            <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Quantity" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white" />
+            <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Quantity" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           </div>
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {error && <p className="text-red-400 text-xs">{error}</p>}
           <button disabled={submitting || !warehouseId || !quantity} className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Recording…" : "Record movement"}</button>
         </form>
 
         {stock && stock.movements.length > 0 && (
           <div className="space-y-1.5 border-t border-white/5 pt-3">
-            <p className="text-[11px] font-bold uppercase text-[#94a3b8]">Recent movements</p>
+            <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Recent movements</p>
             {stock.movements.slice(0, 10).map((m, i) => (
               <div key={i} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
                 <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}>{m.delta > 0 ? "+" : ""}{m.delta}</span>
@@ -254,8 +254,8 @@ function MovementsTab({ orgId }) {
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
   const capped = (movements || []).slice(0, MOVEMENTS_FEED_CAP);
   return (
-    <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-      {!movements ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : movements.length === 0 ? (
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      {!movements ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : movements.length === 0 ? (
         <EmptyState compact icon="📜" description="No stock movements recorded yet." />
       ) : (
         <div className="space-y-2.5">
@@ -264,7 +264,7 @@ function MovementsTab({ orgId }) {
             <div key={i} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
               <span className="text-slate-200 font-bold">{m.productName}</span>
               <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}> {m.delta > 0 ? "+" : ""}{m.delta}</span>
-              <span className="text-[#94a3b8]"> · {m.type.toLowerCase()} · {m.warehouseName}</span>
+              <span className="text-[var(--inaya-text-muted)]"> · {m.type.toLowerCase()} · {m.warehouseName}</span>
               <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
             </div>
           ))}
@@ -298,21 +298,21 @@ function WarehousesTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search warehouses…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search warehouses…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New warehouse</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-        {!warehouses ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : warehouses.length === 0 ? (
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!warehouses ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : warehouses.length === 0 ? (
           <EmptyState compact icon="🏬" description="No warehouses yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
-          <p className="text-[#94a3b8] text-xs">No warehouses match "{search}".</p>
+          <p className="text-[var(--inaya-text-muted)] text-xs">No warehouses match "{search}".</p>
         ) : (
           <div className="space-y-2">
             {filtered.map((w) => (
               <div key={w.id} className="bg-black/20 border border-white/5 rounded-lg p-3">
-                <span className="text-white text-sm">{w.name}</span>
-                {w.location && <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">{w.location}</p>}
+                <span className="text-[var(--inaya-text-primary)] text-sm">{w.name}</span>
+                {w.location && <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{w.location}</p>}
               </div>
             ))}
           </div>
@@ -348,12 +348,12 @@ function CreateWarehouseModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New warehouse" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-white">
+        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Warehouse name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-[#8a96ab]" />
+        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Warehouse name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create warehouse"}</button>
       </form>
@@ -364,10 +364,10 @@ function CreateWarehouseModal({ orgId, departments, onClose, onCreated }) {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-[#090d16] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
+      <div onClick={(e) => e.stopPropagation()} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-white font-bold text-sm truncate">{title}</h3>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white text-lg leading-none shrink-0">×</button>
+          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm truncate">{title}</h3>
+          <button onClick={onClose} className="text-[var(--inaya-text-muted)] hover:text-[var(--inaya-text-primary)] text-lg leading-none shrink-0">×</button>
         </div>
         {children}
       </div>
