@@ -23,11 +23,20 @@
 // tries to get the model to ask for something outside `scope`, the lookup
 // just returns "not found" — there is no path from "the model asked" to
 // "the database returned it" that skips permission resolution.
+//
+// GUARDED EXECUTION (Phase 3/4): propose_task_status_change and
+// propose_expense_decision are the only two tools here that mutate
+// anything, and even they don't — they insert a PENDING_APPROVAL row via
+// proposeAiAction() (ai-action-requests.js). The model can never make a
+// real change: a human with the same authority the real transitionX()
+// would itself require must approve it, and even then a 36h delay must
+// pass before a cron executor calls the real function. See
+// ai-action-requests.js's header comment for the full state machine.
 
 import { Type } from "@google/genai";
-import { getOrgCollections } from "./orgs.js";
+import { getOrgCollections, canAccessDepartment, canManageFinance } from "./orgs.js";
 import { getAccessibleScope, requireDocumentAccess } from "./document-permissions.js";
-import { TASK_STATES } from "./task-workflow.js";
+import { TASK_STATES, TRANSITIONS as TASK_TRANSITIONS } from "./task-workflow.js";
 import { DEAL_STAGES } from "./deal-workflow.js";
 import { PURCHASE_ORDER_STATES } from "./purchase-order-workflow.js";
 import { isLowStock } from "./inventory.js";
@@ -35,6 +44,7 @@ import { INVOICE_STATES } from "./invoice-workflow.js";
 import { EXPENSE_STATES } from "./expense-workflow.js";
 import { EMPLOYMENT_STATES } from "./employee-workflow.js";
 import { computeBusinessInsights } from "./business-insights.js";
+import { proposeAiAction } from "./ai-action-requests.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 
@@ -435,6 +445,75 @@ async function getBusinessInsights(args, ctx) {
 }
 
 // ============================================================
+// Guarded Execution — "propose" tools (Phase 4). These NEVER call the
+// real transitionTask()/transitionExpense() directly; they insert a
+// PENDING_APPROVAL row via proposeAiAction() (ai-action-requests.js) and
+// tell the model it was submitted for approval. A human with the exact
+// authority the real transition would itself require reviews it in the
+// AI Action Requests panel; nothing executes until they approve AND the
+// resulting 36h unlockAt has passed (Phase 4's cron executor).
+// ============================================================
+
+/** requiresManage:false for every task transition (task-workflow.js's
+ *  whole permission story is department access, no manager gate) — so
+ *  canPropose here is exactly canAccessDepartment, the same floor
+ *  transitionTask() itself enforces. */
+async function proposeTaskStatusChange(args, ctx) {
+  const { taskTitle, action } = args || {};
+  if (!taskTitle || !action) return { error: "taskTitle and action are required." };
+  if (!TASK_TRANSITIONS[action]) return { error: `Unknown action "${action}". Valid actions: ${Object.keys(TASK_TRANSITIONS).join(", ")}.` };
+
+  const matches = ctx.scope.visibleTasks.filter((t) => matchesName(t.title, taskTitle));
+  if (matches.length === 0) return { notFound: true, taskTitle };
+  if (matches.length > 1) return { ambiguous: true, matches: matches.slice(0, 5).map((t) => ({ title: t.title, status: t.status })) };
+
+  const task = matches[0];
+  const canPropose = canAccessDepartment(ctx.membership, task.departmentId);
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_task_status_change",
+    targetRecordType: "TASK", targetRecordId: task._id, proposedAction: action,
+    args: { taskId: task._id.toString(), action },
+    requestedContextSummary: `Change "${task.title}" (currently ${task.status}) via "${action}".`,
+    actorEmail: ctx.email, canPropose,
+  });
+  if (result.error) return { error: result.error };
+  return {
+    submitted: true, deduped: !!result.deduped,
+    message: `Submitted for approval: ${action} on task "${task.title}". A manager needs to approve it in the AI Action Requests panel, and it won't actually execute until 36 hours after approval.`,
+  };
+}
+
+/** requiresManage:true for approve/reject (expense-workflow.js's own
+ *  gate) — so canPropose here requires canManageFinance on the PROPOSING
+ *  user, not just department access, mirroring exactly what
+ *  transitionExpense() itself would require of whoever eventually
+ *  executes it. */
+async function proposeExpenseDecision(args, ctx) {
+  const { expenseVendor, decision } = args || {};
+  if (!expenseVendor || !decision) return { error: "expenseVendor and decision are required." };
+  if (!["approve", "reject"].includes(decision)) return { error: 'decision must be "approve" or "reject".' };
+
+  const matches = ctx.scope.visibleExpenses.filter((e) => matchesName(e.vendor, expenseVendor) && e.status === "PENDING_APPROVAL");
+  if (matches.length === 0) return { notFound: true, expenseVendor, message: "No pending-approval expense matches that vendor." };
+  if (matches.length > 1) return { ambiguous: true, matches: matches.slice(0, 5).map((e) => ({ vendor: e.vendor, amount: e.amount, category: e.category })) };
+
+  const expense = matches[0];
+  const canPropose = canAccessDepartment(ctx.membership, expense.departmentId) && canManageFinance(ctx.membership);
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_expense_decision",
+    targetRecordType: "EXPENSE", targetRecordId: expense._id, proposedAction: decision,
+    args: { expenseId: expense._id.toString(), action: decision },
+    requestedContextSummary: `${decision === "approve" ? "Approve" : "Reject"} expense from "${expense.vendor}" ($${expense.amount}).`,
+    actorEmail: ctx.email, canPropose,
+  });
+  if (result.error) return { error: result.error };
+  return {
+    submitted: true, deduped: !!result.deduped,
+    message: `Submitted for approval: ${decision} the $${expense.amount} expense from "${expense.vendor}". Another Finance Manager (or you, reviewing it later) needs to approve it in the AI Action Requests panel, and it won't actually execute until 36 hours after approval.`,
+  };
+}
+
+// ============================================================
 // Gemini function-calling declarations + dispatcher
 // ============================================================
 export const BUSINESS_TOOL_DECLARATIONS = [
@@ -621,6 +700,30 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "propose_task_status_change",
+    description: "Propose a status change for a task (e.g. mark it started, blocked, complete, or cancelled). This does NOT change the task immediately — it submits a request for a manager to approve in the AI Action Requests panel, and even after approval it only executes 36 hours later. Use this when the user explicitly asks you to change a task's status.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        taskTitle: { type: Type.STRING, description: "The task's title, or a distinctive part of it." },
+        action: { type: Type.STRING, enum: Object.keys(TASK_TRANSITIONS), description: "The transition to propose." },
+      },
+      required: ["taskTitle", "action"],
+    },
+  },
+  {
+    name: "propose_expense_decision",
+    description: "Propose approving or rejecting a pending expense. This does NOT decide the expense immediately — it submits a request for a Finance Manager to approve in the AI Action Requests panel, and even after approval it only executes 36 hours later. Only usable by someone who already has Finance Manager (or owner/admin) authority. Use this when the user explicitly asks you to approve or reject an expense.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        expenseVendor: { type: Type.STRING, description: "The expense's vendor name, or a distinctive part of it." },
+        decision: { type: Type.STRING, enum: ["approve", "reject"], description: "The decision to propose." },
+      },
+      required: ["expenseVendor", "decision"],
+    },
+  },
+  {
     name: "get_business_insights",
     description: "Get KPI summary (revenue, expenses, pipeline, task completion, headcount, etc.), period-over-period comparison, and active business alerts (overdue invoices, low stock, overdue tasks, pending approvals, significant KPI swings). Use this for questions like \"how's the business doing\", \"explain our KPIs\", \"what changed this month\", or \"any alerts I should know about\".",
     parameters: {
@@ -649,6 +752,8 @@ const TOOL_IMPLEMENTATIONS = {
   get_activity: getActivity,
   get_document_access: getDocumentAccess,
   get_business_insights: getBusinessInsights,
+  propose_task_status_change: proposeTaskStatusChange,
+  propose_expense_decision: proposeExpenseDecision,
 };
 
 export async function runBusinessTool(name, args, ctx) {
@@ -670,5 +775,5 @@ Keep answers concise and concrete: reference actual filenames, department/projec
 
 For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows.
 
-You cannot take actions (approve, reject, upload, share, change permissions) — you only look things up and summarize. If asked to perform an action, explain that they should use the workspace UI for that.`;
+For most requests you only look things up and summarize — you cannot upload, share, or change permissions, and you cannot directly change a task's status or decide an expense. For those two specific actions, use propose_task_status_change or propose_expense_decision: this submits a request that a manager must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request, explain that they should use the workspace UI for that.`;
 }

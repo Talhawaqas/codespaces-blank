@@ -40,6 +40,7 @@ import InventoryView from "../../components/business/InventoryView";
 import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
 import InsightsView from "../../components/business/InsightsView";
+import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
 
@@ -725,6 +726,7 @@ const NAV_ITEMS = [
   { key: "finance", label: "Finance", icon: "finance" },
   { key: "hr", label: "HR", icon: "hr" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
+  { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "activity", label: "Activity", icon: "activity" },
   { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
   { key: "billing", label: "Billing", icon: "billing", manageOnly: true },
@@ -810,6 +812,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     finance: "Finance",
     hr: "HR",
     approvals: "Approvals",
+    aiActions: "AI Action Requests",
     activity: "Activity",
     ai: "AI Assistant",
     billing: "Billing",
@@ -905,6 +908,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
           {activeView === "hr" && <HRView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
+          {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}
           {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}

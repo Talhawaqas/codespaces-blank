@@ -37,6 +37,28 @@
 import { createHash } from "node:crypto";
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
+import { transitionTask } from "./task-workflow.js";
+import { transitionExpense } from "./expense-workflow.js";
+
+// Maps a request's targetRecordType to the real workflow transition it's
+// eventually allowed to trigger, and how to turn a request's stored args
+// into that function's call shape. Adding a new propose_* tool (Phase 4
+// only ships two) means adding one entry here, not touching the executor
+// loop itself.
+// Execution runs as a synthetic org-manager membership, NOT as the
+// original approver's real membership — the approval step already
+// verified the approver had the exact authority the real transition
+// requires (reviewAiAction()'s canApprove gate), so re-deriving THEIR
+// membership here would be redundant and would break if their role
+// changed between approval and the 36h unlock. What executes is "this
+// org's own approved decision," attributed in the activity log to the
+// human who approved it (actorEmail below), not to a fabricated identity.
+const SYSTEM_EXECUTOR_MEMBERSHIP = { role: "owner" };
+
+const EXECUTORS = {
+  TASK: ({ orgId, args, actorEmail }) => transitionTask({ orgId, taskId: args.taskId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  EXPENSE: ({ orgId, args, actorEmail }) => transitionExpense({ orgId, expenseId: args.expenseId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+};
 
 export const AI_ACTION_STATUSES = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "QUEUED", "EXECUTED", "EXPIRED", "CANCELLED"];
 export const SETTLEMENT_DELAY_MS = 36 * 60 * 60 * 1000; // 36h, mirrors InayaNodeRegistry.sol's SETTLEMENT_DELAY
@@ -186,4 +208,66 @@ export async function listAiActionRequests({ orgId, status }) {
   const filter = { orgId: toObjectId(orgId) };
   if (status) filter.status = status;
   return aiActionRequests.find(filter).sort({ requestedAt: -1 }).toArray();
+}
+
+/** The cron entry point (api/cron/execute-approved-ai-actions) — finds
+ *  every APPROVED request across every org whose unlockAt has passed,
+ *  atomically claims each one (APPROVED -> QUEUED, findOneAndUpdate status
+ *  guard — the same replay-safe pattern every workflow transition in this
+ *  codebase already uses, so two overlapping cron invocations can never
+ *  execute the same request twice), then calls the real transitionX().
+ *  QUEUED -> EXECUTED on success; QUEUED -> EXPIRED if the real transition
+ *  no longer applies (e.g. the task/expense moved to some other state in
+ *  the meantime) — that's an honest outcome, not a retry-worthy error. */
+export async function executeApprovedAiActions() {
+  const { aiActionRequests } = await getOrgCollections();
+  const now = new Date().toISOString();
+  const due = await aiActionRequests.find({ status: "APPROVED", unlockAt: { $lte: now } }).toArray();
+
+  const results = { claimed: 0, executed: 0, expired: 0 };
+  for (const request of due) {
+    const queued = await aiActionRequests.findOneAndUpdate(
+      { _id: request._id, status: "APPROVED" },
+      { $set: { status: "QUEUED" } },
+      { returnDocument: "after" }
+    );
+    if (!queued) continue; // another concurrent run already claimed it
+    results.claimed += 1;
+
+    const executor = EXECUTORS[queued.targetRecordType];
+    let executionResult;
+    try {
+      executionResult = executor
+        ? await executor({ orgId: queued.orgId, args: queued.args, actorEmail: queued.reviewedByEmail })
+        : { error: `No executor registered for targetRecordType "${queued.targetRecordType}".`, status: 500 };
+    } catch (err) {
+      executionResult = { error: err.message, status: 500 };
+    }
+
+    const executedAt = new Date().toISOString();
+    if (executionResult.error) {
+      // A 409 from the real transition means the record's state moved on
+      // its own since approval (someone else already handled it, or it
+      // was cancelled through the normal UI) — that's EXPIRED, an honest
+      // outcome. Anything else (404, 500) is still recorded as EXPIRED
+      // rather than left stuck in QUEUED forever; the reason is preserved
+      // in executionResult for operators to inspect.
+      await aiActionRequests.updateOne({ _id: queued._id }, { $set: { status: "EXPIRED", executedAt, executionResult: { error: executionResult.error } } });
+      await logOrgActivity({
+        orgId: queued.orgId, recordType: "AI_ACTION_REQUEST", recordId: queued._id,
+        actorEmail: queued.reviewedByEmail, action: "AI_ACTION_EXPIRED", previousState: "QUEUED", newState: "EXPIRED",
+        metadata: { reason: executionResult.error },
+      });
+      results.expired += 1;
+    } else {
+      await aiActionRequests.updateOne({ _id: queued._id }, { $set: { status: "EXECUTED", executedAt, executionResult: { success: true } } });
+      await logOrgActivity({
+        orgId: queued.orgId, recordType: "AI_ACTION_REQUEST", recordId: queued._id,
+        actorEmail: queued.reviewedByEmail, action: "AI_ACTION_EXECUTED", previousState: "QUEUED", newState: "EXECUTED", metadata: {},
+      });
+      results.executed += 1;
+    }
+  }
+
+  return results;
 }
