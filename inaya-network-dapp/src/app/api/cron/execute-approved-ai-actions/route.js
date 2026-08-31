@@ -1,11 +1,18 @@
 // app/api/cron/execute-approved-ai-actions/route.js
 //
-// GET /api/cron/execute-approved-ai-actions — hourly, same CRON_SECRET
-// bearer-token pattern as /api/cron/invoices-mark-overdue. Finds every
-// APPROVED AI action request across every org whose 36h unlockAt has
-// passed and executes the real transitionX() for it — see
-// ai-action-requests.js's executeApprovedAiActions() for the atomic
-// claim + execute + EXECUTED/EXPIRED bookkeeping.
+// GET /api/cron/execute-approved-ai-actions — daily, same CRON_SECRET
+// bearer-token pattern as /api/cron/invoices-mark-overdue. Daily rather
+// than hourly because the Vercel account this deploys to is on the
+// Hobby plan, which rejects any cron schedule finer than once/day at
+// deploy time — an hourly schedule is what this route originally shipped
+// with, but it made the WHOLE deployment fail, not just this route, so
+// it was changed to daily. Functionally harmless either way: this only
+// adds a few extra hours of latency after a request's 36h unlockAt has
+// already passed, it doesn't change correctness. Finds every APPROVED AI
+// action request across every org whose unlockAt has passed and executes
+// the real transitionX() for it — see ai-action-requests.js's
+// executeApprovedAiActions() for the atomic claim + execute +
+// EXECUTED/EXPIRED bookkeeping.
 
 import { NextResponse } from "next/server";
 import { executeApprovedAiActions } from "../../../../lib/ai-action-requests.js";
