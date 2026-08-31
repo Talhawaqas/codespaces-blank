@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import ConfirmButton from "./ConfirmButton";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -51,6 +52,10 @@ export default function CRMView({ orgId, canManage, email }) {
   const [tab, setTab] = useState("contacts"); // 'contacts' | 'deals'
   const [departments, setDepartments] = useState([]);
   const [error, setError] = useState("");
+  // Set by DealsTab's "View contact" link — ContactsTab auto-opens this
+  // contact on mount, then the caller clears it, completing the SOW's
+  // documented Customer -> Deal cross-navigation without a full router.
+  const [focusContactId, setFocusContactId] = useState(null);
 
   useEffect(() => {
     api(`/api/orgs/departments?orgId=${orgId}`).then((d) => setDepartments(d.departments)).catch((err) => setError(err.message));
@@ -63,7 +68,11 @@ export default function CRMView({ orgId, canManage, email }) {
         <button onClick={() => setTab("deals")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "deals" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>Deals</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      {tab === "contacts" ? <ContactsTab orgId={orgId} departments={departments} /> : <DealsTab orgId={orgId} departments={departments} email={email} />}
+      {tab === "contacts" ? (
+        <ContactsTab orgId={orgId} departments={departments} focusContactId={focusContactId} onFocusHandled={() => setFocusContactId(null)} />
+      ) : (
+        <DealsTab orgId={orgId} departments={departments} email={email} onViewContact={(id) => { setFocusContactId(id); setTab("contacts"); }} />
+      )}
     </div>
   );
 }
@@ -71,7 +80,7 @@ export default function CRMView({ orgId, canManage, email }) {
 // ============================================================
 // CONTACTS
 // ============================================================
-function ContactsTab({ orgId, departments }) {
+function ContactsTab({ orgId, departments, focusContactId, onFocusHandled }) {
   const [contacts, setContacts] = useState(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -92,6 +101,13 @@ function ContactsTab({ orgId, departments }) {
   }, [orgId, typeFilter, search]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!focusContactId || !contacts) return;
+    const match = contacts.find((c) => c.id === focusContactId);
+    if (match) setSelected(match);
+    onFocusHandled();
+  }, [focusContactId, contacts, onFocusHandled]);
 
   return (
     <div className="space-y-4">
@@ -213,11 +229,12 @@ function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
 // ============================================================
 // DEALS
 // ============================================================
-function DealsTab({ orgId, departments, email }) {
+function DealsTab({ orgId, departments, email, onViewContact }) {
   const [deals, setDeals] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -230,12 +247,14 @@ function DealsTab({ orgId, departments, email }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const filteredDeals = (deals || []).filter((d) => !search.trim() || d.title.toLowerCase().includes(search.trim().toLowerCase()) || (d.contactName || "").toLowerCase().includes(search.trim().toLowerCase()));
   const byStage = {};
-  if (deals) for (const s of STAGE_ORDER) byStage[s] = deals.filter((d) => d.status === s);
+  for (const s of STAGE_ORDER) byStage[s] = filteredDeals.filter((d) => d.status === s);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deal title or contact…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-64" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New deal</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -245,6 +264,8 @@ function DealsTab({ orgId, departments, email }) {
         <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
           <EmptyState compact icon="💼" description="No deals yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         </div>
+      ) : filteredDeals.length === 0 ? (
+        <p className="text-[#94a3b8] text-xs">No deals match "{search}".</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {STAGE_ORDER.map((stage) => (
@@ -252,10 +273,17 @@ function DealsTab({ orgId, departments, email }) {
               <h4 className={`text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border inline-block mb-2 ${STAGE_STYLES[stage]}`}>{STAGE_LABELS[stage]} ({byStage[stage].length})</h4>
               <div className="space-y-1.5">
                 {byStage[stage].map((d) => (
-                  <button key={d.id} onClick={() => setSelectedId(d.id)} className="w-full text-left bg-black/20 border border-white/5 rounded-lg p-2 hover:bg-white/5">
-                    <p className="text-white text-xs truncate">{d.title}</p>
-                    <p className="text-[#94a3b8] text-[11px] font-mono truncate">{d.contactName || ""}{formatMoney(d.value) ? ` · ${formatMoney(d.value)}` : ""}</p>
-                  </button>
+                  <div key={d.id} className="bg-black/20 border border-white/5 rounded-lg p-2">
+                    <button onClick={() => setSelectedId(d.id)} className="w-full text-left">
+                      <p className="text-white text-xs truncate">{d.title}</p>
+                      {formatMoney(d.value) && <p className="text-[#94a3b8] text-[11px] font-mono truncate">{formatMoney(d.value)}</p>}
+                    </button>
+                    {d.contactName && (
+                      <button onClick={() => onViewContact(d.contactId)} className="text-[#00f2fe] text-[11px] font-mono truncate hover:underline">
+                        {d.contactName}
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -280,7 +308,7 @@ function CreateDealModal({ orgId, departments, onClose, onCreated }) {
 
   useEffect(() => {
     if (!departmentId) { setContacts([]); setContactId(""); return; }
-    api(`/api/orgs/crm/contacts?orgId=${orgId}&departmentId=${departmentId}`).then((d) => setContacts(d.contacts)).catch(() => setContacts([]));
+    api(`/api/orgs/crm/contacts?orgId=${orgId}&departmentId=${departmentId}`).then((d) => { setContacts(d.contacts); setError(""); }).catch((err) => { setContacts([]); setError(`Couldn't load contacts: ${err.message}`); });
     setContactId("");
   }, [orgId, departmentId]);
 
@@ -361,11 +389,17 @@ function DealDetailModal({ orgId, dealId, onClose, onChanged }) {
           {formatMoney(deal.value) && <span className="text-[12px] font-mono text-[#94a3b8]">{formatMoney(deal.value)}</span>}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {(ACTIONS_BY_STAGE[deal.status] || []).map(([action, label]) => (
-            <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
-              {acting === action ? "…" : label}
-            </button>
-          ))}
+          {(ACTIONS_BY_STAGE[deal.status] || []).map(([action, label]) =>
+            action === "lose" ? (
+              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                {acting === action ? "…" : label}
+              </ConfirmButton>
+            ) : (
+              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                {acting === action ? "…" : label}
+              </button>
+            )
+          )}
         </div>
         {error && <p className="text-red-400 text-xs">{error}</p>}
       </div>

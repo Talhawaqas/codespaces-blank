@@ -14,6 +14,9 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
+import ConfirmButton from "./ConfirmButton";
+
+const DESTRUCTIVE_ACTIONS = new Set(["terminate", "reject", "cancel"]);
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -39,9 +42,10 @@ function StatusBadge({ status }) {
 export default function HRView({ orgId, email }) {
   const [tab, setTab] = useState("employees");
   const [departments, setDepartments] = useState([]);
+  const [departmentsError, setDepartmentsError] = useState("");
 
   useEffect(() => {
-    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => setDepartments(d.departments)).catch(() => {});
+    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => { setDepartments(d.departments); setDepartmentsError(""); }).catch((err) => setDepartmentsError(`Couldn't load departments: ${err.message}`));
   }, [orgId]);
 
   return (
@@ -54,6 +58,7 @@ export default function HRView({ orgId, email }) {
         </div>
         <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Testnet / Beta</span>
       </div>
+      {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "employees" && <EmployeesTab orgId={orgId} email={email} departments={departments} />}
       {tab === "leave" && <LeaveTab orgId={orgId} email={email} />}
       {tab === "managers" && <ManagersTab orgId={orgId} departments={departments} />}
@@ -69,6 +74,7 @@ function EmployeesTab({ orgId, email, departments }) {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -80,18 +86,23 @@ function EmployeesTab({ orgId, email, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = (employees || []).filter((emp) => !search.trim() || emp.fullName.toLowerCase().includes(search.trim().toLowerCase()) || (emp.jobTitle || "").toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New employee</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         {!employees ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : employees.length === 0 ? (
           <EmptyState compact icon="🧑‍💼" description="No employee records visible yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
+        ) : filtered.length === 0 ? (
+          <p className="text-[#94a3b8] text-xs">No employees match "{search}".</p>
         ) : (
           <div className="space-y-2">
-            {employees.map((emp) => (
+            {filtered.map((emp) => (
               <button key={emp.id} onClick={() => setSelected(emp)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
                   <span className="text-white text-sm">{emp.fullName}</span>
@@ -232,11 +243,17 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
 
         {(EMPLOYEE_ACTIONS[employee.employmentStatus] || []).length > 0 && (
           <div className="flex gap-2 border-t border-white/5 pt-3">
-            {EMPLOYEE_ACTIONS[employee.employmentStatus].map(([action, label]) => (
-              <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
-                {submitting === action ? "…" : label}
-              </button>
-            ))}
+            {EMPLOYEE_ACTIONS[employee.employmentStatus].map(([action, label]) =>
+              DESTRUCTIVE_ACTIONS.has(action) ? (
+                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                  {submitting === action ? "…" : label}
+                </ConfirmButton>
+              ) : (
+                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                  {submitting === action ? "…" : label}
+                </button>
+              )
+            )}
           </div>
         )}
         {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -314,8 +331,8 @@ function LeaveTab({ orgId, email }) {
                   {r.status === "PENDING" && (
                     <>
                       <button onClick={() => handleAction(r.id, "approve")} disabled={!!acting} className="text-[11px] font-bold uppercase text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-1 rounded-lg disabled:opacity-40">✓</button>
-                      <button onClick={() => handleAction(r.id, "reject")} disabled={!!acting} className="text-[11px] font-bold uppercase text-red-400 bg-red-400/10 border border-red-400/30 px-2 py-1 rounded-lg disabled:opacity-40">✕</button>
-                      <button onClick={() => handleAction(r.id, "cancel")} disabled={!!acting} className="text-[11px] font-bold uppercase text-[#94a3b8] bg-white/5 border border-white/15 px-2 py-1 rounded-lg disabled:opacity-40">Cancel</button>
+                      <ConfirmButton onConfirm={() => handleAction(r.id, "reject")} disabled={!!acting} className="text-[11px] font-bold uppercase text-red-400 bg-red-400/10 border border-red-400/30 px-2 py-1 rounded-lg disabled:opacity-40">✕</ConfirmButton>
+                      <ConfirmButton onConfirm={() => handleAction(r.id, "cancel")} disabled={!!acting} className="text-[11px] font-bold uppercase text-[#94a3b8] bg-white/5 border border-white/15 px-2 py-1 rounded-lg disabled:opacity-40">Cancel</ConfirmButton>
                     </>
                   )}
                 </div>
@@ -344,7 +361,7 @@ function CreateLeaveModal({ orgId, email, onClose, onCreated }) {
       setEmployees(d.employees);
       const self = d.employees.find((e) => e.memberEmail === email);
       if (self) setEmployeeId(self.id);
-    }).catch(() => {});
+    }).catch((err) => setError(`Couldn't load employees: ${err.message}`));
   }, [orgId, email]);
 
   async function handleSubmit(e) {

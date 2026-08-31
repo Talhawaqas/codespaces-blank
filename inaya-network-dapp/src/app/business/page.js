@@ -41,6 +41,7 @@ import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
 import InsightsView from "../../components/business/InsightsView";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
+import ConfirmButton from "../../components/business/ConfirmButton";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -1128,6 +1129,8 @@ function ApprovalsView({ orgId, onNavigate }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [acting, setActing] = useState("");
+  const [selected, setSelected] = useState(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -1153,22 +1156,65 @@ function ApprovalsView({ orgId, onNavigate }) {
     }
   }
 
+  function toggleSelected(docId) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(docId)) next.delete(docId);
+      else next.add(docId);
+      return next;
+    });
+  }
+
+  async function handleApproveSelected() {
+    setBulkApproving(true);
+    setError("");
+    try {
+      for (const docId of selected) {
+        await api(`/api/orgs/documents/${docId}/transition`, { method: "POST", body: JSON.stringify({ orgId, action: "approve" }) });
+      }
+      setSelected(new Set());
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBulkApproving(false);
+    }
+  }
+
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
   if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
 
+  const selectableIds = data.filter((d) => d.status === "UNDER_REVIEW").map((d) => d.id);
+
   return (
     <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Documents awaiting your review</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8]">Documents awaiting your review</h3>
+        {selected.size > 0 && (
+          <button
+            onClick={handleApproveSelected}
+            disabled={bulkApproving}
+            className="text-[11px] font-bold uppercase px-3 py-1.5 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40"
+          >
+            {bulkApproving ? "Approving…" : `Approve selected (${selected.size})`}
+          </button>
+        )}
+      </div>
       {data.length === 0 ? (
         <EmptyState compact icon="✅" description="Nothing needs your attention right now — you're all caught up." />
       ) : (
         <div className="space-y-2">
           {data.map((d) => (
             <div key={d.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
-              <button onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })} className="min-w-0 text-left">
-                <p className="text-white text-sm truncate">{d.filename}</p>
-                <p className="text-[#94a3b8] text-[12px] font-mono">{d.departmentName} · {d.projectName}</p>
-              </button>
+              <div className="flex items-center gap-2 min-w-0">
+                {d.status === "UNDER_REVIEW" && (
+                  <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleSelected(d.id)} className="shrink-0" />
+                )}
+                <button onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })} className="min-w-0 text-left">
+                  <p className="text-white text-sm truncate">{d.filename}</p>
+                  <p className="text-[#94a3b8] text-[12px] font-mono">{d.departmentName} · {d.projectName}</p>
+                </button>
+              </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
                 {d.status === "PENDING" && (
@@ -1189,13 +1235,13 @@ function ApprovalsView({ orgId, onNavigate }) {
                     >
                       {acting === d.id + "approve" ? "…" : "Approve"}
                     </button>
-                    <button
-                      onClick={() => handleAction(d.id, "reject")}
+                    <ConfirmButton
+                      onConfirm={() => handleAction(d.id, "reject")}
                       disabled={!!acting}
                       className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 disabled:opacity-40"
                     >
                       {acting === d.id + "reject" ? "…" : "Reject"}
-                    </button>
+                    </ConfirmButton>
                   </>
                 )}
               </div>
@@ -1211,6 +1257,8 @@ function ApprovalsView({ orgId, onNavigate }) {
 // ============================================================
 // ACTIVITY — org-wide feed across every document the caller can see.
 // ============================================================
+const ACTIVITY_FEED_CAP = 100;
+
 function ActivityView({ orgId }) {
   const [activity, setActivity] = useState(null);
   const [error, setError] = useState("");
@@ -1224,6 +1272,8 @@ function ActivityView({ orgId }) {
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
   if (!activity) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
 
+  const capped = activity.slice(0, ACTIVITY_FEED_CAP);
+
   return (
     <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-4">Recent activity</h3>
@@ -1231,7 +1281,8 @@ function ActivityView({ orgId }) {
         <EmptyState compact icon="📜" description="No activity recorded yet — actions on documents in this org will show up here." />
       ) : (
         <div className="space-y-2.5">
-          {activity.map((e) => (
+          {activity.length > ACTIVITY_FEED_CAP && <p className="text-[11px] font-mono text-[#8a96ab]">Showing latest {ACTIVITY_FEED_CAP} of {activity.length}.</p>}
+          {capped.map((e) => (
             <div key={e.eventId} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
               <span className="text-slate-200 font-bold">{e.filename}</span>
               <span className="text-[#94a3b8]"> · {e.action}</span>
@@ -1733,16 +1784,27 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        {availableActions.map(([action, label]) => (
-          <button
-            key={action}
-            onClick={() => handleAction(action)}
-            disabled={!!acting}
-            className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
-          >
-            {acting === action ? "…" : label}
-          </button>
-        ))}
+        {availableActions.map(([action, label]) =>
+          action === "archive" ? (
+            <ConfirmButton
+              key={action}
+              onConfirm={() => handleAction(action)}
+              disabled={!!acting}
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            >
+              {acting === action ? "…" : label}
+            </ConfirmButton>
+          ) : (
+            <button
+              key={action}
+              onClick={() => handleAction(action)}
+              disabled={!!acting}
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            >
+              {acting === action ? "…" : label}
+            </button>
+          )
+        )}
         <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
           Download
         </button>
@@ -1878,7 +1940,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
                 <option value="EDIT">Edit</option>
                 <option value="MANAGE">Manage</option>
               </select>
-              <button onClick={() => handleRevoke(g.email)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase px-1.5">Revoke</button>
+              <ConfirmButton onConfirm={() => handleRevoke(g.email)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase px-1.5">Revoke</ConfirmButton>
             </div>
           </div>
         ))
@@ -1985,7 +2047,7 @@ function SharePanel({ documentId, orgId }) {
                 {s.status} · {s.useCount}{s.maxUses !== null ? `/${s.maxUses}` : ""} uses · expires {new Date(s.expiresAt).toLocaleString()}
               </span>
               {s.status === "active" && (
-                <button onClick={() => handleRevoke(s.shareId)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase shrink-0">Revoke</button>
+                <ConfirmButton onConfirm={() => handleRevoke(s.shareId)} className="text-red-400 hover:text-red-300 text-[11px] font-bold uppercase shrink-0">Revoke</ConfirmButton>
               )}
             </div>
           ))

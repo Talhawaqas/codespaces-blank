@@ -62,6 +62,23 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
   if (!data) return <p className="text-[#94a3b8] font-mono text-sm">Loading…</p>;
 
+  const noDataYet = Object.values(data.kpis).every((kpi) => !kpi.value) && data.alerts.length === 0;
+  if (noDataYet) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold uppercase text-[#94a3b8]">Period</span>
+          <div className="flex bg-[#090d16] border border-white/5 rounded-xl p-1">
+            {PERIOD_OPTIONS.map(([value, label]) => (
+              <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <EmptyState icon="📊" title="Not enough data yet" description="Insights build up as your team creates tasks, deals, invoices, and expenses. Check back once there's some activity to summarize." />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">

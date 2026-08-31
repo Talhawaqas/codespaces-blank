@@ -22,9 +22,10 @@ async function api(path, options) {
 export default function InventoryView({ orgId }) {
   const [tab, setTab] = useState("products");
   const [departments, setDepartments] = useState([]);
+  const [departmentsError, setDepartmentsError] = useState("");
 
   useEffect(() => {
-    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => setDepartments(d.departments)).catch(() => {});
+    api(`/api/orgs/departments?orgId=${orgId}`).then((d) => { setDepartments(d.departments); setDepartmentsError(""); }).catch((err) => setDepartmentsError(`Couldn't load departments: ${err.message}`));
   }, [orgId]);
 
   return (
@@ -34,6 +35,7 @@ export default function InventoryView({ orgId }) {
           <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[#94a3b8]"}`}>{label}</button>
         ))}
       </div>
+      {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "products" && <ProductsTab orgId={orgId} departments={departments} />}
       {tab === "movements" && <MovementsTab orgId={orgId} />}
       {tab === "warehouses" && <WarehousesTab orgId={orgId} departments={departments} />}
@@ -50,6 +52,7 @@ function ProductsTab({ orgId, departments }) {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -63,9 +66,12 @@ function ProductsTab({ orgId, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = (products || []).filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()) || p.sku.toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
         <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[#94a3b8] border-white/15"}`}>Low stock only</button>
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
       </div>
@@ -73,9 +79,11 @@ function ProductsTab({ orgId, departments }) {
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         {!products ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : products.length === 0 ? (
           <EmptyState compact icon="📦" description="No products match these filters." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
+        ) : filtered.length === 0 ? (
+          <p className="text-[#94a3b8] text-xs">No products match "{search}".</p>
         ) : (
           <div className="space-y-2">
-            {products.map((p) => (
+            {filtered.map((p) => (
               <button key={p.id} onClick={() => setSelected(p)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
                   <span className="text-white text-sm">{p.name}</span>
@@ -156,7 +164,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    api(`/api/orgs/inventory/warehouses?orgId=${orgId}&departmentId=${product.departmentId}`).then((d) => setWarehouses(d.warehouses)).catch(() => setWarehouses([]));
+    api(`/api/orgs/inventory/warehouses?orgId=${orgId}&departmentId=${product.departmentId}`).then((d) => setWarehouses(d.warehouses)).catch((err) => { setWarehouses([]); setError(`Couldn't load warehouses: ${err.message}`); });
   }, [orgId, product.departmentId]);
 
   async function handleSubmit(e) {
@@ -233,6 +241,8 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
 // ============================================================
 // MOVEMENTS (org-wide feed)
 // ============================================================
+const MOVEMENTS_FEED_CAP = 100;
+
 function MovementsTab({ orgId }) {
   const [movements, setMovements] = useState(null);
   const [error, setError] = useState("");
@@ -242,13 +252,15 @@ function MovementsTab({ orgId }) {
   }, [orgId]);
 
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
+  const capped = (movements || []).slice(0, MOVEMENTS_FEED_CAP);
   return (
     <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
       {!movements ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : movements.length === 0 ? (
         <EmptyState compact icon="📜" description="No stock movements recorded yet." />
       ) : (
         <div className="space-y-2.5">
-          {movements.map((m, i) => (
+          {movements.length > MOVEMENTS_FEED_CAP && <p className="text-[11px] font-mono text-[#8a96ab]">Showing latest {MOVEMENTS_FEED_CAP} of {movements.length}.</p>}
+          {capped.map((m, i) => (
             <div key={i} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
               <span className="text-slate-200 font-bold">{m.productName}</span>
               <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}> {m.delta > 0 ? "+" : ""}{m.delta}</span>
@@ -269,6 +281,7 @@ function WarehousesTab({ orgId, departments }) {
   const [warehouses, setWarehouses] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -280,16 +293,23 @@ function WarehousesTab({ orgId, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = (warehouses || []).filter((w) => !search.trim() || w.name.toLowerCase().includes(search.trim().toLowerCase()) || (w.location || "").toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center"><button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New warehouse</button></div>
+      <div className="flex items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search warehouses…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-[#8a96ab] w-56" />
+        <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New warehouse</button>
+      </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-5">
         {!warehouses ? <p className="text-[#94a3b8] font-mono text-sm">Loading…</p> : warehouses.length === 0 ? (
           <EmptyState compact icon="🏬" description="No warehouses yet." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
+        ) : filtered.length === 0 ? (
+          <p className="text-[#94a3b8] text-xs">No warehouses match "{search}".</p>
         ) : (
           <div className="space-y-2">
-            {warehouses.map((w) => (
+            {filtered.map((w) => (
               <div key={w.id} className="bg-black/20 border border-white/5 rounded-lg p-3">
                 <span className="text-white text-sm">{w.name}</span>
                 {w.location && <p className="text-[#94a3b8] text-[12px] font-mono mt-0.5">{w.location}</p>}

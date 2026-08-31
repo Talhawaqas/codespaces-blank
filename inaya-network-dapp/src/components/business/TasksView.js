@@ -21,6 +21,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import ConfirmButton from "./ConfirmButton";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -89,8 +90,8 @@ export default function TasksView({ orgId, canManage, email }) {
       return;
     }
     api(`/api/orgs/projects?orgId=${orgId}&departmentId=${filterDeptId}`)
-      .then((d) => setFilterProjects(d.projects))
-      .catch(() => setFilterProjects([]));
+      .then((d) => { setFilterProjects(d.projects); setError(""); })
+      .catch((err) => { setFilterProjects([]); setError(`Couldn't load projects: ${err.message}`); });
     setFilterProjectId("");
   }, [orgId, filterDeptId]);
 
@@ -234,7 +235,7 @@ function CreateTaskModal({ orgId, departments, onClose, onCreated }) {
 
   useEffect(() => {
     if (!departmentId) { setProjects([]); setProjectId(""); return; }
-    api(`/api/orgs/projects?orgId=${orgId}&departmentId=${departmentId}`).then((d) => setProjects(d.projects)).catch(() => setProjects([]));
+    api(`/api/orgs/projects?orgId=${orgId}&departmentId=${departmentId}`).then((d) => { setProjects(d.projects); setError(""); }).catch((err) => { setProjects([]); setError(`Couldn't load projects: ${err.message}`); });
     setProjectId("");
   }, [orgId, departmentId]);
 
@@ -366,16 +367,27 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
 
         {availableActions.length > 0 && (canEdit || !canManage) && (
           <div className="flex flex-wrap gap-1.5">
-            {availableActions.map(([action, label]) => (
-              <button
-                key={action}
-                onClick={() => handleAction(action)}
-                disabled={!!acting}
-                className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
-              >
-                {acting === action ? "…" : label}
-              </button>
-            ))}
+            {availableActions.map(([action, label]) =>
+              action === "cancel" ? (
+                <ConfirmButton
+                  key={action}
+                  onConfirm={() => handleAction(action)}
+                  disabled={!!acting}
+                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+                >
+                  {acting === action ? "…" : label}
+                </ConfirmButton>
+              ) : (
+                <button
+                  key={action}
+                  onClick={() => handleAction(action)}
+                  disabled={!!acting}
+                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+                >
+                  {acting === action ? "…" : label}
+                </button>
+              )
+            )}
           </div>
         )}
 
