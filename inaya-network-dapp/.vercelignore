@@ -1,0 +1,24 @@
+# .vercelignore
+#
+# This project's Root Directory setting (Vercel dashboard) is
+# "inaya-network-dapp" — .vercelignore has to live HERE, not at the
+# monorepo root, for `vercel deploy` (run from the monorepo root, where
+# .vercel/project.json is linked) to actually respect it. A duplicate
+# also exists at the monorepo root for the same reason, since it wasn't
+# obvious which location the CLI reads from without checking — better to
+# cover both than have this silently do nothing again.
+#
+# Without this, a deploy uploads this app's own node_modules (multiple
+# GB) even though .gitignore already excludes it — .gitignore and
+# .vercelignore are not automatically the same list for a CLI-driven
+# deploy the way they are for git-integration-triggered deploys.
+
+node_modules
+**/node_modules
+.next
+**/.next
+custody-sdk
+.env
+.env.local
+**/.env
+**/.env.local

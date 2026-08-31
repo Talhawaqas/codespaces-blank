@@ -117,10 +117,10 @@ export function toWalletAddEthereumChainParams(chainId) {
   };
 }
 
-/// Generic replacement for page.js's private ensureCorrectNetwork()/BSC_TESTNET_CHAIN_ID,
-/// parameterized by target chainId instead of hardcoded to BSC testnet. Not wired into page.js
-/// yet (deliberately left as a follow-up cleanup, see CROSS_CHAIN_BRIDGE_GUIDE.md) -- new bridge
-/// UI code should use this directly.
+/// Generic switch/add-chain helper, parameterized by target chainId instead of hardcoded to one
+/// chain. Used directly by the /bridge page's chain picker, and by page.js's own
+/// ensureCorrectNetwork() (which wraps this with its own "already on BSC testnet?" check and
+/// user-facing status messages, since that page only ever targets BSC testnet).
 export async function ensureChain(provider, chainId) {
   const hexChainId = getChain(chainId)?.hexChainId;
   if (!hexChainId) throw new Error(`Unsupported chainId: ${chainId}`);

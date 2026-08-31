@@ -1,0 +1,44 @@
+# .vercelignore
+#
+# The Vercel project's Root Directory build setting points at
+# inaya-network-dapp/, but `vercel deploy` run from the monorepo ROOT
+# still walks and uploads the FULL working tree regardless of that
+# setting -- it doesn't limit what gets bundled, only where the build
+# runs once uploaded. Without this file, a deploy pulls in every
+# node_modules across every package (inaya-network-dapp/, inaya-mobile/,
+# custody-sdk/ and its own sub-packages), .git history, Hardhat build
+# artifacts, and prebuilt desktop binaries -- multiple gigabytes of
+# content that has nothing to do with what actually gets deployed, which
+# is what caused a deploy to hang for 20+ minutes uploading a multi-GB
+# archive instead of finishing in under a minute like every other
+# deploy of this project.
+#
+# Mirrors .gitignore's exclusions, plus a few more that only matter for
+# deploys specifically (this file's own scope is upload-time file
+# selection, not what's version-controlled).
+
+node_modules
+**/node_modules
+
+.git
+.next
+**/.next
+
+# Separately hosted repos, not part of this deploy's build
+inaya-mobile
+inaya-network-dapp/custody-sdk
+
+# Hardhat build output -- regenerable, and not needed by the Next.js build
+artifacts
+cache
+
+# Prebuilt desktop binaries -- large, regenerable, not part of the web deploy
+portable-builds
+
+# Local env files -- Vercel's own dashboard-configured env vars are what
+# actually apply in production; these should never be uploaded regardless
+.env
+.env.local
+env.local
+**/.env
+**/.env.local

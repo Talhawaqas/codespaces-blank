@@ -13,6 +13,7 @@ import EmptyState from '../components/EmptyState';
 import AccentGraphic from '../components/AccentGraphic';
 import Skeleton from '../components/Skeleton';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import { CHAIN_IDS, ensureChain } from '../lib/chains';
 import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
@@ -3023,15 +3024,18 @@ export default function Home() {
 
   // ========================================================
   // 🌐 NETWORK AUTO-SWITCH — BNB Chain Testnet
+  //
+  // Phase 1 of the multi-chain SOW: the actual switch/add-chain RPC calls
+  // now delegate to lib/chains.js's ensureChain() (the same generic
+  // helper the /bridge page's chain picker uses) instead of duplicating
+  // wallet_switchEthereumChain/wallet_addEthereumChain here — this
+  // function's own job is just "is BSC testnet already selected, and
+  // what do we tell the user while switching," the same UX it always
+  // had. BSC_TESTNET_CHAIN_ID stays hardcoded here on purpose: this dApp
+  // page only ever operates on BSC testnet, unlike /bridge which lets the
+  // user target any supported chain.
   // ========================================================
-  const BSC_TESTNET_CHAIN_ID = '0x61'; 
-  const BSC_TESTNET_PARAMS = {
-    chainId: BSC_TESTNET_CHAIN_ID,
-    chainName: 'BNB Smart Chain Testnet',
-    nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
-    rpcUrls: ['https://rpc.ankr.com/bsc_testnet', 'https://data-seed-prebsc-1-s1.binance.org:8545/'],
-    blockExplorerUrls: ['https://testnet.bscscan.com']
-  };
+  const BSC_TESTNET_CHAIN_ID = '0x61';
 
   const ensureCorrectNetwork = async () => {
     try {
@@ -3046,21 +3050,7 @@ export default function Home() {
       if (currentChainId.toLowerCase() === BSC_TESTNET_CHAIN_ID) return true;
 
       setStatusLog("🔄 Switching network to BNB Chain Testnet...");
-      try {
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: BSC_TESTNET_CHAIN_ID }]
-        });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [BSC_TESTNET_PARAMS]
-          });
-        } else {
-          throw switchErr;
-        }
-      }
+      await ensureChain(provider, CHAIN_IDS.BSC_TESTNET);
       return true;
     } catch (err) {
       console.error("Network switch failed:", err);

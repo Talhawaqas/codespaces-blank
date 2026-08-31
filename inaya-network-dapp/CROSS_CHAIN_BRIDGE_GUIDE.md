@@ -37,6 +37,11 @@ reserved sentinel range `>= 1_000_000_000` (`SOLANA_DEVNET = 1_000_000_002`). Se
 
 ## 2. Contracts
 
+See `contracts/bridge/CHAIN_ADAPTER_INTERFACE.md` for the formal per-chain adapter contract
+(chain ID, wallet connection, token handling, messaging, transactions/confirmations, event
+indexing) — the explicit interface every chain below already implements, and what a future
+chain has to implement to be added.
+
 - `contracts/bridge/ChainIds.sol`, `InayaBridgeTypes.sol`, `IInayaMessageHandler.sol` — shared types
 - `contracts/bridge/InayaChainRegistry.sol` — trusted remote chain/contract registry
 - `contracts/bridge/InayaValidatorSet.sol` — M-of-N ECDSA threshold verification
@@ -91,8 +96,8 @@ Also used by Hardhat deploy scripts (not dApp env): `VALIDATOR_ADDRESS_1..3`, `S
 
 - Contract unit + integration tests: `Test/{InayaChainRegistry,InayaValidatorSet,InayaMessenger,InayaTokenBridge,InayaStakingCrossChain,CrossChainIntegration}.test.js` — run via `npx hardhat test`.
 - Local multi-chain dry run: `npx hardhat node --port 854{5,6,7,8}` (see `hardhat.config.js`'s `local{Home,Sepolia,Amoy,Fuji}` entries, each with a genuinely distinct `HH_CHAIN_ID`), then `scripts/deploy-bridge.js` + `scripts/wire-bridge-registries.js` per network, verified end-to-end by `scripts/verify-local-bridge.js`.
-- Real testnet deployment needs funded deployer + validator wallets on each of BSC Testnet/Sepolia/Amoy/Fuji (faucets) — not yet performed; flagged as the next external-dependency step.
-- Solana: `anchor build && anchor test` once a real toolchain is available (see `solana/programs/inaya-bridge-solana/src/lib.rs`'s doc comment).
+- Real testnet deployment: **live** on BSC Testnet (home), Ethereum Sepolia, and Avalanche Fuji — see `deployments/bridge/*.json` for deployed addresses; a read-only health check confirming real bytecode at every address across all three chains lives at `scripts/testnet-health-check.js`. Polygon Amoy is configured (`hardhat.config.js`, `chains.js`) but **not yet deployed** — still needs a confirmed-funded deployer wallet on that chain before running `deploy-bridge.js --network polygonAmoy`.
+- Solana: program **deployed** on Devnet (`76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn`), but not yet wired on-chain (`initialize`/`add_trusted_chain`/`set_home_addresses` not yet run per `deployments/bridge/solanaDevnet.json`) and `anchor test` has never run (blocked on the `surfpool` local-validator tool — see `solana/programs/inaya-bridge-solana/src/lib.rs`'s doc comment). Run `solana/wire-devnet.mjs` once the wiring wallet is confirmed funded with Devnet SOL.
 
 ## 7. Security Model
 
