@@ -117,6 +117,14 @@ export async function getOrgCollections() {
     employees: db.collection("employees"),
     leaveRequests: db.collection("leave_requests"),
     attachments: db.collection("attachments"),
+    // Phase 2 — cryptographic audit trail. A hash-chained overlay on top
+    // of org_activity/document_activity (see src/lib/auditChain.js), not a
+    // replacement — those collections keep recording the same
+    // human-readable events they always have. auditChainHeads holds one
+    // doc per org (the tip of that org's chain); auditChainEntries is the
+    // append-only chain itself.
+    auditChainEntries: db.collection("audit_chain_entries"),
+    auditChainHeads: db.collection("audit_chain_heads"),
   };
 }
 
@@ -130,6 +138,7 @@ export async function ensureOrgIndexes() {
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
+    auditChainEntries, auditChainHeads,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -196,6 +205,10 @@ export async function ensureOrgIndexes() {
     leaveRequests.createIndex({ orgId: 1, employeeId: 1 }),
     leaveRequests.createIndex({ orgId: 1, status: 1 }),
     attachments.createIndex({ orgId: 1, relatedRecordType: 1, relatedRecordId: 1 }),
+    // Phase 2 — cryptographic audit trail
+    auditChainEntries.createIndex({ orgId: 1, seq: 1 }, { unique: true }),
+    auditChainEntries.createIndex({ orgId: 1, timestamp: 1 }),
+    auditChainHeads.createIndex({ orgId: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;

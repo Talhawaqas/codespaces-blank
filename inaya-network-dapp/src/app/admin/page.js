@@ -146,6 +146,9 @@ export default function AdminDashboard() {
           <a href="/admin/fraud" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Fraud &amp; Abuse
           </a>
+          <a href="/admin/audit" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Audit Trail
+          </a>
           <a href="/admin/faucet" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Faucet
           </a>

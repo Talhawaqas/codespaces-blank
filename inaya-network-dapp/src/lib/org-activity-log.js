@@ -15,6 +15,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getOrgCollections, toObjectId } from "./orgs.js";
+import { appendAuditEntry } from "./auditChain.js";
 
 export async function logOrgActivity({ orgId, recordType, recordId, actorEmail, action, previousState, newState, metadata }) {
   const { orgActivity } = await getOrgCollections();
@@ -31,6 +32,16 @@ export async function logOrgActivity({ orgId, recordType, recordId, actorEmail, 
     metadata: metadata || {},
   };
   await orgActivity.insertOne(event);
+  // Best-effort: the human-readable event above is the record of truth for
+  // every existing caller/UI; the hash-chained copy is an additive
+  // integrity layer, so a chain-append failure (e.g. transient write
+  // contention exhausting retries) must never block the actual workflow
+  // transition that's already committed.
+  try {
+    await appendAuditEntry({ orgId, recordType, recordId, actorEmail, action, previousState, newState, metadata });
+  } catch (err) {
+    console.error("org-activity-log: audit chain append failed:", err.message);
+  }
   return event;
 }
 
