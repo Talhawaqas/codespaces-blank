@@ -41,6 +41,7 @@ import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
+import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
 
@@ -738,7 +739,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
     <>
       {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-[#090d16] border-r border-white/5 flex flex-col transition-transform duration-200 ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-[var(--inaya-surface)] border-r border-[var(--inaya-border)] flex flex-col transition-transform duration-200 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -820,7 +821,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)]">
       <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
           floating bubble/panel on top of that full page would be redundant. */}
@@ -836,17 +837,18 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       />
 
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-[#060913]/90 backdrop-blur border-b border-white/5 px-5 py-4 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 bg-[var(--inaya-bg)]/90 backdrop-blur border-b border-[var(--inaya-border)] px-5 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-slate-300 p-1">
               <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
             </button>
             <div className="min-w-0">
-              <h1 className="text-lg font-extrabold text-white tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
+              <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
               <p className="text-[#94a3b8] text-[13px] font-mono truncate">{email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeSwitcher />
             <a
               href="/docs/business-workspace-guide.md"
               download

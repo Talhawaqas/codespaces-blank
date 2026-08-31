@@ -2,6 +2,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
 
 // SEO note: og:image / twitter:image point at /public/og-banner.png,
@@ -75,7 +76,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col antialiased">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
         <Analytics />
         <SpeedInsights />
         <script

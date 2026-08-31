@@ -12,6 +12,7 @@ import NetworkVisualization from '../components/security/NetworkVisualization';
 import EmptyState from '../components/EmptyState';
 import AccentGraphic from '../components/AccentGraphic';
 import Skeleton from '../components/Skeleton';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
@@ -5133,6 +5134,7 @@ export default function Home() {
             <span className="hidden 2xl:inline-block text-[12px] ml-2 font-mono px-3 py-0.5 rounded-full font-bold border bg-cyan-500/10 text-[#00f2fe] border-[#00f2fe]/30">⚡ LOW-COST DEPIN DISRUPTOR PLATFORM</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-self-end">
+            <ThemeSwitcher />
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
