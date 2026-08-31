@@ -149,6 +149,9 @@ export default function AdminDashboard() {
           <a href="/admin/audit" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Audit Trail
           </a>
+          <a href="/admin/nodes" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Storage Nodes
+          </a>
           <a href="/admin/faucet" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Faucet
           </a>

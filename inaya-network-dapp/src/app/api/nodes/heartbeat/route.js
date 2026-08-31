@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongodb';
+import { computeUptimeScoreBps, HEARTBEAT_LOG_SIZE } from '../../../../lib/nodeReputation.js';
 
 export async function POST(request) {
   try {
-    const { nodeId, operatorWallet, usedCapacityGB, totalCapacityGB, shardsStored } = await request.json();
+    const {
+      nodeId, operatorWallet, usedCapacityGB, totalCapacityGB, shardsStored,
+      daemonVersion, uptimeSeconds, restartCount, lastErrorAt, lastErrorMessage,
+    } = await request.json();
     if (!nodeId) {
       return NextResponse.json({ success: false, error: 'nodeId is required.' }, { status: 400 });
     }
@@ -12,11 +16,32 @@ export async function POST(request) {
     const nodes = db.collection('nodes');
     const shardQueue = db.collection('shard_queue');
     const now = new Date();
+
+    // Phase 5 — append this beat to a capped rolling log so
+    // computeUptimeScoreBps() can measure real heartbeat regularity, not
+    // just "did the most recent one arrive." $push+$slice keeps this a
+    // single atomic write, same discipline as every other capped-array
+    // pattern in this codebase.
+    const existing = await nodes.findOne({ nodeId }, { projection: { heartbeatLog: 1 } });
+    const heartbeatLog = [...(existing?.heartbeatLog || []), now.toISOString()].slice(-HEARTBEAT_LOG_SIZE);
+    const uptimeScoreBps = computeUptimeScoreBps({ heartbeatLog, lastHeartbeatAt: now.toISOString() }, now.getTime());
+
     const updateFields = {
       usedCapacityGB: usedCapacityGB ?? 0,
       totalCapacityGB: totalCapacityGB ?? 0,
       shardsStored: shardsStored ?? 0,
       lastHeartbeatAt: now,
+      heartbeatLog,
+      uptimeScoreBps,
+      // Genuinely reported by the daemon itself (start.js/state.js) — never
+      // fabricated here if the daemon didn't send them (an older daemon
+      // version simply won't include these fields, and that's honest: we
+      // don't know its version/uptime, so we don't claim to).
+      daemonVersion: daemonVersion ?? null,
+      uptimeSeconds: typeof uptimeSeconds === 'number' ? uptimeSeconds : null,
+      restartCount: typeof restartCount === 'number' ? restartCount : null,
+      lastErrorAt: lastErrorAt ?? null,
+      lastErrorMessage: lastErrorMessage ?? null,
     };
     if (operatorWallet) updateFields.operatorWallet = operatorWallet.toLowerCase();
     await nodes.updateOne({ nodeId }, { $set: updateFields }, { upsert: true });
