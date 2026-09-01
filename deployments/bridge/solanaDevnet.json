@@ -5,5 +5,5 @@
   "programId": "76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn",
   "upgradeAuthority": "FF7HjxkCDzfCtPK8p41ELKNV4VZdKapUvTwZj9Y7TPAE",
   "cluster": "https://api.devnet.solana.com",
-  "notes": "Program binary deployed and verified live via `solana program show`. On-chain state (initialize/add_trusted_chain/set_home_addresses) not yet run -- home bridge/staking-gateway addresses and validator set still need wiring. anchor test not yet run."
+  "notes": "Program binary deployed and verified live via `solana program show`. On-chain state IS wired -- confirmed live 2026-08-31 by reading bridgeConfig directly: admin set, homeBridgeAddress/homeStakingGatewayAddress match this file's home bscTestnet.json bridge/stakingGateway addresses byte-for-byte, trustedChain(97).isActive=true, validatorSet holds BSC's real 3 validators at threshold 2, bridged-INAYA SPL mint exists. Wired by whoever holds upgradeAuthority above, not by this session's own wiring key. No end-to-end message send+execute proven yet. anchor test not yet run."
 }

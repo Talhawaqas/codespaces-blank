@@ -45,7 +45,13 @@ const CAPABILITY_OVERRIDES = {
   [CHAIN_IDS.SEPOLIA]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.STAKING },
   [CHAIN_IDS.FUJI]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.STAKING },
   [CHAIN_IDS.AMOY]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.DISCOVERED }, // configured, never deployed -- confirmed by the audit, not fabricated as more
-  [SOLANA_DEVNET_CHAIN_ID]: { family: CHAIN_FAMILIES.SOLANA, level: SUPPORT_LEVELS.WALLET }, // program deployed + wallet connects; NOT messaging/transfer -- on-chain wiring never run
+  [SOLANA_DEVNET_CHAIN_ID]: { family: CHAIN_FAMILIES.SOLANA, level: SUPPORT_LEVELS.MESSAGE }, // program IS wired on-chain (confirmed live 2026-08-31: bridgeConfig.admin set, homeBridgeAddress/
+  // homeStakingGatewayAddress match the real deployed BSC Testnet contracts byte-for-byte,
+  // trustedChain(97).isActive=true, validatorSet has BSC's real 3 validators at threshold 2, and
+  // a bridged-INAYA SPL mint exists) -- corrects an earlier claim of WALLET/"not yet wired" that
+  // was based on deployments/bridge/solanaDevnet.json's stale notes, not a live on-chain read.
+  // Still not TOKEN_TRANSFER: config supports messaging, but no real message has been sent and
+  // executed end-to-end yet, so that level isn't claimed until one actually is (see Phase 5).
 };
 
 /** @returns {{ chainId: number, family: string, level: number, levelLabel: string } | null} */

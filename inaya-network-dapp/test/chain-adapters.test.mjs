@@ -36,9 +36,9 @@ test("registry: Polygon Amoy is honestly DISCOVERED, not overclaimed as deployed
   assert.equal(cap.level, SUPPORT_LEVELS.DISCOVERED);
 });
 
-test("registry: Solana Devnet is WALLET level (program deployed, not wired) — not TOKEN_TRANSFER", () => {
+test("registry: Solana Devnet is MESSAGE level (program deployed AND wired on-chain, confirmed live) — not TOKEN_TRANSFER", () => {
   const cap = getChainCapability(SOLANA_DEVNET_CHAIN_ID);
-  assert.equal(cap.level, SUPPORT_LEVELS.WALLET);
+  assert.equal(cap.level, SUPPORT_LEVELS.MESSAGE);
   assert.equal(cap.family, "SOLANA");
 });
 
@@ -173,7 +173,7 @@ test("Regression: Solana Devnet program exists on-chain (binary deployed, matche
     return;
   }
   assert.equal(accountInfo.executable, true, "the bridge program account should be marked executable");
-  // Still only WALLET level -- program existing is not the same as being wired (initialize/
-  // add_trusted_chain/set_home_addresses never run). Never let a passing existence check imply more.
-  assert.equal(getChainCapability(SOLANA_DEVNET_CHAIN_ID).level, SUPPORT_LEVELS.WALLET);
+  // MESSAGE level, not higher -- config is wired (see registry.js's comment for the live-state
+  // evidence) but no real message has been sent+executed end-to-end yet.
+  assert.equal(getChainCapability(SOLANA_DEVNET_CHAIN_ID).level, SUPPORT_LEVELS.MESSAGE);
 });
