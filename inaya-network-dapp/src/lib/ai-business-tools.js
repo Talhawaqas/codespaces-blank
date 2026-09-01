@@ -48,6 +48,7 @@ import { EMPLOYMENT_STATES, EMPLOYEE_TRANSITIONS } from "./employee-workflow.js"
 import { TRANSITIONS as DOCUMENT_TRANSITIONS } from "./document-workflow.js";
 import { LEAVE_STATES } from "./leave-workflow.js";
 import { computeBusinessInsights } from "./business-insights.js";
+import { generateBusinessBrief, BRIEF_PERIODS } from "./business-brief.js";
 import { proposeAiAction } from "./ai-action-requests.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
@@ -488,6 +489,16 @@ async function getBusinessInsights(args, ctx) {
   const insights = await computeBusinessInsights({ orgId: ctx.orgId, membership: ctx.membership, email: ctx.email, periodDays: args?.periodDays });
   const { trends, ...rest } = insights;
   return rest;
+}
+
+/** includeNarrative:false — this tool's caller is ALREADY an outer Gemini
+ *  call generating a conversational reply from this data, so a second,
+ *  nested narrative call inside business-brief.js would be redundant
+ *  latency/cost for no benefit. The model narrates the real highlights
+ *  itself, same as it already does for get_business_insights. */
+async function getBusinessBrief(args, ctx) {
+  const period = args?.period && BRIEF_PERIODS[args.period] ? args.period : "weekly";
+  return generateBusinessBrief({ orgId: ctx.orgId, membership: ctx.membership, email: ctx.email, period, includeNarrative: false });
 }
 
 // ============================================================
@@ -1104,6 +1115,16 @@ export const BUSINESS_TOOL_DECLARATIONS = [
       },
     },
   },
+  {
+    name: "get_business_brief",
+    description: "Get a Daily, Weekly, Monthly, or Yearly business brief — real highlights (revenue, expenses, tasks completed, deals won, all compared to the equivalent previous period) plus current alerts. Use this for requests like \"give me my weekly brief\", \"what's my daily summary\", or \"how did this month go\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        period: { type: Type.STRING, enum: Object.keys(BRIEF_PERIODS), description: "Which brief to generate, default weekly." },
+      },
+    },
+  },
 ];
 
 const TOOL_IMPLEMENTATIONS = {
@@ -1125,6 +1146,7 @@ const TOOL_IMPLEMENTATIONS = {
   get_activity: getActivity,
   get_document_access: getDocumentAccess,
   get_business_insights: getBusinessInsights,
+  get_business_brief: getBusinessBrief,
   propose_task_status_change: proposeTaskStatusChange,
   propose_expense_decision: proposeExpenseDecision,
   propose_document_transition: proposeDocumentTransition,
@@ -1153,7 +1175,7 @@ If get_document_access returns permissionDenied, tell the user plainly that they
 
 Keep answers concise and concrete: reference actual filenames, department/project names, statuses, and dates from the tool results. Use plain language, not raw JSON. If a request is ambiguous (e.g. multiple documents match a name), ask a short clarifying question or list the candidates the tool returned.
 
-For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows.
+For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows. For a periodic recap ("give me my weekly brief", "daily summary", "how did this month go"), use get_business_brief instead — narrate its real highlights/alerts in your own words rather than just listing them back verbatim.
 
 For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request (uploading a file, sharing something, changing permissions, creating a new record, reassigning a task, sending an external communication, or anything with no matching propose_* tool above), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
 

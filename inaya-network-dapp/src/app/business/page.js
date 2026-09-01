@@ -42,6 +42,7 @@ import HRView from "../../components/business/HRView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
+import BriefView from "../../components/business/BriefView";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
@@ -718,6 +719,7 @@ ICONS.settings = (
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "insights", label: "Insights", icon: "insights" },
+  { key: "brief", label: "Brief", icon: "insights" },
   { key: "departments", label: "Departments", icon: "departments" },
   { key: "projects", label: "Projects", icon: "projects" },
   { key: "documents", label: "Documents", icon: "documents" },
@@ -807,6 +809,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const VIEW_TITLES = {
     dashboard: "Overview",
     insights: "Business Insights",
+    brief: "Business Brief",
     browse: "Company Records",
     tasks: "Tasks",
     crm: "CRM",
@@ -896,6 +899,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             <DashboardView orgId={orgId} canManage={canManage} onNavigate={navigate} />
           )}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
+          {activeView === "brief" && <BriefView orgId={orgId} />}
           {activeView === "browse" && (
             <OrgWorkspace
               key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}

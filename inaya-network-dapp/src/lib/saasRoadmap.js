@@ -53,6 +53,15 @@
 //     plus a dedicated AI tool (get_business_insights). Web + mobile
 //     (mobile has KPIs/alerts, no trend charts yet). See
 //     BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's not.
+//   - Stage 9 (AI-Powered Business Operations) moved from FUTURE to LIVE
+//     2026-09-01 — the AI can now propose real (never self-execute) changes
+//     across 9 domains, gated by the exact real permission the underlying
+//     action requires, a mandatory 36h delay, risk classification, proposal
+//     expiration, and a cryptographic audit trail with self-service export.
+//     19 automated tests, 11 of them adversarial security scenarios. See
+//     docs/ai-controlled-actions.md for the full breakdown, including what's
+//     explicitly still not covered (AI-driven record creation, task
+//     reassignment, transaction categorization, communication sending).
 
 export const ROADMAP_STATUS = {
   LIVE: "LIVE",
@@ -192,9 +201,14 @@ export const ROADMAP_STAGES = [
       "Integrated into the Business Workspace",
       "Available on web and mobile",
     ],
-    tools: ["list_documents", "list_departments", "list_projects", "get_activity", "get_document_access"],
+    tools: [
+      "list_documents", "list_departments", "list_projects", "list_tasks", "list_contacts",
+      "list_deals", "list_suppliers", "list_purchase_orders", "list_purchase_requests",
+      "list_products", "list_invoices", "list_expenses", "list_employees", "list_leave_requests",
+      "find_employee_document", "get_activity", "get_document_access", "get_business_insights",
+    ],
     notes:
-      "Live today in both the web and mobile Business Workspace, powered by the exact same permission-scoped tools on the backend.",
+      "Live today in both the web and mobile Business Workspace, powered by the exact same permission-scoped tools on the backend. Read-only here — for the AI's ability to propose real changes (never execute them directly), see Stage 9.",
   },
   {
     number: 5,
@@ -275,22 +289,29 @@ export const ROADMAP_STAGES = [
   {
     number: 9,
     title: "AI-Powered Business Operations",
-    status: ROADMAP_STATUS.FUTURE,
+    status: ROADMAP_STATUS.LIVE,
+    highlight: true,
     description:
-      "The long-term direction for AI in the Business Workspace: proposing actions, not just answering questions.",
+      "The AI Business Assistant can propose real changes across 9 business domains — it never executes anything itself. A human with the exact same real authority the underlying action would require must approve; the server independently re-validates that authority; a mandatory 36-hour delay passes; only then does the change execute — and every step is recorded in a tamper-evident, cryptographically verifiable audit trail.",
+    securityStatement: "AI recommends. Humans authorize. The server validates. The system executes. The audit trail remembers.",
     features: [
-      "AI workflow assistance",
-      "AI-generated reports",
-      "AI document summaries",
-      "AI task creation",
-      "AI workflow recommendations",
-      "AI-assisted procurement",
-      "AI-assisted CRM",
-      "AI-assisted finance",
-      "AI-assisted HR",
-      "Controlled AI actions",
+      "Guarded task status changes",
+      "Guarded expense decisions",
+      "Guarded document workflow transitions",
+      "Guarded employee status changes",
+      "Guarded invoice actions",
+      "Guarded leave request decisions",
+      "Guarded purchase order transitions",
+      "Guarded purchase request transitions",
+      "Guarded CRM deal pipeline moves",
+      "Risk classification (LOW / MEDIUM / HIGH)",
+      "Proposal expiration for unreviewed requests",
+      "36-hour mandatory delay after approval",
+      "Cryptographically hash-chained, tamper-evident audit trail",
+      "Self-service, independently verifiable audit export (JSON / CSV)",
     ],
-    securityStatement: "AI proposes → User confirms → Server validates permissions → Action executes → Activity log records it",
+    notes:
+      "Real and shipped across 9 domains, covered by 19 automated tests including 11 adversarial security scenarios (forged approval, cross-tenant access, replay, expired-proposal execution, prompt injection, and more — all fail safely). Explicitly not yet covered: AI-driven record creation (a new task/contact/etc.), task reassignment, transaction categorization, and drafting/sending customer communications — none of these exist anywhere in the app yet, gated or not, so there's nothing yet to guard. See docs/ai-controlled-actions.md for the full phase-by-phase breakdown.",
   },
 ];
 
