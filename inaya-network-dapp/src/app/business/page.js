@@ -310,7 +310,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
               Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
             </p>
           </div>
-          <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10 shrink-0">
+          <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] shrink-0">
             Sign out
           </button>
         </div>
@@ -441,7 +441,7 @@ function AuthScreen({ notice, onAuthed }) {
 
         {notice && <div className="bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs rounded-lg p-3 mb-4">{notice}</div>}
 
-        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 mb-6">
+        <div className="flex bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-xl p-1 mb-6">
           <button onClick={() => setMode("signin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "signin" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Sign in</button>
           <button onClick={() => setMode("create")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg ${mode === "create" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Create a company</button>
         </div>
@@ -450,17 +450,17 @@ function AuthScreen({ notice, onAuthed }) {
         {googleError && <p className="text-red-400 text-xs text-center mb-3">{googleError}</p>}
         {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-[var(--inaya-overlay-10)]" />
             <span className="text-[12px] text-[#8a96ab] uppercase font-bold">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-[var(--inaya-overlay-10)]" />
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "create" && (
-            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           )}
-          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
             {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
           </button>
@@ -469,7 +469,7 @@ function AuthScreen({ notice, onAuthed }) {
         {error && <p className="text-red-400 text-xs mt-4">{error}</p>}
         {message && <p className="text-emerald-400 text-xs mt-4">{message}</p>}
         {fallbackUrl && (
-          <div className="mt-3 bg-black/20 border border-white/10 rounded-xl p-4">
+          <div className="mt-3 bg-black/20 border border-[var(--inaya-overlay-10)] rounded-xl p-4">
             <p className="text-slate-400 text-xs mb-2">Email delivery isn't fully set up yet — use this link directly:</p>
             <a href={fallbackUrl} className="text-[#00f2fe] underline text-xs break-all">{fallbackUrl}</a>
           </div>
@@ -478,13 +478,13 @@ function AuthScreen({ notice, onAuthed }) {
         <a
           href="/docs/business-workspace-guide.md"
           download
-          className="mt-8 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+          className="mt-8 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-[var(--inaya-overlay-10)] hover:border-[#00f2fe]/30 rounded-xl py-2.5"
         >
           <span aria-hidden>↓</span> Download the step-by-step setup guide
         </a>
         <a
           href="/business/download"
-          className="mt-2 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-white/10 hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+          className="mt-2 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-[var(--inaya-overlay-10)] hover:border-[#00f2fe]/30 rounded-xl py-2.5"
         >
           <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
         </a>
@@ -558,7 +558,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           onChange={(e) => setOrgName(e.target.value)}
           required
           placeholder="Company name"
-          className="w-full bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
+          className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
         />
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -743,7 +743,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="px-5 py-6 border-b border-white/5">
+        <div className="px-5 py-6 border-b border-[var(--inaya-overlay-5)]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center shrink-0">
               <span className="text-black font-extrabold text-sm">I</span>
@@ -753,7 +753,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
               <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono uppercase tracking-wide">Business Workspace</p>
             </div>
           </div>
-          <div className="mt-4 bg-black/30 border border-white/5 rounded-lg px-3 py-2">
+          <div className="mt-4 bg-black/30 border border-[var(--inaya-overlay-5)] rounded-lg px-3 py-2">
             <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{orgName}</p>
             <p className="text-[#00f2fe] text-[12px] font-mono uppercase tracking-wide mt-0.5">{ROLE_LABELS[role] || role}</p>
           </div>
@@ -765,7 +765,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
               key={item.key}
               onClick={() => onNavigate(item.key)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-muted)] hover:bg-white/5 hover:text-slate-200"
+                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-muted)] hover:bg-[var(--inaya-overlay-5)] hover:text-slate-200"
               }`}
             >
               <Icon path={ICONS[item.icon]} />
@@ -875,14 +875,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <select
                 value={selectedOrgId || ""}
                 onChange={(e) => onSwitchOrg(e.target.value)}
-                className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]"
+                className="bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]"
               >
                 {orgs.map((o) => (
                   <option key={o.orgId} value={o.orgId}>{o.orgName}</option>
                 ))}
               </select>
             )}
-            <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10">
+            <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
               Sign out
             </button>
           </div>
@@ -925,7 +925,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 // DASHBOARD — overview cards + recent departments/projects/documents.
 // ============================================================
 const STATUS_STYLES = {
-  DRAFT: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
+  DRAFT: "bg-[var(--inaya-overlay-5)] text-[var(--inaya-text-muted)] border-[var(--inaya-overlay-10)]",
   PENDING: "bg-amber-400/10 text-amber-400 border-amber-400/30",
   UNDER_REVIEW: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
@@ -935,7 +935,7 @@ const STATUS_STYLES = {
 
 function StatCard({ icon, label, value, sub }) {
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex items-center gap-4">
       <div className="w-11 h-11 rounded-xl bg-[#00f2fe]/10 flex items-center justify-center shrink-0">
         <Icon path={ICONS[icon]} className="w-5 h-5 text-[#00f2fe]" />
       </div>
@@ -950,7 +950,7 @@ function StatCard({ icon, label, value, sub }) {
 
 function DashboardCard({ title, onViewAll, children }) {
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{title}</h3>
         {onViewAll && (
@@ -990,7 +990,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
           the desktop app itself, same reasoning as not showing "Explore"
           for a product you're already in. */}
       {!isDesktopApp && (
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inaya-fade-in-up">
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-[var(--inaya-overlay-10)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inaya-fade-in-up">
           <div className="pointer-events-none absolute -right-6 -top-6 opacity-40 hidden sm:block" aria-hidden="true">
             <AccentGraphic variant="business" size={120} />
           </div>
@@ -1033,7 +1033,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
               <button
                 key={d.id}
                 onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-left"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
               >
                 <span className="text-[var(--inaya-text-primary)] text-xs truncate">{d.filename}</span>
                 <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
@@ -1053,9 +1053,9 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 <button
                   key={d.id}
                   onClick={() => onNavigate("projects", { deptId: d.id })}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--inaya-overlay-5)] flex items-center justify-center shrink-0">
                     <Icon path={ICONS.departments} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -1077,7 +1077,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 <button
                   key={p.id}
                   onClick={() => onNavigate("documents", { deptId: p.departmentId, projectId: p.id })}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
                 >
                   <div className="min-w-0">
                     <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{p.name}</p>
@@ -1102,9 +1102,9 @@ function DashboardView({ orgId, canManage, onNavigate }) {
               <button
                 key={d.id}
                 onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[var(--inaya-overlay-5)] flex items-center justify-center shrink-0">
                   <Icon path={ICONS.documents} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1193,7 +1193,7 @@ function ApprovalsView({ orgId, onNavigate }) {
   const selectableIds = data.filter((d) => d.status === "UNDER_REVIEW").map((d) => d.id);
 
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">Documents awaiting your review</h3>
         {selected.size > 0 && (
@@ -1211,7 +1211,7 @@ function ApprovalsView({ orgId, onNavigate }) {
       ) : (
         <div className="space-y-2">
           {data.map((d) => (
-            <div key={d.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
+            <div key={d.id} className="flex items-center justify-between gap-3 bg-black/20 border border-[var(--inaya-overlay-5)] rounded-lg p-3">
               <div className="flex items-center gap-2 min-w-0">
                 {d.status === "UNDER_REVIEW" && (
                   <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleSelected(d.id)} className="shrink-0" />
@@ -1281,7 +1281,7 @@ function ActivityView({ orgId }) {
   const capped = activity.slice(0, ACTIVITY_FEED_CAP);
 
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Recent activity</h3>
       {activity.length === 0 ? (
         <EmptyState compact icon="📜" description="No activity recorded yet — actions on documents in this org will show up here." />
@@ -1289,7 +1289,7 @@ function ActivityView({ orgId }) {
         <div className="space-y-2.5">
           {activity.length > ACTIVITY_FEED_CAP && <p className="text-[11px] font-mono text-[#8a96ab]">Showing latest {ACTIVITY_FEED_CAP} of {activity.length}.</p>}
           {capped.map((e) => (
-            <div key={e.eventId} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
+            <div key={e.eventId} className="text-xs border-b border-[var(--inaya-overlay-5)] pb-2.5 last:border-0 last:pb-0">
               <span className="text-[var(--inaya-text-primary)] font-bold">{e.filename}</span>
               <span className="text-[var(--inaya-text-muted)]"> · {e.action}</span>
               {e.previousState && <span className="text-[var(--inaya-text-muted)] font-mono"> · {e.previousState} → {e.newState}</span>}
@@ -1347,13 +1347,13 @@ function AIAssistantView({ orgId }) {
   }
 
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "bg-[#00f2fe]/15 text-[var(--inaya-text-primary)]" : "bg-white/5 text-[var(--inaya-text-primary)]"
+                m.role === "user" ? "bg-[#00f2fe]/15 text-[var(--inaya-text-primary)]" : "bg-[var(--inaya-overlay-5)] text-[var(--inaya-text-primary)]"
               }`}
             >
               {m.content}
@@ -1362,15 +1362,15 @@ function AIAssistantView({ orgId }) {
         ))}
         {sending && (
           <div className="flex justify-start">
-            <div className="bg-white/5 text-[var(--inaya-text-muted)] rounded-2xl px-4 py-2.5 text-sm italic">Thinking…</div>
+            <div className="bg-[var(--inaya-overlay-5)] text-[var(--inaya-text-muted)] rounded-2xl px-4 py-2.5 text-sm italic">Thinking…</div>
           </div>
         )}
       </div>
 
       {messages.length <= 1 && (
-        <div className="flex flex-wrap gap-2 py-3 border-t border-white/5 mt-3">
+        <div className="flex flex-wrap gap-2 py-3 border-t border-[var(--inaya-overlay-5)] mt-3">
           {AI_SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => send(s)} className="text-[12px] text-[var(--inaya-text-primary)] bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+            <button key={s} onClick={() => send(s)} className="text-[12px] text-[var(--inaya-text-primary)] bg-[var(--inaya-overlay-5)] hover:bg-[var(--inaya-overlay-10)] border border-[var(--inaya-overlay-10)] rounded-full px-3 py-1.5">
               {s}
             </button>
           ))}
@@ -1379,14 +1379,14 @@ function AIAssistantView({ orgId }) {
 
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
 
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--inaya-overlay-5)]">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Ask about your company's documents, approvals, or activity…"
           disabled={sending}
-          className="flex-1 bg-black/45 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
+          className="flex-1 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
         />
         <button
           onClick={() => send()}
@@ -1523,7 +1523,7 @@ function OrgWorkspace({ orgId, departmentIds, canManage, initialDeptId, initialP
 
 function Column({ title, children, action }) {
   return (
-    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{title}</h3>
         {action}
@@ -1555,7 +1555,7 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
     <Column title="Departments" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finance" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finance" autoFocus className="flex-1 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
@@ -1565,7 +1565,7 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
       ) : (
         <div className="space-y-1">
           {departments.map((d) => (
-            <button key={d.id} onClick={() => onSelect(d.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedDeptId === d.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-white/5"}`}>
+            <button key={d.id} onClick={() => onSelect(d.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedDeptId === d.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-5)]"}`}>
               {d.name}
             </button>
           ))}
@@ -1597,7 +1597,7 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
     <Column title="Projects" action={canManage && <button onClick={() => setCreating((v) => !v)} className="text-[12px] font-bold text-[#00f2fe]">+ New</button>}>
       {creating && (
         <form onSubmit={handleCreate} className="mb-3 flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Q3 Audit" autoFocus className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Q3 Audit" autoFocus className="flex-1 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           <button className="text-[12px] font-bold text-[#00f2fe] bg-[#00f2fe]/10 px-2 rounded-lg">Add</button>
         </form>
       )}
@@ -1607,7 +1607,7 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
       ) : (
         <div className="space-y-1">
           {projects.map((p) => (
-            <button key={p.id} onClick={() => onSelect(p.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedProjectId === p.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-white/5"}`}>
+            <button key={p.id} onClick={() => onSelect(p.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedProjectId === p.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-5)]"}`}>
               {p.name}
             </button>
           ))}
@@ -1675,8 +1675,8 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
     <Column title="Documents">
       <form onSubmit={handleUpload} className="mb-4 space-y-2">
         <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[12px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
-        <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-        <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]">
+        <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+        <select value={accessLevel} onChange={(e) => setAccessLevel(e.target.value)} className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]">
           <option value="PRIVATE">Private</option>
           <option value="DEPARTMENT">Department</option>
           <option value="PROJECT">Project</option>
@@ -1775,7 +1775,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
   }
 
   return (
-    <div className="bg-black/20 border border-white/5 rounded-lg p-2.5">
+    <div className="bg-black/20 border border-[var(--inaya-overlay-5)] rounded-lg p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-xs text-[var(--inaya-text-primary)] truncate">{doc.filename}</div>
@@ -1796,7 +1796,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               key={action}
               onConfirm={() => handleAction(action)}
               disabled={!!acting}
-              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
             >
               {acting === action ? "…" : label}
             </ConfirmButton>
@@ -1805,21 +1805,21 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               key={action}
               onClick={() => handleAction(action)}
               disabled={!!acting}
-              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
             >
               {acting === action ? "…" : label}
             </button>
           )
         )}
-        <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
+        <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
           Download
         </button>
         {canManageThisDoc && (
           <>
-            <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
+            <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
               Permissions
             </button>
-            <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
+            <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
               Share
             </button>
           </>
@@ -1832,13 +1832,13 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       {error && <p className="text-red-400 text-[12px] mt-1.5">{error}</p>}
 
       {showDownload && (
-        <div className="mt-2 border-t border-white/5 pt-2 flex gap-2">
+        <div className="mt-2 border-t border-[var(--inaya-overlay-5)] pt-2 flex gap-2">
           <input
             type="password"
             value={downloadPasskey}
             onChange={(e) => setDownloadPasskey(e.target.value)}
             placeholder="Encryption passkey"
-            className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]"
+            className="flex-1 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]"
           />
           <button onClick={handleDownload} disabled={downloading || !downloadPasskey} className="text-[11px] font-bold uppercase px-3 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
             {downloading ? "…" : "Go"}
@@ -1850,7 +1850,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
       {showShare && <SharePanel documentId={doc.id} orgId={orgId} />}
 
       {showActivity && (
-        <div className="mt-2 border-t border-white/5 pt-2 space-y-1">
+        <div className="mt-2 border-t border-[var(--inaya-overlay-5)] pt-2 space-y-1">
           {loadingActivity ? (
             <p className="text-[#8a96ab] text-[12px] italic">Loading…</p>
           ) : activity && activity.length > 0 ? (
@@ -1928,7 +1928,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
   }
 
   return (
-    <div className="mt-2 border-t border-white/5 pt-2">
+    <div className="mt-2 border-t border-[var(--inaya-overlay-5)] pt-2">
       <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)] mb-1.5">People with access</p>
       <div className="flex items-center justify-between text-[12px] py-1">
         <span className="text-[var(--inaya-text-primary)] truncate">{ownerEmail}</span>
@@ -1941,7 +1941,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
           <div key={g.email} className="flex items-center justify-between gap-2 text-[12px] py-1">
             <span className="text-[var(--inaya-text-primary)] truncate">{g.email}</span>
             <div className="flex items-center gap-1 shrink-0">
-              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[11px] text-[var(--inaya-text-primary)]">
+              <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-[var(--inaya-overlay-15)] rounded px-1 py-0.5 text-[11px] text-[var(--inaya-text-primary)]">
                 <option value="VIEW">View</option>
                 <option value="EDIT">Edit</option>
                 <option value="MANAGE">Manage</option>
@@ -1952,8 +1952,8 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
         ))
       )}
       <form onSubmit={handleAdd} className="flex items-center gap-1.5 mt-2">
-        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
-        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-1 text-[11px] text-[var(--inaya-text-primary)]">
+        <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} type="email" required placeholder="Add person by email" className="flex-1 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
+        <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-black/45 border border-[var(--inaya-overlay-15)] rounded px-1 py-1 text-[11px] text-[var(--inaya-text-primary)]">
           <option value="VIEW">View</option>
           <option value="EDIT">Edit</option>
           <option value="MANAGE">Manage</option>
@@ -2017,23 +2017,23 @@ function SharePanel({ documentId, orgId }) {
   }
 
   return (
-    <div className="mt-2 border-t border-white/5 pt-2">
+    <div className="mt-2 border-t border-[var(--inaya-overlay-5)] pt-2">
       <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)] mb-1.5">Secure sharing</p>
       <form onSubmit={handleCreate} className="flex items-center gap-1.5">
-        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-white/15 rounded px-1.5 py-1 text-[11px] text-[var(--inaya-text-primary)]">
+        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="bg-black/45 border border-[var(--inaya-overlay-15)] rounded px-1.5 py-1 text-[11px] text-[var(--inaya-text-primary)]">
           <option value="1h">Expires in 1 hour</option>
           <option value="24h">Expires in 24 hours</option>
           <option value="7d">Expires in 7 days</option>
           <option value="30d">Expires in 30 days</option>
         </select>
-        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
+        <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} type="number" min="1" placeholder="Max uses (optional)" className="w-28 bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1 text-[12px] text-[var(--inaya-text-primary)]" />
         <button disabled={creating} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
           {creating ? "…" : "Create link"}
         </button>
       </form>
 
       {newShareUrl && (
-        <div className="mt-2 bg-black/20 border border-white/10 rounded-lg p-2">
+        <div className="mt-2 bg-black/20 border border-[var(--inaya-overlay-10)] rounded-lg p-2">
           <p className="text-[11px] text-[var(--inaya-text-muted)] mb-1">Share this link — it won't be shown again:</p>
           <p className="text-[12px] text-[#00f2fe] break-all font-mono">{newShareUrl}</p>
         </div>
@@ -2140,7 +2140,7 @@ function BillingView({ orgId, canManage }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
             <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Current plan</p>
@@ -2156,7 +2156,7 @@ function BillingView({ orgId, canManage }) {
             <button
               onClick={handlePortal}
               disabled={portalLoading}
-              className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
+              className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
             >
               {portalLoading ? "Opening…" : "Manage billing"}
             </button>
@@ -2270,11 +2270,11 @@ function TeamView({ orgId, email }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Invite someone</h3>
         <form onSubmit={handleInvite} className="space-y-3">
-          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required type="email" placeholder="colleague@company.com" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]">
+          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required type="email" placeholder="colleague@company.com" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
+          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]">
             <option value="member">Member</option>
             <option value="admin">Admin</option>
           </select>
@@ -2282,7 +2282,7 @@ function TeamView({ orgId, email }) {
             <p className="text-[12px] text-[var(--inaya-text-muted)] uppercase mb-1.5">Departments</p>
             <div className="flex flex-wrap gap-1.5">
               {departments.map((d) => (
-                <button type="button" key={d.id} onClick={() => toggleDept(d.id)} className={`text-[12px] px-2.5 py-1 rounded-full border ${inviteDeptIds.includes(d.id) ? "bg-[#00f2fe]/15 border-[#00f2fe]/40 text-[#00f2fe]" : "border-white/10 text-slate-400"}`}>
+                <button type="button" key={d.id} onClick={() => toggleDept(d.id)} className={`text-[12px] px-2.5 py-1 rounded-full border ${inviteDeptIds.includes(d.id) ? "bg-[#00f2fe]/15 border-[#00f2fe]/40 text-[#00f2fe]" : "border-[var(--inaya-overlay-10)] text-slate-400"}`}>
                   {d.name}
                 </button>
               ))}
@@ -2294,18 +2294,18 @@ function TeamView({ orgId, email }) {
         </form>
         {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
         {inviteResult && (
-          <div className="mt-3 bg-black/20 border border-white/10 rounded-lg p-3">
+          <div className="mt-3 bg-black/20 border border-[var(--inaya-overlay-10)] rounded-lg p-3">
             <p className="text-slate-400 text-xs mb-1">{inviteResult.emailSent ? "Invite emailed." : "Share this invite link:"}</p>
             <a href={inviteResult.inviteUrl} className="text-[#00f2fe] underline text-[12px] break-all">{inviteResult.inviteUrl}</a>
           </div>
         )}
       </div>
 
-      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-4">Members</h3>
 
         {ownMembership && (ownMembership.role === "owner" || ownMembership.role === "admin") && (
-          <div className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 mb-3">
+          <div className="flex items-center justify-between gap-3 bg-black/20 border border-[var(--inaya-overlay-5)] rounded-lg p-3 mb-3">
             <div className="min-w-0">
               <p className="text-xs text-[var(--inaya-text-primary)]">Email me when something needs my approval</p>
               <p className="text-[12px] text-[var(--inaya-text-muted)] mt-0.5">Sent the moment a document is submitted — you can turn this off if it's too noisy.</p>
@@ -2313,7 +2313,7 @@ function TeamView({ orgId, email }) {
             <button
               onClick={() => handleToggleNotify(!ownMembership.notifyOnApprovals)}
               disabled={savingNotifyPref}
-              className={`shrink-0 relative w-10 h-6 rounded-full transition-colors disabled:opacity-40 ${ownMembership.notifyOnApprovals ? "bg-[#00f2fe]/60" : "bg-white/10"}`}
+              className={`shrink-0 relative w-10 h-6 rounded-full transition-colors disabled:opacity-40 ${ownMembership.notifyOnApprovals ? "bg-[#00f2fe]/60" : "bg-[var(--inaya-overlay-10)]"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${ownMembership.notifyOnApprovals ? "translate-x-[18px]" : "translate-x-0.5"}`} />
             </button>
@@ -2322,7 +2322,7 @@ function TeamView({ orgId, email }) {
 
         <div className="space-y-2">
           {members.map((m) => (
-            <div key={m.email} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg p-2.5">
+            <div key={m.email} className="flex items-center justify-between bg-black/20 border border-[var(--inaya-overlay-5)] rounded-lg p-2.5">
               <div className="min-w-0">
                 <div className="text-xs text-[var(--inaya-text-primary)] truncate">{m.email}</div>
                 <div className="text-[12px] text-[var(--inaya-text-muted)] font-mono">{ROLE_LABELS[m.role]} · {m.status === "active" ? "Active" : "Invited"}</div>

@@ -19,6 +19,19 @@
 
 export const THEMES = ["white", "dark", "neon"];
 
+// The "white" key is kept as-is for backward compatibility (anyone with `inaya_theme: "white"`
+// already in localStorage must keep resolving to a valid theme, not silently fall back to dark)
+// even though the palette it now points to isn't literally white anymore -- see THEME_LABELS.
+//
+// Every theme also defines --inaya-overlay-{5,10,15}: theme-aware replacements for the ~50+
+// hardcoded `bg-white/5`, `hover:bg-white/10`, `border-white/15`-style Tailwind classes used
+// throughout the Business Workspace for hover states, subtle icon-container backgrounds, and
+// borders. Those were fixed at a WHITE tint, which reads fine against the dark/neon surfaces
+// they were designed for but is nearly invisible against a light one -- rows, icon containers,
+// and dividers all but disappear, which is the real, structural reason the white theme reads as
+// "broken," not (only) a plain color-contrast problem. dark/neon's overlay values below are the
+// exact literal rgba(255,255,255,...) values already in use, so adopting the token changes
+// nothing visually for those two themes.
 export const THEME_TOKENS = {
   dark: {
     "--inaya-bg": "#060913",
@@ -29,16 +42,26 @@ export const THEME_TOKENS = {
     "--inaya-text-primary": "#e2e8f0",
     "--inaya-text-muted": "#94a3b8",
     "--inaya-border": "rgba(255,255,255,0.08)",
+    "--inaya-overlay-5": "rgba(255,255,255,0.05)",
+    "--inaya-overlay-10": "rgba(255,255,255,0.10)",
+    "--inaya-overlay-15": "rgba(255,255,255,0.15)",
   },
+  // Replaces the old stark white/near-black pairing (#f4f6fb bg, #ffffff cards, #0284c7 accent)
+  // with a warm ivory/paper base, white cards for a real sense of elevation against it, and a
+  // deeper, more considered teal accent -- still clearly "the light theme," but designed rather
+  // than a flat inversion of dark.
   white: {
-    "--inaya-bg": "#f4f6fb",
+    "--inaya-bg": "#f6f3ec",
     "--inaya-surface": "#ffffff",
-    "--inaya-surface-2": "#eef1f8",
-    "--inaya-accent": "#0284c7",
-    "--inaya-accent-2": "#0ea5e9",
-    "--inaya-text-primary": "#0f172a",
-    "--inaya-text-muted": "#64748b",
-    "--inaya-border": "rgba(15,23,42,0.10)",
+    "--inaya-surface-2": "#efe9dc",
+    "--inaya-accent": "#0e7490",
+    "--inaya-accent-2": "#0891b2",
+    "--inaya-text-primary": "#1c1917",
+    "--inaya-text-muted": "#78716c",
+    "--inaya-border": "rgba(28,25,23,0.10)",
+    "--inaya-overlay-5": "rgba(28,25,23,0.04)",
+    "--inaya-overlay-10": "rgba(28,25,23,0.07)",
+    "--inaya-overlay-15": "rgba(28,25,23,0.11)",
   },
   neon: {
     "--inaya-bg": "#050014",
@@ -49,10 +72,15 @@ export const THEME_TOKENS = {
     "--inaya-text-primary": "#f5f3ff",
     "--inaya-text-muted": "#b8a9e0",
     "--inaya-border": "rgba(255,0,229,0.25)",
+    "--inaya-overlay-5": "rgba(255,255,255,0.05)",
+    "--inaya-overlay-10": "rgba(255,255,255,0.10)",
+    "--inaya-overlay-15": "rgba(255,255,255,0.15)",
   },
 };
 
-export const THEME_LABELS = { white: "White", dark: "Dark", neon: "Neon" };
+// Label updated from "White" to "Light" -- the palette itself no longer is one, see the module
+// comment above. The stored/matched key stays "white" so existing saved preferences keep working.
+export const THEME_LABELS = { white: "Light", dark: "Dark", neon: "Neon" };
 
 export const THEME_STORAGE_KEY = "inaya_theme";
 
