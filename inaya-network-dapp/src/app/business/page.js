@@ -310,7 +310,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
               Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
             </p>
           </div>
-          <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 shrink-0">
+          <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10 shrink-0">
             Sign out
           </button>
         </div>
@@ -754,7 +754,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
             </div>
           </div>
           <div className="mt-4 bg-black/30 border border-white/5 rounded-lg px-3 py-2">
-            <p className="text-slate-200 text-xs font-bold truncate">{orgName}</p>
+            <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{orgName}</p>
             <p className="text-[#00f2fe] text-[12px] font-mono uppercase tracking-wide mt-0.5">{ROLE_LABELS[role] || role}</p>
           </div>
         </div>
@@ -839,7 +839,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       <div className="flex-1 min-w-0">
         <header className="sticky top-0 z-30 bg-[var(--inaya-bg)]/90 backdrop-blur border-b border-[var(--inaya-border)] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-slate-300 p-1">
+            <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-[var(--inaya-text-primary)] p-1">
               <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
             </button>
             <div className="min-w-0">
@@ -882,7 +882,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
                 ))}
               </select>
             )}
-            <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10">
+            <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10">
               Sign out
             </button>
           </div>
@@ -1035,7 +1035,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                 onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-left"
               >
-                <span className="text-slate-300 text-xs truncate">{d.filename}</span>
+                <span className="text-[var(--inaya-text-primary)] text-xs truncate">{d.filename}</span>
                 <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
               </button>
             ))}
@@ -1059,7 +1059,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                     <Icon path={ICONS.departments} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-slate-200 text-xs font-bold truncate">{d.name}</p>
+                    <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{d.name}</p>
                     <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
                   </div>
                 </button>
@@ -1080,7 +1080,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                   className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left"
                 >
                   <div className="min-w-0">
-                    <p className="text-slate-200 text-xs font-bold truncate">{p.name}</p>
+                    <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{p.name}</p>
                     <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
                   </div>
                   <span className="flex items-center gap-1 text-[11px] font-bold uppercase text-emerald-400 shrink-0">
@@ -1108,7 +1108,7 @@ function DashboardView({ orgId, canManage, onNavigate }) {
                   <Icon path={ICONS.documents} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-slate-200 text-xs font-bold truncate">{d.filename}</p>
+                  <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{d.filename}</p>
                   <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
@@ -1290,7 +1290,7 @@ function ActivityView({ orgId }) {
           {activity.length > ACTIVITY_FEED_CAP && <p className="text-[11px] font-mono text-[#8a96ab]">Showing latest {ACTIVITY_FEED_CAP} of {activity.length}.</p>}
           {capped.map((e) => (
             <div key={e.eventId} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-              <span className="text-slate-200 font-bold">{e.filename}</span>
+              <span className="text-[var(--inaya-text-primary)] font-bold">{e.filename}</span>
               <span className="text-[var(--inaya-text-muted)]"> · {e.action}</span>
               {e.previousState && <span className="text-[var(--inaya-text-muted)] font-mono"> · {e.previousState} → {e.newState}</span>}
               <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">
@@ -1353,7 +1353,7 @@ function AIAssistantView({ orgId }) {
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "bg-[#00f2fe]/15 text-[var(--inaya-text-primary)]" : "bg-white/5 text-slate-200"
+                m.role === "user" ? "bg-[#00f2fe]/15 text-[var(--inaya-text-primary)]" : "bg-white/5 text-[var(--inaya-text-primary)]"
               }`}
             >
               {m.content}
@@ -1370,7 +1370,7 @@ function AIAssistantView({ orgId }) {
       {messages.length <= 1 && (
         <div className="flex flex-wrap gap-2 py-3 border-t border-white/5 mt-3">
           {AI_SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => send(s)} className="text-[12px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+            <button key={s} onClick={() => send(s)} className="text-[12px] text-[var(--inaya-text-primary)] bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
               {s}
             </button>
           ))}
@@ -1565,7 +1565,7 @@ function DepartmentColumn({ orgId, departments, selectedDeptId, onSelect, canMan
       ) : (
         <div className="space-y-1">
           {departments.map((d) => (
-            <button key={d.id} onClick={() => onSelect(d.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedDeptId === d.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-slate-300 hover:bg-white/5"}`}>
+            <button key={d.id} onClick={() => onSelect(d.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedDeptId === d.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-white/5"}`}>
               {d.name}
             </button>
           ))}
@@ -1607,7 +1607,7 @@ function ProjectColumn({ orgId, departmentId, projects, selectedProjectId, onSel
       ) : (
         <div className="space-y-1">
           {projects.map((p) => (
-            <button key={p.id} onClick={() => onSelect(p.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedProjectId === p.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-slate-300 hover:bg-white/5"}`}>
+            <button key={p.id} onClick={() => onSelect(p.id)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedProjectId === p.id ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-primary)] hover:bg-white/5"}`}>
               {p.name}
             </button>
           ))}
@@ -1796,7 +1796,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               key={action}
               onConfirm={() => handleAction(action)}
               disabled={!!acting}
-              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
             >
               {acting === action ? "…" : label}
             </ConfirmButton>
@@ -1805,21 +1805,21 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
               key={action}
               onClick={() => handleAction(action)}
               disabled={!!acting}
-              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+              className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
             >
               {acting === action ? "…" : label}
             </button>
           )
         )}
-        <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+        <button onClick={() => setShowDownload((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
           Download
         </button>
         {canManageThisDoc && (
           <>
-            <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+            <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
               Permissions
             </button>
-            <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
+            <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10">
               Share
             </button>
           </>
@@ -1856,7 +1856,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
           ) : activity && activity.length > 0 ? (
             activity.map((e) => (
               <div key={e.eventId} className="text-[12px] font-mono text-[var(--inaya-text-muted)]">
-                <span className="text-slate-300">{e.action}</span>
+                <span className="text-[var(--inaya-text-primary)]">{e.action}</span>
                 {e.previousState && <span> · {e.previousState} → {e.newState}</span>}
                 <span> · {e.actorId} · {new Date(e.timestamp).toLocaleString()}</span>
                 {e.metadata?.note && <span className="italic"> — "{e.metadata.note}"</span>}
@@ -1931,7 +1931,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
     <div className="mt-2 border-t border-white/5 pt-2">
       <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)] mb-1.5">People with access</p>
       <div className="flex items-center justify-between text-[12px] py-1">
-        <span className="text-slate-300 truncate">{ownerEmail}</span>
+        <span className="text-[var(--inaya-text-primary)] truncate">{ownerEmail}</span>
         <span className="text-[var(--inaya-text-muted)] font-mono">Owner</span>
       </div>
       {grants === null ? (
@@ -1939,7 +1939,7 @@ function PermissionsPanel({ documentId, orgId, ownerEmail }) {
       ) : (
         grants.map((g) => (
           <div key={g.email} className="flex items-center justify-between gap-2 text-[12px] py-1">
-            <span className="text-slate-300 truncate">{g.email}</span>
+            <span className="text-[var(--inaya-text-primary)] truncate">{g.email}</span>
             <div className="flex items-center gap-1 shrink-0">
               <select value={g.level} onChange={(e) => handleChange(g.email, e.target.value)} className="bg-black/45 border border-white/15 rounded px-1 py-0.5 text-[11px] text-[var(--inaya-text-primary)]">
                 <option value="VIEW">View</option>
@@ -2049,7 +2049,7 @@ function SharePanel({ documentId, orgId }) {
         ) : (
           shares.map((s) => (
             <div key={s.shareId} className="flex items-center justify-between gap-2 text-[12px] bg-black/20 rounded px-2 py-1">
-              <span className="text-slate-300">
+              <span className="text-[var(--inaya-text-primary)]">
                 {s.status} · {s.useCount}{s.maxUses !== null ? `/${s.maxUses}` : ""} uses · expires {new Date(s.expiresAt).toLocaleString()}
               </span>
               {s.status === "active" && (
@@ -2156,7 +2156,7 @@ function BillingView({ orgId, canManage }) {
             <button
               onClick={handlePortal}
               disabled={portalLoading}
-              className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40"
+              className="text-[12px] font-bold uppercase bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
             >
               {portalLoading ? "Opening…" : "Manage billing"}
             </button>

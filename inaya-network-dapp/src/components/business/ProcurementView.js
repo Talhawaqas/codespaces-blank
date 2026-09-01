@@ -216,11 +216,11 @@ function RequestsTab({ orgId, departments }) {
                   <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${PR_STATUS_STYLES[r.status]}`}>{r.status.replace("_", " ")}</span>
                   {(PR_ACTIONS[r.status] || []).map(([action, label]) =>
                     DESTRUCTIVE_ACTIONS.has(action) ? (
-                      <ConfirmButton key={action} onConfirm={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                      <ConfirmButton key={action} onConfirm={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                         {acting === r.id + action ? "…" : label}
                       </ConfirmButton>
                     ) : (
-                      <button key={action} onClick={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                      <button key={action} onClick={() => handleAction(r.id, action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                         {acting === r.id + action ? "…" : label}
                       </button>
                     )
@@ -468,11 +468,11 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
         <div className="flex flex-wrap gap-1.5">
           {(PO_ACTIONS[po.status] || []).map(([action, label]) =>
             DESTRUCTIVE_ACTIONS.has(action) ? (
-              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                 {acting === action ? "…" : label}
               </ConfirmButton>
             ) : (
-              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                 {acting === action ? "…" : label}
               </button>
             )

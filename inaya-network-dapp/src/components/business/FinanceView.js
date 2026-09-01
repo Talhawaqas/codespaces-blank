@@ -30,7 +30,7 @@ async function api(path, options) {
 }
 
 const STATUS_COLORS = {
-  DRAFT: "bg-white/10 text-slate-300 border-white/15",
+  DRAFT: "bg-white/10 text-[var(--inaya-text-primary)] border-white/15",
   SENT: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   PAID: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
   OVERDUE: "bg-red-400/10 text-red-400 border-red-400/30",
@@ -38,11 +38,11 @@ const STATUS_COLORS = {
   PENDING_APPROVAL: "bg-amber-400/10 text-amber-400 border-amber-400/30",
   APPROVED: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
   REJECTED: "bg-red-400/10 text-red-400 border-red-400/30",
-  RECORDED: "bg-white/10 text-slate-300 border-white/15",
+  RECORDED: "bg-white/10 text-[var(--inaya-text-primary)] border-white/15",
 };
 
 function StatusBadge({ status }) {
-  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_COLORS[status] || "bg-white/10 text-slate-300 border-white/15"}`}>{status?.replace(/_/g, " ")}</span>;
+  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_COLORS[status] || "bg-white/10 text-[var(--inaya-text-primary)] border-white/15"}`}>{status?.replace(/_/g, " ")}</span>;
 }
 
 export default function FinanceView({ orgId, email }) {
@@ -249,7 +249,7 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
         <div className="space-y-1 border-t border-white/5 pt-3">
           {invoice.lineItems.map((it, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-slate-300">{it.description} × {it.quantity}</span>
+              <span className="text-[var(--inaya-text-primary)]">{it.description} × {it.quantity}</span>
               <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">${(it.quantity * it.unitPrice).toFixed(2)}</span>
             </div>
           ))}
@@ -260,11 +260,11 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
           <div className="flex gap-2 border-t border-white/5 pt-3">
             {INVOICE_ACTIONS[invoice.status].map(([action, label]) =>
               DESTRUCTIVE_ACTIONS.has(action) ? (
-                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </ConfirmButton>
               ) : (
-                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </button>
               )
@@ -278,7 +278,7 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
             <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Activity</p>
             {activity.map((e) => (
               <div key={e.eventId} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
-                <span className="text-slate-300">{e.action.replace(/_/g, " ")}</span>
+                <span className="text-[var(--inaya-text-primary)]">{e.action.replace(/_/g, " ")}</span>
                 <div className="text-[11px] font-mono text-[#8a96ab]">{e.actorEmail} · {new Date(e.timestamp).toLocaleString()}</div>
               </div>
             ))}
@@ -455,17 +455,17 @@ function ExpenseDetailModal({ orgId, expense, onClose, onChanged }) {
           <span className="text-[var(--inaya-text-primary)] text-lg font-mono tabular-nums">${expense.amount.toFixed(2)}</span>
         </div>
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{expense.category} · {new Date(expense.expenseDate).toLocaleDateString()}</p>
-        {expense.description && <p className="text-slate-300 text-xs">{expense.description}</p>}
+        {expense.description && <p className="text-[var(--inaya-text-primary)] text-xs">{expense.description}</p>}
 
         {(EXPENSE_ACTIONS[expense.status] || []).length > 0 && (
           <div className="flex gap-2 border-t border-white/5 pt-3">
             {EXPENSE_ACTIONS[expense.status].map(([action, label]) =>
               DESTRUCTIVE_ACTIONS.has(action) ? (
-                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </ConfirmButton>
               ) : (
-                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </button>
               )
@@ -478,13 +478,13 @@ function ExpenseDetailModal({ orgId, expense, onClose, onChanged }) {
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Receipts</p>
           {attachments && attachments.length > 0 && (
             <div className="space-y-1">
-              {attachments.map((a) => <p key={a.id} className="text-xs text-slate-300 truncate">📎 {a.filename}</p>)}
+              {attachments.map((a) => <p key={a.id} className="text-xs text-[var(--inaya-text-primary)] truncate">📎 {a.filename}</p>)}
             </div>
           )}
           <form onSubmit={handleUploadReceipt} className="space-y-1.5">
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
             <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-            <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-slate-200 disabled:opacity-40">{uploading ? "Uploading…" : "Attach receipt"}</button>
+            <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{uploading ? "Uploading…" : "Attach receipt"}</button>
           </form>
         </div>
       </div>
@@ -648,7 +648,7 @@ function ReportsTab({ orgId }) {
                 <tbody>
                   {report.rows.map((row, i) => (
                     <tr key={i} className="border-t border-white/5">
-                      {Object.values(row).map((v, j) => <td key={j} className="py-1.5 pr-4 text-slate-300 font-mono">{String(v)}</td>)}
+                      {Object.values(row).map((v, j) => <td key={j} className="py-1.5 pr-4 text-[var(--inaya-text-primary)] font-mono">{String(v)}</td>)}
                     </tr>
                   ))}
                 </tbody>

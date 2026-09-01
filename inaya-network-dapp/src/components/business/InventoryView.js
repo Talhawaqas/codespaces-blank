@@ -195,7 +195,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
             <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Stock by warehouse</p>
             {stock.levels.length === 0 ? <p className="text-[#8a96ab] text-xs italic">No stock recorded yet.</p> : stock.levels.map((l) => (
               <div key={l.warehouseId} className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">{l.warehouseName}</span>
+                <span className="text-[var(--inaya-text-primary)]">{l.warehouseName}</span>
                 <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">{l.quantity}</span>
               </div>
             ))}
@@ -227,7 +227,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
             {stock.movements.slice(0, 10).map((m, i) => (
               <div key={i} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
                 <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}>{m.delta > 0 ? "+" : ""}{m.delta}</span>
-                <span className="text-slate-300"> {m.type.toLowerCase()} · {m.warehouseName}</span>
+                <span className="text-[var(--inaya-text-primary)]"> {m.type.toLowerCase()} · {m.warehouseName}</span>
                 <div className="text-[11px] font-mono text-[#8a96ab]">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
               </div>
             ))}
@@ -262,7 +262,7 @@ function MovementsTab({ orgId }) {
           {movements.length > MOVEMENTS_FEED_CAP && <p className="text-[11px] font-mono text-[#8a96ab]">Showing latest {MOVEMENTS_FEED_CAP} of {movements.length}.</p>}
           {capped.map((m, i) => (
             <div key={i} className="text-xs border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-              <span className="text-slate-200 font-bold">{m.productName}</span>
+              <span className="text-[var(--inaya-text-primary)] font-bold">{m.productName}</span>
               <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}> {m.delta > 0 ? "+" : ""}{m.delta}</span>
               <span className="text-[var(--inaya-text-muted)]"> · {m.type.toLowerCase()} · {m.warehouseName}</span>
               <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>

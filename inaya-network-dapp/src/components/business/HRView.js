@@ -36,7 +36,7 @@ const STATUS_COLORS = {
   CANCELLED: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
 };
 function StatusBadge({ status }) {
-  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_COLORS[status] || "bg-white/10 text-slate-300 border-white/15"}`}>{status?.replace(/_/g, " ")}</span>;
+  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_COLORS[status] || "bg-white/10 text-[var(--inaya-text-primary)] border-white/15"}`}>{status?.replace(/_/g, " ")}</span>;
 }
 
 export default function HRView({ orgId, email }) {
@@ -231,7 +231,7 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
           <StatusBadge status={employee.employmentStatus} />
           {isSelf && <span className="text-[10px] font-bold uppercase text-[#00f2fe]">You</span>}
         </div>
-        {employee.jobTitle && <p className="text-slate-300 text-sm">{employee.jobTitle}</p>}
+        {employee.jobTitle && <p className="text-[var(--inaya-text-primary)] text-sm">{employee.jobTitle}</p>}
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">Joined {new Date(employee.joiningDate).toLocaleDateString()}</p>
 
         {balance && (
@@ -245,11 +245,11 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
           <div className="flex gap-2 border-t border-white/5 pt-3">
             {EMPLOYEE_ACTIONS[employee.employmentStatus].map(([action, label]) =>
               DESTRUCTIVE_ACTIONS.has(action) ? (
-                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <ConfirmButton key={action} disabled={!!submitting} onConfirm={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </ConfirmButton>
               ) : (
-                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40">
+                <button key={action} disabled={!!submitting} onClick={() => handleAction(action)} className="flex-1 py-2 rounded-lg text-xs font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
                   {submitting === action ? "…" : label}
                 </button>
               )
@@ -262,14 +262,14 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Documents</p>
           {attachments && attachments.length > 0 && (
             <div className="space-y-1">
-              {attachments.map((a) => <p key={a.id} className="text-xs text-slate-300 truncate">📎 {a.filename}</p>)}
+              {attachments.map((a) => <p key={a.id} className="text-xs text-[var(--inaya-text-primary)] truncate">📎 {a.filename}</p>)}
             </div>
           )}
           {attachments && attachments.length === 0 && <p className="text-[#8a96ab] text-xs italic">No documents yet.</p>}
           <form onSubmit={handleUploadDoc} className="space-y-1.5">
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
             <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-            <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-slate-200 disabled:opacity-40">{uploading ? "Uploading…" : "Upload document"}</button>
+            <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{uploading ? "Uploading…" : "Upload document"}</button>
           </form>
         </div>
       </div>

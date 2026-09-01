@@ -131,7 +131,7 @@ export default function AIActionRequestsView({ orgId }) {
                 {r.status === "APPROVED" && (
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-mono text-[#00f2fe]">{formatCountdown(r.unlockAt)}</span>
-                    <ConfirmButton onConfirm={() => handleCancel(r.id)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+                    <ConfirmButton onConfirm={() => handleCancel(r.id)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                       {acting === r.id + "cancel" ? "…" : "Cancel"}
                     </ConfirmButton>
                   </div>

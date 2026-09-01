@@ -218,7 +218,7 @@ function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{contact.company || "No company"}{contact.email ? ` · ${contact.email}` : ""}{contact.phone ? ` · ${contact.phone}` : ""}</p>
         <span className={`inline-block text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${contact.type === "CUSTOMER" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/30"}`}>{contact.type}</span>
         {error && <p className="text-red-400 text-xs">{error}</p>}
-        <button onClick={toggleType} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+        <button onClick={toggleType} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
           {saving ? "…" : contact.type === "LEAD" ? "Convert to Customer" : "Revert to Lead"}
         </button>
       </div>
@@ -391,11 +391,11 @@ function DealDetailModal({ orgId, dealId, onClose, onChanged }) {
         <div className="flex flex-wrap gap-1.5">
           {(ACTIONS_BY_STAGE[deal.status] || []).map(([action, label]) =>
             action === "lose" ? (
-              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+              <ConfirmButton key={action} onConfirm={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                 {acting === action ? "…" : label}
               </ConfirmButton>
             ) : (
-              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40">
+              <button key={action} onClick={() => handleAction(action)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
                 {acting === action ? "…" : label}
               </button>
             )

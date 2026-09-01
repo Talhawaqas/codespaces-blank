@@ -358,7 +358,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
           )}
         </div>
 
-        {task.description && <p className="text-slate-300 text-sm whitespace-pre-wrap">{task.description}</p>}
+        {task.description && <p className="text-[var(--inaya-text-primary)] text-sm whitespace-pre-wrap">{task.description}</p>}
 
         <div className="text-[12px] font-mono text-[var(--inaya-text-muted)] space-y-0.5">
           <p>Assignee: {task.assigneeEmail || "Unassigned"}</p>
@@ -373,7 +373,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
                   key={action}
                   onConfirm={() => handleAction(action)}
                   disabled={!!acting}
-                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
                 >
                   {acting === action ? "…" : label}
                 </ConfirmButton>
@@ -382,7 +382,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
                   key={action}
                   onClick={() => handleAction(action)}
                   disabled={!!acting}
-                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-40"
+                  className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40"
                 >
                   {acting === action ? "…" : label}
                 </button>
@@ -403,7 +403,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
             <div className="space-y-2">
               {activity.map((e) => (
                 <div key={e.eventId} className="text-xs border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                  <span className="text-slate-200">{e.action.replaceAll("_", " ").toLowerCase()}</span>
+                  <span className="text-[var(--inaya-text-primary)]">{e.action.replaceAll("_", " ").toLowerCase()}</span>
                   {e.previousState && <span className="text-[var(--inaya-text-muted)] font-mono"> · {e.previousState} → {e.newState}</span>}
                   <div className="text-[11px] font-mono text-[#8a96ab] mt-0.5">
                     {e.actorEmail} · {new Date(e.timestamp).toLocaleString()}

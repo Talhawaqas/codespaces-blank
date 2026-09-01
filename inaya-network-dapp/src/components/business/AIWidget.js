@@ -107,7 +107,7 @@ export default function AIWidget({ orgId }) {
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs font-mono leading-relaxed whitespace-pre-wrap break-words ${
-                m.role === "user" ? "bg-gradient-to-r from-violet-400 to-[#00f2fe] text-[#060913] font-semibold" : "bg-white/[0.04] border border-white/10 text-slate-200"
+                m.role === "user" ? "bg-gradient-to-r from-violet-400 to-[#00f2fe] text-[#060913] font-semibold" : "bg-white/[0.04] border border-white/10 text-[var(--inaya-text-primary)]"
               }`}
             >
               {m.content}
@@ -124,7 +124,7 @@ export default function AIWidget({ orgId }) {
         {messages.length <= 1 && !sending && (
           <div className="flex flex-wrap gap-2 pt-2">
             {SUGGESTIONS.map((s) => (
-              <button key={s} onClick={() => send(s)} className="text-[12px] text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+              <button key={s} onClick={() => send(s)} className="text-[12px] text-[var(--inaya-text-primary)] bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
                 {s}
               </button>
             ))}

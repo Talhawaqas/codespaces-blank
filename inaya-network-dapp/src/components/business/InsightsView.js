@@ -203,7 +203,7 @@ function DrillList({ title, onView, children }) {
         <p className="text-[#8a96ab] text-[11px] font-bold uppercase">{title}</p>
         <button onClick={onView} className="text-[#00f2fe] text-[11px] font-bold">View →</button>
       </div>
-      <ul className="text-slate-300 text-xs space-y-1">{children}</ul>
+      <ul className="text-[var(--inaya-text-primary)] text-xs space-y-1">{children}</ul>
     </div>
   );
 }
