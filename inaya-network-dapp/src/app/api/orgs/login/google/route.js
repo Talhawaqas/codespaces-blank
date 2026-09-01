@@ -19,11 +19,20 @@
 import { NextResponse } from "next/server";
 import { createSession, SESSION_TTL_MS, SESSION_COOKIE } from "../../../../../lib/orgs.js";
 import { verifyGoogleIdToken } from "../../../../../lib/googleAuth.js";
+import { isMfaEnrolled, issueMfaPendingToken } from "../../../../../lib/mfa.js";
 
 export async function POST(req) {
   try {
     const { idToken } = await req.json();
     const { email } = await verifyGoogleIdToken(idToken);
+
+    // MFA gate — additive, same as the magic-link routes: an unenrolled
+    // email falls straight through to createSession() exactly as before.
+    if (await isMfaEnrolled(email)) {
+      const mfaPendingToken = await issueMfaPendingToken(email);
+      return NextResponse.json({ mfaRequired: true, mfaPendingToken, email });
+    }
+
     const { sessionToken } = await createSession(email);
 
     const response = NextResponse.json({ authenticated: true, email, sessionToken });

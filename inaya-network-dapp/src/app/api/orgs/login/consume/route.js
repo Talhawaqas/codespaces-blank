@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { consumeLoginToken, SESSION_TTL_MS, SESSION_COOKIE } from "../../../../../lib/orgs.js";
+import { isMfaEnrolled, issueMfaPendingToken } from "../../../../../lib/mfa.js";
 
 export async function GET(req) {
   const { searchParams, origin } = new URL(req.url);
@@ -21,6 +22,14 @@ export async function GET(req) {
   const result = await consumeLoginToken(token);
   if (result.error) {
     return NextResponse.redirect(`${origin}/business?orgLoginError=${result.error}`);
+  }
+
+  // MFA gate — additive: a member who never enrolled hits neither of these
+  // checks and falls straight through to the exact same session-creation
+  // this route always did.
+  if (await isMfaEnrolled(result.email)) {
+    const mfaPendingToken = await issueMfaPendingToken(result.email);
+    return NextResponse.redirect(`${origin}/business?mfaPending=${mfaPendingToken}`);
   }
 
   const response = NextResponse.redirect(`${origin}/business?orgLoggedIn=true`);

@@ -43,6 +43,8 @@ import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
 import BriefView from "../../components/business/BriefView";
+import MfaVerifyScreen from "../../components/business/MfaVerifyScreen";
+import MfaSettings from "../../components/business/MfaSettings";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
@@ -98,6 +100,7 @@ export default function BusinessPage() {
   const [session, setSession] = useState(null); // { email, orgs: [{orgId, orgName, role, departmentIds}] }
   const [selectedOrgId, setSelectedOrgId] = useState(null);
   const [notice, setNotice] = useState("");
+  const [mfaPendingToken, setMfaPendingToken] = useState(null);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -120,7 +123,9 @@ export default function BusinessPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("orgLoggedIn")) setNotice("Signed in.");
     if (params.get("orgLoginError")) setNotice("That sign-in link is invalid or has expired — request a new one below.");
-    if (params.get("orgLoggedIn") || params.get("orgLoginError")) {
+    const mfaPending = params.get("mfaPending");
+    if (mfaPending) setMfaPendingToken(mfaPending);
+    if (params.get("orgLoggedIn") || params.get("orgLoginError") || mfaPending) {
       window.history.replaceState({}, "", window.location.pathname);
     }
     refreshSession();
@@ -187,10 +192,22 @@ export default function BusinessPage() {
     );
   }
 
+  if (mfaPendingToken) {
+    return (
+      <CenteredShell>
+        <MfaVerifyScreen
+          mfaPendingToken={mfaPendingToken}
+          onVerified={() => { setMfaPendingToken(null); refreshSession(); }}
+          onCancel={() => setMfaPendingToken(null)}
+        />
+      </CenteredShell>
+    );
+  }
+
   if (!session?.authenticated) {
     return (
       <CenteredShell>
-        <AuthScreen notice={notice} onAuthed={refreshSession} />
+        <AuthScreen notice={notice} onAuthed={refreshSession} onMfaRequired={setMfaPendingToken} />
       </CenteredShell>
     );
   }
@@ -359,7 +376,7 @@ function CenteredShell({ children }) {
 // ============================================================
 // AUTH SCREEN
 // ============================================================
-function AuthScreen({ notice, onAuthed }) {
+function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const [mode, setMode] = useState("signin"); // 'signin' | 'create'
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
@@ -378,13 +395,17 @@ function AuthScreen({ notice, onAuthed }) {
     async (response) => {
       setGoogleError("");
       try {
-        await api("/api/orgs/login/google", { method: "POST", body: JSON.stringify({ idToken: response.credential }) });
+        const data = await api("/api/orgs/login/google", { method: "POST", body: JSON.stringify({ idToken: response.credential }) });
+        if (data.mfaRequired) {
+          onMfaRequired(data.mfaPendingToken);
+          return;
+        }
         onAuthed();
       } catch (err) {
         setGoogleError(err.message);
       }
     },
-    [onAuthed]
+    [onAuthed, onMfaRequired]
   );
 
   useEffect(() => {
@@ -720,6 +741,7 @@ const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "insights", label: "Insights", icon: "insights" },
   { key: "brief", label: "Brief", icon: "insights" },
+  { key: "security", label: "Security", icon: "activity" },
   { key: "departments", label: "Departments", icon: "departments" },
   { key: "projects", label: "Projects", icon: "projects" },
   { key: "documents", label: "Documents", icon: "documents" },
@@ -810,6 +832,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     dashboard: "Overview",
     insights: "Business Insights",
     brief: "Business Brief",
+    security: "Security",
     browse: "Company Records",
     tasks: "Tasks",
     crm: "CRM",
@@ -900,6 +923,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           )}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}
+          {activeView === "security" && <MfaSettings />}
           {activeView === "browse" && (
             <OrgWorkspace
               key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}

@@ -20,6 +20,14 @@
 
 import { NextResponse } from "next/server";
 import { consumeLoginToken } from "../../../../../lib/orgs.js";
+import { isMfaEnrolled, issueMfaPendingToken } from "../../../../../lib/mfa.js";
+
+// KNOWN GAP: inaya-mobile has no UI yet for the mfaRequired response shape
+// below — this route change is additive for the API, but a mobile member
+// who enrolls MFA via the web app will hit an unhandled response on their
+// next mobile login until inaya-mobile's own login screen is updated
+// separately. Not silently ignored — flagged directly here and in the
+// feature's summary.
 
 export async function POST(req) {
   try {
@@ -40,6 +48,11 @@ export async function POST(req) {
         ? "A login link or code is required."
         : "That link is invalid or has expired — request a new one.";
       return NextResponse.json({ error: message }, { status: result.status });
+    }
+
+    if (await isMfaEnrolled(result.email)) {
+      const mfaPendingToken = await issueMfaPendingToken(result.email);
+      return NextResponse.json({ mfaRequired: true, mfaPendingToken, email: result.email });
     }
 
     return NextResponse.json({ email: result.email, sessionToken: result.sessionToken });
