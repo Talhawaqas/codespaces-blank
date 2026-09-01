@@ -3177,10 +3177,14 @@ export default function Home() {
         // Added August 2026 — Cross-Chain Bridge & Cross-Chain Staking (SOW-1):
         // hub-and-spoke bridge, home ledger on BSC Testnet, M-of-N validator-signed
         // messages, real deployments + a live relayer dry run on real testnets.
-        { text: "Cross-chain bridge — 9 new smart contracts (chain registry, validator set, messenger, token bridges, staking gateways), deployed live on BSC Testnet, Ethereum Sepolia, and Avalanche Fuji", done: true },
+        { text: "Cross-chain bridge — 9 new smart contracts (chain registry, validator set, messenger, token bridges, staking gateways), deployed live on BSC Testnet, Ethereum Sepolia, Avalanche Fuji, and Arbitrum Sepolia", done: true }, // Arbitrum Sepolia added September 2026 — real, proven transfer, was missing from this item's original chain list
         { text: "Cross-chain staking — one unified staking position across every chain, existing Flexible/30-day/90-day tiers unchanged", done: true },
         { text: "Cross-chain relayer — real end-to-end dry run confirmed on live testnets (validator signatures + relayer submission, BSC Testnet -> Sepolia)", done: true },
-        { text: "Solana (non-EVM) bridge — Anchor program written, built, and deployed live to Solana Devnet with on-chain wiring confirmed; anchor test suite and a live receive_message call still pending", done: false },
+        // Corrected September 2026 — this was genuinely still-pending when
+        // first written; the receive_message call and anchor test suite
+        // have since run for real (see the September 2026 block below for
+        // the two other non-EVM chains built the same cycle).
+        { text: "Solana (non-EVM) bridge — real transfer proven, custom Anchor program", done: true },
         { text: "Polygon Amoy spoke — contracts partially deployed, paused pending additional testnet gas funding", done: false },
         // Added August 2026 — Business Operations (Tasks, CRM, Procurement,
         // Inventory), a Finance & HR layer, and RAG-grounded AI assistants,
@@ -3188,6 +3192,25 @@ export default function Home() {
         { text: "Business Operations — Tasks, CRM, Procurement, Inventory, real permission-scoped AI tools, web + mobile", done: true },
         { text: "Finance & HR Layer — invoices, expenses, payments, employee records, leave management (testnet demonstration scope, web + mobile)", done: true },
         { text: "RAG (retrieval-augmented generation) infrastructure — hybrid vector + keyword search on MongoDB Atlas, grounding the Docs, Security, and Learn AI assistants", done: true },
+        // Added September 2026 — three more native bridge spokes (each a
+        // real, verified on-chain transfer, not a simulated one), a parallel
+        // Wormhole interop path, the Backup & Recovery mechanism, the
+        // Cryptographic Audit Trail, Guarded AI Actions extended to 9
+        // business domains, a Daily/Weekly/Monthly/Yearly Business Brief,
+        // and the Web3 App Store / NFT Vault / in-app wallet protection —
+        // all shipped this cycle, none reflected here until now.
+        { text: "Native bridge — Hedera Testnet spoke, real transfer proven (runs the EVM natively, same contracts as every EVM spoke)", done: true },
+        { text: "Native bridge — Aptos Testnet spoke, real transfer proven (new Move contract)", done: true },
+        { text: "Native bridge — Sui Testnet spoke, real transfer proven (new Move contract, a real signature-encoding bug found and fixed along the way)", done: true },
+        { text: "Wormhole interoperability layer — 3 real, proven routes (BSC to Ethereum/Arbitrum/Avalanche); Solana/Sui/Aptos routes hit real, external Wormhole-side blockers, honestly documented rather than forced", done: true },
+        { text: "Decentralized Storage Backup & Recovery — dual-provider shard replication (Pinata + Filebase), automated health monitoring, integrity-verified automatic recovery, InayaBackupRegistry on-chain, proven with a real simulated-failure-to-recovered cycle", done: true },
+        { text: "Cryptographic Audit Trail — tamper-evident hash chain over org/document activity, admin chain browser + integrity banner, independently verifiable JSON/CSV export", done: true },
+        { text: "Guarded AI Actions — extended from 2 to 9 business domains (task, expense, document, employee, invoice, leave, purchase order, purchase request, deal), with risk classification and proposal expiration; 19 automated tests including 11 adversarial security scenarios", done: true },
+        { text: "Self-service Audit Trail — business org owners/admins can now browse and export their own org's audit chain, not just Inaya's internal admin panel", done: true },
+        { text: "Business Brief — Daily/Weekly/Monthly/Yearly recap (real KPI highlights plus a best-effort AI narrative), Business Workspace view + conversational AI tool", done: true },
+        { text: "Web3 App Store — curated directory of Inaya's own real apps, each linking to how it's independently verifiable", done: true },
+        { text: "NFT Vault — discover a wallet's owned ERC-721 NFTs and back their metadata/image up to Inaya's own encrypted storage, gated by a real on-chain ownership check", done: true },
+        { text: "In-app wallet-attack protection — the Security Layer's threat registry wired directly into the Bridge's recipient-address field, live threat warnings before you send", done: true },
       ],
     },
     {
