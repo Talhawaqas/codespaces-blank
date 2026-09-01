@@ -38,6 +38,7 @@ const EVM_CHAINS = [
   { label: "BSC Testnet (home)", file: "bscTestnet.json", rpcEnv: "BSC_TESTNET_RPC", fallbackRpc: "https://data-seed-prebsc-1-s1.binance.org:8545", chainId: 97 },
   { label: "Ethereum Sepolia (spoke)", file: "sepolia.json", rpcEnv: "SEPOLIA_RPC", fallbackRpc: "https://ethereum-sepolia-rpc.publicnode.com", chainId: 11155111 },
   { label: "Avalanche Fuji (spoke)", file: "avalancheFuji.json", rpcEnv: "AVALANCHE_FUJI_RPC", fallbackRpc: "https://api.avax-test.network/ext/bc/C/rpc", chainId: 43113 },
+  { label: "Arbitrum Sepolia (spoke)", file: "arbitrumSepolia.json", rpcEnv: "ARBITRUM_SEPOLIA_RPC", fallbackRpc: "https://sepolia-rollup.arbitrum.io/rpc", chainId: 421614 },
 ];
 
 const ADDRESS_FIELDS = ["inayaToken", "wrappedToken", "chainRegistry", "validatorSet", "messenger", "bridge", "staking", "stakingGateway"];

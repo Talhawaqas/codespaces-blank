@@ -21,6 +21,7 @@ library ChainIds {
     uint256 internal constant ETH_SEPOLIA = 11155111;
     uint256 internal constant POLYGON_AMOY = 80002;
     uint256 internal constant AVALANCHE_FUJI = 43113;
+    uint256 internal constant ARBITRUM_SEPOLIA = 421614;
 
     // Reserved range for non-EVM chain families.
     uint256 internal constant SOLANA_MAINNET = 1_000_000_001;

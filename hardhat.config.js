@@ -56,6 +56,14 @@ export default {
       chainId: 43113,
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
     },
+    // Universal Chain Adapter SOW, Phase 5 -- the one new chain added through the adapter
+    // (docs/chain-adapters.md). Same deployer key, same deploy-bridge.js/wire-bridge-registries.js
+    // scripts every other spoke used -- no new deployment logic, just a new --network target.
+    arbitrumSepolia: {
+      url: process.env.ARBITRUM_SEPOLIA_RPC || "https://sepolia-rollup.arbitrum.io/rpc",
+      chainId: 421614,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
+    },
     // Local multi-node simulation (Phase 2) -- run `npx hardhat node --port 854<N>` once per
     // entry before deploying against these.
     localHome: { url: "http://127.0.0.1:8545", chainId: 31337 },

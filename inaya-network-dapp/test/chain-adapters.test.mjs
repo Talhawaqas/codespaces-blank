@@ -9,6 +9,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { PublicKey } from "@solana/web3.js";
 import { CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID } from "../src/lib/chains.js";
 import {
@@ -34,6 +35,13 @@ test("registry: BSC Testnet/Sepolia/Fuji are all at STAKING level (verified live
 test("registry: Polygon Amoy is honestly DISCOVERED, not overclaimed as deployed", () => {
   const cap = getChainCapability(CHAIN_IDS.AMOY);
   assert.equal(cap.level, SUPPORT_LEVELS.DISCOVERED);
+});
+
+test("registry: Arbitrum Sepolia (Phase 5's proof chain) is MESSAGE level -- deployed+wired, not yet transfer-proven", () => {
+  const cap = getChainCapability(CHAIN_IDS.ARBITRUM_SEPOLIA);
+  assert.equal(cap.level, SUPPORT_LEVELS.MESSAGE);
+  assert.equal(cap.family, "EVM");
+  assert.equal(isTransferReady(CHAIN_IDS.ARBITRUM_SEPOLIA), false);
 });
 
 test("registry: Solana Devnet is MESSAGE level (program deployed AND wired on-chain, confirmed live) — not TOKEN_TRANSFER", () => {
@@ -157,6 +165,19 @@ test("Regression: BSC Testnet (home) and Sepolia/Fuji (spokes) each resolve to a
     assert.equal(adapter.getChainInfo().hexChainId, adapter.chainConfig.hexChainId);
     assert.equal(isTransferReady(chainId), true, `chainId ${chainId} should be transfer-ready per the audit`);
   }
+});
+
+test("Regression: Arbitrum Sepolia's bridge contracts are real deployed bytecode, reachable through the adapter", { timeout: 15_000 }, async () => {
+  const adapter = getAdapter(CHAIN_IDS.ARBITRUM_SEPOLIA);
+  assert.ok(adapter instanceof EVMAdapter);
+  const health = await adapter.healthCheck();
+  if (!health.healthy) {
+    console.warn("Arbitrum Sepolia RPC unreachable from this environment, skipping bytecode assertion:", health.error);
+    return;
+  }
+  const bridgeAddress = JSON.parse(fs.readFileSync(new URL("../../deployments/bridge/arbitrumSepolia.json", import.meta.url))).bridge;
+  const code = await adapter.provider.getCode(bridgeAddress);
+  assert.ok(code && code !== "0x", "the deployed InayaTokenBridgeSpoke should have real bytecode on Arbitrum Sepolia");
 });
 
 test("Regression: Solana Devnet program exists on-chain (binary deployed, matches deployments/bridge/solanaDevnet.json)", { timeout: 15_000 }, async () => {

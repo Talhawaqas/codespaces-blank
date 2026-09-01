@@ -11,6 +11,7 @@ export const CHAIN_IDS = {
   SEPOLIA: 11155111,
   AMOY: 80002,
   FUJI: 43113,
+  ARBITRUM_SEPOLIA: 421614,
 };
 
 export const CHAINS = {
@@ -81,6 +82,26 @@ export const CHAINS = {
       stakingGateway: process.env.NEXT_PUBLIC_STAKING_GATEWAY_FUJI_ADDRESS,
       chainRegistry: process.env.NEXT_PUBLIC_CHAIN_REGISTRY_FUJI_ADDRESS,
       messenger: process.env.NEXT_PUBLIC_MESSENGER_FUJI_ADDRESS,
+    },
+  },
+  // Universal Chain Adapter SOW, Phase 5 -- deployed + wired live (deployments/bridge/
+  // arbitrumSepolia.json), same deploy-bridge.js/wire-bridge-registries.js scripts as every
+  // other spoke above. See docs/chain-adapters.md.
+  [CHAIN_IDS.ARBITRUM_SEPOLIA]: {
+    key: "arbitrumSepolia",
+    isHome: false,
+    hexChainId: "0x66eee",
+    name: "Arbitrum Sepolia",
+    nativeCurrency: { name: "Arbitrum Sepolia ETH", symbol: "ETH", decimals: 18 },
+    rpcUrl: process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || "https://sepolia-rollup.arbitrum.io/rpc",
+    serverRpcUrl: process.env.ARBITRUM_SEPOLIA_RPC || "https://sepolia-rollup.arbitrum.io/rpc",
+    blockExplorerUrl: "https://sepolia.arbiscan.io",
+    contracts: {
+      wrappedInaya: process.env.NEXT_PUBLIC_INAYA_BRIDGED_ARBITRUM_SEPOLIA_ADDRESS,
+      bridge: process.env.NEXT_PUBLIC_BRIDGE_ARBITRUM_SEPOLIA_ADDRESS,
+      stakingGateway: process.env.NEXT_PUBLIC_STAKING_GATEWAY_ARBITRUM_SEPOLIA_ADDRESS,
+      chainRegistry: process.env.NEXT_PUBLIC_CHAIN_REGISTRY_ARBITRUM_SEPOLIA_ADDRESS,
+      messenger: process.env.NEXT_PUBLIC_MESSENGER_ARBITRUM_SEPOLIA_ADDRESS,
     },
   },
 };

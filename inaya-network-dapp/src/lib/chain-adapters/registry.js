@@ -45,6 +45,10 @@ const CAPABILITY_OVERRIDES = {
   [CHAIN_IDS.SEPOLIA]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.STAKING },
   [CHAIN_IDS.FUJI]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.STAKING },
   [CHAIN_IDS.AMOY]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.DISCOVERED }, // configured, never deployed -- confirmed by the audit, not fabricated as more
+  [CHAIN_IDS.ARBITRUM_SEPOLIA]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.MESSAGE }, // Phase 5's proof chain -- deployed + registries wired (deployments/bridge/arbitrumSepolia.json,
+  // confirmed live via testnet-health-check.js: real bytecode at all 6 addresses). MESSAGE, not
+  // STAKING like Sepolia/Fuji: registries trust each other but no real transfer/stake has been
+  // sent and confirmed through it yet -- upgrade this once one has (see docs/chain-adapters.md).
   [SOLANA_DEVNET_CHAIN_ID]: { family: CHAIN_FAMILIES.SOLANA, level: SUPPORT_LEVELS.MESSAGE }, // program IS wired on-chain (confirmed live 2026-08-31: bridgeConfig.admin set, homeBridgeAddress/
   // homeStakingGatewayAddress match the real deployed BSC Testnet contracts byte-for-byte,
   // trustedChain(97).isActive=true, validatorSet has BSC's real 3 validators at threshold 2, and

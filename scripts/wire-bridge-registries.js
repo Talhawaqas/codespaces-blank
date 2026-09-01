@@ -27,7 +27,11 @@ async function main() {
   const all = loadAllDeployments();
   const self = all.find((d) => d.network === network.name);
   if (!self) throw new Error(`No deployment file for network "${network.name}" -- run deploy-bridge.js first.`);
-  const others = all.filter((d) => d.network !== network.name);
+  // Non-EVM deployment files (e.g. solanaDevnet.json) live in the same directory but have no
+  // EVM-shaped `.bridge` address to register/trust here -- InayaChainRegistry.registerRemoteChain
+  // only models EVM-style 20-byte addresses; Solana's own trust wiring is done on-chain via
+  // solana/wire-devnet.mjs instead. Skip them rather than crash on a null address.
+  const others = all.filter((d) => d.network !== network.name && d.bridge);
 
   const registry = await ethers.getContractAt("InayaChainRegistry", self.chainRegistry);
 
