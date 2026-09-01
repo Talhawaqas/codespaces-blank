@@ -15,7 +15,7 @@
 // EXECUTED/EXPIRED bookkeeping.
 
 import { NextResponse } from "next/server";
-import { executeApprovedAiActions } from "../../../../lib/ai-action-requests.js";
+import { executeApprovedAiActions, expireStalePendingActions } from "../../../../lib/ai-action-requests.js";
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
@@ -24,8 +24,12 @@ export async function GET(request) {
   }
 
   try {
-    const result = await executeApprovedAiActions();
-    return NextResponse.json({ success: true, ...result });
+    // Two independent sweeps in one daily run: execute what's due, and
+    // expire proposals nobody ever reviewed (Phase 10) — no new cron entry
+    // needed for the latter, same schedule is frequent enough for a 7-day
+    // expiry window.
+    const [executed, expired] = await Promise.all([executeApprovedAiActions(), expireStalePendingActions()]);
+    return NextResponse.json({ success: true, ...executed, ...expired });
   } catch (err) {
     console.error("cron/execute-approved-ai-actions failed:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

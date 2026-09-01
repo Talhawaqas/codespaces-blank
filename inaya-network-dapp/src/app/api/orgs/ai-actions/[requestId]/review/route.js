@@ -11,25 +11,9 @@
 // adding one case here, not touching reviewAiAction()'s state machine.
 
 import { NextResponse } from "next/server";
-import { ensureOrgIndexes, requireMembership, getOrgCollections, canAccessDepartment, canManageFinance, toObjectId } from "../../../../../../lib/orgs.js";
+import { ensureOrgIndexes, requireMembership, getOrgCollections, toObjectId } from "../../../../../../lib/orgs.js";
+import { resolveCanApprove } from "../../../../../../lib/ai-action-approval-gate.js";
 import { reviewAiAction } from "../../../../../../lib/ai-action-requests.js";
-
-async function resolveCanApprove({ orgId, targetRecordType, targetRecordId, membership }) {
-  const { tasks, expenses } = await getOrgCollections();
-  const orgObjectId = toObjectId(orgId);
-
-  if (targetRecordType === "TASK") {
-    const task = await tasks.findOne({ _id: targetRecordId, orgId: orgObjectId });
-    if (!task) return { canApprove: false, reason: "The underlying task no longer exists." };
-    return { canApprove: canAccessDepartment(membership, task.departmentId) };
-  }
-  if (targetRecordType === "EXPENSE") {
-    const expense = await expenses.findOne({ _id: targetRecordId, orgId: orgObjectId });
-    if (!expense) return { canApprove: false, reason: "The underlying expense no longer exists." };
-    return { canApprove: canAccessDepartment(membership, expense.departmentId) && canManageFinance(membership) };
-  }
-  return { canApprove: false, reason: `Unknown targetRecordType "${targetRecordType}".` };
-}
 
 export async function POST(req, { params }) {
   try {
@@ -46,7 +30,8 @@ export async function POST(req, { params }) {
     if (!existing) return NextResponse.json({ error: "Request not found." }, { status: 404 });
 
     const { canApprove, reason } = await resolveCanApprove({
-      orgId, targetRecordType: existing.targetRecordType, targetRecordId: existing.targetRecordId, membership: auth.membership,
+      orgId, targetRecordType: existing.targetRecordType, targetRecordId: existing.targetRecordId,
+      proposedAction: existing.proposedAction, membership: auth.membership, email: auth.session.email,
     });
     if (!canApprove) return NextResponse.json({ error: reason || "You don't have permission to review this action." }, { status: 403 });
 

@@ -168,7 +168,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
   const {
     departments, projects, orgDocuments, projectMembers, tasks,
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders, warehouses, products,
-    invoices, expenses, employees,
+    invoices, expenses, employees, leaveRequests,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -262,10 +262,23 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     if (selfRecord) visibleEmployees.push(selfRecord);
   }
 
+  // Leave requests: same visibility story as employees just above — HR-scoped
+  // over visible/managed departments, plus the caller's own leave requests
+  // always included regardless of role (self-service, mirrors
+  // leave-workflow.js's isOwnRequest carve-out). visibleEmployees already
+  // guarantees the caller's own employee record is present when `email` is
+  // given (the self-record carve-out just above this), so a plain
+  // employeeId lookup over visibleEmployees already covers both cases —
+  // no separate self-access query needed.
+  const visibleEmployeeIds = visibleEmployees.map((e) => e._id);
+  const visibleLeaveRequests = visibleEmployeeIds.length
+    ? await leaveRequests.find({ orgId: orgObjectId, employeeId: { $in: visibleEmployeeIds } }).sort({ createdAt: -1 }).toArray()
+    : [];
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
-    visibleInvoices, visibleExpenses, visibleEmployees,
+    visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
   };
 }
 

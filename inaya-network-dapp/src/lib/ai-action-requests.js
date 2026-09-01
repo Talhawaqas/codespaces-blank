@@ -39,6 +39,13 @@ import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { transitionTask } from "./task-workflow.js";
 import { transitionExpense } from "./expense-workflow.js";
+import { transitionDocument } from "./document-workflow.js";
+import { transitionEmployee } from "./employee-workflow.js";
+import { transitionInvoice } from "./invoice-workflow.js";
+import { transitionLeaveRequest } from "./leave-workflow.js";
+import { transitionPurchaseOrder } from "./purchase-order-workflow.js";
+import { transitionPurchaseRequest } from "./purchase-request-workflow.js";
+import { transitionDeal } from "./deal-workflow.js";
 
 // Maps a request's targetRecordType to the real workflow transition it's
 // eventually allowed to trigger, and how to turn a request's stored args
@@ -58,10 +65,57 @@ const SYSTEM_EXECUTOR_MEMBERSHIP = { role: "owner" };
 const EXECUTORS = {
   TASK: ({ orgId, args, actorEmail }) => transitionTask({ orgId, taskId: args.taskId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
   EXPENSE: ({ orgId, args, actorEmail }) => transitionExpense({ orgId, expenseId: args.expenseId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  DOCUMENT: ({ orgId, args, actorEmail }) => transitionDocument({ orgId, documentId: args.documentId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  EMPLOYEE: ({ orgId, args, actorEmail }) => transitionEmployee({ orgId, employeeId: args.employeeId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  INVOICE: ({ orgId, args, actorEmail }) => transitionInvoice({ orgId, invoiceId: args.invoiceId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  LEAVE_REQUEST: ({ orgId, args, actorEmail }) => transitionLeaveRequest({ orgId, leaveRequestId: args.leaveRequestId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  PURCHASE_ORDER: ({ orgId, args, actorEmail }) => transitionPurchaseOrder({ orgId, poId: args.poId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  PURCHASE_REQUEST: ({ orgId, args, actorEmail }) => transitionPurchaseRequest({ orgId, requestId: args.requestId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  DEAL: ({ orgId, args, actorEmail }) => transitionDeal({ orgId, dealId: args.dealId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
 };
 
 export const AI_ACTION_STATUSES = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "QUEUED", "EXECUTED", "EXPIRED", "CANCELLED"];
 export const SETTLEMENT_DELAY_MS = 36 * 60 * 60 * 1000; // 36h, mirrors InayaNodeRegistry.sol's SETTLEMENT_DELAY
+export const PROPOSAL_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — Phase 10, distinct from the post-approval unlockAt delay above
+
+// Phase 5 — Action Risk Classification. Keyed first by "targetRecordType:action"
+// for domains where risk genuinely varies by action, falling back to a
+// per-domain default. classifyRisk() never returns undefined — an
+// unrecognized combination defaults to MEDIUM rather than silently
+// under-classifying as LOW.
+const RISK_LEVELS = {
+  TASK: "LOW",
+  "DOCUMENT:submit": "LOW",
+  "DOCUMENT:revise": "LOW",
+  "DOCUMENT:startReview": "MEDIUM",
+  "DOCUMENT:approve": "MEDIUM",
+  "DOCUMENT:reject": "MEDIUM",
+  "DOCUMENT:archive": "MEDIUM",
+  "DOCUMENT:restore": "MEDIUM",
+  "DEAL:advance": "LOW",
+  "DEAL:regress": "LOW",
+  "DEAL:win": "MEDIUM",
+  "DEAL:lose": "MEDIUM",
+  "DEAL:reopen": "MEDIUM",
+  "PURCHASE_REQUEST:submit": "MEDIUM",
+  "PURCHASE_REQUEST:cancel": "MEDIUM",
+  "PURCHASE_REQUEST:approve": "HIGH",
+  "PURCHASE_REQUEST:reject": "HIGH",
+  "LEAVE_REQUEST:approve": "MEDIUM",
+  "LEAVE_REQUEST:reject": "MEDIUM",
+  "LEAVE_REQUEST:cancel": "MEDIUM",
+  "EMPLOYEE:activate": "MEDIUM",
+  "EMPLOYEE:placeOnLeave": "MEDIUM",
+  "EMPLOYEE:returnFromLeave": "MEDIUM",
+  "EMPLOYEE:terminate": "HIGH",
+  EXPENSE: "HIGH",
+  INVOICE: "HIGH",
+  PURCHASE_ORDER: "HIGH",
+};
+
+export function classifyRisk(targetRecordType, proposedAction) {
+  return RISK_LEVELS[`${targetRecordType}:${proposedAction}`] || RISK_LEVELS[targetRecordType] || "MEDIUM";
+}
 
 function computeIdempotencyKey({ orgId, toolName, targetRecordId, args }) {
   const hourBucket = Math.floor(Date.now() / (60 * 60 * 1000));
@@ -107,9 +161,11 @@ export async function proposeAiAction({
     proposedAction,
     args: args || {},
     requestedContextSummary: requestedContextSummary || "",
+    riskLevel: classifyRisk(targetRecordType, proposedAction),
     status: "PENDING_APPROVAL",
     requestedByEmail: actorEmail || null,
     requestedAt: now,
+    proposalExpiresAt: new Date(Date.now() + PROPOSAL_EXPIRY_MS).toISOString(),
     reviewedByEmail: null,
     reviewedAt: null,
     reviewNote: null,
@@ -159,12 +215,21 @@ export async function reviewAiAction({ orgId, requestId, decision, actorEmail, n
   const updateFields = { status: newStatus, reviewedByEmail: actorEmail || null, reviewedAt: now, reviewNote: note || null };
   if (newStatus === "APPROVED") updateFields.unlockAt = new Date(Date.now() + SETTLEMENT_DELAY_MS).toISOString();
 
+  // Phase 10 / Phase 14: a PENDING_APPROVAL request past its proposalExpiresAt
+  // can no longer be approved or rejected, even if the daily expiry sweep
+  // hasn't run yet — this is a synchronous, race-safe backstop (the filter
+  // itself excludes an expired row, so a concurrent approve attempt fails
+  // closed rather than racing the cron).
   const updated = await aiActionRequests.findOneAndUpdate(
-    { _id: requestObjectId, orgId: orgObjectId, status: "PENDING_APPROVAL" },
+    { _id: requestObjectId, orgId: orgObjectId, status: "PENDING_APPROVAL", proposalExpiresAt: { $gt: now } },
     { $set: updateFields },
     { returnDocument: "after" }
   );
-  if (!updated) return { error: "This request is no longer pending approval (already reviewed, or doesn't exist).", status: 409 };
+  if (!updated) {
+    const stillPending = await aiActionRequests.findOne({ _id: requestObjectId, orgId: orgObjectId, status: "PENDING_APPROVAL" });
+    if (stillPending) return { error: "This request has expired and can no longer be approved or rejected.", status: 409 };
+    return { error: "This request is no longer pending approval (already reviewed, or doesn't exist).", status: 409 };
+  }
 
   await logOrgActivity({
     orgId: orgObjectId, recordType: "AI_ACTION_REQUEST", recordId: requestObjectId,
@@ -218,11 +283,17 @@ export async function listAiActionRequests({ orgId, status }) {
  *  execute the same request twice), then calls the real transitionX().
  *  QUEUED -> EXECUTED on success; QUEUED -> EXPIRED if the real transition
  *  no longer applies (e.g. the task/expense moved to some other state in
- *  the meantime) — that's an honest outcome, not a retry-worthy error. */
-export async function executeApprovedAiActions() {
+ *  the meantime) — that's an honest outcome, not a retry-worthy error.
+ *  `orgId` is optional and exists ONLY so tests can scope a sweep to their
+ *  own fixture org without also processing every other org's genuinely-due
+ *  requests on a shared database — the real cron route never passes it, so
+ *  production behavior (org-agnostic, system-wide) is unchanged. */
+export async function executeApprovedAiActions({ orgId } = {}) {
   const { aiActionRequests } = await getOrgCollections();
   const now = new Date().toISOString();
-  const due = await aiActionRequests.find({ status: "APPROVED", unlockAt: { $lte: now } }).toArray();
+  const filter = { status: "APPROVED", unlockAt: { $lte: now } };
+  if (orgId) filter.orgId = toObjectId(orgId);
+  const due = await aiActionRequests.find(filter).toArray();
 
   const results = { claimed: 0, executed: 0, expired: 0 };
   for (const request of due) {
@@ -270,4 +341,38 @@ export async function executeApprovedAiActions() {
   }
 
   return results;
+}
+
+/** Phase 10 — Action Expiration. A PENDING_APPROVAL request nobody reviewed
+ *  within PROPOSAL_EXPIRY_MS is stale: the business data it was proposed
+ *  against may no longer look like it did when the AI proposed it, so it
+ *  must not remain approvable indefinitely. Distinct from unlockAt above —
+ *  this expires an UNREVIEWED proposal, not a reviewed-and-waiting one.
+ *  Same atomic per-row claim as executeApprovedAiActions, called from the
+ *  same daily cron. `orgId` is optional test-scoping only — see
+ *  executeApprovedAiActions's comment above, same reasoning applies here. */
+export async function expireStalePendingActions({ orgId } = {}) {
+  const { aiActionRequests } = await getOrgCollections();
+  const now = new Date().toISOString();
+  const filter = { status: "PENDING_APPROVAL", proposalExpiresAt: { $lte: now } };
+  if (orgId) filter.orgId = toObjectId(orgId);
+  const stale = await aiActionRequests.find(filter).toArray();
+
+  let expired = 0;
+  for (const request of stale) {
+    const updated = await aiActionRequests.findOneAndUpdate(
+      { _id: request._id, status: "PENDING_APPROVAL" },
+      { $set: { status: "EXPIRED", executedAt: now, executionResult: { error: "Proposal expired before it was reviewed." } } },
+      { returnDocument: "after" }
+    );
+    if (!updated) continue; // reviewed (or already expired) by a concurrent request in between
+    expired += 1;
+    await logOrgActivity({
+      orgId: updated.orgId, recordType: "AI_ACTION_REQUEST", recordId: updated._id,
+      actorEmail: null, action: "AI_ACTION_EXPIRED", previousState: "PENDING_APPROVAL", newState: "EXPIRED",
+      metadata: { reason: "proposal_expired_unreviewed" },
+    });
+  }
+
+  return { expired };
 }

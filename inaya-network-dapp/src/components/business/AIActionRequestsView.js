@@ -32,6 +32,13 @@ const STATUS_STYLES = {
   CANCELLED: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
 };
 
+// Phase 5 — Action Risk Classification, mirrors ai-action-requests.js's classifyRisk().
+const RISK_STYLES = {
+  LOW: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
+  MEDIUM: "bg-amber-400/10 text-amber-400 border-amber-400/30",
+  HIGH: "bg-red-400/10 text-red-400 border-red-400/30",
+};
+
 function formatCountdown(unlockAt) {
   const ms = new Date(unlockAt).getTime() - Date.now();
   if (ms <= 0) return "Unlocking…";
@@ -114,8 +121,17 @@ export default function AIActionRequestsView({ orgId }) {
                       Requested by {r.requestedByEmail || "assistant"} · {new Date(r.requestedAt).toLocaleString()}
                     </p>
                   </div>
-                  <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[r.status] || ""}`}>{r.status.replace(/_/g, " ")}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {r.riskLevel && (
+                      <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${RISK_STYLES[r.riskLevel] || ""}`}>{r.riskLevel}</span>
+                    )}
+                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[r.status] || ""}`}>{r.status.replace(/_/g, " ")}</span>
+                  </div>
                 </div>
+
+                {r.riskLevel === "HIGH" && r.status === "PENDING_APPROVAL" && (
+                  <p className="text-red-400 text-[11px]">High-risk action — review the affected record carefully before approving.</p>
+                )}
 
                 {r.status === "PENDING_APPROVAL" && (
                   <div className="flex gap-1.5">
