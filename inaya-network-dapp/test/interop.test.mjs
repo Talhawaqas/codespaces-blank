@@ -77,7 +77,7 @@ test("LayerZeroProvider: declared, extends the same interface, still fully unimp
 });
 
 test("capabilityRegistry: every still-undeployed priority chain is honestly Tier C / ROUTE_AVAILABLE", () => {
-  const undeployedChains = ["BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
+  const undeployedChains = ["BASE", "OPTIMISM", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
   for (const key of undeployedChains) {
     assert.ok(INTEROP_CHAINS[key], `${key} should be a declared interop chain`);
     const cap = getInteropCapability(key);
@@ -101,6 +101,12 @@ test("capabilityRegistry: BSC, ETHEREUM (Sepolia), ARBITRUM (Arbitrum Sepolia), 
     assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED, `${key} should reflect the real proven transfer`);
     assert.equal(isInteropTransferProven(key), true, `${key} should now report a proven transfer`);
   }
+});
+
+test("capabilityRegistry: SOLANA is TRANSFER_AVAILABLE, not TRANSFER_TESTED -- real wrapped mint exists, real transfer not yet completed", () => {
+  const cap = getInteropCapability("SOLANA");
+  assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.TRANSFER_AVAILABLE);
+  assert.equal(isInteropTransferProven("SOLANA"), false, "SOLANA shouldn't claim a proven transfer -- the completion leg failed");
 });
 
 test("capabilityRegistry: an unknown chain key returns null, not a fabricated default", () => {

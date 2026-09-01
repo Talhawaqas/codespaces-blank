@@ -48,5 +48,20 @@
     }
   },
   "recipient": "0x4BA0a7c39154e7B7fA72288D29D7fdaf0248b1F2",
-  "note": "Each entry under provenRoutes is a REAL, complete, verified end-to-end transfer (source-chain lock + destination-chain completion + on-chain balance check) -- not a partial attempt. All 3 EVM spokes Inaya already has a native-bridge presence on now also have a proven Wormhole interop route. Solana/Sui/Aptos require different, non-EVM SDK tooling and are a separate follow-up (see docs/inaya-interoperability.md's status)."
+  "note": "Each entry under provenRoutes is a REAL, complete, verified end-to-end transfer (source-chain lock + destination-chain completion + on-chain balance check) -- not a partial attempt. All 3 EVM spokes Inaya already has a native-bridge presence on now also have a proven Wormhole interop route.",
+  "partialRoutes": {
+    "SOLANA": {
+      "wrappedTokenCreation": {
+        "status": "REAL, confirmed on-chain -- 3 real transactions (submitAttestation's multi-step Solana flow), all confirmed success (no tx error), wrapped mint verified to exist and be owned by the real SPL Token program",
+        "wrappedTokenMint": "DRJhHbUUmHSkusgPChkMerUYuf7kUpkGBRuzTGCQ5tz3",
+        "txids": ["5kXFVif7PrdfELwaHUzKFY3nCbytWKFJDZphohv5QXL2qFHZ1YU5UNoCUSfHmbsCKhhKGC3nPzeQR9WZdSW2qLwn", "5oALJodkNUcKeMaxNwr8898UbCGVdje9BbUjbCxoU4TVbi6z74so99AEXrtbPvTqzuqT9sWZp3GMBxkGf1n1uqXw", "3f6REmRnUKAPgFMqbDeN4XR1D2TNnbUTJKSvcSAG2TuLXwouAMVeQNi76bwDTTgH4CbKgaZJ4wfjZz4FhrMv6p7w"]
+      },
+      "transferAttempt": {
+        "status": "BLOCKED -- real transfer attempted, not completed",
+        "lockTx": "0xc04ad03e2393502da558de22ffcac2b7fb7f8ffc7ee12189c1010da7becc1d9a (BSC, confirmed)",
+        "recipient": "CrKtH5L2MsgEpDGhkjiGeU6ugtW6PYeenFa4qqNomyXX",
+        "failure": "The Solana Token Bridge program's redeem/complete-transfer instruction reverts with a program-level error (IoError: InvalidAccountData, at ~18764 compute units, before any real transfer logic runs) when submitted via the Wormhole SDK's redeem() -- tried both directly and after an explicit core-bridge verifyMessage() post step first (the SDK reported that step needed zero transactions, i.e. it believed posting wasn't required, and the redeem still failed identically). Guardian set (index 0) and its on-chain PDA were confirmed to exist and match the VAA. Root cause not yet found -- likely an account-layout mismatch between the SDK's expectations and this specific devnet program deployment, which needs deeper Solana/Anchor-level debugging than the EVM chains required. The locked 1 $INAYA on BSC is currently stuck in-flight (its VAA is valid and re-attemptable once this is fixed)."
+      }
+    }
+  }
 }

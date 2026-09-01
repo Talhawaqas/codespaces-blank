@@ -100,6 +100,14 @@ const CAPABILITY_OVERRIDES = {
   // deployments/interop/wormhole-wtt/bscTestnet-attestation.json's provenRoutes.
   ARBITRUM: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
   AVALANCHE: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
+  // SOLANA: wrapped $INAYA genuinely created and verified on-chain (real SPL mint, real SPL Token
+  // program owner -- 3 confirmed transactions). NOT TRANSFER_TESTED: a real transfer was locked
+  // on BSC but completing it on Solana hit an unresolved program-level error (Solana's account
+  // model needs different, deeper debugging than the EVM chains did -- see
+  // deployments/interop/wormhole-wtt/bscTestnet-attestation.json's partialRoutes.SOLANA for the
+  // exact failure). TRANSFER_AVAILABLE is the honest level: infra is real and ready, a completed
+  // transfer is not yet proven.
+  SOLANA: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_AVAILABLE },
 };
 
 const CAPABILITY = Object.fromEntries(
