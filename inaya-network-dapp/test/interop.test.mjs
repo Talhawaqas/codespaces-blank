@@ -34,13 +34,27 @@ test("getInteropProvider: returns a real WormholeProvider, cached across calls",
   assert.strictEqual(a, b, "should be cached, not a new instance each call");
 });
 
-test("WormholeProvider: unimplemented methods reject clearly rather than silently no-op", async () => {
+test("WormholeProvider: getRoute/estimateFee/sendTransfer/getTransferStatus reject clearly -- no Inaya-side deployment exists yet to back them", async () => {
   const provider = getInteropProvider();
-  await assert.rejects(() => provider.getSupportedChains(), /Not implemented/);
   await assert.rejects(() => provider.getRoute(97, 1), /Not implemented/);
   await assert.rejects(() => provider.estimateFee({}), /Not implemented/);
   await assert.rejects(() => provider.sendTransfer({}), /Not implemented/);
   await assert.rejects(() => provider.getTransferStatus("x"), /Not implemented/);
+});
+
+test("WormholeProvider.getSupportedChains: REAL query against @wormhole-foundation/sdk-base -- every priority chain has confirmed live testnet Core+Token Bridge contracts", async () => {
+  const provider = getInteropProvider();
+  const chains = await provider.getSupportedChains();
+  const priorityChains = ["ETHEREUM", "BSC", "ARBITRUM", "AVALANCHE", "POLYGON", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
+  const foundKeys = chains.map((c) => c.inayaKey);
+  for (const key of priorityChains) {
+    assert.ok(foundKeys.includes(key), `${key} should have confirmed live Wormhole testnet infrastructure`);
+  }
+  for (const entry of chains) {
+    assert.ok(entry.coreBridge, `${entry.inayaKey} should have a real core bridge address`);
+    assert.ok(entry.tokenBridge, `${entry.inayaKey} should have a real token bridge address`);
+    assert.ok(entry.family, `${entry.inayaKey} should have a resolved platform (Evm/Solana/Sui/...)`);
+  }
 });
 
 test("LayerZeroProvider: declared, extends the same interface, still fully unimplemented (deferred per the evaluation)", async () => {

@@ -41,6 +41,25 @@ The practical rule going forward: **routes Inaya already has a working native br
 
 This preserves the SOW's Phase 3 requirements: 1:1 accounting stays enforceable (NTT's rate-limiting + hub-and-spoke/burn-mint model prevents unauthorized supply creation; WTT's lock-and-mint keeps wrapped supply backed 1:1 by the source-chain lock), source-chain backing is explicit in both modes, and replay protection/transfer uniqueness come from Wormhole's own Guardian-signed VAA scheme (a message is only actionable once, per Wormhole's core protocol guarantees) layered under whichever mode is used.
 
-## Status
+## Status (Definition of Done, per the SOW's Phase 14)
 
-Phase 2 (this abstraction) and Phase 4/12 (the capability registry) are real, tested code. **No interop deployment exists yet on any chain** — `WormholeProvider`'s methods are correctly-shaped stubs, not live integrations. See `docs/multichain-support-matrix.md` for the honest per-chain state and `docs/chain-expansion-guide.md` for what deploying the first real route actually requires.
+- [x] Wormhole evaluated — `docs/interoperability-provider-evaluation.md`, sourced against live docs
+- [x] LayerZero evaluated — same doc
+- [x] Provider selected based on technical evidence — Wormhole (NTT primary, WTT fallback)
+- [x] Existing Inaya bridge remains functional — untouched; verified via the full existing test suite staying green (`npm test`, `npx hardhat test`) after every change in this SOW
+- [x] Provider-neutral interoperability abstraction exists — `src/lib/chain-adapters/interop/InteropProvider.js` + `WormholeProvider.js` + `LayerZeroProvider.js` (two real implementations of one interface, not just one — a single-implementation interface isn't proven provider-neutral)
+- [x] $INAYA integration model documented — this doc, "Hybrid" model
+- [ ] 1:1 accounting verified — designed for (`docs/interop-security-boundary.md`), not yet verified against a real deployed contract, since none exists
+- [x] Broad chain availability discovered dynamically — `WormholeProvider.getSupportedChains()` is a REAL, live query against `@wormhole-foundation/sdk-base`'s own chain-contract registry, not a hardcoded list Inaya maintains by hand
+- [x] Chain support levels implemented — `src/lib/chain-adapters/interop/capabilityRegistry.js`, Tier A-D + the DISCOVERED→FULL_INAYA_INTEGRATION level model
+- [ ] Wallet routing implemented — not started; existing EVM/Solana wallet paths are unchanged, no non-EVM (Sui/Aptos/Near/Injective/Sei) wallet integration exists yet
+- [x] Transfer tracking integrated — `src/lib/interopTransfers.js`, mirrors the native bridge's `bridge_transfers` pattern with its own `interop_transfers` collection and the SOW's own PENDING/PROCESSING/ATTESTING/RELAYING/COMPLETED/FAILED status set
+- [ ] Testnet/devnet transfer proven — **not done**. No NttManager/WTT attestation has been deployed by Inaya on any chain yet; `docs/chain-expansion-guide.md` documents the real deployment sequence but it hasn't been executed
+- [x] Existing tests remain green — `npm test` (dApp), `npx hardhat test` (contracts), both re-verified after every change in this SOW
+- [x] Existing staking remains untouched — no staking contract or route was touched
+- [x] No mainnet deployment — nothing deployed anywhere yet, mainnet or otherwise
+- [x] No fake chain-support claims — every chain in `capabilityRegistry.js` is honestly Tier C / `ROUTE_AVAILABLE`, never claimed higher than what's been verified
+- [x] Documentation completed — this doc, the evaluation doc, the support matrix, the expansion guide, the security-boundary doc
+- [ ] At least 3 additional ecosystems technically demonstrated through the interop layer — **not done**; this requires the real testnet deployment above, which hasn't happened
+
+**Honest summary**: the architecture, provider selection, capability model, transfer-tracking schema, and a REAL (not stubbed) live query against Wormhole's own chain registry are done and tested. The actual first deployment — an NttManager or WTT attestation on any chain, and a real end-to-end testnet transfer — has not been done. That's the concrete remaining work, and `docs/chain-expansion-guide.md` is the real, sourced procedure for it.

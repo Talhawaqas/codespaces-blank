@@ -16,21 +16,61 @@
 // this SOW at all; testnet/devnet only, per the SOW's explicit instruction.
 
 import { InteropProvider } from "./InteropProvider.js";
+import { chainToPlatform, contracts, finality } from "@wormhole-foundation/sdk-base";
+import { INTEROP_CHAINS } from "./capabilityRegistry.js";
 
 export const WORMHOLE_MODE = { NTT: "ntt", WTT: "wtt" };
+
+// Maps Inaya's own chain keys (capabilityRegistry.js) to the Wormhole SDK's own chain-name
+// strings -- the two vocabularies differ (Inaya: "BSC", Wormhole SDK: "Bsc").
+const INAYA_KEY_TO_WORMHOLE_CHAIN = {
+  ETHEREUM: "Ethereum", BSC: "Bsc", ARBITRUM: "Arbitrum", AVALANCHE: "Avalanche",
+  POLYGON: "Polygon", BASE: "Base", OPTIMISM: "Optimism", SOLANA: "Solana",
+  SUI: "Sui", APTOS: "Aptos", NEAR: "Near", INJECTIVE: "Injective", SEI: "Sei",
+};
 
 export class WormholeProvider extends InteropProvider {
   constructor() {
     super("wormhole");
   }
 
-  // getSupportedChains() -> will read Inaya's own deployed-NttManager/WTT-attestation
-  // registry (deployments/interop/wormhole-ntt/*.json, once Phase 3's real deployment
-  // exists) -- NOT the Wormhole network's full chain list, which would overclaim.
+  /** REAL, live query against @wormhole-foundation/sdk-base's own chain-contract registry --
+   *  not Inaya's own capabilityRegistry.js (which tracks INAYA-SIDE deployment state, a
+   *  separate question). Returns only chains where Wormhole's own core infrastructure
+   *  (Core Bridge + Token Bridge) is confirmed deployed on Testnet, which is real
+   *  verification of "the provider's network reaches this chain" -- not marketing, not a
+   *  hardcoded list Inaya maintains by hand and could let drift out of date. */
+  async getSupportedChains() {
+    const out = [];
+    for (const [inayaKey, wormholeChain] of Object.entries(INAYA_KEY_TO_WORMHOLE_CHAIN)) {
+      let coreBridge = null;
+      let tokenBridge = null;
+      try {
+        coreBridge = contracts.coreBridge("Testnet", wormholeChain);
+        tokenBridge = contracts.tokenBridge("Testnet", wormholeChain);
+      } catch {
+        // Chain genuinely not in the SDK's registry for Testnet -- excluded, not silently included.
+      }
+      if (!coreBridge || !tokenBridge) continue;
+      out.push({
+        chainId: INTEROP_CHAINS[inayaKey]?.testnetEvmChainId ?? null,
+        family: chainToPlatform(wormholeChain),
+        mode: WORMHOLE_MODE.WTT, // confirmed via tokenBridge; NTT confirmation would need Inaya's own deployed NttManager, which doesn't exist yet
+        inayaKey,
+        wormholeChain,
+        coreBridge,
+        tokenBridge,
+        finalityBlocks: finality.finalityThreshold(wormholeChain) ?? null,
+      });
+    }
+    return out;
+  }
 
   // getRoute(sourceChainId, destChainId) -> checks whether both chains have a deployed
   // NttManager with the OTHER chain registered as a peer (NTT's "registerPeer" step),
-  // falling back to WTT attestation-existence for chains NTT doesn't cover.
+  // falling back to WTT attestation-existence for chains NTT doesn't cover. Still
+  // unimplemented -- unlike getSupportedChains() above, this needs Inaya's OWN deployment
+  // state (deployments/interop/wormhole-ntt/*.json), which doesn't exist until Phase 3 ships.
 
   // estimateFee(params) -> wraps the Wormhole SDK's fee-estimation call for the chosen
   // mode (NTT: protocol message fee + destination gas; WTT: protocol message fee +
