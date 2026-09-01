@@ -3915,16 +3915,24 @@ export default function Home() {
 };
 
   // ⚡ MONGO BUSINESS PIPELINE ROUTING FOR PINATA
- const uploadToPinata = async (encryptedShard, filename, elementTag) => {
+ const uploadToPinata = async (encryptedShard, filename, elementTag, fileHash, shardId) => {
   const response = await fetch("/api/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ 
-      encryptedShard, 
-      filename, 
+    body: JSON.stringify({
+      encryptedShard,
+      filename,
       elementTag,
       walletAddress,
-      selectedTier: selectedB2BTier
+      selectedTier: selectedB2BTier,
+      // Backup & Recovery Mechanism (docs/backup-redundancy-architecture.md): fileHash/shardId
+      // let api/upload/route.js key the second-provider replication by the same fileHash
+      // batchRegisterAssets() will register on-chain moments later -- computed client-side here
+      // (computeFileHash is a pure keccak256, no RPC needed) since a fileHash doesn't otherwise
+      // exist yet at pin time. Optional: older/other callers of this route that don't pass them
+      // simply don't get replicated, same as before this change.
+      fileHash,
+      shardId,
     })
   });
   const data = await response.json();
@@ -3948,14 +3956,14 @@ export default function Home() {
     });
   };
 
-  const prepareShardedFile = async (file) => {
+  const prepareShardedFile = async (file, fileHash) => {
     const dataUrl = await readFileAsDataURL(file);
     const cipherTextString = await encryptData(dataUrl, masterPasskey);
     const midpoint = Math.ceil(cipherTextString.length / 2);
 
     const [cidA, cidB] = await Promise.all([
-      uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha"),
-      uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta")
+      uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha", fileHash, "alpha"),
+      uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta", fileHash, "beta")
     ]);
 
     // 🌳 Proof-of-storage: chunk the same ciphertext into 256KB leaves and build the Merkle tree.
@@ -4025,10 +4033,10 @@ export default function Home() {
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const effectiveAssetId = isBatch ? `${assetId}-${i + 1}` : assetId;
+      const hash = computeFileHash(effectiveAssetId);
       try {
         updateProgress(i, 'processing', 'Encrypting (PBKDF2 + AES-GCM)...');
-        const { filename, cidAlpha, cidBeta, merkleRoot, merkleLayers, chunkCount } = await prepareShardedFile(file);
-        const hash = computeFileHash(effectiveAssetId);
+        const { filename, cidAlpha, cidBeta, merkleRoot, merkleLayers, chunkCount } = await prepareShardedFile(file, hash);
 
         fileHashes.push(hash);
         fileSizes.push(file.size);

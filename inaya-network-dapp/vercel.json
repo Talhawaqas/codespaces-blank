@@ -31,6 +31,18 @@
     {
       "path": "/api/interop/wtt/relay",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/backup/cron/check-pins",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/backup/cron/verify-integrity",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/backup/cron/recover",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

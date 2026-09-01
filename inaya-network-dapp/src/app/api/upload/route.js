@@ -1,10 +1,32 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
+import { replicateShard } from '@/lib/backupEngine';
+
+// Backup & Recovery Mechanism (docs/backup-redundancy-architecture.md) — best-effort fan-out to a
+// second pinning provider after THIS route's own primary Pinata pin succeeds, bounded by a soft
+// timeout so a slow/unreachable secondary provider adds at most REPLICATE_SOFT_TIMEOUT_MS to the
+// upload response, never longer. Deliberately AWAITED (not left truly detached after the
+// response is sent) -- Vercel serverless functions don't guarantee unawaited work continues
+// running once a response has gone out, so "best-effort" here means "bounded-latency, not
+// blocking indefinitely," not "run after we've already responded." Any failure or timeout is
+// swallowed (never fails the upload itself) -- the check-pins cron is the real safety net for
+// anything that doesn't complete here (see backupEngine.js's own module comment).
+const REPLICATE_SOFT_TIMEOUT_MS = 8000;
+
+async function replicateShardBestEffort({ fileHash, shardId, content, primaryProvider, primaryCid }) {
+  if (!fileHash || !shardId) return; // caller (below) only has a real fileHash/shardId once the client sends them — see the request body change
+  const timeout = new Promise((resolve) => setTimeout(resolve, REPLICATE_SOFT_TIMEOUT_MS));
+  try {
+    await Promise.race([replicateShard({ fileHash, shardId, content, primaryProvider, primaryCid }), timeout]);
+  } catch (err) {
+    console.error('backup replicateShard (best-effort) failed:', err.message);
+  }
+}
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { encryptedShard, filename, elementTag, walletAddress, selectedTier } = body;
+    const { encryptedShard, filename, elementTag, walletAddress, selectedTier, fileHash, shardId } = body;
     
     // 🔑 Updated to use Pinata JWT (Modern Method)
     const pinataJWT = process.env.PINATA_JWT;
@@ -85,6 +107,9 @@ export async function POST(request) {
     }
 
     const data = await response.json();
+
+    await replicateShardBestEffort({ fileHash, shardId, content: encryptedShard, primaryProvider: 'pinata', primaryCid: data.IpfsHash });
+
     return NextResponse.json({ IpfsHash: data.IpfsHash });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
