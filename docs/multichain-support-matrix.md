@@ -19,11 +19,11 @@ Single source of truth for what "supported" actually means per chain, per the In
 
 | Chain | Provider available | Wallet | $INAYA transfer | Tested | Staking |
 |---|---|---|---|---|---|
-| Ethereum | Yes (Wormhole core) | Existing MetaMask/EVM path | No — not deployed | No | No |
-| BSC | Yes | Existing EVM path | No — not deployed | No | No |
-| Arbitrum | Yes | Existing EVM path | No — not deployed | No | No |
-| Avalanche | Yes | Existing EVM path | No — not deployed | No | No |
-| Polygon | Yes | Existing EVM path | No — not deployed | No | No |
+| BSC (source) | Yes | Existing EVM path | **Yes — real, verified** | **Yes** | No |
+| Ethereum (Sepolia) | Yes | Existing MetaMask/EVM path | **Yes — real, verified** | **Yes** | No |
+| Arbitrum | Yes | Existing EVM path | No — not attempted yet | No | No |
+| Avalanche | Yes | Existing EVM path | No — not attempted yet | No | No |
+| Polygon | **No — Wormhole has no real Amoy coverage** | Existing EVM path | No | No | No |
 | Base | Yes | Existing EVM path | No — not deployed | No | No |
 | Optimism | Yes | Existing EVM path | No — not deployed | No | No |
 | Solana | Yes | Existing Phantom/Solflare path | No — not deployed | No | No |
@@ -33,6 +33,8 @@ Single source of truth for what "supported" actually means per chain, per the In
 | Injective | Yes | Not yet built | No — not deployed | No | No |
 | Sei | Yes | Not yet built | No — not deployed | No | No |
 
-"Provider available" here means: Wormhole's core Guardian network is confirmed live on that chain (`docs/interoperability-provider-evaluation.md`'s sourced comparison) — **not** that Inaya has deployed anything there. Every "$INAYA transfer" cell is "No" because that's the honest, current state: zero interop-layer deployment exists yet, matching `src/lib/chain-adapters/interop/capabilityRegistry.js`'s Tier C classification for all 13 chains.
+"Provider available" here means: Wormhole's core Guardian network is confirmed live on that chain (`docs/interoperability-provider-evaluation.md`'s sourced comparison) — **not** that Inaya has deployed anything there. Polygon is the one honest exception: Wormhole has no "PolygonAmoy" entry, only an unrelated "PolygonSepolia" testnet — a real transfer attempt against it reverted on-chain (`InvalidTargetChain()`) before this was caught and corrected, see `deployments/interop/wormhole-wtt/bscTestnet-attestation.json`.
 
-The correct sentence to use anywhere user-facing, per the SOW's own instruction: *"Inaya's interoperability layer provides access to 13 evaluated blockchain networks through Wormhole, with deployment in progress."* Not "Inaya supports 13 chains."
+BSC and Ethereum/Sepolia's "$INAYA transfer" cells are the one real, end-to-end proof this table exists to distinguish from marketing: 1.0 `$INAYA` was actually locked on BSC Testnet and the wrapped equivalent is confirmed, on-chain, in a real wallet on Sepolia. Every other cell stays "No" because that's the honest, current state — no deployment exists yet for those chains.
+
+The correct sentence to use anywhere user-facing, per the SOW's own instruction: *"Inaya's interoperability layer has a real, working route from BSC to Ethereum via Wormhole, with 11 more evaluated networks in progress."* Not "Inaya supports 13 chains."

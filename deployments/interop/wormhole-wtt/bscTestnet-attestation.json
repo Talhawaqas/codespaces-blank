@@ -8,14 +8,26 @@
   "blockNumber": 128409561,
   "gasUsed": "68867",
   "status": "confirmed on-chain (receipt status 1)",
-  "notes": "This registers $INAYA's metadata on Wormhole's Token Bridge, the prerequisite before a wrapped $INAYA can be created on any destination chain via WTT. This alone does NOT make a transfer available yet -- the resulting VAA must still be submitted to a destination chain's Token Bridge to create the wrapped token there. See scripts/interop-attest-inaya.mjs and scripts/interop-complete-wrapped-creation.mjs for the next step.",
-  "wrappedCreationAttempts": [
-    {
-      "destChain": "Avalanche (Fuji)",
-      "result": "REVERTED on-chain",
-      "revertTxHash": "0x1cf287aad22b584eeff2a79000d828e43357bb5b111d4c662cba01e8865926af",
-      "gasUsed": "492677",
-      "notes": "VAA fetch from the Guardian network succeeded (real, live attestation was signed) -- the revert happened in the destination-chain submitAttestation() call itself, cause not yet root-caused. Deployer wallet's Fuji balance was low (~0.0016 AVAX) after this attempt, so further blind retries were stopped rather than risk exhausting it chasing an undiagnosed revert. Next attempt should: (1) fund the deployer wallet further on Fuji, (2) decode the VAA's payload directly to check its encoded target chain ID matches Fuji's Wormhole chain ID exactly, (3) try a different, better-funded destination chain (e.g. Sepolia) first to isolate whether this is Fuji-specific or a general submitAttestation issue."
-    }
-  ]
+  "wrappedTokenCreation": {
+    "destChain": "Ethereum Sepolia",
+    "wormholeChainId": 10002,
+    "action": "createWrapped",
+    "txHash": "0xab9f8f01fdf1a62816e7150660fe013f268eed1bcfbcf880920faeaa97d95516",
+    "blockNumber": 11610064,
+    "wrappedTokenAddress": "0xAC711C4aC50E4280c790D64fE816e217203b7ab1",
+    "verified": { "name": "Project Inaya", "symbol": "INAYA", "decimals": 18, "bytecodeLength": 831 },
+    "notes": "The Wormhole TypeScript SDK's own submitAttestation() wrapper reverted (both on Fuji and initially on Sepolia) -- root-caused and worked around by calling createWrapped(bytes) directly via ethers using the VAA the SDK itself fetched. The VAA and the destination contract were both fine; the SDK's transaction-construction wrapper was the actual problem."
+  },
+  "realTransfer": {
+    "amount": "1.0 $INAYA",
+    "lockTx": { "chain": "BSC Testnet", "txHash": "0xacfb69e7e13fb29035b88ebe18dd9be78ecc7025b8dfa8524292260be4574da9", "blockNumber": 128416094, "targetWormholeChainId": 10002 },
+    "completeTx": { "chain": "Ethereum Sepolia", "txHash": "0x8ceb13dc70a48126dddf6c4d2526d05f768d766d32316d1bc7e236ee9d334136", "blockNumber": 11610103 },
+    "verifiedDestinationBalance": "1.0",
+    "recipient": "0x4BA0a7c39154e7B7fA72288D29D7fdaf0248b1F2",
+    "status": "COMPLETE -- real, end-to-end, verified. A user's $INAYA was locked on BSC Testnet and the equivalent wrapped $INAYA is confirmed present in their wallet on Sepolia."
+  },
+  "correctedBug": {
+    "description": "A first attempt targeted Wormhole chain ID 2 ('Ethereum', mainnet's ID) instead of 10002 ('Sepolia', the actual testnet-specific ID) -- Wormhole registers Sepolia as its own distinct chain, separate from mainnet Ethereum, unlike BSC/Avalanche which have a single mainnet-name-covers-testnet-too mapping. That attempt's completeTransfer() reverted on-chain with InvalidTargetChain() (selector 0x376f6e4a, confirmed by computing keccak256 selectors for every custom error in Wormhole's Bridge.sol and matching). The stray locked amount from that attempt (tx 0x982d65f2e7e8c8142a8a23452f3d71d7149e0c38cc99c78f4922df91feef9c96) is inert -- its VAA targets chain 2, which nothing here will ever submit to. Fixed in src/lib/chain-adapters/interop/WormholeProvider.js's chain-name mapping, which had the identical bug for Ethereum/Arbitrum/Base/Optimism (Polygon has no fix -- Wormhole genuinely doesn't cover Inaya's Amoy target, see that file's comment).",
+    "realTransferTx": "See realTransfer above for the corrected, successful attempt."
+  }
 }

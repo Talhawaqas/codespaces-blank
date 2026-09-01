@@ -66,20 +66,38 @@ export const INTEROP_CHAINS = {
 };
 
 // Verified 2026-08-31 against Wormhole's own published chain list (wormhole.com/blockchains,
-// cross-checked search results) -- every chain below is confirmed present on Wormhole's network.
-// Tier C for all of them: $INAYA has no NTT/WTT deployment on ANY chain yet, so even though
-// Wormhole's core messaging is live everywhere below, Inaya-side deployment is still required
-// before a single one becomes usable. None are Tier A yet, honestly, because "Tier A" would mean
-// zero Inaya-side work -- that's not true for a brand-new asset on any interoperability network.
+// cross-checked search results) -- every chain below (except POLYGON, see its override) is
+// confirmed present on Wormhole's network. Tier C by default: $INAYA has no NTT/WTT
+// deployment on most chains yet, so even though Wormhole's core messaging is live, Inaya-side
+// deployment is still required before a route becomes usable.
+const DEFAULT_CAPABILITY = {
+  tier: TIERS.C_DESTINATION_DEPLOY,
+  providerConfirmed: true, // Wormhole's core Guardian network is confirmed live on this chain
+  level: INTEROP_SUPPORT_LEVELS.ROUTE_AVAILABLE, // provider reachable; nothing Inaya-specific deployed yet
+};
+
+// Real, proven overrides -- upgraded only once actually demonstrated on-chain, per chain,
+// never ahead of proof:
+const CAPABILITY_OVERRIDES = {
+  // POLYGON: Wormhole has no "PolygonAmoy" testnet entry -- only an unrelated "PolygonSepolia"
+  // that isn't Inaya's real Amoy target (confirmed by a real on-chain revert, InvalidTargetChain,
+  // before this was caught and fixed -- see WormholeProvider.js's mapping comment). Honestly
+  // Tier D / DISCOVERED: the selected provider does not currently reach Inaya's actual chain.
+  POLYGON: { tier: TIERS.D_UNSUPPORTED, providerConfirmed: false, level: INTEROP_SUPPORT_LEVELS.DISCOVERED },
+  // BSC: real createAttestation() confirmed on-chain (tx 0x09f6fabe0f1..., receipt status 1) --
+  // the source-chain half of a real transfer is proven. TRANSFER_TESTED, not higher --
+  // no staking/business integration has been built on top of this yet.
+  BSC: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
+  // ETHEREUM (Sepolia): a real end-to-end transfer is proven -- wrapped $INAYA deployed
+  // (0xAC711C4aC50E4280c790D64fE816e217203b7ab1, real ERC20, name/symbol/decimals verified),
+  // 1 $INAYA locked on BSC (tx 0x982d65f2e7e...) and minted on Sepolia via a real
+  // completeTransfer() (tx confirmed, balance verified non-zero). See
+  // deployments/interop/wormhole-wtt/ for the full record.
+  ETHEREUM: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
+};
+
 const CAPABILITY = Object.fromEntries(
-  Object.keys(INTEROP_CHAINS).map((key) => [
-    key,
-    {
-      tier: TIERS.C_DESTINATION_DEPLOY,
-      providerConfirmed: true, // Wormhole's core Guardian network is confirmed live on this chain
-      level: INTEROP_SUPPORT_LEVELS.ROUTE_AVAILABLE, // provider reachable; nothing Inaya-specific deployed yet
-    },
-  ])
+  Object.keys(INTEROP_CHAINS).map((key) => [key, { ...DEFAULT_CAPABILITY, ...(CAPABILITY_OVERRIDES[key] || {}) }])
 );
 
 /** @returns {{ tier: string, providerConfirmed: boolean, level: number, levelLabel: string } | null} */

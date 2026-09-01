@@ -23,10 +23,26 @@ export const WORMHOLE_MODE = { NTT: "ntt", WTT: "wtt" };
 
 // Maps Inaya's own chain keys (capabilityRegistry.js) to the Wormhole SDK's own chain-name
 // strings -- the two vocabularies differ (Inaya: "BSC", Wormhole SDK: "Bsc").
+//
+// CORRECTED (real bug, found while completing a real testnet transfer -- see
+// deployments/interop/wormhole-wtt/): for chains where a given mainnet family has MULTIPLE
+// registered Wormhole testnets, "Testnet" + the mainnet family name does NOT resolve to
+// Inaya's actual target testnet -- it silently returns a DIFFERENT chain's addresses.
+// Confirmed directly: contracts.tokenBridge('Testnet','Ethereum') !== contracts.tokenBridge
+// ('Testnet','Sepolia') (different addresses, different Wormhole chain IDs -- 2 vs 10002).
+// Submitting a real transferTokens() call with the wrong chain ID (2 instead of 10002)
+// reverted on-chain with InvalidTargetChain() once it reached the destination -- that's how
+// this was caught, not by inspection. Ethereum/Arbitrum/Base/Optimism now map to their
+// Sepolia-family testnet-specific SDK names, matching Inaya's own real testnet spokes.
+// POLYGON has no entry -- verified there is no "PolygonAmoy" in the SDK's chain list at all
+// (only "Polygon" mainnet and "PolygonSepolia", a DIFFERENT, unrelated Polygon testnet) --
+// Wormhole does not currently reach Inaya's actual Amoy target, so it's honestly excluded
+// rather than mapped to a testnet that isn't the one Inaya deployed to.
 const INAYA_KEY_TO_WORMHOLE_CHAIN = {
-  ETHEREUM: "Ethereum", BSC: "Bsc", ARBITRUM: "Arbitrum", AVALANCHE: "Avalanche",
-  POLYGON: "Polygon", BASE: "Base", OPTIMISM: "Optimism", SOLANA: "Solana",
+  ETHEREUM: "Sepolia", BSC: "Bsc", ARBITRUM: "ArbitrumSepolia", AVALANCHE: "Avalanche",
+  BASE: "BaseSepolia", OPTIMISM: "OptimismSepolia", SOLANA: "Solana",
   SUI: "Sui", APTOS: "Aptos", NEAR: "Near", INJECTIVE: "Injective", SEI: "Sei",
+  // POLYGON deliberately omitted -- see comment above.
 };
 
 export class WormholeProvider extends InteropProvider {

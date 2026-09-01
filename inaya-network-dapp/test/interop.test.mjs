@@ -45,14 +45,24 @@ test("WormholeProvider: getRoute/estimateFee/sendTransfer/getTransferStatus reje
   await assert.rejects(() => provider.getTransferStatus("x"), /Not implemented/);
 });
 
-test("WormholeProvider.getSupportedChains: REAL query against @wormhole-foundation/sdk-base -- every priority chain has confirmed live testnet Core+Token Bridge contracts", async () => {
+test("WormholeProvider.getSupportedChains: REAL query against @wormhole-foundation/sdk-base -- every priority chain (except Polygon) has confirmed live, CORRECT testnet Core+Token Bridge contracts", async () => {
   const provider = getInteropProvider();
   const chains = await provider.getSupportedChains();
-  const priorityChains = ["ETHEREUM", "BSC", "ARBITRUM", "AVALANCHE", "POLYGON", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
+  // POLYGON is deliberately excluded -- Wormhole has no "PolygonAmoy" entry, only an
+  // unrelated "PolygonSepolia" testnet that isn't Inaya's actual Amoy target. Confirmed via
+  // a real reverted on-chain transfer (InvalidTargetChain) before this was corrected -- see
+  // WormholeProvider.js's mapping comment.
+  const priorityChains = ["ETHEREUM", "BSC", "ARBITRUM", "AVALANCHE", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
   const foundKeys = chains.map((c) => c.inayaKey);
   for (const key of priorityChains) {
     assert.ok(foundKeys.includes(key), `${key} should have confirmed live Wormhole testnet infrastructure`);
   }
+  assert.ok(!foundKeys.includes("POLYGON"), "POLYGON should NOT be claimed -- no real Amoy coverage exists on Wormhole");
+  // Regression guard for the exact bug found: Ethereum/Arbitrum/Base/Optimism must resolve to
+  // their OWN Sepolia-family testnet addresses, never silently fall back to the mainnet-family
+  // chain name's address under the Testnet network param.
+  const ethEntry = chains.find((c) => c.inayaKey === "ETHEREUM");
+  assert.equal(ethEntry.tokenBridge, "0xDB5492265f6038831E89f495670FF909aDe94bd9", "ETHEREUM must resolve to Sepolia's real token bridge, not mainnet Ethereum's");
   for (const entry of chains) {
     assert.ok(entry.coreBridge, `${entry.inayaKey} should have a real core bridge address`);
     assert.ok(entry.tokenBridge, `${entry.inayaKey} should have a real token bridge address`);
@@ -66,15 +76,30 @@ test("LayerZeroProvider: declared, extends the same interface, still fully unimp
   await assert.rejects(() => provider.getSupportedChains(), /Not implemented/);
 });
 
-test("capabilityRegistry: every SOW-priority chain is present and honestly Tier C / ROUTE_AVAILABLE (nothing Inaya-side deployed yet)", () => {
-  const priorityChains = ["ETHEREUM", "BSC", "ARBITRUM", "AVALANCHE", "POLYGON", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
-  for (const key of priorityChains) {
+test("capabilityRegistry: every still-undeployed priority chain is honestly Tier C / ROUTE_AVAILABLE", () => {
+  const undeployedChains = ["ARBITRUM", "AVALANCHE", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
+  for (const key of undeployedChains) {
     assert.ok(INTEROP_CHAINS[key], `${key} should be a declared interop chain`);
     const cap = getInteropCapability(key);
     assert.ok(cap, `${key} should have a capability entry`);
     assert.equal(cap.tier, TIERS.C_DESTINATION_DEPLOY, `${key} should honestly be Tier C until real deployment exists`);
     assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.ROUTE_AVAILABLE, `${key} shouldn't claim more than ROUTE_AVAILABLE yet`);
     assert.equal(isInteropTransferProven(key), false, `${key} shouldn't claim a proven transfer -- none has been sent`);
+  }
+});
+
+test("capabilityRegistry: POLYGON is honestly Tier D -- Wormhole has no real Amoy coverage, caught by a real reverted on-chain transfer", () => {
+  const cap = getInteropCapability("POLYGON");
+  assert.equal(cap.tier, TIERS.D_UNSUPPORTED);
+  assert.equal(cap.providerConfirmed, false);
+  assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.DISCOVERED);
+});
+
+test("capabilityRegistry: BSC and ETHEREUM (Sepolia) are TRANSFER_TESTED -- a real end-to-end transfer was proven on-chain", () => {
+  for (const key of ["BSC", "ETHEREUM"]) {
+    const cap = getInteropCapability(key);
+    assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED, `${key} should reflect the real proven transfer`);
+    assert.equal(isInteropTransferProven(key), true, `${key} should now report a proven transfer`);
   }
 });
 
