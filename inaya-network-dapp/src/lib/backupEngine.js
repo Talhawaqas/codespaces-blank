@@ -19,7 +19,16 @@
 import clientPromise from "./mongodb.js";
 import { ethers } from "ethers";
 import { getProvider, listAvailableProviders, sha256Hex } from "./pinningProviders/index.js";
-import { computeAssetHealthState, needsRecovery, HEALTH_STATES, CONSECUTIVE_FAILURE_THRESHOLD } from "./backupHealth.js";
+import { computeAssetHealthState, computeShardHealthState, classifyReplicaStatus, needsRecovery, HEALTH_STATES, CONSECUTIVE_FAILURE_THRESHOLD } from "./backupHealth.js";
+
+/** A replica counts as a valid recovery source/existing-healthy-provider using the SAME
+ *  "retrievable" definition backupHealth.js uses everywhere else (healthy OR wavering -- under
+ *  the failure threshold, not corrupted) -- not a stricter "must have zero recorded misses ever"
+ *  check, which would wrongly exclude a replica that's merely had one transient blip. */
+function isReplicaRetrievable(doc) {
+  const status = classifyReplicaStatus(docToHealthInput(doc));
+  return status === "healthy" || status === "wavering";
+}
 
 const DB_NAME = "inaya_network";
 const SHARD_IDS = ["alpha", "beta"];
@@ -348,7 +357,7 @@ async function recoverShard(fileHash, shardId) {
     const { replicas } = await getCollections();
     const docs = await loadShardReplicaDocs(fileHash, shardId);
 
-    const source = docs.find((d) => !d.corrupted && (d.consecutiveFailures || 0) === 0);
+    const source = docs.find(isReplicaRetrievable);
     if (!source) return { shardId, status: "no-healthy-source" };
 
     const sourceAdapter = getProvider(source.provider);
@@ -357,7 +366,7 @@ async function recoverShard(fileHash, shardId) {
       return { shardId, status: "source-integrity-mismatch" }; // reject -- do not propagate bad data
     }
 
-    const healthyProviders = new Set(docs.filter((d) => !d.corrupted && (d.consecutiveFailures || 0) === 0).map((d) => d.provider));
+    const healthyProviders = new Set(docs.filter(isReplicaRetrievable).map((d) => d.provider));
     const targetProviderName = listAvailableProviders().find((p) => !healthyProviders.has(p));
     if (!targetProviderName) return { shardId, status: "no-target-provider-available" };
 
@@ -365,8 +374,18 @@ async function recoverShard(fileHash, shardId) {
     const pinResult = await targetAdapter.pin(content, { name: `${fileHash}_${shardId}_recovered_${Date.now()}` });
     await recordReplica({ fileHash, shardId, provider: pinResult.provider, cid: pinResult.cid, providerRef: pinResult.providerRef, contentHash: pinResult.contentHash });
 
-    // Drop the failed/corrupted replica record for this provider so it stops being counted --
-    // it will be re-created fresh next time that provider is chosen as a recovery target.
+    // Actually remove the failed/corrupted replica from its provider's storage (not just its DB
+    // record) -- otherwise a dead pin/object sits accumulating storage cost forever after
+    // recovery replaces it (SOW's storage-efficiency requirement: "cleanup of obsolete copies").
+    // Best-effort: an unpin failure shouldn't undo the recovery that already succeeded above.
+    const deadDocs = docs.filter((d) => d.corrupted || (d.consecutiveFailures || 0) >= CONSECUTIVE_FAILURE_THRESHOLD);
+    for (const dead of deadDocs) {
+      try {
+        await getProvider(dead.provider).unpin(dead.providerRef);
+      } catch (err) {
+        console.error(`backupEngine: unpin failed for ${dead.provider}/${dead.providerRef} (continuing -- DB record is still removed below):`, err.message);
+      }
+    }
     await replicas.deleteMany({
       fileHash, shardId,
       $or: [{ corrupted: true }, { consecutiveFailures: { $gte: CONSECUTIVE_FAILURE_THRESHOLD } }],
@@ -389,10 +408,14 @@ export async function runRecoverySweep({ limit = 50 } = {}) {
   for (const doc of candidates) {
     for (const shardId of SHARD_IDS) {
       const shardDocs = await loadShardReplicaDocs(doc.fileHash, shardId);
-      const shardHealth = computeAssetHealthState({
-        shardAlpha: shardId === "alpha" ? { replicas: shardDocs.map(docToHealthInput), rebuildInFlight: false } : { replicas: [], rebuildInFlight: false },
-        shardBeta: shardId === "beta" ? { replicas: shardDocs.map(docToHealthInput), rebuildInFlight: false } : { replicas: [], rebuildInFlight: false },
+      // Per-shard state, not the asset-level (worst-of-both) combiner -- computeAssetHealthState
+      // requires both shards' real data or the missing one reads as "zero replicas" and always
+      // dominates as the worse state, wrongly flagging every shard as needing recovery regardless
+      // of its own actual health.
+      const shardHealth = computeShardHealthState({
+        replicas: shardDocs.map(docToHealthInput),
         targetReplicaCount: getTargetReplicaCount(),
+        rebuildInFlight: false,
       });
       if (!needsRecovery(shardHealth) && shardHealth !== HEALTH_STATES.RECOVERY_FAILED) continue;
 

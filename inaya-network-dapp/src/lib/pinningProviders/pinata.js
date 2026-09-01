@@ -64,3 +64,21 @@ export async function getPinStatus(providerRef) {
   const data = await res.json();
   return Array.isArray(data?.rows) && data.rows.some((row) => row.ipfs_pin_hash === providerRef);
 }
+
+/** Permanently removes a replica -- called by recoverShard when cleaning up a failed/corrupted
+ *  replica, so a dead pin doesn't sit accumulating storage cost forever after recovery replaces
+ *  it (SOW's storage-efficiency requirement: "cleanup of obsolete copies"). Idempotent: Pinata's
+ *  unpin returns 404/"already unpinned" for an already-gone CID, treated as success here too. */
+export async function unpin(providerRef) {
+  const pinataJWT = process.env.PINATA_JWT;
+  if (!pinataJWT) throw new Error("pinningProviders/pinata: PINATA_JWT is not configured.");
+
+  const res = await fetch(`https://api.pinata.cloud/pinning/unpin/${providerRef}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${pinataJWT.trim()}` },
+  });
+  if (!res.ok && res.status !== 404) {
+    const errorText = await res.text();
+    throw new Error(`pinningProviders/pinata: unpin failed (HTTP ${res.status}): ${errorText}`);
+  }
+}

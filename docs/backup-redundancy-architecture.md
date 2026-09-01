@@ -36,12 +36,18 @@ does not change the underlying 2-of-2 bisection — if Alpha and Beta both indep
 replica, the file is still unrecoverable, exactly as before this mechanism existed. True
 cross-shard redundancy needs real erasure coding, out of scope here.
 
-**Second provider status**: Filebase is fully coded (`src/lib/pinningProviders/filebase.js`) but
-not yet live — `FILEBASE_ACCESS_KEY`/`FILEBASE_SECRET_KEY`/`FILEBASE_BUCKET` have not been
-supplied. `pinningProviders/index.js`'s `listAvailableProviders()` only returns providers whose
-credentials are actually present, so today the system correctly reports every asset as **Degraded**
-(1 of 2 target replicas) rather than falsely claiming Protected — the health-state machine was
-verified to behave exactly this way against real data (see §7).
+**Second provider status**: Filebase is real and live (`src/lib/pinningProviders/filebase.js`) as
+of 2026-09-01 — `FILEBASE_ACCESS_KEY`/`FILEBASE_SECRET_KEY`/`FILEBASE_BUCKET` are configured and
+verified working end-to-end (see §7). Two real, live-account gotchas hit and fixed while wiring
+this in, both specific to Filebase's actual current setup rather than anything in this codebase:
+the correct S3 endpoint is `https://s3.filebase.io` (not `.com`), and the AWS SDK v3's newer
+default of auto-attaching a request checksum causes a generic `AccessDenied` against Filebase's
+S3-compatible backend — fixed by setting `requestChecksumCalculation`/`responseChecksumValidation`
+to `"WHEN_REQUIRED"` on the client. `pinningProviders/index.js`'s `listAvailableProviders()` only
+ever returns providers whose credentials are actually present, so if either provider's credentials
+are ever removed/rotated out, the system correctly falls back to reporting **Degraded** rather than
+falsely claiming Protected — this fallback behavior was itself verified for real before Filebase
+credentials existed (see §7's first real run).
 
 ## 3. Failure detection — two tiers
 
@@ -76,7 +82,9 @@ affected shard: fetches content from any other currently-healthy replica of the 
 recomputes its SHA-256 and requires an exact match against the hash captured at original pin time
 (rejecting and leaving the shard in Recovery Required on any mismatch — recovered data is never
 accepted on trust), then re-pins to whichever configured provider doesn't already hold a healthy
-replica, restoring the target count.
+replica, restoring the target count. The failed/corrupted replica's underlying storage object is
+then actually removed (each adapter's `unpin()`, best-effort) — not just its database record —
+so a dead pin doesn't sit accumulating storage cost forever after recovery replaces it.
 
 This deliberately does **not** reuse the existing Merkle-proof registry (`InayaProofRegistry.sol`
 / `src/lib/merkle.js`) for integrity verification — that mechanism chunks the *pre-split, full*
@@ -123,16 +131,49 @@ address: `0x062c341aE4f11CB1dEa1B0D3930d52902F97f48a`.
   `requestRecovery()`'s signed-message construction, and error translation.
 - **Real deployment + real on-chain interaction**: `InayaBackupRegistry` deployed live to BSC
   Testnet 97 (`0x062c341aE4f11CB1dEa1B0D3930d52902F97f48a`).
-- **Real end-to-end run** (`scripts/backup-mechanism-e2e-proof.mjs`): run against a real,
-  already-registered `InayaCustody` asset (real on-chain `assets()` read, real IPFS shard content
-  fetched from public gateways), through the real `backupEngine.replicateShard()` /
-  `getBackupStatus()` / `runCheckPinsSweep()` pipeline, ending in a real
-  `InayaBackupRegistry.registerRedundancyCommitment()` transaction — full result, including the
-  real transaction hash and the exact asset used, recorded in this session's own summary. Honestly
-  scoped to what's provable with only Pinata configured: correctly computes and records
-  **Degraded** (1 of 2 target replicas — Filebase not yet configured), not a false "Protected."
-  Proving the full outage-simulation → Recovery Required → recovered → Protected cycle needs a
-  second real, live provider and is deferred to Phase 2, once Filebase credentials are supplied.
+- **Real end-to-end run, both providers** (`scripts/backup-mechanism-e2e-proof.mjs`): run against
+  a real, already-registered `InayaCustody` asset (real on-chain `assets()` read, real IPFS shard
+  content fetched from public gateways), through the real `backupEngine.replicateShard()` /
+  `getBackupStatus()` / `runCheckPinsSweep()` pipeline. Both shards replicated for real to both
+  Pinata (existing pin, confirmed still held) and Filebase (fresh real pin, real assigned CID),
+  correctly computing and recording **Protected** (2 of 2 target replicas), with a matching real
+  `InayaBackupRegistry.registerRedundancyCommitment()` transaction confirmed by an independent
+  on-chain read.
+
+  Before Filebase's real credentials were supplied, the identical script correctly computed and
+  recorded **Degraded** (1 of 2 target replicas) instead of a false "Protected" — proving the
+  fallback behavior described in §2 works for real, not just in theory.
+
+- **Real end-to-end recovery cycle** (`scripts/backup-mechanism-recovery-proof.mjs`): starting from
+  the real Protected state above, deletes the real Filebase replica for shardAlpha (via the
+  adapter's own real `unpin()`), simulates the Tier-1 grace window having elapsed, and confirms:
+  the state machine correctly flips to **Recovery Required**; the real recovery sweep fetches the
+  surviving shard content from the healthy Pinata replica, verifies its SHA-256 against the hash
+  captured at original pin time, and re-pins it to Filebase (a real new object, same CID as before
+  — IPFS content-addressing confirmed working as expected); a follow-up clean Tier-1 pass confirms
+  every replica independently healthy and the asset self-heals back to **Protected**; and the
+  on-chain `InayaBackupRegistry` record tracks every one of these real state transitions
+  (Protected → RecoveryRequired → Protected), confirmed against an independent on-chain read at
+  each step. Full command output, including every real transaction/object reference, was captured
+  during this run.
+
+  **Two real bugs were found and fixed by this exact run**, both in `backupEngine.js`, neither in
+  the already-unit-tested `backupHealth.js`:
+  1. `runRecoverySweep` computed each shard's health by wrapping it through the asset-level
+     (worst-of-both-shards) combiner with a *fake empty replica list* standing in for the other
+     shard — an empty list always computes to Recovery Failed, which as the "worse" of the two
+     always won, so **every shard of every asset in the Recovery Required queue got a recovery
+     attempt regardless of whether that specific shard actually needed one**. Fixed by calling
+     `computeShardHealthState` directly, per shard, instead.
+  2. `recoverShard`'s source/target-provider selection required a replica to have *exactly zero*
+     recorded consecutive failures ever, rather than using the same "retrievable" definition
+     (healthy OR wavering, i.e. under the failure threshold) `backupHealth.js` uses everywhere
+     else — so a perfectly fine replica that had merely had one transient blip could get wrongly
+     excluded as a recovery source, or wrongly counted as still needing a fresh target pin. Fixed
+     by extracting a shared `isReplicaRetrievable()` helper reusing `classifyReplicaStatus()`.
+
+  Both fixes are reflected in the current `backupEngine.js`; the recovery proof script above passes
+  cleanly, end-to-end, in a single run against the fixed code.
 
 ## 8. What's explicitly out of scope for this pass
 
@@ -155,4 +196,4 @@ deployment of `InayaBackupRegistry` beyond BSC Testnet 97. All of these are the 
 - Cron schedule: `inaya-network-dapp/vercel.json`
 - SDK: `custody-sdk/src/backup.js` (`InayaKernel.Backup`), tests in `custody-sdk/test/backup.test.mjs`
 - Upload-path wiring: `inaya-network-dapp/src/app/api/upload/route.js`, `inaya-network-dapp/src/app/page.js` (`uploadToPinata`/`prepareShardedFile`)
-- Real end-to-end proof script: `scripts/backup-mechanism-e2e-proof.mjs`
+- Real end-to-end proof scripts: `scripts/backup-mechanism-e2e-proof.mjs` (replication + Protected/Degraded), `scripts/backup-mechanism-recovery-proof.mjs` (full failure → recovery → Protected cycle), `scripts/test-filebase-adapter.mjs` (standalone adapter smoke test)

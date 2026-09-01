@@ -3,23 +3,25 @@
 // Second, independent pinning provider for backup replication -- a genuinely different
 // infrastructure/failure domain than Pinata's own cluster (Filebase's IPFS storage backs onto
 // Storj/Sia, not Pinata's infra), which is the actual point of provider diversity per
-// docs/backup-redundancy-architecture.md. S3-compatible API (endpoint s3.filebase.com), object
-// bodies stored as the raw shard ciphertext string in an IPFS-storage-class bucket; Filebase
-// computes and returns a real IPFS CID for each object, exposed via the `x-amz-meta-cid` response
-// header (confirmed via Filebase's own docs -- retrieved through a HeadObjectCommand immediately
-// after PutObjectCommand, since the AWS SDK v3's PutObject response does not surface arbitrary
-// custom headers directly).
+// docs/backup-redundancy-architecture.md. S3-compatible API, object bodies stored as the raw
+// shard ciphertext string in an IPFS-storage-class bucket; Filebase computes and returns a real
+// IPFS CID for each object, exposed via the `x-amz-meta-cid` response header (confirmed via
+// Filebase's own docs -- retrieved through a HeadObjectCommand immediately after PutObjectCommand,
+// since the AWS SDK v3's PutObject response does not surface arbitrary custom headers directly).
 //
-// NOT YET LIVE: requires FILEBASE_ACCESS_KEY / FILEBASE_SECRET_KEY / FILEBASE_BUCKET, which have
-// not been supplied yet (see docs/backup-redundancy-architecture.md's Phase 2 gate). isConfigured()
-// honestly reports false until they are -- every other function throws a clear, actionable error
-// rather than silently no-opping if called anyway.
+// Endpoint is https://s3.filebase.io (NOT .com -- confirmed live against Filebase's own S3 API
+// dashboard page, 2026-09-01), region "auto" (Filebase's current recommendation; "us-east-1"
+// still works for older integrations per their docs, but auto is what's shown live now).
+//
+// FILEBASE_ACCESS_KEY / FILEBASE_SECRET_KEY / FILEBASE_BUCKET are real, configured credentials
+// (see .env.local) -- isConfigured() reports true once they're present; every other function
+// throws a clear, actionable error if called without them rather than silently no-opping.
 
-import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { sha256Hex } from "./hash.js";
 
-const ENDPOINT = "https://s3.filebase.com";
-const REGION = "us-east-1"; // Filebase's IPFS endpoint is region-agnostic; the SDK still requires a value.
+const ENDPOINT = "https://s3.filebase.io";
+const REGION = "auto";
 
 function getClient() {
   const accessKeyId = process.env.FILEBASE_ACCESS_KEY;
@@ -27,7 +29,18 @@ function getClient() {
   if (!accessKeyId || !secretAccessKey) {
     throw new Error("pinningProviders/filebase: FILEBASE_ACCESS_KEY / FILEBASE_SECRET_KEY are not configured.");
   }
-  return new S3Client({ endpoint: ENDPOINT, region: REGION, credentials: { accessKeyId, secretAccessKey }, forcePathStyle: true });
+  return new S3Client({
+    endpoint: ENDPOINT,
+    region: REGION,
+    credentials: { accessKeyId, secretAccessKey },
+    forcePathStyle: true,
+    // AWS SDK v3's newer default (auto-attaching a CRC32 request checksum) trips up several
+    // non-AWS S3-compatible providers, surfacing as a generic AccessDenied rather than a clear
+    // checksum error -- confirmed live against Filebase specifically. Reverting to the older,
+    // opt-in-only checksum behavior fixes it.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  });
 }
 
 function getBucket() {
@@ -79,6 +92,21 @@ export async function getPinStatus(providerRef) {
     return true;
   } catch (err) {
     if (err?.$metadata?.httpStatusCode === 404 || err?.name === "NotFound") return false;
+    throw err;
+  }
+}
+
+/** Permanently removes a replica -- called by recoverShard when cleaning up a failed/corrupted
+ *  replica, so a dead replica doesn't sit in the bucket accumulating storage cost forever after
+ *  recovery replaces it (SOW's storage-efficiency requirement: "cleanup of obsolete copies").
+ *  Idempotent: a 404 on an already-gone object is not an error. */
+export async function unpin(providerRef) {
+  const client = getClient();
+  const bucket = getBucket();
+  try {
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: providerRef }));
+  } catch (err) {
+    if (err?.$metadata?.httpStatusCode === 404 || err?.name === "NotFound") return;
     throw err;
   }
 }

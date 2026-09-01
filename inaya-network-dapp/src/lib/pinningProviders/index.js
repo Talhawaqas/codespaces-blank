@@ -4,12 +4,14 @@
 //   pin(content, { name }) -> { provider, cid, providerRef, contentHash }
 //   fetchReplica(providerRef) -> content string
 //   getPinStatus(providerRef) -> boolean
+//   unpin(providerRef) -> void (idempotent -- removing an already-gone replica is not an error)
 //   isConfigured() -> boolean
 //
 // The backup-replication engine loops over PROVIDERS / listAvailableProviders() without knowing
-// which concrete provider it's talking to. Pinata is real and already backs the primary upload
-// path; Filebase is the second, independent provider for redundancy -- see filebase.js's header
-// for why it's coded but not yet live (pending FILEBASE_* credentials).
+// which concrete provider it's talking to. Both providers are real and live: Pinata backs the
+// primary upload path; Filebase (S3-compatible, IPFS-storage-class bucket) is the second,
+// independent provider for redundancy -- confirmed working end-to-end 2026-09-01
+// (docs/backup-redundancy-architecture.md §7).
 
 import * as pinata from "./pinata.js";
 import * as filebase from "./filebase.js";
