@@ -206,6 +206,7 @@ export const ROADMAP_STAGES = [
       "list_deals", "list_suppliers", "list_purchase_orders", "list_purchase_requests",
       "list_products", "list_invoices", "list_expenses", "list_employees", "list_leave_requests",
       "find_employee_document", "get_activity", "get_document_access", "get_business_insights",
+      "get_business_brief",
     ],
     notes:
       "Live today in both the web and mobile Business Workspace, powered by the exact same permission-scoped tools on the backend. Read-only here — for the AI's ability to propose real changes (never execute them directly), see Stage 9.",
@@ -277,14 +278,16 @@ export const ROADMAP_STAGES = [
       "AI-generated summaries",
       "AI business insights",
       "Natural-language reporting",
+      "Daily / Weekly / Monthly / Yearly Business Brief",
     ],
     examples: [
       "“How's the business doing this month?”",
       "“Any alerts I should know about?”",
       "“Explain why revenue changed this period.”",
+      "“Give me my weekly brief.”",
     ],
     notes:
-      "Real and shipped: KPI cards, period-over-period comparison, trend charts, and business alerts all compute from the same permission-scoped data every other Business Workspace module already reads — no separate, weaker-scoped path. The AI Business Assistant answers KPI/trend/alert questions directly via a dedicated get_business_insights tool. See BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's explicitly not yet (no custom date-range picker, no trend charts on mobile yet).",
+      "Real and shipped: KPI cards, period-over-period comparison, trend charts, and business alerts all compute from the same permission-scoped data every other Business Workspace module already reads — no separate, weaker-scoped path. The AI Business Assistant answers KPI/trend/alert questions directly via a dedicated get_business_insights tool. The Business Brief (new 2026-09-01) is a periodic recap on the same real data — deterministic highlight bullets plus a best-effort AI narrative paragraph on top, available as its own Workspace view and conversationally via get_business_brief. See BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's explicitly not yet (no custom date-range picker, no trend charts on mobile yet).",
   },
   {
     number: 9,
