@@ -129,6 +129,15 @@ export async function getListingBySlug(slug) {
   return db.collection("app_store_listings").findOne({ slug, status: "approved" });
 }
 
+/** Every submission from one wallet, any status — the only way a developer
+ *  can check whether their own pending submission was approved or rejected
+ *  (and why) without admin access. Public read, but scoped to the querying
+ *  address's own data only — same risk profile as GET /api/nft/backups. */
+export async function listListingsBySubmitter(address) {
+  const { db } = await connectToDatabase();
+  return db.collection("app_store_listings").find({ submitterAddress: String(address || "").toLowerCase() }).sort({ createdAt: -1 }).toArray();
+}
+
 /** Re-runs the threat check at review time (a domain can turn malicious
  *  after submission but before an admin looks at it) before recording the
  *  decision, so the stored threatCheck reflects what was actually true
