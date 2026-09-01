@@ -94,6 +94,12 @@ const CAPABILITY_OVERRIDES = {
   // completeTransfer() (tx confirmed, balance verified non-zero). See
   // deployments/interop/wormhole-wtt/ for the full record.
   ETHEREUM: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
+  // ARBITRUM (Arbitrum Sepolia) and AVALANCHE (Fuji): same real, proven pattern as ETHEREUM --
+  // wrapped $INAYA deployed and verified, 1 $INAYA locked on BSC and minted on each destination
+  // via a real completeTransfer(), balance confirmed non-zero on each. Full record in
+  // deployments/interop/wormhole-wtt/bscTestnet-attestation.json's provenRoutes.
+  ARBITRUM: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
+  AVALANCHE: { tier: TIERS.C_DESTINATION_DEPLOY, providerConfirmed: true, level: INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED },
 };
 
 const CAPABILITY = Object.fromEntries(

@@ -33,12 +33,24 @@ async function fetchVaaByTxHash(txHash) {
   return { rawBase64: op.vaa.raw, sequence: op.sequence, emitterAddress: op.emitterAddress?.hex };
 }
 
+// Every route here is real and proven end-to-end -- see
+// deployments/interop/wormhole-wtt/bscTestnet-attestation.json's provenRoutes for the actual
+// transaction hashes each was verified with.
 const PROVEN_ROUTES = {
   "BSC:ETHEREUM": {
     destRpc: () => process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com",
     destChainId: 11155111,
     destTokenBridge: "0xDB5492265f6038831E89f495670FF909aDe94bd9",
-    wormholeVaaChain: "Sepolia",
+  },
+  "BSC:ARBITRUM": {
+    destRpc: () => process.env.ARBITRUM_SEPOLIA_RPC || "https://sepolia-rollup.arbitrum.io/rpc",
+    destChainId: 421614,
+    destTokenBridge: "0xC7A204bDBFe983FCD8d8E61D02b475D4073fF97e",
+  },
+  "BSC:AVALANCHE": {
+    destRpc: () => process.env.AVALANCHE_FUJI_RPC || "https://api.avax-test.network/ext/bc/C/rpc",
+    destChainId: 43113,
+    destTokenBridge: "0x61E44E506Ca5659E6c0bba9b678586fA2d729756",
   },
 };
 

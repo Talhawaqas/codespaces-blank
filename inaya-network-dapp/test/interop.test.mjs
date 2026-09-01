@@ -77,7 +77,7 @@ test("LayerZeroProvider: declared, extends the same interface, still fully unimp
 });
 
 test("capabilityRegistry: every still-undeployed priority chain is honestly Tier C / ROUTE_AVAILABLE", () => {
-  const undeployedChains = ["ARBITRUM", "AVALANCHE", "BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
+  const undeployedChains = ["BASE", "OPTIMISM", "SOLANA", "SUI", "APTOS", "NEAR", "INJECTIVE", "SEI"];
   for (const key of undeployedChains) {
     assert.ok(INTEROP_CHAINS[key], `${key} should be a declared interop chain`);
     const cap = getInteropCapability(key);
@@ -95,8 +95,8 @@ test("capabilityRegistry: POLYGON is honestly Tier D -- Wormhole has no real Amo
   assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.DISCOVERED);
 });
 
-test("capabilityRegistry: BSC and ETHEREUM (Sepolia) are TRANSFER_TESTED -- a real end-to-end transfer was proven on-chain", () => {
-  for (const key of ["BSC", "ETHEREUM"]) {
+test("capabilityRegistry: BSC, ETHEREUM (Sepolia), ARBITRUM (Arbitrum Sepolia), and AVALANCHE (Fuji) are TRANSFER_TESTED -- real end-to-end transfers proven on-chain", () => {
+  for (const key of ["BSC", "ETHEREUM", "ARBITRUM", "AVALANCHE"]) {
     const cap = getInteropCapability(key);
     assert.equal(cap.level, INTEROP_SUPPORT_LEVELS.TRANSFER_TESTED, `${key} should reflect the real proven transfer`);
     assert.equal(isInteropTransferProven(key), true, `${key} should now report a proven transfer`);

@@ -28,12 +28,19 @@ const MESSENGER_SENT_TOPIC_ABI = [
 
 const TRANSFER_FEE = 100000000000000n; // 0.0001 INAYA -- InayaToken's flat fee, home side only
 
-// Interop SOW -- the ONE real, proven Wormhole route (docs/inaya-interoperability.md's
-// Definition of Done). Every value below is a real, verified-on-chain address/ID, not a
-// placeholder -- see deployments/interop/wormhole-wtt/bscTestnet-attestation.json for the
-// actual transaction hashes this was proven with.
+// Interop SOW -- every route below is REAL and PROVEN (docs/inaya-interoperability.md's
+// Definition of Done): a real attestation + wrapped-token creation + locked transfer +
+// completed transfer + non-zero destination balance, each verified on-chain. Every chain ID
+// here is the chain's OWN Wormhole-registered testnet ID, not assumed from its mainnet family
+// (Sepolia=10002, ArbitrumSepolia=10003 -- NOT 2/23, mainnet Ethereum/Arbitrum's IDs -- a real
+// bug found and fixed this session). See
+// deployments/interop/wormhole-wtt/bscTestnet-attestation.json for every transaction hash.
 const WORMHOLE_BSC_TOKEN_BRIDGE = "0x9dcF9D205C9De35334D646BeE44b2D2859712A09";
-const WORMHOLE_SEPOLIA_CHAIN_ID = 10002; // Sepolia's OWN Wormhole chain ID -- NOT 2 (mainnet Ethereum's), a real bug found and fixed this session
+const WORMHOLE_PROVEN_DESTINATIONS = [
+  { key: "ETHEREUM", label: "Ethereum (Sepolia)", wormholeChainId: 10002 },
+  { key: "ARBITRUM", label: "Arbitrum (Sepolia)", wormholeChainId: 10003 },
+  { key: "AVALANCHE", label: "Avalanche (Fuji)", wormholeChainId: 6 },
+];
 const WORMHOLE_TRANSFER_TOKENS_ABI = ["function transferTokens(address,uint256,uint16,bytes32,uint256,uint32) payable returns (uint64)"];
 
 function getBrowserProvider() {
@@ -56,6 +63,7 @@ export default function BridgePage() {
   // Interop SOW state -- deliberately separate from the native-bridge state above, since it's
   // a different system (src/lib/interopTransfers.js's interop_transfers, not bridge_transfers).
   const [interopChains, setInteropChains] = useState(null);
+  const [interopDest, setInteropDest] = useState(WORMHOLE_PROVEN_DESTINATIONS[0].key);
   const [interopAmount, setInteropAmount] = useState("");
   const [interopStatus, setInteropStatus] = useState("");
   const [interopTransferId, setInteropTransferId] = useState(null);
@@ -97,23 +105,24 @@ export default function BridgePage() {
       setInteropStatus("Approving Wormhole Token Bridge...");
       await (await token.approve(WORMHOLE_BSC_TOKEN_BRIDGE, amountWei)).wait();
 
+      const dest = WORMHOLE_PROVEN_DESTINATIONS.find((d) => d.key === interopDest);
       const tb = new ethers.Contract(WORMHOLE_BSC_TOKEN_BRIDGE, WORMHOLE_TRANSFER_TOKENS_ABI, signer);
       const recipientBytes32 = ethers.zeroPadValue(account, 32);
       const nonce = Math.floor(Math.random() * 1e9);
-      setInteropStatus("Locking $INAYA on BSC via Wormhole...");
-      const tx = await tb.transferTokens(home.contracts.inayaToken, amountWei, WORMHOLE_SEPOLIA_CHAIN_ID, recipientBytes32, 0, nonce);
+      setInteropStatus(`Locking $INAYA on BSC via Wormhole, destined for ${dest.label}...`);
+      const tx = await tb.transferTokens(home.contracts.inayaToken, amountWei, dest.wormholeChainId, recipientBytes32, 0, nonce);
       const receipt = await tx.wait();
 
       const initRes = await fetch("/api/interop/wtt/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceChain: "BSC", destChain: "ETHEREUM", sourceTxHash: receipt.hash, userAddress: account, amount: amountWei.toString() }),
+        body: JSON.stringify({ sourceChain: "BSC", destChain: dest.key, sourceTxHash: receipt.hash, userAddress: account, amount: amountWei.toString() }),
       });
       const initData = await initRes.json();
       if (!initData.success) throw new Error(initData.error || "Failed to record transfer");
 
       setInteropTransferId(initData.transferId);
-      setInteropStatus(`Locked on BSC (${receipt.hash.slice(0, 10)}...). Waiting for Wormhole Guardian attestation + relay to Sepolia -- this can take a few minutes.`);
+      setInteropStatus(`Locked on BSC (${receipt.hash.slice(0, 10)}...). Waiting for Wormhole Guardian attestation + relay to ${dest.label} -- this can take a few minutes.`);
     } catch (err) {
       setInteropStatus(`Error: ${err.message}`);
     }
@@ -299,11 +308,20 @@ export default function BridgePage() {
 
         <div style={{ display: "grid", gap: 12, marginTop: 16, maxWidth: 420 }}>
           <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12 }}>
-            <strong>BSC → Ethereum (Sepolia)</strong> <span style={{ color: "#0a7", fontSize: 12 }}>● Real, proven route</span>
+            <strong>BSC → {WORMHOLE_PROVEN_DESTINATIONS.find((d) => d.key === interopDest)?.label}</strong>{" "}
+            <span style={{ color: "#0a7", fontSize: 12 }}>● Real, proven route</span>
             <p style={{ fontSize: 12, color: "#666", margin: "4px 0 12px" }}>
-              Locks $INAYA on BSC via Wormhole's Token Bridge; Inaya's relayer completes the mint on Sepolia automatically once
-              the Guardian network signs the attestation (a few minutes on testnet).
+              Locks $INAYA on BSC via Wormhole's Token Bridge; Inaya's relayer completes the mint on the destination automatically
+              once the Guardian network signs the attestation (a few minutes on testnet).
             </p>
+            <label>
+              Destination
+              <select value={interopDest} onChange={(e) => setInteropDest(e.target.value)}>
+                {WORMHOLE_PROVEN_DESTINATIONS.map((d) => (
+                  <option key={d.key} value={d.key}>{d.label}</option>
+                ))}
+              </select>
+            </label>
             <label>
               Amount (INAYA)
               <input value={interopAmount} onChange={(e) => setInteropAmount(e.target.value)} placeholder="0.0" />
@@ -315,7 +333,7 @@ export default function BridgePage() {
             {interopTransfer && (
               <div style={{ border: "1px solid #ddd", padding: 10, marginTop: 8, fontSize: 13 }}>
                 <strong>Status:</strong> {interopTransfer.status}
-                {interopTransfer.destTxHash && <div>Sepolia tx: {interopTransfer.destTxHash}</div>}
+                {interopTransfer.destTxHash && <div>Destination tx: {interopTransfer.destTxHash}</div>}
                 {interopTransfer.failureReason && <div>Reason: {interopTransfer.failureReason}</div>}
               </div>
             )}
@@ -326,7 +344,7 @@ export default function BridgePage() {
               <summary style={{ cursor: "pointer" }}>Other networks Wormhole reaches (not yet transfer-ready through Inaya)</summary>
               <ul style={{ marginTop: 8 }}>
                 {interopChains.capability
-                  .filter((c) => c.key !== "ETHEREUM" && c.key !== "BSC")
+                  .filter((c) => !WORMHOLE_PROVEN_DESTINATIONS.some((d) => d.key === c.key) && c.key !== "BSC")
                   .map((c) => (
                     <li key={c.key}>
                       {c.label}: {c.levelLabel} {c.tier === "D" ? "— not currently reachable via Wormhole for Inaya's actual testnet" : ""}

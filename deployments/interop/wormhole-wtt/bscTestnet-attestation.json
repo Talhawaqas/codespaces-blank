@@ -7,27 +7,46 @@
   "txHash": "0x09f6fabe0f111ce035a31c3262ffe0300d0cdf72a4b7f54811ed76a8b7cd7fb4",
   "blockNumber": 128409561,
   "gasUsed": "68867",
-  "status": "confirmed on-chain (receipt status 1)",
-  "wrappedTokenCreation": {
-    "destChain": "Ethereum Sepolia",
-    "wormholeChainId": 10002,
-    "action": "createWrapped",
-    "txHash": "0xab9f8f01fdf1a62816e7150660fe013f268eed1bcfbcf880920faeaa97d95516",
-    "blockNumber": 11610064,
-    "wrappedTokenAddress": "0xAC711C4aC50E4280c790D64fE816e217203b7ab1",
-    "verified": { "name": "Project Inaya", "symbol": "INAYA", "decimals": 18, "bytecodeLength": 831 },
-    "notes": "The Wormhole TypeScript SDK's own submitAttestation() wrapper reverted (both on Fuji and initially on Sepolia) -- root-caused and worked around by calling createWrapped(bytes) directly via ethers using the VAA the SDK itself fetched. The VAA and the destination contract were both fine; the SDK's transaction-construction wrapper was the actual problem."
-  },
-  "realTransfer": {
-    "amount": "1.0 $INAYA",
-    "lockTx": { "chain": "BSC Testnet", "txHash": "0xacfb69e7e13fb29035b88ebe18dd9be78ecc7025b8dfa8524292260be4574da9", "blockNumber": 128416094, "targetWormholeChainId": 10002 },
-    "completeTx": { "chain": "Ethereum Sepolia", "txHash": "0x8ceb13dc70a48126dddf6c4d2526d05f768d766d32316d1bc7e236ee9d334136", "blockNumber": 11610103 },
-    "verifiedDestinationBalance": "1.0",
-    "recipient": "0x4BA0a7c39154e7B7fA72288D29D7fdaf0248b1F2",
-    "status": "COMPLETE -- real, end-to-end, verified. A user's $INAYA was locked on BSC Testnet and the equivalent wrapped $INAYA is confirmed present in their wallet on Sepolia."
-  },
+  "status": "confirmed on-chain (receipt status 1) -- one attestation on the source chain backs wrapped-token creation on every destination below",
   "correctedBug": {
     "description": "A first attempt targeted Wormhole chain ID 2 ('Ethereum', mainnet's ID) instead of 10002 ('Sepolia', the actual testnet-specific ID) -- Wormhole registers Sepolia as its own distinct chain, separate from mainnet Ethereum, unlike BSC/Avalanche which have a single mainnet-name-covers-testnet-too mapping. That attempt's completeTransfer() reverted on-chain with InvalidTargetChain() (selector 0x376f6e4a, confirmed by computing keccak256 selectors for every custom error in Wormhole's Bridge.sol and matching). The stray locked amount from that attempt (tx 0x982d65f2e7e8c8142a8a23452f3d71d7149e0c38cc99c78f4922df91feef9c96) is inert -- its VAA targets chain 2, which nothing here will ever submit to. Fixed in src/lib/chain-adapters/interop/WormholeProvider.js's chain-name mapping, which had the identical bug for Ethereum/Arbitrum/Base/Optimism (Polygon has no fix -- Wormhole genuinely doesn't cover Inaya's Amoy target, see that file's comment).",
-    "realTransferTx": "See realTransfer above for the corrected, successful attempt."
-  }
+    "alsoFound": "The Wormhole TypeScript SDK's own submitAttestation() wrapper reverted (Fuji and initially Sepolia) -- root-caused and worked around by calling createWrapped(bytes)/completeTransfer(bytes) directly via ethers using VAAs fetched via Wormholescan's public REST API instead of the SDK. The VAAs and destination contracts were always fine; the SDK's transaction-construction wrapper was the actual problem."
+  },
+  "provenRoutes": {
+    "ETHEREUM": {
+      "destChain": "Ethereum Sepolia",
+      "wormholeChainId": 10002,
+      "wrappedTokenCreation": { "txHash": "0xab9f8f01fdf1a62816e7150660fe013f268eed1bcfbcf880920faeaa97d95516", "blockNumber": 11610064, "wrappedTokenAddress": "0xAC711C4aC50E4280c790D64fE816e217203b7ab1", "verified": { "name": "Project Inaya", "symbol": "INAYA", "decimals": 18, "bytecodeLength": 831 } },
+      "realTransfer": {
+        "amount": "1.0 $INAYA",
+        "lockTx": "0xacfb69e7e13fb29035b88ebe18dd9be78ecc7025b8dfa8524292260be4574da9",
+        "completeTx": "0x8ceb13dc70a48126dddf6c4d2526d05f768d766d32316d1bc7e236ee9d334136",
+        "verifiedDestinationBalance": "1.0"
+      }
+    },
+    "ARBITRUM": {
+      "destChain": "Arbitrum Sepolia",
+      "wormholeChainId": 10003,
+      "wrappedTokenCreation": { "txHash": "0xd494d86ea0b01d0a5532502b9e8264b7c9afec33d21f0240d4e65117cbe6378e", "blockNumber": 304168807, "wrappedTokenAddress": "0xB761EE25f7e5A2920DdbB13019F7CC2Aa2696d88" },
+      "realTransfer": {
+        "amount": "1.0 $INAYA",
+        "lockTx": "0x259717c662d131fd4b9858625c65faf453ab8e3de98033fbfacf21927ac2557a",
+        "completeTx": "0x3debb3eba55ca520c7f744b8791a56a94ac6a5f0d19515dbc1369cac89c63a25",
+        "verifiedDestinationBalance": "1.0"
+      }
+    },
+    "AVALANCHE": {
+      "destChain": "Avalanche Fuji",
+      "wormholeChainId": 6,
+      "wrappedTokenCreation": { "txHash": "0xe451ed640100e226905f8fbe425d826b23219d2a3aa67814f818e496a443cf4d", "blockNumber": 58108225, "wrappedTokenAddress": "0x1652038Ff07047837cC82B0Aec499F07807A4f91" },
+      "realTransfer": {
+        "amount": "1.0 $INAYA",
+        "lockTx": "0x81967c370b502192129c2e9c7e0fc8b364aaa6a0d11dea723023ac720e6f6bdb",
+        "completeTx": "0x608f7a1f5c95f8cfeccc0c3c924f87b5c7af55547dfc6d8b582ca7c67611320a",
+        "verifiedDestinationBalance": "1.0"
+      }
+    }
+  },
+  "recipient": "0x4BA0a7c39154e7B7fA72288D29D7fdaf0248b1F2",
+  "note": "Each entry under provenRoutes is a REAL, complete, verified end-to-end transfer (source-chain lock + destination-chain completion + on-chain balance check) -- not a partial attempt. All 3 EVM spokes Inaya already has a native-bridge presence on now also have a proven Wormhole interop route. Solana/Sui/Aptos require different, non-EVM SDK tooling and are a separate follow-up (see docs/inaya-interoperability.md's status)."
 }
