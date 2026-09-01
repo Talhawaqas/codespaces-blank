@@ -3213,6 +3213,7 @@ export default function Home() {
         { text: "In-app wallet-attack protection — the Security Layer's threat registry wired directly into the Bridge's recipient-address field, live threat warnings before you send", done: true },
         { text: "Secured community App Store hosting — developers submit their own app (IPFS CID or a sandboxed iframe embed), wallet-signed, threat-checked, and admin-approved before anything is public", done: true },
         { text: "Host apps via the SDK/CLI — InayaKernel.AppStore client plus a new `inaya deploy` CLI command pins a local static site to IPFS (the developer's own Pinata account) and submits it for App Store review in one step", done: true },
+        { text: "MFA for Business Workspace — opt-in TOTP (QR code, any authenticator app) and SMS second factor on login, web + mobile; identity-scoped so one enrollment protects every org a member belongs to", done: true },
       ],
     },
     {
