@@ -9,7 +9,7 @@
 // checks, the deployment JSONs' own honest notes) — never upgraded past
 // what's been proven.
 
-import { CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID, getChain, SOLANA_META } from "../chains.js";
+import { CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID, SOLANA_META, APTOS_TESTNET_CHAIN_ID, APTOS_META, SUI_TESTNET_CHAIN_ID, SUI_META, getChain } from "../chains.js";
 
 export const SUPPORT_LEVELS = {
   DISCOVERED: 0, // in the registry, no integration
@@ -56,6 +56,22 @@ const CAPABILITY_OVERRIDES = {
   // secp256k1 precompile keccak-hashes the message field internally before recovery -- validators
   // must sign keccak256(hash), not hash directly; see solana/programs/.../secp256k1.rs's comment).
   // Not STAKING yet -- only a plain transfer has been proven, no staking flow tested from Solana.
+  [CHAIN_IDS.HEDERA_TESTNET]: { family: CHAIN_FAMILIES.EVM, level: SUPPORT_LEVELS.TOKEN_TRANSFER }, // REAL, PROVEN 2026-09-01:
+  // native bridge (not Wormhole) -- Hedera runs the EVM directly, so the identical
+  // InayaTokenBridgeSpoke/InayaMessenger bytecode already proven on Sepolia/Fuji/Arbitrum was
+  // deployed unchanged. Full bridgeOut + executeMessage cycle confirmed, wrapped balance verified
+  // on-chain. See deployments/bridge/hederaTestnet.json's realDryRun.
+  [APTOS_TESTNET_CHAIN_ID]: { family: CHAIN_FAMILIES.MOVE, level: SUPPORT_LEVELS.TOKEN_TRANSFER }, // REAL, PROVEN 2026-09-01:
+  // brand-new native Move contract (aptos/programs/inaya-bridge-aptos), built after Wormhole's own
+  // SDK proved genuinely blocked (stale hardcoded per-asset bytecode template -- see
+  // deployments/interop/wormhole-wtt/bscTestnet-attestation.json's APTOS entry). Full bridgeOut +
+  // receive_message cycle confirmed, wrapped balance verified on-chain, first real attempt --
+  // see deployments/bridge/aptosTestnet.json's realDryRun.
+  [SUI_TESTNET_CHAIN_ID]: { family: CHAIN_FAMILIES.MOVE, level: SUPPORT_LEVELS.TOKEN_TRANSFER }, // REAL, PROVEN 2026-09-01:
+  // brand-new native Move contract (sui/programs/inaya_bridge_sui), same reasoning as Aptos above.
+  // Full bridgeOut + receive_message cycle confirmed twice, wrapped balance verified on-chain --
+  // see deployments/bridge/suiTestnet.json's realDryRun (which also documents the one real bug
+  // found: an off-chain signature-encoding truncation, not a Move-contract bug).
 };
 
 /** @returns {{ chainId: number, family: string, level: number, levelLabel: string } | null} */
@@ -71,14 +87,16 @@ export function getChainCapability(chainId) {
   };
 }
 
-/** Lists every chain the registry knows about (chains.js's EVM entries + Solana),
+/** Lists every chain the registry knows about (chains.js's EVM entries + Solana + Aptos + Sui),
  *  each annotated with its real, verified capability level — the single source
  *  a UI should read from before ever describing a chain as "supported." */
 export function listChainCapabilities() {
   const evmChainIds = Object.values(CHAIN_IDS);
   const evmEntries = evmChainIds.map((id) => ({ ...getChain(id), ...getChainCapability(id) }));
   const solanaEntry = { ...SOLANA_META, chainId: SOLANA_DEVNET_CHAIN_ID, ...getChainCapability(SOLANA_DEVNET_CHAIN_ID) };
-  return [...evmEntries, solanaEntry];
+  const aptosEntry = { ...APTOS_META, chainId: APTOS_TESTNET_CHAIN_ID, ...getChainCapability(APTOS_TESTNET_CHAIN_ID) };
+  const suiEntry = { ...SUI_META, chainId: SUI_TESTNET_CHAIN_ID, ...getChainCapability(SUI_TESTNET_CHAIN_ID) };
+  return [...evmEntries, solanaEntry, aptosEntry, suiEntry];
 }
 
 /** True only at or above TOKEN_TRANSFER -- the minimum bar for a UI to ever say

@@ -11,7 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { PublicKey } from "@solana/web3.js";
-import { CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID } from "../src/lib/chains.js";
+import { CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID, APTOS_TESTNET_CHAIN_ID, SUI_TESTNET_CHAIN_ID } from "../src/lib/chains.js";
 import {
   getAdapter, EVMAdapter, SolanaAdapter, ChainAdapter,
   SUPPORT_LEVELS, getChainCapability, listChainCapabilities, isTransferReady,
@@ -50,20 +50,34 @@ test("registry: Solana Devnet is TOKEN_TRANSFER level -- a real BSC -> Solana me
   assert.equal(cap.family, "SOLANA");
 });
 
+test("registry: Aptos Testnet is TOKEN_TRANSFER level -- a real BSC -> Aptos message was sent and executed end-to-end (brand-new native Move contract, not Wormhole)", () => {
+  const cap = getChainCapability(APTOS_TESTNET_CHAIN_ID);
+  assert.equal(cap.level, SUPPORT_LEVELS.TOKEN_TRANSFER);
+  assert.equal(cap.family, "MOVE");
+});
+
+test("registry: Sui Testnet is TOKEN_TRANSFER level -- a real BSC -> Sui message was sent and executed end-to-end (brand-new native Move contract, not Wormhole)", () => {
+  const cap = getChainCapability(SUI_TESTNET_CHAIN_ID);
+  assert.equal(cap.level, SUPPORT_LEVELS.TOKEN_TRANSFER);
+  assert.equal(cap.family, "MOVE");
+});
+
 test("registry: an unregistered chain ID returns null, not a fabricated default", () => {
   assert.equal(getChainCapability(999999), null);
 });
 
-test("registry: isTransferReady is true for the live spokes and Solana (real proven transfer), false for Amoy", () => {
+test("registry: isTransferReady is true for the live spokes, Solana, Aptos, and Sui (real proven transfers), false for Amoy", () => {
   assert.equal(isTransferReady(CHAIN_IDS.SEPOLIA), true);
   assert.equal(isTransferReady(CHAIN_IDS.FUJI), true);
   assert.equal(isTransferReady(CHAIN_IDS.AMOY), false);
   assert.equal(isTransferReady(SOLANA_DEVNET_CHAIN_ID), true);
+  assert.equal(isTransferReady(APTOS_TESTNET_CHAIN_ID), true);
+  assert.equal(isTransferReady(SUI_TESTNET_CHAIN_ID), true);
 });
 
-test("registry: listChainCapabilities returns every EVM chain plus Solana, each annotated", () => {
+test("registry: listChainCapabilities returns every EVM chain plus Solana, Aptos, and Sui, each annotated", () => {
   const list = listChainCapabilities();
-  assert.equal(list.length, Object.keys(CHAIN_IDS).length + 1);
+  assert.equal(list.length, Object.keys(CHAIN_IDS).length + 3);
   assert.ok(list.every((c) => typeof c.level === "number" && typeof c.levelLabel === "string"));
 });
 

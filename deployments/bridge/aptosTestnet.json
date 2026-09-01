@@ -1,0 +1,20 @@
+{
+  "role": "spoke",
+  "network": "aptosTestnet",
+  "chainId": 2000000002,
+  "homeChainId": 97,
+  "chainFamily": "MOVE (Aptos)",
+  "packageAddress": "0xc4bf038a4ed931ea21acf4a1da08ddd308a490b7fcd4c96d7592e6eba053efee",
+  "bridge": "0xc4bf038a4ed931ea21acf4a1da08ddd308a490b7fcd4c96d7592e6eba053efee",
+  "publishTx": "0x808c760c30abb3baf846935bdee15f07e3974114fd8609b4fa90575eaa338fd3",
+  "initializeTx": "0x0400eafea049da2fa97672395e9cc59d233974fdb9bb9982aec02083d3cbd59d",
+  "wrappedAsset": "Fungible Asset (0x1::fungible_asset) minted by the bridge module -- no separate deployed address, it's a resource of the package itself",
+  "realDryRun": {
+    "amount": "1.0 $INAYA",
+    "bridgeOutTx": "0x01c3487199464e8c9d8b4e47bb09023777a049054d1751190079bea5300d2c2e",
+    "receiveMessageTx": "0x519b033b7fbe4d0084a33654edd08d8dab3f155341897991b12a4850f170755c",
+    "recipient": "0xc4bf038a4ed931ea21acf4a1da08ddd308a490b7fcd4c96d7592e6eba053efee",
+    "verifiedDestinationBalance": "1.0",
+    "notes": "Real BSC -> Aptos Testnet transfer through a brand-new native Move contract (aptos/programs/inaya-bridge-aptos), NOT Wormhole -- built after Wormhole's own SDK proved genuinely blocked for both Aptos and Sui (stale, hardcoded per-asset bytecode templates the SDK ships, confirmed by re-running the actual attestation attempt live and inspecting the exact bytecode/package-version mismatch -- see deployments/interop/wormhole-wtt/bscTestnet-attestation.json's SUI/APTOS entries). Design choice worth recording: unlike Solana (whose native secp256k1 precompile keccak-hashes the message internally, an undocumented quirk requiring a special double-hash on the signer side), Aptos's aptos_std::secp256k1::ecdsa_recover applies NO hidden hashing -- so this contract reuses the exact same EIP-191 personal-sign convention every EVM spoke's validator signing code already produces (ethers.Wallet.signMessage), no special-cased signing logic needed. Worked end-to-end on the first real attempt -- no crypto/hashing bugs found, only shell/CLI tooling friction (documented in scripts/relayer-dry-run-aptos.mjs)."
+  }
+}

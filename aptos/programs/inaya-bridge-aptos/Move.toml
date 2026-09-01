@@ -1,0 +1,12 @@
+[package]
+name = "inaya_bridge_aptos"
+version = "1.0.0"
+authors = []
+
+[addresses]
+inaya_bridge = "_"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"

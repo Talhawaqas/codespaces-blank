@@ -1,0 +1,23 @@
+{
+  "role": "spoke",
+  "network": "suiTestnet",
+  "chainId": 3000000002,
+  "homeChainId": 97,
+  "chainFamily": "MOVE (Sui)",
+  "packageId": "0xd47bd3b1bcb7bfb2674f372a603fa99acaf4d9dda122e649e8d7f6441aa27a66",
+  "bridgeStateObjectId": "0x1162bff1172c016f0fa794fe2fa811b413764aca9398cf607d44eb04f7ba100a",
+  "bridge": "0x1162bff1172c016f0fa794fe2fa811b413764aca9398cf607d44eb04f7ba100a",
+  "treasuryCapObjectId": "0x0b436384b37c9a08935f0755546aa4700f95f6e0d7afea63131810121eb9b502",
+  "coinMetadataObjectId": "0x823a052c3503d7c9ec8d33ccf26ab6abb161fadd1c8c1161d5c32f98929dfbc5",
+  "wrappedAssetType": "0xd47bd3b1bcb7bfb2674f372a603fa99acaf4d9dda122e649e8d7f6441aa27a66::bridge::BRIDGE",
+  "publishTx": "EasVimfbiQTL1q5c6pU3HGkMxrJedy5jAMJ5pAEYwgZv",
+  "initializeTx": "included in the same publish flow's next transaction (BridgeState creation), digest recorded in git history's terminal output only",
+  "realDryRun": {
+    "amount": "1.0 $INAYA (x2, two separate real runs)",
+    "bridgeOutTx": "0xb1cbf9aa79794648a7b0fe5f5be245640e2459abf6d255dbf86b284baf6da10f",
+    "receiveMessageTx": "5ysU3ojBmoojnypRKZX9H3EHtSsT5atLJRsgL71vooAQ",
+    "recipient": "0xcf13f96340bdd7b55e00b0f35b70721ffb7aa6ef00bd6fbd6f6da940cd4a5475",
+    "verifiedDestinationBalance": "2.0 (cumulative across two real dry runs)",
+    "notes": "Real BSC -> Sui Testnet transfer through a brand-new native Move contract (sui/programs/inaya_bridge_sui), NOT Wormhole -- same reasoning as Aptos's native bridge (see deployments/bridge/aptosTestnet.json). Validators are tracked by their 33-byte COMPRESSED secp256k1 public key (what sui::ecdsa_k1::secp256k1_ecrecover actually returns), not an Ethereum-style address -- no reason to reconstruct that EVM-specific derivation on Sui. A real bug WAS found and fixed here (unlike Aptos, which worked first try): the first attempt's off-chain relayer script built each signature's recovery-id byte via `ethers.toBeArray(yParity)`, which returns a ZERO-LENGTH array when yParity is 0 (minimal big-endian encoding of the value 0 has no bytes) -- silently truncating the signature from 65 to 64 bytes and making Sui's ecdsa_k1::secp256k1_ecrecover abort with EInvalidSignature. Root-caused by comparing the failed transaction's actual on-chain BCS-decoded arguments (`sui client tx-block <digest>`) against isolated Move unit tests proving the message-hash and signature-recovery logic were both already correct -- fixed by using `Uint8Array.of(yParity)` instead, which always emits exactly one byte. The on-chain Move contract itself needed zero changes."
+  }
+}

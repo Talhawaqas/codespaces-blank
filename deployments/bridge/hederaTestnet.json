@@ -1,0 +1,19 @@
+{
+  "role": "spoke",
+  "network": "hederaTestnet",
+  "chainId": 296,
+  "homeChainId": 97,
+  "wrappedToken": "0x5bD412582Fbbed5C6d8D4b531a9CB8F913fF4e81",
+  "chainRegistry": "0xb2350FD7f00058ec322D4B98e4c8cF6E1d62E8c9",
+  "validatorSet": "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3",
+  "messenger": "0xD4cE8BF06c8E22482262ab1712847C322c2499f7",
+  "bridge": "0xc8780daE7de676F81904D3118DD30c7c81c85f37",
+  "stakingGateway": "0x871229a40d58A89545270B8d059B8E0F481f1d55",
+  "realDryRun": {
+    "amount": "1.0 $INAYA",
+    "bridgeOutTx": "0x44fe856c1bb04324ac9890f5e33f9d6658193e1112740defd6d70305ec16c17b",
+    "executeMessageTx": "0xd619dd27c0257461b3f61897dc45459468618d0b440d13ba57dbe7146fe969ae",
+    "verifiedDestinationBalance": "1.0",
+    "notes": "Real BSC -> Hedera Testnet transfer through Inaya's own native bridge (not Wormhole -- Hedera runs the EVM directly via Hedera Smart Contract Service/Hashio JSON-RPC relay, so the SAME InayaTokenBridgeSpoke/InayaMessenger Solidity bytecode already proven on Sepolia/Fuji/Arbitrum was deployed unchanged, no new contract language needed). One real, Hedera-specific quirk found along the way: an EVM account that has never received any value does not exist on Hedera's ledger yet -- a transaction FROM that account fails with 'Sender account not found' until it first receives an inbound transfer (Hedera auto-creates the account on that first credit). The relayer wallet hit this; fixed by sending it a small HBAR transfer from the funded deployer wallet first. Also: Hedera's gas cost for that very first inbound transfer to a not-yet-existing account is materially higher than a normal transfer (~660k gas vs the usual ~21k) since it's paying for real account creation, not just a value move -- budget for that when funding a fresh Hedera wallet for the first time."
+  }
+}

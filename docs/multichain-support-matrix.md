@@ -11,6 +11,9 @@ Single source of truth for what "supported" actually means per chain, per the In
 | Avalanche Fuji | — (native) | Yes | Yes | Yes | Yes |
 | Arbitrum Sepolia | — (native) | Yes | Real dry run 2026-09-01 (bridgeOut + executeMessage, balance verified) | Yes | No |
 | Solana Devnet | — (native) | Yes | Real dry run 2026-09-01 (bridgeOut + receive_message, balance verified) | Yes | No |
+| Hedera Testnet | — (native, runs the EVM directly) | Yes | Real dry run 2026-09-01 (bridgeOut + executeMessage, balance verified) | Yes | No |
+| Aptos Testnet | — (native, new Move contract) | No | Real dry run 2026-09-01 (bridgeOut + receive_message, balance verified) | Yes | No |
+| Sui Testnet | — (native, new Move contract) | No | Real dry run 2026-09-01, run twice (bridgeOut + receive_message, balance verified) | Yes | No |
 | Polygon Amoy | — (native) | No | No | No | No |
 
 (Source: `src/lib/chain-adapters/registry.js`, verified against live on-chain reads — see `docs/chain-agnostic-audit.md` and `docs/chain-adapters.md`.)

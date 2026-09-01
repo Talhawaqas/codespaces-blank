@@ -64,6 +64,17 @@ export default {
       chainId: 421614,
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
     },
+    // Hedera Testnet -- runs the EVM directly (Hedera Smart Contract Service via the Hashio
+    // JSON-RPC relay), so the SAME deploy-bridge.js/wire-bridge-registries.js scripts and
+    // InayaTokenBridgeSpoke.sol/InayaMessenger.sol bytecode used for Sepolia/Fuji/Arbitrum
+    // apply unchanged -- no new contract language needed, unlike Sui/Aptos. Same deployer
+    // key; needs its own testnet HBAR (Hedera's faucet auto-creates the account on first
+    // funded transfer to an EVM address -- see https://portal.hedera.com/faucet).
+    hederaTestnet: {
+      url: process.env.HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api",
+      chainId: 296,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
+    },
     // Local multi-node simulation (Phase 2) -- run `npx hardhat node --port 854<N>` once per
     // entry before deploying against these.
     localHome: { url: "http://127.0.0.1:8545", chainId: 31337 },

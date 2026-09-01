@@ -12,6 +12,7 @@ export const CHAIN_IDS = {
   AMOY: 80002,
   FUJI: 43113,
   ARBITRUM_SEPOLIA: 421614,
+  HEDERA_TESTNET: 296,
 };
 
 export const CHAINS = {
@@ -104,6 +105,26 @@ export const CHAINS = {
       messenger: process.env.NEXT_PUBLIC_MESSENGER_ARBITRUM_SEPOLIA_ADDRESS,
     },
   },
+  // Hedera Testnet -- native EVM via Hedera Smart Contract Service (Hashio JSON-RPC relay), so
+  // this reuses the identical spoke contracts/deploy scripts as Sepolia/Fuji/Arbitrum. See
+  // hardhat.config.js's hederaTestnet entry.
+  [CHAIN_IDS.HEDERA_TESTNET]: {
+    key: "hederaTestnet",
+    isHome: false,
+    hexChainId: "0x128",
+    name: "Hedera Testnet",
+    nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
+    rpcUrl: process.env.NEXT_PUBLIC_HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api",
+    serverRpcUrl: process.env.HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api",
+    blockExplorerUrl: "https://hashscan.io/testnet",
+    contracts: {
+      wrappedInaya: process.env.NEXT_PUBLIC_INAYA_BRIDGED_HEDERA_TESTNET_ADDRESS,
+      bridge: process.env.NEXT_PUBLIC_BRIDGE_HEDERA_TESTNET_ADDRESS,
+      stakingGateway: process.env.NEXT_PUBLIC_STAKING_GATEWAY_HEDERA_TESTNET_ADDRESS,
+      chainRegistry: process.env.NEXT_PUBLIC_CHAIN_REGISTRY_HEDERA_TESTNET_ADDRESS,
+      messenger: process.env.NEXT_PUBLIC_MESSENGER_HEDERA_TESTNET_ADDRESS,
+    },
+  },
 };
 
 // Non-EVM metadata only -- Solana has no bridge contract addresses in this shape (see
@@ -116,6 +137,30 @@ export const SOLANA_META = {
   isEvm: false,
   name: "Solana Devnet",
   cluster: "devnet",
+};
+
+// Non-EVM metadata only -- Aptos has no bridge contract addresses in this shape (see
+// aptos/programs/inaya-bridge-aptos), listed here purely so the dApp's chain picker can show it
+// as a supported destination.
+export const APTOS_TESTNET_CHAIN_ID = 2_000_000_002;
+export const APTOS_META = {
+  key: "aptosTestnet",
+  isHome: false,
+  isEvm: false,
+  name: "Aptos Testnet",
+  cluster: "testnet",
+};
+
+// Non-EVM metadata only -- Sui has no bridge contract addresses in this shape (see
+// sui/programs/inaya_bridge_sui), listed here purely so the dApp's chain picker can show it as a
+// supported destination.
+export const SUI_TESTNET_CHAIN_ID = 3_000_000_002;
+export const SUI_META = {
+  key: "suiTestnet",
+  isHome: false,
+  isEvm: false,
+  name: "Sui Testnet",
+  cluster: "testnet",
 };
 
 export function getChain(chainId) {
