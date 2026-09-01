@@ -49,13 +49,13 @@ const CAPABILITY_OVERRIDES = {
   // confirmed live via testnet-health-check.js: real bytecode at all 6 addresses). MESSAGE, not
   // STAKING like Sepolia/Fuji: registries trust each other but no real transfer/stake has been
   // sent and confirmed through it yet -- upgrade this once one has (see docs/chain-adapters.md).
-  [SOLANA_DEVNET_CHAIN_ID]: { family: CHAIN_FAMILIES.SOLANA, level: SUPPORT_LEVELS.MESSAGE }, // program IS wired on-chain (confirmed live 2026-08-31: bridgeConfig.admin set, homeBridgeAddress/
-  // homeStakingGatewayAddress match the real deployed BSC Testnet contracts byte-for-byte,
-  // trustedChain(97).isActive=true, validatorSet has BSC's real 3 validators at threshold 2, and
-  // a bridged-INAYA SPL mint exists) -- corrects an earlier claim of WALLET/"not yet wired" that
-  // was based on deployments/bridge/solanaDevnet.json's stale notes, not a live on-chain read.
-  // Still not TOKEN_TRANSFER: config supports messaging, but no real message has been sent and
-  // executed end-to-end yet, so that level isn't claimed until one actually is (see Phase 5).
+  [SOLANA_DEVNET_CHAIN_ID]: { family: CHAIN_FAMILIES.SOLANA, level: SUPPORT_LEVELS.TOKEN_TRANSFER }, // REAL, PROVEN 2026-09-01: a full
+  // BSC -> Solana message was sent (bridgeOut) and executed (receive_message) end-to-end, wrapped
+  // balance confirmed on-chain. See deployments/bridge/solanaDevnet.json's realDryRun for the
+  // actual transaction hashes, and the real bug found + fixed along the way (Solana's native
+  // secp256k1 precompile keccak-hashes the message field internally before recovery -- validators
+  // must sign keccak256(hash), not hash directly; see solana/programs/.../secp256k1.rs's comment).
+  // Not STAKING yet -- only a plain transfer has been proven, no staking flow tested from Solana.
 };
 
 /** @returns {{ chainId: number, family: string, level: number, levelLabel: string } | null} */

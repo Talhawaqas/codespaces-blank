@@ -24,12 +24,18 @@ pub struct ParsedSecpVerification {
 /// emit one `Secp256k1Program.createInstructionWithEthAddress` call per validator signature
 /// (see the Solana relayer delta doc), never a batched multi-sig instruction.
 ///
-/// HIGHEST-TECHNICAL-RISK CODE IN THIS PROGRAM: this offset-table layout is transcribed from
-/// `solana-sdk`'s `secp256k1_instruction` module documentation and has NOT been exercised
-/// against a real `Secp256k1Program.createInstructionWithEthAddress`-built instruction in this
-/// environment (no Solana/Anchor CLI available -- see the toolchain note in this crate's
-/// top-level doc). Re-verify field offsets against the actual `solana-sdk` version pinned once a
-/// real toolchain is available, before trusting this in any live deployment.
+/// VERIFIED against a real, on-chain `Secp256k1Program.createInstructionWithEthAddress`-built
+/// instruction on Solana Devnet (2026-09-01) -- see deployments/bridge/solanaDevnet.json's
+/// `realDryRun` for the actual transaction hashes. The offset-table layout below is correct as
+/// transcribed. What the first attempt actually got wrong was NOT this parser -- it was the
+/// off-chain signer: Solana's native secp256k1 precompile keccak256-hashes the `message` bytes
+/// found at `message_data_offset` internally before recovering the signature (undocumented in
+/// the public client crate). This function's `require!(parsed.message == hash.to_vec())` check
+/// is correct as written -- `parsed.message` must stay the RAW, unhashed `message_hash(&message)`
+/// output, matching what's actually in the instruction's message field. The validator producing
+/// the signature is the one who must sign `keccak256(hash)`, not `hash` directly -- that's a
+/// client-side (off-chain relayer) concern, not something this parser or this program needs to
+/// account for.
 pub fn parse_secp256k1_instruction(instructions_sysvar: &AccountInfo, index: u16) -> Result<ParsedSecpVerification> {
     let ix = load_instruction_at_checked(index as usize, instructions_sysvar)
         .map_err(|_| error!(BridgeError::InvalidSecp256k1Instruction))?;

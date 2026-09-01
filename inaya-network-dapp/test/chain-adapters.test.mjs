@@ -44,9 +44,9 @@ test("registry: Arbitrum Sepolia (Phase 5's proof chain) is MESSAGE level -- dep
   assert.equal(isTransferReady(CHAIN_IDS.ARBITRUM_SEPOLIA), false);
 });
 
-test("registry: Solana Devnet is MESSAGE level (program deployed AND wired on-chain, confirmed live) — not TOKEN_TRANSFER", () => {
+test("registry: Solana Devnet is TOKEN_TRANSFER level -- a real BSC -> Solana message was sent and executed end-to-end", () => {
   const cap = getChainCapability(SOLANA_DEVNET_CHAIN_ID);
-  assert.equal(cap.level, SUPPORT_LEVELS.MESSAGE);
+  assert.equal(cap.level, SUPPORT_LEVELS.TOKEN_TRANSFER);
   assert.equal(cap.family, "SOLANA");
 });
 
@@ -54,11 +54,11 @@ test("registry: an unregistered chain ID returns null, not a fabricated default"
   assert.equal(getChainCapability(999999), null);
 });
 
-test("registry: isTransferReady is true for the live spokes, false for Amoy and Solana", () => {
+test("registry: isTransferReady is true for the live spokes and Solana (real proven transfer), false for Amoy", () => {
   assert.equal(isTransferReady(CHAIN_IDS.SEPOLIA), true);
   assert.equal(isTransferReady(CHAIN_IDS.FUJI), true);
   assert.equal(isTransferReady(CHAIN_IDS.AMOY), false);
-  assert.equal(isTransferReady(SOLANA_DEVNET_CHAIN_ID), false);
+  assert.equal(isTransferReady(SOLANA_DEVNET_CHAIN_ID), true);
 });
 
 test("registry: listChainCapabilities returns every EVM chain plus Solana, each annotated", () => {
@@ -194,7 +194,7 @@ test("Regression: Solana Devnet program exists on-chain (binary deployed, matche
     return;
   }
   assert.equal(accountInfo.executable, true, "the bridge program account should be marked executable");
-  // MESSAGE level, not higher -- config is wired (see registry.js's comment for the live-state
-  // evidence) but no real message has been sent+executed end-to-end yet.
-  assert.equal(getChainCapability(SOLANA_DEVNET_CHAIN_ID).level, SUPPORT_LEVELS.MESSAGE);
+  // TOKEN_TRANSFER: a real BSC -> Solana message was sent and executed end-to-end, wrapped
+  // balance confirmed on-chain -- see registry.js's comment and deployments/bridge/solanaDevnet.json.
+  assert.equal(getChainCapability(SOLANA_DEVNET_CHAIN_ID).level, SUPPORT_LEVELS.TOKEN_TRANSFER);
 });

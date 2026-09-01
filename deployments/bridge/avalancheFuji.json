@@ -8,5 +8,12 @@
   "validatorSet": "0x78d84E7ab7aAa1a9d6Bc03A64ADD995cB3f9bAb3",
   "messenger": "0xD4cE8BF06c8E22482262ab1712847C322c2499f7",
   "bridge": "0xc8780daE7de676F81904D3118DD30c7c81c85f37",
-  "stakingGateway": "0x871229a40d58A89545270B8d059B8E0F481f1d55"
+  "stakingGateway": "0x871229a40d58A89545270B8d059B8E0F481f1d55",
+  "realDryRun": {
+    "amount": "1.0 $INAYA",
+    "bridgeOutTx": "0x02fc02e1001c89509a78ca28e5a170fa71be689024a0dcc563254c026fcaf6e9",
+    "executeMessageTx": "0xc8ec944a2c5710ce8c6390e614503e1b9a6d5bf9ad7a1367a001cd61cb25c03d",
+    "verifiedDestinationBalance": "1.0",
+    "notes": "Real BSC -> Fuji transfer through Inaya's own native bridge (not Wormhole): bridgeOut() on BSC, 2-of-3 validator signatures collected, executeMessage() submitted on Fuji via the relayer wallet, wrapped $INAYA balance confirmed on-chain. Matches the same proof Sepolia already had."
+  }
 }

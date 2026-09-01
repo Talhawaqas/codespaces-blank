@@ -5,5 +5,18 @@
   "programId": "76KGt54jrh142nibdFH9BtZHxSu68rrDwxCTp5d98kZn",
   "upgradeAuthority": "FF7HjxkCDzfCtPK8p41ELKNV4VZdKapUvTwZj9Y7TPAE",
   "cluster": "https://api.devnet.solana.com",
-  "notes": "Program binary deployed and verified live via `solana program show`. On-chain state IS wired -- confirmed live 2026-08-31 by reading bridgeConfig directly: admin set, homeBridgeAddress/homeStakingGatewayAddress match this file's home bscTestnet.json bridge/stakingGateway addresses byte-for-byte, trustedChain(97).isActive=true, validatorSet holds BSC's real 3 validators at threshold 2, bridged-INAYA SPL mint exists. Wired by whoever holds upgradeAuthority above, not by this session's own wiring key. No end-to-end message send+execute proven yet. anchor test not yet run."
+  "notes": "Program binary deployed and verified live via `solana program show`. On-chain state IS wired -- confirmed live 2026-08-31 by reading bridgeConfig directly: admin set, homeBridgeAddress/homeStakingGatewayAddress match this file's home bscTestnet.json bridge/stakingGateway addresses byte-for-byte, trustedChain(97).isActive=true, validatorSet holds BSC's real 3 validators at threshold 2, bridged-INAYA SPL mint exists. Wired by whoever holds upgradeAuthority above, not by this session's own wiring key. anchor test not yet run.",
+  "realDryRun": {
+    "amount": "1 bridged INAYA",
+    "bridgeOutTx": "0xa06d6f484ce7fbf50250443d5a33d1eff46f46d71f912dfac92ccd7ad20b2c4d",
+    "receiveMessageTx": "5v8fGdsQjzy8wR1V64XWSdDAfGpBmacxHMFUK8VeYAMXyR7EvXhnm1JsDh73MicrufvL51Pt946joBVdSFWm15MA",
+    "recipient": "CrKtH5L2MsgEpDGhkjiGeU6ugtW6PYeenFa4qqNomyXX",
+    "verifiedDestinationBalance": "1",
+    "prerequisitesFixed": [
+      "BSC's InayaTokenBridgeHome had no setSpokeBridgeAddress() entry for Solana Devnet (chainId 1000000002) -- registered (tx 0x364762421d3cb604785799caaa9f7508461160dd925f55862324d8085b1f32b8), program ID's raw 32 bytes as the spoke address.",
+      "BSC's InayaChainRegistry had never registered Solana Devnet as an active/trusted remote chain -- registered via registerRemoteChain() + setTrustedRemoteContract()."
+    ],
+    "realBugFixed": "Solana's native secp256k1 precompile keccak256-hashes the instruction's 'message' field internally before recovering the ECDSA signature -- confirmed empirically (undocumented in the public client-crate docs; multiple official doc pages were checked and gave inconsistent/incomplete answers). receive_message.rs's own parse_secp256k1_instruction compares the raw, UNHASHED message_hash() output against the message field, so the field itself stays unhashed -- the fix is that validators must sign keccak256(message_hash) (one extra hash) instead of message_hash directly. scripts/interop and receive_message.rs's own doc comment (calling this 'HIGHEST-TECHNICAL-RISK CODE... has NOT been exercised against a real instruction') were correct to flag this as unverified -- it needed exactly this real end-to-end attempt to surface and fix.",
+    "notes": "This is the first-ever proven cross-chain message execution on Inaya's Solana program -- previously wired (admin/home-addresses/validator-set/trusted-chain all confirmed set) but never actually exercised end-to-end."
+  }
 }
