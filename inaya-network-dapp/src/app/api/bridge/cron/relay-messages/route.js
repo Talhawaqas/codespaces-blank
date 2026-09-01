@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { CHAINS } from "@/lib/chains";
 import { getPendingTransfersWithMessage, recordValidatorSignature, getSignaturesFor, markTransferStatus } from "@/lib/bridge";
+import { getAdapter } from "@/lib/chain-adapters";
 
 const MESSENGER_ABI = [
   "function executeMessage(tuple(uint256 sourceChainId, bytes32 sourceContract, uint256 destChainId, bytes32 destContract, uint256 nonce, uint8 msgType, bytes payload) message, bytes[] signatures) external",
@@ -79,7 +80,7 @@ export async function GET(request) {
         continue;
       }
 
-      const provider = new ethers.JsonRpcProvider(destChain.serverRpcUrl);
+      const provider = getAdapter(Number(doc.destChainId), { useServerRpc: true }).provider;
       const relayer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
       const messenger = new ethers.Contract(destChain.contracts.messenger, MESSENGER_ABI, relayer);
 

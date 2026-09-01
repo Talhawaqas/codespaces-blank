@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { CHAINS, CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID } from "@/lib/chains";
+import { getAdapter } from "@/lib/chain-adapters";
 
 const STAKING_ABI = [
   "function userStakedBalance(address) view returns (uint256)",
@@ -30,7 +31,7 @@ export async function GET(request, { params }) {
     return NextResponse.json({ success: false, error: "Staking contract not configured" }, { status: 500 });
   }
 
-  const provider = new ethers.JsonRpcProvider(home.serverRpcUrl);
+  const provider = getAdapter(CHAIN_IDS.BSC_TESTNET, { useServerRpc: true }).provider;
   const staking = new ethers.Contract(home.contracts.staking, STAKING_ABI, provider);
 
   const [userStakedBalance, rewards, earned, lockExpiry, lockMultiplierBps, ...byChain] = await Promise.all([

@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { CHAINS } from "@/lib/chains";
 import { getChainCursor, setChainCursor, recordTransferInitiated, markTransferStatus } from "@/lib/bridge";
+import { getAdapter } from "@/lib/chain-adapters";
 
 const MAX_BLOCKS_PER_RUN = 2000;
 
@@ -29,7 +30,8 @@ export async function GET(request) {
   for (const [chainId, chain] of Object.entries(CHAINS)) {
     if (!chain.contracts.messenger) continue;
     try {
-      const provider = new ethers.JsonRpcProvider(chain.serverRpcUrl);
+      const adapter = getAdapter(chainId, { useServerRpc: true });
+      const provider = adapter.provider;
       const messenger = new ethers.Contract(chain.contracts.messenger, MESSENGER_ABI, provider);
 
       const fromBlock = (await getChainCursor(chainId)) + 1;
@@ -71,6 +73,14 @@ export async function GET(request) {
       }
       for (const ev of executedEvents) {
         await markTransferStatus(ev.args.messageId, "completed", { destTxHash: ev.transactionHash });
+        // Additive, logged-only for now (Phase 3 of the chain-adapter SOW) -- not yet a hard
+        // gate on "completed" status, since we haven't watched this log against real testnet
+        // reorg behavior yet. Flipping to a hard gate is a deliberate follow-up decision.
+        adapter.getFinalityStatus(ev.transactionHash).then((finality) => {
+          if (!finality.finalized) {
+            console.warn(`[index-events] chain ${chainId}: tx ${ev.transactionHash} marked completed with only ${finality.confirmations}/${finality.required} confirmations`);
+          }
+        }).catch((err) => console.warn(`[index-events] chain ${chainId}: finality check failed for ${ev.transactionHash}:`, err.message));
       }
       for (const ev of failedEvents) {
         await markTransferStatus(ev.args.messageId, "failed", { failureReason: ev.args.reason });
