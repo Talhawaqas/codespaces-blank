@@ -1,0 +1,21 @@
+{
+  "provider": "wormhole",
+  "mode": "wtt",
+  "action": "createAttestation",
+  "sourceChain": "BSC Testnet",
+  "tokenAddress": "0x3966a3378c8d9e6bb34dd0b8458eef4b878ce94e",
+  "txHash": "0x09f6fabe0f111ce035a31c3262ffe0300d0cdf72a4b7f54811ed76a8b7cd7fb4",
+  "blockNumber": 128409561,
+  "gasUsed": "68867",
+  "status": "confirmed on-chain (receipt status 1)",
+  "notes": "This registers $INAYA's metadata on Wormhole's Token Bridge, the prerequisite before a wrapped $INAYA can be created on any destination chain via WTT. This alone does NOT make a transfer available yet -- the resulting VAA must still be submitted to a destination chain's Token Bridge to create the wrapped token there. See scripts/interop-attest-inaya.mjs and scripts/interop-complete-wrapped-creation.mjs for the next step.",
+  "wrappedCreationAttempts": [
+    {
+      "destChain": "Avalanche (Fuji)",
+      "result": "REVERTED on-chain",
+      "revertTxHash": "0x1cf287aad22b584eeff2a79000d828e43357bb5b111d4c662cba01e8865926af",
+      "gasUsed": "492677",
+      "notes": "VAA fetch from the Guardian network succeeded (real, live attestation was signed) -- the revert happened in the destination-chain submitAttestation() call itself, cause not yet root-caused. Deployer wallet's Fuji balance was low (~0.0016 AVAX) after this attempt, so further blind retries were stopped rather than risk exhausting it chasing an undiagnosed revert. Next attempt should: (1) fund the deployer wallet further on Fuji, (2) decode the VAA's payload directly to check its encoded target chain ID matches Fuji's Wormhole chain ID exactly, (3) try a different, better-funded destination chain (e.g. Sepolia) first to isolate whether this is Fuji-specific or a general submitAttestation issue."
+    }
+  ]
+}

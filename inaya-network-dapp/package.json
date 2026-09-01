@@ -26,6 +26,7 @@
     "@vercel/blob": "^2.8.0",
     "@vercel/speed-insights": "^2.0.0",
     "@walletconnect/ethereum-provider": "^2.23.10",
+    "@wormhole-foundation/sdk": "^6.1.5",
     "@wormhole-foundation/sdk-base": "^6.1.5",
     "autoprefixer": "^10.4.19",
     "ethers": "^6.17.0",
