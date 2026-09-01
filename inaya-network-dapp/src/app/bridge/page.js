@@ -11,6 +11,7 @@ import { ethers } from "ethers";
 import { PublicKey } from "@solana/web3.js";
 import { CHAINS, CHAIN_IDS, SOLANA_DEVNET_CHAIN_ID, ensureChain, getChain } from "@/lib/chains";
 import SolanaBridgePanel from "@/components/bridge/SolanaBridgePanel";
+import AddressRiskCheck from "@/components/AddressRiskCheck";
 
 const BRIDGE_HOME_ABI = [
   "function bridgeOut(uint256 destChainId, bytes32 recipient, uint256 amount) external returns (bytes32 messageId)",
@@ -281,6 +282,7 @@ export default function BridgePage() {
             onChange={(e) => setRecipient(e.target.value)}
             placeholder={destChainId === SOLANA_DEVNET_CHAIN_ID ? "Solana base58 address..." : "0x..."}
           />
+          <AddressRiskCheck address={recipient} />
         </label>
         <button onClick={handleTransfer} disabled={!account}>
           Bridge
