@@ -21,6 +21,9 @@ import {
   getInteropCapability,
   listInteropCapabilities,
   isInteropTransferProven,
+  WALLET_FAMILIES,
+  getWalletFamilyForChain,
+  isWalletReady,
 } from "../src/lib/chain-adapters/interop/index.js";
 
 test("InteropProvider: cannot be instantiated directly (abstract base)", () => {
@@ -83,4 +86,35 @@ test("listInteropCapabilities: returns exactly the declared chain set, each anno
   const list = listInteropCapabilities();
   assert.equal(list.length, Object.keys(INTEROP_CHAINS).length);
   assert.ok(list.every((c) => typeof c.level === "number" && typeof c.levelLabel === "string" && typeof c.tier === "string"));
+});
+
+// ============================================================
+// Phase 7 -- wallet family routing
+// ============================================================
+test("walletFamilies: EVM chains and Solana are wallet-ready today (existing, installed adapters)", () => {
+  for (const key of ["ETHEREUM", "BSC", "ARBITRUM", "AVALANCHE", "POLYGON", "BASE", "OPTIMISM"]) {
+    const wf = getWalletFamilyForChain(key);
+    assert.equal(wf.family, WALLET_FAMILIES.EVM, `${key} should route to the EVM wallet family`);
+    assert.equal(isWalletReady(key), true, `${key} should be wallet-ready -- MetaMask/WalletConnect already work`);
+  }
+  assert.equal(getWalletFamilyForChain("SOLANA").family, WALLET_FAMILIES.SOLANA);
+  assert.equal(isWalletReady("SOLANA"), true);
+});
+
+test("walletFamilies: never forces MetaMask/EVM onto a non-EVM chain, and is honest that those aren't wallet-ready yet", () => {
+  const nonEvmExpectations = { SUI: WALLET_FAMILIES.SUI, APTOS: WALLET_FAMILIES.APTOS, NEAR: WALLET_FAMILIES.NEAR, INJECTIVE: WALLET_FAMILIES.COSMOS, SEI: WALLET_FAMILIES.COSMOS };
+  for (const [key, expectedFamily] of Object.entries(nonEvmExpectations)) {
+    const wf = getWalletFamilyForChain(key);
+    assert.equal(wf.family, expectedFamily, `${key} should NOT route to the EVM family`);
+    assert.notEqual(wf.family, WALLET_FAMILIES.EVM, `${key} should never be forced onto MetaMask`);
+    assert.equal(isWalletReady(key), false, `${key}'s wallet adapter isn't installed/wired yet -- shouldn't claim ready`);
+  }
+});
+
+test("walletFamilies: Injective and Sei share the same Cosmos wallet family (one adapter, not two)", () => {
+  assert.equal(getWalletFamilyForChain("INJECTIVE").package, getWalletFamilyForChain("SEI").package);
+});
+
+test("walletFamilies: an unknown chain key returns null, not a fabricated default", () => {
+  assert.equal(getWalletFamilyForChain("NOT_A_REAL_CHAIN"), null);
 });

@@ -20,6 +20,12 @@ export {
   listInteropCapabilities,
   isInteropTransferProven,
 } from "./capabilityRegistry.js";
+export {
+  WALLET_FAMILIES,
+  WALLET_FAMILY_ADAPTERS,
+  getWalletFamilyForChain,
+  isWalletReady,
+} from "./walletFamilies.js";
 
 let cachedProvider = null;
 
