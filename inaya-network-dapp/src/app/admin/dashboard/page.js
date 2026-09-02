@@ -3,9 +3,13 @@
 // app/admin/dashboard/page.js
 //
 // Private owner-only dashboard — not linked from anywhere on the public
-// site. Visit as /admin/dashboard?key=YOUR_SECRET (the same value as
-// ADMIN_DASHBOARD_SECRET, set in Vercel's env vars). Bookmark the full URL
-// with the key included; there's no login form, this is a one-person view.
+// site. Same passphrase-gated cookie session as every other /admin/* page
+// (admin-auth.js, ADMIN_DASHBOARD_PASSPHRASE). Used to be a bookmarked
+// /admin/dashboard?key=YOUR_SECRET URL checked against a separate
+// ADMIN_DASHBOARD_SECRET env var with a plain !== comparison -- besides not
+// being timing-safe, a secret traveling in the URL gets logged by most
+// server/proxy access logs and leaks via Referer headers and browser
+// history. Collapsed onto the standard admin login form instead.
 
 import { useState, useEffect, useCallback } from "react";
 
@@ -49,7 +53,7 @@ function FilterChips({ options, value, onChange }) {
   );
 }
 
-function FeedbackRow({ item, adminKey, onChanged }) {
+function FeedbackRow({ item, onChanged }) {
   const [expanded, setExpanded] = useState(false);
   const [notes, setNotes] = useState(item.adminNotes || "");
   const [saving, setSaving] = useState(false);
@@ -57,7 +61,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
   async function patch(body) {
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/feedback/${item._id}?key=${encodeURIComponent(adminKey)}`, {
+      const res = await fetch(`/api/admin/feedback/${item._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -75,7 +79,7 @@ function FeedbackRow({ item, adminKey, onChanged }) {
   async function handleDelete() {
     if (!confirm(`Delete "${item.title}"? This can't be undone.`)) return;
     try {
-      const res = await fetch(`/api/admin/feedback/${item._id}?key=${encodeURIComponent(adminKey)}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/feedback/${item._id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       onChanged(null, item._id);
@@ -184,6 +188,11 @@ const SUBSCRIPTION_STATUS_COLORS = {
 };
 
 export default function AdminDashboardPage() {
+  const [passphrase, setPassphrase] = useState("");
+  const [authed, setAuthed] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+
   const [activeTab, setActiveTab] = useState("referrals");
   const [referralFilter, setReferralFilter] = useState("all"); // all | pending | verified | rejected
   const [watcherFilter, setWatcherFilter] = useState("all"); // all | active | inactive
@@ -193,21 +202,20 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [feedbackError, setFeedbackError] = useState("");
-  const adminKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") || "" : "";
 
   const loadFeedback = useCallback(() => {
-    fetch(`/api/admin/feedback?key=${encodeURIComponent(adminKey)}`)
+    fetch("/api/admin/feedback")
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
         setFeedback(json.submissions);
       })
       .catch((err) => setFeedbackError(err.message));
-  }, [adminKey]);
+  }, []);
 
   useEffect(() => {
-    const key = new URLSearchParams(window.location.search).get("key") || "";
-    fetch(`/api/admin/dashboard?key=${encodeURIComponent(key)}`)
+    if (!authed) return;
+    fetch("/api/admin/dashboard")
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
@@ -215,7 +223,7 @@ export default function AdminDashboardPage() {
       })
       .catch((err) => setError(err.message));
     loadFeedback();
-  }, [loadFeedback]);
+  }, [authed, loadFeedback]);
 
   function handleFeedbackChanged(updated, deletedId) {
     setFeedback((prev) => {
@@ -224,10 +232,61 @@ export default function AdminDashboardPage() {
     });
   }
 
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoginError("");
+    setLoggingIn(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passphrase }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setLoginError(json.error || "Login failed.");
+        return;
+      }
+      setAuthed(true);
+      setPassphrase("");
+    } catch {
+      setLoginError("Login failed.");
+    } finally {
+      setLoggingIn(false);
+    }
+  }
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans flex items-center justify-center px-4">
+        <form onSubmit={handleLogin} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-8 w-full max-w-sm">
+          <h1 className="text-lg font-extrabold text-white mb-1">Enterprise Dashboard</h1>
+          <p className="text-[#94a3b8] text-xs mb-5">Referrals, Watcher Pioneers, Business Workspace, and feedback</p>
+          <input
+            type="password"
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+            className="w-full bg-black/30 border border-white/10 focus:border-[#00f2fe]/40 rounded-lg px-3 py-2.5 text-sm text-white outline-none mb-3"
+            placeholder="Passphrase"
+            autoFocus
+          />
+          {loginError && <p className="text-red-400 text-xs mb-3">{loginError}</p>}
+          <button
+            type="submit"
+            disabled={loggingIn}
+            className="w-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-sm rounded-xl px-4 py-2.5 disabled:opacity-50"
+          >
+            {loggingIn ? "Checking…" : "Sign in"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-mono flex items-center justify-center p-6">
-        <p className="text-red-400 text-sm">⚠ {error}{error === "Unauthorized" ? " — append ?key=YOUR_SECRET to the URL." : ""}</p>
+        <p className="text-red-400 text-sm">⚠ {error}</p>
       </div>
     );
   }
@@ -559,7 +618,7 @@ export default function AdminDashboardPage() {
                 ) : (
                   <div className="space-y-3">
                     {feedback.map((item) => (
-                      <FeedbackRow key={item._id} item={item} adminKey={adminKey} onChanged={handleFeedbackChanged} />
+                      <FeedbackRow key={item._id} item={item} onChanged={handleFeedbackChanged} />
                     ))}
                   </div>
                 )}

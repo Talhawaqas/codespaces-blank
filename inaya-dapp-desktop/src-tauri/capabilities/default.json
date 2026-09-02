@@ -5,6 +5,11 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": [
+      "https://www.inayanetwork.com/*"
+    ]
+  },
   "permissions": [
     "core:default",
     "updater:default",

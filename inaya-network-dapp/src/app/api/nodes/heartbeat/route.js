@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongodb';
 import { computeUptimeScoreBps, HEARTBEAT_LOG_SIZE } from '../../../../lib/nodeReputation.js';
+import { verifyNodeAuth } from '../../../../lib/nodeAuth.js';
 
 export async function POST(request) {
   try {
     const {
       nodeId, operatorWallet, usedCapacityGB, totalCapacityGB, shardsStored,
       daemonVersion, uptimeSeconds, restartCount, lastErrorAt, lastErrorMessage,
+      message, signature, timestamp,
     } = await request.json();
-    if (!nodeId) {
-      return NextResponse.json({ success: false, error: 'nodeId is required.' }, { status: 400 });
+    if (!nodeId || !operatorWallet) {
+      return NextResponse.json({ success: false, error: 'nodeId and operatorWallet are required.' }, { status: 400 });
+    }
+    try {
+      verifyNodeAuth({ action: 'heartbeat', nodeId, operatorWallet, message, signature, timestamp });
+    } catch (err) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 401 });
     }
     const client = await clientPromise;
     const db = client.db('inaya_network');

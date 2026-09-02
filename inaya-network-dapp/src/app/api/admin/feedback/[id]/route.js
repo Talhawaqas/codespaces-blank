@@ -1,25 +1,20 @@
 // app/api/admin/feedback/[id]/route.js
 //
-// PATCH /api/admin/feedback/[id]?key=SECRET — body {status?, adminNotes?}
-// DELETE /api/admin/feedback/[id]?key=SECRET — removes a submission (spam)
+// PATCH /api/admin/feedback/[id] — body {status?, adminNotes?}
+// DELETE /api/admin/feedback/[id] — removes a submission (spam)
 //
-// Same admin-secret gate as the rest of /api/admin/*.
+// Same cookie-based admin session gate as the rest of /api/admin/* (admin-auth.js).
 
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
+import { isAdminAuthenticated } from "../../../../../lib/admin-auth.js";
 import { getFeedbackCollections, FEEDBACK_STATUSES } from "../../../../../lib/feedback.js";
 
 export const dynamic = "force-dynamic";
 
-function checkAdminKey(req) {
-  const { searchParams } = new URL(req.url);
-  const key = searchParams.get("key");
-  return !!process.env.ADMIN_DASHBOARD_SECRET && key === process.env.ADMIN_DASHBOARD_SECRET;
-}
-
 export async function PATCH(req, { params }) {
   try {
-    if (!checkAdminKey(req)) {
+    if (!isAdminAuthenticated(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!ObjectId.isValid(params.id)) {
@@ -58,7 +53,7 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    if (!checkAdminKey(req)) {
+    if (!isAdminAuthenticated(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!ObjectId.isValid(params.id)) {

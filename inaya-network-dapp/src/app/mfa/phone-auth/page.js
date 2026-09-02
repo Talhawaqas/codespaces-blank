@@ -24,12 +24,18 @@ function PhoneAuthInner() {
   const searchParams = useSearchParams();
   const callback = searchParams.get("callback");
   const initialPhoneNumber = searchParams.get("phone") || "";
+  // Echoed back verbatim in the bounce fragment below, unmodified -- this page never generates or
+  // checks it, that's the mobile app's job (see MfaSettingsScreen.js/MfaVerifyScreen.js's own
+  // comment on why: inayamobile:// isn't exclusive to this app, so the mobile side needs to reject
+  // an inbound idToken that doesn't carry the nonce IT generated for the request it actually sent).
+  const state = searchParams.get("state");
   const [bounced, setBounced] = useState(false);
 
   function handleVerified(idToken) {
     if (!callback) return;
     setBounced(true);
-    window.location.replace(`${callback}#idToken=${encodeURIComponent(idToken)}`);
+    const stateSuffix = state ? `&state=${encodeURIComponent(state)}` : "";
+    window.location.replace(`${callback}#idToken=${encodeURIComponent(idToken)}${stateSuffix}`);
   }
 
   return (

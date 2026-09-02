@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongodb';
+import { verifyNodeAuth } from '../../../../lib/nodeAuth.js';
 
 export async function POST(request) {
   try {
-    const { nodeId, operatorWallet, capacityGB } = await request.json();
+    const { nodeId, operatorWallet, capacityGB, message, signature, timestamp } = await request.json();
     if (!nodeId || !operatorWallet || !capacityGB) {
       return NextResponse.json(
         { success: false, error: 'nodeId, operatorWallet, and capacityGB are all required.' },
         { status: 400 }
       );
+    }
+    try {
+      verifyNodeAuth({ action: 'register', nodeId, operatorWallet, message, signature, timestamp });
+    } catch (err) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 401 });
     }
     const client = await clientPromise;
     const db = client.db('inaya_network');

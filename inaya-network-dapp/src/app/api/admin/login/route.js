@@ -12,9 +12,21 @@
 
 import { NextResponse } from "next/server";
 import { verifyAdminPassphrase, computeAdminSessionCookieValue, ADMIN_SESSION_COOKIE, ADMIN_SESSION_COOKIE_OPTIONS } from "../../../../lib/admin-auth";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 
 export async function POST(req) {
   try {
+    // This one shared passphrase gates every /admin/* surface (all orgs' aggregated data) --
+    // verifyAdminPassphrase()'s own timing-safe comparison stops a timing side-channel, but
+    // nothing previously stopped an attacker from just submitting guesses as fast as the network
+    // allows. 10 attempts per IP per 15 minutes is generous for a real admin fat-fingering a
+    // passphrase, and makes online brute force against any reasonably-sized passphrase infeasible.
+    try {
+      await checkRateLimit({ action: "admin-login", key: getClientIp(req), max: 10, windowMs: 15 * 60 * 1000 });
+    } catch {
+      return NextResponse.json({ error: "Too many attempts — please wait a while and try again." }, { status: 429 });
+    }
+
     const { passphrase } = await req.json();
     const ok = verifyAdminPassphrase(passphrase);
     if (!ok) {

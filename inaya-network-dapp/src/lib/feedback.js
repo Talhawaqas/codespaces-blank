@@ -5,7 +5,7 @@
 // referrals.js/watcherPioneer.js (getXCollections/ensureXIndexes), single
 // collection, no auth required to submit (matches referrals/activate's
 // openness) — admin read/write routes are gated separately by the same
-// ADMIN_DASHBOARD_SECRET key already used for /admin/dashboard.
+// cookie-based admin session (admin-auth.js) every other /admin/* route uses.
 
 import { connectToDatabase } from "./mongodb.js";
 

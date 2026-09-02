@@ -30,6 +30,7 @@ import {
 } from "../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
 import { assessRisk } from "../../../../lib/fraudRisk.js";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 
 export async function POST(req) {
   try {
@@ -42,6 +43,16 @@ export async function POST(req) {
 
     if (!ownerEmail || !isValidEmail(ownerEmail)) {
       return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
+    }
+
+    // Caps both mail-bombing (repeated magic-link sends to the same address) and junk-org
+    // creation spam (this route writes real org/member documents on every call) -- checked before
+    // any DB write, regardless of session state.
+    try {
+      await checkRateLimit({ action: "org-create-email", key: ownerEmail, max: 5, windowMs: 15 * 60 * 1000 });
+      await checkRateLimit({ action: "org-create-ip", key: getClientIp(req), max: 10, windowMs: 15 * 60 * 1000 });
+    } catch {
+      return NextResponse.json({ error: "Too many attempts — please wait a while and try again." }, { status: 429 });
     }
 
     // Fraud & Abuse Protection Layer, Phase 2 -- monitor-only, same

@@ -23,6 +23,23 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_updater::UpdaterExt;
 
 const APP_URL: &str = "https://www.inayanetwork.com/";
+const TRUSTED_ORIGIN: &str = "https://www.inayanetwork.com";
+
+// SECURITY: defense-in-depth for the passkey commands below -- see inaya-desktop's src/lib.rs
+// (the sibling Business Workspace wrapper)'s identical verify_trusted_origin for the full
+// reasoning: Tauri v2's capabilities/ACL system is designed primarily around plugin commands,
+// so whether capabilities/default.json's `remote.urls` actually gates a bare #[tauri::command]
+// like these is ambiguous without a live runtime test. This window always loads APP_URL and
+// never navigates anywhere else, so checking the calling window's actual URL here fails closed
+// regardless of how that ACL ambiguity resolves.
+fn verify_trusted_origin(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let url = window.url().map_err(|e| e.to_string())?;
+    let origin = format!("{}://{}", url.scheme(), url.host_str().unwrap_or(""));
+    if origin != TRUSTED_ORIGIN {
+        return Err(format!("Refusing: this command is only callable from {}, not {}.", TRUSTED_ORIGIN, origin));
+    }
+    Ok(())
+}
 
 // User-Controlled Master Node Passkey Backup & Recovery (SOW section 1,
 // "Local Secure Storage") -- the actual OS-backed credential store
@@ -39,14 +56,16 @@ const KEYRING_SERVICE: &str = "com.inayanetwork.dapp";
 const KEYRING_ACCOUNT: &str = "master-node-passkey";
 
 #[tauri::command]
-fn store_passkey_secure(passkey: String) -> Result<(), String> {
+fn store_passkey_secure(window: tauri::WebviewWindow, passkey: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
     Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
         .and_then(|e| e.set_password(&passkey))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn retrieve_passkey_secure() -> Result<Option<String>, String> {
+fn retrieve_passkey_secure(window: tauri::WebviewWindow) -> Result<Option<String>, String> {
+    verify_trusted_origin(&window)?;
     match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.get_password()) {
         Ok(passkey) => Ok(Some(passkey)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -55,7 +74,8 @@ fn retrieve_passkey_secure() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-fn clear_passkey_secure() -> Result<(), String> {
+fn clear_passkey_secure(window: tauri::WebviewWindow) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
     match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.delete_credential()) {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),

@@ -28,6 +28,7 @@ import {
 } from "../../../../../lib/orgs.js";
 import { sendMagicLinkEmail } from "../../../../../lib/email.js";
 import { assessRisk } from "../../../../../lib/fraudRisk.js";
+import { checkRateLimit, getClientIp } from "../../../../../lib/rateLimit.js";
 
 export async function POST(req) {
   try {
@@ -35,6 +36,17 @@ export async function POST(req) {
     const email = normalizeEmail(rawEmail);
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
+    }
+
+    // Caps mail-bombing (repeatedly triggering a real email send to the same address) without
+    // touching login itself -- see assessRisk() below for why this endpoint deliberately never
+    // BLOCKS a login attempt. Checked before the membership lookup so the 429 applies uniformly
+    // to any well-formed email, known account or not -- it can't be used to enumerate accounts.
+    try {
+      await checkRateLimit({ action: "login-request-email", key: email, max: 5, windowMs: 15 * 60 * 1000 });
+      await checkRateLimit({ action: "login-request-ip", key: getClientIp(req), max: 20, windowMs: 15 * 60 * 1000 });
+    } catch {
+      return NextResponse.json({ error: "Too many login link requests — please wait a while and try again." }, { status: 429 });
     }
 
     await ensureOrgIndexes();

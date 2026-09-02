@@ -1,12 +1,15 @@
 // app/api/admin/dashboard/route.js
 //
-// GET /api/admin/dashboard?key=SECRET
+// GET /api/admin/dashboard
 //
-// Private, owner-only read endpoint — NOT part of the public site. Gated
-// by a single shared secret (process.env.ADMIN_DASHBOARD_SECRET) rather
-// than a full login system, deliberately: this is a one-person dashboard,
-// not a multi-admin surface, so the standing session/cookie machinery
-// elsewhere in this codebase (orgs.js) would be overkill here.
+// Private, owner-only read endpoint — NOT part of the public site. Gated by
+// the same cookie-based, timing-safe admin session every other /admin/*
+// route already uses (admin-auth.js). Used to be its own separate
+// process.env.ADMIN_DASHBOARD_SECRET checked via a plain !== comparison on
+// a ?key= query param -- besides not being timing-safe, a secret traveling
+// in the URL gets logged by most server/proxy access logs and leaks via
+// Referer headers and browser history. Collapsed onto admin-auth.js's
+// mechanism instead, same as admin/nodes, admin/audit, etc.
 //
 // Four datasets:
 //   - referrers: email + successfulReferralCount
@@ -28,6 +31,7 @@
 // schema, no duplicated counters.
 
 import { NextResponse } from "next/server";
+import { isAdminAuthenticated } from "../../../../lib/admin-auth.js";
 import clientPromise from "../../../../lib/mongodb.js";
 import { getReferralCollections, ensureReferralIndexes } from "../../../../lib/referrals.js";
 import { getWatcherCollections, ensureWatcherIndexes, WATCHER_POINTS_PER_INAYA } from "../../../../lib/watcherPioneer.js";
@@ -107,13 +111,10 @@ async function getMobileApkDownloads() {
 }
 
 export async function GET(req) {
+  if (!isAdminAuthenticated(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
-    const { searchParams } = new URL(req.url);
-    const key = searchParams.get("key");
-    if (!process.env.ADMIN_DASHBOARD_SECRET || key !== process.env.ADMIN_DASHBOARD_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await Promise.all([ensureReferralIndexes(), ensureWatcherIndexes(), ensureOrgIndexes()]);
     const { referrers } = await getReferralCollections();
     const { pioneers, sessions } = await getWatcherCollections();

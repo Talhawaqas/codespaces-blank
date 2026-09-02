@@ -18,8 +18,9 @@ dotenv.config({ path: "inaya-network-dapp/.env.local" });
 dotenv.config({ path: ".env" });
 
 const APTOS_URL = "https://fullnode.testnet.aptoslabs.com/v1";
-const APTOS_DEPLOYER = "0xc4bf038a4ed931ea21acf4a1da08ddd308a490b7fcd4c96d7592e6eba053efee";
-const APTOS_PRIVATE_KEY = "a04631351e6825ea5b914a967cd56ff6a3d9e6623e21e260b395cf0481b53845";
+const APTOS_DEPLOYER = "0xc4bf038a4ed931ea21acf4a1da08ddd308a490b7fcd4c96d7592e6eba053efee"; // public account address, not a secret
+const APTOS_PRIVATE_KEY = process.env.APTOS_DEPLOYER_PRIVATE_KEY;
+if (!APTOS_PRIVATE_KEY) throw new Error("APTOS_DEPLOYER_PRIVATE_KEY is not set — add it to .env (never hardcode it here, see git history for why).");
 const APTOS_CHAIN_ID = 2_000_000_002n;
 const THRESHOLD = 2;
 const SCRATCH = "C:\\Users\\waqastal\\AppData\\Local\\Temp\\claude\\D--Codespace-blank-codespaces-blank-main-codespaces-blank-main-inaya-network-dapp-custody-sdk\\1a4dbb5a-ada6-44bd-a831-5ff6400924e3\\scratchpad";
@@ -89,6 +90,7 @@ async function main() {
   fs.writeFileSync(argsFile, JSON.stringify(args, null, 2));
 
   const keyFile = `${SCRATCH}\\aptos_deployer.key`;
+  fs.writeFileSync(keyFile, APTOS_PRIVATE_KEY); // written fresh from env each run, not committed anywhere
   const NPX_CWD = "D:/Codespace-blank/codespaces-blank-main/codespaces-blank-main/inaya-network-dapp/custody-sdk";
   const out = execFileSync("npx", [
     "aptos", "move", "run",

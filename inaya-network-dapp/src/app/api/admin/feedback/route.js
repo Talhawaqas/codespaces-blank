@@ -1,24 +1,22 @@
 // app/api/admin/feedback/route.js
 //
-// GET /api/admin/feedback?key=SECRET — private, same single-shared-secret
-// gate as /api/admin/dashboard (process.env.ADMIN_DASHBOARD_SECRET). Not
-// linked from the public site. Returns the raw submission list, newest
-// first; summary counts are derived client-side by the dashboard page,
-// same as it already does for the Watcher Pioneer active-wallet count.
+// GET /api/admin/feedback — private, same cookie-based admin session as the
+// rest of /api/admin/* (admin-auth.js). Not linked from the public site.
+// Returns the raw submission list, newest first; summary counts are derived
+// client-side by the dashboard page, same as it already does for the
+// Watcher Pioneer active-wallet count.
 
 import { NextResponse } from "next/server";
+import { isAdminAuthenticated } from "../../../../lib/admin-auth.js";
 import { ensureFeedbackIndexes, getFeedbackCollections } from "../../../../lib/feedback.js";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
+  if (!isAdminAuthenticated(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
-    const { searchParams } = new URL(req.url);
-    const key = searchParams.get("key");
-    if (!process.env.ADMIN_DASHBOARD_SECRET || key !== process.env.ADMIN_DASHBOARD_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await ensureFeedbackIndexes();
     const { feedback } = await getFeedbackCollections();
     const rows = await feedback.find({}).sort({ createdAt: -1 }).toArray();

@@ -17,6 +17,27 @@ use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::UpdaterExt;
 
 const APP_URL: &str = "https://www.inayanetwork.com/business";
+const TRUSTED_ORIGIN: &str = "https://www.inayanetwork.com";
+
+// SECURITY: defense-in-depth for the commands below that touch the OS keychain or the firewall.
+// This window always loads APP_URL and never navigates anywhere else, but Tauri v2's
+// capabilities/ACL system is designed primarily around PLUGIN commands -- whether an app-level
+// command declared with a bare #[tauri::command] (as these are, not through a local plugin with
+// its own permission schema) is actually gated by capabilities/default.json's `remote.urls` is
+// genuinely ambiguous without a live runtime test this environment can't perform. Rather than
+// depend on that ambiguity, every sensitive command below independently confirms the calling
+// window's current URL is really this app's own origin before doing anything -- so even if the
+// ACL layer turns out to be wide open for app-level commands, invoking these from any other
+// origin (a future XSS payload, a compromised third-party script, anything not this app itself)
+// fails closed here regardless.
+fn verify_trusted_origin(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let url = window.url().map_err(|e| e.to_string())?;
+    let origin = format!("{}://{}", url.scheme(), url.host_str().unwrap_or(""));
+    if origin != TRUSTED_ORIGIN {
+        return Err(format!("Refusing: this command is only callable from {}, not {}.", TRUSTED_ORIGIN, origin));
+    }
+    Ok(())
+}
 
 // User-Controlled Master Node Passkey Backup & Recovery (SOW section 1,
 // "Local Secure Storage") -- the actual OS-backed credential store
@@ -33,14 +54,16 @@ const KEYRING_SERVICE: &str = "com.inayanetwork.desktop";
 const KEYRING_ACCOUNT: &str = "master-node-passkey";
 
 #[tauri::command]
-fn store_passkey_secure(passkey: String) -> Result<(), String> {
+fn store_passkey_secure(window: tauri::WebviewWindow, passkey: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
     Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
         .and_then(|e| e.set_password(&passkey))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn retrieve_passkey_secure() -> Result<Option<String>, String> {
+fn retrieve_passkey_secure(window: tauri::WebviewWindow) -> Result<Option<String>, String> {
+    verify_trusted_origin(&window)?;
     match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.get_password()) {
         Ok(passkey) => Ok(Some(passkey)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -49,7 +72,8 @@ fn retrieve_passkey_secure() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-fn clear_passkey_secure() -> Result<(), String> {
+fn clear_passkey_secure(window: tauri::WebviewWindow) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
     match Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).and_then(|e| e.delete_credential()) {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
@@ -232,9 +256,18 @@ fn notify_security_event(app: tauri::AppHandle, title: String, body: String) -> 
 // section -- this is only ever invoked for the user's own explicit block action or a
 // Protect/Strict-mode confirmed threat, never silently).
 #[tauri::command]
-fn block_ip(ip: String, label: String) -> Result<String, String> {
+fn block_ip(window: tauri::WebviewWindow, ip: String, label: String) -> Result<String, String> {
+    verify_trusted_origin(&window)?;
     if !ip.chars().all(|c| c.is_ascii_digit() || c == '.') {
         return Err("Refusing to block a non-IPv4-literal value.".into());
+    }
+    // label comes from the security feed's threat._id (JS slices it to 16 chars before sending,
+    // but this is the actual trust boundary, not that slice) -- not exploitable as command
+    // injection since Command::args never goes through a shell, but an unvalidated value could
+    // still produce a garbled/collided rule name. Same alphanumeric+dash+underscore allowlist
+    // unblock_ip below relies on implicitly by needing an exact rule-name match to find what to remove.
+    if label.is_empty() || !label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("Refusing to block: label must be non-empty alphanumeric/dash/underscore only.".into());
     }
     let rule_name = format!("Inaya-Block-{}", label);
 
@@ -269,7 +302,11 @@ fn block_ip(ip: String, label: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn unblock_ip(ip: String, label: String) -> Result<String, String> {
+fn unblock_ip(window: tauri::WebviewWindow, ip: String, label: String) -> Result<String, String> {
+    verify_trusted_origin(&window)?;
+    if label.is_empty() || !label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("Refusing to unblock: label must be non-empty alphanumeric/dash/underscore only.".into());
+    }
     let rule_name = format!("Inaya-Block-{}", label);
 
     #[cfg(target_os = "windows")]
