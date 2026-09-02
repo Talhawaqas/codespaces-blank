@@ -9,6 +9,7 @@
 // (mfa/disable's own server-side check), never a bare toggle.
 
 import { useState, useEffect, useCallback } from "react";
+import FirebasePhoneAuth from "../FirebasePhoneAuth";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -23,9 +24,6 @@ export default function MfaSettings() {
 
   const [totpEnrollment, setTotpEnrollment] = useState(null); // { qrDataUri, secret, uri }
   const [totpCode, setTotpCode] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [smsPending, setSmsPending] = useState(false);
-  const [smsCode, setSmsCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState(null);
   const [disableCode, setDisableCode] = useState("");
   const [busy, setBusy] = useState("");
@@ -66,26 +64,11 @@ export default function MfaSettings() {
     }
   }
 
-  async function startSmsEnrollment() {
-    setError(""); setBusy("sms-start");
+  async function handlePhoneVerified(idToken) {
+    setError(""); setBusy("sms-enroll");
     try {
-      await api("/api/orgs/mfa/sms/enroll", { method: "POST", body: JSON.stringify({ phoneNumber: phoneNumber.trim() }) });
-      setSmsPending(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function confirmSms() {
-    setError(""); setBusy("sms-confirm");
-    try {
-      const result = await api("/api/orgs/mfa/sms/confirm", { method: "POST", body: JSON.stringify({ code: smsCode.trim() }) });
+      const result = await api("/api/orgs/mfa/sms/enroll", { method: "POST", body: JSON.stringify({ idToken }) });
       if (result.recoveryCodes) setRecoveryCodes(result.recoveryCodes);
-      setSmsPending(false);
-      setSmsCode("");
-      setPhoneNumber("");
       await load();
     } catch (err) {
       setError(err.message);
@@ -173,21 +156,9 @@ export default function MfaSettings() {
           {status.smsEnabled && <span className="text-[11px] font-bold uppercase text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">Enabled · •••{status.smsPhoneLast4}</span>}
         </div>
 
-        {!status.smsEnabled && !smsPending && (
-          <div className="mt-3 flex gap-2">
-            <input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+15551234567" className="flex-1 bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-            <button onClick={startSmsEnrollment} disabled={busy === "sms-start"} className="text-xs font-bold uppercase px-3 py-2 rounded-lg bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
-              Send code
-            </button>
-          </div>
-        )}
-
-        {smsPending && (
-          <div className="mt-3 flex gap-2">
-            <input value={smsCode} onChange={(e) => setSmsCode(e.target.value)} placeholder="6-digit code" className="flex-1 bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-            <button onClick={confirmSms} disabled={busy === "sms-confirm"} className="text-xs font-bold uppercase px-3 py-2 rounded-lg bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">
-              Confirm
-            </button>
+        {!status.smsEnabled && (
+          <div className="mt-3">
+            <FirebasePhoneAuth onVerified={handlePhoneVerified} />
           </div>
         )}
       </div>

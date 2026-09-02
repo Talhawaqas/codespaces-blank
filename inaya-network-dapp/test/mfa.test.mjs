@@ -2,24 +2,61 @@
 //
 // MFA (Business Workspace) coverage: mfaCrypto's encrypt/decrypt round
 // trip + tamper detection, the full TOTP enroll->confirm->login-verify
-// flow using real otpauth-generated codes (not mocked), recovery-code
+// flow using real otpauth-generated codes (not mocked), the Firebase
+// Phone Auth SMS flow (enroll/login-verify/disable) against a stubbed
+// verifyPhoneIdToken (a real Firebase ID token can't be generated
+// without a live Firebase project — see firebaseAdmin.js), recovery-code
 // single-use, and the 5-attempt brute-force lockout on the login-time
 // pending token. Same node --test + real Atlas + RUN_ID-fixtures
 // convention as every other test file here.
 //
-// Run with: node --env-file=.env.local --test test/mfa.test.mjs
+// mfa.js imports verifyPhoneIdToken from firebaseAdmin.js statically, so
+// stubbing it requires mock.module() to run BEFORE mfa.js is first
+// loaded — that's why mfa.js's exports are pulled in via a top-level
+// dynamic import below instead of a static "import ... from" like every
+// other module here. --experimental-test-module-mocks is required (see
+// package.json's "test" script) for mock.module() to exist at all.
+//
+// Run with: node --env-file=.env.local --experimental-test-module-mocks --test test/mfa.test.mjs
 
-import { test, before, after } from "node:test";
+import { test, before, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { TOTP, Secret } from "otpauth";
 import { encryptSecret, decryptSecret } from "../src/lib/mfaCrypto.js";
-import {
-  enrollTotp, confirmTotp, getMfaStatus, isMfaEnrolled,
-  issueMfaPendingToken, verifyMfaPending, disableMfa,
-} from "../src/lib/mfa.js";
 import { connectToDatabase } from "../src/lib/mongodb.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
+
+/** Stands in for firebaseAdmin.js's real verifyPhoneIdToken(), which needs a live Firebase
+ *  project to produce a real signed ID token. Fake tokens here are just JSON strings carrying
+ *  the phone number they "prove" — opaque to mfa.js either way, which only ever treats the
+ *  token as a string to hand off for verification. Mirrors the real function's fail-closed
+ *  contract: throws (never returns falsy) on a missing/mismatched phone number. */
+async function fakeVerifyPhoneIdToken(idToken, expectedPhoneNumber) {
+  if (!idToken) throw new Error("No ID token provided.");
+  let decoded;
+  try {
+    decoded = JSON.parse(idToken);
+  } catch {
+    throw new Error("Invalid fake ID token.");
+  }
+  if (!decoded.phoneNumber) throw new Error("This token wasn't issued by a phone sign-in — no phone_number claim present.");
+  if (expectedPhoneNumber && decoded.phoneNumber !== expectedPhoneNumber) {
+    throw new Error("The verified phone number doesn't match the one on file for this account.");
+  }
+  return { phoneNumber: decoded.phoneNumber, uid: decoded.uid || `fake-${decoded.phoneNumber}` };
+}
+
+function fakeIdToken(phoneNumber) {
+  return JSON.stringify({ phoneNumber, uid: `fake-${phoneNumber}` });
+}
+
+mock.module("../src/lib/firebaseAdmin.js", { exports: { verifyPhoneIdToken: fakeVerifyPhoneIdToken } });
+
+const {
+  enrollTotp, confirmTotp, enrollSms, getMfaStatus, isMfaEnrolled,
+  issueMfaPendingToken, verifyMfaPending, disableMfa,
+} = await import("../src/lib/mfa.js");
 
 const RUN_ID = randomUUID().slice(0, 8);
 const email = (label) => `test-mfa-${RUN_ID}-${label}@example.com`;
@@ -164,5 +201,60 @@ test("disableMfa: requires a valid code, removes enrollment entirely on success"
   assert.equal(await isMfaEnrolled(e), true, "a wrong code must not disable MFA");
 
   await disableMfa(e, currentCodeFor(enrollment.secret, e.toLowerCase()));
+  assert.equal(await isMfaEnrolled(e), false);
+});
+
+// ============================================================
+// SMS (Firebase Phone Auth) — verifyPhoneIdToken is stubbed above; everything else
+// (member_mfa storage, checkFactor's branch order, recovery-code issuance-once) is real.
+// ============================================================
+
+test("enrollSms: verifies the Firebase ID token and records the phone, issues recovery codes once", async () => {
+  const e = tracked("sms-enroll");
+  const result = await enrollSms(e, fakeIdToken("+15559990001"));
+  assert.equal(result.verified, true);
+  assert.equal(result.phoneNumber, "+15559990001");
+  assert.equal(result.recoveryCodes.length, 10);
+
+  const status = await getMfaStatus(e);
+  assert.equal(status.smsEnabled, true);
+  assert.equal(status.smsPhoneLast4, "0001");
+  assert.equal(await isMfaEnrolled(e), true);
+});
+
+test("enrollSms: a token with no phone_number claim is rejected", async () => {
+  const e = tracked("sms-enroll-bad");
+  await assert.rejects(() => enrollSms(e, JSON.stringify({})), /no phone_number claim/);
+  assert.equal(await isMfaEnrolled(e), false);
+});
+
+test("SMS login-verify: a fresh Firebase ID token for the enrolled phone number succeeds", async () => {
+  const e = tracked("sms-login");
+  await enrollSms(e, fakeIdToken("+15559990002"));
+
+  const pendingToken = await issueMfaPendingToken(e);
+  const result = await verifyMfaPending({ token: pendingToken, code: fakeIdToken("+15559990002") });
+  assert.equal(result.ok, true);
+  assert.equal(result.email, e.toLowerCase());
+});
+
+test("SMS login-verify: an ID token proving a DIFFERENT phone number is rejected", async () => {
+  const e = tracked("sms-wrong-phone");
+  await enrollSms(e, fakeIdToken("+15559990003"));
+
+  const pendingToken = await issueMfaPendingToken(e);
+  const result = await verifyMfaPending({ token: pendingToken, code: fakeIdToken("+15559990099") });
+  assert.equal(result.ok, false);
+});
+
+test("disableMfa: a valid Firebase ID token proves control and disables SMS enrollment", async () => {
+  const e = tracked("sms-disable");
+  await enrollSms(e, fakeIdToken("+15559990004"));
+  assert.equal(await isMfaEnrolled(e), true);
+
+  await assert.rejects(() => disableMfa(e, fakeIdToken("+15550000000")), /Incorrect code/);
+  assert.equal(await isMfaEnrolled(e), true, "an ID token for the wrong phone must not disable MFA");
+
+  await disableMfa(e, fakeIdToken("+15559990004"));
   assert.equal(await isMfaEnrolled(e), false);
 });

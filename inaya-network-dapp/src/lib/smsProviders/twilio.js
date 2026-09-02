@@ -1,5 +1,12 @@
 // src/lib/smsProviders/twilio.js
 //
+// UNWIRED: mfa.js's SMS method now runs on Firebase Phone Auth
+// (firebaseAdmin.js/firebaseClient.js), which is a client-driven
+// verification flow, not a sendSms(phoneNumber, message) adapter — this
+// file's isConfigured()/sendSms() are no longer called from mfa.js. Left
+// in place (real, tested code) rather than deleted, in case Firebase is
+// ever swapped back out.
+//
 // Real Twilio REST API integration for MFA SMS delivery — no SDK
 // dependency needed, Twilio's Messages API is a plain authenticated POST.
 // isConfigured() reports true once TWILIO_ACCOUNT_SID/AUTH_TOKEN/

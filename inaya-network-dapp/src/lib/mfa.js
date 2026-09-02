@@ -24,13 +24,12 @@ import { TOTP, Secret } from "otpauth";
 import QRCode from "qrcode";
 import { connectToDatabase } from "./mongodb.js";
 import { hashToken, generateToken, normalizeEmail } from "./orgs.js";
-import { getSmsProvider, isSmsConfigured } from "./smsProviders/index.js";
+import { verifyPhoneIdToken } from "./firebaseAdmin.js";
 import { encryptSecret, decryptSecret } from "./mfaCrypto.js";
 
 const ISSUER = "Inaya Network";
 const MFA_PENDING_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_VERIFY_ATTEMPTS = 5;
-const SMS_OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RECOVERY_CODE_COUNT = 10;
 
 async function collections() {
@@ -117,44 +116,28 @@ export async function confirmTotp(email, code) {
 }
 
 // ============================================================
-// SMS enrollment
+// SMS enrollment — backed by Firebase Phone Auth. The client (FirebasePhoneAuth.js)
+// drives the actual send-code/verify-code flow directly against Firebase; by the time
+// this is called, phone possession is already proven — enrollSms() just independently
+// re-verifies the resulting ID token (never trusts it blind) and records the phone
+// number it proves. No separate confirm step, no server-generated OTP.
 // ============================================================
 
-export async function enrollSms(email, phoneNumber) {
-  if (!isSmsConfigured()) throw new Error("SMS delivery isn't configured yet — set TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER to enable it.");
+export async function enrollSms(email, idToken) {
   const normalized = normalizeEmail(email);
-  const cleanPhone = String(phoneNumber || "").trim();
-  if (!/^\+[1-9]\d{6,14}$/.test(cleanPhone)) throw new Error("Phone number must be in E.164 format, e.g. +15551234567.");
+  const { phoneNumber } = await verifyPhoneIdToken(idToken);
 
-  const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
-  const { memberMfa } = await collections();
-  await memberMfa.updateOne(
-    { _id: normalized },
-    { $set: { sms: { phoneNumber: cleanPhone, verified: false, otpHash: hashToken(otp), otpExpiresAt: new Date(Date.now() + SMS_OTP_TTL_MS).toISOString(), enrolledAt: new Date().toISOString() } } },
-    { upsert: true }
-  );
-
-  await getSmsProvider().sendSms(cleanPhone, `Your Inaya Network verification code is ${otp}. It expires in 10 minutes.`);
-  return { sent: true, phoneNumber: cleanPhone };
-}
-
-export async function confirmSms(email, code) {
-  const normalized = normalizeEmail(email);
   const { memberMfa } = await collections();
   const doc = await memberMfa.findOne({ _id: normalized });
-  if (!doc?.sms || doc.sms.verified) throw new Error("No pending SMS enrollment for this account — call enrollSms() first.");
-  if (new Date(doc.sms.otpExpiresAt).getTime() < Date.now()) throw new Error("That code has expired — request a new one.");
-  if (hashToken(String(code || "").trim()) !== doc.sms.otpHash) throw new Error("That code doesn't match — check your messages and try again.");
-
-  const update = { $set: { "sms.verified": true }, $unset: { "sms.otpHash": "", "sms.otpExpiresAt": "" } };
+  const update = { $set: { sms: { phoneNumber, verified: true, enrolledAt: new Date().toISOString() } } };
   let recoveryCodes = null;
-  if (!doc.recoveryCodesHashed?.length) {
+  if (!doc?.recoveryCodesHashed?.length) {
     const generated = generateRecoveryCodes();
     update.$set.recoveryCodesHashed = generated.hashed;
     recoveryCodes = generated.codes;
   }
-  await memberMfa.updateOne({ _id: normalized }, update);
-  return { verified: true, recoveryCodes };
+  await memberMfa.updateOne({ _id: normalized }, update, { upsert: true });
+  return { verified: true, phoneNumber, recoveryCodes };
 }
 
 // ============================================================
@@ -171,8 +154,12 @@ export async function disableMfa(email, code) {
 }
 
 // ============================================================
-// Shared factor-checking (TOTP, then SMS live OTP, then a recovery code) — used by both
-// disableMfa() and the login-time verifyMfaPending() below.
+// Shared factor-checking (TOTP, then a Firebase Phone Auth ID token, then a recovery
+// code) — used by both disableMfa() and the login-time verifyMfaPending() below. The
+// "code" submitted for a live SMS check is now a Firebase ID token (a JWT), produced by
+// the client re-running the FirebasePhoneAuth flow — there's no more server-side OTP to
+// generate or resend, so a TOTP digit-string or recovery code just fails token
+// verification here and falls through to the other branches untouched.
 // ============================================================
 
 async function checkFactor(normalizedEmail, code) {
@@ -185,8 +172,13 @@ async function checkFactor(normalizedEmail, code) {
     const secretBase32 = decryptSecret(doc.totp.secretEncrypted);
     if (buildTotp(secretBase32, normalizedEmail).validate({ token: trimmed, window: 1 }) !== null) return { ok: true, method: "totp" };
   }
-  if (doc.sms?.verified && doc.sms.otpHash && new Date(doc.sms.otpExpiresAt).getTime() >= Date.now() && hashToken(trimmed) === doc.sms.otpHash) {
-    return { ok: true, method: "sms" };
+  if (doc.sms?.verified) {
+    try {
+      const { phoneNumber } = await verifyPhoneIdToken(trimmed, doc.sms.phoneNumber);
+      if (phoneNumber) return { ok: true, method: "sms" };
+    } catch {
+      // Not a valid/matching Firebase ID token — fall through to the other factors.
+    }
   }
   if (doc.recoveryCodesHashed?.includes(hashToken(trimmed))) {
     // Recovery codes are single-use — consume it immediately so it can never be replayed.
@@ -194,20 +186,6 @@ async function checkFactor(normalizedEmail, code) {
     return { ok: true, method: "recovery" };
   }
   return { ok: false };
-}
-
-/** For a login's SMS step — sends a fresh live OTP the same way enrollSms() does, without
- *  touching the already-verified phone/verified flag. */
-export async function sendLoginSmsCode(email) {
-  const normalized = normalizeEmail(email);
-  const { memberMfa } = await collections();
-  const doc = await memberMfa.findOne({ _id: normalized });
-  if (!doc?.sms?.verified) throw new Error("SMS is not enrolled for this account.");
-
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  await memberMfa.updateOne({ _id: normalized }, { $set: { "sms.otpHash": hashToken(otp), "sms.otpExpiresAt": new Date(Date.now() + SMS_OTP_TTL_MS).toISOString() } });
-  await getSmsProvider().sendSms(doc.sms.phoneNumber, `Your Inaya Network sign-in code is ${otp}. It expires in 10 minutes.`);
-  return { sent: true };
 }
 
 // ============================================================
@@ -228,18 +206,6 @@ export async function issueMfaPendingToken(email) {
     createdAt: new Date().toISOString(),
   });
   return token;
-}
-
-/** For the login-time verify screen's "resend SMS code" action — takes the mfaPendingToken
- *  (never a client-supplied email) so a live OTP can only ever be sent for the account that
- *  actually just completed primary auth, looked up server-side. */
-export async function sendLoginSmsForPendingToken(token) {
-  const { mfaPending } = await collections();
-  const pending = await mfaPending.findOne({ tokenHash: hashToken(token || "") });
-  if (!pending || pending.usedAt || new Date(pending.expiresAt).getTime() < Date.now()) {
-    throw new Error("This login attempt is no longer valid — please sign in again.");
-  }
-  return sendLoginSmsCode(pending.email);
 }
 
 /** Verifies a login's second factor. Fails closed and rate-limited: 5 wrong attempts
