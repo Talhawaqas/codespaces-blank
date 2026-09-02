@@ -32,6 +32,8 @@ export const ecosystemDevDeepdive = {
             ["inaya-network-dapp/", "Next.js 14 App Router — src/app/, src/lib/, src/app/api/"],
             ["inaya-network-dapp/custody-sdk/", "src/index.js (InayaKernel), src/crypto.js, src/contracts.js"],
             ["inaya-network-dapp/custody-sdk/packages/node-daemon/", "bin/inaya-node-daemon.js (commander CLI)"],
+            ["src/lib/chain-adapters/ (bridge + interop)", "registry.js (capability model), interop/ (Wormhole)"],
+            ["src/lib/ai-action-requests.js, auditChain.js", "AI guarded-execution state machine + cryptographic audit trail"],
             ["inaya-mobile/", "Expo — App.js, src/screens/, src/utils/, src/providers/"],
             ["inaya-desktop/", "src-tauri/src/lib.rs, tauri.conf.json"],
             ["inaya-dapp-desktop/", "src-tauri/src/lib.rs, tauri.conf.json"],
@@ -386,6 +388,72 @@ export const ecosystemDevDeepdive = {
           type: "note",
           label: "getAccessibleScope() extension pattern.",
           text: "Each module adds its own visibleX array (visibleTasks, visibleContacts, visibleInvoices, visibleEmployees, ...) to the same resolver rather than each having a separate scope function. Finance's arrays are gated by canAccessFinance on top of department scope; HR's visibleEmployees unions HR-scoped employees, Department-Manager-scoped employees (managedDepartmentIds — NOT filtered against the caller's own already-visible departments, a real bug fixed during this layer's testing, see the founder architecture doc's Section 24), and the caller's own self-record, deduplicated by _id.",
+        },
+      ],
+    },
+    {
+      number: "13",
+      title: "Multi-Chain Bridge & Interop Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / contract", "Purpose"],
+          rows: [
+            ["InayaTokenBridgeHome.bridgeOut(...)", "BSC-side lock/burn entry point, source of every cross-chain transfer"],
+            ["InayaTokenBridgeSpoke.executeMessage(...) / receive_message(...)", "Remote-chain entry point (EVM name / Solana-Move name) — validates threshold validator signatures, mints/releases on the destination"],
+            ["InayaChainRegistry.setSpokeBridgeAddress() / registerRemoteChain() / setTrustedRemoteContract()", "Owner-only wiring — a chain has no real route until all three are called for it, not just deployed"],
+            ["listChainCapabilities() / getChainCapability(chainId)", "src/lib/chain-adapters/registry.js — the single source a UI reads before ever describing a chain as 'supported'; SUPPORT_LEVELS run DISCOVERED(0) → READ_ONLY → WALLET → MESSAGE → TOKEN_TRANSFER → STAKING → FULL_ECOSYSTEM(6), each backfilled only from what's actually been verified"],
+            ["WormholeProvider.js", "Wraps Wormhole's WTT/lock-and-mint flow; chain-id mapping is the thing that broke first (Sepolia/testnet IDs differ from their mainnet counterparts unlike BSC/Avalanche)"],
+            ["GET/POST /api/interop/wtt/{initiate,relay,status}", "Relay cron (*/5 min) fetches the Guardian-signed VAA via a plain REST call to Wormholescan's public API (not the @wormhole-foundation/sdk package — that broke the Next.js build, see Section 26 of the architecture doc) and completes the transfer via Inaya's relayer wallet"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Per-chain proof records (real tx hashes both sides): deployments/bridge/{avalancheFuji,solanaDevnet,hederaTestnet,aptosTestnet,suiTestnet}.json; deployments/interop/wormhole-wtt/bscTestnet-attestation.json.",
+        },
+      ],
+    },
+    {
+      number: "14",
+      title: "Storage Backup & Redundancy Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / contract", "Purpose"],
+          rows: [
+            ["InayaBackupRegistry.sol", "0x062c341aE4f11CB1dEa1B0D3930d52902F97f48a (BSC Testnet) — records redundancy commitment + health-state transitions only, never replica data"],
+            ["InayaKernel.Backup.getBackupStatus / getBackupHealth / getRedundancyStatus / getRecoveryStatus / requestRecovery", "custody-sdk client, published to npm"],
+            ["Health states", "PROTECTED / REBUILDING / DEGRADED / RECOVERY_REQUIRED / RECOVERY_FAILED — pure state machine, 19/19 unit tests"],
+            ["Pin-status check", "Every 15 min, 3-strike grace window before flagging a replica"],
+            ["Integrity check", "Daily, content-hash comparison, zero grace — catches real corruption immediately"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Providers: Pinata + Filebase (S3-compatible, IPFS-backed, separate infrastructure/failure domain). Filebase gotcha: its S3 endpoint is s3.filebase.io, not .com; the AWS SDK's default auto-attached request checksum causes a generic AccessDenied against it unless disabled. Full writeup: docs/backup-redundancy-architecture.md.",
+        },
+      ],
+    },
+    {
+      number: "15",
+      title: "AI Guarded Execution & Audit Trail Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function", "Purpose"],
+          rows: [
+            ["proposeAiAction({orgId, assistantSurface, toolName, targetRecordType, targetRecordId, proposedAction, args, actorEmail, canPropose})", "Inserts a PENDING_APPROVAL request; idempotencyKey = sha256(orgId+toolName+targetRecordId+args+hourBucket) dedupes same-hour repeats"],
+            ["reviewAiAction(..., canApprove)", "Approve sets unlockAt = now + 36h (SETTLEMENT_DELAY_MS); reject is terminal"],
+            ["classifyRisk(targetRecordType, proposedAction)", "Never returns undefined — unmatched combinations default MEDIUM; EXPENSE/INVOICE/PURCHASE_ORDER default HIGH"],
+            ["api/cron/execute-approved-ai-actions", "The only code path that calls a real transitionX() for an AI-originated change, and only once unlockAt has passed; runs as a synthetic org-manager membership, attributed in the log to the human approver"],
+            ["appendAuditEntry({orgId, recordType, recordId, actorEmail, action, previousState, newState, metadata})", "src/lib/auditChain.js — entryHash = sha256(prevHash + canonicalJSON(eventFields)); optimistic CAS on audit_chain_heads, retries on conflict, never corrupts under contention"],
+            ["verifyChainIntegrity(orgId)", "Walks the full chain, recomputes every hash; returns {valid:false, brokenAtSeq, reason} on the first mismatch (gap/reorder, prevHash mismatch, or content altered after write)"],
+            ["GET /api/orgs/audit/export?orgId=&format=json|csv", "Org-scoped (owner/admin only) full-chain export — every field needed to independently recompute and verify, so a customer never has to trust a UI badge"],
+          ],
+        },
+        {
+          type: "note",
+          text: "9 gated domains (EXECUTORS map in ai-action-requests.js): TASK, EXPENSE, DOCUMENT, EMPLOYEE, INVOICE, LEAVE_REQUEST, PURCHASE_ORDER, PURCHASE_REQUEST, DEAL — one corresponding propose_* tool each in ai-business-tools.js. State machine: PENDING_APPROVAL → APPROVED → QUEUED → EXECUTED|EXPIRED, or PENDING_APPROVAL → REJECTED, or APPROVED → CANCELLED (only before unlockAt). 19 automated tests, 11 adversarial.",
         },
       ],
     },

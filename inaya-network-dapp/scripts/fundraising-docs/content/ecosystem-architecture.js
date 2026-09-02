@@ -598,6 +598,10 @@ export const ecosystemArchitecture = {
             ["Node operator CLI", "inaya-network-dapp/custody-sdk/packages/node-daemon/"],
             ["Release verification (reproducible build, published hashes, IPFS pin)", "custody-sdk/.github/workflows/release.yml, CHECKSUMS.md, docs/VERIFYING_RELEASES.md, scripts/pin-release.mjs"],
             ["Cross-implementation crypto compatibility proof", "custody-sdk/test/webCryptoCompat.test.mjs"],
+            ["Native multi-chain bridge", "contracts/InayaTokenBridge{Home,Spoke}.sol, InayaChainRegistry.sol, InayaMessenger.sol; src/lib/chain-adapters/; deployments/bridge/*.json; aptos/programs/inaya-bridge-aptos/, sui/programs/inaya_bridge_sui/"],
+            ["Wormhole interoperability layer", "src/lib/chain-adapters/interop/, src/app/api/interop/; deployments/interop/wormhole-wtt/bscTestnet-attestation.json; docs/{interoperability-provider-evaluation,inaya-interoperability,multichain-support-matrix,chain-expansion-guide,interop-security-boundary}.md"],
+            ["Storage backup & redundancy", "contracts/InayaBackupRegistry.sol; src/lib/pinningProviders/ (Pinata + Filebase); docs/backup-redundancy-architecture.md"],
+            ["AI guarded execution + cryptographic audit trail", "src/lib/ai-action-requests.js, src/lib/auditChain.js, src/lib/ai-business-tools.js (propose_* tools); src/app/api/cron/execute-approved-ai-actions/; src/app/api/orgs/audit/"],
             ["Backend + web dApp + Business Workspace", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],
             ["Business Operations (Tasks/CRM/Procurement/Inventory)", "src/lib/{task,deal,purchase-request,purchase-order}-workflow.js, inventory.js; src/app/api/orgs/{tasks,crm,procurement,inventory}/"],
             ["Finance & HR", "src/lib/{invoice,expense,employee,leave}-workflow.js, attachments.js; src/app/api/orgs/{finance,hr}/"],
@@ -726,6 +730,150 @@ export const ecosystemArchitecture = {
         {
           type: "note",
           text: "Full detail in RAG_INFRASTRUCTURE.md at the repo root.",
+        },
+      ],
+    },
+    {
+      number: "26",
+      title: "Multi-Chain Bridge & Interoperability (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "$INAYA is no longer BSC-only. Two independent systems move it to other chains, deliberately kept separate — a problem in one says nothing about the other. Every capability claim below is backed by a real transaction, not a deployment assumed to work.",
+        },
+        {
+          type: "subsection",
+          heading: "System 1 — Inaya's own native bridge (mint/burn, BSC home)",
+          body: "InayaTokenBridgeHome (BSC) + InayaTokenBridgeSpoke per remote chain, coordinated by InayaChainRegistry (trusted-chain + spoke-address registration) and InayaMessenger, secured by threshold validator signatures over each cross-chain message. bridgeOut() on the source chain, executeMessage()/receive_message() on the destination.",
+        },
+        {
+          type: "table",
+          headers: ["Chain", "Verified level", "Evidence"],
+          rows: [
+            ["BSC Testnet (home) / Sepolia / Avalanche Fuji", "Staking-level — full unified staking interaction proven", "Established prior to this pass; re-confirmed alongside the new chains below."],
+            ["Arbitrum Sepolia", "Messaging — registries wired and trust-verified, no transfer confirmed through it yet", "deployments/bridge/arbitrumSepolia.json"],
+            ["Solana Devnet", "Token-transfer — first-ever proven cross-chain message execution on Inaya's Solana program", "Real bridgeOut + receive_message cycle, wrapped balance confirmed on-chain. deployments/bridge/solanaDevnet.json."],
+            ["Hedera Testnet", "Token-transfer", "Hedera runs the EVM natively, so the identical spoke bytecode already proven on Sepolia/Fuji/Arbitrum was deployed unchanged. Real bridgeOut + executeMessage cycle confirmed. deployments/bridge/hederaTestnet.json."],
+            ["Aptos Testnet", "Token-transfer", "New native Move contract (aptos/programs/inaya-bridge-aptos), reusing the same validator-signing scheme as the EVM spokes. Real cycle confirmed first attempt. deployments/bridge/aptosTestnet.json."],
+            ["Sui Testnet", "Token-transfer", "New native Move contract (sui/programs/inaya_bridge_sui). Real cycle confirmed twice. deployments/bridge/suiTestnet.json."],
+            ["Polygon Amoy", "Discovered only", "Configured, never deployed — not claimed as more."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Two real, non-obvious bugs found getting Solana and Sui working.",
+          text: "Solana: its native secp256k1 precompile keccak256-hashes the instruction's message field internally before recovering the signature — undocumented in the public client crate docs, root-caused empirically by tracing the real (and, confusingly, doc-versioning-inconsistent) error-enum ordering; fixed in the off-chain validator signing procedure, not the on-chain program. Sui: ethers.toBeArray(0) returns a zero-length array (minimal big-endian encoding of zero has no bytes), silently truncating a signature by one byte whenever a validator's recovery id was 0 — fixed in the relayer script.",
+        },
+        {
+          type: "subsection",
+          heading: "System 2 — Wormhole interoperability layer (parallel, does not replace System 1)",
+          body: "Reaches other chains through Wormhole's third-party guardian network instead of a hand-built bridge per chain. Evaluated against LayerZero on live docs (docs/interoperability-provider-evaluation.md); Wormhole selected (WTT/lock-and-mint mode), LayerZero deferred rather than rejected.",
+        },
+        {
+          type: "bullets",
+          lead: "4 real, proven routes (full lock-and-complete cycle, verified non-zero destination balance):",
+          items: [
+            "BSC → Ethereum Sepolia, BSC → Arbitrum Sepolia, BSC → Avalanche Fuji — all proven end-to-end.",
+            "BSC attestation-only path additionally proven.",
+            "Solana: wrapped token created and verified, but a transfer is blocked because Wormhole's own guardians never registered BSC as a trusted source chain on their Solana Devnet Token Bridge — a governance action on Wormhole's side, not fixable by Inaya.",
+            "Sui and Aptos via Wormhole: both blocked by stale bytecode/package references inside Wormhole's own SDK, confirmed by re-running the actual attempts and inspecting the exact on-chain abort — the same root cause that led directly to building Aptos/Sui support into the native bridge (System 1) instead.",
+          ],
+        },
+        {
+          type: "note",
+          text: "/bridge's UI offers only the routes actually proven as real send options; every other Wormhole-reachable chain is shown as reference-only, per an explicit no-fake-chain-support policy. Relay infrastructure (api/interop/wtt/{initiate,relay,status}, a 5-minute cron) fetches the Guardian-signed VAA via a plain REST call to Wormholescan's public API rather than the @wormhole-foundation/sdk package directly — importing that SDK inside a Next.js API route was found to break the production build (it eagerly pulls in XRPL support, whose dependency chain ships ESM-only files webpack can't bundle).",
+        },
+      ],
+    },
+    {
+      number: "27",
+      title: "Storage Backup & Redundancy (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Closes a real gap that existed until this pass: each file's two encrypted shards (Section 05) were each pinned to exactly one provider (Pinata). Losing that one pin permanently lost the file — zero redundancy. Additive only; the existing encryption/sharding pipeline is unchanged.",
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Replica redundancy, two independent providers.",
+              body: "Every shard is now replicated across Pinata and Filebase (an S3-compatible, IPFS-backed provider on a genuinely different infrastructure/failure domain), not just one.",
+            },
+            {
+              heading: "Two-tier failure detection.",
+              body: "Cheap pin-status checks every 15 minutes with a 3-strike grace window (a single blip never triggers recovery), plus daily content-hash integrity checks that catch real corruption with zero grace.",
+            },
+            {
+              heading: "Five backup-health states, a pure state machine.",
+              body: "Protected / Rebuilding / Degraded / Recovery Required / Recovery Failed — computed by a fully unit-tested state machine (19/19 tests), not scattered conditionals.",
+            },
+            {
+              heading: "Integrity-verified automatic recovery.",
+              body: "Fetches from a surviving healthy replica, verifies its hash against what was captured at original pin time, re-pins to restore the target replica count, and deletes the failed replica's underlying storage object (not just its database record).",
+            },
+          ],
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["InayaBackupRegistry.sol", "Deployed to BSC Testnet: 0x062c341aE4f11CB1dEa1B0D3930d52902F97f48a. Records only a redundancy commitment and health-state transitions on-chain — never the replica data itself — written only at real state boundaries, mirroring InayaProofRegistry's trust model. 15/15 contract tests."],
+            ["InayaKernel.Backup SDK client", "getBackupStatus / getBackupHealth / getRedundancyStatus / getRecoveryStatus / requestRecovery. 9/9 tests, published to npm as part of custody-sdk."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Real, live, end-to-end proof — not just unit tests.",
+          text: "Replicated a real already-uploaded asset's shards to both Pinata and Filebase (correctly computed Protected, matching an independently-confirmed on-chain transaction); then deleted a real Filebase replica and watched the system correctly detect it (Recovery Required), fetch from the surviving Pinata copy, verify its hash, re-pin to Filebase, and self-heal back to Protected — with the on-chain registry tracking every real state transition. Two real coordinator-level bugs (not in the already-correct, already-tested state machine itself) were found and fixed by this exact proof run: a recovery sweep that checked shard health using a fake empty replica list, always reading worst-case; and a source/target-provider selection rule requiring zero recorded failures ever, instead of the same 'still retrievable' definition used everywhere else in the system.",
+        },
+        {
+          type: "note",
+          text: "One real, external, currently-open constraint: the project's Pinata account is over its plan's usage limit (confirmed via a live 403 from Pinata's own API), which blocked the first attempt at a fresh live pin during this proof and separately affects custody-sdk's own release-pinning step (Section 05). Not a code bug — an account-side limit to address separately. Full writeup: docs/backup-redundancy-architecture.md.",
+        },
+      ],
+    },
+    {
+      number: "28",
+      title: "AI Guarded Execution & Cryptographic Audit Trail (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The Business Assistant's most consequential capability: it can propose real changes across 9 business domains (Task, Document, Deal, Purchase Request, Purchase Order, Leave Request, Employee, Expense, Invoice) — and can never execute any of them itself. src/lib/ai-action-requests.js is the guarded-execution state machine; src/lib/auditChain.js is the tamper-evident log everything writes into.",
+        },
+        {
+          type: "subsection",
+          heading: "State machine (ai-action-requests.js)",
+          body: "PENDING_APPROVAL → APPROVED (sets unlockAt = now + 36h) → QUEUED (cron, once unlocked) → EXECUTED (cron, after calling the real transitionX()) or EXPIRED (cron, if the real transition no longer applies). PENDING_APPROVAL can also go to REJECTED; APPROVED can go to CANCELLED, but only before unlockAt passes.",
+        },
+        {
+          type: "bullets",
+          lead: "Authorization, belt-and-suspenders throughout:",
+          items: [
+            "proposeAiAction() requires canPropose — resolved by the caller through the exact same getAccessibleScope()-derived gate the real action's own tool context uses. An AI can't propose something the requesting user isn't already allowed to ask for.",
+            "reviewAiAction()'s approve/reject requires canApprove — resolved through the domain's real requiresManage gate (e.g. canManageFinance for an expense decision). An AI-proposed action can never be approved by someone who couldn't already perform the real action themselves.",
+            "Execution (the 36h-later cron) runs as a synthetic org-manager membership attributed in the activity log to the human who approved it — not a fabricated identity, and not re-derived from the approver's current membership (which could have changed since approval).",
+            "Idempotency: idempotencyKey = sha256(orgId+toolName+targetRecordId+args+hour-bucket), uniquely indexed — an identical proposal within the same hour upserts into the existing pending request instead of duplicating.",
+            "Risk classification (classifyRisk()) is keyed first by exact action, falling back to a per-domain default, and never returns undefined — an unrecognized combination defaults to MEDIUM rather than silently under-classifying as LOW. EXPENSE, INVOICE, and PURCHASE_ORDER default HIGH; PURCHASE_REQUEST approve/reject and EMPLOYEE terminate are explicitly HIGH.",
+          ],
+        },
+        {
+          type: "subsection",
+          heading: "The audit trail (auditChain.js) — a hash-chained overlay, not a replacement log",
+          body: "Runs alongside the existing plain-insert logs (org-activity-log.js, activity-log.js, security.js), which keep writing exactly what they always have. This module additionally appends a linked entry: entryHash = sha256(prevHash + canonicalJSON(eventFields)) — each entry commits to the entire chain before it, not just its own content, so altering or deleting any past entry breaks every hash after it.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Concurrency: one org's chain is strictly sequential (entry N must know entry N-1's real, committed hash), so appendAuditEntry does an optimistic compare-and-swap on audit_chain_heads and retries on conflict — under contention this means a few wasted reads, never a corrupted chain; a conflicting write always fails closed.",
+            "verifyChainIntegrity(orgId) walks the whole chain and recomputes every hash, catching a direct DB edit, a deleted entry, or a reordered entry — returns exactly which sequence number broke and why.",
+            "GET /api/orgs/audit/export (org-scoped, owner/admin only) exports the full chain — every field needed to independently recompute and verify it — so a business customer doesn't have to trust Inaya's own \"Verified\" banner; they can walk the export and recompute sha256(prevHash + canonicalFields) themselves. Same shape as the internal admin export, just gated by org membership instead of internal auth.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Why this belongs next to custody-sdk's release verification (Section 05).",
+          text: "Same underlying principle applied to a different trust boundary: custody-sdk lets anyone verify the client code wasn't tampered with before it ran; the audit trail lets anyone verify a business's own activity log wasn't tampered with after it was written. Neither asks the reader to simply trust Inaya's word. 19 automated tests cover this system, 11 of them adversarial scenarios specifically trying to defeat the guardrails (approving without real authority, bypassing the delay, replaying an idempotency key, etc.) rather than just the happy path.",
         },
       ],
     },

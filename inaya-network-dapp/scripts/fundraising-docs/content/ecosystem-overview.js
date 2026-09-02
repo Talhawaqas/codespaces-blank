@@ -65,6 +65,11 @@ export const ecosystemOverview = {
           label: "You don't have to take Inaya's word for any of this.",
           text: "The encryption code above is published as open source (@inaya-network/custody-sdk on npm) and used identically by the web app and the mobile app — not a separate, unverifiable implementation behind the scenes. Every release publishes a cryptographic hash anyone can independently reproduce and check, plus a second copy pinned to IPFS so the code itself, not just Inaya's word, identifies what you're running. Full verification steps are public.",
         },
+        {
+          type: "note",
+          label: "The two halves don't depend on one company staying up.",
+          text: "Each file's two encrypted shards are replicated across two independent pinning providers on genuinely different infrastructure (Pinata and Filebase), not just one. The system checks pin health continuously and, if a replica goes missing or its content stops matching what was originally captured, automatically fetches from the surviving healthy copy, re-verifies it, and re-pins — self-healing back to fully protected without anyone having to notice or act.",
+        },
       ],
     },
     {
@@ -159,6 +164,25 @@ export const ecosystemOverview = {
           label: "How the Docs, Security, and Learn assistants find the right passage.",
           text: "A shared retrieval layer (RAG) indexes the project's real documentation and FAQs, embeds it for semantic search, and combines that with plain keyword search — so \"how does the pricing work\" and \"pricing structure\" both find the same real answer, not a static block of hardcoded text that goes stale the moment the product changes.",
         },
+        {
+          type: "subsection",
+          heading: "AI-Powered Business Operations — the AI can propose, it can never execute.",
+          body: "As of September 2026, the Business Assistant can go further than answering questions: it can propose real changes across 9 business domains (Tasks, Expenses, Documents, Employees, Invoices, Leave Requests, Purchase Orders, Purchase Requests, Deals). It never performs any of them itself.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "The AI proposes, not executes.", body: "Every proposal is checked against the exact same permission the real action would require before it's even created — the AI can't propose something the requesting user isn't already allowed to do." },
+            { heading: "A human approves with real authority.", body: "A person with the exact same real authority the underlying action requires — re-checked independently by the server, not trusted from the request — must approve it. Higher-risk actions (terminating an employee, approving a large purchase) are automatically classified as higher risk than routine ones (advancing a task)." },
+            { heading: "A mandatory 36-hour delay passes.", body: "Even after approval, nothing executes immediately — mirroring the same timelocked-settlement pattern the storage protocol itself uses for node-operator payouts, reused here for a completely different kind of action." },
+            { heading: "Only then does it execute — and everything is recorded.", body: "A separate process executes the change only once the delay has genuinely passed, and only if the real action still makes sense. Every step — proposed, approved, delayed, executed, rejected, or expired — is written into a cryptographically verifiable audit trail." },
+          ],
+        },
+        {
+          type: "note",
+          label: "The audit trail isn't just a log — it's tamper-evident by construction.",
+          text: "Every entry cryptographically commits to the one before it, so altering or deleting any past entry breaks every entry after it — a direct database edit is mathematically detectable, not just against policy. Any business customer can independently walk their own organization's chain and recompute it themselves via a self-service export; they don't have to trust a \"Verified\" badge Inaya shows them. Security-tested with 19 automated tests, 11 of them adversarial scenarios specifically trying to defeat the guardrails.",
+        },
       ],
     },
     {
@@ -180,6 +204,34 @@ export const ecosystemOverview = {
     },
     {
       number: "09",
+      title: "Multi-Chain — Moving Value Beyond BNB Chain",
+      blocks: [
+        {
+          type: "lead",
+          text: "Inaya started on BNB Chain Testnet, but $INAYA doesn't have to stay there. Two independent systems, running in parallel, let value move to other chains — deliberately kept separate, since a problem in one says nothing about the other.",
+        },
+        {
+          type: "columns",
+          items: [
+            {
+              heading: "Inaya's own native bridge",
+              body: "Full control, no third-party dependency. A real, proven lock-and-mint cycle now works to Ethereum, Avalanche, Arbitrum, Solana, Hedera, Aptos, and Sui — each one verified with a real transaction that moved real (testnet) value and confirmed it arrived on the other side, not just deployed-and-assumed-working.",
+            },
+            {
+              heading: "A second route via Wormhole",
+              body: "An independent, third-party interoperability network, integrated as an alternative path that doesn't replace the native bridge. Proven working end-to-end to Ethereum, Arbitrum, and Avalanche; a few other chains are currently blocked by issues in Wormhole's own tooling, not anything on Inaya's side, and are shown as reference-only until that's resolved upstream.",
+            },
+          ],
+        },
+        {
+          type: "note",
+          label: "Nothing here is claimed beyond what's actually been proven on-chain.",
+          text: "A chain only ever gets credit for the capability level it's genuinely demonstrated — discovered, wallet-connected, messaging-only, or a real proven transfer — never assumed from \"it's deployed\" alone. Several real bugs were found and fixed getting the newer chains (Solana, Sui) working; each is documented rather than smoothed over, the same honesty convention this whole ecosystem holds itself to.",
+        },
+      ],
+    },
+    {
+      number: "10",
       title: "Oracle & Automation — Infrastructure That Runs Itself",
       blocks: [
         {
@@ -197,7 +249,7 @@ export const ecosystemOverview = {
       ],
     },
     {
-      number: "10",
+      number: "11",
       title: "How It All Actually Connects",
       blocks: [
         {
@@ -205,7 +257,7 @@ export const ecosystemOverview = {
           text: [
             "One backend serves every surface — the website, the mobile app, and both desktop apps all call the exact same API. There's no duplicated logic to keep in sync between platforms; a fix or feature on the backend is instantly live everywhere.",
             "The protocol (contracts, node operators, encryption) and the applications (dApp, Business Workspace, mobile, desktop, AI) are cleanly separated — most of what a user touches day-to-day never has to think about the blockchain underneath it, even though it's doing real work a layer down.",
-            "Everything currently runs on BNB Chain Testnet. Nothing described in this document is live on mainnet yet — that's the next major milestone, not a past one.",
+            "BNB Chain Testnet is still home base — the core protocol, staking, and node settlement all live there — but it's no longer the only chain involved: $INAYA now moves to several other testnets through the bridge described in Section 09. Nothing described in this document is live on mainnet yet, on any chain — that's the next major milestone, not a past one.",
           ],
         },
       ],
