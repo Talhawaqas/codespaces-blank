@@ -2083,6 +2083,12 @@ const NAV_GROUPS = [
     ],
   },
   {
+    title: 'Developers',
+    items: [
+      { label: 'Build on Inaya', icon: '⚙️', href: '/build' },
+    ],
+  },
+  {
     title: 'About Us',
     items: [
       { label: 'Business Model', icon: '📄' },
