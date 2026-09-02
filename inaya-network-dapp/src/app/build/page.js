@@ -217,6 +217,40 @@ export default function BuildOnInayaPage() {
           </div>
         </section>
 
+        {/* Verify this build */}
+        <section className="mt-16">
+          <h2 className="text-white font-extrabold text-xl">Verify this build</h2>
+          <p className="text-[#8a96ab] text-[13px] mt-1.5 max-w-2xl">
+            This page (and every page on this site) is identified by a build ID tied to the exact git commit and
+            custody-sdk version it was built from — not a random ID that tells you nothing. Same encryption code
+            path as mobile, since the client-side crypto consolidation described below.
+          </p>
+          <div className="mt-5 bg-[#0b1426]/70 border border-[#00f2fe]/15 rounded-2xl p-5 font-mono text-[12.5px] space-y-2">
+            <div className="flex flex-wrap gap-x-3">
+              <span className="text-[#8a96ab]">Build ID:</span>
+              <span className="text-[#00f2fe] break-all">{process.env.NEXT_PUBLIC_BUILD_ID || "unavailable in this environment"}</span>
+            </div>
+            <div className="flex flex-wrap gap-x-3">
+              <span className="text-[#8a96ab]">custody-sdk version:</span>
+              <span className="text-white">{process.env.NEXT_PUBLIC_SDK_VERSION || "unknown"}</span>
+            </div>
+          </div>
+          <p className="text-[#8a96ab] text-[12.5px] mt-3 max-w-2xl leading-relaxed">
+            What this does and doesn't guarantee, how to reproduce a release yourself, and what content-addressed
+            delivery means here — see <code className="text-[#00f2fe]">docs/reproducible-builds-and-verification.md</code> in
+            this app's repository, and{" "}
+            <a
+              href="https://github.com/Talhawaqas/custody-sdk/blob/main/docs/VERIFYING_RELEASES.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#00f2fe] hover:underline"
+            >
+              custody-sdk's own release-verification guide
+            </a>{" "}
+            for the SDK package specifically.
+          </p>
+        </section>
+
         {/* CTA footer */}
         <section className="mt-16 mb-8 bg-gradient-to-br from-[#00f2fe]/10 to-[#4facfe]/5 border border-[#00f2fe]/25 rounded-2xl p-7 md:p-9 text-center">
           <h2 className="text-white font-extrabold text-xl">Start building</h2>

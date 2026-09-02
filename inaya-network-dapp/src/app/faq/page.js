@@ -48,7 +48,7 @@ export const faqs = [
   {
     icon: "✅",
     q: "Why should I trust a testnet-stage product?",
-    a: "Inaya doesn't ask for blind trust — the encryption architecture is verifiable (files are provably split client-side before upload), the core contracts are deployed and verified on BscScan, and the custody-sdk powering the encryption is open-source on GitHub. Being upfront that this is testnet, not mainnet, is itself part of that verifiability.",
+    a: "Inaya doesn't ask for blind trust — the encryption architecture is verifiable (files are provably split client-side before upload), the core contracts are deployed and verified on BscScan, and web and mobile both run the exact same open-source custody-sdk for encryption, not separate implementations. Every release publishes a cryptographic hash you (or anyone) can independently reproduce and check, and release artifacts are also available via content-addressed IPFS delivery — see /build for the details and current build ID. Being upfront that this is testnet, not mainnet, is itself part of that verifiability.",
   },
   {
     icon: "🚀",

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
-import { createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
+import { InayaKernel, createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -3703,7 +3703,7 @@ export default function Home() {
 
   // ========================================================
   // 💳 CARD-BASED PAYG UPLOAD — no wallet required. Reuses the same
-  // encryptData()/uploadToPinata() pipeline the wallet flow uses (client-
+  // custody-sdk encrypt/shard pipeline the wallet flow uses (client-
   // side, no wallet needed for that part), but takes an explicit passkey
   // instead of the shared masterPasskey state, since this can run without
   // the wallet-flow's sidebar ever being touched. Skips Merkle/proof-of-
@@ -3718,14 +3718,14 @@ export default function Home() {
     setIsCardUploadProcessing(true);
     setCardUploadStatus('Encrypting (PBKDF2 + AES-GCM)...');
     try {
-      const dataUrl = await readFileAsDataURL(cardUploadFile);
-      const cipherTextString = await encryptData(dataUrl, cardUploadPasskey);
-      const midpoint = Math.ceil(cipherTextString.length / 2);
+      const salt = InayaKernel.generateSecureSalt();
+      const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: cardUploadPasskey, salt });
+      const { shardAlpha, shardBeta } = await InayaKernel.disperseAndSlice({ file: cardUploadFile, encryptionKey });
 
       setCardUploadStatus('Sharding & uploading to IPFS...');
       const [cidAlpha, cidBeta] = await Promise.all([
-        uploadToPinata(cipherTextString.slice(0, midpoint), cardUploadFile.name, "Alpha"),
-        uploadToPinata(cipherTextString.slice(midpoint), cardUploadFile.name, "Beta"),
+        uploadToPinata(shardAlpha, cardUploadFile.name, "Alpha"),
+        uploadToPinata(shardBeta, cardUploadFile.name, "Beta"),
       ]);
 
       const assetIdText = `${cardCustomerEmail}-${cardUploadFile.name}-${Date.now()}`;
@@ -3894,57 +3894,12 @@ export default function Home() {
   }; // <--- Yeh bracket handleCorporateCheckout ko close karne ke liye hai
 
   // ========================================================
-  // 🛡️ BROWSER AES-GCM / PBKDF2 HARDENED SECURE MATRIX
+  // 🛡️ Encryption -- see prepareShardedFile()/handleCardUpload() (InayaKernel.deriveVaultKey +
+  // disperseAndSlice) and InayaKernel.reconstructAndDecrypt() at the retrieval call sites below.
+  // Used to be a hand-rolled crypto.subtle copy of this exact algorithm inlined here; consolidated
+  // onto @inaya-network/custody-sdk as part of the Verifiable Inaya Client SOW so that verifying
+  // the SDK's source actually verifies what runs for web uploads too, not just mobile.
   // ========================================================
-  const encryptData = async (text, password) => {
-    const enc = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-    const salt = window.crypto.getRandomValues(new Uint8Array(16));
-    const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
-    const fontIv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: fontIv }, key, enc.encode(text));
-    const combined = new Uint8Array(salt.length + fontIv.length + encrypted.byteLength);
-    combined.set(salt, 0); combined.set(fontIv, salt.length); combined.set(new Uint8Array(encrypted), salt.length + fontIv.length);
-    let binary = ''; for (let i = 0; i < combined.byteLength; i++) { binary += String.fromCharCode(combined[i]); }
-    return window.btoa(binary);
-  };
-
-  const decryptData = async (base64Str, password) => {
-  const binaryStr = window.atob(base64Str);
-  const combined = new Uint8Array(binaryStr.length); 
-  for (let i = 0; i < binaryStr.length; i++) { 
-    combined[i] = binaryStr.charCodeAt(i); 
-  }
-  const salt = combined.slice(0, 16); 
-  const fontIv = combined.slice(16, 28); 
-  const encrypted = combined.slice(28);
-
-  const enc = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey(
-    "raw", 
-    enc.encode(password), 
-    { name: "PBKDF2" }, 
-    false, 
-    ["deriveKey"]
-  );
-
-  const key = await window.crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, 
-    keyMaterial, 
-    { name: "AES-GCM", length: 256 }, 
-    false, 
-    ["decrypt"]
-  );
-
-  const decryptedBuffer = await window.crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fontIv }, 
-    key, 
-    encrypted
-  );
-
-  const dec = new TextDecoder();
-  return dec.decode(decryptedBuffer);
-};
 
   // ⚡ MONGO BUSINESS PIPELINE ROUTING FOR PINATA
  const uploadToPinata = async (encryptedShard, filename, elementTag, fileHash, shardId) => {
@@ -3979,23 +3934,19 @@ export default function Home() {
   // ========================================================
   // ⚡ DISPERSAL & ASSEMBLY ROUTINES FOR ATOMIC DATASTORE
   // ========================================================
-  const readFileAsDataURL = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const prepareShardedFile = async (file, fileHash) => {
-    const dataUrl = await readFileAsDataURL(file);
-    const cipherTextString = await encryptData(dataUrl, masterPasskey);
-    const midpoint = Math.ceil(cipherTextString.length / 2);
+    // Verifiable Inaya Client SOW: encryption now runs through custody-sdk's
+    // deriveVaultKey/disperseAndSlice instead of this file's own hand-rolled
+    // crypto.subtle copy — proven byte-identical to the old implementation via a
+    // committed cross-compatibility test (custody-sdk/test/webCryptoCompat.test.mjs)
+    // before this switch, not assumed.
+    const salt = InayaKernel.generateSecureSalt();
+    const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: masterPasskey, salt });
+    const { shardAlpha, shardBeta } = await InayaKernel.disperseAndSlice({ file, encryptionKey });
 
     const [cidA, cidB] = await Promise.all([
-      uploadToPinata(cipherTextString.slice(0, midpoint), file.name, "Alpha", fileHash, "alpha"),
-      uploadToPinata(cipherTextString.slice(midpoint), file.name, "Beta", fileHash, "beta")
+      uploadToPinata(shardAlpha, file.name, "Alpha", fileHash, "alpha"),
+      uploadToPinata(shardBeta, file.name, "Beta", fileHash, "beta")
     ]);
 
     // 🌳 Proof-of-storage: chunk the same ciphertext into 256KB leaves and build the Merkle tree.
@@ -4003,7 +3954,9 @@ export default function Home() {
     // eventual chunk-fetch step (see scripts/verify-chunk.js) expects a CID *per chunk*, which this
     // two-shard pipeline does not produce. Root registration below works today; wiring a real
     // end-to-end challenge later will require pinning each 256KB chunk individually too.
-    const { root, layers, chunkCount } = buildProofOfStoragePayload(cipherTextString);
+    // disperseAndSlice() returns the two halves pre-split -- reconstruct the full ciphertext
+    // string the same way the old implementation always produced it before chunking it.
+    const { root, layers, chunkCount } = buildProofOfStoragePayload(shardAlpha + shardBeta);
 
     return { filename: file.name, cidAlpha: cidA, cidBeta: cidB, merkleRoot: root, merkleLayers: layers, chunkCount };
   };
@@ -4246,10 +4199,9 @@ export default function Home() {
         fetchFastShard(cidBeta)
       ]);
 
-      const fullCipherText = shardA + shardB;
       const localFilename = getFilenameMapping(searchHash);
       setRestoredName(localFilename || searchId);
-      setDownloadUrl(await decryptData(fullCipherText, masterPasskey));
+      setDownloadUrl(await InayaKernel.reconstructAndDecrypt({ shardAlpha: shardA, shardBeta: shardB, passkey: masterPasskey }));
       setStatusLog("💚 TRANSACTION FULLY VERIFIED: Payload restored intact.");
     } catch (err) { setStatusLog(`❌ Security check validation dropped: ${err.message}`); }
   };
@@ -4316,8 +4268,7 @@ export default function Home() {
       };
 
       const [shardA, shardB] = await Promise.all([fetchFastShard(cidAlpha), fetchFastShard(cidBeta)]);
-      const fullCipherText = shardA + shardB;
-      const dataUrl = await decryptData(fullCipherText, passkey);
+      const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha: shardA, shardBeta: shardB, passkey });
 
       // Trigger a direct download rather than routing through the wallet-flow's
       // downloadUrl/restoredName state, since this panel renders independently of it.

@@ -1,0 +1,9 @@
+[toolchain]
+# Verifiable Inaya Client SOW: pinned exactly (was implicitly "stable" -- whatever
+# happened to be current on build day, in CI via dtolnay/rust-toolchain@stable and
+# locally via whatever's installed). A floating toolchain is a real, common source of
+# build non-determinism between two otherwise-identical builds of the same tagged
+# source. Bump deliberately, not automatically, when there's a reason to. Same pin as
+# inaya-desktop/src-tauri/rust-toolchain.toml -- keep them in sync unless there's a
+# reason for the two apps to diverge.
+channel = "1.97.1"

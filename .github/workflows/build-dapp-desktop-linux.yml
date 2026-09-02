@@ -17,9 +17,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SOURCE_DATE_EPOCH below needs the real commit timestamp, not a shallow clone's
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+      # Verifiable Inaya Client SOW: see inaya-desktop's build-desktop-linux.yml for the
+      # full reasoning behind these three steps (same fixes, same rationale, applied here
+      # for consistency between the two desktop apps).
+      - name: Set up Rust (version pinned by rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+
+      - name: Pin SOURCE_DATE_EPOCH to the commit timestamp
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+
+      - name: Strip the absolute build path out of the compiled binary
+        run: echo "RUSTFLAGS=--remap-path-prefix=$GITHUB_WORKSPACE=." >> "$GITHUB_ENV"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

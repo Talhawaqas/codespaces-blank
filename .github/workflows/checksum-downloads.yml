@@ -1,0 +1,50 @@
+name: Checksum desktop downloads
+
+# Verifiable Inaya Client SOW. Desktop binaries in inaya-network-dapp/public/downloads/
+# are committed directly (deployment here is "build it, then manually commit the
+# binary" -- confirmed: they're real tracked files, not built/placed by any existing
+# CI step). Computing checksums INSIDE the build workflows (build-desktop-linux.yml /
+# build-dapp-desktop-linux.yml) would risk drifting from whatever binary a human
+# actually ends up committing here later. Instead this runs directly against whatever
+# is ACTUALLY committed under public/downloads/ whenever that changes, so
+# CHECKSUMS.txt can never describe a binary other than the one currently being served --
+# correct by construction, not by keeping two separate steps in sync by hand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "inaya-network-dapp/public/downloads/**"
+      - "!inaya-network-dapp/public/downloads/CHECKSUMS.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  checksum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute SHA-256 for every downloadable binary
+        # Files live in subdirectories (dapp/, business-workspace/) but the download
+        # page (src/app/download/page.js) matches CHECKSUMS.txt entries by basename
+        # only (filenames are already unique across both apps) -- hash by full relative
+        # path so sha256sum can actually find each file, then strip the directory
+        # prefix back off before writing the file.
+        working-directory: inaya-network-dapp/public/downloads
+        run: |
+          find . -type f \( -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" \) -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            | sed -E 's#(\s\*?)\./[^/]+/#\1#' > CHECKSUMS.txt
+
+      - name: Commit if changed
+        working-directory: inaya-network-dapp/public/downloads
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHECKSUMS.txt
+          git diff --cached --quiet || git commit -m "Update desktop download checksums"
+          git push

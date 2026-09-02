@@ -10,6 +10,18 @@
 // public/downloads/ rather than proxied through GitHub Releases, so this
 // page keeps working even if the release repo/tag layout changes later.
 // No auth required to view it.
+//
+// Verifiable Inaya Client SOW: SHA-256 checksums are read from
+// public/downloads/CHECKSUMS.txt at runtime (standard `sha256sum` output
+// format, one "<hash>  <filename>" line per binary -- see
+// .github/workflows/build-desktop-linux.yml / build-dapp-desktop-linux.yml
+// for where that file gets (re)generated) rather than hardcoded into this
+// file's data below, since a hash baked into source code goes stale the
+// moment a new binary is built. Matched by filename; an entry with no
+// matching line (checksums not generated yet, or this specific file
+// missing one) simply shows no verify hint rather than a fabricated one.
+
+import { useState, useEffect } from "react";
 
 const APPS = [
   {
@@ -98,7 +110,33 @@ const APPS = [
   },
 ];
 
+/** Parses standard `sha256sum` output ("<hash>  <filename>" per line, filenames only —
+ *  no path) into a { filename -> hash } lookup. Tolerant of a missing/empty file (the
+ *  fetch itself is wrapped in try/catch by the caller) since checksums may not exist yet
+ *  for older builds. */
+function parseChecksums(text) {
+  const map = {};
+  for (const line of text.split("\n")) {
+    const match = line.trim().match(/^([a-f0-9]{64})\s+\*?(.+)$/i);
+    if (match) map[match[2].trim()] = match[1].toLowerCase();
+  }
+  return map;
+}
+
+function basename(filePath) {
+  return filePath.split("/").pop();
+}
+
 export default function DownloadHubPage() {
+  const [checksums, setChecksums] = useState({});
+
+  useEffect(() => {
+    fetch("/downloads/CHECKSUMS.txt")
+      .then((res) => (res.ok ? res.text() : ""))
+      .then((text) => setChecksums(parseChecksums(text)))
+      .catch(() => {}); // no checksums file yet -- verify hints just stay hidden
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-5xl mx-auto">
@@ -133,23 +171,32 @@ export default function DownloadHubPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-              {app.downloads.map((d) => (
-                <div key={d.file} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6 flex flex-col">
-                  <div className="text-3xl mb-3">{d.icon}</div>
-                  <h3 className="text-white font-bold text-lg mb-1">{d.os}</h3>
-                  <p className="text-[#8a96ab] text-xs font-mono mb-4">{d.sub}</p>
-                  <a
-                    href={d.file}
-                    download
-                    className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-sm rounded-xl px-4 py-2.5 text-center hover:opacity-90 transition-opacity mb-4"
-                  >
-                    {d.label}
-                  </a>
-                  <pre className="text-[12px] text-[#94a3b8] font-mono whitespace-pre-wrap leading-relaxed bg-black/30 border border-white/5 rounded-lg p-3 mt-auto">
-                    {d.instructions}
-                  </pre>
-                </div>
-              ))}
+              {app.downloads.map((d) => {
+                const sha256 = checksums[basename(d.file)];
+                return (
+                  <div key={d.file} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6 flex flex-col">
+                    <div className="text-3xl mb-3">{d.icon}</div>
+                    <h3 className="text-white font-bold text-lg mb-1">{d.os}</h3>
+                    <p className="text-[#8a96ab] text-xs font-mono mb-4">{d.sub}</p>
+                    <a
+                      href={d.file}
+                      download
+                      className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-bold text-sm rounded-xl px-4 py-2.5 text-center hover:opacity-90 transition-opacity mb-4"
+                    >
+                      {d.label}
+                    </a>
+                    <pre className="text-[12px] text-[#94a3b8] font-mono whitespace-pre-wrap leading-relaxed bg-black/30 border border-white/5 rounded-lg p-3 mt-auto">
+                      {d.instructions}
+                    </pre>
+                    {sha256 && (
+                      <p className="text-[11px] text-[#8a96ab] font-mono mt-2 break-all">
+                        Verify: <code className="text-[#00f2fe]">sha256sum {basename(d.file)}</code> should output{" "}
+                        <code className="text-white">{sha256}</code>
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-4 bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
