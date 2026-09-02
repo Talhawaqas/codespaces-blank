@@ -15,7 +15,7 @@ export const ecosystemOverview = {
     title: "The Inaya Ecosystem, End to End",
     subtitle:
       "How the storage protocol, the applications built on it, and the AI layer all fit together — the shape of the system, without the code.",
-    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · August 2026",
+    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · September 2026",
   },
   docId: "INAYA-OV-2026-V1",
   sections: [
@@ -59,6 +59,11 @@ export const ecosystemOverview = {
             { heading: "Anchor ownership on-chain.", body: "A record — who owns this file, where its two halves live, a fingerprint proving it hasn't been tampered with — gets written to the blockchain. This is the permanent, tamper-evident receipt." },
             { heading: "Reverse it to read.", body: "Downloading does the same thing backwards: look up the on-chain record, fetch both halves, put them back together, decrypt with the owner's passkey. Nothing about this process gives Inaya, a node operator, or anyone else a way to see the plaintext." },
           ],
+        },
+        {
+          type: "note",
+          label: "You don't have to take Inaya's word for any of this.",
+          text: "The encryption code above is published as open source (@inaya-network/custody-sdk on npm) and used identically by the web app and the mobile app — not a separate, unverifiable implementation behind the scenes. Every release publishes a cryptographic hash anyone can independently reproduce and check, plus a second copy pinned to IPFS so the code itself, not just Inaya's word, identifies what you're running. Full verification steps are public.",
         },
       ],
     },

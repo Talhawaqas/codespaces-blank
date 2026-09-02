@@ -15,7 +15,7 @@ export const ecosystemDevDeepdive = {
     title: "Inaya Ecosystem — Developer Reference",
     subtitle:
       "Contract functions, API routes, data models, and SDK signatures — a lookup reference grounded directly in the real code.",
-    docLine: "Document INAYA-DEV-2026-V1 · Classification Internal · August 2026",
+    docLine: "Document INAYA-DEV-2026-V1 · Classification Internal · September 2026",
   },
   docId: "INAYA-DEV-2026-V1",
   sections: [
@@ -152,6 +152,17 @@ export const ecosystemDevDeepdive = {
         {
           type: "note",
           text: "Crypto primitives are @noble/hashes, @noble/ciphers, @noble/curves (pure JS) rather than crypto.subtle — chosen specifically for React Native compatibility, per an inline comment in crypto.js.",
+        },
+        {
+          type: "subsection",
+          heading: "Release verification (v1.0.10-beta+)",
+          body: "Every git tag matching v* on custody-sdk (.github/workflows/release.yml) runs npm test → computes checksums → pins to IPFS (Pinata, non-blocking) → npm publish --provenance → commits CHECKSUMS.md → attaches the tarball to a GitHub Release. Reproduce independently per docs/VERIFYING_RELEASES.md:",
+          bullets: [
+            "git rev-parse <tag>^{tree} — compare to CHECKSUMS.md's git-tree-hash. NOT git archive | sha256sum (tried first, found non-reproducible across git versions — see Section 05 of ecosystem-architecture.js).",
+            "Download the .tgz attached to the GitHub Release, sha256sum it, compare to CHECKSUMS.md's npm-tarball-sha256 — always matches, since you're hashing the literal file CI attached rather than re-deriving it (npm pack tarball bytes aren't guaranteed identical across npm versions, even when file contents are).",
+            "npm view @inaya-network/custody-sdk@<version> dist.integrity / dist.shasum — the registry's own recorded hash for the published tarball.",
+            "test/webCryptoCompat.test.mjs — the committed proof that this package's crypto and the dApp's former inline crypto.subtle implementation are byte-identical and cross-decryptable.",
+          ],
         },
       ],
     },

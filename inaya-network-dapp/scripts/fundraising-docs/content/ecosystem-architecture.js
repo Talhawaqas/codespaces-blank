@@ -15,7 +15,7 @@ export const ecosystemArchitecture = {
     title: "How Inaya Actually Works",
     subtitle:
       "Every contract, app, backend, and data flow across the ecosystem — written from the real code, not the pitch. For the founding team.",
-    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · August 2026",
+    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · September 2026",
   },
   docId: "INAYA-ARCH-2026-V1",
   sections: [
@@ -185,6 +185,37 @@ export const ecosystemArchitecture = {
         {
           type: "note",
           text: "Known gap worth flagging: the SDK's own bundled example (examples/node-script.mjs) skips the Pinata step and passes raw ciphertext directly into anchorToLedger's CID parameters — it only \"works\" because the example never calls retrieveAndReconstruct against real IPFS. The production code path in page.js does the Pinata step correctly; the example just isn't a faithful end-to-end demo.",
+        },
+        {
+          type: "subsection",
+          heading: "Release verification — the SDK doesn't have to be trusted blindly.",
+          body: "Verifiable Inaya Client SOW (September 2026): as of custody-sdk v1.0.10-beta, every tagged release is independently reproducible and verifiable, not just claimed open-source. Full mechanism and third-party verification commands: custody-sdk/docs/VERIFYING_RELEASES.md.",
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Reproducible build.",
+              body: "custody-sdk ships with no build step — src/*.js is exactly what's in git (ESM, explicit .js import extensions, hand-written .d.ts). \"Reproducible\" reduces to \"the published tarball is provably the tagged source, file for file,\" not a compiled-artifact-determinism problem.",
+            },
+            {
+              heading: "Published hash — and a real bug found and fixed computing it.",
+              body: "Every tagged release (.github/workflows/release.yml) publishes a git-tree-hash and an npm-tarball SHA-256 to CHECKSUMS.md and the GitHub Release. First implementation used git archive HEAD | sha256sum — verification then found this isn't reproducible across git versions (confirmed directly: local git 2.55.0 and ubuntu-latest's git produced different hashes for the identical tagged v1.0.9-beta commit, which would make an honest verifier see a false mismatch). Fixed in v1.0.10-beta by publishing git rev-parse <tag>^{tree} instead — git's own content-addressed tree object id, identical on every git install by construction.",
+            },
+            {
+              heading: "Independent verification, actually performed.",
+              body: "Not just documented — run: v1.0.10-beta's git-tree-hash was independently recomputed on a separate machine and matched CHECKSUMS.md; the GitHub Release tarball was downloaded fresh and its SHA-256 matched; every file inside it was diffed byte-for-byte against the tagged git source and found identical. npm provenance (npm publish --provenance) separately attaches a signed, publicly-checkable statement of exactly which CI run produced the package (npm audit signatures).",
+            },
+            {
+              heading: "Content-addressed delivery.",
+              body: "The release tarball is also pinned to IPFS (Pinata) at publish time; the resulting directory CID is recorded in CHECKSUMS.md and the GitHub Release, IPFS pinning kept non-blocking (continue-on-error) so a Pinata-side outage can't prevent npm publish. Fetching by CID — not from any server Inaya controls — and hashing what comes back is a second, independent confirmation of the exact artifact.",
+            },
+          ],
+        },
+        {
+          type: "note",
+          label: "What this does and does not prove.",
+          text: "Guarantees: the code that produced a release is exactly the tagged source; anyone can independently re-derive the published hashes; as of the same release, the web dApp (src/lib/clientCrypto.js, src/app/page.js) and inaya-mobile both call this published npm package directly rather than each running its own separate crypto — verified by a committed cross-implementation test, custody-sdk/test/webCryptoCompat.test.mjs, proving the SDK's @noble-based AES-GCM/PBKDF2 is byte-identical to and cross-decryptable with the dApp's former inline crypto.subtle implementation. Does not guarantee: that inayanetwork.com is serving this exact build at this exact moment, or an implementation-bug-free audit of the primitives beyond that cross-compatibility test.",
         },
       ],
     },
@@ -565,6 +596,8 @@ export const ecosystemArchitecture = {
             ["Automation keeper + tests", "scripts/automation-worker.mjs, scripts/test-automation-worker.mjs, test/OracleAutomation.test.js"],
             ["Client-side crypto SDK", "inaya-network-dapp/custody-sdk/src/ (crypto.js, index.js, contracts.js)"],
             ["Node operator CLI", "inaya-network-dapp/custody-sdk/packages/node-daemon/"],
+            ["Release verification (reproducible build, published hashes, IPFS pin)", "custody-sdk/.github/workflows/release.yml, CHECKSUMS.md, docs/VERIFYING_RELEASES.md, scripts/pin-release.mjs"],
+            ["Cross-implementation crypto compatibility proof", "custody-sdk/test/webCryptoCompat.test.mjs"],
             ["Backend + web dApp + Business Workspace", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],
             ["Business Operations (Tasks/CRM/Procurement/Inventory)", "src/lib/{task,deal,purchase-request,purchase-order}-workflow.js, inventory.js; src/app/api/orgs/{tasks,crm,procurement,inventory}/"],
             ["Finance & HR", "src/lib/{invoice,expense,employee,leave}-workflow.js, attachments.js; src/app/api/orgs/{finance,hr}/"],
