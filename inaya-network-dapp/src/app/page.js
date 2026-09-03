@@ -5,6 +5,7 @@ import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if li
 import { InayaKernel, createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
 import { WalletProvider } from '../contexts/WalletContext';
 import NotificationsBell from '../components/NotificationsBell';
+import CommandPalette from '../components/CommandPalette';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -5146,7 +5147,10 @@ export default function Home() {
                 them into one bell is a fast-follow, not done silently
                 here. */}
             {isConnected && walletAddress && (
-              <NotificationsBell scope="wallet" walletAddress={walletAddress} signMessage={signMessage} />
+              <>
+                <CommandPalette searchUrl={`/api/wallet/search?address=${walletAddress}`} onSelect={() => setCurrentPage('Sovereign Vault')} />
+                <NotificationsBell scope="wallet" walletAddress={walletAddress} signMessage={signMessage} />
+              </>
             )}
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount

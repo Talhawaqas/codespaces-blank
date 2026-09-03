@@ -50,6 +50,7 @@ import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
+import CommandPalette from "../../components/CommandPalette";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -889,6 +890,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} />
             <NotificationsBell scope="org" orgId={membership.orgId} email={email} />
             <ThemeSwitcher />
             <a
