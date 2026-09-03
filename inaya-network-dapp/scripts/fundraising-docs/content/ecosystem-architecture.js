@@ -877,5 +877,72 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "29",
+      title: "Web3 App Store, NFT Vault & Wallet-Attack Protection (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Three related additions to the dApp side, shipped 2026-09-01: a curated + community app directory, an NFT backup vault, and live threat-registry checks wired into the bridge's recipient field.",
+        },
+        {
+          type: "subsection",
+          heading: "Web3 App Store (/apps) — real submission-to-approval pipeline, not just a directory",
+          body: "8 first-party apps plus dynamically-fetched community listings (src/lib/appStoreListings.js). A developer submits either an already-pinned IPFS CID (opens via a public gateway in a new tab, never touches Inaya's origin) or an externally-hosted URL rendered in a strictly sandboxed iframe (src/app/apps/embed/[slug]/page.js — no allow-same-origin combined with allow-scripts, the actual dangerous combination). Same-origin hosting and an unvetted registry were both explicitly considered and rejected.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Every submission requires a wallet signature (the same generic metadata-auth framework used elsewhere in the codebase) and is checked against the live Security Layer threat registry both at submission and again at admin-review time — nothing is ever auto-published, every listing starts pending.",
+            "Admin review/approve/reject queue at /admin/app-store, mirroring /admin/audit's existing passphrase-gated session pattern exactly.",
+            "Verified end-to-end with a real signed submission, a real reject/approve cycle, and three adversarial cases (malformed CID, javascript: URL scheme, forged wallet signature) — all correctly rejected. Two real bugs were caught and fixed during that verification: /apps was being statically prerendered at build time (new listings would never appear until redeploy), and a resourceId mismatch between the raw signed URL and its normalized form was incorrectly flagging legitimate submissions as tampered.",
+            "Genuinely missing, not yet built: a CLI deploy path directly into this store (custody-sdk's CLI deploys to the storage network, not to this app-store collection).",
+          ],
+        },
+        {
+          type: "subsection",
+          heading: "NFT Vault (/nfts)",
+          body: "Discovers a wallet's owned tokens from a specific ERC-721 + Enumerable collection (no indexer credentials configured, so auto-discovery across every collection is a stated, honest gap, not silently claimed) and backs up metadata + image via the existing encrypt/shard/pin pipeline (src/lib/clientCrypto.js). A backup record requires both a wallet signature and a real on-chain ownerOf() check — API at src/app/api/nft/backup(s)/route.js.",
+        },
+        {
+          type: "subsection",
+          heading: "Wallet-attack protection — live threat check on the bridge's recipient field",
+          body: "A real browser extension doesn't exist and wasn't judged proportionate; instead the existing Security Layer threat registry (Section 09) is wired directly into the Bridge page's recipient address field (src/components/AddressRiskCheck.js) — a debounced live check, honest silence when there's no data on file, and a clear warning for a real CONFIRMED/DISPUTED report. Verified live end-to-end against a seeded threat record.",
+        },
+      ],
+    },
+    {
+      number: "30",
+      title: "Multi-Factor Authentication & September 2026 Security Hardening",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two related trust-surface additions: real MFA on Business Workspace login, and a full ecosystem security audit + remediation pass across web, mobile, custody-sdk, and both desktop apps.",
+        },
+        {
+          type: "subsection",
+          heading: "MFA (TOTP + SMS) on Business Workspace login",
+          body: "An optional second factor on top of the existing magic-link/Google sign-in — TOTP (any standard authenticator app) or SMS via Firebase Phone Auth, managed from the Security nav item (src/components/business/MfaSettings.js) and enforced at login (MfaVerifyScreen.js). Mirrors the same pattern on inaya-mobile.",
+        },
+        {
+          type: "subsection",
+          heading: "Security hardening pass — 2 critical, 6 high, 8 medium findings, all remediated",
+          body: "A full audit across the whole ecosystem (web, mobile, custody-sdk, both desktop apps, node infra). Selected findings, chosen because they're the ones a reader would most want confirmed fixed rather than just counted:",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Critical: a hardcoded Aptos private key in a relayer dry-run script — removed, the script now reads it from env like every sibling relayer script, and the key itself has been rotated (not just removed from source).",
+            "Critical: Next.js bumped 14.2.5 → 14.2.35 (patched) plus a protobufjs override, closing a critical transitive advisory — 0 critical vulnerabilities remaining as of this pass.",
+            "High: /api/upload was an unauthenticated, unmetered proxy to Inaya's own storage backend — now requires a real session and is rate-limited.",
+            "The remaining high/medium findings span rate limiting, security headers, desktop IPC hardening, and general key-hygiene fixes across inaya-desktop/inaya-dapp-desktop and scripts/.",
+          ],
+        },
+        {
+          type: "note",
+          text: "Same honesty convention as the rest of this document: every finding above cites a real fix in a real commit, not a general claim of \"hardened.\" A public developer-facing overview of the custody-sdk ecosystem, pulled from the SDK's own README/SDK_GUIDE rather than separately maintained, is also now live at inayanetwork.com/build (\"Build on Inaya\") for anyone wanting the install commands and quickstart directly.",
+        },
+      ],
+    },
   ],
 };

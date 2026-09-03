@@ -204,6 +204,24 @@ export const ecosystemOverview = {
     },
     {
       number: "09",
+      title: "App Store, NFT Vault & Account Security (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Three smaller but real additions rounding out the consumer side: a place to discover Web3 apps, a place to back up NFTs the same way files are backed up, and a stronger login.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Web3 App Store (/apps) — a curated set of Inaya's own apps, plus community-submitted ones. A submission needs a wallet signature and is checked against the live threat network before an admin ever sees it, and nothing goes live until approved.",
+            "NFT Vault (/nfts) — discovers NFTs a wallet owns and backs up their metadata and image using the exact same encrypt-and-shard pipeline that protects every other file on Inaya.",
+            "Optional two-factor login for Business Workspace — an authenticator app or a text message code, on top of the existing passwordless sign-in.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "10",
       title: "Multi-Chain — Moving Value Beyond BNB Chain",
       blocks: [
         {
@@ -231,7 +249,7 @@ export const ecosystemOverview = {
       ],
     },
     {
-      number: "10",
+      number: "11",
       title: "Oracle & Automation — Infrastructure That Runs Itself",
       blocks: [
         {
@@ -249,7 +267,7 @@ export const ecosystemOverview = {
       ],
     },
     {
-      number: "11",
+      number: "12",
       title: "How It All Actually Connects",
       blocks: [
         {
@@ -257,7 +275,7 @@ export const ecosystemOverview = {
           text: [
             "One backend serves every surface — the website, the mobile app, and both desktop apps all call the exact same API. There's no duplicated logic to keep in sync between platforms; a fix or feature on the backend is instantly live everywhere.",
             "The protocol (contracts, node operators, encryption) and the applications (dApp, Business Workspace, mobile, desktop, AI) are cleanly separated — most of what a user touches day-to-day never has to think about the blockchain underneath it, even though it's doing real work a layer down.",
-            "BNB Chain Testnet is still home base — the core protocol, staking, and node settlement all live there — but it's no longer the only chain involved: $INAYA now moves to several other testnets through the bridge described in Section 09. Nothing described in this document is live on mainnet yet, on any chain — that's the next major milestone, not a past one.",
+            "BNB Chain Testnet is still home base — the core protocol, staking, and node settlement all live there — but it's no longer the only chain involved: $INAYA now moves to several other testnets through the bridge described in Section 10. Nothing described in this document is live on mainnet yet, on any chain — that's the next major milestone, not a past one.",
           ],
         },
       ],

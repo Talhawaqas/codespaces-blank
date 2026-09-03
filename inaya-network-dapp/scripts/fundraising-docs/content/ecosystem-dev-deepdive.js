@@ -457,5 +457,26 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "16",
+      title: "Web3 App Store, NFT Vault & MFA Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["submitAppListing / listApprovedListings / listPendingListings / listListingsBySubmitter / reviewAppListing", "src/lib/appStoreListings.js — full submission→threat-check→review→approve pipeline"],
+            ["POST /api/apps/submit, GET /api/apps/listings, GET /api/apps/my-listings", "Developer-facing App Store API"],
+            ["GET /api/admin/app-store/pending, POST /api/admin/app-store/[slug]/review", "Admin review queue, passphrase-gated same as /admin/audit"],
+            ["src/app/apps/embed/[slug]/page.js", "Sandboxed iframe host for externally-hosted app submissions — no allow-same-origin + allow-scripts together"],
+            ["checkNftContractSupport / discoverOwnedTokens", "src/lib/nftDiscovery.js — ERC-721 + Enumerable only, no indexer"],
+            ["signNftBackup", "src/lib/nftBackupAuth.js — wallet-signature auth reused for NFT backup requests"],
+            ["POST /api/nft/backup, GET /api/nft/backups", "NFT Vault backup API"],
+            ["src/components/AddressRiskCheck.js", "Debounced live Security Layer threat-registry check, wired into the Bridge page's recipient field"],
+            ["MfaSettings.js / MfaVerifyScreen.js", "TOTP + Firebase-Phone-Auth SMS MFA for Business Workspace login"],
+          ],
+        },
+      ],
+    },
   ],
 };
