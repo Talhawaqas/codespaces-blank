@@ -2070,6 +2070,12 @@ const NAV_GROUPS = [
       { label: 'Staking', icon: '📈' },
       { label: 'My Dashboard', icon: '📊' },
       { label: 'What Changed?', icon: '📰' },
+      // Real, shipped pages with no prior nav entry anywhere on the site --
+      // confirmed by grep before adding these (zero href references outside
+      // /nfts's own back-link and OsHomeSection.js's OS Home tiles, which
+      // only a connected wallet ever reaches).
+      { label: 'Web3 App Store', icon: '🛍️', href: '/apps' },
+      { label: 'NFT Vault', icon: '💎', href: '/nfts' },
       { label: 'Referrals', icon: '🤝' },
       { label: 'Genesis Airdrop', icon: '🎁' },
       { label: 'Learn', icon: '🎓' },
@@ -2104,6 +2110,7 @@ const NAV_GROUPS = [
       { label: 'Contact Us', icon: '✉️' },
       { label: 'FAQ', icon: '❓', href: '/faq' },
       { label: 'Network Stats', icon: '📉', href: '/stats' },
+      { label: "What's New", icon: '🆕', href: '/changelog' },
     ],
   },
 ];
