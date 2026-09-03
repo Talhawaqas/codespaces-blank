@@ -155,7 +155,7 @@ export const institutionalFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "Yes — Business Workspace is a fully independent B2B SaaS product built on the same infrastructure: organizations, departments, projects, documents, server-enforced approval workflows, granular permissions, secure external sharing, and a permission-aware AI assistant. It's priced and evaluated like any other business software — an institutional buyer never has to engage with the token economics above to use it.",
+          text: "Yes — Business Workspace is a fully independent B2B SaaS product built on the same infrastructure: organizations, departments, projects, documents, server-enforced approval workflows, granular permissions, secure external sharing, and a permission-aware AI assistant. It's priced and evaluated like any other business software — an institutional buyer never has to engage with the token economics above to use it. As of September 2026, a Sovereign Enterprise OS layer also ties the whole workspace together: one home screen showing real trust & health status (built from the actual audit trail and backup data, not a decorative dashboard), unified notifications, cross-module search, and a single AI assistant covering both business and security questions.",
         },
       ],
     },

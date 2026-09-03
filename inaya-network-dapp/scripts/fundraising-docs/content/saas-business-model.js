@@ -79,7 +79,7 @@ export const saasBusinessModel = {
         },
         {
           type: "lead",
-          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; and full mobile access via the Inaya app.",
+          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation.",
         },
       ],
     },

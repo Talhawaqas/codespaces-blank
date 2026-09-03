@@ -231,6 +231,7 @@ export const whitepaper = {
             "Two Tauri desktop apps — thin native wrappers around the Business Workspace and the main dApp, with system tray, native notifications, and signed auto-updates.",
             "Four Gemini-powered AI assistants — Docs, Business, Security, and Learn — sharing one technical pattern but different guardrail philosophies suited to their purpose; Docs, Security, and Learn are grounded by a shared RAG retrieval layer (see the Ecosystem Architecture document for full detail).",
             "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
+            "Sovereign Enterprise OS — a connecting layer, not a new feature list: unified identity, cross-module notifications, one search across every module, a trust & health signal built from the real audit trail and backup data, and a single AI assistant spanning business and security questions, on both the web app and Business Workspace.",
           ],
         },
         {

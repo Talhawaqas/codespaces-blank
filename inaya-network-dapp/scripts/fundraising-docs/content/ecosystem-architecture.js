@@ -944,5 +944,55 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "31",
+      title: "Sovereign Enterprise OS — The Connecting Layer (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Most of what this SOW asked for already existed — Business Workspace, AI Guarded Execution, the audit trail, the App Store, custody-sdk. What was genuinely missing was the layer connecting all of it into one coherent operating environment rather than a pile of separate features. Built on both surfaces as two parallel instances sharing the same underlying engines: Business Workspace (email/org identity) and the main dApp (wallet identity) are confirmed, completely separate identity systems today — no walletAddress field exists anywhere on an org_members record — so this deliberately does not build a new identity-linking layer, it builds the same connecting capability twice from shared code.",
+        },
+        {
+          type: "subsection",
+          heading: "Identity Context — the one foundational gap everything else depended on",
+          body: "Neither surface had a client-side identity context before this pass; both prop-drilled session/wallet state through one top-level component (BusinessPage→Workspace, and page.js's single ~7500-line Home()). New src/contexts/OrgContext.js and WalletContext.js (React Context, mirroring ThemeProvider.js's shape — the only prior Context in the codebase) make identity reachable via useOrg()/useWallet() from any component, zero props threaded through.",
+        },
+        {
+          type: "note",
+          text: "orgs.js's permission gates (canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager) were extracted into a new client-safe module, src/lib/orgGates.js, so OrgContext could import them at all — orgs.js itself imports node:crypto and the mongodb driver, which can't ship to a browser bundle. orgs.js re-exports every one of them under its own name, so all ~60 existing server-side `import {...} from \"./orgs.js\"` call sites needed zero changes.",
+        },
+        {
+          type: "subsection",
+          heading: "Cross-Module Trust & Health",
+          body: "Confirmed nothing anywhere combined audit-chain integrity, AI action backlog, backup health, and security status into one signal (grepped for trustScore/systemHealth/aggregat* — zero hits). New src/lib/trustHealth.js's computeTrustHealthSnapshot() does this for real, per scope — org-side combines verifyChainIntegrity(), pending AI actions by risk tier, and overdue business items (platform-wide security stats are explicitly labeled as such, not presented as org-specific, since security.js has no org linkage); wallet-side combines the wallet's own recent security events with real per-asset backup health across its own files, a cleaner signal than the org side since security/backup data is already wallet-keyed.",
+        },
+        {
+          type: "table",
+          headers: ["Piece", "What's genuinely new", "Reused, not reinvented"],
+          rows: [
+            ["Unified Notifications", "New notifications/notification_reads collections with real persistent read-state — the only prior 'notifications' were a narrow referral/KYC read-model with no DB collection at all, unread state only in localStorage.", "Write-hooks from proposeAiAction/reviewAiAction, document-workflow.js's submit transition, and backupEngine.js's state-change boundary crossings — additive calls into already-tested functions, not rewrites."],
+            ["Unified Search", "New Cmd/Ctrl+K src/components/CommandPalette.js, src/lib/orgSearch.js + walletSearch.js — the only prior search anywhere was a scoped YouTube proxy for Learn.", "getAccessibleScope() as orgSearch's only data source (no-leak-by-construction); metadata_files as walletSearch's source, the same off-chain enumeration list-files/route.js already documents as the only full-list source that exists."],
+            ["Activity Center", "New src/lib/activityCenter.js's generateWhatChanged() — genuine period-over-period counts (AI outcomes, notification volume) from real timestamped fields.", "business-brief.js's generateBusinessBrief() output composed verbatim as the org-side business section, not reimplemented."],
+            ["OS-Level AI Router", "New src/lib/ai-os-router.js — a thin dispatch shim merging Business+Security (org) or a new search_docs tool (wraps RAG's existing retrieveContext, domain:\"docs\") + Security (wallet) behind one conversation, tool-name-prefixed so Gemini sees one collision-free list.", "runBusinessTool/runSecurityTool called unmodified after prefix-stripping — a router bug can't change what either tool set actually does."],
+            ["OS Home", "New OsHomeView.js (Business Workspace, new default view) and OsHomeSection.js (dApp, new non-default tab — that page is the public anonymous landing page too, so its default couldn't change).", "No new aggregate backend route — parallel fetches against the APIs above, same pattern DashboardView already uses for /api/orgs/dashboard."],
+          ],
+        },
+        {
+          type: "subsection",
+          heading: "Desktop multi-window",
+          body: "Both desktop apps could only ever open a single window before this pass — confirmed: tauri.conf.json has \"windows\": [] (built programmatically) and lib.rs constructed exactly one \"main\" WebviewWindowBuilder. New open_module_window(label, path) Tauri command (identical implementation in both apps' src-tauri/src/lib.rs) reuses the exact same WebviewWindowBuilder::new(app, label, WebviewUrl::External(...)) call the main window is already built with, plus each file's own verify_trusted_origin guard — not a new window-creation mechanism, just parameterizing the one that already existed.",
+        },
+        {
+          type: "note",
+          label: "Verified for real, not just type-checked.",
+          text: "A real compile bug was caught fixing this: naming url::ParseError explicitly in a map_err closure doesn't compile, since the url crate is only a transitive tauri dependency, not a direct one in Cargo.toml — fixed by letting type inference flow from context instead, the same thing the existing APP_URL.parse().unwrap() calls already lean on. cargo check passed cleanly on both crates; a genuine cargo build --release then succeeded for both via the existing scripts/build-portable-desktop.ps1 (unmodified — it already supports -App both/desktop/dapp), producing real standalone portable .exe files in roughly 1m35s each; both apps' existing build-desktop-linux.yml/build-dapp-desktop-linux.yml CI workflows ran green on the actual push, path-triggered automatically, not manually invoked.",
+        },
+        {
+          type: "note",
+          label: "What OS Home does and does not guarantee.",
+          text: "Guarantees: every number shown is a real value from an already-shipped, already-tested API — no new aggregate route fabricating a summary. Does not guarantee: a unified identity across the dApp and Business Workspace (a deliberate, confirmed-with-the-team scope decision, not an oversight — see the opening note above); a historical trust/health trend (the aggregator computes live, nothing persists snapshots yet, so Activity Center reports current-state rather than a claimed delta it can't honestly back).",
+        },
+      ],
+    },
   ],
 };

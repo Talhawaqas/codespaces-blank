@@ -139,6 +139,9 @@ export const investmentMemorandum = {
             // factual, no-financial-claims pattern as the Security Layer
             // and Business Workspace lines above.
             "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
+            // New addition, Sovereign Enterprise OS SOW, September 2026 — same
+            // factual, no-financial-claims pattern as the lines above.
+            "Sovereign Enterprise OS — a connecting layer tying the whole product together on both web and Business Workspace: unified identity, real cross-module notifications, one search across every module, a trust & health signal built from the real audit trail and backup data, and a single AI assistant spanning business and security questions. Desktop apps additionally support popping a module out into its own window.",
           ],
         },
         {

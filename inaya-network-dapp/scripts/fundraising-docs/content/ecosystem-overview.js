@@ -268,6 +268,31 @@ export const ecosystemOverview = {
     },
     {
       number: "12",
+      title: "Sovereign Enterprise OS — One Operating Environment, Not a Pile of Features",
+      blocks: [
+        {
+          type: "lead",
+          text: "Almost everything described in this document already existed as a separate feature. What was missing was the connecting layer — one place that shows you what needs your attention, lets you search everything at once, asks one assistant instead of four, and tells you plainly whether your data and your organization's activity are in a trustworthy state right now.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "One OS Home screen — trust & health status, recent notifications, what changed this week, and an assistant that can answer both business and security questions — on both the web app and Business Workspace, each tailored to how you actually use it.",
+            "Real notifications with a memory — mark something read once, and it stays read, instead of the app forgetting the moment you refresh.",
+            "One search bar (Cmd/Ctrl+K) instead of hunting through a dozen separate screens for a task, a deal, a document, or a file.",
+            "A trust & health signal that's actually true, not decorative — built from the same real audit trail, backup health, and security data described earlier in this document, never invented for the sake of a clean-looking dashboard.",
+            "On desktop, a module you're watching closely (like the audit trail) can now pop out into its own window and stay visible alongside everything else, instead of switching away from what you were doing.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Two operating environments, not one blended one.",
+          text: "Your business identity (email, organization membership) and your wallet identity are kept genuinely separate — there was no clean way to merge them without inventing a new identity system neither product actually needed, so the OS shell was built twice from the same underlying pieces instead: one for Business Workspace, one for the wallet-connected app. This mirrors how the two desktop apps already work today.",
+        },
+      ],
+    },
+    {
+      number: "13",
       title: "How It All Actually Connects",
       blocks: [
         {

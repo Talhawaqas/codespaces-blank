@@ -35,6 +35,7 @@ export const executiveSummary = {
           "Staking interface and business/pricing flows implemented",
           "Full interactive Proof-of-Storage scheduled for mainnet",
           "Also live: a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, and four AI assistants (RAG-grounded Docs/Security/Learn plus a permission-scoped Business Assistant)",
+          "September 2026: a Sovereign Enterprise OS layer now ties the product together — unified identity, notifications, search, trust/health status, and one AI assistant spanning business and security questions, plus multi-window desktop support",
         ],
         // Approved addition (2 sentences, see fundraising docs SOW §5) —
         // deliberately prose, not more bullets, to keep this a compression

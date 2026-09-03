@@ -737,6 +737,10 @@ export const gtmStrategy = {
           body: "Rather than launching dozens of features simultaneously, Inaya follows a layered expansion strategy: Phase One — Core Infrastructure (reliable storage, developer tooling, documentation, SDK maturity, enterprise onboarding). Phase Two — Developer Ecosystem (SDKs, templates, plugins, open-source integrations, community contributions). Phase Three — Enterprise Platform (administration, reporting, access control, compliance, billing, analytics). Phase Four — Infrastructure Ecosystem (expansion beyond storage into broader sovereign infrastructure services).",
         },
         {
+          type: "note",
+          text: "Update, September 2026 — a real piece of Phase Three shipped: a Sovereign Enterprise OS layer now provides unified identity, cross-module notifications, unified search, a real trust & health signal, and one AI assistant spanning business and security questions, on both the web app and Business Workspace. Not a rebrand of this roadmap — an actual, shipped, tested connecting layer over the features already described throughout this document.",
+        },
+        {
           type: "bullets",
           lead: "Product Success Metrics — measured using developer-centric metrics rather than vanity metrics:",
           items: ["SDK downloads", "Npm installations", "GitHub stars", "Documentation engagement", "Developer activation", "Successful integrations", "Active applications", "Monthly storage growth", "Enterprise upgrades"],

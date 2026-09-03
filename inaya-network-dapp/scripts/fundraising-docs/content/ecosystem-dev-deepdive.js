@@ -478,5 +478,35 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "17",
+      title: "Sovereign Enterprise OS Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Module", "Key exports / functions"],
+          rows: [
+            ["src/contexts/OrgContext.js", "OrgProvider, useOrg() → {email, membership, orgId, role, orgs, switchOrg, logout, can: {manageOrg, accessDepartment, manageFinance, accessFinance, manageHR, accessHR, isDepartmentManager}}"],
+            ["src/contexts/WalletContext.js", "WalletProvider, useWallet() → {walletAddress, walletBalance, isConnected, selectedWalletName, signMessage}"],
+            ["src/lib/orgGates.js", "Client-safe extraction of orgs.js's 7 pure permission gates — re-exported from orgs.js under the same names for the ~60 existing server-side importers"],
+            ["src/lib/trustHealth.js", "computeTrustHealthSnapshot({scope:\"org\"|\"wallet\", ...}) → {overallStatus, auditTrail|security, aiActions|backup, businessHealth, scopeNotes}"],
+            ["GET /api/orgs/trust-health, GET /api/wallet/trust-health", "Org: requireMembership-gated. Wallet: unauthenticated, aggregate counts only"],
+            ["src/lib/notifications.js", "createNotification (idempotent on dedupeKey), listNotificationsFor, markRead, markAllRead — collections: notifications, notification_reads"],
+            ["GET/POST /api/orgs/notifications/*, /api/wallet/notifications/*", "Org: session-cookie auth. Wallet: GET unauthenticated, mutations signed via verifyMetadataAuth's existing message format"],
+            ["src/lib/orgSearch.js, src/lib/walletSearch.js", "searchOrg({orgId, membership, email, query}) over getAccessibleScope(); searchWallet({walletAddress, query}) over metadata_files"],
+            ["src/components/CommandPalette.js", "Cmd/Ctrl+K overlay, surface-agnostic — onSelect(result) left to the caller's own real navigation function"],
+            ["src/lib/activityCenter.js", "generateWhatChanged({scope, ..., period}) → {sections: [{module, bullets}]}; reuses business-brief.js's BRIEF_PERIODS"],
+            ["src/lib/ai-os-router.js", "buildOsContext, getOsToolDeclarations(scope), runOsTool(name, args, ctx), osSystemInstruction — business_/security_ prefixed dispatch"],
+            ["POST /api/ai/os-chat, POST /api/ai/os-chat-wallet", "Org: requireMembership-gated. Wallet: identityId passed directly, matching security-chat's existing precedent"],
+            ["src/components/business/OsHomeView.js, src/components/OsHomeSection.js", "The composed OS Home screen per surface — TrustHealthCard, OS Assistant widget, What-Changed preview, module tiles, surfaced links"],
+            ["open_module_window(label, path)", "Tauri command, both inaya-desktop and inaya-dapp-desktop's src-tauri/src/lib.rs — pops a module into its own native window"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Every org-scoped route follows the exact ensureOrgIndexes()+requireMembership()+getAccessibleScope()-or-narrower pattern dashboard/route.js already established; every wallet-scoped GET follows the same unauthenticated-aggregate-only trust tier as the pre-existing list-files/backup-status routes. No existing route, collection, or component was renamed, removed, or had its behavior changed — additive only.",
+        },
+      ],
+    },
   ],
 };

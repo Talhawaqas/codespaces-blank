@@ -91,6 +91,7 @@ export const communityFaqs = {
             "Inaya Learn — browse and watch curated educational videos on Web3, AI, and programming, with a built-in AI tutor. No wallet needed.",
             "Security — check whether a domain or IP has been flagged by the network's decentralized threat-intelligence layer, right from the public website. No wallet needed.",
             "Business Workspace — if your company needs document management with real approval workflows and permissions, it's a separate sign-up with just an email address.",
+            "OS Home — once you're signed in (either with a wallet or a Business Workspace account), a single home screen now shows you what actually needs your attention: real notifications, a trust/health check on your data, and one search box that finds anything across every part of the app.",
           ],
         },
       ],
