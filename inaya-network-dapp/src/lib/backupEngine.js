@@ -20,6 +20,7 @@ import clientPromise from "./mongodb.js";
 import { ethers } from "ethers";
 import { getProvider, listAvailableProviders, sha256Hex } from "./pinningProviders/index.js";
 import { computeAssetHealthState, computeShardHealthState, classifyReplicaStatus, needsRecovery, HEALTH_STATES, CONSECUTIVE_FAILURE_THRESHOLD } from "./backupHealth.js";
+import { createNotification } from "./notifications.js";
 
 /** A replica counts as a valid recovery source/existing-healthy-provider using the SAME
  *  "retrievable" definition backupHealth.js uses everywhere else (healthy OR wavering -- under
@@ -41,6 +42,44 @@ async function getCollections() {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   return { replicas: db.collection("backup_replicas"), state: db.collection("backup_state") };
+}
+
+// Enterprise OS SOW, Phase 3 — fires only at a real state-machine boundary
+// crossing (recomputeAndSyncState's own isBoundaryCrossing, the same
+// signal that gates the on-chain sync above), never on a routine poll
+// that finds no change. Resolves fileHash -> owner via metadata_files,
+// the same "only off-chain enumeration source" list-files/route.js's own
+// header comment already documents — non-fatal, wrapped, never blocks
+// the real state write this runs after.
+async function notifyOwnerOfBackupStateChange({ fileHash, previousHealthState, healthState }) {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const fileDoc = await db.collection("metadata_files").findOne({ fileHash }, { projection: { owner: 1, filename: 1 } });
+    if (!fileDoc?.owner) return;
+
+    const gotWorse = HEALTH_STATES.RECOVERY_REQUIRED === healthState || HEALTH_STATES.RECOVERY_FAILED === healthState;
+    const recovered = healthState === HEALTH_STATES.PROTECTED && previousHealthState !== HEALTH_STATES.PROTECTED;
+    if (!gotWorse && !recovered) return;
+
+    await createNotification({
+      scope: "wallet",
+      walletAddress: fileDoc.owner,
+      category: "data",
+      severity: gotWorse ? "critical" : "info",
+      type: gotWorse ? "backup_recovery_required" : "backup_recovered",
+      title: gotWorse ? `Backup issue: "${fileDoc.filename || fileHash}"` : `Backup restored: "${fileDoc.filename || fileHash}"`,
+      body: gotWorse
+        ? `Redundancy dropped to ${healthState} — automatic recovery will attempt to restore it.`
+        : `This file's backup redundancy is fully restored.`,
+      sourceModule: "backupEngine",
+      sourceId: fileHash,
+      actionUrl: "/nfts",
+      dedupeKey: `wallet:${fileDoc.owner}:backup_state:${fileHash}:${healthState}:${new Date().toISOString().slice(0, 10)}`,
+    });
+  } catch (err) {
+    console.error("notifyOwnerOfBackupStateChange failed (non-fatal):", err.message);
+  }
 }
 
 // ------------------------------------------------------------------
@@ -186,6 +225,10 @@ async function recomputeAndSyncState(fileHash) {
     },
     { upsert: true }
   );
+
+  if (isBoundaryCrossing && previousHealthState !== null) {
+    await notifyOwnerOfBackupStateChange({ fileHash, previousHealthState, healthState });
+  }
 
   return healthState;
 }

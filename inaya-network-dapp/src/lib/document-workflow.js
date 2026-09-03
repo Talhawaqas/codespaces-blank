@@ -40,6 +40,7 @@ import { getOrgCollections, canManageOrg, toObjectId, generateToken, hashToken, 
 import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
 import { logDocumentActivity } from "./activity-log.js";
 import { sendMagicLinkEmail } from "./email.js";
+import { createNotification } from "./notifications.js";
 
 export { logDocumentActivity }; // re-exported — existing imports across the codebase use this path
 
@@ -102,6 +103,42 @@ async function notifyApproversOfSubmission({ orgObjectId, doc, actorEmail }) {
     );
   } catch (err) {
     console.error("notifyApproversOfSubmission failed (non-fatal):", err.message);
+  }
+}
+
+// Enterprise OS SOW, Phase 3 — same audience/query as
+// notifyApproversOfSubmission above (owner/admin, active, opted in), a
+// separate small query rather than threading the in-app notification
+// through that already-tested email function, so a bug here can't affect
+// email delivery and vice versa.
+async function notifyApproversInApp({ orgObjectId, orgId, doc, actorEmail }) {
+  try {
+    const { orgMembers } = await getOrgCollections();
+    const approvers = await orgMembers
+      .find({ orgId: orgObjectId, role: { $in: ["owner", "admin"] }, status: "active", notifyOnApprovals: { $ne: false } })
+      .toArray();
+    await Promise.all(
+      approvers
+        .filter((a) => a.email !== actorEmail)
+        .map((a) =>
+          createNotification({
+            scope: "org",
+            orgId,
+            targetEmail: a.email,
+            category: "approval",
+            severity: "info",
+            type: "document_submitted",
+            title: `"${doc.filename}" submitted for review`,
+            body: `Submitted by ${actorEmail}.`,
+            sourceModule: "document-workflow",
+            sourceId: doc._id,
+            actionUrl: "/business?view=approvals",
+            dedupeKey: `${orgId}:document_submitted:${doc._id}:${a.email}`,
+          })
+        )
+    );
+  } catch (err) {
+    console.error("notifyApproversInApp failed (non-fatal):", err.message);
   }
 }
 
@@ -170,6 +207,7 @@ export async function transitionDocument({ orgId, documentId, action, membership
     // mode, and the transition below already succeeded regardless of what
     // this returns.
     await notifyApproversOfSubmission({ orgObjectId, doc: updated, actorEmail });
+    await notifyApproversInApp({ orgObjectId, orgId, doc: updated, actorEmail });
   }
 
   return { document: updated };

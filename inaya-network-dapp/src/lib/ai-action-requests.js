@@ -36,6 +36,7 @@
 
 import { createHash } from "node:crypto";
 import { getOrgCollections, toObjectId } from "./orgs.js";
+import { createNotification } from "./notifications.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { transitionTask } from "./task-workflow.js";
 import { transitionExpense } from "./expense-workflow.js";
@@ -73,6 +74,68 @@ const EXECUTORS = {
   PURCHASE_REQUEST: ({ orgId, args, actorEmail }) => transitionPurchaseRequest({ orgId, requestId: args.requestId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
   DEAL: ({ orgId, args, actorEmail }) => transitionDeal({ orgId, dealId: args.dealId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
 };
+
+// Enterprise OS SOW, Phase 3 — same "wrap in try/catch, log and continue,
+// never let a notification failure break the real transition" discipline
+// document-workflow.js's notifyApproversOfSubmission already established.
+// Notifies owners/admins specifically (not org-wide) — mirrors that same
+// function's role query, since only they can approve any action type
+// (module-specific managers like a Finance Manager are a real subset the
+// notification center doesn't need to resolve precisely for v1: an
+// org-wide informational miss here is lower-risk than a targeted query
+// getting a domain's approver rule wrong).
+async function notifyOrgManagersOfProposal({ orgObjectId, orgId, request }) {
+  try {
+    const { orgMembers } = await getOrgCollections();
+    const managers = await orgMembers
+      .find({ orgId: orgObjectId, role: { $in: ["owner", "admin"] }, status: "active" })
+      .toArray();
+    await Promise.all(
+      managers
+        .filter((m) => m.email !== request.requestedByEmail)
+        .map((m) =>
+          createNotification({
+            scope: "org",
+            orgId,
+            targetEmail: m.email,
+            category: "ai",
+            severity: request.riskLevel === "HIGH" ? "warning" : "info",
+            type: "ai_action_proposed",
+            title: `AI proposed: ${request.proposedAction} on ${request.targetRecordType}`,
+            body: request.requestedContextSummary || `Proposed by ${request.requestedByEmail || "the AI assistant"} — ${request.riskLevel} risk.`,
+            sourceModule: "ai-action-requests",
+            sourceId: request._id,
+            actionUrl: "/business?view=aiActions",
+            dedupeKey: `${orgId}:ai_action_proposed:${request._id}:${m.email}`,
+          })
+        )
+    );
+  } catch (err) {
+    console.error("notifyOrgManagersOfProposal failed (non-fatal):", err.message);
+  }
+}
+
+async function notifyProposerOfDecision({ orgId, request, decision }) {
+  if (!request.requestedByEmail) return;
+  try {
+    await createNotification({
+      scope: "org",
+      orgId,
+      targetEmail: request.requestedByEmail,
+      category: "ai",
+      severity: decision === "reject" ? "warning" : "info",
+      type: `ai_action_${decision}d`,
+      title: `Your proposed action was ${decision}d`,
+      body: `${request.proposedAction} on ${request.targetRecordType}${request.reviewNote ? ` — "${request.reviewNote}"` : ""}`,
+      sourceModule: "ai-action-requests",
+      sourceId: request._id,
+      actionUrl: "/business?view=aiActions",
+      dedupeKey: `${orgId}:ai_action_${decision}d:${request._id}`,
+    });
+  } catch (err) {
+    console.error("notifyProposerOfDecision failed (non-fatal):", err.message);
+  }
+}
 
 export const AI_ACTION_STATUSES = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "QUEUED", "EXECUTED", "EXPIRED", "CANCELLED"];
 export const SETTLEMENT_DELAY_MS = 36 * 60 * 60 * 1000; // 36h, mirrors InayaNodeRegistry.sol's SETTLEMENT_DELAY
@@ -196,6 +259,8 @@ export async function proposeAiAction({
     metadata: { toolName, targetRecordType, targetRecordId: targetRecordId ? targetRecordId.toString() : null },
   });
 
+  await notifyOrgManagersOfProposal({ orgObjectId, orgId, request: inserted });
+
   return { request: inserted };
 }
 
@@ -236,6 +301,8 @@ export async function reviewAiAction({ orgId, requestId, decision, actorEmail, n
     actorEmail, action: decision === "approve" ? "AI_ACTION_APPROVED" : "AI_ACTION_REJECTED",
     previousState: "PENDING_APPROVAL", newState: newStatus, metadata: note ? { note } : {},
   });
+
+  await notifyProposerOfDecision({ orgId, request: updated, decision });
 
   return { request: updated };
 }

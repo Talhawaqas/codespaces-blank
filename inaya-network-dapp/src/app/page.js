@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
 import { InayaKernel, createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
 import { WalletProvider } from '../contexts/WalletContext';
+import NotificationsBell from '../components/NotificationsBell';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -5137,6 +5138,16 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-self-end">
             <ThemeSwitcher />
+            {/* Enterprise OS SOW, Phase 3 — the new unified wallet-scoped
+                notification center (security/data/web3 categories, real
+                DB-backed read-state), deliberately separate from the
+                referral/KYC bell below rather than merged into it this
+                pass — different schema, different history; consolidating
+                them into one bell is a fast-follow, not done silently
+                here. */}
+            {isConnected && walletAddress && (
+              <NotificationsBell scope="wallet" walletAddress={walletAddress} signMessage={signMessage} />
+            )}
             {/* 🔔 NOTIFICATION CENTER — see the state block near
                 isUpdatesDrawerOpen for how allNotifications/unreadNotificationsCount
                 are computed. */}
