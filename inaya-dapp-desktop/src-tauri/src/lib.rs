@@ -82,6 +82,48 @@ fn clear_passkey_secure(window: tauri::WebviewWindow) -> Result<(), String> {
     }
 }
 
+// Enterprise OS SOW, Phase 9 — multi-window support, identical
+// implementation to inaya-desktop's own open_module_window (see that
+// file's comment for the full reasoning): parameterizes the same
+// WebviewWindowBuilder::new(app, label, WebviewUrl::External(...)) call
+// the main window below is already built with, reuses the same
+// verify_trusted_origin guard, re-focuses an existing pop-out instead of
+// erroring on a duplicate label.
+#[tauri::command]
+fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow, label: String, path: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+
+    if label.is_empty() || !label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("Refusing: label must be non-empty alphanumeric/dash/underscore only.".into());
+    }
+    if !path.starts_with('/') {
+        return Err("Refusing: path must be a relative path starting with '/'.".into());
+    }
+
+    if let Some(existing) = app.get_webview_window(&label) {
+        existing.show().map_err(|e| e.to_string())?;
+        existing.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let full_url = format!("{}{}", TRUSTED_ORIGIN, path);
+    // Not naming the error type explicitly (e.g. url::ParseError) since
+    // the `url` crate is only a transitive dependency here, not a direct
+    // one in Cargo.toml -- see inaya-desktop's identical open_module_window
+    // for the full reasoning.
+    let parsed_url = match full_url.parse() {
+        Ok(u) => u,
+        Err(e) => return Err(format!("{:?}", e)),
+    };
+    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed_url))
+        .title("Inaya Network")
+        .inner_size(1000.0, 700.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // Checked once on startup. Prompts before installing rather than
 // installing silently, since download_and_install() replaces the running
 // binary and restarts the app.
@@ -134,7 +176,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             store_passkey_secure,
             retrieve_passkey_secure,
-            clear_passkey_secure
+            clear_passkey_secure,
+            open_module_window
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

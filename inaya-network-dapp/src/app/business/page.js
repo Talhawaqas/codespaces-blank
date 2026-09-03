@@ -835,7 +835,17 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
 
-  const [activeView, setActiveView] = useState("osHome");
+  // Enterprise OS SOW, Phase 9 — reads a ?view= query param on first mount
+  // so a pop-out window (open_module_window, a real separate native window
+  // with no shared React state) can land directly on the right view
+  // instead of always opening to OS Home. Safe to read window.location
+  // here: Workspace only ever mounts client-side after the async session
+  // fetch resolves (BusinessPage shows a loading/auth screen until then),
+  // so there's no SSR render of this component to mismatch against.
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window === "undefined") return "osHome";
+    return new URLSearchParams(window.location.search).get("view") || "osHome";
+  });
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 

@@ -33,15 +33,35 @@ function Tile({ label, value, onClick }) {
   );
 }
 
-function LinkTile({ label, description, onClick }) {
+// Enterprise OS SOW, Phase 9 — "pop out" a module into its own native
+// desktop window via the open_module_window Tauri command (inaya-desktop/
+// src-tauri/src/lib.rs). window.__TAURI__ only exists inside the actual
+// desktop app, never in a regular browser tab, same detection convention
+// SECURITY_FEED_POLL_SCRIPT already uses in lib.rs — the button is simply
+// absent everywhere else, not a broken no-op.
+function popOutModuleWindow(label, path) {
+  if (typeof window === "undefined" || !window.__TAURI__) return;
+  window.__TAURI__.core.invoke("open_module_window", { label, path }).catch((err) => console.error("open_module_window failed:", err));
+}
+
+function LinkTile({ label, description, onClick, popOutPath }) {
+  const isDesktopApp = typeof window !== "undefined" && !!window.__TAURI__;
   return (
-    <button
-      onClick={onClick}
-      className="bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-3.5 text-left hover:bg-white/5 transition-colors"
-    >
-      <p className="text-[13px] font-bold text-[var(--inaya-text-primary)]">{label}</p>
-      <p className="text-[11px] text-[var(--inaya-text-muted)] mt-0.5">{description}</p>
-    </button>
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-3.5 hover:bg-white/5 transition-colors flex items-start justify-between gap-2">
+      <button onClick={onClick} className="text-left flex-1 min-w-0">
+        <p className="text-[13px] font-bold text-[var(--inaya-text-primary)]">{label}</p>
+        <p className="text-[11px] text-[var(--inaya-text-muted)] mt-0.5">{description}</p>
+      </button>
+      {isDesktopApp && popOutPath && (
+        <button
+          onClick={() => popOutModuleWindow(label.replace(/[^a-zA-Z0-9]/g, ""), popOutPath)}
+          title="Open in its own window"
+          className="shrink-0 text-[var(--inaya-text-muted)] hover:text-[#00f2fe] p-1"
+        >
+          ⧉
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -200,9 +220,19 @@ export default function OsHomeView({ onNavigate }) {
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-[var(--inaya-text-muted)] mb-2">Trust &amp; Audit</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <LinkTile label="Audit Trail" description="Cryptographically hash-chained, self-service verifiable." onClick={() => onNavigate("auditTrail")} />
+          <LinkTile
+            label="Audit Trail"
+            description="Cryptographically hash-chained, self-service verifiable."
+            onClick={() => onNavigate("auditTrail")}
+            popOutPath="/business?view=auditTrail"
+          />
           {can.manageOrg() && (
-            <LinkTile label="AI Action Requests" description="Review AI-proposed changes awaiting approval." onClick={() => onNavigate("aiActions")} />
+            <LinkTile
+              label="AI Action Requests"
+              description="Review AI-proposed changes awaiting approval."
+              onClick={() => onNavigate("aiActions")}
+              popOutPath="/business?view=aiActions"
+            />
           )}
         </div>
       </div>

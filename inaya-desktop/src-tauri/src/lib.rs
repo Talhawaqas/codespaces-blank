@@ -339,6 +339,64 @@ fn unblock_ip(window: tauri::WebviewWindow, ip: String, label: String) -> Result
     Err("OS-level blocking isn't supported on this platform in this build.".into())
 }
 
+// Enterprise OS SOW, Phase 9 — multi-window support. Lets a module (e.g.
+// Audit Trail, AI Action Requests) "pop out" of the main window into its
+// own real native window that runs alongside it, rather than only ever
+// switching views inside one window. Uses the exact same
+// WebviewWindowBuilder::new(app, label, WebviewUrl::External(...)) call
+// the main window is already built with below -- this isn't a new
+// window-creation mechanism, just parameterizing the one that already
+// exists instead of hardcoding "main"/APP_URL. Reuses the same
+// verify_trusted_origin guard every other sensitive command here already
+// applies.
+#[tauri::command]
+fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow, label: String, path: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+
+    // label becomes the actual Tauri window label (and its OS-level window
+    // identity) -- same alphanumeric/dash/underscore allowlist block_ip/
+    // unblock_ip already use for their own OS-facing identifiers below.
+    if label.is_empty() || !label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("Refusing: label must be non-empty alphanumeric/dash/underscore only.".into());
+    }
+    // path is a relative path under this app's own trusted origin, never an
+    // arbitrary URL -- the same trust boundary every other command here
+    // enforces via verify_trusted_origin, just applied to where the NEW
+    // window is allowed to point rather than where the call came from.
+    if !path.starts_with('/') {
+        return Err("Refusing: path must be a relative path starting with '/'.".into());
+    }
+
+    // A second pop-out of the same module re-focuses the existing window
+    // instead of erroring (Tauri window labels must be unique) or silently
+    // doing nothing.
+    if let Some(existing) = app.get_webview_window(&label) {
+        existing.show().map_err(|e| e.to_string())?;
+        existing.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let full_url = format!("{}{}", TRUSTED_ORIGIN, path);
+    // Not naming the error type explicitly (e.g. url::ParseError) since
+    // the `url` crate is only a transitive dependency here, not a direct
+    // one in Cargo.toml -- this relies on the same type inference the
+    // existing APP_URL.parse().unwrap() calls elsewhere in this file
+    // already lean on (inferred backward from WebviewUrl::External's
+    // parameter type), just handled as a real Result instead of unwrap()
+    // since this string is runtime-constructed, not a hardcoded constant.
+    let parsed_url = match full_url.parse() {
+        Ok(u) => u,
+        Err(e) => return Err(format!("{:?}", e)),
+    };
+    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed_url))
+        .title("Inaya Business Workspace")
+        .inner_size(1000.0, 700.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // Checked once on startup (not polled -- a business tool people relaunch
 // often enough that once-per-launch is sufficient, matching the mobile
 // app's OTA approach of checking at app open rather than continuously).
@@ -400,7 +458,8 @@ pub fn run() {
             unblock_ip,
             store_passkey_secure,
             retrieve_passkey_secure,
-            clear_passkey_secure
+            clear_passkey_secure,
+            open_module_window
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

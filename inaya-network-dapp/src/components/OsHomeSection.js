@@ -19,12 +19,34 @@ async function api(path, opts) {
   return data;
 }
 
+// Enterprise OS SOW, Phase 9 — "pop out" into its own native desktop
+// window via inaya-dapp-desktop's open_module_window Tauri command.
+// window.__TAURI__ only exists inside the actual desktop app, never a
+// regular browser tab, same detection convention this app's own injected
+// scripts already use in lib.rs.
+function popOutModuleWindow(label, path) {
+  if (typeof window === "undefined" || !window.__TAURI__) return;
+  window.__TAURI__.core.invoke("open_module_window", { label, path }).catch((err) => console.error("open_module_window failed:", err));
+}
+
 function LinkTile({ label, description, href }) {
+  const isDesktopApp = typeof window !== "undefined" && !!window.__TAURI__;
   return (
-    <a href={href} className="block bg-black/20 border border-white/10 rounded-xl p-3.5 hover:bg-white/5 transition-colors">
-      <p className="text-[13px] font-bold text-white">{label}</p>
-      <p className="text-[11px] text-[#94a3b8] mt-0.5">{description}</p>
-    </a>
+    <div className="bg-black/20 border border-white/10 rounded-xl p-3.5 hover:bg-white/5 transition-colors flex items-start justify-between gap-2">
+      <a href={href} className="flex-1 min-w-0">
+        <p className="text-[13px] font-bold text-white">{label}</p>
+        <p className="text-[11px] text-[#94a3b8] mt-0.5">{description}</p>
+      </a>
+      {isDesktopApp && (
+        <button
+          onClick={() => popOutModuleWindow(label.replace(/[^a-zA-Z0-9]/g, ""), href)}
+          title="Open in its own window"
+          className="shrink-0 text-[#94a3b8] hover:text-[#00f2fe] p-1"
+        >
+          ⧉
+        </button>
+      )}
+    </div>
   );
 }
 
