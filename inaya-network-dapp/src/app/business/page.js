@@ -44,6 +44,7 @@ import AIActionRequestsView from "../../components/business/AIActionRequestsView
 import AuditTrailView from "../../components/business/AuditTrailView";
 import BriefView from "../../components/business/BriefView";
 import ActivityCenterView from "../../components/ActivityCenterView";
+import OsHomeView from "../../components/business/OsHomeView";
 import MfaVerifyScreen from "../../components/business/MfaVerifyScreen";
 import MfaSettings from "../../components/business/MfaSettings";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
@@ -752,6 +753,7 @@ ICONS.settings = (
 // SIDEBAR + WORKSPACE SHELL
 // ============================================================
 const NAV_ITEMS = [
+  { key: "osHome", label: "OS Home", icon: "dashboard" },
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "insights", label: "Insights", icon: "insights" },
   { key: "brief", label: "Brief", icon: "insights" },
@@ -833,7 +835,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
 
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState("osHome");
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -844,6 +846,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   }
 
   const VIEW_TITLES = {
+    osHome: "OS Home",
     dashboard: "Overview",
     insights: "Business Insights",
     brief: "Business Brief",
@@ -936,6 +939,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         </header>
 
         <main className="p-5 md:p-8 max-w-6xl">
+          {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
           {activeView === "dashboard" && (
             <DashboardView orgId={orgId} canManage={canManage} onNavigate={navigate} />
           )}

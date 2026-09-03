@@ -7,6 +7,7 @@ import { WalletProvider } from '../contexts/WalletContext';
 import NotificationsBell from '../components/NotificationsBell';
 import CommandPalette from '../components/CommandPalette';
 import ActivityCenterView from '../components/ActivityCenterView';
+import OsHomeSection from '../components/OsHomeSection';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -2063,6 +2064,7 @@ const NAV_GROUPS = [
       // everywhere (including the initial useState default), so `label`
       // can show "Home" without touching every one of those call sites.
       { label: 'Home', value: 'Network Home', icon: '🏠' },
+      { label: 'OS Home', icon: '🖥️' },
       { label: 'Faucet', icon: '🚰' },
       { label: 'Sovereign Vault', icon: '🔐' },
       { label: 'Staking', icon: '📈' },
@@ -6816,6 +6818,20 @@ export default function Home() {
                 </div>
 
               </div>
+            </div>
+          )}
+
+          {/* Enterprise OS SOW, Phase 7 — OS Home, a new tab rather than the
+              default page: unlike Business Workspace (always-authenticated),
+              this file's default tab is the public landing page for
+              anonymous, no-wallet visitors too, so replacing it would break
+              that entry point. */}
+          {currentPage === 'OS Home' && isConnected && walletAddress && (
+            <OsHomeSection walletAddress={walletAddress} onNavigate={setCurrentPage} />
+          )}
+          {currentPage === 'OS Home' && !isConnected && (
+            <div className="max-w-2xl mx-auto text-center py-16">
+              <p className="text-[#94a3b8] text-sm">Connect your wallet to see your OS Home.</p>
             </div>
           )}
 
