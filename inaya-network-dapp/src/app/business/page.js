@@ -43,6 +43,7 @@ import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
 import BriefView from "../../components/business/BriefView";
+import ActivityCenterView from "../../components/ActivityCenterView";
 import MfaVerifyScreen from "../../components/business/MfaVerifyScreen";
 import MfaSettings from "../../components/business/MfaSettings";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
@@ -754,6 +755,7 @@ const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "insights", label: "Insights", icon: "insights" },
   { key: "brief", label: "Brief", icon: "insights" },
+  { key: "whatChanged", label: "What Changed?", icon: "insights" },
   { key: "security", label: "Security", icon: "activity" },
   { key: "departments", label: "Departments", icon: "departments" },
   { key: "projects", label: "Projects", icon: "projects" },
@@ -845,6 +847,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     dashboard: "Overview",
     insights: "Business Insights",
     brief: "Business Brief",
+    whatChanged: "What Changed?",
     security: "Security",
     browse: "Company Records",
     tasks: "Tasks",
@@ -938,6 +941,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           )}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}
+          {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
           {activeView === "security" && <MfaSettings />}
           {activeView === "browse" && (
             <OrgWorkspace

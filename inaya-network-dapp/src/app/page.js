@@ -6,6 +6,7 @@ import { InayaKernel, createPasskeyBackup, restorePasskeyBackup, isPasskeyBackup
 import { WalletProvider } from '../contexts/WalletContext';
 import NotificationsBell from '../components/NotificationsBell';
 import CommandPalette from '../components/CommandPalette';
+import ActivityCenterView from '../components/ActivityCenterView';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -2066,6 +2067,7 @@ const NAV_GROUPS = [
       { label: 'Sovereign Vault', icon: '🔐' },
       { label: 'Staking', icon: '📈' },
       { label: 'My Dashboard', icon: '📊' },
+      { label: 'What Changed?', icon: '📰' },
       { label: 'Referrals', icon: '🤝' },
       { label: 'Genesis Airdrop', icon: '🎁' },
       { label: 'Learn', icon: '🎓' },
@@ -6814,6 +6816,20 @@ export default function Home() {
                 </div>
 
               </div>
+            </div>
+          )}
+
+          {/* Enterprise OS SOW, Phase 5 — "What Changed?" digest, the dApp's
+              wallet-scoped counterpart to Business Workspace's activity
+              center view. */}
+          {currentPage === 'What Changed?' && isConnected && walletAddress && (
+            <div className="max-w-3xl mx-auto">
+              <ActivityCenterView baseUrl={`/api/wallet/activity-center?address=${walletAddress}`} />
+            </div>
+          )}
+          {currentPage === 'What Changed?' && !isConnected && (
+            <div className="max-w-2xl mx-auto text-center py-16">
+              <p className="text-[#94a3b8] text-sm">Connect your wallet to see what's changed.</p>
             </div>
           )}
 
