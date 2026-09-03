@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
 import { InayaKernel, createPasskeyBackup, restorePasskeyBackup, isPasskeyBackupEnvelope } from '@inaya-network/custody-sdk';
+import { WalletProvider } from '../contexts/WalletContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -2854,6 +2855,18 @@ export default function Home() {
   const getActiveProvider = () => wcProviderRef.current || (typeof window !== 'undefined' ? window.ethereum : undefined);
   const WALLETCONNECT_PROJECT_ID = "f4554dce07d85b0d64306778c3b15f3b";
 
+  // Enterprise OS SOW, Phase 1 — reusable signMessage() for WalletContext,
+  // wrapping the same new ethers.BrowserProvider(getActiveProvider()) +
+  // signer.signMessage() pattern already repeated at every existing
+  // wallet-signing call site in this file. New wallet-scoped OS code
+  // (Phase 2+) calls useWallet().signMessage(...) instead of duplicating
+  // that pattern again; none of the existing call sites are touched.
+  const signMessage = async (message) => {
+    const provider = new ethers.BrowserProvider(getActiveProvider());
+    const signer = await provider.getSigner();
+    return signer.signMessage(message);
+  };
+
   // ========================================================
   // 🤖 AI DOCS ASSISTANT — CHAT WIDGET STATE (Gemini-backed /api/ai/chat)
   // ========================================================
@@ -5076,8 +5089,16 @@ export default function Home() {
   const totalSpaceAllocatedTB = paygStatus.tbCommitted + corporateAllocatedTB;
 
   return (
+    <WalletProvider
+      walletAddress={walletAddress}
+      walletBalance={walletBalance}
+      isConnected={isConnected}
+      selectedWalletName={selectedWalletName}
+      isWrongNetwork={isWrongNetwork}
+      signMessage={signMessage}
+    >
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
-      
+
       {/* GLOBAL TOP HEADER — sticky at the extreme top of the viewport,
           always visible. The ☰ button inside it opens the site menu
           drawer (rendered as a sibling below) instead of an in-header nav. */}
@@ -7919,5 +7940,6 @@ export default function Home() {
         </div>
       )}
     </div>
+    </WalletProvider>
   );
 }

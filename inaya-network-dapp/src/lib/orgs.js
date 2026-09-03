@@ -32,6 +32,23 @@
 import { randomBytes, createHash } from "node:crypto";
 import { ObjectId } from "mongodb";
 import { connectToDatabase } from "./mongodb.js";
+// Enterprise OS SOW, Phase 1: the pure permission-gate functions live in
+// orgGates.js (client-safe — no node:crypto/mongodb) so OrgContext can
+// import them directly. Imported here too so this file's own internal
+// callers (requireMembership, etc.) keep working, and re-exported below
+// so every existing `import { canManageOrg } from "./orgs.js"` call site
+// is unaffected.
+import {
+  canManageOrg,
+  canAccessDepartment,
+  canManageFinance,
+  canAccessFinance,
+  canManageHR,
+  canAccessHR,
+  isDepartmentManager,
+} from "./orgGates.js";
+
+export { canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager };
 
 export const ROLES = ["owner", "admin", "member"];
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -262,10 +279,6 @@ export async function getMembership(orgId, email) {
   return orgMembers.findOne({ orgId: toObjectId(orgId), email: normalizeEmail(email), status: "active" });
 }
 
-export function canManageOrg(membership) {
-  return membership?.role === "owner" || membership?.role === "admin";
-}
-
 export function toObjectId(id) {
   return id instanceof ObjectId ? id : new ObjectId(id);
 }
@@ -337,56 +350,6 @@ export async function consumeLoginToken(token) {
   }
 
   return createSession(link.email);
-}
-
-/** Members see documents in departments they're assigned to; owner/admin see everything
- *  in the org. Phase 1's whole permission model in one place so Phase 2's workflow logic
- *  has one function to extend rather than re-deriving this in every route. */
-export function canAccessDepartment(membership, departmentId) {
-  if (!membership) return false;
-  if (canManageOrg(membership)) return true;
-  return (membership.departmentIds || []).some((id) => id.toString() === departmentId.toString());
-}
-
-// ============================================================
-// Business Operations, Phase 5 (Finance & HR) — role model
-//
-// financeRole/hrRole/managedDepartmentIds are new, OPTIONAL fields on the
-// same org_members document, not a restructure of the existing
-// role:"owner"|"admin"|"member" field. That field is checked in exactly
-// one place (canManageOrg, above) and every other Business Operations
-// module (Tasks/CRM/Procurement/Inventory) depends on it staying a
-// stable three-value string — expanding ROLES itself would mean auditing
-// every existing gate for correctness. A member simply has none, one, or
-// both of financeRole/hrRole set alongside their normal role, same
-// spirit as departmentIds already being an orthogonal, additive
-// permission axis on the same doc.
-// ============================================================
-
-export function canManageFinance(membership) {
-  return canManageOrg(membership) || membership?.financeRole === "manager";
-}
-
-export function canAccessFinance(membership) {
-  return canManageFinance(membership) || membership?.financeRole === "staff";
-}
-
-export function canManageHR(membership) {
-  return canManageOrg(membership) || membership?.hrRole === "manager";
-}
-
-export function canAccessHR(membership) {
-  return canManageHR(membership) || membership?.hrRole === "staff";
-}
-
-/** "Department Manager" — a new concept; departments have no manager field
- *  today (canAccessDepartment above only distinguishes org-wide owner/
- *  admin from a plain department-scoped member). Grants read access to
- *  that department's employees without full org-wide HR visibility. */
-export function isDepartmentManager(membership, departmentId) {
-  if (!membership) return false;
-  if (canManageOrg(membership)) return true;
-  return (membership.managedDepartmentIds || []).some((id) => id.toString() === departmentId.toString());
 }
 
 /** "Employee" (the SOW's 7th role, "personal HR information and permitted

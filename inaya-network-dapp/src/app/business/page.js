@@ -48,6 +48,7 @@ import MfaSettings from "../../components/business/MfaSettings";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
+import { OrgProvider } from "../../contexts/OrgContext";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -233,7 +234,7 @@ export default function BusinessPage() {
         <PlanSelectionGate email={session.email} membership={currentMembership} onLogout={handleLogout} />
       )}
       {currentMembership && !needsPlanSelection && (
-        <Workspace
+        <OrgProvider
           key={currentMembership.orgId}
           email={session.email}
           membership={currentMembership}
@@ -241,7 +242,17 @@ export default function BusinessPage() {
           selectedOrgId={currentMembership.orgId}
           onSwitchOrg={setSelectedOrgId}
           onLogout={handleLogout}
-        />
+          refreshSession={refreshSession}
+        >
+          <Workspace
+            email={session.email}
+            membership={currentMembership}
+            orgs={session.orgs}
+            selectedOrgId={currentMembership.orgId}
+            onSwitchOrg={setSelectedOrgId}
+            onLogout={handleLogout}
+          />
+        </OrgProvider>
       )}
     </div>
   );
