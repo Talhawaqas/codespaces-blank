@@ -17,6 +17,14 @@ const DOWNLOADS = [
     instructions: "Run the installer and follow the prompts. Windows may show a SmartScreen warning since this build isn't code-signed yet — click \"More info\" → \"Run anyway\" to proceed.",
   },
   {
+    os: "Windows (Portable)",
+    icon: "🪟",
+    file: "/downloads/business-workspace/Inaya-Business-Workspace-Portable-x64.exe",
+    label: "Download Portable",
+    sub: "Single .exe · no install needed",
+    instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions. Supports opening modules (Audit Trail, AI Assistant) in their own pop-out windows alongside the main one.",
+  },
+  {
     os: "Linux (AppImage)",
     icon: "🐧",
     file: "/downloads/business-workspace/Inaya-Business-Workspace-x86_64.AppImage",
