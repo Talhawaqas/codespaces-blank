@@ -46,7 +46,7 @@ const APPS = [
         file: "/downloads/dapp/Inaya-Network-Portable-x64.exe",
         label: "Download Portable",
         sub: "Single .exe · no install needed",
-        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions.",
+        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions. Supports opening modules (Security Center, NFT Vault, AI Assistant) in their own pop-out windows alongside the main one.",
       },
       {
         os: "Linux (AppImage)",
@@ -88,7 +88,7 @@ const APPS = [
         file: "/downloads/business-workspace/Inaya-Business-Workspace-Portable-x64.exe",
         label: "Download Portable",
         sub: "Single .exe · no install needed",
-        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions.",
+        instructions: "No installer, no registry changes, no admin rights needed — just run it. Needs the Microsoft Edge WebView2 Runtime already on your machine (present by default on Windows 10 1803+ and Windows 11). Doesn't auto-update — re-download for new versions. Supports opening modules (Audit Trail, AI Assistant) in their own pop-out windows alongside the main one.",
       },
       {
         os: "Linux (AppImage)",
@@ -148,10 +148,10 @@ export default function DownloadHubPage() {
           <span className="text-white font-extrabold tracking-wide">INAYA</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
-          Inaya <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">Desktop Apps</span>
+          Inaya Sovereign Enterprise OS <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">— Desktop Apps</span>
         </h1>
         <p className="text-[#94a3b8] text-sm mb-2 max-w-2xl">
-          Two separate apps, each with its own installer and auto-updater — pick the one you need below.
+          Two separate desktop apps — each its own installer, auto-updater, and OS Home screen (identity, notifications, search, trust &amp; health status). On Windows, either app can pop a module out into its own window running alongside the main one. Pick the one you need below.
         </p>
         <p className="text-amber-400/80 text-xs font-mono mb-10">
           ⚠ Testnet release. If something looks wrong, please report it — that's exactly the feedback we need right now.
