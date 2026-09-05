@@ -12,7 +12,8 @@
 // moment this ships. An org only becomes limited once its owner explicitly
 // picks a plan (self-serve checkout) or Enterprise is assigned manually.
 
-import { getOrgCollections, toObjectId } from "./orgs.js";
+import { getOrgCollections, toObjectId, generateToken, hashToken, MAGIC_LINK_TTL_MS } from "./orgs.js";
+import { sendNoPlanReminderEmail } from "./email.js";
 
 export const PLANS = {
   starter: {
@@ -130,14 +131,87 @@ export const LEGACY_UNLIMITED = {
   features: [],
 };
 
+// "Continue without plan" — a new org that explicitly declines checkout
+// (see /api/orgs/billing/continue-without-plan) rather than a pre-existing
+// org that simply predates plan selection. Distinct from LEGACY_UNLIMITED
+// on purpose: the user asked for this to carry Starter's real limits, not
+// the unrestricted grandfather treatment — an org that actively chose
+// "no plan" is a genuinely different case from one that was never asked.
+// Same maxUsers/maxStorageGB/maxFileSizeMB as PLANS.starter so every
+// existing enforcement call site (invite, upload) needs zero changes;
+// price fields are zeroed and the name says so, so Billing UI never
+// implies this org is being charged.
+export const NO_PLAN_LIMITED = {
+  ...PLANS.starter,
+  id: "starter",
+  name: "Starter (No Billing)",
+  tagline: "Limited features, selected without billing — upgrade anytime.",
+  priceMonthly: 0,
+  priceYearly: 0,
+  noBilling: true,
+};
+
 export function getOrgPlan(org) {
-  if (!org?.plan) return LEGACY_UNLIMITED;
-  return PLANS[org.plan] || PLANS.starter;
+  if (org?.plan) return PLANS[org.plan] || PLANS.starter;
+  if (org?.noPlanConfirmedAt) return NO_PLAN_LIMITED;
+  return LEGACY_UNLIMITED;
 }
 
 // One-shot usage lookup reused by the Billing GET route and both
 // enforcement points (invite, document upload) so there's a single place
 // that defines what "usage" means for an org.
+// Healthcare & Legal Expansion follow-on — nudges an org owner stuck at
+// the plan-selection gate (requiresPlanSelection still true, no plan, and
+// never explicitly continued for free) toward finishing setup. Cron-
+// driven (api/cron/no-plan-reminders), same idempotent-via-marker
+// discipline as invoice-workflow.js's markOverdueInvoices and
+// health-scheduling.js's appointment reminders: sent exactly once per
+// org via a findOneAndUpdate that only succeeds if noPlanReminderSentAt
+// isn't already set, so a concurrent/repeated cron run can't double-send.
+// Waits 24h past creation first so someone still mid-signup isn't
+// immediately emailed.
+//
+// `orgIds` (optional): scopes the scan to exactly these org IDs instead
+// of the whole `orgs` collection. The real cron always omits it (a full
+// scan is the entire point). This exists ONLY so automated tests can
+// call the real function without touching real user data — this
+// function sends actual emails to actual people, unlike e.g.
+// markOverdueInvoices()'s plain status flip, so "just run it against the
+// shared test database and hope only fixture rows match" is not an
+// acceptable testing strategy here. A real incident during this
+// implementation (an early test run, before this parameter existed,
+// matched ~68 real production orgs and stamped them as reminded even
+// though RESEND_API_KEY wasn't configured locally to actually send —
+// caught and reverted, but exactly the failure mode this guards against).
+export async function sendNoPlanReminders({ orgIds } = {}) {
+  const { orgs, magicLinks } = await getOrgCollections();
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const query = { requiresPlanSelection: true, plan: null, noPlanConfirmedAt: { $exists: false }, noPlanReminderSentAt: { $exists: false }, createdAt: { $lt: cutoff } };
+  if (orgIds) query._id = { $in: orgIds.map((id) => toObjectId(id)) };
+  const stuck = await orgs.find(query).toArray();
+
+  let sent = 0;
+  for (const org of stuck) {
+    const claimed = await orgs.findOneAndUpdate(
+      { _id: org._id, noPlanReminderSentAt: { $exists: false } },
+      { $set: { noPlanReminderSentAt: new Date().toISOString() } }
+    );
+    if (!claimed) continue; // already claimed by a concurrent run
+
+    const token = generateToken();
+    await magicLinks.insertOne({
+      tokenHash: hashToken(token), email: org.ownerEmail, orgId: null, purpose: "login",
+      expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_MS).toISOString(), usedAt: null, createdAt: new Date().toISOString(),
+    });
+    const origin = process.env.NEXT_PUBLIC_APP_URL;
+    if (!origin) continue; // can't build a working link without a configured origin
+    const url = `${origin}/api/orgs/login/consume?token=${token}`; // this route always redirects into /business on success
+    await sendNoPlanReminderEmail({ to: org.ownerEmail, orgName: org.name, url });
+    sent += 1;
+  }
+  return { checked: stuck.length, sent };
+}
+
 export async function getOrgUsage(orgId) {
   const { orgMembers, orgDocuments } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);

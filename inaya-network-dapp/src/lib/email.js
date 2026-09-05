@@ -116,3 +116,30 @@ export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName, 
 
   return sendEmail({ to, subject, html, text });
 }
+
+/** Healthcare & Legal Expansion follow-on — reminds an org owner who
+ *  created a company but never picked a plan (or continued for free)
+ *  that they're stuck at the plan-selection gate. `url` is a real,
+ *  single-use magic link (same shape as the login flow) rather than a
+ *  bare app URL, so the owner doesn't need to separately remember how to
+ *  sign back in — clicking it lands them directly on the gate, which now
+ *  offers "Continue without a plan" as well as the paid tiers. */
+export async function sendNoPlanReminderEmail({ to, orgName, url }) {
+  const subject = `Finish setting up ${orgName} on Inaya`;
+  const heading = "You signed up, but haven't chosen a plan yet";
+  const body = `You created <b>${orgName}</b> on Inaya Business Workspace, but never picked a plan — so your workspace has been sitting inactive. Click below to finish setup: pick a paid plan, or continue for free on limited (Starter-equivalent) features.`;
+
+  const html = `
+    ${BRAND_HEADER}
+    <h1 style="font-size: 20px; margin: 16px 0 8px; color: #10151f;">${heading}</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #3a4250;">${body}</p>
+    <a href="${url}" style="display: inline-block; margin: 16px 0; padding: 12px 22px; background: #007a8f; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+      Finish setup
+    </a>
+    <p style="font-size: 12px; color: #8a93a3; word-break: break-all;">${url}</p>
+    ${brandFooter({})}
+  `;
+  const text = `${heading}\n\n${body.replace(/<[^>]+>/g, "")}\n\n${url}`;
+
+  return sendEmail({ to, subject, html, text });
+}

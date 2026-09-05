@@ -277,6 +277,19 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   const [error, setError] = useState("");
   const [switchingPlanId, setSwitchingPlanId] = useState(null);
   const [checkingActivation, setCheckingActivation] = useState(false);
+  const [continuingWithoutPlan, setContinuingWithoutPlan] = useState(false);
+
+  async function handleContinueWithoutPlan() {
+    setContinuingWithoutPlan(true);
+    setError("");
+    try {
+      await api("/api/orgs/billing/continue-without-plan", { method: "POST", body: JSON.stringify({ orgId: membership.orgId }) });
+      window.location.reload(); // simplest way for BusinessPage to re-derive membership and drop the gate
+    } catch (err) {
+      setError(err.message);
+      setContinuingWithoutPlan(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/orgs/billing/plans")
@@ -343,7 +356,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
             <p className="text-[var(--inaya-text-muted)] text-xs font-mono">{email} · {membership.orgName}</p>
             <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] mt-1">Activate your workspace</h1>
             <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
-              Pick a plan to get started. Every plan includes a 14-day free trial — and since this runs on Inaya's testnet, nothing is actually charged during the trial.
+              You signed up but haven't chosen a plan yet. Pick one to get started — every plan includes a 14-day free trial, and since this runs on Inaya's testnet, nothing is actually charged during the trial. Not ready to commit? You can also continue on limited free features below.
             </p>
           </div>
           <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] shrink-0">
@@ -373,6 +386,20 @@ function PlanSelectionGate({ email, membership, onLogout }) {
             ))}
           </div>
         )}
+
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <p className="text-[var(--inaya-text-muted)] text-xs">Not ready to pick a plan?</p>
+          <button
+            onClick={handleContinueWithoutPlan}
+            disabled={continuingWithoutPlan}
+            className="text-[12px] font-bold uppercase text-[var(--inaya-text-primary)] bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-4 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
+          >
+            {continuingWithoutPlan ? "Setting up…" : "Continue without a plan (free, Starter limits)"}
+          </button>
+          <p className="text-[var(--inaya-text-muted)] text-[11px] max-w-sm">
+            2 users, 250 GB storage, 5 GB max file size — the same limits as Starter, at no cost. You can upgrade to a paid plan anytime from Billing.
+          </p>
+        </div>
       </div>
     </div>
   );

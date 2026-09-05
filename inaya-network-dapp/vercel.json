@@ -21,6 +21,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/no-plan-reminders",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/bridge/cron/index-events",
       "schedule": "*/5 * * * *"
     },
