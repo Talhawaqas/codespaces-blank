@@ -293,6 +293,32 @@ export const ecosystemOverview = {
     },
     {
       number: "13",
+      title: "Healthcare & Legal OS — Two Industries, Same Secure Foundation",
+      blocks: [
+        {
+          type: "lead",
+          text: "Business Workspace now has two specialized modes for organizations with genuinely different needs: Health OS for hospitals and clinics, Legal OS for law firms and legal departments. Both are built on the exact same encryption, audit trail, and permission model as the rest of Business Workspace — just adapted to the records those two industries actually work with.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Need-to-know access, not just department-wide — only staff actually assigned to a patient's care team, or a lawyer actually on a matter's team, can see that record. Being in the right department isn't enough on its own, which is stricter than how the rest of Business Workspace works, on purpose.",
+            "Emergency access that's actually safe — a clinician can get emergency access to a patient outside their normal assignment, but it's logged the instant it happens, expires automatically after a few hours, and a manager is notified to review it. We caught and fixed a real bug during testing where an early version didn't expire on time.",
+            "A legal hold that actually holds — placing a hold on a matter doesn't just show a warning, it genuinely blocks anyone from deleting the related records until the hold is released.",
+            "Trust accounting with one hard rule — the system will never let anyone withdraw more from a client's trust fund than what's actually there, no matter who's asking.",
+            "An AI assistant that knows its limits — it can summarize, search, and draft, but it's built to flatly refuse anything that crosses a real line: diagnosing a patient, giving final legal advice, or agreeing to release a hold or delete evidence.",
+            "The right modules for the right business — a general company never sees Health OS or Legal OS at all; a hospital or law firm picks its type at signup (or changes it later in Settings), and that choice is enforced for real, not just hidden behind a menu a determined user could still reach.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What's live today vs. what's next.",
+          text: "Patient records and legal matters both have a real, working screen in Business Workspace today. Most of the other modules described above — consent, billing, scheduling, evidence, legal holds, contracts, trust accounting — work correctly behind the scenes and are already tested, but don't have their own screen in the app yet; that's the next phase of work, building on logic that's already written rather than starting over. Nothing here is HIPAA-certified, ABA-certified, or legally compliant with any specific jurisdiction — that would require a real legal/compliance review this build doesn't include, and we've been careful not to claim otherwise.",
+        },
+      ],
+    },
+    {
+      number: "14",
       title: "How It All Actually Connects",
       blocks: [
         {

@@ -316,6 +316,26 @@ export const ROADMAP_STAGES = [
     notes:
       "Real and shipped across 9 domains, covered by 19 automated tests including 11 adversarial security scenarios (forged approval, cross-tenant access, replay, expired-proposal execution, prompt injection, and more — all fail safely). Explicitly not yet covered: AI-driven record creation (a new task/contact/etc.), task reassignment, transaction categorization, and drafting/sending customer communications — none of these exist anywhere in the app yet, gated or not, so there's nothing yet to guard. See docs/ai-controlled-actions.md for the full phase-by-phase breakdown.",
   },
+  {
+    number: 10,
+    title: "Healthcare & Legal OS",
+    status: ROADMAP_STATUS.IN_PROGRESS,
+    description:
+      "Two vertical specializations of the Business Workspace — Health OS and Legal OS — for organizations handling patient or client/matter data, picked at company signup or changed later in Settings.",
+    securityStatement: "Patient and matter visibility is assignment-based, not department-based — being in the right department is never enough on its own.",
+    features: [
+      "Patient registry & Patient 360 (Health OS)",
+      "Matter registry & Matter Workspace (Legal OS)",
+      "Care-team / matter-team assignment-based access",
+      "Break-glass emergency access (audited, time-limited, reviewable)",
+      "Legal holds that actually block deletion",
+      "Trust accounting with an overdraft-safety guard",
+      "Vertical-locked API — a general or mismatched-vertical org is rejected, not just hidden from",
+      "Health/Legal AI assistants (read/summarize/draft only — no diagnosis, no legal advice, no filing, no hold release, no evidence deletion)",
+    ],
+    notes:
+      "Patients and Matters are real, tested, and have a working screen in Business Workspace today (IN_PROGRESS, not LIVE, because of what's below). Consent, ROI, break-glass, billing, scheduling, and research (Health OS) plus clients, prospects, evidence, holds, discovery, redaction, deadlines, contracts, entities, trust accounting, and time tracking (Legal OS) all have real, tested backend logic and a real, vertical-locked API route already, but no screen yet — reachable by API only. Nothing on mobile for either vertical yet. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
+  },
 ];
 
 export const VISION = {

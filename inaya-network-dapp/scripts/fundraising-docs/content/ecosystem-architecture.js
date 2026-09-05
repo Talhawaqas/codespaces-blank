@@ -994,5 +994,55 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "32",
+      title: "Healthcare & Legal OS Expansion (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Extends the Sovereign Enterprise OS (§31) into two vertical specializations — Health OS and Legal OS — for organizations handling patient or client/matter data, on Business Workspace's existing org/email identity side only. Reuses the shared OS foundation throughout (getAccessibleScope(), the audit chain, notifications, unified search) rather than building parallel systems — confirmed via codebase audit before writing anything: appendAuditEntry() is fully generic and reused directly for healthcare/legal audit and evidence chain-of-custody by passing new recordType values, no second audit system built.",
+        },
+        {
+          type: "subsection",
+          heading: "Assignment-based access — a genuinely different model from every other module",
+          body: "Department membership grants nothing here. Only an explicit care-team or matter-team assignment (new health_care_team_assignments/legal_matter_team_assignments join collections, mirroring project_members' shape) — or an org-wide healthRole/legalRole — grants patient/matter visibility, wired into getAccessibleScope() itself rather than a parallel resolver. Verified by tests: a department member with no assignment sees zero patients or matters, even though they can see everything else in that same department.",
+        },
+        {
+          type: "note",
+          label: "A real bug this caught.",
+          text: "Break-glass emergency access is implemented as a genuine, time-limited care-team assignment (not a separate bypass code path) — but the first version had no expiry check in getAccessibleScope()'s query, so a '4-hour' emergency grant would have stayed active forever. Caught by writing the expiry test, fixed with a notExpired filter, reverified. Every grant is still audited the instant it happens and flagged for manager review afterward.",
+        },
+        {
+          type: "subsection",
+          heading: "Legal holds that actually block deletion, not just display a warning",
+          body: "retention.js's checkDispositionAllowed() is the guard every deletion call site checks first — verified to return allowed:false for any record tied to a matter under an ACTIVE hold (matched by direct record, matter, or custodian scope), and allowed:true again once released. Written ahead of legal-hold-workflow.js in Phase 1 specifically so every future disposition path gets this protection automatically the moment it's wired in, no second pass needed.",
+        },
+        {
+          type: "subsection",
+          heading: "Trust accounting — one hard safety rule, no compliance claim",
+          body: "trust-accounting.js recomputes a matter's real trust balance and rejects any withdrawal that would exceed it, atomically, before the write — verified with a test attempting to overdraw a real seeded balance. Explicitly no jurisdictional (IOLTA-style) compliance validation is claimed or attempted; this is a financial-safety guard, not a regulatory one, per the SOW's own instruction not to claim compliance without jurisdiction-specific validation.",
+        },
+        {
+          type: "subsection",
+          heading: "AI kept deliberately narrow — the capability isn't exposed, not just discouraged",
+          body: "ai-health-tools.js and ai-legal-tools.js are 100% read/summarize/draft — no propose_* mutation tool exists for either vertical, since SOW §10.28/§11.20's own tool lists are entirely read/summarize/draft to begin with. A free-text query framed as a diagnosis request, a request for final legal advice, or a request to release a hold or delete evidence is refused at the tool layer (a regex guard checked before any summarization runs), not left to a prompt instruction the model could be talked out of — verified with real refusal tests across both tool sets.",
+        },
+        {
+          type: "subsection",
+          heading: "The vertical lock — real enforcement added after an explicit follow-up request",
+          body: "An org's configured business type (general/healthcare/legal) initially only gated which nav items business/page.js showed — a law firm could still call a Health OS API route directly and it would work. requireVertical() (industry-config.js) closes this: every one of 25 Health/Legal API routes now rejects a mismatched org with a real 403, checked immediately after authentication in every handler, fail-closed as 'general' for any org with no vertical configured at all.",
+        },
+        {
+          type: "note",
+          label: "A second real bug this caught.",
+          text: "The automated multi-file edit that inserted requireVertical() into all 25 routes referenced a variable that didn't exist in scope in 14 POST handlers (they only ever destructured body.orgId, not a bare orgId) — a guaranteed 500 crash on every POST call to those routes. Caught by a full re-scan before committing, fixed, and backed by a new permanent test (vertical-lock-wiring.test.mjs) that statically confirms requireMembership() and requireVertical() are always called with the exact same expression across every one of the 25 route files — this exact bug class can't silently ship again. Beyond the test suite: live-verified against the running dev server with three real seeded orgs and real session cookies — a healthcare org's GET and POST both genuinely succeeded, a general org's identical calls were cleanly rejected with 403 (never a crash).",
+        },
+        {
+          type: "note",
+          label: "What's real backend but has no screen yet.",
+          text: "Of roughly 20 domain modules across both verticals, only Patients (Health OS) and Matters (Legal OS) have an actual UI screen today — verified live in a real browser against real seeded data. Consent, ROI, break-glass, billing, scheduling, and research (Health OS) plus clients, prospects, evidence, holds, discovery, redaction, deadlines, contracts, entities, trust accounting, and time tracking (Legal OS) all have real, tested backend logic and a real, vertical-locked API route, but reaching them requires calling the API directly today. Nothing on inaya-mobile for either vertical yet. FHIR/HL7/DICOM/lab/pharmacy/claims/e-filing/legal-research/e-signature/SSO are documented adapter interfaces (adapterStub.js) with an honest configured:false stub, not live integrations — none of these can be genuine without the user's own third-party credentials. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed anywhere.",
+        },
+      ],
+    },
   ],
 };

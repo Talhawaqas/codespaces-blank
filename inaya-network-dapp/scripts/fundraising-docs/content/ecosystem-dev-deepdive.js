@@ -508,5 +508,32 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "18",
+      title: "Healthcare & Legal OS Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["health-patients.js: createPatient, assignCareTeamMember, findDuplicatePatientCandidates, mergePatients", "Patient registry; care-team assignment is the join row getAccessibleScope() reads for visibility"],
+            ["health-clinical-workflow.js: TRANSITIONS (draft→review→sign→lock), amendClinicalRecord", "Locked records are never overwritten — amend creates a new linked record, marks the original AMENDED"],
+            ["health-consent-workflow.js, health-roi-workflow.js, health-breakglass.js", "Consent record/withdraw; ROI request→authorize→review (hands off to export-center.js); break-glass = a real time-limited care-team assignment, not a bypass path"],
+            ["legal-matter-workflow.js: createMatter, assignMatterTeamMember; legal-conflict-workflow.js: searchConflicts, recordConflictCheck", "Matter lifecycle + team assignment; conflict status is always potential/cleared/escalated, never a raw boolean"],
+            ["legal-evidence.js, legal-custody.js: recordCustodyEvent; legal-hold-workflow.js: createLegalHold, releaseLegalHold", "Evidence metadata over an org_documents FK; every custody event chained via appendAuditEntry; holds gate retention.js's checkDispositionAllowed()"],
+            ["trust-accounting.js: recordDeposit, recordWithdrawal, getMatterTrustBalance", "Atomic balance recheck before every withdrawal — no jurisdictional (IOLTA) compliance claimed"],
+            ["ai-health-tools.js, ai-legal-tools.js", "buildXContext/X_TOOL_DECLARATIONS/runXTool/xSystemInstruction — read/summarize/draft only, wired into ai-os-router.js with health_/legal_ prefixes"],
+            ["industry-config.js: requireVertical(orgId, expectedVertical)", "The door-lock — every Health/Legal route calls this right after requireMembership(); 403 on any mismatch, fail-closed as 'general' with no vertical set"],
+            ["25 routes under /api/orgs/health/*, /api/orgs/legal/*", "Patients, consents, ROI, break-glass, appointments, billing, care-team, research (health); clients, prospects, matters, matter-team, conflict-checks, evidence, holds, discovery, redaction, deadlines, contracts, entities, trust-accounting, time-entries, billing (legal)"],
+            ["HealthView.js, LegalView.js (src/components/business/)", "The only two modules with an actual screen today — registry/list + create + detail modal, mirroring CRMView.js's structure"],
+            ["src/lib/integrations/{health,legal}/*Adapter.js + adapterStub.js", "13 documented third-party interfaces (FHIR, HL7, DICOM, lab, pharmacy, claims, e-filing, legal research, e-signature, email, calendar, accounting, SSO) — configured:false until real env credentials are present, never fabricated"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Patient/matter visibility is assignment-based (health_care_team_assignments/legal_matter_team_assignments), a genuinely different model from every other Business Workspace module's department-scoping — wired directly into getAccessibleScope() rather than a parallel resolver. 20 domain modules have real backend + API; only 2 (Patients, Matters) have a screen. Two real bugs were caught and fixed during this build (break-glass had no expiry enforcement; 14 POST route handlers referenced an out-of-scope variable after the vertical-lock was added) — both now covered by permanent regression tests.",
+        },
+      ],
+    },
   ],
 };
