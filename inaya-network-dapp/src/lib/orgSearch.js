@@ -21,7 +21,7 @@
 
 import { getAccessibleScope } from "./document-permissions.js";
 
-const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company"];
+const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company", "legalName", "preferredName"];
 
 function matchText(record, query) {
   const q = query.toLowerCase();
@@ -49,6 +49,14 @@ const ENTITY_SOURCES = [
   { entityType: "invoice", arrayKey: "visibleInvoices", label: (r) => r.invoiceNumber, view: "finance" },
   { entityType: "expense", arrayKey: "visibleExpenses", label: (r) => r.description, view: "finance" },
   { entityType: "employee", arrayKey: "visibleEmployees", label: (r) => r.name || r.memberEmail, view: "hr" },
+  // Healthcare & Legal Expansion SOW, Phase 2/6 — patients/matters are
+  // already assignment-scoped by getAccessibleScope() itself (see that
+  // function's Phase 2/6 block), so this needs no extra permission
+  // handling here, same no-leak-by-construction guarantee as every
+  // other source above.
+  { entityType: "patient", arrayKey: "visiblePatients", label: (r) => r.preferredName || r.legalName, view: "health" },
+  { entityType: "client", arrayKey: "visibleClients", label: (r) => r.name, view: "legal" },
+  { entityType: "matter", arrayKey: "visibleMatters", label: (r) => r.name, view: "legal" },
 ];
 
 /** searchOrg({orgId, membership, email, query, limit}) — one call, every
