@@ -31,12 +31,19 @@ import {
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
 import { assessRisk } from "../../../../lib/fraudRisk.js";
 import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
+import { ORG_VERTICALS } from "../../../../lib/industry-config.js";
 
 export async function POST(req) {
   try {
-    const { orgName, ownerEmail: rawEmail } = await req.json();
+    const { orgName, ownerEmail: rawEmail, vertical: rawVertical } = await req.json();
     const name = String(orgName || "").trim();
     if (!name) return NextResponse.json({ error: "Company name is required." }, { status: 400 });
+    // Healthcare & Legal Expansion SOW — the company-type picker at signup.
+    // Defaults to "general" for any unrecognized/omitted value rather than
+    // rejecting the request, since this field is a UI convenience gate
+    // (which nav items show), not a security boundary -- getAccessibleScope()
+    // and the role gates are what actually enforce access regardless of it.
+    const vertical = ORG_VERTICALS.includes(rawVertical) ? rawVertical : "general";
 
     const existingSession = await getSession(getRawSessionToken(req));
     const ownerEmail = existingSession ? existingSession.email : normalizeEmail(rawEmail);
@@ -77,6 +84,7 @@ export async function POST(req) {
     const orgResult = await orgs.insertOne({
       name,
       ownerEmail,
+      vertical,
       plan: null,
       planUpdatedAt: null,
       requiresPlanSelection: true,

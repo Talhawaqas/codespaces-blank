@@ -74,6 +74,11 @@ export async function createFixedOrRetainerBilling({ orgId, matterId, clientId, 
   return { billing: inserted };
 }
 
+export async function listBillingForMatter(orgId, matterId) {
+  const { legalBilling } = await getOrgCollections();
+  return legalBilling.find({ orgId: toObjectId(orgId), matterId: toObjectId(matterId) }).sort({ createdAt: -1 }).toArray();
+}
+
 export async function transitionLegalBilling({ orgId, billingId, action, actorEmail, membership }) {
   if (!canManageLegal(membership)) return { error: "Only a legal manager or the owner/admin can update billing status.", status: 403 };
   const definition = LEGAL_BILLING_TRANSITIONS[action];

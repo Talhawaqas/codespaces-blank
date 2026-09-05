@@ -75,6 +75,11 @@ export async function addNegotiationVersion({ orgId, contractId, summary, docume
   return { contract: updated };
 }
 
+export async function listContractsForMatter(orgId, matterId) {
+  const { legalContracts } = await getOrgCollections();
+  return legalContracts.find({ orgId: toObjectId(orgId), matterId: toObjectId(matterId) }).sort({ createdAt: -1 }).toArray();
+}
+
 /** Renewal alerting — cron-driven, same pattern as invoice-workflow.js's
  *  markOverdueInvoices and health-scheduling.js's reminders. */
 export async function sendExpirationAlerts(daysAhead = 30) {

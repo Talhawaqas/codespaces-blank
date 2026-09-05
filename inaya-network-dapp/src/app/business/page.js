@@ -397,6 +397,13 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const [mode, setMode] = useState("signin"); // 'signin' | 'create'
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
+  // Healthcare & Legal Expansion SOW — the company-type picker at signup.
+  // Determines which of the Health OS / Legal OS nav items this org will
+  // ever see (Sidebar's NAV_ITEMS filter, business/page.js) — a UI gate,
+  // not the actual security boundary (getAccessibleScope() is), but this
+  // is what stops a generic company's workspace from showing modules that
+  // don't apply to their business at all.
+  const [vertical, setVertical] = useState("general");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -456,7 +463,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
     setFallbackUrl("");
     try {
       if (mode === "create") {
-        const data = await api("/api/orgs/create", { method: "POST", body: JSON.stringify({ orgName, ownerEmail: email }) });
+        const data = await api("/api/orgs/create", { method: "POST", body: JSON.stringify({ orgName, ownerEmail: email, vertical }) });
         setMessage(data.emailSent ? "Company created — check your email for a sign-in link." : "Company created.");
         if (data.loginUrl) setFallbackUrl(data.loginUrl);
       } else {
@@ -498,7 +505,14 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "create" && (
-            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+            <>
+              <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required placeholder="Company name" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <select value={vertical} onChange={(e) => setVertical(e.target.value)} className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)]">
+                <option value="general">General business</option>
+                <option value="healthcare">Healthcare (Health OS)</option>
+                <option value="legal">Legal / Law firm (Legal OS)</option>
+              </select>
+            </>
           )}
           <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="you@company.com" className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
@@ -565,6 +579,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
 // ============================================================
 function CreateCompanyPrompt({ email, onCreated, onLogout }) {
   const [orgName, setOrgName] = useState("");
+  const [vertical, setVertical] = useState("general");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -573,7 +588,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/create", { method: "POST", body: JSON.stringify({ orgName }) });
+      await api("/api/orgs/create", { method: "POST", body: JSON.stringify({ orgName, vertical }) });
       onCreated();
     } catch (err) {
       setError(err.message);
@@ -600,6 +615,11 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           placeholder="Company name"
           className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]"
         />
+        <select value={vertical} onChange={(e) => setVertical(e.target.value)} className="w-full bg-black/45 border border-[var(--inaya-overlay-15)] rounded-xl px-4 py-2.5 text-sm text-[var(--inaya-text-primary)]">
+          <option value="general">General business</option>
+          <option value="healthcare">Healthcare (Health OS)</option>
+          <option value="legal">Legal / Law firm (Legal OS)</option>
+        </select>
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
         </button>
@@ -781,8 +801,8 @@ const NAV_ITEMS = [
   { key: "inventory", label: "Inventory", icon: "inventory" },
   { key: "finance", label: "Finance", icon: "finance" },
   { key: "hr", label: "HR", icon: "hr" },
-  { key: "health", label: "Health OS", icon: "health" },
-  { key: "legal", label: "Legal OS", icon: "legal" },
+  { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare" },
+  { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -792,7 +812,48 @@ const NAV_ITEMS = [
   { key: "settings", label: "Settings", icon: "settings", manageOnly: true },
 ];
 
-function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen, onCloseMobile }) {
+// Healthcare & Legal Expansion SOW — lets an existing org (created before
+// this feature, or simply changing business type) switch which vertical
+// nav items (Health OS / Legal OS) it sees, without needing to recreate
+// the company. Owner/admin only (the settings view itself is already
+// canManage-gated by its caller).
+function OrgVerticalSettings({ orgId, vertical, onChanged }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleChange(newVertical) {
+    setSaving(true);
+    setError("");
+    try {
+      await api("/api/orgs/settings", { method: "PATCH", body: JSON.stringify({ orgId, vertical: newVertical }) });
+      onChanged(newVertical);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm mb-1">Company type</h3>
+      <p className="text-[var(--inaya-text-muted)] text-xs mb-3">Controls which specialized modules (Health OS, Legal OS) show up in the sidebar for everyone in this company.</p>
+      <select
+        value={vertical}
+        onChange={(e) => handleChange(e.target.value)}
+        disabled={saving}
+        className="w-full max-w-xs bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] disabled:opacity-40"
+      >
+        <option value="general">General business</option>
+        <option value="healthcare">Healthcare (Health OS)</option>
+        <option value="legal">Legal / Law firm (Legal OS)</option>
+      </select>
+      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+    </div>
+  );
+}
+
+function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile }) {
   return (
     <>
       {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
@@ -818,7 +879,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, mobileOpen,
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.filter((item) => !item.manageOnly || canManage).map((item) => (
+          {NAV_ITEMS.filter((item) => (!item.manageOnly || canManage) && (!item.verticalOnly || item.verticalOnly === vertical)).map((item) => (
             <button
               key={item.key}
               onClick={() => onNavigate(item.key)}
@@ -864,6 +925,16 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // Healthcare & Legal Expansion SOW — Health OS / Legal OS nav items are
+  // gated on the org's configured vertical, not shown unconditionally.
+  // Defaults to "general" (industry-config.js's own default) until the
+  // real value loads, so there's a one-frame flash of "no health/legal
+  // nav" rather than a flash of nav items that then disappear.
+  const [orgVertical, setOrgVertical] = useState("general");
+  useEffect(() => {
+    api(`/api/orgs/settings?orgId=${orgId}`).then((d) => setOrgVertical(d.profile?.vertical || "general")).catch(() => {});
+  }, [orgId]);
+
   function navigate(view, target) {
     setActiveView(view === "departments" || view === "projects" || view === "documents" ? "browse" : view);
     setBrowseTarget(target || null);
@@ -884,6 +955,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     inventory: "Inventory",
     finance: "Finance",
     hr: "HR",
+    health: "Health OS",
+    legal: "Legal OS",
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
@@ -905,6 +978,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         activeView={activeView}
         onNavigate={navigate}
         canManage={canManage}
+        vertical={orgVertical}
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
       />
@@ -996,7 +1070,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && <AIAssistantView orgId={orgId} />}
           {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
-          {activeView === "settings" && canManage && <TeamView orgId={orgId} email={email} />}
+          {activeView === "settings" && canManage && (
+            <div className="space-y-6">
+              <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
+              <TeamView orgId={orgId} email={email} />
+            </div>
+          )}
         </main>
       </div>
     </div>

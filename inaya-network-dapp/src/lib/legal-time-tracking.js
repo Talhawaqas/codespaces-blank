@@ -69,6 +69,11 @@ export async function lockTimeEntryAsBilled({ orgId, timeEntryId }) {
   );
 }
 
+export async function listTimeEntriesForMatter(orgId, matterId) {
+  const { legalTimeEntries } = await getOrgCollections();
+  return legalTimeEntries.find({ orgId: toObjectId(orgId), matterId: toObjectId(matterId) }).sort({ entryDate: -1 }).toArray();
+}
+
 export async function listUnbilledApprovedTimeEntries(orgId, matterId) {
   const { legalTimeEntries } = await getOrgCollections();
   return legalTimeEntries.find({ orgId: toObjectId(orgId), matterId: toObjectId(matterId), status: "APPROVED", billed: false }).sort({ entryDate: 1 }).toArray();
