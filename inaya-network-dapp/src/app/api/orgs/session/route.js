@@ -39,6 +39,7 @@ export async function GET(req) {
         // in orgs/create/route.js for why that's the intended behavior).
         plan: org?.plan || null,
         requiresPlanSelection: !!org?.requiresPlanSelection,
+        vertical: org?.vertical || "general",
       };
     }),
   });

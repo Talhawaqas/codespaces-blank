@@ -324,17 +324,20 @@ export const ROADMAP_STAGES = [
       "Two vertical specializations of the Business Workspace — Health OS and Legal OS — for organizations handling patient or client/matter data, picked at company signup or changed later in Settings.",
     securityStatement: "Patient and matter visibility is assignment-based, not department-based — being in the right department is never enough on its own.",
     features: [
-      "Patient registry & Patient 360 (Health OS)",
-      "Matter registry & Matter Workspace (Legal OS)",
+      "Patient registry & Patient 360 — appointments, consent, ROI, billing, care team (Health OS)",
+      "Emergency access review & de-identified research datasets (Health OS)",
+      "Matter registry & Matter Workspace — team, deadlines, evidence, holds, discovery, redaction, contracts, time & billing, trust accounting (Legal OS)",
+      "Clients, Prospects, and Corporate Entities (Legal OS)",
       "Care-team / matter-team assignment-based access",
       "Break-glass emergency access (audited, time-limited, reviewable)",
       "Legal holds that actually block deletion",
       "Trust accounting with an overdraft-safety guard",
       "Vertical-locked API — a general or mismatched-vertical org is rejected, not just hidden from",
+      "Mobile screens for both verticals (Health OS, Legal OS)",
       "Health/Legal AI assistants (read/summarize/draft only — no diagnosis, no legal advice, no filing, no hold release, no evidence deletion)",
     ],
     notes:
-      "Patients and Matters are real, tested, and have a working screen in Business Workspace today (IN_PROGRESS, not LIVE, because of what's below). Consent, ROI, break-glass, billing, scheduling, and research (Health OS) plus clients, prospects, evidence, holds, discovery, redaction, deadlines, contracts, entities, trust accounting, and time tracking (Legal OS) all have real, tested backend logic and a real, vertical-locked API route already, but no screen yet — reachable by API only. Nothing on mobile for either vertical yet. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
+      "Every domain module for both verticals now has a real, working screen in Business Workspace — not just Patients and Matters — live-verified end-to-end against the running app, including the trust ledger's server-side overdraft rejection. Mobile now has real screens for both verticals too (Health OS, Legal OS, and their patient/matter detail screens), built against the exact same vertical-locked API routes as web; these are written and syntax-verified but not yet exercised on a live device/simulator, which is the one thing still holding this at IN_PROGRESS rather than LIVE. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
   },
 ];
 
