@@ -39,6 +39,8 @@ import ProcurementView from "../../components/business/ProcurementView";
 import InventoryView from "../../components/business/InventoryView";
 import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
+import HealthView from "../../components/business/HealthView";
+import LegalView from "../../components/business/LegalView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
@@ -620,6 +622,17 @@ function Icon({ path, className = "w-[18px] h-[18px]" }) {
 }
 
 const ICONS = {
+  health: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M12 8v8M8 12h8" />
+    </>
+  ),
+  legal: (
+    <>
+      <path d="M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0l-3-6M19 7l-3 6a3 3 0 0 0 6 0l-3-6" />
+    </>
+  ),
   dashboard: (
     <>
       <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
@@ -768,6 +781,8 @@ const NAV_ITEMS = [
   { key: "inventory", label: "Inventory", icon: "inventory" },
   { key: "finance", label: "Finance", icon: "finance" },
   { key: "hr", label: "HR", icon: "hr" },
+  { key: "health", label: "Health OS", icon: "health" },
+  { key: "legal", label: "Legal OS", icon: "legal" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -973,6 +988,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "inventory" && <InventoryView orgId={orgId} />}
           {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
           {activeView === "hr" && <HRView orgId={orgId} email={email} />}
+          {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
