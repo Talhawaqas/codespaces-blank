@@ -31,6 +31,8 @@
 import { Type } from "@google/genai";
 import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, businessSystemInstruction } from "./ai-business-tools.js";
 import { buildSecurityContext, runSecurityTool, SECURITY_TOOL_DECLARATIONS } from "./ai-security-tools.js";
+import { buildHealthContext, runHealthTool, HEALTH_TOOL_DECLARATIONS, healthSystemInstruction } from "./ai-health-tools.js";
+import { buildLegalContext, runLegalTool, LEGAL_TOOL_DECLARATIONS, legalSystemInstruction } from "./ai-legal-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
 
 const DOCS_TOOL_DECLARATION = {
@@ -72,11 +74,20 @@ function withPrefix(declarations, prefix) {
 export async function buildOsContext(input) {
   if (input?.scope === "org") {
     const { orgId, membership, email } = input;
-    const [businessCtx, securityCtx] = await Promise.all([
+    const [businessCtx, securityCtx, healthCtx, legalCtx] = await Promise.all([
       buildBusinessContext({ orgId, membership, email }),
       buildSecurityContext({ identityId: email }).catch(() => null),
+      // Healthcare & Legal Expansion SOW, Phase 5/9 — built unconditionally
+      // for every org (cheap: it's just getAccessibleScope(), already
+      // computed once per request for business/security too) rather than
+      // gated on the org's configured vertical, since a member of a
+      // "general" org with zero patients/matters just gets empty scope
+      // arrays and every health_/legal_ tool naturally returns empty
+      // results — no separate vertical-detection branch needed here.
+      buildHealthContext({ orgId, membership, email }).catch(() => null),
+      buildLegalContext({ orgId, membership, email }).catch(() => null),
     ]);
-    return { scope: "org", businessCtx, securityCtx };
+    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx };
   }
   if (input?.scope === "wallet") {
     const { walletAddress } = input;
@@ -88,7 +99,12 @@ export async function buildOsContext(input) {
 
 export function getOsToolDeclarations(scope) {
   if (scope === "org") {
-    return [...withPrefix(BUSINESS_TOOL_DECLARATIONS, "business"), ...withPrefix(SECURITY_TOOL_DECLARATIONS, "security")];
+    return [
+      ...withPrefix(BUSINESS_TOOL_DECLARATIONS, "business"),
+      ...withPrefix(SECURITY_TOOL_DECLARATIONS, "security"),
+      ...withPrefix(HEALTH_TOOL_DECLARATIONS, "health"),
+      ...withPrefix(LEGAL_TOOL_DECLARATIONS, "legal"),
+    ];
   }
   if (scope === "wallet") {
     return [DOCS_TOOL_DECLARATION, ...withPrefix(SECURITY_TOOL_DECLARATIONS, "security")];
@@ -102,6 +118,8 @@ export async function runOsTool(name, args, ctx) {
   if (name === "search_docs") return searchDocs(args);
   if (name.startsWith("business_") && ctx.businessCtx) return runBusinessTool(name.slice("business_".length), args, ctx.businessCtx);
   if (name.startsWith("security_") && ctx.securityCtx) return runSecurityTool(name.slice("security_".length), args, ctx.securityCtx);
+  if (name.startsWith("health_") && ctx.healthCtx) return runHealthTool(name.slice("health_".length), args, ctx.healthCtx);
+  if (name.startsWith("legal_") && ctx.legalCtx) return runLegalTool(name.slice("legal_".length), args, ctx.legalCtx);
   return { error: `Unknown or unavailable tool: ${name}` };
 }
 
@@ -115,7 +133,8 @@ export async function runOsTool(name, args, ctx) {
 export function osSystemInstruction({ scope, orgName, role, isManager }) {
   if (scope === "org") {
     return businessSystemInstruction({ orgName, role, isManager }) +
-      `\n\nYou ALSO have Security Layer tools (prefixed security_) for questions about threat status, security events, and how the Security Layer works — ground those answers only in what the tools return, exactly as strictly as your business tools, and never blend a documented policy claim with a live-data claim without saying which is which. If a question isn't covered by any available tool, say so rather than guessing.`;
+      `\n\nYou ALSO have Security Layer tools (prefixed security_) for questions about threat status, security events, and how the Security Layer works — ground those answers only in what the tools return, exactly as strictly as your business tools, and never blend a documented policy claim with a live-data claim without saying which is which. If a question isn't covered by any available tool, say so rather than guessing.` +
+      `\n\nYou ALSO have Health OS tools (prefixed health_) and Legal OS tools (prefixed legal_), for organizations running those verticals. ${healthSystemInstruction()}\n\n${legalSystemInstruction()}`;
   }
   return `You are the Inaya OS Assistant for a connected wallet — you help with general questions about how Inaya works (via search_docs, Inaya's indexed documentation) and this wallet's own security status (via the security_ tools: recent events, threat lookups, reputation detail).
 
