@@ -68,3 +68,52 @@ export function isDepartmentManager(membership, departmentId) {
   if (canManageOrg(membership)) return true;
   return (membership.managedDepartmentIds || []).some((id) => id.toString() === departmentId.toString());
 }
+
+// ============================================================
+// Healthcare & Legal Expansion SOW — role model
+//
+// healthRole/legalRole are new, OPTIONAL fields on the same org_members
+// document, following financeRole/hrRole's exact precedent above: never a
+// restructure of the primary role field, just another orthogonal axis a
+// member may or may not have set. Two-tier manager/staff shape copied
+// verbatim from canManageFinance/canAccessFinance.
+// ============================================================
+
+export function canManageHealth(membership) {
+  return canManageOrg(membership) || membership?.healthRole === "manager";
+}
+
+export function canAccessHealthRecords(membership) {
+  return canManageHealth(membership) || membership?.healthRole === "staff";
+}
+
+export function canManageLegal(membership) {
+  return canManageOrg(membership) || membership?.legalRole === "manager";
+}
+
+export function canAccessLegalMatters(membership) {
+  return canManageLegal(membership) || membership?.legalRole === "staff";
+}
+
+/** Patient/matter visibility is assignment-based, not department-based —
+ *  a care team or matter team can span departments, and department
+ *  membership alone must not grant patient/matter access (SOW's
+ *  minimum-necessary principle). `assignments` is the caller's own
+ *  already-fetched list of {patientId, email} rows from
+ *  health_care_team_assignments; org owner/admin bypass as usual. */
+export function isCareTeamMember(membership, patientId, assignments) {
+  if (!membership) return false;
+  if (canManageOrg(membership)) return true;
+  return (assignments || []).some(
+    (a) => a.patientId?.toString() === patientId?.toString() && a.email === membership.email
+  );
+}
+
+/** Same shape as isCareTeamMember, for legal_matter_team_assignments rows. */
+export function isMatterTeamMember(membership, matterId, assignments) {
+  if (!membership) return false;
+  if (canManageOrg(membership)) return true;
+  return (assignments || []).some(
+    (a) => a.matterId?.toString() === matterId?.toString() && a.email === membership.email
+  );
+}

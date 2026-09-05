@@ -46,9 +46,18 @@ import {
   canManageHR,
   canAccessHR,
   isDepartmentManager,
+  canManageHealth,
+  canAccessHealthRecords,
+  canManageLegal,
+  canAccessLegalMatters,
+  isCareTeamMember,
+  isMatterTeamMember,
 } from "./orgGates.js";
 
-export { canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager };
+export {
+  canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager,
+  canManageHealth, canAccessHealthRecords, canManageLegal, canAccessLegalMatters, isCareTeamMember, isMatterTeamMember,
+};
 
 export const ROLES = ["owner", "admin", "member"];
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -149,6 +158,62 @@ export async function getOrgCollections() {
     // SETTLEMENT_DELAY) must pass before a cron executor calls the real
     // workflow function. See src/lib/ai-action-requests.js.
     aiActionRequests: db.collection("ai_action_requests"),
+    // Healthcare & Legal Expansion SOW, Phase 1 (Shared Industry Framework).
+    // Generic, vertical-agnostic org-governance records — not health/legal
+    // specific themselves, just the foundation both verticals (and any
+    // future one) build compliance-adjacent tooling on top of. See
+    // src/lib/classification.js, policy-engine.js, incidents.js,
+    // retention.js, export-center.js, risk-register.js,
+    // vendor-management.js, training.js for the logic layered on these.
+    industryPolicies: db.collection("industry_policies"),
+    dataClassifications: db.collection("data_classifications"),
+    incidents: db.collection("incidents"),
+    retentionPolicies: db.collection("retention_policies"),
+    riskRegister: db.collection("risk_register"),
+    vendorRecords: db.collection("vendor_records"),
+    trainingRecords: db.collection("training_records"),
+    exportRequests: db.collection("export_requests"),
+    // Healthcare & Legal Expansion SOW, Phase 2 (Healthcare Core). Clinical
+    // files themselves are NOT a new storage table — health_clinical_records
+    // holds only domain metadata + a documentId pointer into the existing
+    // org_documents (same encrypt/shard/pin pipeline every other document
+    // already uses). health_care_team_assignments is the join table that
+    // makes patient visibility assignment-based rather than purely
+    // department-based (mirrors project_members' shape).
+    healthPatients: db.collection("health_patients"),
+    healthEncounters: db.collection("health_encounters"),
+    healthProviders: db.collection("health_providers"),
+    healthCareTeams: db.collection("health_care_teams"),
+    healthCareTeamAssignments: db.collection("health_care_team_assignments"),
+    healthAppointments: db.collection("health_appointments"),
+    healthReferrals: db.collection("health_referrals"),
+    healthCarePlans: db.collection("health_care_plans"),
+    healthClinicalRecords: db.collection("health_clinical_records"),
+    healthConsents: db.collection("health_consents"),
+    healthRoiRequests: db.collection("health_roi_requests"),
+    healthAccessEvents: db.collection("health_access_events"),
+    // Healthcare & Legal Expansion SOW, Phase 6 (Legal Core). Same storage
+    // indirection: legal_evidence (Phase 7) holds metadata + a documentId
+    // pointer, never a parallel storage system.
+    legalClients: db.collection("legal_clients"),
+    legalProspects: db.collection("legal_prospects"),
+    legalMatters: db.collection("legal_matters"),
+    legalParties: db.collection("legal_parties"),
+    legalConflictChecks: db.collection("legal_conflict_checks"),
+    legalEngagements: db.collection("legal_engagements"),
+    legalMatterTeamAssignments: db.collection("legal_matter_team_assignments"),
+    // Phase 7 (Legal Evidence & Litigation)
+    legalEvidence: db.collection("legal_evidence"),
+    legalChainEvents: db.collection("legal_chain_events"),
+    legalHolds: db.collection("legal_holds"),
+    legalDiscovery: db.collection("legal_discovery"),
+    legalDeadlines: db.collection("legal_deadlines"),
+    // Phase 8 (Legal Operations)
+    legalContracts: db.collection("legal_contracts"),
+    legalTimeEntries: db.collection("legal_time_entries"),
+    legalBilling: db.collection("legal_billing"),
+    legalEntities: db.collection("legal_entities"),
+    legalTrustLedger: db.collection("legal_trust_ledger"),
   };
 }
 
@@ -163,6 +228,15 @@ export async function ensureOrgIndexes() {
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
     auditChainEntries, auditChainHeads, aiActionRequests,
+    industryPolicies, dataClassifications, incidents, retentionPolicies,
+    riskRegister, vendorRecords, trainingRecords, exportRequests,
+    healthPatients, healthEncounters, healthProviders, healthCareTeams, healthCareTeamAssignments,
+    healthAppointments, healthReferrals, healthCarePlans, healthClinicalRecords,
+    healthConsents, healthRoiRequests, healthAccessEvents,
+    legalClients, legalProspects, legalMatters, legalParties, legalConflictChecks,
+    legalEngagements, legalMatterTeamAssignments, legalEvidence, legalChainEvents,
+    legalHolds, legalDiscovery, legalDeadlines, legalContracts, legalTimeEntries,
+    legalBilling, legalEntities, legalTrustLedger,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -237,6 +311,60 @@ export async function ensureOrgIndexes() {
     aiActionRequests.createIndex({ orgId: 1, status: 1 }),
     aiActionRequests.createIndex({ orgId: 1, unlockAt: 1 }),
     aiActionRequests.createIndex({ idempotencyKey: 1 }, { unique: true }),
+    // Healthcare & Legal Expansion SOW, Phase 1 (Shared Industry Framework)
+    industryPolicies.createIndex({ orgId: 1, key: 1 }, { unique: true }),
+    dataClassifications.createIndex({ orgId: 1, key: 1 }, { unique: true }),
+    incidents.createIndex({ orgId: 1, status: 1 }),
+    incidents.createIndex({ orgId: 1, severity: 1, createdAt: 1 }),
+    retentionPolicies.createIndex({ orgId: 1, recordType: 1 }, { unique: true }),
+    riskRegister.createIndex({ orgId: 1, status: 1 }),
+    riskRegister.createIndex({ orgId: 1, reviewDate: 1 }),
+    vendorRecords.createIndex({ orgId: 1, name: 1 }),
+    trainingRecords.createIndex({ orgId: 1, memberEmail: 1 }),
+    trainingRecords.createIndex({ orgId: 1, policyKey: 1 }),
+    exportRequests.createIndex({ orgId: 1, status: 1 }),
+    exportRequests.createIndex({ orgId: 1, requestedByEmail: 1, createdAt: 1 }),
+    // Healthcare & Legal Expansion SOW, Phase 2 (Healthcare Core)
+    healthPatients.createIndex({ orgId: 1, status: 1 }),
+    healthEncounters.createIndex({ orgId: 1, patientId: 1, createdAt: 1 }),
+    healthProviders.createIndex({ orgId: 1, departmentId: 1 }),
+    healthCareTeams.createIndex({ orgId: 1, patientId: 1 }),
+    healthCareTeamAssignments.createIndex({ orgId: 1, patientId: 1, email: 1 }, { unique: true }),
+    healthCareTeamAssignments.createIndex({ orgId: 1, email: 1 }),
+    healthAppointments.createIndex({ orgId: 1, patientId: 1, startAt: 1 }),
+    healthAppointments.createIndex({ orgId: 1, providerId: 1, startAt: 1 }),
+    healthReferrals.createIndex({ orgId: 1, patientId: 1 }),
+    healthCarePlans.createIndex({ orgId: 1, patientId: 1 }),
+    healthClinicalRecords.createIndex({ orgId: 1, patientId: 1, createdAt: 1 }),
+    healthClinicalRecords.createIndex({ orgId: 1, documentId: 1 }),
+    healthConsents.createIndex({ orgId: 1, patientId: 1, status: 1 }),
+    healthRoiRequests.createIndex({ orgId: 1, patientId: 1, status: 1 }),
+    healthAccessEvents.createIndex({ orgId: 1, patientId: 1, timestamp: 1 }),
+    // Phase 6 (Legal Core)
+    legalClients.createIndex({ orgId: 1, status: 1 }),
+    legalProspects.createIndex({ orgId: 1, status: 1 }),
+    legalMatters.createIndex({ orgId: 1, clientId: 1 }),
+    legalMatters.createIndex({ orgId: 1, status: 1 }),
+    legalParties.createIndex({ orgId: 1, matterId: 1 }),
+    legalConflictChecks.createIndex({ orgId: 1, createdAt: 1 }),
+    legalEngagements.createIndex({ orgId: 1, matterId: 1 }),
+    legalMatterTeamAssignments.createIndex({ orgId: 1, matterId: 1, email: 1 }, { unique: true }),
+    legalMatterTeamAssignments.createIndex({ orgId: 1, email: 1 }),
+    // Phase 7 (Legal Evidence & Litigation)
+    legalEvidence.createIndex({ orgId: 1, matterId: 1 }),
+    legalEvidence.createIndex({ orgId: 1, documentId: 1 }),
+    legalChainEvents.createIndex({ orgId: 1, evidenceId: 1, timestamp: 1 }),
+    legalHolds.createIndex({ orgId: 1, status: 1 }),
+    legalHolds.createIndex({ orgId: 1, matterId: 1 }),
+    legalDiscovery.createIndex({ orgId: 1, matterId: 1 }),
+    legalDeadlines.createIndex({ orgId: 1, matterId: 1, dueAt: 1 }),
+    // Phase 8 (Legal Operations)
+    legalContracts.createIndex({ orgId: 1, status: 1 }),
+    legalTimeEntries.createIndex({ orgId: 1, matterId: 1, lawyerEmail: 1 }),
+    legalTimeEntries.createIndex({ orgId: 1, billed: 1 }),
+    legalBilling.createIndex({ orgId: 1, clientId: 1, status: 1 }),
+    legalEntities.createIndex({ orgId: 1 }),
+    legalTrustLedger.createIndex({ orgId: 1, matterId: 1, createdAt: 1 }),
   ]);
 
   indexesEnsured = true;

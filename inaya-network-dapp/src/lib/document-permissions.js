@@ -54,7 +54,7 @@
 // against a maxUses-limited link race-safe without extra locking.
 
 import { randomBytes, createHash } from "node:crypto";
-import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, toObjectId } from "./orgs.js";
+import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, canAccessHealthRecords, canAccessLegalMatters, toObjectId } from "./orgs.js";
 import { logDocumentActivity } from "./activity-log.js";
 
 export const PERMISSION_LEVELS = ["VIEW", "EDIT", "MANAGE"];
@@ -169,6 +169,8 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     departments, projects, orgDocuments, projectMembers, tasks,
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders, warehouses, products,
     invoices, expenses, employees, leaveRequests,
+    healthPatients, healthEncounters, healthCareTeamAssignments,
+    legalClients, legalMatters, legalMatterTeamAssignments,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -275,10 +277,60 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     ? await leaveRequests.find({ orgId: orgObjectId, employeeId: { $in: visibleEmployeeIds } }).sort({ createdAt: -1 }).toArray()
     : [];
 
+  // Healthcare & Legal Expansion SOW, Phase 2/6 — patient/matter visibility
+  // is ASSIGNMENT-based, not department-based (SOW's minimum-necessary
+  // principle: department membership alone must not grant patient/matter
+  // access — a care team or matter team can span departments). This is a
+  // different shape from the Finance/HR block above: there's no
+  // department-scoped query at all here, only a role gate (org-wide
+  // visibility for health/legal managers) OR an explicit assignment (a
+  // care-team/matter-team member sees only their own assigned
+  // patients/matters, mirroring the HR self-record carve-out's shape but
+  // for many possible records instead of exactly one).
+  const canSeeAllPatients = canAccessHealthRecords(membership);
+  const canSeeAllMatters = canAccessLegalMatters(membership);
+
+  // notExpired excludes a break-glass (or any future time-limited) grant
+  // once its expiresAt has passed — an ordinary permanent assignment has
+  // no expiresAt field at all and always matches the $exists:false arm.
+  // Without this filter, a 4-hour break-glass grant would never actually
+  // stop granting access, silently turning an emergency exception into a
+  // permanent one.
+  const now = new Date().toISOString();
+  const notExpired = { $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: now } }] };
+  const [assignedPatientIds, assignedMatterIds] = await Promise.all([
+    !canSeeAllPatients && email ? healthCareTeamAssignments.find({ orgId: orgObjectId, email, ...notExpired }).toArray() : [],
+    !canSeeAllMatters && email ? legalMatterTeamAssignments.find({ orgId: orgObjectId, email, ...notExpired }).toArray() : [],
+  ]);
+
+  const [visiblePatients, visibleClients, visibleMatters] = await Promise.all([
+    canSeeAllPatients
+      ? healthPatients.find({ orgId: orgObjectId, deletedAt: null }).sort({ createdAt: -1 }).toArray()
+      : assignedPatientIds.length
+      ? healthPatients.find({ orgId: orgObjectId, deletedAt: null, _id: { $in: assignedPatientIds.map((a) => a.patientId) } }).sort({ createdAt: -1 }).toArray()
+      : [],
+    canSeeAllMatters ? legalClients.find({ orgId: orgObjectId, deletedAt: null }).sort({ createdAt: -1 }).toArray() : [],
+    canSeeAllMatters
+      ? legalMatters.find({ orgId: orgObjectId, deletedAt: null }).sort({ createdAt: -1 }).toArray()
+      : assignedMatterIds.length
+      ? legalMatters.find({ orgId: orgObjectId, deletedAt: null, _id: { $in: assignedMatterIds.map((a) => a.matterId) } }).sort({ createdAt: -1 }).toArray()
+      : [],
+  ]);
+
+  // Encounters follow their patient's visibility exactly — no separate
+  // role check, since an encounter with no visible patient is meaningless
+  // on its own (same "follows the parent record" principle documents use
+  // via accessLevel rather than having their own independent grant table).
+  const visiblePatientIds = visiblePatients.map((p) => p._id);
+  const visibleEncounters = visiblePatientIds.length
+    ? await healthEncounters.find({ orgId: orgObjectId, patientId: { $in: visiblePatientIds } }).sort({ createdAt: -1 }).toArray()
+    : [];
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
     visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
+    visiblePatients, visibleEncounters, visibleClients, visibleMatters,
   };
 }
 

@@ -41,7 +41,15 @@ export async function ensureNotificationIndexes() {
   indexesEnsured = true;
 }
 
-export const NOTIFICATION_CATEGORIES = ["security", "approval", "ai", "data", "business", "web3", "system"];
+export const NOTIFICATION_CATEGORIES = [
+  "security", "approval", "ai", "data", "business", "web3", "system",
+  // Healthcare & Legal Expansion SOW, Phase 1 — these four have no exact
+  // existing-category fit (retention/incident/compliance-control/external-
+  // share are distinct concerns from a generic "security" or "approval"
+  // event); everything else the SOW asks for (patient workflow, consent,
+  // matter deadline, etc.) maps onto the categories above with an exact fit.
+  "retention", "incident", "compliance_control", "external_share",
+];
 
 /** Idempotent on dedupeKey — a repeat call with the same key upserts into
  *  the existing notification instead of creating a duplicate (matches
