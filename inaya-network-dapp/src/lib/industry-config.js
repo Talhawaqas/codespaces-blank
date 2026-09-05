@@ -8,12 +8,15 @@
 // document, same collection every other module already reads via
 // `orgs.findOne({_id: orgObjectId})`.
 //
-// `industry`/`vertical` is what gates the Health/Legal NAV_ITEMS entries
-// in business/page.js (an org not configured as "healthcare" or "legal"
-// simply never sees those nav items — this is a UI convenience gate, NOT
-// a security boundary; the real security boundary is getAccessibleScope()
-// + classification.js + the role gates, which apply regardless of what
-// nav items are shown).
+// `industry`/`vertical` gates the Health/Legal NAV_ITEMS entries in
+// business/page.js (an org not configured as "healthcare" or "legal"
+// simply never sees those nav items) AND, via requireVertical() below,
+// every Health/Legal API route — a law firm or general business cannot
+// reach a Health OS route (or vice versa) even by calling the API
+// directly, not just by the nav item being hidden. This is layered on
+// TOP of, not instead of, getAccessibleScope() + classification.js + the
+// role gates — those still govern which specific records within an
+// approved vertical a given member can see.
 
 import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
 
@@ -64,4 +67,23 @@ export async function updateOrgProfile({ orgId, updates, actorEmail, membership 
   );
   if (!updated) return { error: "Organization not found.", status: 404 };
   return { org: updated };
+}
+
+const VERTICAL_LABELS = { healthcare: "Health OS", legal: "Legal OS" };
+
+/** The hard door-lock, called from every Health/Legal API route right
+ *  after requireMembership(). Returns { error, status: 403 } unless the
+ *  org's configured vertical matches exactly — a "general" org, or a
+ *  legal org calling a health route (or vice versa), is rejected before
+ *  any domain logic runs, regardless of the caller's role within the
+ *  org. Fails closed: an org with no profile at all (shouldn't happen
+ *  once getOrgProfile's defaults apply, but checked explicitly) is
+ *  treated as "general" — never treated as a match by accident. */
+export async function requireVertical(orgId, expectedVertical) {
+  const profile = await getOrgProfile(orgId);
+  const actual = profile?.vertical || "general";
+  if (actual !== expectedVertical) {
+    return { error: `This organization isn't configured for ${VERTICAL_LABELS[expectedVertical] || expectedVertical} — an owner/admin can change this under Settings.`, status: 403 };
+  }
+  return { ok: true };
 }

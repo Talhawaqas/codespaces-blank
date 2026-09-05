@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { createDeadline, confirmDeadline, listDeadlinesForMatter } from "../../../../../lib/legal-calendar.js";
 
 function serialize(d) {
@@ -21,6 +22,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const deadlines = await listDeadlinesForMatter(orgId, matterId);
     return NextResponse.json({ deadlines: deadlines.map(serialize) });
@@ -39,6 +43,9 @@ export async function POST(req) {
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const verticalCheck = await requireVertical(body.orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
+
     const result = await createDeadline({ ...body, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ deadline: serialize(result.deadline) });
@@ -56,6 +63,9 @@ export async function PATCH(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await confirmDeadline({ orgId, deadlineId, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

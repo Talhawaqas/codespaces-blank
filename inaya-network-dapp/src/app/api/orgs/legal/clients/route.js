@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { createClient } from "../../../../../lib/legal-clients.js";
 
@@ -22,6 +23,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     // Clients are visible to any legal-role member org-wide (canAccessLegalMatters
     // gates matters/assignment, but clients themselves aren't assignment-scoped
@@ -51,6 +55,9 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await createClient({ ...body, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

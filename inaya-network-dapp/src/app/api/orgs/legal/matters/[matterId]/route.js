@@ -9,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../../lib/industry-config.js";
 import { getAccessibleScope } from "../../../../../../lib/document-permissions.js";
 import { getMatterWorkspace } from "../../../../../../lib/legal-matter-workflow.js";
 import { listDeadlinesForMatter } from "../../../../../../lib/legal-calendar.js";
@@ -24,6 +25,9 @@ export async function GET(req, { params }) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const scope = await getAccessibleScope({ orgId, membership: auth.membership, email: auth.session.email });
     const matter = scope.visibleMatters.find((m) => m._id.toString() === matterId);

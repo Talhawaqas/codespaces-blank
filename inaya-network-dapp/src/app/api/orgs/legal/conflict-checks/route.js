@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { searchConflicts, recordConflictCheck } from "../../../../../lib/legal-conflict-workflow.js";
 
 export async function GET(req) {
@@ -16,6 +17,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const { matches } = await searchConflicts({ orgId, names });
     return NextResponse.json({ matches });
@@ -33,6 +37,9 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(body.orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await recordConflictCheck({ ...body, reviewerEmail: auth.session.email, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

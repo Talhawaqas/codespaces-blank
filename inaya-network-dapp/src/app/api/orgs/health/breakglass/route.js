@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { grantBreakGlassAccess, listUnreviewedBreakGlassGrants, reviewBreakGlassGrant } from "../../../../../lib/health-breakglass.js";
 
 export async function POST(req) {
@@ -15,6 +16,9 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await grantBreakGlassAccess({ orgId, patientId, actorEmail: auth.session.email, reason, hours });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
@@ -35,6 +39,9 @@ export async function GET(req) {
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
+
     const grants = await listUnreviewedBreakGlassGrants(orgId);
     return NextResponse.json({ grants: grants.map((g) => ({ id: g._id.toString(), patientId: g.patientId.toString(), email: g.email, reason: g.reason, expiresAt: g.expiresAt, createdAt: g.createdAt })) });
   } catch (err) {
@@ -51,6 +58,9 @@ export async function PATCH(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await reviewBreakGlassGrant({ orgId, assignmentId, actorEmail: auth.session.email, reviewNotes });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

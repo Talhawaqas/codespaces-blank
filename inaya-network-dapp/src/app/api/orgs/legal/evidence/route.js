@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { acquireEvidence, transferEvidence, listEvidenceForMatter } from "../../../../../lib/legal-evidence.js";
 import { listCustodyEvents } from "../../../../../lib/legal-custody.js";
@@ -24,6 +25,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const scope = await getAccessibleScope({ orgId, membership: auth.membership, email: auth.session.email });
     if (!scope.visibleMatters.some((m) => m._id.toString() === matterId)) {
@@ -51,6 +55,9 @@ export async function POST(req) {
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const verticalCheck = await requireVertical(body.orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
+
     const result = await acquireEvidence({ ...body, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ evidence: serialize(result.evidence) });
@@ -68,6 +75,9 @@ export async function PATCH(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await transferEvidence({ orgId, evidenceId, destination, reason, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

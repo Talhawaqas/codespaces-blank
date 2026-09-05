@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { createResearchDataset, listDatasetVersions } from "../../../../../lib/health-research.js";
 
 function serialize(d) {
@@ -21,6 +22,9 @@ export async function GET(req) {
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
+
     const versions = await listDatasetVersions(orgId, name);
     return NextResponse.json({ versions: versions.map(serialize) });
   } catch (err) {
@@ -37,6 +41,9 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, body.orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(body.orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await createResearchDataset({ ...body, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

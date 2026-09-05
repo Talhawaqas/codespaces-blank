@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { recordDeposit, recordWithdrawal, getMatterTrustBalance, listTransactionHistory } from "../../../../../lib/trust-accounting.js";
 
 function serialize(e) {
@@ -20,6 +21,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const [history, balance] = await Promise.all([listTransactionHistory(orgId, matterId), getMatterTrustBalance(orgId, matterId)]);
     return NextResponse.json({ transactions: history.map(serialize), balance });
@@ -38,6 +42,9 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "legal");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = type === "deposit"
       ? await recordDeposit({ orgId, matterId, amount, source: body.source, actorEmail: auth.session.email, membership: auth.membership })

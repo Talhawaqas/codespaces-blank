@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../lib/industry-config.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { scheduleAppointment, updateAppointmentStatus, listAppointmentsForPatient } from "../../../../../lib/health-scheduling.js";
 
@@ -22,6 +23,9 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const scope = await getAccessibleScope({ orgId, membership: auth.membership, email: auth.session.email });
     if (!scope.visiblePatients.some((p) => p._id.toString() === patientId)) {
@@ -44,6 +48,9 @@ export async function POST(req) {
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const verticalCheck = await requireVertical(body.orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
+
     const result = await scheduleAppointment({ ...body, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ appointment: serialize(result.appointment) });
@@ -61,6 +68,9 @@ export async function PATCH(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await updateAppointmentStatus({ orgId, appointmentId, status, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

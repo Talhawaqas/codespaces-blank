@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.js";
+import { requireVertical } from "../../../../../../lib/industry-config.js";
 import { getAccessibleScope } from "../../../../../../lib/document-permissions.js";
 import { listClinicalRecordsForPatient } from "../../../../../../lib/health-clinical-workflow.js";
 import { listAppointmentsForPatient } from "../../../../../../lib/health-scheduling.js";
@@ -29,6 +30,9 @@ export async function GET(req, { params }) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const verticalCheck = await requireVertical(orgId, "healthcare");
+    if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const scope = await getAccessibleScope({ orgId, membership: auth.membership, email: auth.session.email });
     const patient = scope.visiblePatients.find((p) => p._id.toString() === patientId);
