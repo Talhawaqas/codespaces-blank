@@ -306,6 +306,27 @@ export async function getOrgCollections() {
     fundraisingProspects: db.collection("fundraising_prospects"),
     exits: db.collection("exits"),
     spvs: db.collection("spvs"),
+    // Financial Services & Regulated Enterprise SOW, Phase 5 (Security &
+    // Resilience) — cross-vertical, not gated to any one vertical (every
+    // org type has vendors, ICT assets, and needs resilience/privileged-
+    // access controls). Deliberately does NOT touch vendorRecords'
+    // existing collection name/shape wholesale -- vendor-management.js is
+    // extended in place (new fields, same collection) rather than forked.
+    // privilegedSessions covers BOTH §62 (planned elevation, approved in
+    // advance) and §63 (break-glass, granted immediately then reviewed
+    // after) in one collection -- same underlying "time-limited elevated
+    // session" record, just a different `grantType` and approval timing,
+    // matching health-breakglass.js's precedent of a real assignment row
+    // rather than a second bypass code path.
+    ictAssets: db.collection("ict_assets"),
+    criticalFunctions: db.collection("critical_functions"),
+    continuityPlans: db.collection("continuity_plans"),
+    drRunbooks: db.collection("dr_runbooks"),
+    drTests: db.collection("dr_tests"),
+    resilienceTests: db.collection("resilience_tests"),
+    dataResidencyPolicies: db.collection("data_residency_policies"),
+    privilegedSessions: db.collection("privileged_sessions"),
+    sodRules: db.collection("sod_rules"),
   };
 }
 
@@ -340,6 +361,8 @@ export async function ensureOrgIndexes() {
     privateCapitalDeals, dealScorecards, diligenceRequests, termSheets, capTableSnapshots,
     portfolioCompanies, boardMeetings, boardResolutions, valueCreationPlans,
     portfolioKpiDefinitions, portfolioKpiValues, fundraisingProspects, exits, spvs,
+    ictAssets, criticalFunctions, continuityPlans, drRunbooks, drTests,
+    resilienceTests, dataResidencyPolicies, privilegedSessions, sodRules,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -526,6 +549,16 @@ export async function ensureOrgIndexes() {
     fundraisingProspects.createIndex({ orgId: 1, fundId: 1, stage: 1 }),
     exits.createIndex({ orgId: 1, portfolioCompanyId: 1 }),
     spvs.createIndex({ orgId: 1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 5 (Security & Resilience)
+    ictAssets.createIndex({ orgId: 1, type: 1 }),
+    criticalFunctions.createIndex({ orgId: 1 }),
+    continuityPlans.createIndex({ orgId: 1, functionId: 1 }),
+    drRunbooks.createIndex({ orgId: 1, functionId: 1 }),
+    drTests.createIndex({ orgId: 1, runbookId: 1, testedAt: -1 }),
+    resilienceTests.createIndex({ orgId: 1, testType: 1, testedAt: -1 }),
+    dataResidencyPolicies.createIndex({ orgId: 1 }, { unique: true }),
+    privilegedSessions.createIndex({ orgId: 1, status: 1 }),
+    sodRules.createIndex({ orgId: 1, ruleType: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;

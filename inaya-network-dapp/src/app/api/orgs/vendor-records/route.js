@@ -7,8 +7,17 @@ import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
 import { createVendor, updateVendorSecurityReview, listVendors } from "../../../../lib/vendor-management.js";
 
+// Financial Services & Regulated Enterprise SOW, Phase 5 (§64-66) --
+// extended to surface the onboarding state machine + criticality this
+// route's callers now depend on (the Trust & Resilience UI's next-action
+// buttons read onboardingStatus directly).
 function serialize(v) {
-  return { id: v._id.toString(), name: v.name, service: v.service, securityReviewStatus: v.securityReviewStatus, risk: v.risk, renewalDate: v.renewalDate };
+  return {
+    id: v._id.toString(), name: v.name, service: v.service, criticality: v.criticality,
+    securityReviewStatus: v.securityReviewStatus, risk: v.risk, riskScore: v.riskScore,
+    onboardingStatus: v.onboardingStatus, renewalDate: v.renewalDate,
+    contractExpiryDate: v.contractExpiryDate, certificateExpiryDates: v.certificateExpiryDates,
+  };
 }
 
 export async function GET(req) {
