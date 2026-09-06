@@ -19,6 +19,10 @@ export const INCIDENT_CATEGORIES = [
   "unauthorized_access", "suspicious_login", "data_export", "accidental_disclosure",
   "malware", "ransomware", "lost_device", "compromised_account", "policy_violation",
   "ai_security_event", "backup_failure",
+  // Financial Services & Regulated Enterprise SOW, Phase 4 (§53) — the
+  // broader incident-class list a regulated-enterprise org needs beyond
+  // the original security-only set above.
+  "financial", "fraud", "regulatory", "data_integrity", "vendor", "physical_security", "safety",
 ];
 
 export const INCIDENT_SEVERITIES = ["low", "medium", "high", "critical"];

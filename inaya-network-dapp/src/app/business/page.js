@@ -41,6 +41,7 @@ import FinanceView from "../../components/business/FinanceView";
 import HRView from "../../components/business/HRView";
 import HealthView from "../../components/business/HealthView";
 import LegalView from "../../components/business/LegalView";
+import RegulatedView from "../../components/business/RegulatedView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
@@ -538,6 +539,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
                 <option value="general">General business</option>
                 <option value="healthcare">Healthcare (Health OS)</option>
                 <option value="legal">Legal / Law firm (Legal OS)</option>
+                <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
               </select>
             </>
           )}
@@ -646,6 +648,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           <option value="general">General business</option>
           <option value="healthcare">Healthcare (Health OS)</option>
           <option value="legal">Legal / Law firm (Legal OS)</option>
+          <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
         </select>
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -678,6 +681,12 @@ const ICONS = {
   legal: (
     <>
       <path d="M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0l-3-6M19 7l-3 6a3 3 0 0 0 6 0l-3-6" />
+    </>
+  ),
+  regulated: (
+    <>
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
     </>
   ),
   dashboard: (
@@ -830,6 +839,7 @@ const NAV_ITEMS = [
   { key: "hr", label: "HR", icon: "hr" },
   { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare" },
   { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal" },
+  { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -864,7 +874,7 @@ function OrgVerticalSettings({ orgId, vertical, onChanged }) {
   return (
     <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
       <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm mb-1">Company type</h3>
-      <p className="text-[var(--inaya-text-muted)] text-xs mb-3">Controls which specialized modules (Health OS, Legal OS) show up in the sidebar for everyone in this company.</p>
+      <p className="text-[var(--inaya-text-muted)] text-xs mb-3">Controls which specialized modules (Health OS, Legal OS, Regulated Enterprise OS) show up in the sidebar for everyone in this company.</p>
       <select
         value={vertical}
         onChange={(e) => handleChange(e.target.value)}
@@ -874,6 +884,7 @@ function OrgVerticalSettings({ orgId, vertical, onChanged }) {
         <option value="general">General business</option>
         <option value="healthcare">Healthcare (Health OS)</option>
         <option value="legal">Legal / Law firm (Legal OS)</option>
+        <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
       </select>
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
     </div>
@@ -984,6 +995,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     hr: "HR",
     health: "Health OS",
     legal: "Legal OS",
+    regulated: "Regulated OS",
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
@@ -1091,6 +1103,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "hr" && <HRView orgId={orgId} email={email} />}
           {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}

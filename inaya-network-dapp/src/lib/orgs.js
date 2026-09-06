@@ -52,11 +52,16 @@ import {
   canAccessLegalMatters,
   isCareTeamMember,
   isMatterTeamMember,
+  canManageCompliance,
+  canAccessCompliance,
+  canManageAudit,
+  canAccessAudit,
 } from "./orgGates.js";
 
 export {
   canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager,
   canManageHealth, canAccessHealthRecords, canManageLegal, canAccessLegalMatters, isCareTeamMember, isMatterTeamMember,
+  canManageCompliance, canAccessCompliance, canManageAudit, canAccessAudit,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -214,6 +219,27 @@ export async function getOrgCollections() {
     legalBilling: db.collection("legal_billing"),
     legalEntities: db.collection("legal_entities"),
     legalTrustLedger: db.collection("legal_trust_ledger"),
+    // Financial Services & Regulated Enterprise SOW, Phase 4 (Regulated
+    // Enterprise Control Plane). complianceOrgFrameworks holds one
+    // enabled-frameworks doc per org (mirrors industry-config.js's
+    // single-profile-doc pattern) — the framework/requirement catalog
+    // itself is static reference data in compliance-frameworks.js, not a
+    // collection. complianceFindings is shared by both control-testing.js
+    // and internal-audit.js (one finding lifecycle, tagged by source) —
+    // deliberately not two parallel finding collections.
+    complianceOrgFrameworks: db.collection("compliance_org_frameworks"),
+    complianceControls: db.collection("compliance_controls"),
+    complianceEvidence: db.collection("compliance_evidence"),
+    complianceControlTests: db.collection("compliance_control_tests"),
+    complianceFindings: db.collection("compliance_findings"),
+    internalAuditPlans: db.collection("internal_audit_plans"),
+    compliancePolicies: db.collection("compliance_policies"),
+    compliancePolicyAcknowledgements: db.collection("compliance_policy_acknowledgements"),
+    complianceExceptions: db.collection("compliance_exceptions"),
+    regulatoryExaminations: db.collection("regulatory_examinations"),
+    regulatoryExaminationRequests: db.collection("regulatory_examination_requests"),
+    regulatoryExaminerMagicLinks: db.collection("regulatory_examiner_magic_links"),
+    regulatoryExaminerSessions: db.collection("regulatory_examiner_sessions"),
   };
 }
 
@@ -237,6 +263,10 @@ export async function ensureOrgIndexes() {
     legalEngagements, legalMatterTeamAssignments, legalEvidence, legalChainEvents,
     legalHolds, legalDiscovery, legalDeadlines, legalContracts, legalTimeEntries,
     legalBilling, legalEntities, legalTrustLedger,
+    complianceOrgFrameworks, complianceControls, complianceEvidence, complianceControlTests,
+    complianceFindings, internalAuditPlans, compliancePolicies, compliancePolicyAcknowledgements,
+    complianceExceptions, regulatoryExaminations, regulatoryExaminationRequests,
+    regulatoryExaminerMagicLinks, regulatoryExaminerSessions,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -365,6 +395,28 @@ export async function ensureOrgIndexes() {
     legalBilling.createIndex({ orgId: 1, clientId: 1, status: 1 }),
     legalEntities.createIndex({ orgId: 1 }),
     legalTrustLedger.createIndex({ orgId: 1, matterId: 1, createdAt: 1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 4 (Regulated Enterprise Control Plane)
+    complianceOrgFrameworks.createIndex({ orgId: 1 }, { unique: true }),
+    complianceControls.createIndex({ orgId: 1, status: 1 }),
+    complianceControls.createIndex({ orgId: 1, "linkedRequirements.frameworkId": 1 }),
+    complianceEvidence.createIndex({ orgId: 1, controlId: 1 }),
+    complianceEvidence.createIndex({ orgId: 1, validUntil: 1 }),
+    complianceControlTests.createIndex({ orgId: 1, controlId: 1, testedAt: 1 }),
+    complianceFindings.createIndex({ orgId: 1, status: 1 }),
+    complianceFindings.createIndex({ orgId: 1, controlId: 1 }),
+    internalAuditPlans.createIndex({ orgId: 1, status: 1 }),
+    compliancePolicies.createIndex({ orgId: 1, key: 1, version: 1 }, { unique: true }),
+    compliancePolicies.createIndex({ orgId: 1, status: 1 }),
+    compliancePolicyAcknowledgements.createIndex({ orgId: 1, policyId: 1, memberEmail: 1 }, { unique: true }),
+    complianceExceptions.createIndex({ orgId: 1, status: 1 }),
+    complianceExceptions.createIndex({ orgId: 1, expiresAt: 1 }),
+    regulatoryExaminations.createIndex({ orgId: 1, status: 1 }),
+    regulatoryExaminationRequests.createIndex({ orgId: 1, examinationId: 1, status: 1 }),
+    regulatoryExaminerMagicLinks.createIndex({ tokenHash: 1 }, { unique: true }),
+    regulatoryExaminerMagicLinks.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    regulatoryExaminerSessions.createIndex({ tokenHash: 1 }, { unique: true }),
+    regulatoryExaminerSessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    regulatoryExaminerSessions.createIndex({ orgId: 1, examinationId: 1, examinerEmail: 1 }),
   ]);
 
   indexesEnsured = true;

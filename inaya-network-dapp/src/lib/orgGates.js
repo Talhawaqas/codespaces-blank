@@ -117,3 +117,32 @@ export function isMatterTeamMember(membership, matterId, assignments) {
     (a) => a.matterId?.toString() === matterId?.toString() && a.email === membership.email
   );
 }
+
+// ============================================================
+// Financial Services & Regulated Enterprise SOW, Phase 4 — role model
+//
+// complianceRole/auditRole are new, OPTIONAL fields on the same
+// org_members document, following financeRole/hrRole/healthRole/legalRole's
+// exact precedent above. auditRole is deliberately never given a write
+// path in the API layer regardless of tier — canAccessAudit only ever
+// gates reads, matching the SOW's repeated "Audit Copilot / auditor
+// access is read-only by default" principle. Only canManageAudit
+// (owner/admin, or an explicit "manager"-tier auditRole assigned by
+// them) can create audit plans or transition findings.
+// ============================================================
+
+export function canManageCompliance(membership) {
+  return canManageOrg(membership) || membership?.complianceRole === "manager";
+}
+
+export function canAccessCompliance(membership) {
+  return canManageCompliance(membership) || membership?.complianceRole === "staff";
+}
+
+export function canManageAudit(membership) {
+  return canManageOrg(membership) || membership?.auditRole === "manager";
+}
+
+export function canAccessAudit(membership) {
+  return canManageAudit(membership) || membership?.auditRole === "staff";
+}

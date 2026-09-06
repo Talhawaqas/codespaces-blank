@@ -33,6 +33,7 @@ import { buildBusinessContext, runBusinessTool, BUSINESS_TOOL_DECLARATIONS, busi
 import { buildSecurityContext, runSecurityTool, SECURITY_TOOL_DECLARATIONS } from "./ai-security-tools.js";
 import { buildHealthContext, runHealthTool, HEALTH_TOOL_DECLARATIONS, healthSystemInstruction } from "./ai-health-tools.js";
 import { buildLegalContext, runLegalTool, LEGAL_TOOL_DECLARATIONS, legalSystemInstruction } from "./ai-legal-tools.js";
+import { buildComplianceContext, runComplianceTool, COMPLIANCE_TOOL_DECLARATIONS, complianceSystemInstruction } from "./ai-compliance-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
 
 const DOCS_TOOL_DECLARATION = {
@@ -74,7 +75,7 @@ function withPrefix(declarations, prefix) {
 export async function buildOsContext(input) {
   if (input?.scope === "org") {
     const { orgId, membership, email } = input;
-    const [businessCtx, securityCtx, healthCtx, legalCtx] = await Promise.all([
+    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx] = await Promise.all([
       buildBusinessContext({ orgId, membership, email }),
       buildSecurityContext({ identityId: email }).catch(() => null),
       // Healthcare & Legal Expansion SOW, Phase 5/9 — built unconditionally
@@ -86,8 +87,12 @@ export async function buildOsContext(input) {
       // results — no separate vertical-detection branch needed here.
       buildHealthContext({ orgId, membership, email }).catch(() => null),
       buildLegalContext({ orgId, membership, email }).catch(() => null),
+      // Financial Services & Regulated Enterprise SOW, Phase 4 — same
+      // "build unconditionally, let the tools naturally return empty"
+      // reasoning as health/legal above.
+      buildComplianceContext({ orgId, membership, email }).catch(() => null),
     ]);
-    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx };
+    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx };
   }
   if (input?.scope === "wallet") {
     const { walletAddress } = input;
@@ -104,6 +109,7 @@ export function getOsToolDeclarations(scope) {
       ...withPrefix(SECURITY_TOOL_DECLARATIONS, "security"),
       ...withPrefix(HEALTH_TOOL_DECLARATIONS, "health"),
       ...withPrefix(LEGAL_TOOL_DECLARATIONS, "legal"),
+      ...withPrefix(COMPLIANCE_TOOL_DECLARATIONS, "compliance"),
     ];
   }
   if (scope === "wallet") {
@@ -120,6 +126,7 @@ export async function runOsTool(name, args, ctx) {
   if (name.startsWith("security_") && ctx.securityCtx) return runSecurityTool(name.slice("security_".length), args, ctx.securityCtx);
   if (name.startsWith("health_") && ctx.healthCtx) return runHealthTool(name.slice("health_".length), args, ctx.healthCtx);
   if (name.startsWith("legal_") && ctx.legalCtx) return runLegalTool(name.slice("legal_".length), args, ctx.legalCtx);
+  if (name.startsWith("compliance_") && ctx.complianceCtx) return runComplianceTool(name.slice("compliance_".length), args, ctx.complianceCtx);
   return { error: `Unknown or unavailable tool: ${name}` };
 }
 
@@ -134,7 +141,8 @@ export function osSystemInstruction({ scope, orgName, role, isManager }) {
   if (scope === "org") {
     return businessSystemInstruction({ orgName, role, isManager }) +
       `\n\nYou ALSO have Security Layer tools (prefixed security_) for questions about threat status, security events, and how the Security Layer works — ground those answers only in what the tools return, exactly as strictly as your business tools, and never blend a documented policy claim with a live-data claim without saying which is which. If a question isn't covered by any available tool, say so rather than guessing.` +
-      `\n\nYou ALSO have Health OS tools (prefixed health_) and Legal OS tools (prefixed legal_), for organizations running those verticals. ${healthSystemInstruction()}\n\n${legalSystemInstruction()}`;
+      `\n\nYou ALSO have Health OS tools (prefixed health_) and Legal OS tools (prefixed legal_), for organizations running those verticals. ${healthSystemInstruction()}\n\n${legalSystemInstruction()}` +
+      `\n\nYou ALSO have Regulated Enterprise compliance tools (prefixed compliance_), for organizations running that vertical. ${complianceSystemInstruction()}`;
   }
   return `You are the Inaya OS Assistant for a connected wallet — you help with general questions about how Inaya works (via search_docs, Inaya's indexed documentation) and this wallet's own security status (via the security_ tools: recent events, threat lookups, reputation detail).
 

@@ -20,7 +20,7 @@
 
 import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
 
-export const ORG_VERTICALS = ["general", "healthcare", "legal"];
+export const ORG_VERTICALS = ["general", "healthcare", "legal", "regulated"];
 
 const DEFAULT_PROFILE = {
   vertical: "general",
@@ -69,7 +69,7 @@ export async function updateOrgProfile({ orgId, updates, actorEmail, membership 
   return { org: updated };
 }
 
-const VERTICAL_LABELS = { healthcare: "Health OS", legal: "Legal OS" };
+const VERTICAL_LABELS = { healthcare: "Health OS", legal: "Legal OS", regulated: "Regulated Enterprise OS" };
 
 /** The hard door-lock, called from every Health/Legal API route right
  *  after requireMembership(). Returns { error, status: 403 } unless the
