@@ -339,6 +339,29 @@ export const ROADMAP_STAGES = [
     notes:
       "Every domain module for both verticals now has a real, working screen in Business Workspace — not just Patients and Matters — live-verified end-to-end against the running app, including the trust ledger's server-side overdraft rejection. Mobile now has real screens for both verticals too (Health OS, Legal OS, and their patient/matter detail screens), built against the exact same vertical-locked API routes as web; these are written and syntax-verified but not yet exercised on a live device/simulator, which is the one thing still holding this at IN_PROGRESS rather than LIVE. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
   },
+  {
+    number: 11,
+    title: "Financial Services & Regulated Enterprise OS",
+    status: ROADMAP_STATUS.IN_PROGRESS,
+    description:
+      "A third and fourth vertical specialization of the Business Workspace — Financial Services OS (hedge funds/asset managers), Private Capital OS (PE/VC), and Regulated Enterprise OS (cross-industry compliance for banks, insurers, pharma, and other regulated organizations) — sharing one platform core with Health OS and Legal OS.",
+    securityStatement: "A framework or control mapping is never presented as a compliance certification — and a control with no test on file shows as \"unknown,\" never as passing.",
+    features: [
+      "Regulatory Framework Engine — pluggable reference mappings (NIST CSF 2.0, ISO 27001, SOC 2, DORA, GDPR, GLBA/Reg S-P, SEC IA) with an explicit compliance-is-not-certification disclaimer",
+      "Compliance Control Library with requirement linkage and effectiveness tracking",
+      "Evidence vault with per-item review and expiry tracking",
+      "Findings & Remediation workflow (a failed control test auto-opens a finding)",
+      "Versioned Policy Management — a published policy is immutable; changes only ever create a new version",
+      "Compliance exceptions / risk acceptance — every exception requires an expiry, no permanent silent exceptions",
+      "Internal audit plans, sharing one finding lifecycle with control testing",
+      "Regulatory Examination Workspace with its own scoped, time-limited, one-time-use external examiner access links",
+      "Continuous Compliance dashboard — controls passing/failing/unknown are always reported separately, never merged",
+      "Vertical-locked API — a general or mismatched-vertical org is rejected, not just hidden from",
+      "Compliance AI assistant (read/summarize/flag only — cannot certify compliance or guarantee an audit outcome)",
+    ],
+    notes:
+      "This is the first slice (Phase 0 + Phase 4 of a much larger SOW) — the shared Regulated Enterprise Control Plane that the SOW's own Financial Services and Private Capital verticals are meant to build on next, rather than each reinventing compliance logic. Live-verified end-to-end against the running app: control creation and activation, a failing test auto-opening a finding and walking its full state machine to closed, the dashboard's unknown/failing/passing distinction, the full policy lifecycle including the immutability guard and amend-creates-a-new-version behavior, and an examiner magic-link's issue/exchange/one-time-use cycle. Not yet built: the fund/portfolio/investment-research core (Financial Services OS), the deal/diligence/portfolio-company core (Private Capital OS), and everything in the SOW's remaining eight phases (security & resilience hardening, role-specific AI copilots, third-party integrations, executive/board reporting, external data rooms, and enterprise hardening) — those are planned, not built, and nothing here should be read as claiming otherwise. No compliance certification of any kind exists or is claimed.",
+  },
 ];
 
 export const VISION = {
