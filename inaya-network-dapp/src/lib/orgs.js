@@ -281,6 +281,31 @@ export async function getOrgCollections() {
     liquidityScenarios: db.collection("liquidity_scenarios"),
     valuations: db.collection("valuations"),
     performanceMetrics: db.collection("performance_metrics"),
+    // Financial Services & Regulated Enterprise SOW, Phase 3 (Private
+    // Capital) — "private_capital" vertical only (PE/VC). Deliberately
+    // reuses Phase 1's financialInvestors/financialFundTeamAssignments for
+    // LPs/SPV investors and fund-team-style assignment, Phase 2's
+    // investmentCommitteeCases/icDecisions for exit approval, and
+    // riskRegister for portfolio-monitoring risk flags -- none of those are
+    // duplicated here. capTableSnapshots is deliberately an ingest/evidence
+    // layer, never a transactional share-issuance engine (§34: "if an
+    // external cap-table system remains authoritative, Inaya should ingest
+    // and preserve synchronized evidence rather than creating a conflicting
+    // source of truth").
+    privateCapitalDeals: db.collection("private_capital_deals"),
+    dealScorecards: db.collection("deal_scorecards"),
+    diligenceRequests: db.collection("diligence_requests"),
+    termSheets: db.collection("term_sheets"),
+    capTableSnapshots: db.collection("cap_table_snapshots"),
+    portfolioCompanies: db.collection("portfolio_companies"),
+    boardMeetings: db.collection("board_meetings"),
+    boardResolutions: db.collection("board_resolutions"),
+    valueCreationPlans: db.collection("value_creation_plans"),
+    portfolioKpiDefinitions: db.collection("portfolio_kpi_definitions"),
+    portfolioKpiValues: db.collection("portfolio_kpi_values"),
+    fundraisingProspects: db.collection("fundraising_prospects"),
+    exits: db.collection("exits"),
+    spvs: db.collection("spvs"),
   };
 }
 
@@ -312,6 +337,9 @@ export async function ensureOrgIndexes() {
     financialInvestors, financialInvestorCommitments, financialCounterparties,
     investmentResearch, investmentTheses, investmentCommitteeCases, icDecisions,
     portfolios, positions, exposureThresholds, liquidityScenarios, valuations, performanceMetrics,
+    privateCapitalDeals, dealScorecards, diligenceRequests, termSheets, capTableSnapshots,
+    portfolioCompanies, boardMeetings, boardResolutions, valueCreationPlans,
+    portfolioKpiDefinitions, portfolioKpiValues, fundraisingProspects, exits, spvs,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -483,6 +511,21 @@ export async function ensureOrgIndexes() {
     liquidityScenarios.createIndex({ orgId: 1, fundId: 1, createdAt: 1 }),
     valuations.createIndex({ orgId: 1, positionId: 1, valuationDate: 1 }),
     performanceMetrics.createIndex({ orgId: 1, fundId: 1, period: 1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 3 (Private Capital)
+    privateCapitalDeals.createIndex({ orgId: 1, fundId: 1, stage: 1 }),
+    dealScorecards.createIndex({ orgId: 1, dealId: 1, version: 1 }),
+    diligenceRequests.createIndex({ orgId: 1, dealId: 1, domain: 1 }),
+    termSheets.createIndex({ orgId: 1, dealId: 1, version: 1 }),
+    capTableSnapshots.createIndex({ orgId: 1, portfolioCompanyId: 1, version: 1 }),
+    portfolioCompanies.createIndex({ orgId: 1, fundId: 1 }),
+    boardMeetings.createIndex({ orgId: 1, portfolioCompanyId: 1, scheduledAt: 1 }),
+    boardResolutions.createIndex({ orgId: 1, meetingId: 1 }),
+    valueCreationPlans.createIndex({ orgId: 1, portfolioCompanyId: 1, status: 1 }),
+    portfolioKpiDefinitions.createIndex({ orgId: 1, portfolioCompanyId: 1, key: 1 }, { unique: true }),
+    portfolioKpiValues.createIndex({ orgId: 1, kpiDefinitionId: 1, period: 1 }, { unique: true }),
+    fundraisingProspects.createIndex({ orgId: 1, fundId: 1, stage: 1 }),
+    exits.createIndex({ orgId: 1, portfolioCompanyId: 1 }),
+    spvs.createIndex({ orgId: 1 }),
   ]);
 
   indexesEnsured = true;

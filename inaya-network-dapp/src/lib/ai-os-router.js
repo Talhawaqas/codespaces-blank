@@ -35,6 +35,7 @@ import { buildHealthContext, runHealthTool, HEALTH_TOOL_DECLARATIONS, healthSyst
 import { buildLegalContext, runLegalTool, LEGAL_TOOL_DECLARATIONS, legalSystemInstruction } from "./ai-legal-tools.js";
 import { buildComplianceContext, runComplianceTool, COMPLIANCE_TOOL_DECLARATIONS, complianceSystemInstruction } from "./ai-compliance-tools.js";
 import { buildInvestmentContext, runInvestmentTool, INVESTMENT_TOOL_DECLARATIONS, investmentSystemInstruction } from "./ai-investment-tools.js";
+import { buildPrivateCapitalContext, runPrivateCapitalTool, PRIVATE_CAPITAL_TOOL_DECLARATIONS, privateCapitalSystemInstruction } from "./ai-private-capital-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
 
 const DOCS_TOOL_DECLARATION = {
@@ -76,7 +77,7 @@ function withPrefix(declarations, prefix) {
 export async function buildOsContext(input) {
   if (input?.scope === "org") {
     const { orgId, membership, email } = input;
-    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx] = await Promise.all([
+    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx] = await Promise.all([
       buildBusinessContext({ orgId, membership, email }),
       buildSecurityContext({ identityId: email }).catch(() => null),
       // Healthcare & Legal Expansion SOW, Phase 5/9 — built unconditionally
@@ -93,8 +94,9 @@ export async function buildOsContext(input) {
       // reasoning as health/legal above.
       buildComplianceContext({ orgId, membership, email }).catch(() => null),
       buildInvestmentContext({ orgId, membership, email }).catch(() => null),
+      buildPrivateCapitalContext({ orgId, membership, email }).catch(() => null),
     ]);
-    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx };
+    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx };
   }
   if (input?.scope === "wallet") {
     const { walletAddress } = input;
@@ -113,6 +115,7 @@ export function getOsToolDeclarations(scope) {
       ...withPrefix(LEGAL_TOOL_DECLARATIONS, "legal"),
       ...withPrefix(COMPLIANCE_TOOL_DECLARATIONS, "compliance"),
       ...withPrefix(INVESTMENT_TOOL_DECLARATIONS, "investment"),
+      ...withPrefix(PRIVATE_CAPITAL_TOOL_DECLARATIONS, "pc"),
     ];
   }
   if (scope === "wallet") {
@@ -131,6 +134,7 @@ export async function runOsTool(name, args, ctx) {
   if (name.startsWith("legal_") && ctx.legalCtx) return runLegalTool(name.slice("legal_".length), args, ctx.legalCtx);
   if (name.startsWith("compliance_") && ctx.complianceCtx) return runComplianceTool(name.slice("compliance_".length), args, ctx.complianceCtx);
   if (name.startsWith("investment_") && ctx.investmentCtx) return runInvestmentTool(name.slice("investment_".length), args, ctx.investmentCtx);
+  if (name.startsWith("pc_") && ctx.privateCapitalCtx) return runPrivateCapitalTool(name.slice("pc_".length), args, ctx.privateCapitalCtx);
   return { error: `Unknown or unavailable tool: ${name}` };
 }
 
@@ -147,7 +151,8 @@ export function osSystemInstruction({ scope, orgName, role, isManager }) {
       `\n\nYou ALSO have Security Layer tools (prefixed security_) for questions about threat status, security events, and how the Security Layer works — ground those answers only in what the tools return, exactly as strictly as your business tools, and never blend a documented policy claim with a live-data claim without saying which is which. If a question isn't covered by any available tool, say so rather than guessing.` +
       `\n\nYou ALSO have Health OS tools (prefixed health_) and Legal OS tools (prefixed legal_), for organizations running those verticals. ${healthSystemInstruction()}\n\n${legalSystemInstruction()}` +
       `\n\nYou ALSO have Regulated Enterprise compliance tools (prefixed compliance_), for organizations running that vertical. ${complianceSystemInstruction()}` +
-      `\n\nYou ALSO have Investment Research tools (prefixed investment_), for organizations running the Financial Services vertical. ${investmentSystemInstruction()}`;
+      `\n\nYou ALSO have Investment Research tools (prefixed investment_), for organizations running the Financial Services vertical. ${investmentSystemInstruction()}` +
+      `\n\nYou ALSO have Private Capital tools (prefixed pc_), for organizations running the Private Capital vertical. ${privateCapitalSystemInstruction()}`;
   }
   return `You are the Inaya OS Assistant for a connected wallet — you help with general questions about how Inaya works (via search_docs, Inaya's indexed documentation) and this wallet's own security status (via the security_ tools: recent events, threat lookups, reputation detail).
 

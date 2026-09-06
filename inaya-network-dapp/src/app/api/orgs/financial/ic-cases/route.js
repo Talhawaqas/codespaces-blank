@@ -3,6 +3,12 @@
 // POST { orgId, opportunity, ... } -> create an IC case
 // PATCH { orgId, caseId, action, note? } -> submit / startResearch / submitForComplianceReview /
 //   submitForRiskReview / scheduleIC / resumeFromDeferral / execute / beginMonitoring / close / withdraw
+//
+// Vertical-checked as ["financial","private_capital"] (array form, not
+// single-string) -- unlike the rest of Phase 2, the Investment Committee
+// workflow is generic enough that Phase 3's exit-management.js (§41)
+// reuses it directly for exit approval, so a private_capital org needs
+// this same route to create/decide an IC case, not a second IC concept.
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership, canAccessFinancialEntities } from "../../../../../lib/orgs.js";
@@ -27,7 +33,7 @@ export async function GET(req) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
     if (!canAccessFinancialEntities(auth.membership)) return NextResponse.json({ error: "You don't have financial-entities access." }, { status: 403 });
 
@@ -49,7 +55,7 @@ export async function POST(req) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await createCase({ ...body, actorEmail: auth.session.email, membership: auth.membership });
@@ -70,7 +76,7 @@ export async function PATCH(req) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await transitionCase({ orgId, caseId, action, note, actorEmail: auth.session.email, membership: auth.membership });

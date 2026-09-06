@@ -34,6 +34,7 @@ const FUND_STATUS_STYLES = {
 export default function FinancialView({ orgId, vertical }) {
   const [tab, setTab] = useState("funds");
   const isFinancial = vertical === "financial";
+  const isPrivateCapital = vertical === "private_capital";
   return (
     <div className="space-y-5">
       <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
@@ -42,16 +43,26 @@ export default function FinancialView({ orgId, vertical }) {
         <button onClick={() => setTab("counterparties")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "counterparties" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Counterparties</button>
         {isFinancial && <button onClick={() => setTab("research")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "research" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Research</button>}
         {isFinancial && <button onClick={() => setTab("theses")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "theses" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Theses</button>}
-        {isFinancial && <button onClick={() => setTab("committee")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "committee" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Committee</button>}
+        {(isFinancial || isPrivateCapital) && <button onClick={() => setTab("committee")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "committee" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Committee</button>}
         {isFinancial && <button onClick={() => setTab("portfolio")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "portfolio" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Portfolio</button>}
+        {isPrivateCapital && <button onClick={() => setTab("deals")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "deals" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Deals</button>}
+        {isPrivateCapital && <button onClick={() => setTab("pcPortfolio")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "pcPortfolio" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Portfolio</button>}
+        {isPrivateCapital && <button onClick={() => setTab("fundraising")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "fundraising" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Fundraising</button>}
+        {isPrivateCapital && <button onClick={() => setTab("exits")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "exits" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Exits</button>}
+        {isPrivateCapital && <button onClick={() => setTab("spvs")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "spvs" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>SPVs</button>}
       </div>
       {tab === "funds" && <FundsTab orgId={orgId} />}
       {tab === "entities" && <EntitiesTab orgId={orgId} />}
       {tab === "counterparties" && <CounterpartiesTab orgId={orgId} />}
       {isFinancial && tab === "research" && <ResearchTab orgId={orgId} />}
       {isFinancial && tab === "theses" && <ThesesTab orgId={orgId} />}
-      {isFinancial && tab === "committee" && <CommitteeTab orgId={orgId} />}
+      {(isFinancial || isPrivateCapital) && tab === "committee" && <CommitteeTab orgId={orgId} />}
       {isFinancial && tab === "portfolio" && <PortfolioTab orgId={orgId} />}
+      {isPrivateCapital && tab === "deals" && <DealsTab orgId={orgId} />}
+      {isPrivateCapital && tab === "pcPortfolio" && <PrivateCapitalPortfolioTab orgId={orgId} />}
+      {isPrivateCapital && tab === "fundraising" && <FundraisingTab orgId={orgId} />}
+      {isPrivateCapital && tab === "exits" && <ExitsTab orgId={orgId} />}
+      {isPrivateCapital && tab === "spvs" && <SpvsTab orgId={orgId} />}
     </div>
   );
 }
@@ -1260,6 +1271,1015 @@ function PerformanceSection({ orgId, fundId }) {
               <Row key={i} left={p.period} right={`${p.inputs?.netReturn != null ? (p.inputs.netReturn * 100).toFixed(2) + "%" : "—"}${p.derived?.sharpe != null ? ` · Sharpe ${p.derived.sharpe.value.toFixed(2)}` : ""}`} />
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PRIVATE CAPITAL: DEALS (Phase 3, §29-33 — pipeline, screening,
+// diligence, term sheets, all fund-scoped like everything else here)
+// ============================================================
+const DEAL_NEXT_ACTION = { SOURCED: "advance", SCREENED: "advance", INITIAL_REVIEW: "advance", PARTNER_REVIEW: "advance", DILIGENCE: "advance", IC: "advance", TERM_SHEET: "advance", NEGOTIATION: "advance" };
+const DILIGENCE_DOMAINS = ["commercial", "financial", "legal", "tax", "technology", "cybersecurity", "product", "market", "regulatory", "hr", "ip", "insurance", "esg", "data_protection", "vendor_risk", "operations"];
+const SCORECARD_CRITERIA = ["market", "team", "product", "traction", "financials", "moat", "competition", "regulatory_risk", "technical_risk", "cybersecurity", "customer_concentration", "capital_efficiency", "valuation", "exit_potential", "strategic_fit"];
+
+function DealsTab({ orgId }) {
+  const [funds, setFunds] = useState(null);
+  const [fundId, setFundId] = useState("");
+  const [deals, setDeals] = useState(null);
+  const [company, setCompany] = useState("");
+  const [expanded, setExpanded] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/financial/funds?orgId=${orgId}`).then((d) => { setFunds(d.funds); if (d.funds.length > 0) setFundId((cur) => cur || d.funds[0].id); }).catch(() => setFunds([]));
+  }, [orgId]);
+
+  const load = useCallback(async () => {
+    if (!fundId) return;
+    try {
+      setError("");
+      setDeals((await api(`/api/orgs/private-capital/deals?orgId=${orgId}&fundId=${fundId}`)).deals);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, fundId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!company.trim() || !fundId) return;
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/deals", { method: "POST", body: JSON.stringify({ orgId, fundId, company: company.trim() }) });
+      setCompany("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function act(dealId, action) {
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/deals", { method: "PATCH", body: JSON.stringify({ orgId, dealId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function convert(dealId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/deals/${dealId}/convert-to-portfolio`, { method: "POST", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (!funds) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
+  if (funds.length === 0) return <EmptyState compact icon="🤝" description="Register a fund first (Funds tab) before tracking deals." />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <select value={fundId} onChange={(e) => setFundId(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          {funds.map((f) => <option key={f.id} value={f.id}>{f.shortName || f.legalName}</option>)}
+        </select>
+        <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="New deal: target company" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button onClick={create} disabled={!company.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">New deal</button>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!deals ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : deals.length === 0 ? (
+          <EmptyState compact icon="🤝" description="No deals in the pipeline for this fund yet." />
+        ) : (
+          <div className="space-y-2">
+            {deals.map((d) => (
+              <div key={d.id} className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <button onClick={() => setExpanded(expanded === d.id ? null : d.id)} className="w-full flex items-center justify-between gap-3 text-left">
+                  <span className="text-[var(--inaya-text-primary)] text-sm truncate">{d.company}</span>
+                  <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border border-white/10 text-[var(--inaya-text-muted)] shrink-0">{d.stage.replace(/_/g, " ")}</span>
+                </button>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {DEAL_NEXT_ACTION[d.stage] && <button onClick={() => act(d.id, "advance")} className="text-[10px] font-bold uppercase text-[#00f2fe]">Advance</button>}
+                  {d.stage !== "PORTFOLIO" && d.stage !== "PASSED" && <button onClick={() => act(d.id, "pass")} className="text-[10px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-red-400">Pass</button>}
+                  {d.stage === "PASSED" && <button onClick={() => act(d.id, "reopen")} className="text-[10px] font-bold uppercase text-[#00f2fe]">Reopen</button>}
+                  {d.stage === "CLOSING" && <button onClick={() => convert(d.id)} className="text-[10px] font-bold uppercase text-emerald-400">Convert to portfolio</button>}
+                </div>
+                {expanded === d.id && <DealDetail orgId={orgId} deal={d} />}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DealDetail({ orgId, deal }) {
+  const [section, setSection] = useState("scorecards");
+  return (
+    <div className="mt-2 pt-2 border-t border-white/5">
+      <div className="flex gap-1 flex-wrap mb-2">
+        {["scorecards", "diligence", "term sheets"].map((s) => (
+          <button key={s} onClick={() => setSection(s)} className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${section === s ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{s}</button>
+        ))}
+      </div>
+      {section === "scorecards" && <DealScorecards orgId={orgId} dealId={deal.id} />}
+      {section === "diligence" && <DealDiligence orgId={orgId} dealId={deal.id} />}
+      {section === "term sheets" && <DealTermSheets orgId={orgId} dealId={deal.id} />}
+    </div>
+  );
+}
+
+function DealScorecards({ orgId, dealId }) {
+  const [scorecards, setScorecards] = useState(null);
+  const [criterion, setCriterion] = useState("team");
+  const [score, setScore] = useState("");
+  const [rationale, setRationale] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setScorecards((await api(`/api/orgs/private-capital/deals/${dealId}/scorecards?orgId=${orgId}`)).scorecards);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, dealId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!score) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/deals/${dealId}/scorecards`, { method: "POST", body: JSON.stringify({ orgId, scores: { [criterion]: { score: parseFloat(score), weight: 1 } }, rationale: rationale.trim() || undefined }) });
+      setScore(""); setRationale("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={submit} className="flex flex-wrap gap-2">
+        <select value={criterion} onChange={(e) => setCriterion(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]">
+          {SCORECARD_CRITERIA.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+        </select>
+        <input value={score} onChange={(e) => setScore(e.target.value)} type="number" min="0" max="10" placeholder="Score 0-10" className="w-24 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={rationale} onChange={(e) => setRationale(e.target.value)} placeholder="Rationale" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!score} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Submit score</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!scorecards || scorecards.length === 0 ? <Empty /> : scorecards.map((s) => (
+        <Row key={s.id} left={`v${s.version} · ${s.evaluatorEmail}${s.rationale ? ` — ${s.rationale}` : ""}`} right={s.weightedScore != null ? s.weightedScore.toFixed(1) : "—"} />
+      ))}
+    </div>
+  );
+}
+
+function DealDiligence({ orgId, dealId }) {
+  const [requests, setRequests] = useState(null);
+  const [domain, setDomain] = useState("commercial");
+  const [request, setRequest] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setRequests((await api(`/api/orgs/private-capital/deals/${dealId}/diligence?orgId=${orgId}`)).requests);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, dealId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!request.trim()) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/deals/${dealId}/diligence`, { method: "POST", body: JSON.stringify({ orgId, domain, request: request.trim() }) });
+      setRequest("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function advance(requestId, action) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/diligence/${requestId}`, { method: "PATCH", body: JSON.stringify({ orgId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function review(requestId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/diligence/${requestId}/review`, { method: "PATCH", body: JSON.stringify({ orgId, conclusion: "No material issues found." }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const NEXT = { OPEN: "start", IN_PROGRESS: "submit" };
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={create} className="flex flex-wrap gap-2">
+        <select value={domain} onChange={(e) => setDomain(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]">
+          {DILIGENCE_DOMAINS.map((d) => <option key={d} value={d}>{d.replace(/_/g, " ")}</option>)}
+        </select>
+        <input value={request} onChange={(e) => setRequest(e.target.value)} placeholder="Request (e.g. audited financials)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!request.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Add request</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!requests || requests.length === 0 ? <Empty /> : requests.map((r) => (
+        <div key={r.id} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[var(--inaya-text-muted)] truncate">{r.domain.replace(/_/g, " ")}: {r.request} <span className="font-mono">[{r.status}]</span></span>
+          <div className="flex gap-1.5 shrink-0">
+            {NEXT[r.status] && <button onClick={() => advance(r.id, NEXT[r.status])} className="text-[10px] font-bold uppercase text-[#00f2fe]">{NEXT[r.status]}</button>}
+            {r.status === "SUBMITTED" && <button onClick={() => review(r.id)} className="text-[10px] font-bold uppercase text-[#00f2fe]">Review</button>}
+            {r.status === "REVIEWED" && <button onClick={() => advance(r.id, "close")} className="text-[10px] font-bold uppercase text-[#00f2fe]">Close</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DealTermSheets({ orgId, dealId }) {
+  const [termSheets, setTermSheets] = useState(null);
+  const [valuation, setValuation] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setTermSheets((await api(`/api/orgs/private-capital/deals/${dealId}/term-sheets?orgId=${orgId}`)).termSheets);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, dealId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!valuation) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/deals/${dealId}/term-sheets`, { method: "POST", body: JSON.stringify({ orgId, valuation: parseFloat(valuation) }) });
+      setValuation("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function transition(termSheetId, action) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/term-sheets/${termSheetId}/transition`, { method: "PATCH", body: JSON.stringify({ orgId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function revise(termSheetId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/term-sheets/${termSheetId}/revise`, { method: "POST", body: JSON.stringify({ orgId, updates: {} }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const NEXT = { DRAFT: "send", SENT: "counter" };
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={create} className="flex flex-wrap gap-2">
+        <input value={valuation} onChange={(e) => setValuation(e.target.value)} type="number" placeholder="New round: valuation" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!valuation} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Draft term sheet</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!termSheets || termSheets.length === 0 ? <Empty /> : termSheets.map((t) => (
+        <div key={t.id} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[var(--inaya-text-muted)]">v{t.version} · ${t.valuation} <span className="font-mono">[{t.status}]</span></span>
+          <div className="flex gap-1.5 shrink-0">
+            {NEXT[t.status] && <button onClick={() => transition(t.id, NEXT[t.status])} className="text-[10px] font-bold uppercase text-[#00f2fe]">{NEXT[t.status]}</button>}
+            {["SENT", "COUNTERED"].includes(t.status) && <button onClick={() => transition(t.id, "accept")} className="text-[10px] font-bold uppercase text-emerald-400">Accept</button>}
+            {["SENT", "COUNTERED"].includes(t.status) && <button onClick={() => revise(t.id)} className="text-[10px] font-bold uppercase text-[var(--inaya-text-muted)]">Revise</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// PRIVATE CAPITAL: PORTFOLIO COMPANIES (Phase 3, §35-39 — board, value
+// creation, KPIs/monitoring, all attached to a portfolio company)
+// ============================================================
+function PrivateCapitalPortfolioTab({ orgId }) {
+  const [companies, setCompanies] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setCompanies((await api(`/api/orgs/private-capital/portfolio-companies?orgId=${orgId}`)).portfolioCompanies);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (!companies) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
+
+  return (
+    <div className="space-y-4">
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {companies.length === 0 ? (
+        <EmptyState compact icon="🏢" description="No portfolio companies yet. Convert a CLOSING deal from the Deals tab to create one." />
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {companies.map((c) => (
+            <button key={c.id} onClick={() => setSelected(c.id)} className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border ${selected === c.id ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/30" : "text-[var(--inaya-text-muted)] border-white/10"}`}>{c.name} <span className="opacity-60">({c.status})</span></button>
+          ))}
+        </div>
+      )}
+      {selected && <PortfolioCompanyWorkspace orgId={orgId} portfolioCompanyId={selected} />}
+    </div>
+  );
+}
+
+function PortfolioCompanyWorkspace({ orgId, portfolioCompanyId }) {
+  const [section, setSection] = useState("board");
+  return (
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-3">
+      <div className="flex gap-1 flex-wrap border-b border-white/5 pb-2">
+        {["board", "value creation", "kpis", "cap table"].map((s) => (
+          <button key={s} onClick={() => setSection(s)} className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${section === s ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{s}</button>
+        ))}
+      </div>
+      {section === "board" && <BoardSection orgId={orgId} portfolioCompanyId={portfolioCompanyId} />}
+      {section === "value creation" && <ValueCreationSection orgId={orgId} portfolioCompanyId={portfolioCompanyId} />}
+      {section === "kpis" && <KpiSection orgId={orgId} portfolioCompanyId={portfolioCompanyId} />}
+      {section === "cap table" && <CapTableSection orgId={orgId} portfolioCompanyId={portfolioCompanyId} />}
+    </div>
+  );
+}
+
+function BoardSection({ orgId, portfolioCompanyId }) {
+  const [meetings, setMeetings] = useState(null);
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setMeetings((await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/board-meetings?orgId=${orgId}`)).meetings);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, portfolioCompanyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function schedule(e) {
+    e.preventDefault();
+    if (!scheduledAt) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/board-meetings`, { method: "POST", body: JSON.stringify({ orgId, scheduledAt: new Date(scheduledAt).toISOString() }) });
+      setScheduledAt("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function advance(meetingId, action, extra) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/board-meetings/${meetingId}`, { method: "PATCH", body: JSON.stringify({ orgId, action, ...extra }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const NEXT = { SCHEDULED: ["setAgenda", { agendaItems: ["Financial update"] }], AGENDA_SET: ["hold", { attendees: [] }], HELD: ["draftMinutes", { minutesText: "Minutes recorded." }], MINUTES_DRAFTED: ["approveMinutes", {}] };
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={schedule} className="flex flex-wrap gap-2">
+        <input value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} type="datetime-local" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]" />
+        <button disabled={!scheduledAt} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Schedule meeting</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!meetings || meetings.length === 0 ? <Empty /> : meetings.map((m) => (
+        <div key={m.id} className="bg-black/20 border border-white/5 rounded-lg p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-[var(--inaya-text-muted)]">{new Date(m.scheduledAt).toLocaleString()} <span className="font-mono">[{m.status}]</span></span>
+            {NEXT[m.status] && <button onClick={() => advance(m.id, NEXT[m.status][0], NEXT[m.status][1])} className="text-[10px] font-bold uppercase text-[#00f2fe] shrink-0">{NEXT[m.status][0]}</button>}
+          </div>
+          {m.status === "MINUTES_APPROVED" && <ResolutionsSection orgId={orgId} meetingId={m.id} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ResolutionsSection({ orgId, meetingId }) {
+  const [resolutions, setResolutions] = useState(null);
+  const [title, setTitle] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setResolutions((await api(`/api/orgs/private-capital/board-meetings/${meetingId}/resolutions?orgId=${orgId}`)).resolutions);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, meetingId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function propose(e) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/board-meetings/${meetingId}/resolutions`, { method: "POST", body: JSON.stringify({ orgId, title: title.trim() }) });
+      setTitle("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function vote(resolutionId, v) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/resolutions/${resolutionId}/vote`, { method: "POST", body: JSON.stringify({ orgId, voterEmail: "director@example.com", vote: v }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function close(resolutionId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/resolutions/${resolutionId}/close`, { method: "PATCH", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="mt-2 pt-2 border-t border-white/5 space-y-1.5">
+      <form onSubmit={propose} className="flex gap-2">
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Propose resolution" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!title.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Propose</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!resolutions || resolutions.length === 0 ? <Empty /> : resolutions.map((r) => (
+        <div key={r.id} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[var(--inaya-text-muted)]">{r.title} <span className="font-mono">[{r.status === "PROPOSED" ? `${r.votes.length} votes` : r.outcome}]</span></span>
+          {r.status === "PROPOSED" && (
+            <div className="flex gap-1.5 shrink-0">
+              <button onClick={() => vote(r.id, "approve")} className="text-[10px] font-bold uppercase text-emerald-400">Approve</button>
+              <button onClick={() => vote(r.id, "reject")} className="text-[10px] font-bold uppercase text-red-400">Reject</button>
+              <button onClick={() => close(r.id)} className="text-[10px] font-bold uppercase text-[#00f2fe]">Close voting</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ValueCreationSection({ orgId, portfolioCompanyId }) {
+  const [plans, setPlans] = useState(null);
+  const [category, setCategory] = useState("30_60_90_day");
+  const [title, setTitle] = useState("");
+  const [error, setError] = useState("");
+  const CATEGORIES = ["30_60_90_day", "strategic_initiative", "hiring", "revenue", "cost", "product", "security", "compliance", "ma", "financing"];
+  const STATUSES = ["not_started", "in_progress", "complete", "blocked"];
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setPlans((await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/value-creation?orgId=${orgId}`)).plans);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, portfolioCompanyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/value-creation`, { method: "POST", body: JSON.stringify({ orgId, category, title: title.trim() }) });
+      setTitle("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function setStatus(planId, status) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/value-creation`, { method: "PATCH", body: JSON.stringify({ orgId, planId, status }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={create} className="flex flex-wrap gap-2">
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]">
+          {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+        </select>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan title" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!title.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Add plan</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!plans || plans.length === 0 ? <Empty /> : plans.map((p) => (
+        <div key={p.id} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[var(--inaya-text-muted)] truncate">{p.title} · {p.category.replace(/_/g, " ")}</span>
+          <select value={p.status} onChange={(e) => setStatus(p.id, e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-1.5 py-0.5 text-[10px] text-[var(--inaya-text-primary)] shrink-0">
+            {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function KpiSection({ orgId, portfolioCompanyId }) {
+  const [kpis, setKpis] = useState(null);
+  const [key, setKey] = useState("");
+  const [label, setLabel] = useState("");
+  const [monitoring, setMonitoring] = useState(null);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      const [kpiData, monitoringData] = await Promise.all([
+        api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/kpis?orgId=${orgId}`),
+        api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/monitoring?orgId=${orgId}`),
+      ]);
+      setKpis(kpiData.kpis);
+      setMonitoring(monitoringData);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, portfolioCompanyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function define(e) {
+    e.preventDefault();
+    if (!key.trim() || !label.trim()) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/kpis`, { method: "POST", body: JSON.stringify({ orgId, key: key.trim(), label: label.trim() }) });
+      setKey(""); setLabel("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function recordValue(kpiId, period, value) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/kpis/${kpiId}/values`, { method: "POST", body: JSON.stringify({ orgId, period, value: parseFloat(value) }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <form onSubmit={define} className="flex flex-wrap gap-2">
+        <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. arr)" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. ARR)" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!key.trim() || !label.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Define KPI</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!kpis || kpis.length === 0 ? <Empty /> : kpis.map((k) => <KpiRow key={k.id} kpi={k} onRecord={recordValue} />)}
+      {monitoring && (
+        <div className="pt-2 border-t border-white/5 text-[11px] text-[var(--inaya-text-muted)] space-y-1">
+          <p>Upcoming board deadlines: {monitoring.upcomingBoardDeadlines.length}</p>
+          <p>Open action items: {monitoring.openActionItems.length}</p>
+          <p>Value-creation status: {Object.entries(monitoring.valueCreationPlanStatus).map(([s, n]) => `${s}: ${n}`).join(", ") || "none yet"}</p>
+          <p className="text-amber-400">Not covered by monitoring yet: {monitoring.notCovered.join(", ")}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KpiRow({ kpi, onRecord }) {
+  const [period, setPeriod] = useState("");
+  const [value, setValue] = useState("");
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[11px] text-[var(--inaya-text-primary)] w-24 truncate">{kpi.label}</span>
+      <span className="text-[10px] font-mono text-[var(--inaya-text-muted)]">{kpi.values.map((v) => `${v.period}:${v.value}`).join(" ") || "no data"}</span>
+      <input value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="Period" className="w-20 bg-black/45 border border-white/15 rounded-lg px-1.5 py-0.5 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <input value={value} onChange={(e) => setValue(e.target.value)} type="number" placeholder="Value" className="w-20 bg-black/45 border border-white/15 rounded-lg px-1.5 py-0.5 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <button onClick={() => { onRecord(kpi.id, period, value); setPeriod(""); setValue(""); }} disabled={!period || !value} className="text-[10px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">Record</button>
+    </div>
+  );
+}
+
+function CapTableSection({ orgId, portfolioCompanyId }) {
+  const [snapshots, setSnapshots] = useState(null);
+  const [holderName, setHolderName] = useState("");
+  const [shares, setShares] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setSnapshots((await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/cap-table?orgId=${orgId}`)).snapshots);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, portfolioCompanyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function record(e) {
+    e.preventDefault();
+    if (!holderName.trim() || !shares) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/portfolio-companies/${portfolioCompanyId}/cap-table`, { method: "POST", body: JSON.stringify({ orgId, rows: [{ holderName: holderName.trim(), instrumentType: "common", fullyDilutedShares: parseFloat(shares) }] }) });
+      setHolderName(""); setShares("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function approve(snapshotId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/cap-table/${snapshotId}/approve`, { method: "PATCH", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <form onSubmit={record} className="flex flex-wrap gap-2">
+        <input value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="Holder name" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={shares} onChange={(e) => setShares(e.target.value)} type="number" placeholder="Fully diluted shares" className="w-40 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!holderName.trim() || !shares} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Record snapshot</button>
+      </form>
+      {error && <p className="text-red-400 text-[10px]">{error}</p>}
+      {!snapshots || snapshots.length === 0 ? <Empty /> : snapshots.map((s) => (
+        <div key={s.id} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[var(--inaya-text-muted)]">v{s.version} · {s.totalFullyDilutedShares} shares {s.approvedByEmail ? `· approved by ${s.approvedByEmail}` : "· unapproved"}</span>
+          {!s.approvedByEmail && <button onClick={() => approve(s.id)} className="text-[10px] font-bold uppercase text-[#00f2fe] shrink-0">Approve</button>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// PRIVATE CAPITAL: FUNDRAISING (Phase 3, §40 — LP pipeline)
+// ============================================================
+function FundraisingTab({ orgId }) {
+  const [funds, setFunds] = useState(null);
+  const [fundId, setFundId] = useState("");
+  const [prospects, setProspects] = useState(null);
+  const [legalName, setLegalName] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/financial/funds?orgId=${orgId}`).then((d) => { setFunds(d.funds); if (d.funds.length > 0) setFundId((cur) => cur || d.funds[0].id); }).catch(() => setFunds([]));
+  }, [orgId]);
+
+  const load = useCallback(async () => {
+    if (!fundId) return;
+    try {
+      setError("");
+      setProspects((await api(`/api/orgs/private-capital/fundraising?orgId=${orgId}&fundId=${fundId}`)).prospects);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, fundId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!legalName.trim() || !fundId) return;
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/fundraising", { method: "POST", body: JSON.stringify({ orgId, fundId, legalName: legalName.trim() }) });
+      setLegalName("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function act(prospectId, action) {
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/fundraising", { method: "PATCH", body: JSON.stringify({ orgId, prospectId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function convert(prospectId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/fundraising/${prospectId}/convert`, { method: "POST", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (!funds) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
+  if (funds.length === 0) return <EmptyState compact icon="💰" description="Register a fund first (Funds tab) before raising capital for it." />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <select value={fundId} onChange={(e) => setFundId(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          {funds.map((f) => <option key={f.id} value={f.id}>{f.shortName || f.legalName}</option>)}
+        </select>
+        <input value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="New LP prospect" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button onClick={create} disabled={!legalName.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Add prospect</button>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!prospects || prospects.length === 0 ? <EmptyState compact icon="💰" description="No LP prospects yet." /> : (
+          <div className="space-y-2">
+            {prospects.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
+                <span className="text-[var(--inaya-text-primary)] text-sm truncate">{p.legalName}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border border-white/10 text-[var(--inaya-text-muted)]">{p.stage.replace(/_/g, " ")}</span>
+                  {p.stage !== "LEGAL_DOCS" && p.stage !== "CLOSED" && p.stage !== "PASSED" && <button onClick={() => act(p.id, "advance")} className="text-[10px] font-bold uppercase text-[#00f2fe]">Advance</button>}
+                  {p.stage === "LEGAL_DOCS" && <button onClick={() => convert(p.id)} className="text-[10px] font-bold uppercase text-emerald-400">Convert to investor</button>}
+                  {!["CLOSED", "PASSED"].includes(p.stage) && <button onClick={() => act(p.id, "pass")} className="text-[10px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-red-400">Pass</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PRIVATE CAPITAL: EXITS (Phase 3, §41)
+// ============================================================
+function ExitsTab({ orgId }) {
+  const [companies, setCompanies] = useState(null);
+  const [companyId, setCompanyId] = useState("");
+  const [exits, setExits] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/private-capital/portfolio-companies?orgId=${orgId}`).then((d) => { setCompanies(d.portfolioCompanies); if (d.portfolioCompanies.length > 0) setCompanyId((cur) => cur || d.portfolioCompanies[0].id); }).catch(() => setCompanies([]));
+  }, [orgId]);
+
+  const load = useCallback(async () => {
+    if (!companyId) return;
+    try {
+      setError("");
+      setExits((await api(`/api/orgs/private-capital/exits?orgId=${orgId}&portfolioCompanyId=${companyId}`)).exits);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId, companyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function start() {
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/exits", { method: "POST", body: JSON.stringify({ orgId, portfolioCompanyId: companyId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function act(exitId, action) {
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/exits", { method: "PATCH", body: JSON.stringify({ orgId, exitId, action }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function beginClosingExit(exitId) {
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/exits/${exitId}/begin-closing`, { method: "PATCH", body: JSON.stringify({ orgId }) });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const NEXT = { READINESS: "beginOutreach", BUYER_OUTREACH: "beginDiligence", DILIGENCE: "receiveBids", BIDS_RECEIVED: "negotiate" };
+
+  if (!companies) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
+  if (companies.length === 0) return <EmptyState compact icon="🚪" description="No portfolio companies yet -- an exit needs one." />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 items-center">
+        <select value={companyId} onChange={(e) => setCompanyId(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <button onClick={start} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">Start exit process</button>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!exits || exits.length === 0 ? <EmptyState compact icon="🚪" description="No exit process started for this company." /> : (
+          <div className="space-y-2">
+            {exits.map((ex) => (
+              <div key={ex.id} className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{ex.exitType || "Exit"} · {ex.bids.length} bid(s)</span>
+                  <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border border-white/10 text-[var(--inaya-text-muted)]">{ex.status.replace(/_/g, " ")}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2 items-center">
+                  {NEXT[ex.status] && <button onClick={() => act(ex.id, NEXT[ex.status])} className="text-[10px] font-bold uppercase text-[#00f2fe]">{NEXT[ex.status]}</button>}
+                  {ex.status === "DILIGENCE" && <ExitBidForm orgId={orgId} exitId={ex.id} onDone={load} />}
+                  {ex.status === "NEGOTIATION" && <ExitApproveForm orgId={orgId} exitId={ex.id} onDone={load} />}
+                  {ex.status === "IC_APPROVED" && <button onClick={() => beginClosingExit(ex.id)} className="text-[10px] font-bold uppercase text-[#00f2fe]">Begin closing</button>}
+                  {ex.status === "CLOSING" && <button onClick={() => act(ex.id, "close")} className="text-[10px] font-bold uppercase text-emerald-400">Close</button>}
+                  {ex.status === "CLOSED" && <ExitDistributionForm orgId={orgId} exitId={ex.id} distributionAmount={ex.distributionAmount} onDone={load} />}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ExitBidForm({ orgId, exitId, onDone }) {
+  const [buyerName, setBuyerName] = useState("");
+  const [amount, setAmount] = useState("");
+  async function submit(e) {
+    e.preventDefault();
+    if (!buyerName.trim() || !amount) return;
+    await api(`/api/orgs/private-capital/exits/${exitId}/bids`, { method: "POST", body: JSON.stringify({ orgId, buyerName: buyerName.trim(), buyerType: "strategic", amount: parseFloat(amount) }) });
+    setBuyerName(""); setAmount("");
+    onDone();
+  }
+  return (
+    <form onSubmit={submit} className="flex gap-2">
+      <input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} placeholder="Buyer" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Bid amount" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <button disabled={!buyerName.trim() || !amount} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Record bid</button>
+    </form>
+  );
+}
+
+function ExitApproveForm({ orgId, exitId, onDone }) {
+  const [icDecisionId, setIcDecisionId] = useState("");
+  const [error, setError] = useState("");
+  async function submit(e) {
+    e.preventDefault();
+    if (!icDecisionId.trim()) return;
+    try {
+      setError("");
+      await api(`/api/orgs/private-capital/exits/${exitId}/approve`, { method: "PATCH", body: JSON.stringify({ orgId, icDecisionId: icDecisionId.trim() }) });
+      setIcDecisionId("");
+      onDone();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+  return (
+    <form onSubmit={submit} className="flex flex-wrap gap-2 items-center">
+      <input value={icDecisionId} onChange={(e) => setIcDecisionId(e.target.value)} placeholder="IC decision ID (from Committee tab)" className="w-56 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <button disabled={!icDecisionId.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Approve exit</button>
+      {error && <p className="text-red-400 text-[10px] w-full">{error}</p>}
+    </form>
+  );
+}
+
+function ExitDistributionForm({ orgId, exitId, distributionAmount, onDone }) {
+  const [amount, setAmount] = useState("");
+  if (distributionAmount != null) return <span className="text-[11px] font-mono text-emerald-400">Distributed: ${distributionAmount}</span>;
+  async function submit(e) {
+    e.preventDefault();
+    if (!amount) return;
+    await api(`/api/orgs/private-capital/exits/${exitId}/distribution`, { method: "PATCH", body: JSON.stringify({ orgId, distributionAmount: parseFloat(amount) }) });
+    setAmount("");
+    onDone();
+  }
+  return (
+    <form onSubmit={submit} className="flex gap-2">
+      <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Distribution amount" className="w-36 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+      <button disabled={!amount} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Record distribution</button>
+    </form>
+  );
+}
+
+// ============================================================
+// PRIVATE CAPITAL: SPVs (Phase 3, §42)
+// ============================================================
+function SpvsTab({ orgId }) {
+  const [spvs, setSpvs] = useState(null);
+  const [name, setName] = useState("");
+  const [underlyingAsset, setUnderlyingAsset] = useState("");
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setError("");
+      setSpvs((await api(`/api/orgs/private-capital/spvs?orgId=${orgId}`)).spvs);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [orgId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function create(e) {
+    e.preventDefault();
+    if (!name.trim() || !underlyingAsset.trim()) return;
+    try {
+      setError("");
+      await api("/api/orgs/private-capital/spvs", { method: "POST", body: JSON.stringify({ orgId, name: name.trim(), underlyingAsset: underlyingAsset.trim() }) });
+      setName(""); setUnderlyingAsset("");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={create} className="flex flex-wrap gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="SPV name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input value={underlyingAsset} onChange={(e) => setUnderlyingAsset(e.target.value)} placeholder="Underlying asset" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <button disabled={!name.trim() || !underlyingAsset.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Register SPV</button>
+      </form>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+        {!spvs || spvs.length === 0 ? <EmptyState compact icon="📦" description="No SPVs registered yet." /> : (
+          <div className="space-y-2">{spvs.map((s) => <Row key={s.id} left={s.underlyingAsset} right={`${(s.expenses || []).length} expense(s)`} />)}</div>
         )}
       </div>
     </div>

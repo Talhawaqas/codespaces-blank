@@ -4,6 +4,10 @@
 //   (outcome: approve | approveWithConditions | reject | defer) -- only legal from IC_SCHEDULED
 // PATCH { orgId, conditions?, dissentingViews?, finalResolution? } -> amend the latest decision,
 //   creating a NEW version -- the original decision row is never mutated
+//
+// Vertical-checked as ["financial","private_capital"] (array form) -- see
+// ../route.js's header comment: Phase 3's exit-management.js (§41) reuses
+// this same decision engine for exit approval.
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/orgs.js";
@@ -29,7 +33,7 @@ export async function GET(req, { params }) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const history = await getCaseDecisionHistory(orgId, caseId);
@@ -51,7 +55,7 @@ export async function POST(req, { params }) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await recordDecision({ orgId, caseId, outcome, conditions: body.conditions, dissentingViews: body.dissentingViews, finalResolution: body.finalResolution, actorEmail: auth.session.email, membership: auth.membership });
@@ -74,7 +78,7 @@ export async function PATCH(req, { params }) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const verticalCheck = await requireVertical(orgId, "financial");
+    const verticalCheck = await requireVertical(orgId, ["financial", "private_capital"]);
     if (verticalCheck.error) return NextResponse.json({ error: verticalCheck.error }, { status: verticalCheck.status });
 
     const result = await amendDecision({ orgId, caseId, conditions: body.conditions, dissentingViews: body.dissentingViews, finalResolution: body.finalResolution, actorEmail: auth.session.email, membership: auth.membership });
