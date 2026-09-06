@@ -1119,7 +1119,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}

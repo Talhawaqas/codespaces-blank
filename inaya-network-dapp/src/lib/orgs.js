@@ -262,6 +262,25 @@ export async function getOrgCollections() {
     financialInvestors: db.collection("financial_investors"),
     financialInvestorCommitments: db.collection("financial_investor_commitments"),
     financialCounterparties: db.collection("financial_counterparties"),
+    // Financial Services & Regulated Enterprise SOW, Phase 2 (Investment
+    // Management) — "financial" vertical only (hedge funds/asset
+    // managers), unlike Phase 1's shared financial/private_capital core.
+    // Research files themselves are NOT a new storage system — same
+    // org_documents + documentId pointer indirection as clinical/legal
+    // records; investmentResearch holds only metadata + provenance.
+    // icDecisions is deliberately separate from investmentCommitteeCases:
+    // a case can be amended pre-decision, but once a decision is
+    // finalized it is versioned and never overwritten (§8.4).
+    investmentResearch: db.collection("investment_research"),
+    investmentTheses: db.collection("investment_theses"),
+    investmentCommitteeCases: db.collection("investment_committee_cases"),
+    icDecisions: db.collection("ic_decisions"),
+    portfolios: db.collection("portfolios"),
+    positions: db.collection("positions"),
+    exposureThresholds: db.collection("exposure_thresholds"),
+    liquidityScenarios: db.collection("liquidity_scenarios"),
+    valuations: db.collection("valuations"),
+    performanceMetrics: db.collection("performance_metrics"),
   };
 }
 
@@ -291,6 +310,8 @@ export async function ensureOrgIndexes() {
     regulatoryExaminerMagicLinks, regulatoryExaminerSessions,
     financialEntities, financialFunds, financialFundTeamAssignments,
     financialInvestors, financialInvestorCommitments, financialCounterparties,
+    investmentResearch, investmentTheses, investmentCommitteeCases, icDecisions,
+    portfolios, positions, exposureThresholds, liquidityScenarios, valuations, performanceMetrics,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -450,6 +471,18 @@ export async function ensureOrgIndexes() {
     financialInvestors.createIndex({ orgId: 1, fundId: 1 }),
     financialInvestorCommitments.createIndex({ orgId: 1, investorId: 1, fundId: 1 }),
     financialCounterparties.createIndex({ orgId: 1, type: 1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 2 (Investment Management)
+    investmentResearch.createIndex({ orgId: 1, fundId: 1, createdAt: 1 }),
+    investmentTheses.createIndex({ orgId: 1, key: 1, version: 1 }, { unique: true }),
+    investmentTheses.createIndex({ orgId: 1, status: 1 }),
+    investmentCommitteeCases.createIndex({ orgId: 1, status: 1 }),
+    icDecisions.createIndex({ orgId: 1, caseId: 1, version: 1 }),
+    portfolios.createIndex({ orgId: 1, fundId: 1 }),
+    positions.createIndex({ orgId: 1, portfolioId: 1 }),
+    exposureThresholds.createIndex({ orgId: 1, fundId: 1, metric: 1 }),
+    liquidityScenarios.createIndex({ orgId: 1, fundId: 1, createdAt: 1 }),
+    valuations.createIndex({ orgId: 1, positionId: 1, valuationDate: 1 }),
+    performanceMetrics.createIndex({ orgId: 1, fundId: 1, period: 1 }),
   ]);
 
   indexesEnsured = true;

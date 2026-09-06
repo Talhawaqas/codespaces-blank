@@ -5,15 +5,25 @@
 // export-center.js — the SOW doesn't define a state-machine lifecycle for
 // risk entries the way it does for incidents/exports, just fields plus a
 // status. Owner/admin only, same reasoning as incidents.js.
+//
+// Financial Services & Regulated Enterprise SOW, Phase 2 (§10.1) —
+// extended to also allow a financialRole:"manager" to create a risk
+// entry, since portfolio-management.js's threshold-breach engine needs
+// to record a real risk-register entry regardless of which domain
+// manager triggered the evaluation, not just an org owner/admin.
 
-import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
+import { getOrgCollections, toObjectId, canManageOrg, canManageFinancialEntities } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
+
+function canCreateRisk(membership) {
+  return canManageOrg(membership) || canManageFinancialEntities(membership);
+}
 
 export const RISK_SEVERITIES = ["low", "medium", "high", "critical"];
 export const RISK_STATUSES = ["open", "mitigating", "accepted", "closed"];
 
 export async function createRisk({ orgId, category, severity, likelihood, impact, ownerEmail, mitigation, reviewDate, relatedIncidentId, controlId, requirementId, frameworkId, actorEmail, membership }) {
-  if (!canManageOrg(membership)) return { error: "Only the owner or an admin can add a risk entry.", status: 403 };
+  if (!canCreateRisk(membership)) return { error: "Only the owner, an admin, or a financial-entities manager can add a risk entry.", status: 403 };
   const { riskRegister } = await getOrgCollections();
   const now = new Date().toISOString();
   const doc = {

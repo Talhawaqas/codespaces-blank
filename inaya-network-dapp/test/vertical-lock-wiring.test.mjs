@@ -49,14 +49,29 @@ const REGULATED_ROUTES = findRouteFiles("src/app/api/orgs/regulated");
 // Entity Core is genuinely shared by both the "financial" and
 // "private_capital" verticals (see industry-config.js's requireVertical
 // header comment) — these routes pass an ARRAY to requireVertical(),
-// e.g. requireVertical(orgId, ["financial", "private_capital"]), which
-// is why `vertical` below can be either a string or an array.
-const FINANCIAL_ROUTES = findRouteFiles("src/app/api/orgs/financial");
+// e.g. requireVertical(orgId, ["financial", "private_capital"]).
+// Phase 2 (Investment Management), added later, is "financial"-only --
+// research/theses/IC/portfolios/positions/exposure/thresholds/liquidity/
+// valuations/performance are all specific to running a fund, not to
+// private-capital deal work, so those routes pass a single string. The
+// two subsets are split here by their known top-level subdirectory so
+// each is checked against the vertical(s) it actually declares.
+const FINANCIAL_ALL_ROUTES = findRouteFiles("src/app/api/orgs/financial");
+const FINANCIAL_PHASE1_DIRS = ["entities", "funds", "investors", "counterparties"];
+const FINANCIAL_PHASE2_DIRS = ["research", "theses", "ic-cases", "portfolios", "positions", "exposure", "thresholds", "liquidity", "valuations", "performance"];
+function financialSubdir(file) {
+  const rel = path.relative(path.join("src", "app", "api", "orgs", "financial"), file);
+  return rel.split(path.sep)[0];
+}
+const FINANCIAL_PHASE1_ROUTES = FINANCIAL_ALL_ROUTES.filter((f) => FINANCIAL_PHASE1_DIRS.includes(financialSubdir(f)));
+const FINANCIAL_PHASE2_ROUTES = FINANCIAL_ALL_ROUTES.filter((f) => FINANCIAL_PHASE2_DIRS.includes(financialSubdir(f)));
+const FINANCIAL_UNCLASSIFIED_ROUTES = FINANCIAL_ALL_ROUTES.filter((f) => !FINANCIAL_PHASE1_DIRS.includes(financialSubdir(f)) && !FINANCIAL_PHASE2_DIRS.includes(financialSubdir(f)));
 const ALL_ROUTES = [
   ...HEALTH_ROUTES.map((f) => ({ file: f, vertical: "healthcare" })),
   ...LEGAL_ROUTES.map((f) => ({ file: f, vertical: "legal" })),
   ...REGULATED_ROUTES.map((f) => ({ file: f, vertical: "regulated" })),
-  ...FINANCIAL_ROUTES.map((f) => ({ file: f, vertical: ["financial", "private_capital"] })),
+  ...FINANCIAL_PHASE1_ROUTES.map((f) => ({ file: f, vertical: ["financial", "private_capital"] })),
+  ...FINANCIAL_PHASE2_ROUTES.map((f) => ({ file: f, vertical: "financial" })),
 ];
 
 function splitIntoHandlers(source) {
@@ -72,7 +87,9 @@ test("sanity: found every expected health/legal/regulated/financial route file (
   assert.ok(HEALTH_ROUTES.length >= 9, `expected at least 9 health routes, found ${HEALTH_ROUTES.length}`);
   assert.ok(LEGAL_ROUTES.length >= 16, `expected at least 16 legal routes, found ${LEGAL_ROUTES.length}`);
   assert.ok(REGULATED_ROUTES.length >= 20, `expected at least 20 regulated routes, found ${REGULATED_ROUTES.length}`);
-  assert.ok(FINANCIAL_ROUTES.length >= 1, `expected at least 1 financial route, found ${FINANCIAL_ROUTES.length}`);
+  assert.ok(FINANCIAL_PHASE1_ROUTES.length >= 8, `expected at least 8 financial Phase-1 routes, found ${FINANCIAL_PHASE1_ROUTES.length}`);
+  assert.ok(FINANCIAL_PHASE2_ROUTES.length >= 16, `expected at least 16 financial Phase-2 routes, found ${FINANCIAL_PHASE2_ROUTES.length}`);
+  assert.deepEqual(FINANCIAL_UNCLASSIFIED_ROUTES, [], `found financial route file(s) not classified into Phase 1 or Phase 2 subdirs -- update FINANCIAL_PHASE1_DIRS/FINANCIAL_PHASE2_DIRS: ${JSON.stringify(FINANCIAL_UNCLASSIFIED_ROUTES)}`);
 });
 
 // Matches requireVertical(<orgIdExpr>, "singleVertical") or
