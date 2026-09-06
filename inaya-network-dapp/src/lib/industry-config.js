@@ -20,7 +20,7 @@
 
 import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
 
-export const ORG_VERTICALS = ["general", "healthcare", "legal", "regulated"];
+export const ORG_VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital"];
 
 const DEFAULT_PROFILE = {
   vertical: "general",
@@ -69,21 +69,33 @@ export async function updateOrgProfile({ orgId, updates, actorEmail, membership 
   return { org: updated };
 }
 
-const VERTICAL_LABELS = { healthcare: "Health OS", legal: "Legal OS", regulated: "Regulated Enterprise OS" };
+const VERTICAL_LABELS = {
+  healthcare: "Health OS", legal: "Legal OS", regulated: "Regulated Enterprise OS",
+  financial: "Financial Services OS", private_capital: "Private Capital OS",
+};
 
-/** The hard door-lock, called from every Health/Legal API route right
- *  after requireMembership(). Returns { error, status: 403 } unless the
- *  org's configured vertical matches exactly — a "general" org, or a
- *  legal org calling a health route (or vice versa), is rejected before
- *  any domain logic runs, regardless of the caller's role within the
- *  org. Fails closed: an org with no profile at all (shouldn't happen
- *  once getOrgProfile's defaults apply, but checked explicitly) is
- *  treated as "general" — never treated as a match by accident. */
+/** The hard door-lock, called from every Health/Legal/Regulated/Financial
+ *  API route right after requireMembership(). Returns { error, status:
+ *  403 } unless the org's configured vertical matches exactly — a
+ *  "general" org, or a legal org calling a health route (or vice versa),
+ *  is rejected before any domain logic runs, regardless of the caller's
+ *  role within the org. Fails closed: an org with no profile at all
+ *  (shouldn't happen once getOrgProfile's defaults apply, but checked
+ *  explicitly) is treated as "general" — never treated as a match by
+ *  accident.
+ *
+ *  `expectedVertical` may be a single string or an array of strings —
+ *  the Financial Entity Core (Phase 1) is genuinely shared by both the
+ *  "financial" (hedge funds/asset managers) and "private_capital"
+ *  (PE/VC) verticals per the SOW's own Phase 1 scope, so its routes need
+ *  to accept either without duplicating every route two ways. */
 export async function requireVertical(orgId, expectedVertical) {
   const profile = await getOrgProfile(orgId);
   const actual = profile?.vertical || "general";
-  if (actual !== expectedVertical) {
-    return { error: `This organization isn't configured for ${VERTICAL_LABELS[expectedVertical] || expectedVertical} — an owner/admin can change this under Settings.`, status: 403 };
+  const allowed = Array.isArray(expectedVertical) ? expectedVertical : [expectedVertical];
+  if (!allowed.includes(actual)) {
+    const label = allowed.map((v) => VERTICAL_LABELS[v] || v).join(" or ");
+    return { error: `This organization isn't configured for ${label} — an owner/admin can change this under Settings.`, status: 403 };
   }
   return { ok: true };
 }

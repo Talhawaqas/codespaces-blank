@@ -56,12 +56,16 @@ import {
   canAccessCompliance,
   canManageAudit,
   canAccessAudit,
+  canManageFinancialEntities,
+  canAccessFinancialEntities,
+  isFundTeamMember,
 } from "./orgGates.js";
 
 export {
   canManageOrg, canAccessDepartment, canManageFinance, canAccessFinance, canManageHR, canAccessHR, isDepartmentManager,
   canManageHealth, canAccessHealthRecords, canManageLegal, canAccessLegalMatters, isCareTeamMember, isMatterTeamMember,
   canManageCompliance, canAccessCompliance, canManageAudit, canAccessAudit,
+  canManageFinancialEntities, canAccessFinancialEntities, isFundTeamMember,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -240,6 +244,24 @@ export async function getOrgCollections() {
     regulatoryExaminationRequests: db.collection("regulatory_examination_requests"),
     regulatoryExaminerMagicLinks: db.collection("regulatory_examiner_magic_links"),
     regulatoryExaminerSessions: db.collection("regulatory_examiner_sessions"),
+    // Financial Services & Regulated Enterprise SOW, Phase 1 (Financial
+    // Entity Core) — shared by both the "financial" (hedge funds/asset
+    // managers) and "private_capital" (PE/VC) verticals. financialEntities
+    // is a generic hierarchy table (type discriminator: management_company,
+    // adviser, office, committee, external_administrator, prime_broker,
+    // custodian, auditor, legal_counsel, fund_administrator, valuation_agent,
+    // data_provider, technology_vendor, etc.) rather than ~20 near-identical
+    // collections — the Fund itself gets its own richer collection
+    // (financialFunds) since it's the central, most complex object (§5.1).
+    // financialFundTeamAssignments is the join table making fund visibility
+    // assignment-based (mirrors health_care_team_assignments/
+    // legal_matter_team_assignments exactly).
+    financialEntities: db.collection("financial_entities"),
+    financialFunds: db.collection("financial_funds"),
+    financialFundTeamAssignments: db.collection("financial_fund_team_assignments"),
+    financialInvestors: db.collection("financial_investors"),
+    financialInvestorCommitments: db.collection("financial_investor_commitments"),
+    financialCounterparties: db.collection("financial_counterparties"),
   };
 }
 
@@ -267,6 +289,8 @@ export async function ensureOrgIndexes() {
     complianceFindings, internalAuditPlans, compliancePolicies, compliancePolicyAcknowledgements,
     complianceExceptions, regulatoryExaminations, regulatoryExaminationRequests,
     regulatoryExaminerMagicLinks, regulatoryExaminerSessions,
+    financialEntities, financialFunds, financialFundTeamAssignments,
+    financialInvestors, financialInvestorCommitments, financialCounterparties,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -417,6 +441,15 @@ export async function ensureOrgIndexes() {
     regulatoryExaminerSessions.createIndex({ tokenHash: 1 }, { unique: true }),
     regulatoryExaminerSessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     regulatoryExaminerSessions.createIndex({ orgId: 1, examinationId: 1, examinerEmail: 1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 1 (Financial Entity Core)
+    financialEntities.createIndex({ orgId: 1, type: 1 }),
+    financialEntities.createIndex({ orgId: 1, parentEntityId: 1 }),
+    financialFunds.createIndex({ orgId: 1, status: 1 }),
+    financialFundTeamAssignments.createIndex({ orgId: 1, fundId: 1, email: 1 }, { unique: true }),
+    financialFundTeamAssignments.createIndex({ orgId: 1, email: 1 }),
+    financialInvestors.createIndex({ orgId: 1, fundId: 1 }),
+    financialInvestorCommitments.createIndex({ orgId: 1, investorId: 1, fundId: 1 }),
+    financialCounterparties.createIndex({ orgId: 1, type: 1 }),
   ]);
 
   indexesEnsured = true;

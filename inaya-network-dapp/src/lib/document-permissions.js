@@ -54,7 +54,7 @@
 // against a maxUses-limited link race-safe without extra locking.
 
 import { randomBytes, createHash } from "node:crypto";
-import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, canAccessHealthRecords, canAccessLegalMatters, toObjectId } from "./orgs.js";
+import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, canAccessHealthRecords, canAccessLegalMatters, canAccessFinancialEntities, toObjectId } from "./orgs.js";
 import { logDocumentActivity } from "./activity-log.js";
 
 export const PERMISSION_LEVELS = ["VIEW", "EDIT", "MANAGE"];
@@ -171,6 +171,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     invoices, expenses, employees, leaveRequests,
     healthPatients, healthEncounters, healthCareTeamAssignments,
     legalClients, legalMatters, legalMatterTeamAssignments,
+    financialFunds, financialFundTeamAssignments, financialEntities,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -326,11 +327,32 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     ? await healthEncounters.find({ orgId: orgObjectId, patientId: { $in: visiblePatientIds } }).sort({ createdAt: -1 }).toArray()
     : [];
 
+  // Financial Services & Regulated Enterprise SOW, Phase 1 — fund
+  // visibility is ASSIGNMENT-based, exact same shape as patients/matters
+  // above (SOW §5.3: department/org membership alone must not grant fund
+  // access). Entities (the generic hierarchy table) are NOT
+  // assignment-scoped — they're org-wide reference data (a "prime broker"
+  // or "custodian" row isn't a secret the way a specific fund's
+  // financials are), gated only by canAccessFinancialEntities.
+  const canSeeAllFunds = canAccessFinancialEntities(membership);
+  const assignedFundIds = !canSeeAllFunds && email
+    ? await financialFundTeamAssignments.find({ orgId: orgObjectId, email }).toArray()
+    : [];
+  const [visibleFunds, visibleEntities] = await Promise.all([
+    canSeeAllFunds
+      ? financialFunds.find({ orgId: orgObjectId }).sort({ createdAt: -1 }).toArray()
+      : assignedFundIds.length
+      ? financialFunds.find({ orgId: orgObjectId, _id: { $in: assignedFundIds.map((a) => a.fundId) } }).sort({ createdAt: -1 }).toArray()
+      : [],
+    canAccessFinancialEntities(membership) ? financialEntities.find({ orgId: orgObjectId }).sort({ type: 1, name: 1 }).toArray() : [],
+  ]);
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
     visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
     visiblePatients, visibleEncounters, visibleClients, visibleMatters,
+    visibleFunds, visibleEntities,
   };
 }
 

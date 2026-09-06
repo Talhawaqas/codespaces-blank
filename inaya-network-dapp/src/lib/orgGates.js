@@ -146,3 +146,33 @@ export function canManageAudit(membership) {
 export function canAccessAudit(membership) {
   return canManageAudit(membership) || membership?.auditRole === "staff";
 }
+
+// ============================================================
+// Financial Services & Regulated Enterprise SOW, Phase 1 — role model
+//
+// financialRole is the org-wide manager/staff gate for the Financial
+// Entity Core (funds, entities, investors, counterparties), same
+// precedent as every prior domain. Fund-level visibility itself is
+// assignment-based, NOT this role alone (SOW §5.3: "a user must not
+// automatically inherit access across funds merely because they belong
+// to the same organization") — isFundTeamMember mirrors
+// isCareTeamMember/isMatterTeamMember exactly for that per-fund check.
+// ============================================================
+
+export function canManageFinancialEntities(membership) {
+  return canManageOrg(membership) || membership?.financialRole === "manager";
+}
+
+export function canAccessFinancialEntities(membership) {
+  return canManageFinancialEntities(membership) || membership?.financialRole === "staff";
+}
+
+/** Same shape as isCareTeamMember/isMatterTeamMember, for
+ *  financial_fund_team_assignments rows. */
+export function isFundTeamMember(membership, fundId, assignments) {
+  if (!membership) return false;
+  if (canManageOrg(membership)) return true;
+  return (assignments || []).some(
+    (a) => a.fundId?.toString() === fundId?.toString() && a.email === membership.email
+  );
+}

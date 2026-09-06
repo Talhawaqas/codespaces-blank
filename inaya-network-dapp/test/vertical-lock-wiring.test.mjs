@@ -45,10 +45,18 @@ const LEGAL_ROUTES = findRouteFiles("src/app/api/orgs/legal");
 // its own header comment), and is naturally skipped by this test's
 // `if (!hasMembershipGate) continue` even if it were scanned.
 const REGULATED_ROUTES = findRouteFiles("src/app/api/orgs/regulated");
+// Financial Services & Regulated Enterprise SOW, Phase 1. The Financial
+// Entity Core is genuinely shared by both the "financial" and
+// "private_capital" verticals (see industry-config.js's requireVertical
+// header comment) — these routes pass an ARRAY to requireVertical(),
+// e.g. requireVertical(orgId, ["financial", "private_capital"]), which
+// is why `vertical` below can be either a string or an array.
+const FINANCIAL_ROUTES = findRouteFiles("src/app/api/orgs/financial");
 const ALL_ROUTES = [
   ...HEALTH_ROUTES.map((f) => ({ file: f, vertical: "healthcare" })),
   ...LEGAL_ROUTES.map((f) => ({ file: f, vertical: "legal" })),
   ...REGULATED_ROUTES.map((f) => ({ file: f, vertical: "regulated" })),
+  ...FINANCIAL_ROUTES.map((f) => ({ file: f, vertical: ["financial", "private_capital"] })),
 ];
 
 function splitIntoHandlers(source) {
@@ -60,13 +68,28 @@ function splitIntoHandlers(source) {
   return handlers;
 }
 
-test("sanity: found every expected health/legal/regulated route file (this test isn't silently checking zero files)", () => {
+test("sanity: found every expected health/legal/regulated/financial route file (this test isn't silently checking zero files)", () => {
   assert.ok(HEALTH_ROUTES.length >= 9, `expected at least 9 health routes, found ${HEALTH_ROUTES.length}`);
   assert.ok(LEGAL_ROUTES.length >= 16, `expected at least 16 legal routes, found ${LEGAL_ROUTES.length}`);
   assert.ok(REGULATED_ROUTES.length >= 20, `expected at least 20 regulated routes, found ${REGULATED_ROUTES.length}`);
+  assert.ok(FINANCIAL_ROUTES.length >= 1, `expected at least 1 financial route, found ${FINANCIAL_ROUTES.length}`);
 });
 
+// Matches requireVertical(<orgIdExpr>, "singleVertical") or
+// requireVertical(<orgIdExpr>, ["v1", "v2"]) — captures the orgId
+// expression plus either a single quoted word or a bracketed list of them.
+const VERTICAL_CALL_RE = /requireVertical\(\s*([^,]+?)\s*,\s*(\[[^\]]+\]|["']\w+["'])\s*\)/;
+
+function parseCheckedVerticals(raw) {
+  if (raw.startsWith("[")) {
+    return [...raw.matchAll(/["'](\w+)["']/g)].map((m) => m[1]);
+  }
+  return [raw.replace(/["']/g, "")];
+}
+
 for (const { file, vertical } of ALL_ROUTES) {
+  const expectedVerticals = Array.isArray(vertical) ? vertical : [vertical];
+
   test(`vertical lock wiring: ${file}`, () => {
     const source = fs.readFileSync(file, "utf8");
     const handlers = splitIntoHandlers(source);
@@ -77,12 +100,13 @@ for (const { file, vertical } of ALL_ROUTES) {
       if (!hasMembershipGate) continue; // a handler with no auth gate at all is a different, unrelated problem
 
       const membershipMatch = body.match(/requireMembership\(\s*req\s*,\s*([^,)]+)/);
-      const verticalMatch = body.match(/requireVertical\(\s*([^,]+?)\s*,\s*["'](\w+)["']\s*\)/);
+      const verticalMatch = body.match(VERTICAL_CALL_RE);
 
       assert.ok(verticalMatch, `${file} :: ${name} -- calls requireMembership but has NO requireVertical() call at all. This route is NOT locked to a business type.`);
 
-      const [, verticalOrgIdExpr, checkedVertical] = verticalMatch;
+      const [, verticalOrgIdExpr, rawCheckedVertical] = verticalMatch;
       const membershipOrgIdExpr = membershipMatch[1].trim();
+      const checkedVerticals = parseCheckedVerticals(rawCheckedVertical);
 
       assert.equal(
         verticalOrgIdExpr.trim(),
@@ -90,7 +114,11 @@ for (const { file, vertical } of ALL_ROUTES) {
         `${file} :: ${name} -- requireMembership() authenticated against "${membershipOrgIdExpr}" but requireVertical() checked "${verticalOrgIdExpr.trim()}". These MUST be the exact same expression, or the vertical lock either checks the wrong org or references a variable that doesn't exist in scope (the real bug this test guards against).`
       );
 
-      assert.equal(checkedVertical, vertical, `${file} :: ${name} -- checks vertical "${checkedVertical}" but this route lives under the "${vertical}" tree.`);
+      assert.deepEqual(
+        checkedVerticals,
+        expectedVerticals,
+        `${file} :: ${name} -- checks vertical(s) ${JSON.stringify(checkedVerticals)} but this route lives under a tree expecting ${JSON.stringify(expectedVerticals)}.`
+      );
     }
   });
 }
