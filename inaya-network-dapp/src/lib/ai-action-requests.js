@@ -47,6 +47,7 @@ import { transitionLeaveRequest } from "./leave-workflow.js";
 import { transitionPurchaseOrder } from "./purchase-order-workflow.js";
 import { transitionPurchaseRequest } from "./purchase-request-workflow.js";
 import { transitionDeal } from "./deal-workflow.js";
+import { amendPolicy } from "./compliance-policies.js";
 
 // Maps a request's targetRecordType to the real workflow transition it's
 // eventually allowed to trigger, and how to turn a request's stored args
@@ -73,6 +74,13 @@ const EXECUTORS = {
   PURCHASE_ORDER: ({ orgId, args, actorEmail }) => transitionPurchaseOrder({ orgId, poId: args.poId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
   PURCHASE_REQUEST: ({ orgId, args, actorEmail }) => transitionPurchaseRequest({ orgId, requestId: args.requestId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
   DEAL: ({ orgId, args, actorEmail }) => transitionDeal({ orgId, dealId: args.dealId, action: args.action, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail, note: "Executed via approved AI action request." }),
+  // Financial Services & Regulated Enterprise SOW, Phase 6 (§199) — the
+  // Regulatory Copilot's only mutation tool. amendPolicy() itself already
+  // enforces "only a PUBLISHED policy can be amended" and never mutates
+  // the published row (it inserts a new version) — this executor adds no
+  // new authority, it just runs that same real function once a human
+  // compliance manager has approved the AI's proposal.
+  COMPLIANCE_POLICY: ({ orgId, args, actorEmail }) => amendPolicy({ orgId, policyId: args.policyId, title: args.title, body: args.body, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail }),
 };
 
 // Enterprise OS SOW, Phase 3 — same "wrap in try/catch, log and continue,
@@ -174,6 +182,7 @@ const RISK_LEVELS = {
   EXPENSE: "HIGH",
   INVOICE: "HIGH",
   PURCHASE_ORDER: "HIGH",
+  "COMPLIANCE_POLICY:amend": "HIGH",
 };
 
 export function classifyRisk(targetRecordType, proposedAction) {
