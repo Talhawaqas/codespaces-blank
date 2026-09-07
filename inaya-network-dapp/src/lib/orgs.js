@@ -343,6 +343,15 @@ export async function getOrgCollections() {
     // DRAFT -> PUBLISHED immutability exactly: once PUBLISHED, no function
     // touches a report's sections again.
     boardReports: db.collection("board_reports"),
+    // Financial Services & Regulated Enterprise SOW, Phase 9 (External
+    // Data Rooms) — investor/diligence/audit rooms. Regulatory examination
+    // rooms keep their own dedicated Phase 4 collections
+    // (regulatoryExaminerMagicLinks/Sessions above) — this is the
+    // generalized engine for the three NEW room types only.
+    dataRooms: db.collection("data_rooms"),
+    dataRoomExternalMagicLinks: db.collection("data_room_external_magic_links"),
+    dataRoomExternalSessions: db.collection("data_room_external_sessions"),
+    dataRoomAccessLog: db.collection("data_room_access_log"),
   };
 }
 
@@ -380,6 +389,7 @@ export async function ensureOrgIndexes() {
     ictAssets, criticalFunctions, continuityPlans, drRunbooks, drTests,
     resilienceTests, dataResidencyPolicies, privilegedSessions, sodRules,
     integrationConnections, integrationSyncRuns, boardReports,
+    dataRooms, dataRoomExternalMagicLinks, dataRoomExternalSessions, dataRoomAccessLog,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -581,6 +591,13 @@ export async function ensureOrgIndexes() {
     integrationSyncRuns.createIndex({ orgId: 1, providerId: 1, startedAt: -1 }),
     // Financial Services & Regulated Enterprise SOW, Phase 8 (Executive / Board Layer)
     boardReports.createIndex({ orgId: 1, status: 1, draftedAt: -1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 9 (External Data Rooms)
+    dataRooms.createIndex({ orgId: 1, roomType: 1 }),
+    dataRoomExternalMagicLinks.createIndex({ tokenHash: 1 }, { unique: true }),
+    dataRoomExternalMagicLinks.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    dataRoomExternalSessions.createIndex({ tokenHash: 1 }, { unique: true }),
+    dataRoomExternalSessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    dataRoomAccessLog.createIndex({ orgId: 1, roomId: 1, accessedAt: -1 }),
   ]);
 
   indexesEnsured = true;

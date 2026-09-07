@@ -46,6 +46,7 @@ import FinancialView from "../../components/business/FinancialView";
 import SecurityResilienceView from "../../components/business/SecurityResilienceView";
 import IntegrationsView from "../../components/business/IntegrationsView";
 import ExecutiveDashboardView from "../../components/business/ExecutiveDashboardView";
+import DataRoomsView from "../../components/business/DataRoomsView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
@@ -721,6 +722,12 @@ const ICONS = {
       <path d="M3 21h18M6 21V10l6-4 6 4v11M10 21v-6h4v6" />
     </>
   ),
+  dataRooms: (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M3 7l3-4h6l2 4" />
+    </>
+  ),
   dashboard: (
     <>
       <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
@@ -876,6 +883,7 @@ const NAV_ITEMS = [
   { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true },
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true },
+  { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -1038,6 +1046,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     resilience: "Trust & Resilience",
     integrations: "Integrations",
     executive: "Executive",
+    dataRooms: "Data Rooms",
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
@@ -1150,6 +1159,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
+          {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
