@@ -47,6 +47,7 @@ import SecurityResilienceView from "../../components/business/SecurityResilience
 import IntegrationsView from "../../components/business/IntegrationsView";
 import ExecutiveDashboardView from "../../components/business/ExecutiveDashboardView";
 import DataRoomsView from "../../components/business/DataRoomsView";
+import EnterpriseHardeningView from "../../components/business/EnterpriseHardeningView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
@@ -728,6 +729,12 @@ const ICONS = {
       <path d="M3 7l3-4h6l2 4" />
     </>
   ),
+  enterpriseHardening: (
+    <>
+      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
+      <path d="M9 12l2 2 4-4" />
+    </>
+  ),
   dashboard: (
     <>
       <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
@@ -884,6 +891,7 @@ const NAV_ITEMS = [
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true },
   { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true },
+  { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -1047,6 +1055,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     integrations: "Integrations",
     executive: "Executive",
     dataRooms: "Data Rooms",
+    enterpriseHardening: "Export & Migration",
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
@@ -1160,6 +1169,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
           {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
+          {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}

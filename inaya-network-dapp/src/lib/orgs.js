@@ -352,6 +352,12 @@ export async function getOrgCollections() {
     dataRoomExternalMagicLinks: db.collection("data_room_external_magic_links"),
     dataRoomExternalSessions: db.collection("data_room_external_sessions"),
     dataRoomAccessLog: db.collection("data_room_access_log"),
+    // Financial Services & Regulated Enterprise SOW, Phase 10 (Enterprise
+    // Hardening) — regulated export packages (§218) and migration runs
+    // (§273-274). Both are immutable-once-created evidentiary records,
+    // same discipline as compliance-policies.js's publish step.
+    regulatedExportPackages: db.collection("regulated_export_packages"),
+    migrationRuns: db.collection("migration_runs"),
   };
 }
 
@@ -390,6 +396,7 @@ export async function ensureOrgIndexes() {
     resilienceTests, dataResidencyPolicies, privilegedSessions, sodRules,
     integrationConnections, integrationSyncRuns, boardReports,
     dataRooms, dataRoomExternalMagicLinks, dataRoomExternalSessions, dataRoomAccessLog,
+    regulatedExportPackages, migrationRuns,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -598,6 +605,9 @@ export async function ensureOrgIndexes() {
     dataRoomExternalSessions.createIndex({ tokenHash: 1 }, { unique: true }),
     dataRoomExternalSessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     dataRoomAccessLog.createIndex({ orgId: 1, roomId: 1, accessedAt: -1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 10 (Enterprise Hardening)
+    regulatedExportPackages.createIndex({ orgId: 1, requestId: 1 }),
+    migrationRuns.createIndex({ orgId: 1, status: 1, createdAt: -1 }),
   ]);
 
   indexesEnsured = true;
