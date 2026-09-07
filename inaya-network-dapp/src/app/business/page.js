@@ -44,6 +44,7 @@ import LegalView from "../../components/business/LegalView";
 import RegulatedView from "../../components/business/RegulatedView";
 import FinancialView from "../../components/business/FinancialView";
 import SecurityResilienceView from "../../components/business/SecurityResilienceView";
+import IntegrationsView from "../../components/business/IntegrationsView";
 import InsightsView from "../../components/business/InsightsView";
 import AIActionRequestsView from "../../components/business/AIActionRequestsView";
 import AuditTrailView from "../../components/business/AuditTrailView";
@@ -707,6 +708,13 @@ const ICONS = {
       <circle cx="12" cy="12" r="4" />
     </>
   ),
+  integrations: (
+    <>
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="18" cy="18" r="3" />
+      <path d="M8.5 8.5l7 7M6 9v6a3 3 0 0 0 3 3h3" />
+    </>
+  ),
   dashboard: (
     <>
       <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
@@ -860,6 +868,7 @@ const NAV_ITEMS = [
   { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated" },
   { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"] },
   { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true },
+  { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
@@ -1020,6 +1029,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     regulated: "Regulated OS",
     financial: "Financial OS",
     resilience: "Trust & Resilience",
+    integrations: "Integrations",
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
@@ -1130,6 +1140,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
           {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
+          {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}

@@ -327,6 +327,17 @@ export async function getOrgCollections() {
     dataResidencyPolicies: db.collection("data_residency_policies"),
     privilegedSessions: db.collection("privileged_sessions"),
     sodRules: db.collection("sod_rules"),
+    // Financial Services & Regulated Enterprise SOW, Phase 7 (§95, §235-236)
+    // — Integrations. Cross-vertical, same reasoning as Phase 5. Every
+    // provider ships stub-by-default (configured:false) since this codebase
+    // holds no real third-party credentials for any of these systems —
+    // integrationConnections records an org's configuration INTENT and
+    // real health/error data once actually connected, never a fabricated
+    // "connected" state. integrationSyncRuns is the append-only
+    // reconciliation history (§236): one row per sync attempt, never
+    // mutated after the fact.
+    integrationConnections: db.collection("integration_connections"),
+    integrationSyncRuns: db.collection("integration_sync_runs"),
   };
 }
 
@@ -363,6 +374,7 @@ export async function ensureOrgIndexes() {
     portfolioKpiDefinitions, portfolioKpiValues, fundraisingProspects, exits, spvs,
     ictAssets, criticalFunctions, continuityPlans, drRunbooks, drTests,
     resilienceTests, dataResidencyPolicies, privilegedSessions, sodRules,
+    integrationConnections, integrationSyncRuns,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -559,6 +571,9 @@ export async function ensureOrgIndexes() {
     dataResidencyPolicies.createIndex({ orgId: 1 }, { unique: true }),
     privilegedSessions.createIndex({ orgId: 1, status: 1 }),
     sodRules.createIndex({ orgId: 1, ruleType: 1 }, { unique: true }),
+    // Financial Services & Regulated Enterprise SOW, Phase 7 (Integrations)
+    integrationConnections.createIndex({ orgId: 1, providerId: 1 }, { unique: true }),
+    integrationSyncRuns.createIndex({ orgId: 1, providerId: 1, startedAt: -1 }),
   ]);
 
   indexesEnsured = true;
