@@ -338,6 +338,11 @@ export async function getOrgCollections() {
     // mutated after the fact.
     integrationConnections: db.collection("integration_connections"),
     integrationSyncRuns: db.collection("integration_sync_runs"),
+    // Financial Services & Regulated Enterprise SOW, Phase 8 (Executive /
+    // Board Layer) — boardReports follows compliance-policies.js's
+    // DRAFT -> PUBLISHED immutability exactly: once PUBLISHED, no function
+    // touches a report's sections again.
+    boardReports: db.collection("board_reports"),
   };
 }
 
@@ -374,7 +379,7 @@ export async function ensureOrgIndexes() {
     portfolioKpiDefinitions, portfolioKpiValues, fundraisingProspects, exits, spvs,
     ictAssets, criticalFunctions, continuityPlans, drRunbooks, drTests,
     resilienceTests, dataResidencyPolicies, privilegedSessions, sodRules,
-    integrationConnections, integrationSyncRuns,
+    integrationConnections, integrationSyncRuns, boardReports,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -574,6 +579,8 @@ export async function ensureOrgIndexes() {
     // Financial Services & Regulated Enterprise SOW, Phase 7 (Integrations)
     integrationConnections.createIndex({ orgId: 1, providerId: 1 }, { unique: true }),
     integrationSyncRuns.createIndex({ orgId: 1, providerId: 1, startedAt: -1 }),
+    // Financial Services & Regulated Enterprise SOW, Phase 8 (Executive / Board Layer)
+    boardReports.createIndex({ orgId: 1, status: 1, draftedAt: -1 }),
   ]);
 
   indexesEnsured = true;
