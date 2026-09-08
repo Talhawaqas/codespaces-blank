@@ -394,6 +394,9 @@ export async function getOrgCollections() {
     // primitives only (propose/accept/reject/revoke/check). See
     // src/lib/org-trust.js's header comment for the scope limit.
     orgTrustRelationships: db.collection("org_trust_relationships"),
+    // Institutional Trust Infrastructure SOW, Phase 4 — API keys for the
+    // public/v1 namespace. See src/lib/api-keys.js.
+    apiKeys: db.collection("api_keys"),
   };
 }
 
@@ -435,7 +438,7 @@ export async function ensureOrgIndexes() {
     regulatedExportPackages, migrationRuns,
     citizenRecords, citizenRecordAssignments, governmentCases, governmentDocumentReads,
     policyKbEntries, policyKbAcknowledgements,
-    guidedTasks, orgTrustRelationships,
+    guidedTasks, orgTrustRelationships, apiKeys,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -664,6 +667,8 @@ export async function ensureOrgIndexes() {
     // Institutional Trust Infrastructure SOW, Phase 5
     orgTrustRelationships.createIndex({ fromOrgId: 1, status: 1 }),
     orgTrustRelationships.createIndex({ toOrgId: 1, status: 1 }),
+    apiKeys.createIndex({ tokenHash: 1 }, { unique: true }),
+    apiKeys.createIndex({ orgId: 1, revokedAt: 1 }),
   ]);
 
   indexesEnsured = true;
