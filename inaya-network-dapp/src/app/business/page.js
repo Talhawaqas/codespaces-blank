@@ -43,6 +43,7 @@ import HealthView from "../../components/business/HealthView";
 import LegalView from "../../components/business/LegalView";
 import RegulatedView from "../../components/business/RegulatedView";
 import FinancialView from "../../components/business/FinancialView";
+import GovernmentView from "../../components/business/GovernmentView";
 import SecurityResilienceView from "../../components/business/SecurityResilienceView";
 import IntegrationsView from "../../components/business/IntegrationsView";
 import ExecutiveDashboardView from "../../components/business/ExecutiveDashboardView";
@@ -548,6 +549,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
                 <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
                 <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
                 <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
+                <option value="government">Government / public sector (Government OS)</option>
               </select>
             </>
           )}
@@ -659,6 +661,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
           <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
           <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
+          <option value="government">Government / public sector (Government OS)</option>
         </select>
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -703,6 +706,12 @@ const ICONS = {
     <>
       <path d="M3 17l5-6 4 4 8-9" />
       <path d="M14 6h6v6" />
+    </>
+  ),
+  government: (
+    <>
+      <path d="M12 3l9 5H3l9-5z" />
+      <path d="M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18" />
     </>
   ),
   resilience: (
@@ -867,39 +876,53 @@ ICONS.settings = (
 // ============================================================
 // SIDEBAR + WORKSPACE SHELL
 // ============================================================
+// UI Enhancement Specs v2, §3 -- each item's `group` drives the sidebar's
+// micro-heading chunking. Order here is also render order, so items in
+// the same group stay contiguous; GROUP_LABELS below defines display order
+// and text independently of these internal keys.
 const NAV_ITEMS = [
-  { key: "osHome", label: "OS Home", icon: "dashboard" },
-  { key: "dashboard", label: "Dashboard", icon: "dashboard" },
-  { key: "insights", label: "Insights", icon: "insights" },
-  { key: "brief", label: "Brief", icon: "insights" },
-  { key: "whatChanged", label: "What Changed?", icon: "insights" },
-  { key: "security", label: "Security", icon: "activity" },
-  { key: "departments", label: "Departments", icon: "departments" },
-  { key: "projects", label: "Projects", icon: "projects" },
-  { key: "documents", label: "Documents", icon: "documents" },
-  { key: "tasks", label: "Tasks", icon: "tasks" },
-  { key: "crm", label: "CRM", icon: "crm" },
-  { key: "procurement", label: "Procurement", icon: "procurement" },
-  { key: "inventory", label: "Inventory", icon: "inventory" },
-  { key: "finance", label: "Finance", icon: "finance" },
-  { key: "hr", label: "HR", icon: "hr" },
-  { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare" },
-  { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal" },
-  { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated" },
-  { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"] },
-  { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true },
-  { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true },
-  { key: "executive", label: "Executive", icon: "executive", manageOnly: true },
-  { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true },
-  { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true },
-  { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true },
-  { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant" },
-  { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true },
-  { key: "activity", label: "Activity", icon: "activity" },
-  { key: "ai", label: "AI Assistant", icon: "aiAssistant" },
-  { key: "billing", label: "Billing", icon: "billing", manageOnly: true },
-  { key: "settings", label: "Settings", icon: "settings", manageOnly: true },
+  { key: "osHome", label: "OS Home", icon: "dashboard", group: "core" },
+  { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "core" },
+  { key: "insights", label: "Insights", icon: "insights", group: "core" },
+  { key: "brief", label: "Brief", icon: "insights", group: "core" },
+  { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
+  { key: "departments", label: "Departments", icon: "departments", group: "operations" },
+  { key: "projects", label: "Projects", icon: "projects", group: "operations" },
+  { key: "documents", label: "Documents", icon: "documents", group: "operations" },
+  { key: "tasks", label: "Tasks", icon: "tasks", group: "operations" },
+  { key: "crm", label: "CRM", icon: "crm", group: "operations" },
+  { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
+  { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
+  { key: "finance", label: "Finance", icon: "finance", group: "operations" },
+  { key: "hr", label: "HR", icon: "hr", group: "operations" },
+  { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare", group: "industry" },
+  { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal", group: "industry" },
+  { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated", group: "industry" },
+  { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"], group: "industry" },
+  { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
+  { key: "security", label: "Security", icon: "activity", group: "trust" },
+  { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true, group: "trust" },
+  { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
+  { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
+  { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
+  { key: "activity", label: "Activity", icon: "activity", group: "trust" },
+  { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
+  { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
+  { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true, group: "enterprise" },
+  { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true, group: "enterprise" },
+  { key: "ai", label: "AI Assistant", icon: "aiAssistant", group: "settings" },
+  { key: "billing", label: "Billing", icon: "billing", manageOnly: true, group: "settings" },
+  { key: "settings", label: "Settings", icon: "settings", manageOnly: true, group: "settings" },
 ];
+
+const GROUP_LABELS = {
+  core: "Core",
+  operations: "Operations",
+  industry: "Industry",
+  trust: "Trust & Security",
+  enterprise: "Enterprise",
+  settings: "Settings",
+};
 
 // Healthcare & Legal Expansion SOW — lets an existing org (created before
 // this feature, or simply changing business type) switch which vertical
@@ -939,6 +962,7 @@ function OrgVerticalSettings({ orgId, vertical, onChanged }) {
         <option value="regulated">Regulated enterprise (Regulated Enterprise OS)</option>
         <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
         <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
+        <option value="government">Government / public sector (Government OS)</option>
       </select>
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
     </div>
@@ -971,18 +995,34 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.filter((item) => (!item.manageOnly || canManage) && (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical))).map((item) => (
-            <button
-              key={item.key}
-              onClick={() => onNavigate(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeView === item.key ? "bg-[#00f2fe]/10 text-[#00f2fe]" : "text-[var(--inaya-text-muted)] hover:bg-[var(--inaya-overlay-5)] hover:text-slate-200"
-              }`}
-            >
-              <Icon path={ICONS[item.icon]} />
-              {item.label}
-            </button>
-          ))}
+          {(() => {
+            const visible = NAV_ITEMS.filter((item) => (!item.manageOnly || canManage) && (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)));
+            let lastGroup = null;
+            return visible.map((item) => {
+              const showHeading = item.group !== lastGroup;
+              lastGroup = item.group;
+              return (
+                <div key={item.key}>
+                  {showHeading && (
+                    <p className={`px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] opacity-40 ${item === visible[0] ? "mb-1.5" : "mt-4 mb-1.5"}`}>
+                      {GROUP_LABELS[item.group] || item.group}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => onNavigate(item.key)}
+                    className={`w-full flex items-center gap-3 pl-2.5 pr-3 py-2.5 rounded-lg text-sm font-medium border-l-2 transition-colors ${
+                      activeView === item.key
+                        ? "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe] shadow-[-2px_0_8px_rgba(0,242,254,0.35)]"
+                        : "text-[var(--inaya-text-muted)] border-transparent hover:bg-[var(--inaya-overlay-5)] hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon path={ICONS[item.icon]} />
+                    {item.label}
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </nav>
 
         <div className="px-3 pb-5">
@@ -1051,6 +1091,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     legal: "Legal OS",
     regulated: "Regulated OS",
     financial: "Financial OS",
+    government: "Government OS",
     resilience: "Trust & Resilience",
     integrations: "Integrations",
     executive: "Executive",
@@ -1164,6 +1205,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
+          {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
           {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}

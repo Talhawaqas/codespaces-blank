@@ -12,11 +12,28 @@
 // surface)] border border-white/5 rounded-2xl) rather than inventing a
 // new look for one more card.
 
+// UI Enhancement Specs v2, §2 -- `arc` is a PRESENTATIONAL weighting, not a
+// real percentage: trustHealth.js's actual data model is this 3-state
+// enum, nothing in it computes a numeric score. Rather than inventing a
+// precise "100%" figure the spec's wording suggests, the ring shows the
+// real state honestly at three fixed visual weights -- a genuine upgrade
+// over the old dot+text without asserting a number nobody computed.
 const STATUS_STYLE = {
-  good: { label: "All good", dot: "bg-emerald-400", text: "text-emerald-400", ring: "border-emerald-400/30" },
-  attention: { label: "Needs attention", dot: "bg-amber-400", text: "text-amber-400", ring: "border-amber-400/30" },
-  critical: { label: "Action required", dot: "bg-red-400", text: "text-red-400", ring: "border-red-400/30" },
+  good: { label: "All good", text: "text-emerald-400", stroke: "#34d399", ring: "border-emerald-400/30", arc: 100, pulse: true },
+  attention: { label: "Needs attention", text: "text-amber-400", stroke: "#fbbf24", ring: "border-amber-400/30", arc: 60, pulse: false },
+  critical: { label: "Action required", text: "text-red-400", stroke: "#f87171", ring: "border-red-400/30", arc: 25, pulse: false },
 };
+
+function StatusRing({ style }) {
+  const r = 8, c = 2 * Math.PI * r;
+  const filled = (style.arc / 100) * c;
+  return (
+    <svg viewBox="0 0 20 20" className={`w-4 h-4 -rotate-90 ${style.pulse ? "inaya-shield-pulse" : ""}`} style={{ color: style.stroke }} aria-hidden="true">
+      <circle cx="10" cy="10" r={r} fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
+      <circle cx="10" cy="10" r={r} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${filled} ${c}`} />
+    </svg>
+  );
+}
 
 function Row({ label, value }) {
   if (value === null || value === undefined) return null;
@@ -54,7 +71,7 @@ export default function TrustHealthCard({ snapshot, loading, error }) {
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-bold uppercase tracking-wide text-[var(--inaya-text-muted)]">Trust &amp; Health</p>
         <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase ${style.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+          <StatusRing style={style} />
           {style.label}
         </span>
       </div>

@@ -90,7 +90,7 @@ export default function AIWidget({ orgId }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9998] w-full h-full sm:inset-auto sm:bottom-24 sm:right-5 sm:w-[92vw] sm:max-w-sm sm:h-[70vh] sm:max-h-[560px] bg-[#090e1a]/95 sm:border sm:border-violet-400/25 sm:rounded-2xl shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[9998] w-full h-full sm:inset-auto sm:bottom-24 sm:right-5 sm:w-[92vw] sm:max-w-sm sm:h-[70vh] sm:max-h-[560px] bg-[#090e1a]/75 sm:border sm:border-violet-400/25 sm:rounded-2xl shadow-[0_8px_40px_rgba(167,139,250,0.25)] backdrop-blur-xl flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10 bg-[#0b1426]/80 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-lg shrink-0 bg-violet-400/15 border border-violet-400/30 flex items-center justify-center text-sm">🤖</div>

@@ -128,3 +128,69 @@ select:focus {
     animation: none;
   }
 }
+
+/* UI Enhancement Specs v2 -- Business Workspace Home Dashboard.
+   Metric-card hover: a soft radial glow behind the card border, plus the
+   lift transform applied inline via Tailwind at the call site. */
+.inaya-card-glow {
+  position: relative;
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+
+.inaya-card-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(0, 242, 254, 0.25), 0 8px 24px -8px rgba(0, 242, 254, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inaya-card-glow {
+    transition: none;
+  }
+  .inaya-card-glow:hover {
+    transform: none;
+  }
+}
+
+/* Trust & Health badge -- a steady breathing glow for the "good" ring only
+   (the state actually worth celebrating); attention/critical rings stay
+   static so they read as "needs a look", not festive. */
+@keyframes inaya-shield-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px currentColor); }
+  50% { filter: drop-shadow(0 0 6px currentColor); }
+}
+
+.inaya-shield-pulse {
+  animation: inaya-shield-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inaya-shield-pulse {
+    animation: none;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+}
+
+/* "Ask the OS Assistant" input -- an animated gradient border ring behind
+   the real input, revealed only through the 1px padding gap. Kept as a
+   ::before on a positioned wrapper so the input's own background/text are
+   never affected. */
+@keyframes inaya-input-glow-spin {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.inaya-input-glow {
+  position: relative;
+  border-radius: 0.5rem;
+  padding: 1px;
+  background: linear-gradient(90deg, #00f2fe, #4facfe, #a78bfa, #00f2fe);
+  background-size: 200% 100%;
+  animation: inaya-input-glow-spin 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inaya-input-glow {
+    animation: none;
+    background: linear-gradient(90deg, #00f2fe, #4facfe);
+  }
+}

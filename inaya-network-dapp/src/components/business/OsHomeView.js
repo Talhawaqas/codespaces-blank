@@ -13,6 +13,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useOrg } from "../../contexts/OrgContext";
 import TrustHealthCard from "../TrustHealthCard";
+import EmptyState from "../EmptyState";
+import { TileIcon } from "./tileIcons";
+import { useCountUp } from "../../hooks/useCountUp";
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -21,14 +24,39 @@ async function api(path, opts) {
   return data;
 }
 
-function Tile({ label, value, onClick }) {
+/** A tiny, real-data-only sparkline. `points` is either null (no history
+ *  yet, or this metric has none to show -- see dashboard-trends.js's own
+ *  header comment for why only Pending Approvals ever gets one) or an
+ *  array of real {day, count} rows; never fabricated. */
+function Sparkline({ points }) {
+  if (!points || points.length < 2) return null;
+  const max = Math.max(1, ...points.map((p) => p.count));
+  const w = 100, h = 28;
+  const step = w / (points.length - 1);
+  const coords = points.map((p, i) => `${(i * step).toFixed(1)},${(h - (p.count / max) * h).toFixed(1)}`);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full h-7 opacity-40" aria-hidden="true">
+      <polyline points={coords.join(" ")} fill="none" stroke="#00f2fe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Tile({ label, value, onClick, trend }) {
+  const displayValue = useCountUp(typeof value === "number" ? value : null);
+
   return (
     <button
       onClick={onClick}
-      className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4 text-left hover:border-[#00f2fe]/30 transition-colors"
+      className="inaya-card-glow relative overflow-hidden bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4 text-left"
     >
-      <p className="text-2xl font-extrabold text-[var(--inaya-text-primary)] font-mono">{value ?? "—"}</p>
-      <p className="text-[11px] uppercase font-bold text-[var(--inaya-text-muted)] mt-1">{label}</p>
+      <span className="pointer-events-none absolute -right-2 -top-2 text-[#00f2fe] opacity-[0.07]">
+        <TileIcon name={label} />
+      </span>
+      <p className="relative text-4xl font-black text-[var(--inaya-text-primary)] font-mono tabular-nums">
+        {value === null || value === undefined ? "—" : displayValue}
+      </p>
+      <p className="relative text-[11px] uppercase font-bold text-[var(--inaya-text-muted)] mt-1">{label}</p>
+      <Sparkline points={trend} />
     </button>
   );
 }
@@ -124,13 +152,15 @@ function OsAssistantWidget({ orgId }) {
     <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-[var(--inaya-text-muted)] mb-2">Ask the OS Assistant</p>
       <div className="flex gap-2">
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && ask()}
-          placeholder="Business or security questions, in one place..."
-          className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-[13px] text-[var(--inaya-text-primary)] outline-none focus:border-[#00f2fe]/40"
-        />
+        <div className="inaya-input-glow flex-1">
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && ask()}
+            placeholder="Business or security questions, in one place..."
+            className="w-full bg-[#0b1120] rounded-[7px] px-3 py-2 text-[13px] text-[var(--inaya-text-primary)] outline-none"
+          />
+        </div>
         <button
           onClick={ask}
           disabled={asking || !question.trim()}
@@ -151,20 +181,26 @@ export default function OsHomeView({ onNavigate }) {
   const [trust, setTrust] = useState(null);
   const [trustError, setTrustError] = useState("");
   const [whatChanged, setWhatChanged] = useState(null);
+  const [trends, setTrends] = useState(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setError("");
-    const [dashRes, trustRes, changedRes] = await Promise.allSettled([
+    const [dashRes, trustRes, changedRes, trendsRes] = await Promise.allSettled([
       api(`/api/orgs/dashboard?orgId=${orgId}`),
       api(`/api/orgs/trust-health?orgId=${orgId}`),
       api(`/api/orgs/activity-center?orgId=${orgId}&period=weekly`),
+      api(`/api/orgs/dashboard-trends?orgId=${orgId}`),
     ]);
     if (dashRes.status === "fulfilled") setDashboard(dashRes.value);
     else setError(dashRes.reason.message);
     if (trustRes.status === "fulfilled") setTrust(trustRes.value);
     else setTrustError(trustRes.reason.message);
     if (changedRes.status === "fulfilled") setWhatChanged(changedRes.value);
+    // UI Enhancement Specs v2, §1 -- a trends fetch failure is silently
+    // absent (no sparkline), never a page-level error; this is decorative,
+    // not load-bearing data.
+    if (trendsRes.status === "fulfilled") setTrends(trendsRes.value);
   }, [orgId]);
 
   useEffect(() => {
@@ -176,7 +212,7 @@ export default function OsHomeView({ onNavigate }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-extrabold text-[var(--inaya-text-primary)]">Welcome back — {orgName}</h1>
+        <h1 className="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[var(--inaya-text-primary)] to-[#00f2fe]">Welcome back — {orgName}</h1>
         <p className="text-[13px] text-[var(--inaya-text-muted)] mt-0.5">One place for what's happening across your organization.</p>
       </div>
 
@@ -191,7 +227,7 @@ export default function OsHomeView({ onNavigate }) {
         <Tile label="Departments" value={dashboard?.counts?.departments} onClick={() => onNavigate("departments")} />
         <Tile label="Projects" value={dashboard?.counts?.projects} onClick={() => onNavigate("projects")} />
         <Tile label="Documents" value={dashboard?.counts?.documents} onClick={() => onNavigate("documents")} />
-        <Tile label="Pending approvals" value={dashboard?.pendingApprovals?.length} onClick={() => onNavigate("approvals")} />
+        <Tile label="Pending approvals" value={dashboard?.pendingApprovals?.length} onClick={() => onNavigate("approvals")} trend={trends?.pendingApprovals} />
       </div>
 
       <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
@@ -202,12 +238,12 @@ export default function OsHomeView({ onNavigate }) {
           </button>
         </div>
         {topBullets.length === 0 ? (
-          <p className="text-[12px] text-[var(--inaya-text-muted)]">Nothing to report this week.</p>
+          <EmptyState compact icon="🌤️" description="Quiet week — nothing new to report yet." />
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="relative space-y-3 pl-4 border-l border-white/10">
             {topBullets.map((b, i) => (
-              <li key={i} className="text-[13px] text-[var(--inaya-text-primary)] flex items-start gap-2">
-                <span className="text-[#00f2fe] mt-0.5">•</span>
+              <li key={i} className="relative text-[13px] text-[var(--inaya-text-primary)]">
+                <span className="absolute -left-[21px] top-1 w-2 h-2 rounded-full bg-[#00f2fe] shadow-[0_0_6px_rgba(0,242,254,0.7)]" />
                 <span>{b}</span>
               </li>
             ))}
