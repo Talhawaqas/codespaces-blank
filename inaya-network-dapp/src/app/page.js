@@ -14,6 +14,7 @@ import ReferralSection from '../components/ReferralSection';
 import HackathonSection from '../components/HackathonSection';
 import LearnSection from '../components/learn/LearnSection';
 import NetworkVisualization from '../components/security/NetworkVisualization';
+import GlobeBackground from '../components/GlobeBackground';
 import EmptyState from '../components/EmptyState';
 import AccentGraphic from '../components/AccentGraphic';
 import Skeleton from '../components/Skeleton';
@@ -5110,7 +5111,8 @@ export default function Home() {
       isWrongNetwork={isWrongNetwork}
       signMessage={signMessage}
     >
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans w-full overflow-x-hidden relative z-0">
+      <GlobeBackground variant="ambient" />
 
       {/* GLOBAL TOP HEADER — sticky at the extreme top of the viewport,
           always visible. The ☰ button inside it opens the site menu

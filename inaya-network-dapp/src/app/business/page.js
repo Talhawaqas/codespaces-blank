@@ -44,6 +44,7 @@ import LegalView from "../../components/business/LegalView";
 import RegulatedView from "../../components/business/RegulatedView";
 import FinancialView from "../../components/business/FinancialView";
 import GovernmentView from "../../components/business/GovernmentView";
+import GlobeBackground from "../../components/GlobeBackground";
 import SecurityResilienceView from "../../components/business/SecurityResilienceView";
 import IntegrationsView from "../../components/business/IntegrationsView";
 import ExecutiveDashboardView from "../../components/business/ExecutiveDashboardView";
@@ -415,7 +416,8 @@ function PlanSelectionGate({ email, membership, onLogout }) {
 
 function CenteredShell({ children }) {
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10 relative overflow-hidden">
+    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10 relative overflow-hidden z-0">
+      <GlobeBackground variant="ambient" />
       {/* Ambient glow -- purely decorative, matches the dashboard promo banner's
           cyan/violet gradient so the sign-in screen doesn't read as a flat,
           separate product from the rest of the workspace. */}
@@ -1107,7 +1109,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   };
 
   return (
-    <div className="flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)]">
+    <div className="flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
+      <GlobeBackground variant="subtle" />
       <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
           floating bubble/panel on top of that full page would be redundant. */}
