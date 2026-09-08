@@ -397,6 +397,11 @@ export async function getOrgCollections() {
     // Institutional Trust Infrastructure SOW, Phase 4 — API keys for the
     // public/v1 namespace. See src/lib/api-keys.js.
     apiKeys: db.collection("api_keys"),
+    // Autonomous Resilience Layer SOW. See src/lib/resilience-policy.js,
+    // resilience-canary.js, resilience-orchestrator.js.
+    resiliencePolicies: db.collection("resilience_policies"),
+    resilienceCanaryAssets: db.collection("resilience_canary_assets"),
+    resilienceTestRuns: db.collection("resilience_test_runs"),
   };
 }
 
@@ -439,6 +444,7 @@ export async function ensureOrgIndexes() {
     citizenRecords, citizenRecordAssignments, governmentCases, governmentDocumentReads,
     policyKbEntries, policyKbAcknowledgements,
     guidedTasks, orgTrustRelationships, apiKeys,
+    resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -669,6 +675,11 @@ export async function ensureOrgIndexes() {
     orgTrustRelationships.createIndex({ toOrgId: 1, status: 1 }),
     apiKeys.createIndex({ tokenHash: 1 }, { unique: true }),
     apiKeys.createIndex({ orgId: 1, revokedAt: 1 }),
+    // Autonomous Resilience Layer SOW
+    resiliencePolicies.createIndex({ orgId: 1, status: 1 }),
+    resilienceCanaryAssets.createIndex({ orgId: 1, policyId: 1, categoryLabel: 1 }, { unique: true }),
+    resilienceTestRuns.createIndex({ orgId: 1, policyId: 1, startedAt: -1 }),
+    resilienceTestRuns.createIndex({ orgId: 1, status: 1 }),
   ]);
 
   indexesEnsured = true;
