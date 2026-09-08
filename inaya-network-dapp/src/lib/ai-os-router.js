@@ -40,6 +40,7 @@ import { buildAuditContext, runAuditTool, AUDIT_TOOL_DECLARATIONS, auditSystemIn
 import { buildRegulatoryContext, runRegulatoryTool, REGULATORY_TOOL_DECLARATIONS, regulatorySystemInstruction } from "./ai-regulatory-tools.js";
 import { buildGovernmentContext, runGovernmentTool, GOVERNMENT_TOOL_DECLARATIONS, governmentSystemInstruction } from "./ai-government-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
+import { getAttentionItems } from "./institutional-attention.js";
 
 const DOCS_TOOL_DECLARATION = {
   name: "search_docs",
@@ -67,6 +68,19 @@ async function searchDocs(args) {
     attribution: formatAttribution(chunks).trim(),
   };
 }
+
+// Institutional Trust Infrastructure SOW, Phase 3 — a genuinely
+// cross-vertical tool (unlike everything else here, which is prefixed
+// per-domain), since "what needs my attention today" is exactly the kind
+// of query no single vertical's tool set can answer. Declared unprefixed,
+// dispatched directly in runOsTool() below rather than through
+// withPrefix()/a per-domain runXTool.
+const ATTENTION_TOOL_DECLARATION = {
+  name: "get_attention_items",
+  description:
+    "Get everything the caller is personally authorized to act on right now, merged across modules: AI-proposed actions awaiting their approval, their own overdue tasks, and documents pending review. Use this for requests like \"what needs my attention\", \"what's pending for me\", or \"show me everything I need to act on today\".",
+  parameters: { type: Type.OBJECT, properties: {} },
+};
 
 function withPrefix(declarations, prefix) {
   return declarations.map((d) => ({ ...d, name: `${prefix}_${d.name}` }));
@@ -120,6 +134,7 @@ export async function buildOsContext(input) {
 export function getOsToolDeclarations(scope) {
   if (scope === "org") {
     return [
+      ATTENTION_TOOL_DECLARATION,
       ...withPrefix(BUSINESS_TOOL_DECLARATIONS, "business"),
       ...withPrefix(SECURITY_TOOL_DECLARATIONS, "security"),
       ...withPrefix(HEALTH_TOOL_DECLARATIONS, "health"),
@@ -142,6 +157,9 @@ export function getOsToolDeclarations(scope) {
  *  into the real, unmodified runBusinessTool/runSecurityTool. */
 export async function runOsTool(name, args, ctx) {
   if (name === "search_docs") return searchDocs(args);
+  if (name === "get_attention_items" && ctx.businessCtx) {
+    return getAttentionItems({ orgId: ctx.businessCtx.orgId, membership: ctx.businessCtx.membership, email: ctx.businessCtx.email, businessCtx: ctx.businessCtx });
+  }
   if (name.startsWith("business_") && ctx.businessCtx) return runBusinessTool(name.slice("business_".length), args, ctx.businessCtx);
   if (name.startsWith("security_") && ctx.securityCtx) return runSecurityTool(name.slice("security_".length), args, ctx.securityCtx);
   if (name.startsWith("health_") && ctx.healthCtx) return runHealthTool(name.slice("health_".length), args, ctx.healthCtx);
@@ -165,6 +183,7 @@ export async function runOsTool(name, args, ctx) {
 export function osSystemInstruction({ scope, orgName, role, isManager }) {
   if (scope === "org") {
     return businessSystemInstruction({ orgName, role, isManager }) +
+      `\n\nYou ALSO have get_attention_items (no prefix) — a single cross-module query for "what needs my attention today"/"what's pending for me" requests. It already merges AI action requests awaiting this person's approval, their overdue tasks, and documents pending review, each already filtered to what they're personally authorized to see — never call several list_* tools to try to build this yourself, and never add anything to its results that it didn't return.` +
       `\n\nYou ALSO have Security Layer tools (prefixed security_) for questions about threat status, security events, and how the Security Layer works — ground those answers only in what the tools return, exactly as strictly as your business tools, and never blend a documented policy claim with a live-data claim without saying which is which. If a question isn't covered by any available tool, say so rather than guessing.` +
       `\n\nYou ALSO have Health OS tools (prefixed health_) and Legal OS tools (prefixed legal_), for organizations running those verticals. ${healthSystemInstruction()}\n\n${legalSystemInstruction()}` +
       `\n\nYou ALSO have Regulated Enterprise compliance tools (prefixed compliance_), for organizations running that vertical. ${complianceSystemInstruction()}` +
