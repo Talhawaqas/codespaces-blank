@@ -177,6 +177,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
       setQuantity("");
       setNote("");
       await load();
+      window.dispatchEvent(new CustomEvent("inaya:guided-movement-recorded"));
       onChanged();
     } catch (err) {
       setError(err.message);

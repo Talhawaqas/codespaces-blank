@@ -385,6 +385,11 @@ export async function getOrgCollections() {
     governmentDocumentReads: db.collection("government_document_reads"),
     policyKbEntries: db.collection("policy_kb_entries"),
     policyKbAcknowledgements: db.collection("policy_kb_acknowledgements"),
+    // AI-Powered Business Workspace SOW. Bookkeeping-only: tracks which
+    // step of a guided-workflow-catalog.js workflow a specific user is on.
+    // Never a target of a real business mutation itself — see
+    // src/lib/guided-tasks.js's header comment.
+    guidedTasks: db.collection("guided_tasks"),
   };
 }
 
@@ -426,6 +431,7 @@ export async function ensureOrgIndexes() {
     regulatedExportPackages, migrationRuns,
     citizenRecords, citizenRecordAssignments, governmentCases, governmentDocumentReads,
     policyKbEntries, policyKbAcknowledgements,
+    guidedTasks,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -647,6 +653,10 @@ export async function ensureOrgIndexes() {
     policyKbEntries.createIndex({ orgId: 1, key: 1, version: 1 }, { unique: true }),
     policyKbEntries.createIndex({ orgId: 1, status: 1 }),
     policyKbAcknowledgements.createIndex({ orgId: 1, entryId: 1, memberEmail: 1 }, { unique: true }),
+    // AI-Powered Business Workspace SOW
+    guidedTasks.createIndex({ orgId: 1, userEmail: 1, status: 1 }),
+    guidedTasks.createIndex({ orgId: 1, workflowKey: 1 }),
+    guidedTasks.createIndex({ orgId: 1, updatedAt: 1 }),
   ]);
 
   indexesEnsured = true;

@@ -633,7 +633,12 @@ function ReportsTab({ orgId }) {
         <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {REPORT_TYPES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
-        <a href={`/api/orgs/finance/reports?orgId=${orgId}&type=${type}&format=csv`} download className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">↓ Download CSV</a>
+        <a
+          href={`/api/orgs/finance/reports?orgId=${orgId}&type=${type}&format=csv`}
+          download
+          onClick={() => window.dispatchEvent(new CustomEvent("inaya:guided-report-downloaded"))}
+          className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg"
+        >↓ Download CSV</a>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">

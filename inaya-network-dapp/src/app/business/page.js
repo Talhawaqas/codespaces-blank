@@ -64,6 +64,7 @@ import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
 import CommandPalette from "../../components/CommandPalette";
+import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -1059,6 +1060,27 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // AI-Powered Business Workspace SOW — one guided task at a time, lifted
+  // here so both the compact AIWidget dock and the full-page AI Assistant
+  // tab show the same in-progress state rather than each tracking their
+  // own. Fetched once on mount so reloading mid-task resumes the panel
+  // instead of losing it.
+  const [guidedTask, setGuidedTask] = useState(null);
+  useEffect(() => {
+    api(`/api/orgs/guided-tasks?orgId=${orgId}`)
+      .then((d) => setGuidedTask(d.tasks?.[0] || null))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  // The single piece of instrumentation every guided workflow's nav-based
+  // steps rely on: fires whenever the visible screen changes, so
+  // GuidedTaskPanel can auto-advance a "click X in the sidebar" step
+  // without any per-view wiring.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("inaya:guided-nav", { detail: { view: activeView } }));
+  }, [activeView]);
+
   // Healthcare & Legal Expansion SOW — Health OS / Legal OS nav items are
   // gated on the org's configured vertical, not shown unconditionally.
   // Defaults to "general" (industry-config.js's own default) until the
@@ -1114,7 +1136,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
           floating bubble/panel on top of that full page would be redundant. */}
-      {activeView !== "ai" && <AIWidget orgId={orgId} />}
+      {activeView !== "ai" && (
+        <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} />
+      )}
       <Sidebar
         orgName={membership.orgName}
         role={role}
@@ -1219,7 +1243,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
-          {activeView === "ai" && <AIAssistantView orgId={orgId} />}
+          {activeView === "ai" && (
+            <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} />
+          )}
           {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
           {activeView === "settings" && canManage && (
             <div className="space-y-6">
@@ -1632,9 +1658,9 @@ const AI_SUGGESTIONS = [
   "Show me our recently approved documents.",
 ];
 
-function AIAssistantView({ orgId }) {
+function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange }) {
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hi — ask me about your company's departments, projects, documents, or recent activity. I only show you what you're already allowed to see." },
+    { role: "assistant", content: "Hi — ask me about your company's departments, projects, documents, or recent activity, or tell me a task you want to do and I'll walk you through it step by step." },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -1649,8 +1675,13 @@ function AIAssistantView({ orgId }) {
     setSending(true);
     setError("");
     try {
-      const data = await api("/api/ai/business-chat", { method: "POST", body: JSON.stringify({ orgId, messages: nextMessages }) });
+      const data = await api("/api/ai/business-chat", { method: "POST", body: JSON.stringify({ orgId, messages: nextMessages, currentView }) });
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      // A guided-task tool call (start/advance/pause/cancel) may have
+      // changed state server-side without the client's own step-complete
+      // endpoint being involved -- re-check so the panel stays in sync
+      // with whatever the model just did.
+      api(`/api/orgs/guided-tasks?orgId=${orgId}`).then((d) => onGuidedTaskChange(d.tasks?.[0] || null)).catch(() => {});
     } catch (err) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -1660,6 +1691,7 @@ function AIAssistantView({ orgId }) {
 
   return (
     <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
+      {guidedTask && <GuidedTaskPanel orgId={orgId} task={guidedTask} onTaskChange={onGuidedTaskChange} />}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>

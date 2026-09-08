@@ -50,6 +50,12 @@ import { LEAVE_STATES } from "./leave-workflow.js";
 import { computeBusinessInsights } from "./business-insights.js";
 import { generateBusinessBrief, BRIEF_PERIODS } from "./business-brief.js";
 import { proposeAiAction } from "./ai-action-requests.js";
+import {
+  startGuidedTask as startGuidedTaskRow, advanceGuidedTaskStep as advanceGuidedTaskStepRow,
+  pauseGuidedTask, resumeGuidedTask, cancelGuidedTask as cancelGuidedTaskRow,
+  listActiveGuidedTasksForUser,
+} from "./guided-tasks.js";
+import { getGuidedWorkflow, listGuidedWorkflowKeys } from "./guided-workflow-catalog.js";
 
 const ALLOWED_STATUSES = ["DRAFT", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"];
 // deal-workflow.js/leave-workflow.js validate these inline rather than
@@ -788,6 +794,98 @@ async function proposeDealTransition(args, ctx) {
 }
 
 // ============================================================
+// AI-Powered Business Workspace SOW — guided-task tools. These are the
+// only tools in this file that mutate anything OUTSIDE the Guarded
+// Execution propose_* pipeline, and deliberately so: they only ever touch
+// guided-tasks.js's own bookkeeping collection (which step of a workflow
+// this user is on), never a real business record. ctx.orgId/ctx.email are
+// the same permission-resolved values every other tool here already uses
+// — these tools never accept a caller-supplied org or user override.
+// ============================================================
+
+async function startGuidedTaskTool(args, ctx) {
+  const { workflowKey } = args || {};
+  if (!workflowKey) return { error: "workflowKey is required." };
+  if (!getGuidedWorkflow(workflowKey)) {
+    return { error: `Unknown workflow "${workflowKey}". Valid workflows: ${listGuidedWorkflowKeys().join(", ")}.` };
+  }
+
+  const { tasks } = await listActiveGuidedTasksForUser({ orgId: ctx.orgId, userEmail: ctx.email });
+  const existing = tasks[0];
+  if (existing) {
+    return {
+      alreadyInProgress: true,
+      existingWorkflow: existing.label,
+      stepNumber: existing.currentStepIndex + 1,
+      totalSteps: existing.totalSteps,
+      message: `You already have "${existing.label}" in progress (step ${existing.currentStepIndex + 1} of ${existing.totalSteps}). Cancel or finish it before starting a new guided task.`,
+    };
+  }
+
+  const result = await startGuidedTaskRow({ orgId: ctx.orgId, userEmail: ctx.email, workflowKey, context: ctx.currentView ? { currentView: ctx.currentView } : {} });
+  if (result.error) return { error: result.error };
+  return {
+    started: true, workflowLabel: result.label, totalSteps: result.totalSteps,
+    stepNumber: 1, instruction: result.currentStep.instruction,
+  };
+}
+
+async function getGuidedTaskStatusTool(_args, ctx) {
+  const { tasks } = await listActiveGuidedTasksForUser({ orgId: ctx.orgId, userEmail: ctx.email });
+  const task = tasks[0];
+  if (!task) return { hasActiveTask: false };
+  return {
+    hasActiveTask: true, workflowLabel: task.label, status: task.status,
+    stepNumber: task.currentStepIndex + 1, totalSteps: task.totalSteps,
+    instruction: task.currentStep?.instruction || null,
+  };
+}
+
+/** Only for completions the model itself verified via another tool (e.g.
+ *  called list_purchase_orders and confirmed the PO now exists) -- a
+ *  completion the user merely reports in chat should be pointed at the
+ *  "I did this" button in the guided task panel instead, per this tool's
+ *  own declaration text below. */
+async function advanceGuidedTaskStepTool(args, ctx) {
+  const { fromStepIndex } = args || {};
+  if (!Number.isInteger(fromStepIndex)) return { error: "fromStepIndex is required and must be an integer." };
+
+  const { tasks } = await listActiveGuidedTasksForUser({ orgId: ctx.orgId, userEmail: ctx.email });
+  const active = tasks.find((t) => t.status === "ACTIVE");
+  if (!active) return { error: "There's no active guided task to advance." };
+
+  const result = await advanceGuidedTaskStepRow({ orgId: ctx.orgId, userEmail: ctx.email, taskId: active.taskId, fromStepIndex, source: "ai-verified" });
+  if (result.error) return { error: result.error };
+  if (result.alreadyAdvanced) return { alreadyAdvanced: true, stepNumber: result.task.currentStepIndex + 1, instruction: result.currentStep?.instruction || null };
+  if (result.task.status === "COMPLETED") return { completed: true, workflowLabel: active.label };
+  return { advanced: true, stepNumber: result.task.currentStepIndex + 1, instruction: result.currentStep.instruction };
+}
+
+async function setGuidedTaskPausedTool(args, ctx) {
+  const { paused } = args || {};
+  if (typeof paused !== "boolean") return { error: "paused (boolean) is required." };
+
+  const { tasks } = await listActiveGuidedTasksForUser({ orgId: ctx.orgId, userEmail: ctx.email });
+  const target = tasks.find((t) => (paused ? t.status === "ACTIVE" : t.status === "PAUSED"));
+  if (!target) return { error: paused ? "There's no active guided task to pause." : "There's no paused guided task to resume." };
+
+  const result = paused
+    ? await pauseGuidedTask({ orgId: ctx.orgId, userEmail: ctx.email, taskId: target.taskId })
+    : await resumeGuidedTask({ orgId: ctx.orgId, userEmail: ctx.email, taskId: target.taskId });
+  if (result.error) return { error: result.error };
+  return { status: result.task.status, workflowLabel: target.label };
+}
+
+async function cancelGuidedTaskTool(_args, ctx) {
+  const { tasks } = await listActiveGuidedTasksForUser({ orgId: ctx.orgId, userEmail: ctx.email });
+  const target = tasks[0];
+  if (!target) return { error: "There's no guided task to cancel." };
+  const result = await cancelGuidedTaskRow({ orgId: ctx.orgId, userEmail: ctx.email, taskId: target.taskId });
+  if (result.error) return { error: result.error };
+  return { cancelled: true, workflowLabel: target.label };
+}
+
+// ============================================================
 // Gemini function-calling declarations + dispatcher
 // ============================================================
 export const BUSINESS_TOOL_DECLARATIONS = [
@@ -1106,6 +1204,49 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "start_guided_task",
+    description: "Start a step-by-step guided walkthrough of an existing Business Workspace screen (e.g. creating a purchase order, finding a record, reviewing an AI action). Gives ONE instruction at a time and waits for the user to complete it before giving the next -- never dump all steps at once. Use this whenever the user asks 'help me do X', 'walk me through X', or 'how do I X' for a supported workflow.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        workflowKey: { type: Type.STRING, enum: listGuidedWorkflowKeys(), description: "The workflow to start." },
+      },
+      required: ["workflowKey"],
+    },
+  },
+  {
+    name: "get_guided_task_status",
+    description: "Check the current step and progress of the user's active or paused guided task, if any.",
+    parameters: { type: Type.OBJECT, properties: {} },
+  },
+  {
+    name: "advance_guided_task_step",
+    description: "Mark the CURRENT step of the user's active guided task as done and get the next instruction -- only call this when you have independently verified (via another tool, e.g. list_purchase_orders) that the step's real-world outcome actually happened. If the user just reports finishing a step without you being able to verify it, tell them to use the \"I did this\" button in the guided task panel instead of calling this.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        fromStepIndex: { type: Type.INTEGER, description: "The step index the task is currently on, from get_guided_task_status." },
+      },
+      required: ["fromStepIndex"],
+    },
+  },
+  {
+    name: "set_guided_task_paused",
+    description: "Pause or resume the user's guided task.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        paused: { type: Type.BOOLEAN, description: "true to pause the active task, false to resume a paused one." },
+      },
+      required: ["paused"],
+    },
+  },
+  {
+    name: "cancel_guided_task",
+    description: "Cancel the user's active or paused guided task entirely.",
+    parameters: { type: Type.OBJECT, properties: {} },
+  },
+  {
     name: "get_business_insights",
     description: "Get KPI summary (revenue, expenses, pipeline, task completion, headcount, etc.), period-over-period comparison, and active business alerts (overdue invoices, low stock, overdue tasks, pending approvals, significant KPI swings). Use this for questions like \"how's the business doing\", \"explain our KPIs\", \"what changed this month\", or \"any alerts I should know about\".",
     parameters: {
@@ -1156,6 +1297,11 @@ const TOOL_IMPLEMENTATIONS = {
   propose_purchase_order_transition: proposePurchaseOrderTransition,
   propose_purchase_request_transition: proposePurchaseRequestTransition,
   propose_deal_transition: proposeDealTransition,
+  start_guided_task: startGuidedTaskTool,
+  get_guided_task_status: getGuidedTaskStatusTool,
+  advance_guided_task_step: advanceGuidedTaskStepTool,
+  set_guided_task_paused: setGuidedTaskPausedTool,
+  cancel_guided_task: cancelGuidedTaskTool,
 };
 
 export async function runBusinessTool(name, args, ctx) {
@@ -1177,7 +1323,13 @@ Keep answers concise and concrete: reference actual filenames, department/projec
 
 For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows. For a periodic recap ("give me my weekly brief", "daily summary", "how did this month go"), use get_business_brief instead — narrate its real highlights/alerts in your own words rather than just listing them back verbatim.
 
-For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request (uploading a file, sharing something, changing permissions, creating a new record, reassigning a task, sending an external communication, or anything with no matching propose_* tool above), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
+For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request with no matching propose_* tool AND no matching guided workflow below (changing permissions, sending an external communication, or anything else this file has no tool for), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
+
+For "help me do X", "walk me through X", or "how do I create/submit/find X" requests that match a supported guided workflow (creating a contact, deal, purchase order, or document; receiving inventory; submitting or reviewing an approval; generating a business report; finding a record; or navigating to a workspace function), call start_guided_task with the matching workflowKey. Give ONLY the first step's instruction back to the user — never list the whole workflow up front. The user completes each real step themselves in the actual UI (or clicks "I did this" in the guided task panel); most steps advance automatically or via that button, without you needing to do anything further. Only call advance_guided_task_step yourself when you've independently verified the outcome with another tool — never just because the user said "done" in chat. If the user asks about progress mid-task, call get_guided_task_status rather than guessing which step they're on. If they want to stop, pause, or start over, use cancel_guided_task / set_guided_task_paused rather than just replying that you will. A guided task never touches a real business record by itself — it only tracks which step the user is on; the real record only changes when the user performs the actual action (or, for the propose_* transitions above, once a human approves it).
+
+If the user goes off-topic while a guided task is active, answer their question but remind them their task is still waiting on the current step.
+
+Action Mode: when a guided workflow's next real step would be exactly what one of the propose_* tools above already does (e.g. review_ai_action's approve/reject step, or an approval sub-case of submit_approval that maps to a purchase order/request/deal/document/invoice/leave transition), you may offer to prepare that action for approval instead of just telling the user where to click — but always phrase it as preparing/submitting for approval, never as doing or completing it, and only do this for the propose_* tools that already exist. Creating a new record (a contact, deal, purchase order, document, or inventory movement) has no propose_* equivalent — for those, only guide the user through the real UI.
 
 Explicit boundaries on what you can and cannot do, no exceptions:
 CAN: analyze the business data these tools return, recommend actions, explain trade-offs, and — for the specific propose_* tools above — prepare a structured change proposal and submit it for human approval.

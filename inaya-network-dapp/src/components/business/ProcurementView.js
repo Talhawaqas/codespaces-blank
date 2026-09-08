@@ -56,7 +56,7 @@ export default function ProcurementView({ orgId, canManage }) {
     <div className="space-y-5">
       <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
         {[["suppliers", "Suppliers"], ["requests", "Requests"], ["orders", "Orders"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+          <button key={key} data-guide-id={`procurement-tab-${key}`} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
         ))}
       </div>
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
@@ -353,6 +353,7 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
           items: validItems.map((it) => ({ description: it.description.trim(), quantity: Number(it.quantity), unitPrice: it.unitPrice ? Number(it.unitPrice) : undefined })),
         }),
       });
+      window.dispatchEvent(new CustomEvent("inaya:guided-po-created"));
       onCreated();
     } catch (err) {
       setError(err.message);

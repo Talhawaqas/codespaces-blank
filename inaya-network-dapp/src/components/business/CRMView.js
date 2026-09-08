@@ -64,8 +64,8 @@ export default function CRMView({ orgId, canManage, email }) {
   return (
     <div className="space-y-5">
       <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-        <button onClick={() => setTab("contacts")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "contacts" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Contacts</button>
-        <button onClick={() => setTab("deals")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "deals" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Deals</button>
+        <button data-guide-id="crm-tab-contacts" onClick={() => setTab("contacts")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "contacts" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Contacts</button>
+        <button data-guide-id="crm-tab-deals" onClick={() => setTab("deals")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "deals" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Deals</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       {tab === "contacts" ? (
@@ -164,6 +164,7 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
     setError("");
     try {
       await api("/api/orgs/crm/contacts", { method: "POST", body: JSON.stringify({ orgId, departmentId, type, name: name.trim(), company: companyName.trim() || undefined, email: contactEmail.trim() || undefined, phone: phone.trim() || undefined }) });
+      window.dispatchEvent(new CustomEvent("inaya:guided-contact-created"));
       onCreated();
     } catch (err) {
       setError(err.message);
@@ -319,6 +320,7 @@ function CreateDealModal({ orgId, departments, onClose, onCreated }) {
     setError("");
     try {
       await api("/api/orgs/crm/deals", { method: "POST", body: JSON.stringify({ orgId, departmentId, contactId, title: title.trim(), value: value ? Number(value) : undefined }) });
+      window.dispatchEvent(new CustomEvent("inaya:guided-deal-created"));
       onCreated();
     } catch (err) {
       setError(err.message);

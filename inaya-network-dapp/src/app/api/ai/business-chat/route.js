@@ -147,7 +147,7 @@ async function runGeminiLoop(ai, contents, systemInstruction, ctx) {
 
 export async function POST(req) {
   try {
-    const { orgId, messages } = await req.json();
+    const { orgId, messages, currentView } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: "messages array is required." }, { status: 400 });
@@ -167,7 +167,7 @@ export async function POST(req) {
     const org = await orgs.findOne({ _id: toObjectId(orgId) });
     if (!org) return NextResponse.json({ error: "Company not found." }, { status: 404 });
 
-    const ctx = await buildBusinessContext({ orgId, membership: auth.membership, email: auth.session.email });
+    const ctx = { ...(await buildBusinessContext({ orgId, membership: auth.membership, email: auth.session.email })), currentView: currentView || null };
     const systemInstruction = businessSystemInstruction({
       orgName: org.name,
       role: auth.membership.role,

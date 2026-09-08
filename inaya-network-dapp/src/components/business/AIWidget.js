@@ -13,14 +13,16 @@
 // tradeoff for not hijacking the user's current view to auto-open it.
 
 import { useState, useEffect, useRef } from "react";
+import GuidedTaskPanel from "./GuidedTaskPanel";
 
 const SUGGESTIONS = [
   "What's overdue for my approval?",
   "Summarize this week's activity",
   "Which documents need review?",
+  "Help me create a purchase order",
 ];
 
-export default function AIWidget({ orgId }) {
+export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: "👋 Hi — I can help with your company's departments, projects, documents, and approvals. What do you need?" },
@@ -65,11 +67,20 @@ export default function AIWidget({ orgId }) {
       const res = await fetch("/api/ai/business-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId, messages: next }),
+        body: JSON.stringify({ orgId, messages: next, currentView }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      // The model may have called a guided-task tool (start/advance/pause/
+      // cancel) -- re-check so the dock stays in sync even when the state
+      // change came from chat rather than the panel's own buttons/events.
+      if (onGuidedTaskChange) {
+        fetch(`/api/orgs/guided-tasks?orgId=${orgId}`)
+          .then((r) => r.json())
+          .then((d) => onGuidedTaskChange(d.tasks?.[0] || null))
+          .catch(() => {});
+      }
     } catch (err) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -103,6 +114,7 @@ export default function AIWidget({ orgId }) {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 pb-6 space-y-3 overscroll-contain">
+        {guidedTask && <GuidedTaskPanel orgId={orgId} task={guidedTask} onTaskChange={onGuidedTaskChange} compact />}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
