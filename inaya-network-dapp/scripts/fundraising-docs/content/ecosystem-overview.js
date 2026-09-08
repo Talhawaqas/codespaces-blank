@@ -319,6 +319,32 @@ export const ecosystemOverview = {
     },
     {
       number: "14",
+      title: "Financial Services, Regulated Enterprise & Government — Three More Industries, Same Foundation",
+      blocks: [
+        {
+          type: "lead",
+          text: "Three more specialized modes now sit alongside Health OS and Legal OS, all sharing the exact same encryption, audit trail, and permission model: Financial Services OS for hedge funds and asset managers, Private Capital OS for private equity and venture capital, Regulated Enterprise OS for banks, insurers, and other heavily-regulated companies, and Government OS for public-sector departments and agencies.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "A compliance foundation that never overstates itself — controls can be mapped to real industry frameworks (NIST, ISO 27001, SOC 2, DORA, GDPR), but every mapping is clearly labeled a reference, never a certification. A control nobody has tested yet shows up as 'unknown,' never a falsely reassuring green checkmark.",
+            "A published policy can't be quietly rewritten — changing it always creates a brand-new version, so there's always a clear record of what a rule said on any given day. The Government OS Policy Knowledge Base reuses this exact same rule.",
+            "Real fund, deal, and investor tracking for the finance side — research, investment committee decisions, portfolios, and for private equity/VC: deal pipelines, due diligence, cap tables, and portfolio-company boards.",
+            "Government's need-to-know rule, borrowed from Health OS — a caseworker with general staff access still can't open a specific citizen's record unless they're actually assigned to it. Every citizen-record read is logged, not just every change — a stricter bar than the rest of Business Workspace.",
+            "An outside examiner or auditor gets their own scoped, one-time-use link — never a real login to the company's system — for both regulatory examinations and Government OS's own case reviews.",
+            "AI assistants that know their limits here too — they can search, summarize, and draft, but are built to flatly refuse a request to certify compliance, approve something final, or override a permission, on any of these four verticals.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What's live today vs. what's next.",
+          text: "Financial Services OS, Private Capital OS, and Regulated Enterprise OS are fully built on the web app, verified end-to-end. Government OS's core (citizen records, case management, the policy knowledge base, the operations/security dashboard, and its own AI assistant) is also built and tested on web. None of the four have a mobile screen yet — that's next, building on logic that's already written. No certification, accreditation, or jurisdiction-specific regulatory approval of any kind is claimed for any of these — that requires independent authorities this build doesn't include, and we've been careful not to claim otherwise.",
+        },
+      ],
+    },
+    {
+      number: "15",
       title: "How It All Actually Connects",
       blocks: [
         {

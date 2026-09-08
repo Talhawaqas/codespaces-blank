@@ -535,5 +535,57 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "19",
+      title: "Financial Services & Regulated Enterprise OS Reference (2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["compliance-controls.js, compliance-evidence.js, control-testing.js", "Control library + evidence vault; a failed control test auto-opens a Finding via the shared finding lifecycle"],
+            ["compliance-policies.js: createPolicyDraft→submitForReview→approve→publishPolicy, amendPolicy", "Publish sets immutable:true; amendPolicy is the ONLY path forward from PUBLISHED, always inserting version+1, never mutating the published row"],
+            ["regulatory-examination-access.js: createExaminerMagicLink, exchangeMagicLink", "Scoped {examinationId, requestIds} access, deliberately its own token pattern (not a retrofit of the unrelated investor dataroom.js)"],
+            ["financial-entities.js, financial-funds.js: isFundTeamMember", "Entity-scoped fund visibility — same assignment-based shape as isCareTeamMember/isMatterTeamMember"],
+            ["investment-committee.js, cap-table.js, board-management.js", "IC decision lifecycle (finalized decisions are versioned, never overwritten); cap-table is an ingest/evidence layer, never a transactional share registry"],
+            ["privileged-access.js: requestElevation→approveElevation, grantBreakGlass, reviewSession", "Cross-vertical from day one — the approver must be a different person than the requester; break-glass is ACTIVE immediately but always forces a post-event review"],
+            ["integrations.js: INTEGRATION_PROVIDERS, configureIntegration, recordSyncRun", "A connection can only ever reach ACTIVE through a real recorded sync run — never through configuration alone"],
+            ["ai-audit-tools.js, ai-regulatory-tools.js + 7 more role-specific copilots", "All 100% read/summarize/flag — a compliance-certification request is refused at the tool layer before any summarization runs"],
+            ["~20 API subtrees under /api/orgs/{regulated,financial,private-capital}/*", "Every route: ensureOrgIndexes → requireMembership → requireVertical → lib call, statically verified by vertical-lock-wiring.test.mjs"],
+            ["RegulatedView.js, FinancialView.js (src/components/business/)", "Full tab-router UI — Controls, Evidence, Findings, Policies, Risk, Audits, Examinations, Dashboard (Regulated); equivalent depth for Financial"],
+          ],
+        },
+        {
+          type: "note",
+          text: "All ten SOW phases are live-verified end-to-end on web: control creation/testing/finding lifecycle, the policy publish-immutability guard, an examiner magic-link's one-time-use cycle, entity-scoped fund/deal visibility, and the board-report/export-package immutability guards. Nothing on inaya-mobile for any of these three verticals yet. Every third-party integration (fund admin, custodian, KYC/AML, etc.) is a documented, honest not-configured stub.",
+        },
+      ],
+    },
+    {
+      number: "20",
+      title: "Government & Public Sector Sovereign OS Reference (2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["citizen-records.js: createCitizenRecord, assignCitizenRecord, requireCitizenRecordAccess", "requireCitizenRecordAccess() is the load-bearing gate — department membership or governmentRole:'staff' alone is never enough, only an explicit assignment (or org owner/admin) grants access to one specific record"],
+            ["government-cases.js: CASE_STATES (OPEN→ASSIGNED→IN_PROGRESS→PENDING_REVIEW→RESOLVED→CLOSED)", "Same TRANSITIONS-map + atomic findOneAndUpdate template as incidents.js; a case linked to a citizen record inherits that record's need-to-know check"],
+            ["policy-knowledge-base.js: createEntryDraft→publishEntry, amendEntry", "compliance-policies.js's exact publish-immutable lifecycle, recontextualized — no updateEntryDraft() path reachable once PUBLISHED"],
+            ["government-audit.js: logCitizenRecordAccess, logGovernmentDocumentRead", "Government-vertical-only: every document READ is chain-logged, not just writes — an additive branch inside the existing retrieve route, gated so no other vertical's behavior changes"],
+            ["government-dashboard.js: getGovernmentDashboard", "Operations + security readiness as two separate honest panels — a fresh org with zero audit-chain entries reports 'unknown,' never a fabricated 'valid'"],
+            ["ai-government-tools.js: search_citizen_records, summarize_case, get_dashboard_summary", "100% read-only; need-to-know is re-checked INSIDE the tool per record, not just trusted from the API layer above it"],
+            ["privileged-access.js (reused, zero new code)", "Break-glass access for Government orgs — already cross-vertical since §33, no government-specific fork needed"],
+            ["integrations.js: 5 new government_systems providers", "Civil/national ID registry, legacy government ERP, GIS/land records, public records portal, interagency data exchange — all configured:false stubs"],
+            ["11 routes under /api/orgs/government/*", "citizen-records (+assign), cases (+transition), policy-kb (+transition/publish/amend), dashboard — statically verified by the extended vertical-lock-wiring.test.mjs"],
+            ["GovernmentView.js (src/components/business/)", "Tab-router UI — Citizen Records, Cases, Policy Knowledge Base, Dashboard — wired into the Business Workspace nav and org-creation flow, confirmed rendering live"],
+          ],
+        },
+        {
+          type: "note",
+          text: "51 new automated tests, including the two load-bearing properties written before their implementation: citizen-record access requires an actual assignment, and a published policy knowledge base entry can never be mutated in place. Nothing on inaya-mobile yet. No government certification, accreditation, FedRAMP authorization, or jurisdiction-specific compliance claim exists or is claimed anywhere.",
+        },
+      ],
+    },
   ],
 };

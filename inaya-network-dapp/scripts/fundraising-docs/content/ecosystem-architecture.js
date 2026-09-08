@@ -1044,5 +1044,65 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "33",
+      title: "Financial Services & Regulated Enterprise OS — All Ten Phases (2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Extends the Sovereign Enterprise OS (§31) into a third and fourth vertical specialization — Financial Services OS (hedge funds/asset managers), Private Capital OS (PE/VC), and a shared Regulated Enterprise Control Plane (banks, insurers, pharma, and other cross-industry regulated organizations) — built in the same additive, reuse-first discipline as §32: appendAuditEntry(), getAccessibleScope(), and the guarded-execution shape from ai-action-requests.js are all reused directly rather than forked.",
+        },
+        {
+          type: "subsection",
+          heading: "The Regulated Enterprise Control Plane came first, deliberately",
+          body: "Phase 0+4 (the compliance foundation — control library, evidence vault, findings, versioned policies, compliance exceptions, internal audit, and a Regulatory Examination Workspace with scoped one-time-use examiner links) was built before Financial Services OS or Private Capital OS's own domain modules, specifically so those two verticals build on one shared compliance layer rather than each reinventing it. compliance-policies.js's publish-immutable lifecycle (no updatePolicyDraft() path reachable once PUBLISHED — amendPolicy() always inserts a new version) is the single most load-bearing property of this phase, backed by a dedicated permanent test.",
+        },
+        {
+          type: "subsection",
+          heading: "Entity-scoped, not org-wide, visibility",
+          body: "The Financial Entity Core (funds, entities, investors, counterparties) and Private Capital's deal pipeline both use assignment-based visibility (financial_fund_team_assignments), the same isFundTeamMember/isCareTeamMember/isMatterTeamMember pattern §32 established — a user does not automatically see every fund or deal in their org just by being a member of it.",
+        },
+        {
+          type: "subsection",
+          heading: "Nine role-specific AI copilots, zero mutation tools",
+          body: "CIO/COO/CCO/CRO/CFO/GC/analyst/deal-team/security/auditor copilots all follow ai-compliance-tools.js's own precedent: 100% read/summarize/flag, with a request phrased to elicit a compliance certification or an 'are we compliant' verdict refused at the tool layer before any summarization runs, not left to a prompt instruction alone.",
+        },
+        {
+          type: "note",
+          label: "What's real backend but has no mobile screen yet.",
+          text: "All ten phases (Regulated Control Plane, Financial Entity Core, Investment Management, Private Capital, Security & Resilience, AI copilots, Integration Adapter Architecture — stub-by-default, configured:false until real credentials exist — Executive/Board Layer, External Data Rooms, and Enterprise Hardening) are live-verified end-to-end on the web app. Nothing on inaya-mobile for any of these three verticals yet — that gap is explicitly called out in the roadmap rather than left ambiguous. No compliance certification of any kind exists or is claimed anywhere.",
+        },
+      ],
+    },
+    {
+      number: "34",
+      title: "Government & Public Sector Sovereign OS — Phase 1 Foundation (2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A fifth vertical specialization, for government departments and agencies handling citizen, legal, financial, procurement, health, and operational data. Built the same way every prior vertical was: confirm what's already reusable first, build only the genuinely new part second. Most of §D's required scope (Procurement, Contracts, Finance, HR, Tasks, Approvals) needed zero new engineering — those modules were already vertical-agnostic.",
+        },
+        {
+          type: "subsection",
+          heading: "Citizen Records reuse Health OS's exact access model",
+          body: "citizen-records.js's isCitizenRecordAssignee() is the same shape as isCareTeamMember() from §32 — a citizen record is visible only to someone actually assigned to it, never to anyone merely holding governmentRole:'staff' or department membership. Verified by a test proving a staff member with no assignment is denied even though they hold general Government OS access.",
+        },
+        {
+          type: "subsection",
+          heading: "Need-to-know enforced twice — API layer and AI tool layer",
+          body: "ai-government-tools.js's search_citizen_records doesn't just trust that the API layer already checked access — it re-runs the same requireCitizenRecordAccess() check per record before returning anything, so an AI assistant can never surface more than the human it's acting for could see. Verified live: a search for a name that matches both an assigned and an unassigned record returns only the assigned one.",
+        },
+        {
+          type: "subsection",
+          heading: "A stricter chain-of-custody rule, gated to one vertical only",
+          body: "Government-vertical orgs get every document READ logged to the audit chain, not just every write — a genuinely stricter bar than the general Documents module. Implemented as an additive, vertical-gated branch inside the existing retrieve route rather than changing that route's behavior for every other org.",
+        },
+        {
+          type: "note",
+          label: "What's real backend but has no mobile screen yet.",
+          text: "Citizen Records, Case Management, the Policy Knowledge Base (reusing compliance-policies.js's publish-immutable lifecycle), the operations/security dashboard, and the AI assistant are all live-verified on the web app — 51 new automated tests, including the two load-bearing properties (assignment-required access; publish-immutability) each written before the implementation they verify. Break-glass access needed zero new code: privileged-access.js was already built vertical-agnostic during §33. Nothing on inaya-mobile yet. No government certification, accreditation, FedRAMP authorization, or jurisdiction-specific compliance claim exists or is claimed anywhere — that requires separate authorities entirely outside this codebase.",
+        },
+      ],
+    },
   ],
 };
