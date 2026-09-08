@@ -21,6 +21,8 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.js";
 import { requireDocumentAccess } from "../../../../../../lib/document-permissions.js";
+import { getOrgProfile } from "../../../../../../lib/industry-config.js";
+import { logGovernmentDocumentRead } from "../../../../../../lib/government-audit.js";
 
 export async function GET(req, { params }) {
   try {
@@ -34,6 +36,19 @@ export async function GET(req, { params }) {
 
     const access = await requireDocumentAccess({ orgId, documentId, membership: auth.membership, email: auth.session.email, minLevel: "VIEW" });
     if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
+
+    // Government & Public Sector Sovereign OS SOW, Phase 1 (§B "chain of
+    // custody") — government-vertical orgs get a stricter bar than the
+    // general default: every READ is chain-logged, not just mutations.
+    // Gated to the "government" vertical only so no other org's retrieve
+    // behavior or latency changes; best-effort (never blocks the real
+    // response), same resilience discipline as health-audit.js's
+    // chainSafely().
+    const profile = await getOrgProfile(orgId);
+    if (profile?.vertical === "government") {
+      logGovernmentDocumentRead({ orgId, documentId, actorEmail: auth.session.email, metadata: { filename: access.doc.filename } })
+        .catch((err) => console.error("government document read audit failed (non-fatal):", err.message));
+    }
 
     return NextResponse.json({
       filename: access.doc.filename,

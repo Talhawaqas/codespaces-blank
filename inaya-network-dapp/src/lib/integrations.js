@@ -28,7 +28,7 @@ import { canManageOrg } from "./orgGates.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { appendAuditEntry } from "./auditChain.js";
 
-export const INTEGRATION_CATEGORIES = ["identity", "productivity", "financial", "security", "compliance", "data_provider"];
+export const INTEGRATION_CATEGORIES = ["identity", "productivity", "financial", "security", "compliance", "data_provider", "government_systems"];
 
 export const INTEGRATION_PROVIDERS = [
   // Identity (§155)
@@ -65,6 +65,17 @@ export const INTEGRATION_PROVIDERS = [
   { id: "market_data_provider", name: "Market Data Provider", category: "data_provider", authType: "api_key", syncDirection: "inbound", defaultFrequencyHours: 0 },
   { id: "company_data_provider", name: "Company Data Provider", category: "data_provider", authType: "api_key", syncDirection: "inbound", defaultFrequencyHours: 24 },
   { id: "alternative_data_provider", name: "Alternative Data Provider", category: "data_provider", authType: "api_key", syncDirection: "inbound", defaultFrequencyHours: 24 },
+  // Government & Public Sector Sovereign OS SOW, Phase 5 (§G "Government
+  // identity and enterprise-system integrations", "External databases and
+  // existing government systems through controlled APIs"). Same
+  // stub-by-default, no-real-credentials honesty boundary as every
+  // provider above — this codebase holds no real connection to any
+  // national ID registry, GIS system, or legacy government ERP.
+  { id: "civil_registry", name: "Civil / National ID Registry", category: "government_systems", authType: "api_key", syncDirection: "inbound", defaultFrequencyHours: 24 },
+  { id: "legacy_government_erp", name: "Legacy Government ERP", category: "government_systems", authType: "api_key", syncDirection: "bidirectional", defaultFrequencyHours: 24 },
+  { id: "gis_land_records", name: "GIS / Land Records System", category: "government_systems", authType: "api_key", syncDirection: "inbound", defaultFrequencyHours: 24 },
+  { id: "public_records_portal", name: "Public Records Portal", category: "government_systems", authType: "oauth2", syncDirection: "outbound", defaultFrequencyHours: 24 },
+  { id: "interagency_data_exchange", name: "Interagency Data Exchange", category: "government_systems", authType: "saml_or_oidc", syncDirection: "bidirectional", defaultFrequencyHours: 4 },
 ];
 
 const PROVIDER_MAP = new Map(INTEGRATION_PROVIDERS.map((p) => [p.id, p]));

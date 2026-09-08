@@ -20,7 +20,7 @@
 
 import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
 
-export const ORG_VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital"];
+export const ORG_VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital", "government"];
 
 const DEFAULT_PROFILE = {
   vertical: "general",
@@ -72,6 +72,7 @@ export async function updateOrgProfile({ orgId, updates, actorEmail, membership 
 const VERTICAL_LABELS = {
   healthcare: "Health OS", legal: "Legal OS", regulated: "Regulated Enterprise OS",
   financial: "Financial Services OS", private_capital: "Private Capital OS",
+  government: "Government OS",
 };
 
 /** The hard door-lock, called from every Health/Legal/Regulated/Financial

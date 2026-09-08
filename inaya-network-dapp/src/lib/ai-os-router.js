@@ -38,6 +38,7 @@ import { buildInvestmentContext, runInvestmentTool, INVESTMENT_TOOL_DECLARATIONS
 import { buildPrivateCapitalContext, runPrivateCapitalTool, PRIVATE_CAPITAL_TOOL_DECLARATIONS, privateCapitalSystemInstruction } from "./ai-private-capital-tools.js";
 import { buildAuditContext, runAuditTool, AUDIT_TOOL_DECLARATIONS, auditSystemInstruction } from "./ai-audit-tools.js";
 import { buildRegulatoryContext, runRegulatoryTool, REGULATORY_TOOL_DECLARATIONS, regulatorySystemInstruction } from "./ai-regulatory-tools.js";
+import { buildGovernmentContext, runGovernmentTool, GOVERNMENT_TOOL_DECLARATIONS, governmentSystemInstruction } from "./ai-government-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
 
 const DOCS_TOOL_DECLARATION = {
@@ -79,7 +80,7 @@ function withPrefix(declarations, prefix) {
 export async function buildOsContext(input) {
   if (input?.scope === "org") {
     const { orgId, membership, email } = input;
-    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx] = await Promise.all([
+    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx] = await Promise.all([
       buildBusinessContext({ orgId, membership, email }),
       buildSecurityContext({ identityId: email }).catch(() => null),
       // Healthcare & Legal Expansion SOW, Phase 5/9 — built unconditionally
@@ -101,8 +102,12 @@ export async function buildOsContext(input) {
       // reasoning: an org with no compliance data just gets empty results.
       buildAuditContext({ orgId, membership, email }).catch(() => null),
       buildRegulatoryContext({ orgId, membership, email }).catch(() => null),
+      // Government & Public Sector Sovereign OS SOW, Phase 1/3 — same
+      // unconditional-build reasoning: a non-government org just gets
+      // empty case/record/policy-kb results from every government_ tool.
+      buildGovernmentContext({ orgId, membership, email }).catch(() => null),
     ]);
-    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx };
+    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx };
   }
   if (input?.scope === "wallet") {
     const { walletAddress } = input;
@@ -124,6 +129,7 @@ export function getOsToolDeclarations(scope) {
       ...withPrefix(PRIVATE_CAPITAL_TOOL_DECLARATIONS, "pc"),
       ...withPrefix(AUDIT_TOOL_DECLARATIONS, "audit"),
       ...withPrefix(REGULATORY_TOOL_DECLARATIONS, "regulatory"),
+      ...withPrefix(GOVERNMENT_TOOL_DECLARATIONS, "government"),
     ];
   }
   if (scope === "wallet") {
@@ -145,6 +151,7 @@ export async function runOsTool(name, args, ctx) {
   if (name.startsWith("pc_") && ctx.privateCapitalCtx) return runPrivateCapitalTool(name.slice("pc_".length), args, ctx.privateCapitalCtx);
   if (name.startsWith("audit_") && ctx.auditCtx) return runAuditTool(name.slice("audit_".length), args, ctx.auditCtx);
   if (name.startsWith("regulatory_") && ctx.regulatoryCtx) return runRegulatoryTool(name.slice("regulatory_".length), args, ctx.regulatoryCtx);
+  if (name.startsWith("government_") && ctx.governmentCtx) return runGovernmentTool(name.slice("government_".length), args, ctx.governmentCtx);
   return { error: `Unknown or unavailable tool: ${name}` };
 }
 
@@ -164,7 +171,8 @@ export function osSystemInstruction({ scope, orgName, role, isManager }) {
       `\n\nYou ALSO have Investment Research tools (prefixed investment_), for organizations running the Financial Services vertical. ${investmentSystemInstruction()}` +
       `\n\nYou ALSO have Private Capital tools (prefixed pc_), for organizations running the Private Capital vertical. ${privateCapitalSystemInstruction()}` +
       `\n\nYou ALSO have Audit Copilot tools (prefixed audit_), read-only. ${auditSystemInstruction()}` +
-      `\n\nYou ALSO have Regulatory Copilot tools (prefixed regulatory_). ${regulatorySystemInstruction()}`;
+      `\n\nYou ALSO have Regulatory Copilot tools (prefixed regulatory_). ${regulatorySystemInstruction()}` +
+      `\n\nYou ALSO have Government OS tools (prefixed government_), for organizations running the Government vertical. ${governmentSystemInstruction()}`;
   }
   return `You are the Inaya OS Assistant for a connected wallet — you help with general questions about how Inaya works (via search_docs, Inaya's indexed documentation) and this wallet's own security status (via the security_ tools: recent events, threat lookups, reputation detail).
 

@@ -75,6 +75,9 @@ const FINANCIAL_UNCLASSIFIED_ROUTES = FINANCIAL_ALL_ROUTES.filter((f) => !FINANC
 // fundraising/exits/SPVs/reporting), unlike Phase 1's shared array-form
 // financial core.
 const PRIVATE_CAPITAL_ROUTES = findRouteFiles("src/app/api/orgs/private-capital");
+// Government & Public Sector Sovereign OS SOW, Phase 1 (Government OS
+// Foundation) — uniformly "government"-only, same shape as REGULATED_ROUTES.
+const GOVERNMENT_ROUTES = findRouteFiles("src/app/api/orgs/government");
 const ALL_ROUTES = [
   ...HEALTH_ROUTES.map((f) => ({ file: f, vertical: "healthcare" })),
   ...LEGAL_ROUTES.map((f) => ({ file: f, vertical: "legal" })),
@@ -82,6 +85,7 @@ const ALL_ROUTES = [
   ...FINANCIAL_PHASE1_ROUTES.map((f) => ({ file: f, vertical: ["financial", "private_capital"] })),
   ...FINANCIAL_PHASE2_ROUTES.map((f) => ({ file: f, vertical: "financial" })),
   ...PRIVATE_CAPITAL_ROUTES.map((f) => ({ file: f, vertical: "private_capital" })),
+  ...GOVERNMENT_ROUTES.map((f) => ({ file: f, vertical: "government" })),
 ];
 
 function splitIntoHandlers(source) {
@@ -101,6 +105,7 @@ test("sanity: found every expected health/legal/regulated/financial/private-capi
   assert.ok(FINANCIAL_PHASE2_ROUTES.length >= 14, `expected at least 14 single-string financial Phase-2 routes, found ${FINANCIAL_PHASE2_ROUTES.length}`);
   assert.deepEqual(FINANCIAL_UNCLASSIFIED_ROUTES, [], `found financial route file(s) not classified into Phase 1 or Phase 2 subdirs -- update FINANCIAL_PHASE1_DIRS/FINANCIAL_PHASE2_DIRS: ${JSON.stringify(FINANCIAL_UNCLASSIFIED_ROUTES)}`);
   assert.ok(PRIVATE_CAPITAL_ROUTES.length >= 30, `expected at least 30 private-capital routes, found ${PRIVATE_CAPITAL_ROUTES.length}`);
+  assert.ok(GOVERNMENT_ROUTES.length >= 8, `expected at least 8 government routes, found ${GOVERNMENT_ROUTES.length}`);
 });
 
 // Matches requireVertical(<orgIdExpr>, "singleVertical") or

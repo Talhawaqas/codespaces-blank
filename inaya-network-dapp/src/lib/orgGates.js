@@ -176,3 +176,33 @@ export function isFundTeamMember(membership, fundId, assignments) {
     (a) => a.fundId?.toString() === fundId?.toString() && a.email === membership.email
   );
 }
+
+// ============================================================
+// Government & Public Sector Sovereign OS SOW, Phase 1 — role model
+//
+// governmentRole is the org-wide manager/staff gate, same precedent as
+// every prior domain. Citizen-record visibility itself is assignment-based,
+// NOT this role alone (SOW §C: "need-to-know access", "assignment-based
+// access to sensitive records") — isCitizenRecordAssignee mirrors
+// isCareTeamMember/isMatterTeamMember/isFundTeamMember exactly: department
+// membership (or even governmentRole:"staff") alone must never grant
+// access to a specific citizen record, only an actual assignment does.
+// ============================================================
+
+export function canManageGovernment(membership) {
+  return canManageOrg(membership) || membership?.governmentRole === "manager";
+}
+
+export function canAccessGovernment(membership) {
+  return canManageGovernment(membership) || membership?.governmentRole === "staff";
+}
+
+/** Same shape as isCareTeamMember/isMatterTeamMember/isFundTeamMember, for
+ *  citizen_record_assignments rows. */
+export function isCitizenRecordAssignee(membership, recordId, assignments) {
+  if (!membership) return false;
+  if (canManageOrg(membership)) return true;
+  return (assignments || []).some(
+    (a) => a.recordId?.toString() === recordId?.toString() && a.email === membership.email
+  );
+}

@@ -59,6 +59,9 @@ import {
   canManageFinancialEntities,
   canAccessFinancialEntities,
   isFundTeamMember,
+  canManageGovernment,
+  canAccessGovernment,
+  isCitizenRecordAssignee,
 } from "./orgGates.js";
 
 export {
@@ -66,6 +69,7 @@ export {
   canManageHealth, canAccessHealthRecords, canManageLegal, canAccessLegalMatters, isCareTeamMember, isMatterTeamMember,
   canManageCompliance, canAccessCompliance, canManageAudit, canAccessAudit,
   canManageFinancialEntities, canAccessFinancialEntities, isFundTeamMember,
+  canManageGovernment, canAccessGovernment, isCitizenRecordAssignee,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -358,6 +362,29 @@ export async function getOrgCollections() {
     // same discipline as compliance-policies.js's publish step.
     regulatedExportPackages: db.collection("regulated_export_packages"),
     migrationRuns: db.collection("migration_runs"),
+    // Government & Public Sector Sovereign OS SOW, Phase 1 (Government OS
+    // Foundation). citizenRecordAssignments is the join table making
+    // citizen-record visibility assignment-based, exact same shape as
+    // healthCareTeamAssignments/legalMatterTeamAssignments/
+    // financialFundTeamAssignments. governmentCases links to citizen
+    // records but is its own collection (a case can span multiple
+    // citizens/records, or none yet at creation). governmentDocumentReads
+    // is the stricter "log every READ, not just mutations" chain-of-custody
+    // trail SOW §B requires for government orgs specifically — deliberately
+    // separate from the general documentActivity collection (which only
+    // ever logs mutations for every other vertical) rather than changing
+    // that collection's long-established meaning for everyone else.
+    // policyKbEntries/policyKbAcknowledgements reuse
+    // compliance-policies.js's exact versioned/publish-immutable lifecycle,
+    // recontextualized as the SOW §4 "Policy Knowledge Base." Break-glass/
+    // privileged access reuses the already cross-vertical privilegedSessions
+    // collection above as-is — no new collection needed for that.
+    citizenRecords: db.collection("citizen_records"),
+    citizenRecordAssignments: db.collection("citizen_record_assignments"),
+    governmentCases: db.collection("government_cases"),
+    governmentDocumentReads: db.collection("government_document_reads"),
+    policyKbEntries: db.collection("policy_kb_entries"),
+    policyKbAcknowledgements: db.collection("policy_kb_acknowledgements"),
   };
 }
 
@@ -397,6 +424,8 @@ export async function ensureOrgIndexes() {
     integrationConnections, integrationSyncRuns, boardReports,
     dataRooms, dataRoomExternalMagicLinks, dataRoomExternalSessions, dataRoomAccessLog,
     regulatedExportPackages, migrationRuns,
+    citizenRecords, citizenRecordAssignments, governmentCases, governmentDocumentReads,
+    policyKbEntries, policyKbAcknowledgements,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -608,6 +637,16 @@ export async function ensureOrgIndexes() {
     // Financial Services & Regulated Enterprise SOW, Phase 10 (Enterprise Hardening)
     regulatedExportPackages.createIndex({ orgId: 1, requestId: 1 }),
     migrationRuns.createIndex({ orgId: 1, status: 1, createdAt: -1 }),
+    // Government & Public Sector Sovereign OS SOW, Phase 1 (Government OS Foundation)
+    citizenRecords.createIndex({ orgId: 1, status: 1 }),
+    citizenRecordAssignments.createIndex({ orgId: 1, recordId: 1, email: 1 }, { unique: true }),
+    citizenRecordAssignments.createIndex({ orgId: 1, email: 1 }),
+    governmentCases.createIndex({ orgId: 1, status: 1 }),
+    governmentCases.createIndex({ orgId: 1, citizenRecordId: 1 }),
+    governmentDocumentReads.createIndex({ orgId: 1, documentId: 1, readAt: -1 }),
+    policyKbEntries.createIndex({ orgId: 1, key: 1, version: 1 }, { unique: true }),
+    policyKbEntries.createIndex({ orgId: 1, status: 1 }),
+    policyKbAcknowledgements.createIndex({ orgId: 1, entryId: 1, memberEmail: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;
