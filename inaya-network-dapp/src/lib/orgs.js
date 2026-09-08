@@ -390,6 +390,10 @@ export async function getOrgCollections() {
     // Never a target of a real business mutation itself — see
     // src/lib/guided-tasks.js's header comment.
     guidedTasks: db.collection("guided_tasks"),
+    // Institutional Trust Infrastructure SOW, Phase 5 — cross-org trust
+    // primitives only (propose/accept/reject/revoke/check). See
+    // src/lib/org-trust.js's header comment for the scope limit.
+    orgTrustRelationships: db.collection("org_trust_relationships"),
   };
 }
 
@@ -431,7 +435,7 @@ export async function ensureOrgIndexes() {
     regulatedExportPackages, migrationRuns,
     citizenRecords, citizenRecordAssignments, governmentCases, governmentDocumentReads,
     policyKbEntries, policyKbAcknowledgements,
-    guidedTasks,
+    guidedTasks, orgTrustRelationships,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -657,6 +661,9 @@ export async function ensureOrgIndexes() {
     guidedTasks.createIndex({ orgId: 1, userEmail: 1, status: 1 }),
     guidedTasks.createIndex({ orgId: 1, workflowKey: 1 }),
     guidedTasks.createIndex({ orgId: 1, updatedAt: 1 }),
+    // Institutional Trust Infrastructure SOW, Phase 5
+    orgTrustRelationships.createIndex({ fromOrgId: 1, status: 1 }),
+    orgTrustRelationships.createIndex({ toOrgId: 1, status: 1 }),
   ]);
 
   indexesEnsured = true;

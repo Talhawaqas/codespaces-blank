@@ -65,6 +65,7 @@ import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
 import CommandPalette from "../../components/CommandPalette";
 import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
+import TrustRelationshipsView from "../../components/business/TrustRelationshipsView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -908,6 +909,7 @@ const NAV_ITEMS = [
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
+  { key: "trustRelationships", label: "Cross-Org Trust", icon: "activity", manageOnly: true, group: "trust" },
   { key: "activity", label: "Activity", icon: "activity", group: "trust" },
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
@@ -1124,6 +1126,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     approvals: "Approvals",
     aiActions: "AI Action Requests",
     auditTrail: "Audit Trail",
+    trustRelationships: "Cross-Org Trust",
     activity: "Activity",
     ai: "AI Assistant",
     billing: "Billing",
@@ -1242,6 +1245,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
+          {activeView === "trustRelationships" && canManage && <TrustRelationshipsView orgId={orgId} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && (
             <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} />
