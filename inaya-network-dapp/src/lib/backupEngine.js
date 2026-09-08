@@ -241,13 +241,24 @@ async function recomputeAndSyncState(fileHash) {
  *  primary replica, then fans out to every OTHER configured provider (today: just Filebase, once
  *  credentials exist). Best-effort per secondary provider -- one failing doesn't roll back the
  *  primary pin or block the upload response; the check-pins cron is the safety net that notices
- *  and retries via the recovery workflow. */
-export async function replicateShard({ fileHash, shardId, content, primaryProvider, primaryCid }) {
+ *  and retries via the recovery workflow.
+ *
+ *  primaryProviderRef defaults to primaryCid (unchanged behavior for the only existing caller,
+ *  which always pins primary via Pinata, where providerRef IS the cid) -- but is a distinct,
+ *  explicit parameter because that equality does NOT hold for every provider (Filebase's
+ *  providerRef is its S3 object key, not its cid -- see pinningProviders/filebase.js). A caller
+ *  whose primary provider might be Filebase (e.g. the Autonomous Resilience Layer, in an
+ *  environment where only Filebase is configured) must pass the real providerRef explicitly. */
+export async function replicateShard({ fileHash, shardId, content, primaryProvider, primaryCid, primaryProviderRef = primaryCid }) {
   if (!SHARD_IDS.includes(shardId)) throw new Error(`backupEngine.replicateShard: shardId must be one of ${SHARD_IDS.join("/")}, got "${shardId}"`);
 
-  await recordReplica({ fileHash, shardId, provider: primaryProvider, cid: primaryCid, providerRef: primaryCid, contentHash: sha256Hex(content) });
+  await recordReplica({ fileHash, shardId, provider: primaryProvider, cid: primaryCid, providerRef: primaryProviderRef, contentHash: sha256Hex(content) });
 
-  const results = [{ provider: primaryProvider, cid: primaryCid, status: "primary" }];
+  // providerRef included on every result entry (additive -- existing callers that only read
+  // provider/cid/status are unaffected) so a caller that needs to actually fetch a replica back
+  // (e.g. the Autonomous Resilience Layer's recovery-test orchestrator) doesn't have to duplicate
+  // this function's own replica bookkeeping just to learn what to pass fetchReplica()/getPinStatus().
+  const results = [{ provider: primaryProvider, cid: primaryCid, providerRef: primaryProviderRef, status: "primary" }];
   const secondaryProviders = listAvailableProviders().filter((p) => p !== primaryProvider);
 
   for (const providerName of secondaryProviders) {
@@ -255,7 +266,7 @@ export async function replicateShard({ fileHash, shardId, content, primaryProvid
       const adapter = getProvider(providerName);
       const pinResult = await adapter.pin(content, { name: `${fileHash}_${shardId}` });
       await recordReplica({ fileHash, shardId, provider: pinResult.provider, cid: pinResult.cid, providerRef: pinResult.providerRef, contentHash: pinResult.contentHash });
-      results.push({ provider: providerName, cid: pinResult.cid, status: "replicated" });
+      results.push({ provider: providerName, cid: pinResult.cid, providerRef: pinResult.providerRef, status: "replicated" });
     } catch (err) {
       results.push({ provider: providerName, status: "failed", error: err.message });
     }
