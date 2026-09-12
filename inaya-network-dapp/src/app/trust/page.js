@@ -187,6 +187,20 @@ export default function TrustCenterPage() {
           </div>
         </Section>
 
+        <Section title="Recovery resilience">
+          <p>
+            Backup existing is not the same as recovery being proven. Institutions can define recovery requirements
+            (an RTO/RPO threshold, critical asset categories, a test frequency) and Inaya continuously runs real,
+            non-destructive recovery tests against them — exercising the exact same encryption, replication, and
+            reconstruction pipeline described above. Each test produces a real recovery-time/recovery-point
+            measurement and a PASS/FAIL result; a resilience test&apos;s evidence uses the identical verifiable
+            evidence-package model as the audit chain above, so it can be checked with the same verifier — paste a
+            recovery-test evidence export instead of an audit export and it works unchanged. Per-organization
+            resilience status is authenticated (Business Workspace → Recovery Resilience), not published here,
+            since it would otherwise disclose one customer&apos;s specific security posture publicly.
+          </p>
+        </Section>
+
         <Section title="Contract / deployment verification">
           <p>
             Every on-chain contract Inaya runs on is publicly deployed and verifiable — see the{" "}
