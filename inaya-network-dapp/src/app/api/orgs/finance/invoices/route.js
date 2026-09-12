@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { INVOICE_STATES } from "../../../../../lib/invoice-workflow.js";
+import { isSupportedCurrency } from "../../../../../lib/currency.js";
 
 function computeTotal(lineItems) {
   return lineItems.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitPrice), 0);
@@ -78,10 +79,12 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, contactId, invoiceNumber, issueDate, dueDate, lineItems: rawItems, notes } = await req.json();
+    const { orgId, departmentId, contactId, invoiceNumber, issueDate, dueDate, lineItems: rawItems, notes, currency } = await req.json();
     if (!orgId || !departmentId || !contactId || !dueDate) {
       return NextResponse.json({ error: "orgId, departmentId, contactId, and dueDate are required." }, { status: 400 });
     }
+    const invoiceCurrency = currency ? String(currency).toUpperCase() : "USD";
+    if (!isSupportedCurrency(invoiceCurrency)) return NextResponse.json({ error: `Unsupported currency "${invoiceCurrency}".` }, { status: 400 });
     const { lineItems, error: itemsError } = validateLineItems(rawItems);
     if (itemsError) return NextResponse.json({ error: itemsError }, { status: 400 });
 
@@ -107,7 +110,7 @@ export async function POST(req) {
     const result = await invoices.insertOne({
       orgId: orgObjectId, departmentId: departmentObjectId, contactId: contactObjectId,
       invoiceNumber: invoiceNumber ? String(invoiceNumber).trim() : `INV-${Date.now().toString(36).toUpperCase()}`,
-      issueDate: issueDate || now, dueDate, lineItems, subtotal: total, total, currency: "USD",
+      issueDate: issueDate || now, dueDate, lineItems, subtotal: total, total, currency: invoiceCurrency,
       status: "DRAFT", notes: notes ? String(notes).trim() : null,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
@@ -115,7 +118,7 @@ export async function POST(req) {
     return NextResponse.json(serializeInvoice({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, contactId: contactObjectId,
       invoiceNumber: invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`, issueDate: issueDate || now, dueDate,
-      lineItems, subtotal: total, total, currency: "USD", status: "DRAFT", notes,
+      lineItems, subtotal: total, total, currency: invoiceCurrency, status: "DRAFT", notes,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }));
   } catch (err) {

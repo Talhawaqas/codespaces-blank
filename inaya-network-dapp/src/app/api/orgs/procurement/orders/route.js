@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { PURCHASE_ORDER_STATES } from "../../../../../lib/purchase-order-workflow.js";
+import { isSupportedCurrency } from "../../../../../lib/currency.js";
 
 function serializeOrder(po) {
   return {
@@ -25,6 +26,7 @@ function serializeOrder(po) {
       warehouseId: item.warehouseId ? item.warehouseId.toString() : null,
       quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0,
     })),
+    currency: po.currency || "USD",
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
   };
 }
@@ -85,8 +87,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems } = await req.json();
+    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems, currency } = await req.json();
     if (!orgId || !departmentId || !supplierId) return NextResponse.json({ error: "orgId, departmentId, and supplierId are required." }, { status: 400 });
+
+    const poCurrency = currency ? String(currency).toUpperCase() : "USD";
+    if (!isSupportedCurrency(poCurrency)) return NextResponse.json({ error: `Unsupported currency "${poCurrency}".` }, { status: 400 });
 
     const { items, error: itemsError } = validateItems(rawItems);
     if (itemsError) return NextResponse.json({ error: itemsError }, { status: 400 });
@@ -131,12 +136,12 @@ export async function POST(req) {
     const now = new Date().toISOString();
     const result = await purchaseOrders.insertOne({
       orgId: orgObjectId, departmentId: departmentObjectId, supplierId: supplierObjectId, sourceRequestId: sourceRequestObjectId,
-      items, status: "DRAFT", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
+      items, currency: poCurrency, status: "DRAFT", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
 
     return NextResponse.json(serializeOrder({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, supplierId: supplierObjectId,
-      sourceRequestId: sourceRequestObjectId, items, status: "DRAFT",
+      sourceRequestId: sourceRequestObjectId, items, currency: poCurrency, status: "DRAFT",
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }));
   } catch (err) {

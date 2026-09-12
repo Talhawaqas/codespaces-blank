@@ -38,8 +38,15 @@ function formatKpiValue(key, value) {
   return value.toLocaleString();
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function InsightsView({ orgId, canManage, onNavigate }) {
   const [periodDays, setPeriodDays] = useState("30");
+  const [activeRange, setActiveRange] = useState(null); // {startDate, endDate} once Applied, else null (preset mode)
+  const [rangeDraft, setRangeDraft] = useState({ start: "", end: "" });
+  const [rangeError, setRangeError] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
@@ -51,29 +58,69 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
 
   const load = useCallback(async () => {
     try {
-      setData(await api(`/api/orgs/insights?orgId=${orgId}&periodDays=${periodDays}`));
+      const query = activeRange
+        ? `startDate=${activeRange.startDate}&endDate=${activeRange.endDate}`
+        : `periodDays=${periodDays}`;
+      setData(await api(`/api/orgs/insights?orgId=${orgId}&${query}`));
     } catch (err) {
       setError(err.message);
     }
-  }, [orgId, periodDays]);
+  }, [orgId, periodDays, activeRange]);
 
   useEffect(() => { load(); }, [load]);
 
+  const applyCustomRange = () => {
+    setRangeError("");
+    if (!rangeDraft.start || !rangeDraft.end) { setRangeError("Pick both a start and end date."); return; }
+    const today = todayStr();
+    if (rangeDraft.start > today || rangeDraft.end > today) { setRangeError("Dates can't be in the future."); return; }
+    if (rangeDraft.end < rangeDraft.start) { setRangeError("End date must be on or after the start date."); return; }
+    setActiveRange({ startDate: rangeDraft.start, endDate: rangeDraft.end });
+  };
+  const resetToPresets = () => {
+    setActiveRange(null);
+    setRangeDraft({ start: "", end: "" });
+    setRangeError("");
+  };
+  const selectPreset = (value) => {
+    resetToPresets();
+    setPeriodDays(value);
+  };
+
   if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!data) return <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>;
+
+  const periodControls = (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Period</span>
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
+          {PERIOD_OPTIONS.map(([value, label]) => (
+            <button key={value} onClick={() => selectPreset(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${!activeRange && periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Custom range</span>
+        <input type="date" value={rangeDraft.start} max={todayStr()} onChange={(e) => setRangeDraft((d) => ({ ...d, start: e.target.value }))}
+          className="bg-[var(--inaya-surface)] border border-white/5 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+        <span className="text-[var(--inaya-text-muted)] text-xs">to</span>
+        <input type="date" value={rangeDraft.end} max={todayStr()} onChange={(e) => setRangeDraft((d) => ({ ...d, end: e.target.value }))}
+          className="bg-[var(--inaya-surface)] border border-white/5 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+        <button onClick={applyCustomRange} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#00f2fe]/15 text-[#00f2fe]">Apply</button>
+        {activeRange && <button onClick={resetToPresets} className="px-3 py-1.5 text-xs font-bold rounded-lg text-[var(--inaya-text-muted)] border border-white/5">Reset</button>}
+      </div>
+      {rangeError && <p className="text-red-400 text-[11px] font-semibold w-full">{rangeError}</p>}
+      {activeRange && !rangeError && <p className="text-[#00f2fe] text-[11px] font-semibold w-full">Showing {activeRange.startDate} to {activeRange.endDate}</p>}
+    </div>
+  );
+
+  if (!data) return <div className="space-y-6">{periodControls}<p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p></div>;
 
   const noDataYet = Object.values(data.kpis).every((kpi) => !kpi.value) && data.alerts.length === 0;
   if (noDataYet) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Period</span>
-          <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
-            {PERIOD_OPTIONS.map(([value, label]) => (
-              <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-            ))}
-          </div>
-        </div>
+        {periodControls}
         <EmptyState icon="📊" title="Not enough data yet" description="Insights build up as your team creates tasks, deals, invoices, and expenses. Check back once there's some activity to summarize." />
       </div>
     );
@@ -81,14 +128,7 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Period</span>
-        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
-          {PERIOD_OPTIONS.map(([value, label]) => (
-            <button key={value} onClick={() => setPeriodDays(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${periodDays === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-          ))}
-        </div>
-      </div>
+      {periodControls}
 
       {data.alerts.length > 0 && (
         <div className="space-y-2">
@@ -174,23 +214,65 @@ function ComparisonCard({ title, comparison, currency }) {
 function TrendChart({ title, series, color, currency }) {
   const width = 280;
   const height = 72;
-  const max = Math.max(1, ...series.map((p) => p.value));
+  const [activeIdx, setActiveIdx] = useState(null);
+  const values = series.map((p) => p.value);
+  const actualMax = Math.max(...values);
+  const actualMin = Math.min(...values);
+  const max = Math.max(1, actualMax);
+  const min = Math.min(0, actualMin);
+  const range = Math.max(1, max - min);
   const stepX = series.length > 1 ? width / (series.length - 1) : width;
-  const points = series.map((p, i) => `${i * stepX},${height - (p.value / max) * height}`).join(" ");
+  const yFor = (v) => height - ((v - min) / range) * height;
+  const coords = series.map((p, i) => [i * stepX, yFor(p.value)]);
+  const points = coords.map(([x, y]) => `${x},${y}`).join(" ");
   const total = series.reduce((s, p) => s + p.value, 0);
+  const fmt = (v) => (currency ? `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : v.toLocaleString());
+  const maxIdx = values.indexOf(actualMax);
+  const minIdx = values.indexOf(actualMin);
+  const active = activeIdx != null ? series[activeIdx] : null;
+
+  const pickNearest = (clientX, currentTarget) => {
+    const rect = currentTarget.getBoundingClientRect();
+    const relX = ((clientX - rect.left) / rect.width) * width;
+    let nearest = 0, best = Infinity;
+    coords.forEach(([x], i) => {
+      const d = Math.abs(x - relX);
+      if (d < best) { best = d; nearest = i; }
+    });
+    setActiveIdx(nearest);
+  };
 
   return (
     <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[#8a96ab] text-[11px] font-mono">{title}</p>
-        <p className="text-[var(--inaya-text-primary)] text-xs font-bold tabular-nums">{currency ? `$${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : total.toLocaleString()}</p>
+        <p className="text-[var(--inaya-text-primary)] text-xs font-bold tabular-nums">
+          {active ? `${active.date}: ${fmt(active.value)}` : fmt(total)}
+        </p>
       </div>
       {series.length === 0 || total === 0 ? (
         <p className="text-[#8a96ab] text-xs italic py-4">No activity in this period.</p>
       ) : (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16" preserveAspectRatio="none">
-          <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        </svg>
+        <div className="relative">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-16 touch-none"
+            preserveAspectRatio="none"
+            onMouseMove={(e) => pickNearest(e.clientX, e.currentTarget)}
+            onMouseLeave={() => setActiveIdx(null)}
+            onTouchStart={(e) => pickNearest(e.touches[0].clientX, e.currentTarget)}
+            onTouchMove={(e) => pickNearest(e.touches[0].clientX, e.currentTarget)}
+            onClick={(e) => pickNearest(e.clientX, e.currentTarget)}
+          >
+            <line x1="0" y1={yFor(min)} x2={width} y2={yFor(min)} stroke="#8a96ab" strokeOpacity="0.25" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            {active && <circle cx={coords[activeIdx][0]} cy={coords[activeIdx][1]} r="4" fill={color} stroke="var(--inaya-surface)" strokeWidth="1.5" />}
+          </svg>
+          <div className="flex justify-between text-[9px] font-mono text-[#8a96ab] mt-0.5">
+            <span>min {fmt(values[minIdx])}</span>
+            <span>max {fmt(values[maxIdx])}</span>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -18,6 +18,7 @@ function serializePayment(p) {
     id: p._id.toString(), orgId: p.orgId.toString(), departmentId: p.departmentId.toString(), direction: p.direction,
     relatedInvoiceId: p.relatedInvoiceId ? p.relatedInvoiceId.toString() : null,
     relatedExpenseId: p.relatedExpenseId ? p.relatedExpenseId.toString() : null,
+    relatedPurchaseOrderId: p.relatedPurchaseOrderId ? p.relatedPurchaseOrderId.toString() : null,
     amount: p.amount, currency: p.currency, method: p.method || null, paymentDate: p.paymentDate, status: p.status,
     createdByEmail: p.createdByEmail, createdAt: p.createdAt,
   };
@@ -63,7 +64,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, direction, amount, method, paymentDate, relatedInvoiceId, relatedExpenseId } = await req.json();
+    const { orgId, departmentId, direction, amount, method, paymentDate, relatedInvoiceId, relatedExpenseId, relatedPurchaseOrderId } = await req.json();
     if (!orgId || !departmentId || !DIRECTIONS.includes(direction)) {
       return NextResponse.json({ error: "orgId, departmentId, and a valid direction (INCOMING|OUTGOING) are required." }, { status: 400 });
     }
@@ -76,7 +77,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
     }
 
-    const { departments, invoices, expenses, payments } = await getOrgCollections();
+    const { departments, invoices, expenses, purchaseOrders, payments } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);
     const departmentObjectId = toObjectId(departmentId);
     const department = await departments.findOne({ _id: departmentObjectId, orgId: orgObjectId });
@@ -94,11 +95,18 @@ export async function POST(req) {
       if (!expense) return NextResponse.json({ error: "Related expense not found." }, { status: 404 });
       relatedExpenseObjectId = expense._id;
     }
+    let relatedPurchaseOrderObjectId = null;
+    if (relatedPurchaseOrderId) {
+      const po = await purchaseOrders.findOne({ _id: toObjectId(relatedPurchaseOrderId), orgId: orgObjectId, deletedAt: null });
+      if (!po) return NextResponse.json({ error: "Related purchase order not found." }, { status: 404 });
+      relatedPurchaseOrderObjectId = po._id;
+    }
 
     const now = new Date().toISOString();
     const result = await payments.insertOne({
       orgId: orgObjectId, departmentId: departmentObjectId, direction, relatedInvoiceId: relatedInvoiceObjectId,
-      relatedExpenseId: relatedExpenseObjectId, amount, currency: "USD", method: method ? String(method).trim() : null,
+      relatedExpenseId: relatedExpenseObjectId, relatedPurchaseOrderId: relatedPurchaseOrderObjectId,
+      amount, currency: "USD", method: method ? String(method).trim() : null,
       paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now, deletedAt: null,
     });
 
@@ -109,8 +117,8 @@ export async function POST(req) {
 
     return NextResponse.json(serializePayment({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, direction,
-      relatedInvoiceId: relatedInvoiceObjectId, relatedExpenseId: relatedExpenseObjectId, amount, currency: "USD",
-      method, paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now,
+      relatedInvoiceId: relatedInvoiceObjectId, relatedExpenseId: relatedExpenseObjectId, relatedPurchaseOrderId: relatedPurchaseOrderObjectId,
+      amount, currency: "USD", method, paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now,
     }));
   } catch (err) {
     console.error("orgs/finance/payments POST failed:", err);

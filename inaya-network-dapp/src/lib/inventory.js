@@ -15,7 +15,9 @@
 // doesn't move real inventory yet" gap the original phased plan flagged
 // as an accepted one-release trade-off.
 
+import { randomUUID } from "node:crypto";
 import { getOrgCollections, toObjectId } from "./orgs.js";
+import { logOrgActivity } from "./org-activity-log.js";
 
 export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"];
 
@@ -86,4 +88,39 @@ export async function totalStockForProduct(orgId, productId) {
 
 export function isLowStock(product, totalQuantity) {
   return (product.reorderThreshold || 0) > 0 && totalQuantity <= product.reorderThreshold;
+}
+
+/** Business Workspace Remaining Features SOW — warehouse-to-warehouse
+ *  transfer. A thin orchestration over recordStockMovement(), which
+ *  already defines TRANSFER_IN/TRANSFER_OUT (unused until now) — no new
+ *  stock-mutation primitive, just two calls to the existing one, linked
+ *  by a shared transferId so history can group them. Rejects an
+ *  identical source/destination up front; insufficient stock is rejected
+ *  by the existing TRANSFER_OUT call itself (recordStockMovement's own
+ *  negative-delta check), so this never invents a second stock-
+ *  sufficiency check that could drift from the real one. */
+export async function transferStock({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note, actorEmail }) {
+  if (sourceWarehouseId === destWarehouseId) return { error: "Source and destination warehouses must be different.", status: 400 };
+  if (!Number.isFinite(quantity) || quantity <= 0) return { error: "quantity must be a positive number.", status: 400 };
+
+  const transferId = randomUUID();
+  const outResult = await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: -quantity, type: "TRANSFER_OUT", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail });
+  if (outResult.error) return outResult;
+
+  const inResult = await recordStockMovement({ orgId, productId, warehouseId: destWarehouseId, delta: quantity, type: "TRANSFER_IN", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail });
+  if (inResult.error) {
+    // The OUT leg already committed -- reverse it rather than leaving
+    // stock silently vanished. A real, recorded reversal movement, not a
+    // silent undo, so the ledger stays a true append-only history.
+    await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: quantity, type: "ADJUSTMENT", note: `reversal of failed transfer ${transferId}: ${inResult.error}`, actorEmail });
+    return inResult;
+  }
+
+  await logOrgActivity({
+    orgId: toObjectId(orgId), recordType: "STOCK_TRANSFER", recordId: outResult.movement._id, actorEmail,
+    action: "STOCK_TRANSFERRED", previousState: null, newState: null,
+    metadata: { transferId, productId, sourceWarehouseId, destWarehouseId, quantity },
+  });
+
+  return { transferId, from: outResult, to: inResult };
 }

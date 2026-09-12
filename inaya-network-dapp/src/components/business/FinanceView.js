@@ -242,9 +242,16 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <StatusBadge status={invoice.status} />
-          <span className="text-[var(--inaya-text-primary)] text-lg font-mono tabular-nums">${invoice.total.toFixed(2)}</span>
+          <span className="text-[var(--inaya-text-primary)] text-lg font-mono tabular-nums">{invoice.currency} {invoice.total.toFixed(2)}</span>
         </div>
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">Issued {new Date(invoice.issueDate).toLocaleDateString()} · Due {new Date(invoice.dueDate).toLocaleDateString()}</p>
+        <a
+          href={`/api/orgs/finance/invoices/${invoice.id}/pdf?orgId=${orgId}`}
+          target="_blank" rel="noreferrer"
+          className="inline-block text-[11px] font-bold uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10"
+        >
+          Generate PDF Invoice
+        </a>
 
         <div className="space-y-1 border-t border-white/5 pt-3">
           {invoice.lineItems.map((it, i) => (

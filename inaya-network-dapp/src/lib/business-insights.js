@@ -71,19 +71,41 @@ function pctChange(current, previous) {
   return Math.round(((current - previous) / previous) * 1000) / 10;
 }
 
-export async function computeBusinessInsights({ orgId, membership, email, periodDays }) {
-  const days = clampPeriodDays(periodDays);
+/** startDate/endDate (ISO strings), when both given, override periodDays
+ *  entirely with an explicit range — the Custom Date-Range Picker. Omit
+ *  both and behavior is byte-identical to before (existing presets
+ *  untouched). `now` (the real current moment) stays separate from
+ *  `periodEnd` (the end of whatever window is being analyzed, which for a
+ *  historical custom range is NOT "now") — only genuinely "right now"
+ *  snapshot logic (e.g. overdueTasks below) uses `now`; every period-
+ *  filtered sum/trend uses `periodEnd`. */
+export async function computeBusinessInsights({ orgId, membership, email, periodDays, startDate, endDate }) {
+  const now = Date.now();
+  let days, periodStart, periodEnd, prevPeriodStart, prevPeriodEnd;
+  if (startDate && endDate) {
+    periodStart = new Date(startDate).getTime();
+    periodEnd = new Date(endDate).getTime();
+    if (!Number.isFinite(periodStart) || !Number.isFinite(periodEnd) || periodEnd < periodStart) {
+      throw new Error("Invalid date range: endDate must be on or after startDate.");
+    }
+    const rangeMs = Math.max(periodEnd - periodStart, 24 * 60 * 60 * 1000);
+    days = Math.max(1, Math.round(rangeMs / (24 * 60 * 60 * 1000)));
+    prevPeriodStart = periodStart - rangeMs;
+    prevPeriodEnd = periodStart;
+  } else {
+    days = clampPeriodDays(periodDays);
+    periodEnd = now;
+    periodStart = now - days * 24 * 60 * 60 * 1000;
+    prevPeriodStart = periodStart - days * 24 * 60 * 60 * 1000;
+    prevPeriodEnd = periodStart;
+  }
+
   const scope = await getAccessibleScope({ orgId, membership, email });
   const {
     visibleTasks, visibleContacts, visibleDeals, visibleSuppliers,
     visiblePurchaseRequests, visiblePurchaseOrders, visibleProducts,
     visibleInvoices, visibleExpenses, visibleEmployees, visibleDocuments,
   } = scope;
-
-  const now = Date.now();
-  const periodStart = now - days * 24 * 60 * 60 * 1000;
-  const prevPeriodStart = periodStart - days * 24 * 60 * 60 * 1000;
-  const prevPeriodEnd = periodStart;
 
   // ============================================================
   // KPI cards — current snapshot, not period-filtered (a headcount or
@@ -146,10 +168,10 @@ export async function computeBusinessInsights({ orgId, membership, email, period
   // Trends — daily series over the selected period, for charts.
   // ============================================================
   const trends = {
-    revenue: buildDailySeries(periodStart, now, paidInvoices, "updatedAt", "total"),
-    expenses: buildDailySeries(periodStart, now, approvedExpenses, "updatedAt", "amount"),
-    tasksCompleted: buildDailySeries(periodStart, now, doneTasks, "updatedAt", null),
-    dealsWon: buildDailySeries(periodStart, now, wonDeals, "closedAt", "value"),
+    revenue: buildDailySeries(periodStart, periodEnd, paidInvoices, "updatedAt", "total"),
+    expenses: buildDailySeries(periodStart, periodEnd, approvedExpenses, "updatedAt", "amount"),
+    tasksCompleted: buildDailySeries(periodStart, periodEnd, doneTasks, "updatedAt", null),
+    dealsWon: buildDailySeries(periodStart, periodEnd, wonDeals, "closedAt", "value"),
   };
 
   // ============================================================
@@ -157,19 +179,19 @@ export async function computeBusinessInsights({ orgId, membership, email, period
   // ============================================================
   const comparison = {
     revenue: {
-      current: sumInRange(paidInvoices, "updatedAt", "total", periodStart, now),
+      current: sumInRange(paidInvoices, "updatedAt", "total", periodStart, periodEnd),
       previous: sumInRange(paidInvoices, "updatedAt", "total", prevPeriodStart, prevPeriodEnd),
     },
     expenses: {
-      current: sumInRange(approvedExpenses, "updatedAt", "amount", periodStart, now),
+      current: sumInRange(approvedExpenses, "updatedAt", "amount", periodStart, periodEnd),
       previous: sumInRange(approvedExpenses, "updatedAt", "amount", prevPeriodStart, prevPeriodEnd),
     },
     dealsWon: {
-      current: countInRange(wonDeals, "closedAt", periodStart, now),
+      current: countInRange(wonDeals, "closedAt", periodStart, periodEnd),
       previous: countInRange(wonDeals, "closedAt", prevPeriodStart, prevPeriodEnd),
     },
     tasksCompleted: {
-      current: countInRange(doneTasks, "updatedAt", periodStart, now),
+      current: countInRange(doneTasks, "updatedAt", periodStart, periodEnd),
       previous: countInRange(doneTasks, "updatedAt", prevPeriodStart, prevPeriodEnd),
     },
   };

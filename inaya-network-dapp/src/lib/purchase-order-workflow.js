@@ -36,6 +36,60 @@ export const PO_TRANSITIONS = {
   cancel: { from: ["DRAFT", "PENDING_APPROVAL", "APPROVED", "ORDERED"], to: "CANCELLED", requiresManage: false, activityAction: "PO_CANCELLED" },
 };
 
+/** Business Workspace Remaining Features SOW — line-item editing after
+ *  creation. Allowed ONLY while DRAFT: the one state nothing has acted on
+ *  yet (no approval, no ordering, no receiving) — the safest, most
+ *  defensible reading of "prevent editing of restricted/closed POs."
+ *  Validates each item the same way the create route does (not a
+ *  separate, divergent validator), replaces the items array atomically,
+ *  and logs the before/after item count + total as the audit trail —
+ *  there is no stored `total` field on a PO (it's derived on read, same
+ *  as the create route), so nothing else needs recomputing server-side. */
+export async function updatePurchaseOrderItems({ orgId, poId, items, membership, actorEmail }) {
+  if (!Array.isArray(items) || items.length === 0) return { error: "At least one line item is required.", status: 400 };
+  const cleanItems = [];
+  for (const raw of items) {
+    const description = String(raw?.description || "").trim();
+    if (!description) return { error: "Every line item needs a description.", status: 400 };
+    const quantity = Number(raw?.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) return { error: `Invalid quantity for "${description}".`, status: 400 };
+    const unitPrice = raw?.unitPrice === undefined || raw?.unitPrice === null ? null : Number(raw.unitPrice);
+    if (unitPrice !== null && (!Number.isFinite(unitPrice) || unitPrice < 0)) return { error: `Invalid unit price for "${description}".`, status: 400 };
+    cleanItems.push({
+      description, sku: raw?.sku ? String(raw.sku).trim() : null,
+      productId: raw?.productId ? toObjectId(raw.productId) : null,
+      warehouseId: raw?.warehouseId ? toObjectId(raw.warehouseId) : null,
+      quantity, unitPrice, receivedQuantity: 0,
+    });
+  }
+
+  const { purchaseOrders } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const poObjectId = toObjectId(poId);
+
+  const existing = await purchaseOrders.findOne({ _id: poObjectId, orgId: orgObjectId, deletedAt: null });
+  if (!existing) return { error: "Purchase order not found.", status: 404 };
+  if (!canAccessDepartment(membership, existing.departmentId)) return { error: "You don't have permission to do that.", status: 403 };
+
+  const now = new Date().toISOString();
+  const updated = await purchaseOrders.findOneAndUpdate(
+    { _id: poObjectId, orgId: orgObjectId, status: "DRAFT" },
+    { $set: { items: cleanItems, updatedAt: now } },
+    { returnDocument: "after" }
+  );
+  if (!updated) return { error: `This purchase order isn't in DRAFT state (it's currently ${existing.status}), so its line items can't be edited.`, status: 409 };
+
+  const oldTotal = existing.items.reduce((s, i) => s + i.quantity * (i.unitPrice || 0), 0);
+  const newTotal = cleanItems.reduce((s, i) => s + i.quantity * (i.unitPrice || 0), 0);
+  await logOrgActivity({
+    orgId: orgObjectId, recordType: "PURCHASE_ORDER", recordId: poObjectId, actorEmail,
+    action: "PO_ITEMS_EDITED", previousState: `${existing.items.length} items, ${oldTotal.toFixed(2)}`,
+    newState: `${cleanItems.length} items, ${newTotal.toFixed(2)}`, metadata: {},
+  });
+
+  return { po: updated };
+}
+
 export async function transitionPurchaseOrder({ orgId, poId, action, membership, actorEmail, note }) {
   const definition = PO_TRANSITIONS[action];
   if (!definition) return { error: `Unknown action "${action}".`, status: 400 };
