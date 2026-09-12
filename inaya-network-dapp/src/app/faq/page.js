@@ -138,7 +138,7 @@ export default function FaqPage() {
         </div>
 
         <p className="text-[#8a96ab] text-xs mt-8">
-          More detail: <a href="/whitepaper" className="text-[#00f2fe] hover:underline">Whitepaper</a> · <a href="/about" className="text-[#00f2fe] hover:underline">About</a> · <a href="/security" className="text-[#00f2fe] hover:underline">Security</a>
+          More detail: <a href="/whitepaper" className="text-[#00f2fe] hover:underline">Whitepaper</a> · <a href="/about" className="text-[#00f2fe] hover:underline">About</a> · <a href="/security" className="text-[#00f2fe] hover:underline">Security</a> · <a href="/trust" className="text-[#00f2fe] hover:underline">Trust Center</a>
         </p>
       </div>
     </div>

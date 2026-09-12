@@ -156,6 +156,7 @@ export default function OsHomeSection({ walletAddress, onNavigate }) {
           <LinkTile label="Web3 App Store" description="Curated + community-submitted apps, wallet-signed and threat-checked." href="/apps" />
           <LinkTile label="NFT Vault" description="Discover and back up your NFTs with the same encryption as your files." href="/nfts" />
           <LinkTile label="Security Layer" description="Live threat network status and your own recent events." href="/security" />
+          <LinkTile label="Trust Center" description="Verify Inaya's own security, audit, and recovery evidence yourself." href="/trust" />
           <LinkTile label="Build on Inaya" description="custody-sdk, React SDK, CLI, and scaffolding for developers." href="/build" />
         </div>
       </div>

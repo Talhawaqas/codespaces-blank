@@ -152,6 +152,9 @@ export default function AboutPage() {
           <a href="/security" className="px-5 py-2.5 bg-white/5 border border-white/10 text-white font-bold text-xs rounded-lg hover:bg-white/10 transition-all">
             Explore the Security Layer →
           </a>
+          <a href="/trust" className="px-5 py-2.5 bg-white/5 border border-white/10 text-white font-bold text-xs rounded-lg hover:bg-white/10 transition-all">
+            Visit the Trust Center →
+          </a>
           <a href="https://github.com/Talhawaqas/custody-sdk" target="_blank" rel="noreferrer" className="px-5 py-2.5 bg-white/5 border border-white/10 text-white font-bold text-xs rounded-lg hover:bg-white/10 transition-all">
             View SDK on GitHub ↗
           </a>
