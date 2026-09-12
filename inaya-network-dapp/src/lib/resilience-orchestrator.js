@@ -39,6 +39,7 @@ import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
 import { getPolicy, evaluateRtoRpo } from "./resilience-policy.js";
 import { ensureCanaryAssets } from "./resilience-canary.js";
 import { logOrgActivity } from "./org-activity-log.js";
+import { createNotification } from "./notifications.js";
 
 export const ENGINE_VERSION = "1.0.0";
 
@@ -170,6 +171,19 @@ export async function runResilienceTest({ orgId, policyId, membership, actorEmai
     metadata: { policyId: policyId.toString(), actualRTOMinutes, actualRPOMinutes, assetCount: assetResults.length, engineVersion: ENGINE_VERSION },
   });
 
+  if (overallResult === "FAIL") {
+    await createNotification({
+      scope: "org", orgId, targetEmail: null, category: "system", severity: "critical",
+      type: "resilience_test_failed",
+      title: `Resilience test failed: "${policy.name}"`,
+      body: !rtoPass ? `Actual recovery time (${actualRTOMinutes.toFixed(1)}m) exceeded the required RTO (${policy.requiredRTOMinutes}m).`
+        : !rpoPass ? `Actual recovery point (${actualRPOMinutes.toFixed(1)}m) exceeded the required RPO (${policy.requiredRPOMinutes}m).`
+        : "One or more critical assets failed recovery, integrity, dependency, or permission validation.",
+      sourceModule: "resilience-orchestrator", sourceId: testRunId, actionUrl: "/business?view=resilience",
+      dedupeKey: `org:${orgId}:resilience_test_failed:${policyId}:${completedAt.slice(0, 10)}`,
+    }).catch((err) => console.error("resilience-orchestrator: notification failed (non-fatal):", err.message));
+  }
+
   return { testRun: serializeTestRun(updated) };
 }
 
@@ -203,6 +217,45 @@ export async function getLatestTestRun({ orgId, policyId }) {
     .limit(1)
     .toArray();
   return { testRun: serializeTestRun(row[0]) };
+}
+
+const FREQUENCY_MS = { daily: 24 * 60 * 60 * 1000, weekly: 7 * 24 * 60 * 60 * 1000, monthly: 30 * 24 * 60 * 60 * 1000 };
+
+/** Autonomous Resilience Layer SOW, Phase 5 — the cron entry point.
+ *  Sweeps every ACTIVE policy across every org whose test window has
+ *  elapsed (never run yet, or lastTestAt + testFrequency has passed).
+ *  Not org-scoped, matching every existing backup/*cron sweep's own
+ *  convention (runCheckPinsSweep, runRecoverySweep). Per-policy try/catch
+ *  (failure isolation) -- one broken policy never blocks the sweep. The
+ *  RUNNING-status guard inside runResilienceTest() itself is the
+ *  duplicate-test-prevention/idempotency guarantee -- this sweep needs no
+ *  separate locking. */
+export async function runScheduledResilienceTests({ limit = 100 } = {}) {
+  const { resiliencePolicies } = await getOrgCollections();
+  const now = Date.now();
+  const candidates = await resiliencePolicies.find({ status: "ACTIVE" }).limit(limit).toArray();
+
+  const due = candidates.filter((p) => {
+    if (!p.lastTestAt) return true;
+    const intervalMs = FREQUENCY_MS[p.testFrequency] || FREQUENCY_MS.daily;
+    return now - new Date(p.lastTestAt).getTime() >= intervalMs;
+  });
+
+  const results = { swept: due.length, completed: 0, failed: 0, errors: [] };
+  for (const policy of due) {
+    try {
+      const { testRun, error } = await runResilienceTest({
+        orgId: policy.orgId, policyId: policy._id.toString(),
+        membership: { role: "owner" }, actorEmail: "system-scheduler", triggeredBy: "schedule",
+      });
+      if (error) { results.errors.push({ policyId: policy._id.toString(), error }); continue; }
+      results.completed += 1;
+      if (testRun.overallResult === "FAIL") results.failed += 1;
+    } catch (err) {
+      results.errors.push({ policyId: policy._id.toString(), error: err.message });
+    }
+  }
+  return results;
 }
 
 export async function listTestRuns({ orgId, policyId, limit = 20 }) {

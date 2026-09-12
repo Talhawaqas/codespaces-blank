@@ -47,6 +47,10 @@
     {
       "path": "/api/backup/cron/recover",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/resilience-tests",
+      "schedule": "0 8 * * *"
     }
   ]
 }

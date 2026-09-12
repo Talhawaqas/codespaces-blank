@@ -67,6 +67,7 @@ import CommandPalette from "../../components/CommandPalette";
 import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
 import TrustRelationshipsView from "../../components/business/TrustRelationshipsView";
 import ApiKeysView from "../../components/business/ApiKeysView";
+import ResilienceView from "../../components/business/ResilienceView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -907,6 +908,7 @@ const NAV_ITEMS = [
   { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
   { key: "security", label: "Security", icon: "activity", group: "trust" },
   { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true, group: "trust" },
+  { key: "resilienceTesting", label: "Recovery Resilience", icon: "resilience", manageOnly: true, group: "trust" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
@@ -1121,6 +1123,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     financial: "Financial OS",
     government: "Government OS",
     resilience: "Trust & Resilience",
+    resilienceTesting: "Recovery Resilience",
     integrations: "Integrations",
     apiKeys: "API Keys",
     executive: "Executive",
@@ -1241,6 +1244,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
           {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
+          {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
