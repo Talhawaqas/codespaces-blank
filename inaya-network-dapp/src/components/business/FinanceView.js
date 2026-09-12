@@ -18,6 +18,7 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
+import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 import ConfirmButton from "./ConfirmButton";
 
 const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
@@ -136,6 +137,7 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
   const [contactId, setContactId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [lineItems, setLineItems] = useState([{ description: "", quantity: "1", unitPrice: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -162,7 +164,7 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
       await api("/api/orgs/finance/invoices", {
         method: "POST",
         body: JSON.stringify({
-          orgId, departmentId, contactId, dueDate, notes: notes.trim() || undefined,
+          orgId, departmentId, contactId, dueDate, currency, notes: notes.trim() || undefined,
           lineItems: lineItems.map((it) => ({ description: it.description.trim(), quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
         }),
       });
@@ -186,6 +188,9 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
           {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <input value={dueDate} onChange={(e) => setDueDate(e.target.value)} type="date" required className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
 
         <div className="space-y-2 border-t border-white/5 pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Line items</p>
@@ -504,14 +509,30 @@ function ExpenseDetailModal({ orgId, expense, onClose, onChanged }) {
 // ============================================================
 function PaymentsTab({ orgId, departments }) {
   const [payments, setPayments] = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [approving, setApproving] = useState(null);
   const [search, setSearch] = useState("");
+  const [groupBy, setGroupBy] = useState("all"); // all | vendor | customer
 
   const load = useCallback(async () => {
     try {
-      setPayments((await api(`/api/orgs/finance/payments?orgId=${orgId}`)).payments);
+      const [paymentsRes, suppliersRes, poRes, contactsRes, invoicesRes] = await Promise.all([
+        api(`/api/orgs/finance/payments?orgId=${orgId}`),
+        api(`/api/orgs/procurement/suppliers?orgId=${orgId}`),
+        api(`/api/orgs/procurement/orders?orgId=${orgId}`),
+        api(`/api/orgs/crm/contacts?orgId=${orgId}`),
+        api(`/api/orgs/finance/invoices?orgId=${orgId}`),
+      ]);
+      setPayments(paymentsRes.payments);
+      setSuppliers(suppliersRes.suppliers);
+      setPurchaseOrders(poRes.orders);
+      setContacts(contactsRes.contacts);
+      setInvoices(invoicesRes.invoices);
     } catch (err) {
       setError(err.message);
     }
@@ -532,12 +553,46 @@ function PaymentsTab({ orgId, departments }) {
     }
   }
 
-  const filtered = (payments || []).filter((p) => !search.trim() || (p.method || "").toLowerCase().includes(search.trim().toLowerCase()));
+  const supplierNameById = new Map(suppliers.map((s) => [s.id, s.name]));
+  const poSupplierIdById = new Map(purchaseOrders.map((po) => [po.id, po.supplierId]));
+  const contactNameById = new Map(contacts.map((c) => [c.id, c.name]));
+  const invoiceContactIdById = new Map(invoices.map((i) => [i.id, i.contactId]));
+
+  function vendorNameFor(p) {
+    const supplierId = p.relatedPurchaseOrderId ? poSupplierIdById.get(p.relatedPurchaseOrderId) : null;
+    return supplierId ? supplierNameById.get(supplierId) || "Unknown vendor" : "Unlinked";
+  }
+  function customerNameFor(p) {
+    const contactId = p.relatedInvoiceId ? invoiceContactIdById.get(p.relatedInvoiceId) : null;
+    return contactId ? contactNameById.get(contactId) || "Unknown customer" : "Unlinked";
+  }
+
+  const searched = (payments || []).filter((p) => !search.trim() || (p.method || "").toLowerCase().includes(search.trim().toLowerCase()));
+  const filtered = groupBy === "vendor" ? searched.filter((p) => p.direction === "OUTGOING") : groupBy === "customer" ? searched.filter((p) => p.direction === "INCOMING") : searched;
+
+  let groups = null;
+  if (groupBy !== "all") {
+    const nameFor = groupBy === "vendor" ? vendorNameFor : customerNameFor;
+    const map = new Map();
+    for (const p of filtered) {
+      const key = nameFor(p);
+      const g = map.get(key) || { name: key, total: 0, payments: [] };
+      g.total += p.amount;
+      g.payments.push(p);
+      map.set(key, g);
+    }
+    groups = [...map.values()].sort((a, b) => b.total - a.total);
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search method…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
+          {[["all", "All"], ["vendor", "By Vendor"], ["customer", "By Customer"]].map(([value, label]) => (
+            <button key={value} onClick={() => setGroupBy(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${groupBy === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+          ))}
+        </div>
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ Record payment</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -545,7 +600,27 @@ function PaymentsTab({ orgId, departments }) {
         {!payments ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : payments.length === 0 ? (
           <EmptyState compact icon="💳" description="No payments recorded yet." ctaLabel="Record one" onCta={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
-          <p className="text-[var(--inaya-text-muted)] text-xs">No payments match "{search}".</p>
+          <p className="text-[var(--inaya-text-muted)] text-xs">No payments match these filters.</p>
+        ) : groups ? (
+          <div className="space-y-4">
+            {groups.map((g) => (
+              <div key={g.name}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[var(--inaya-text-primary)] text-sm font-bold">{g.name}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-xs font-mono tabular-nums">${g.total.toFixed(2)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  {g.payments.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-2.5">
+                      <span className={p.direction === "INCOMING" ? "text-emerald-400 text-xs" : "text-red-400 text-xs"}>{p.direction === "INCOMING" ? "+" : "−"}${p.amount.toFixed(2)}</span>
+                      <span className="text-[var(--inaya-text-muted)] text-[11px] font-mono">{p.method || "—"} · {new Date(p.paymentDate).toLocaleDateString()}</span>
+                      <StatusBadge status={p.status} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((p) => (
@@ -567,17 +642,18 @@ function PaymentsTab({ orgId, departments }) {
           </div>
         )}
       </div>
-      {showCreate && <CreatePaymentModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {showCreate && <CreatePaymentModal orgId={orgId} departments={departments} purchaseOrders={purchaseOrders} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
     </div>
   );
 }
 
-function CreatePaymentModal({ orgId, departments, onClose, onCreated }) {
+function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCreated }) {
   const [departmentId, setDepartmentId] = useState("");
   const [direction, setDirection] = useState("INCOMING");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
+  const [relatedPurchaseOrderId, setRelatedPurchaseOrderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -589,7 +665,10 @@ function CreatePaymentModal({ orgId, departments, onClose, onCreated }) {
     try {
       await api("/api/orgs/finance/payments", {
         method: "POST",
-        body: JSON.stringify({ orgId, departmentId, direction, amount: Number(amount), method: method.trim() || undefined, paymentDate: paymentDate || undefined }),
+        body: JSON.stringify({
+          orgId, departmentId, direction, amount: Number(amount), method: method.trim() || undefined, paymentDate: paymentDate || undefined,
+          relatedPurchaseOrderId: direction === "OUTGOING" && relatedPurchaseOrderId ? relatedPurchaseOrderId : undefined,
+        }),
       });
       onCreated();
     } catch (err) {
@@ -610,6 +689,12 @@ function CreatePaymentModal({ orgId, departments, onClose, onCreated }) {
           <option value="INCOMING">Incoming</option>
           <option value="OUTGOING">Outgoing</option>
         </select>
+        {direction === "OUTGOING" && (
+          <select value={relatedPurchaseOrderId} onChange={(e) => setRelatedPurchaseOrderId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            <option value="">Link to a purchase order (optional)…</option>
+            {(purchaseOrders || []).map((po) => <option key={po.id} value={po.id}>{po.id.slice(-6)} · {po.items.length} item{po.items.length === 1 ? "" : "s"} · {po.currency}</option>)}
+          </select>
+        )}
         <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Method (e.g. bank transfer)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />

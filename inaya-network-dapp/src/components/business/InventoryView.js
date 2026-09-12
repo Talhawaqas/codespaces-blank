@@ -51,6 +51,7 @@ function ProductsTab({ orgId, departments }) {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -73,7 +74,8 @@ function ProductsTab({ orgId, departments }) {
       <div className="flex items-center gap-2">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>Low stock only</button>
-        <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
+        <button onClick={() => setShowTransfer(true)} className="ml-auto text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border bg-black/45 text-[var(--inaya-text-primary)] border-white/15">⇄ Transfer stock</button>
+        <button onClick={() => setShowCreate(true)} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
@@ -99,8 +101,86 @@ function ProductsTab({ orgId, departments }) {
         )}
       </div>
       {showCreate && <CreateProductModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {showTransfer && <TransferStockModal orgId={orgId} products={products || []} onClose={() => setShowTransfer(false)} onTransferred={() => { setShowTransfer(false); load(); }} />}
       {selected && <ProductDetailModal orgId={orgId} product={selected} onClose={() => setSelected(null)} onChanged={load} />}
     </div>
+  );
+}
+
+function TransferStockModal({ orgId, products, onClose, onTransferred }) {
+  const [productId, setProductId] = useState("");
+  const [warehouses, setWarehouses] = useState([]);
+  const [sourceWarehouseId, setSourceWarehouseId] = useState("");
+  const [destWarehouseId, setDestWarehouseId] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [note, setNote] = useState("");
+  const [reviewing, setReviewing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const product = products.find((p) => p.id === productId);
+
+  useEffect(() => {
+    setSourceWarehouseId(""); setDestWarehouseId(""); setWarehouses([]);
+    if (!product) return;
+    api(`/api/orgs/inventory/warehouses?orgId=${orgId}&departmentId=${product.departmentId}`).then((d) => setWarehouses(d.warehouses)).catch((err) => setError(`Couldn't load warehouses: ${err.message}`));
+  }, [orgId, product]);
+
+  const warehouseName = (id) => warehouses.find((w) => w.id === id)?.name || "";
+  const canReview = productId && sourceWarehouseId && destWarehouseId && sourceWarehouseId !== destWarehouseId && Number(quantity) > 0;
+
+  async function handleConfirm() {
+    setSubmitting(true);
+    setError("");
+    try {
+      await api("/api/orgs/inventory/transfers", { method: "POST", body: JSON.stringify({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity: Number(quantity), note: note.trim() || undefined }) });
+      onTransferred();
+    } catch (err) {
+      setError(err.message);
+      setReviewing(false);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal title="Transfer stock" onClose={onClose}>
+      {!reviewing ? (
+        <div className="space-y-3">
+          <select value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            <option value="">Product…</option>
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
+          </select>
+          <select value={sourceWarehouseId} onChange={(e) => setSourceWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+            <option value="">Source warehouse…</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+          <select value={destWarehouseId} onChange={(e) => setDestWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+            <option value="">Destination warehouse…</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+          {sourceWarehouseId && destWarehouseId && sourceWarehouseId === destWarehouseId && <p className="text-red-400 text-xs">Source and destination must be different.</p>}
+          <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="1" placeholder="Quantity" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+          <button disabled={!canReview} onClick={() => setReviewing(true)} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">Review transfer</button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Confirm this transfer</p>
+          <div className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-1 text-xs text-[var(--inaya-text-primary)]">
+            <p><strong>{quantity}</strong> × {product?.name} ({product?.sku})</p>
+            <p>{warehouseName(sourceWarehouseId)} → {warehouseName(destWarehouseId)}</p>
+            {note && <p className="text-[var(--inaya-text-muted)]">Note: {note}</p>}
+          </div>
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+          <div className="flex gap-1.5">
+            <button onClick={handleConfirm} disabled={submitting} className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Transferring…" : "Confirm transfer"}</button>
+            <button onClick={() => setReviewing(false)} disabled={submitting} className="py-2.5 px-4 rounded-xl text-xs font-bold uppercase bg-white/5 border border-white/10 text-[var(--inaya-text-primary)]">Back</button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
