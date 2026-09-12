@@ -40,12 +40,28 @@ async function computeEntryHash(prevHash, canonicalFields) {
 
 /** entries: the "entries" array from an exported evidence package (either
  *  api/orgs/audit/export or evidence.js's exportEvidencePackage — same
- *  shape). Returns { valid, count } or { valid:false, count, brokenAtSeq, reason }. */
+ *  shape, and either the FULL chain or a recordType/recordId-SCOPED
+ *  segment of it, e.g. from the new Institutional Developer Platform's
+ *  api/public/v1/evidence endpoint). Returns { valid, count, fromGenesis }
+ *  or { valid:false, count, brokenAtSeq, reason }.
+ *
+ *  A scoped segment legitimately does NOT start at seq 1/GENESIS_HASH --
+ *  its first entry's own prevHash points at whatever real entry preceded
+ *  it in the org's full chain, which this segment doesn't include. This
+ *  function auto-detects which case it's looking at: if the first entry
+ *  really is seq 1 with the genesis prevHash, it verifies full provenance
+ *  from the very start of the org's chain (the strongest guarantee);
+ *  otherwise it verifies internal consistency among exactly the given
+ *  entries (each hash recomputes correctly and they chain to each other)
+ *  -- a real, honest, weaker guarantee that does NOT prove nothing came
+ *  before the first entry. fromGenesis on the result tells the caller
+ *  which guarantee it actually got, so the UI never overstates either. */
 async function verifyEvidencePackage(entries) {
   if (!Array.isArray(entries) || entries.length === 0) return { valid: false, count: 0, reason: "No entries found in the pasted JSON." };
 
-  let expectedPrevHash = GENESIS_HASH;
-  let expectedSeq = 1;
+  const fromGenesis = entries[0].seq === 1 && entries[0].prevHash === GENESIS_HASH;
+  let expectedPrevHash = fromGenesis ? GENESIS_HASH : entries[0].prevHash;
+  let expectedSeq = fromGenesis ? 1 : entries[0].seq;
   for (const entry of entries) {
     if (entry.seq !== expectedSeq) {
       return { valid: false, count: entries.length, brokenAtSeq: entry.seq, reason: `expected seq ${expectedSeq}, found ${entry.seq} (a gap or reorder)` };
@@ -74,7 +90,7 @@ async function verifyEvidencePackage(entries) {
     expectedPrevHash = entry.entryHash;
     expectedSeq += 1;
   }
-  return { valid: true, count: entries.length };
+  return { valid: true, count: entries.length, fromGenesis };
 }
 
 function Section({ title, children }) {
@@ -180,7 +196,9 @@ export default function TrustCenterPage() {
             {result && (
               <div className={`rounded-lg p-3 text-sm font-mono ${result.valid ? "bg-emerald-400/10 border border-emerald-400/30 text-emerald-400" : "bg-red-400/10 border border-red-400/30 text-red-400"}`}>
                 {result.valid
-                  ? `Verified — ${result.count} ${result.count === 1 ? "entry" : "entries"}, chain intact.`
+                  ? result.fromGenesis
+                    ? `Verified — ${result.count} ${result.count === 1 ? "entry" : "entries"}, full chain intact from the very first recorded event.`
+                    : `Verified — ${result.count} ${result.count === 1 ? "entry" : "entries"}, internally consistent. This is a scoped export (e.g. for one specific record) — it proves these entries weren't altered after being exported, not that nothing came before the first one. Paste the full chain export instead for that stronger guarantee.`
                   : `Broken${result.brokenAtSeq ? ` at entry #${result.brokenAtSeq}` : ""} — ${result.reason}`}
               </div>
             )}
