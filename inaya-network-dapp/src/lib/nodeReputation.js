@@ -25,6 +25,16 @@ export const HEARTBEAT_LOG_SIZE = 20;
 const EXPECTED_INTERVAL_MS = 5 * 60 * 1000; // matches node-daemon's HEARTBEAT_INTERVAL_MS default
 const STALE_GRACE_MULTIPLIER = 3; // a beat up to 3x the expected interval late isn't yet "down"
 
+// Node Operator Dashboard SOW — the exact point stalenessScore() below
+// bottoms out at 0 (i.e. "genuinely down right now"), exported so every
+// online/offline classification elsewhere (the dashboard's health check,
+// the hourly snapshot cron) uses the same threshold this score already
+// implies, instead of a fourth hardcoded "15 minutes" appearing in the
+// codebase (admin/nodes/page.js's inline isStale() and admin/dashboard/
+// route.js's separate 10-minute NODE_ACTIVE_WINDOW_MS predate this and are
+// left as they are — this constant is for new code only).
+export const NODE_OFFLINE_TIMEOUT_MS = EXPECTED_INTERVAL_MS * STALE_GRACE_MULTIPLIER;
+
 /** regularityScore in [0,1]: for each consecutive pair of timestamps in
  *  the log, how close the actual gap was to EXPECTED_INTERVAL_MS. A gap
  *  exactly on time scores 1; a gap of 2x expected (one missed beat)

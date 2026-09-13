@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/resilience-tests",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/nodes-snapshot",
+      "schedule": "0 * * * *"
     }
   ]
 }
