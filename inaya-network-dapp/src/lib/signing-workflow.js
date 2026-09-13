@@ -48,8 +48,26 @@ const CUSTODY_ABI = [
 function sha256Hex(str) {
   return "0x" + createHash("sha256").update(str, "utf8").digest("hex");
 }
+/** Deep, recursive canonicalization -- sorts keys at EVERY level. A naive
+ *  JSON.stringify(obj, Object.keys(obj).sort()) only sorts the TOP level;
+ *  since the array-replacer form applies that same top-level allowlist
+ *  recursively, it would silently strip every field out of the nested
+ *  `signers` array below (confirmed while writing financial-attestation.js's
+ *  own tests, which use the identical pattern over a nested payload) --
+ *  the certificate hash would then never actually depend on who signed
+ *  what, defeating the whole point of anchoring it. */
+function sortDeep(value) {
+  if (Array.isArray(value)) return value.map(sortDeep);
+  if (value && typeof value === "object") {
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = sortDeep(value[key]);
+      return acc;
+    }, {});
+  }
+  return value;
+}
 function canonicalJSON(obj) {
-  return JSON.stringify(obj, Object.keys(obj).sort());
+  return JSON.stringify(sortDeep(obj));
 }
 
 // ============================================================
