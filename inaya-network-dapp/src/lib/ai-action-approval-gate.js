@@ -12,11 +12,11 @@
 // Adding a new propose_* tool means adding one case here, not touching
 // reviewAiAction()'s state machine.
 
-import { getOrgCollections, canAccessDepartment, canManageOrg, canManageFinance, canAccessHR, canManageHR, toObjectId } from "./orgs.js";
+import { getOrgCollections, canAccessDepartment, canManageOrg, canManageFinance, canAccessHR, canManageHR, canManageEscrow, toObjectId } from "./orgs.js";
 import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
 
 export async function resolveCanApprove({ orgId, targetRecordType, targetRecordId, proposedAction, membership, email }) {
-  const { tasks, expenses, orgDocuments, employees, invoices, leaveRequests, purchaseOrders, purchaseRequests, crmDeals } = await getOrgCollections();
+  const { tasks, expenses, orgDocuments, employees, invoices, leaveRequests, purchaseOrders, purchaseRequests, crmDeals, escrows } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
 
   if (targetRecordType === "TASK") {
@@ -80,6 +80,15 @@ export async function resolveCanApprove({ orgId, targetRecordType, targetRecordI
     const deal = await crmDeals.findOne({ _id: targetRecordId, orgId: orgObjectId });
     if (!deal) return { canApprove: false, reason: "The underlying deal no longer exists." };
     return { canApprove: canAccessDepartment(membership, deal.departmentId) };
+  }
+  if (targetRecordType === "ESCROW") {
+    const escrow = await escrows.findOne({ _id: targetRecordId, orgId: orgObjectId });
+    if (!escrow) return { canApprove: false, reason: "The underlying escrow no longer exists." };
+    // A milestone release moves real money out -- gated behind the SAME
+    // authority releaseMilestonePayment() itself requires none of on its
+    // own (it trusts the caller entirely), so this IS the real gate, not
+    // a redundant check: canManageEscrow (or org owner/admin) only.
+    return { canApprove: canManageEscrow(membership) };
   }
   return { canApprove: false, reason: `Unknown targetRecordType "${targetRecordType}".` };
 }

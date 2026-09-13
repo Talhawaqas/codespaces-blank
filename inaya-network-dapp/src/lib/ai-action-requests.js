@@ -48,6 +48,7 @@ import { transitionPurchaseOrder } from "./purchase-order-workflow.js";
 import { transitionPurchaseRequest } from "./purchase-request-workflow.js";
 import { transitionDeal } from "./deal-workflow.js";
 import { amendPolicy } from "./compliance-policies.js";
+import { releaseMilestonePayment } from "./escrow-workflow.js";
 
 // Maps a request's targetRecordType to the real workflow transition it's
 // eventually allowed to trigger, and how to turn a request's stored args
@@ -81,6 +82,12 @@ const EXECUTORS = {
   // new authority, it just runs that same real function once a human
   // compliance manager has approved the AI's proposal.
   COMPLIANCE_POLICY: ({ orgId, args, actorEmail }) => amendPolicy({ orgId, policyId: args.policyId, title: args.title, body: args.body, membership: SYSTEM_EXECUTOR_MEMBERSHIP, actorEmail }),
+  // Four High-Impact Business Workspace Extensions SOW, Feature 3 — a
+  // milestone release NEVER happens because a UI button was clicked; it
+  // only ever runs here, once a human with escrow-approval authority has
+  // approved the proposal AND the 36h delay has genuinely passed. See
+  // escrow-workflow.js's releaseMilestonePayment() header comment.
+  ESCROW: ({ orgId, args, actorEmail }) => releaseMilestonePayment({ orgId, escrowId: args.escrowId, milestoneIndex: args.milestoneIndex, actorEmail }),
 };
 
 // Enterprise OS SOW, Phase 3 — same "wrap in try/catch, log and continue,
@@ -183,6 +190,7 @@ const RISK_LEVELS = {
   INVOICE: "HIGH",
   PURCHASE_ORDER: "HIGH",
   "COMPLIANCE_POLICY:amend": "HIGH",
+  "ESCROW:release": "HIGH",
 };
 
 export function classifyRisk(targetRecordType, proposedAction) {
