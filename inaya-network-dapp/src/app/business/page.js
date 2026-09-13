@@ -68,6 +68,10 @@ import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
 import TrustRelationshipsView from "../../components/business/TrustRelationshipsView";
 import ApiKeysView from "../../components/business/ApiKeysView";
 import ResilienceView from "../../components/business/ResilienceView";
+import SignView from "../../components/business/SignView";
+import StorageManagerView from "../../components/business/StorageManagerView";
+import EscrowView from "../../components/business/EscrowView";
+import AttestationsView from "../../components/business/AttestationsView";
 
 // Set by the public pricing page (business/pricing/page.js) before it
 // redirects a not-yet-signed-in visitor here — see that file's header
@@ -901,6 +905,10 @@ const NAV_ITEMS = [
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
   { key: "hr", label: "HR", icon: "hr", group: "operations" },
+  { key: "sign", label: "Inaya Sign", icon: "documents", group: "operations" },
+  { key: "escrow", label: "Milestone Escrow", icon: "finance", group: "operations" },
+  { key: "storageManager", label: "DePIN Storage", icon: "resilience", group: "operations" },
+  { key: "attestations", label: "Attestations", icon: "financial", group: "operations" },
   { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare", group: "industry" },
   { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal", group: "industry" },
   { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated", group: "industry" },
@@ -1117,6 +1125,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     inventory: "Inventory",
     finance: "Finance",
     hr: "HR",
+    sign: "Inaya Sign",
+    escrow: "Milestone Escrow",
+    storageManager: "DePIN Storage",
+    attestations: "Attestations",
     health: "Health OS",
     legal: "Legal OS",
     regulated: "Regulated OS",
@@ -1238,6 +1250,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "inventory" && <InventoryView orgId={orgId} />}
           {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
           {activeView === "hr" && <HRView orgId={orgId} email={email} />}
+          {activeView === "sign" && <SignView orgId={orgId} email={email} />}
+          {activeView === "escrow" && <EscrowView orgId={orgId} />}
+          {activeView === "storageManager" && <StorageManagerView orgId={orgId} />}
+          {activeView === "attestations" && <AttestationsView orgId={orgId} />}
           {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
