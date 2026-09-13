@@ -5810,6 +5810,7 @@ export default function Home() {
                   { icon: '🎓', label: 'Inaya Learn', desc: 'Web3, AI, and programming learning with an integrated AI tutor.', action: () => setCurrentPage('Learn') },
                   { icon: '📱', label: 'Mobile & Desktop', desc: 'Native applications for accessing the Inaya ecosystem.', href: '/download' },
                   { icon: '🤝', label: 'Network Participation', desc: 'Watcher Pioneer, node staking, and referrals — real participation, real rewards.', action: () => setCurrentPage('Referrals') },
+                  { icon: '🛰️', label: 'Node Operator Dashboard', desc: 'Real-time health, uptime, tier, and rewards for your own registered node.', href: '/operator' },
                 ].map((item, idx) => {
                   const isInteractive = !!(item.action || item.href);
                   const Tag = isInteractive ? 'button' : 'div';
@@ -6000,6 +6001,34 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {/* Node Operator Dashboard cross-promotion -- opens in a new
+                  tab, same reasoning as the Business Workspace/Desktop App
+                  banners above: this is its own wallet-session product
+                  (nodeOperatorAuth.js), separate from the dApp's own wallet
+                  connection, so switching to it shouldn't navigate the
+                  visitor away from here. */}
+              <div className="relative overflow-hidden bg-gradient-to-r from-emerald-500/10 via-[#090d16] to-[#00f2fe]/10 border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-1 mb-2">
+                    For Node Operators
+                  </span>
+                  <h3 className="text-white font-extrabold text-base sm:text-lg">🛰️ Track your node in real time</h3>
+                  <p className="text-[#94a3b8] text-xs sm:text-sm mt-1 max-w-lg">
+                    Sign in with your node's wallet to see its real, measured health, uptime, tier, and rewards — the same telemetry the network itself uses, not a guess.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                  <a
+                    href="/operator"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-emerald-400 to-[#00f2fe] px-4 py-2.5 rounded-lg hover:brightness-110"
+                  >
+                    Open Dashboard
+                  </a>
+                </div>
+              </div>
 
               {/* Product overview video — embedded from YouTube (adaptive quality per
                   visitor's connection, no repo bloat, feeds the existing channel).
