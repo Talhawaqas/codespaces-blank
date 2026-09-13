@@ -5,13 +5,20 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
 import { configureIntegration, getOrgIntegrations } from "../../../../lib/integrations.js";
+import { isOauthBackedProvider, requiresOrgOidcConfig } from "../../../../lib/integrationOauth.js";
 
 function serialize(c) {
   return {
     id: c.id, name: c.name, category: c.category, authType: c.authType, syncDirection: c.syncDirection,
     status: c.status, ownerEmail: c.ownerEmail, lastSyncAt: c.lastSyncAt, nextSyncAt: c.nextSyncAt,
     errorCount: c.errorCount, recordsProcessedTotal: c.recordsProcessedTotal, mismatchCountTotal: c.mismatchCountTotal,
-    credentialsStatus: c.credentialsStatus,
+    credentialsStatus: c.credentialsStatus, externalAccountName: c.externalAccountName,
+    // Tells the UI whether "Configure" should be a real OAuth redirect
+    // (Connect) or the existing honest "record intent only" flow -- see
+    // integrationOauth.js's header for exactly which 9 of the 33 catalog
+    // entries this applies to and why.
+    oauthBacked: isOauthBackedProvider(c.id),
+    requiresOrgConfig: requiresOrgOidcConfig(c.id),
   };
 }
 

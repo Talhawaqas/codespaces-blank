@@ -98,7 +98,18 @@ export const CREDENTIALS_STATUSES = ["not_provided", "provided_unverified", "inv
  *  direction override. This does NOT establish a live connection; status
  *  starts AWAITING_CREDENTIALS and stays there until a real sync actually
  *  runs (recordSyncRun) or fails (also legitimately moves state, honestly,
- *  to ERROR rather than silently staying "pending" forever). */
+ *  to ERROR rather than silently staying "pending" forever).
+ *
+ *  DEFECT FIX (Business Workspace Integrations Test SOW, live testing):
+ *  reconfiguring a DISABLED connection used to leave `status` untouched
+ *  forever — disableIntegration() has no counterpart, and this function
+ *  only ever set `status` for a brand-new connection, never for an
+ *  existing (including DISABLED) one. That meant clicking "Disable" was a
+ *  one-way trip with no way back, from either the UI or the API. Fixed by
+ *  treating a reconfigure of a DISABLED connection the same as configuring
+ *  a fresh one: it re-opens as AWAITING_CREDENTIALS, exactly like a new
+ *  connection, since a disabled connection has no live state to preserve
+ *  either way (see integrations-security.test.mjs's new re-enable test). */
 export async function configureIntegration({ orgId, providerId, ownerEmail, syncFrequencyHours, actorEmail, membership }) {
   if (!canManageOrg(membership)) return { error: "Only an org owner/admin can configure an integration.", status: 403 };
   const provider = getProviderDefinition(providerId);
@@ -107,6 +118,7 @@ export async function configureIntegration({ orgId, providerId, ownerEmail, sync
   const { integrationConnections } = await getOrgCollections();
   const now = new Date().toISOString();
   const existing = await integrationConnections.findOne({ orgId: toObjectId(orgId), providerId });
+  const isFreshOrReenable = !existing || existing.status === "DISABLED";
 
   const setDoc = {
     orgId: toObjectId(orgId), providerId,
@@ -115,8 +127,10 @@ export async function configureIntegration({ orgId, providerId, ownerEmail, sync
     credentialsStatus: existing?.credentialsStatus || "not_provided",
     updatedAt: now,
   };
-  if (!existing) {
+  if (isFreshOrReenable) {
     setDoc.status = "AWAITING_CREDENTIALS";
+  }
+  if (!existing) {
     setDoc.lastSyncAt = null;
     setDoc.nextSyncAt = null;
     setDoc.errorCount = 0;
@@ -127,13 +141,14 @@ export async function configureIntegration({ orgId, providerId, ownerEmail, sync
 
   await integrationConnections.updateOne(
     { orgId: toObjectId(orgId), providerId },
-    existing ? { $set: setDoc } : { $set: setDoc },
+    { $set: setDoc },
     { upsert: true }
   );
   const connection = await integrationConnections.findOne({ orgId: toObjectId(orgId), providerId });
 
-  await logOrgActivity({ orgId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, actorEmail, action: existing ? "RECONFIGURED" : "CONFIGURED", previousState: existing?.status || null, newState: connection.status, metadata: { providerId } });
-  try { await appendAuditEntry({ orgId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, action: existing ? "RECONFIGURED" : "CONFIGURED", actorEmail, metadata: { providerId } }); } catch (err) { console.error("appendAuditEntry failed (non-fatal):", err.message); }
+  const activityAction = !existing ? "CONFIGURED" : existing.status === "DISABLED" ? "RE_ENABLED" : "RECONFIGURED";
+  await logOrgActivity({ orgId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, actorEmail, action: activityAction, previousState: existing?.status || null, newState: connection.status, metadata: { providerId } });
+  try { await appendAuditEntry({ orgId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, action: activityAction, actorEmail, metadata: { providerId } }); } catch (err) { console.error("appendAuditEntry failed (non-fatal):", err.message); }
 
   return { connection };
 }
@@ -238,13 +253,14 @@ export async function getOrgIntegrations(orgId) {
   return INTEGRATION_PROVIDERS.map((provider) => {
     const connection = byProviderId.get(provider.id);
     if (!connection) {
-      return { ...provider, status: "NOT_CONFIGURED", ownerEmail: null, lastSyncAt: null, nextSyncAt: null, errorCount: 0, recordsProcessedTotal: 0, mismatchCountTotal: 0, credentialsStatus: "not_provided" };
+      return { ...provider, status: "NOT_CONFIGURED", ownerEmail: null, lastSyncAt: null, nextSyncAt: null, errorCount: 0, recordsProcessedTotal: 0, mismatchCountTotal: 0, credentialsStatus: "not_provided", externalAccountName: null };
     }
     return {
       ...provider, status: connection.status, ownerEmail: connection.ownerEmail,
       lastSyncAt: connection.lastSyncAt, nextSyncAt: connection.nextSyncAt,
       errorCount: connection.errorCount, recordsProcessedTotal: connection.recordsProcessedTotal,
       mismatchCountTotal: connection.mismatchCountTotal, credentialsStatus: connection.credentialsStatus,
+      externalAccountName: connection.externalAccountName || null,
     };
   });
 }

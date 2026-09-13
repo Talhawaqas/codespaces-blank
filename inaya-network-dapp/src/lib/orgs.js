@@ -422,6 +422,10 @@ export async function getOrgCollections() {
     escrows: db.collection("escrows"),
     // Feature 4 — Cryptographic Financial Attestation. See src/lib/financial-attestation.js.
     financialAttestations: db.collection("financial_attestations"),
+    // Business Workspace Integrations Test SOW — real OAuth state (CSRF
+    // protection for the login/consume-style redirect flow). Short-lived,
+    // TTL-indexed. See src/lib/integrationOauth.js.
+    integrationOauthStates: db.collection("integration_oauth_states"),
   };
 }
 
@@ -466,6 +470,7 @@ export async function ensureOrgIndexes() {
     guidedTasks, orgTrustRelationships, apiKeys,
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
+    integrationOauthStates,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -711,6 +716,8 @@ export async function ensureOrgIndexes() {
     escrows.createIndex({ orgId: 1, status: 1 }),
     financialAttestations.createIndex({ orgId: 1, statementType: 1, period: 1 }),
     financialAttestations.createIndex({ orgId: 1, status: 1 }),
+    integrationOauthStates.createIndex({ state: 1 }, { unique: true }),
+    integrationOauthStates.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
   indexesEnsured = true;
