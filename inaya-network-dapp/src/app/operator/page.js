@@ -14,9 +14,15 @@
 // connect-and-sign flow using the same `new ethers.BrowserProvider(window
 // .ethereum)` pattern already repeated throughout page.js, rather than
 // lifting WalletContext into the root layout for one new page.
+//
+// Node Operator Dashboard Navigation Update SOW (AuroraX feedback) — the
+// 7 sections below used to live behind a horizontal top tab bar; they now
+// render exactly as before, just selected from OperatorSidebar's left nav
+// instead. No section component, route, or API call changed.
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import OperatorSidebar from "../../components/operator/OperatorSidebar";
 import OperatorOverview from "../../components/operator/OperatorOverview";
 import OperatorUptime from "../../components/operator/OperatorUptime";
 import OperatorQualification from "../../components/operator/OperatorQualification";
@@ -32,15 +38,15 @@ async function api(path, options) {
   return data;
 }
 
-const TABS = [
-  ["overview", "Overview"],
-  ["uptime", "Uptime & Telemetry"],
-  ["qualification", "Qualification"],
-  ["rewards", "Tier & Rewards"],
-  ["events", "Events"],
-  ["network", "Network"],
-  ["fleet", "Fleet"],
-];
+const TAB_TITLES = {
+  overview: "Overview",
+  uptime: "Uptime & Telemetry",
+  qualification: "Qualification",
+  rewards: "Tier & Rewards",
+  events: "Events",
+  network: "Network",
+  fleet: "Fleet",
+};
 
 function buildLoginMessage(nodeId, timestamp) {
   return ["Inaya Node Action", "action: login", `nodeId: ${nodeId}`, `timestamp: ${timestamp}`].join("\n");
@@ -51,6 +57,7 @@ export default function OperatorPage() {
   const [me, setMe] = useState(null); // { primary, walletAddress, linkedWallets } once signed in
   const [error, setError] = useState("");
   const [tab, setTab] = useState("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const loadMe = useCallback(async () => {
     try {
@@ -129,38 +136,42 @@ export default function OperatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--inaya-bg)]">
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-[var(--inaya-text-primary)] text-lg font-bold">Node Operator Dashboard</h1>
-            <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{me.walletAddress}</p>
+    <div className="flex min-h-screen bg-[var(--inaya-bg)]">
+      <OperatorSidebar
+        activeTab={tab}
+        onNavigate={(key) => { setTab(key); setMobileNavOpen(false); }}
+        walletAddress={me.walletAddress}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
+      />
+
+      <div className="flex-1 min-w-0">
+        <header className="sticky top-0 z-30 bg-[var(--inaya-bg)]/90 backdrop-blur border-b border-[var(--inaya-border)] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setMobileNavOpen(true)} className="md:hidden text-[var(--inaya-text-primary)] p-1" aria-label="Open navigation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{TAB_TITLES[tab]}</h1>
+              <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{me.walletAddress}</p>
+            </div>
           </div>
-          <button onClick={handleSignOut} className="text-[11px] font-bold uppercase px-3 py-2 rounded-lg bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
+          <button onClick={handleSignOut} className="text-[11px] font-bold uppercase px-3 py-2 rounded-lg bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] shrink-0">
             Sign out
           </button>
-        </div>
+        </header>
 
-        <div className="flex flex-wrap bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-xl p-1 gap-1 w-fit max-w-full overflow-x-auto">
-          {TABS.map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className="px-3 py-2 text-xs font-bold uppercase rounded-lg whitespace-nowrap"
-              style={tab === key ? { background: "color-mix(in srgb, var(--inaya-accent) 15%, transparent)", color: "var(--inaya-accent)" } : { color: "var(--inaya-text-muted)" }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {tab === "overview" && <OperatorOverview initialData={me} onRefresh={loadMe} />}
-        {tab === "uptime" && <OperatorUptime />}
-        {tab === "qualification" && <OperatorQualification />}
-        {tab === "rewards" && <OperatorRewards />}
-        {tab === "events" && <OperatorEvents />}
-        {tab === "network" && <OperatorNetwork />}
-        {tab === "fleet" && <OperatorFleet linkedWallets={me.linkedWallets} onLinked={loadMe} />}
+        <main className="p-5 md:p-8 max-w-5xl space-y-6">
+          {tab === "overview" && <OperatorOverview initialData={me} onRefresh={loadMe} />}
+          {tab === "uptime" && <OperatorUptime />}
+          {tab === "qualification" && <OperatorQualification />}
+          {tab === "rewards" && <OperatorRewards />}
+          {tab === "events" && <OperatorEvents />}
+          {tab === "network" && <OperatorNetwork />}
+          {tab === "fleet" && <OperatorFleet linkedWallets={me.linkedWallets} onLinked={loadMe} />}
+        </main>
       </div>
     </div>
   );
