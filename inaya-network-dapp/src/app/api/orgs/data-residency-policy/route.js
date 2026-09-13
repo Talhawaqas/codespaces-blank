@@ -12,6 +12,12 @@ function serialize(p) {
     country: p.country, region: p.region, storageProvider: p.storageProvider, backupProvider: p.backupProvider,
     encryptionPolicy: p.encryptionPolicy, keyManagementPolicy: p.keyManagementPolicy,
     processingRestrictions: p.processingRestrictions, externalTransferRules: p.externalTransferRules, updatedAt: p.updatedAt,
+    // Four High-Impact Business Workspace Extensions SOW, Feature 2 — see
+    // data-residency.js's header comment: these are DECLARED preferences
+    // only, never enforced routing. The Storage Manager UI must always
+    // show them with an explicit "Declared"/"Unsupported" status, never "Active".
+    preferredRegions: p.preferredRegions || null, allowedRegions: p.allowedRegions || null,
+    prohibitedRegions: p.prohibitedRegions || null, primaryRegion: p.primaryRegion || null, failoverRegion: p.failoverRegion || null,
   };
 }
 

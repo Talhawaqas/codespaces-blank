@@ -20,7 +20,19 @@ export async function getDataResidencyPolicy(orgId) {
   return dataResidencyPolicies.findOne({ orgId: toObjectId(orgId) });
 }
 
-export async function upsertDataResidencyPolicy({ orgId, country, region, storageProvider, backupProvider, encryptionPolicy, keyManagementPolicy, processingRestrictions, externalTransferRules, actorEmail, membership }) {
+export async function upsertDataResidencyPolicy({
+  orgId, country, region, storageProvider, backupProvider, encryptionPolicy, keyManagementPolicy, processingRestrictions, externalTransferRules,
+  // Four High-Impact Business Workspace Extensions SOW, Feature 2 (Native
+  // DePIN Storage Manager) — geographic PREFERENCE fields, additive.
+  // Confirmed by inspection: zero pinning provider routes by region today
+  // (pinningProviders/{pinata,filebase}.js have no region parameter at
+  // all). So these are recorded as a declared preference only — the
+  // Storage Manager UI must always render them with status "Declared" or
+  // "Unsupported", never "Active", per this SOW's own "never represent a
+  // desired policy as active until backend confirmation exists" rule.
+  preferredRegions, allowedRegions, prohibitedRegions, primaryRegion, failoverRegion,
+  actorEmail, membership,
+}) {
   if (!canManageOrg(membership)) return { error: "Only the owner or an admin can update the data residency policy.", status: 403 };
 
   const { dataResidencyPolicies } = await getOrgCollections();
@@ -30,6 +42,8 @@ export async function upsertDataResidencyPolicy({ orgId, country, region, storag
     backupProvider: backupProvider ?? null, encryptionPolicy: encryptionPolicy ?? null,
     keyManagementPolicy: keyManagementPolicy ?? null, processingRestrictions: processingRestrictions ?? null,
     externalTransferRules: externalTransferRules ?? null,
+    preferredRegions: preferredRegions ?? null, allowedRegions: allowedRegions ?? null,
+    prohibitedRegions: prohibitedRegions ?? null, primaryRegion: primaryRegion ?? null, failoverRegion: failoverRegion ?? null,
     updatedByEmail: actorEmail, updatedAt: now,
   };
   await dataResidencyPolicies.updateOne(
