@@ -62,6 +62,14 @@ import {
   canManageGovernment,
   canAccessGovernment,
   isCitizenRecordAssignee,
+  canManageSigning,
+  canAccessSigning,
+  canManageStorage,
+  canAccessStorage,
+  canManageEscrow,
+  canAccessEscrow,
+  canManageAttestations,
+  canAccessAttestations,
 } from "./orgGates.js";
 
 export {
@@ -70,6 +78,8 @@ export {
   canManageCompliance, canAccessCompliance, canManageAudit, canAccessAudit,
   canManageFinancialEntities, canAccessFinancialEntities, isFundTeamMember,
   canManageGovernment, canAccessGovernment, isCitizenRecordAssignee,
+  canManageSigning, canAccessSigning, canManageStorage, canAccessStorage,
+  canManageEscrow, canAccessEscrow, canManageAttestations, canAccessAttestations,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -402,6 +412,16 @@ export async function getOrgCollections() {
     resiliencePolicies: db.collection("resilience_policies"),
     resilienceCanaryAssets: db.collection("resilience_canary_assets"),
     resilienceTestRuns: db.collection("resilience_test_runs"),
+    // Four High-Impact Business Workspace Extensions SOW.
+    // Feature 1 — Inaya Sign. See src/lib/signing-workflow.js.
+    signingRequests: db.collection("signing_requests"),
+    // Feature 2 — Native DePIN Storage Manager. See src/lib/storage-manager.js.
+    orgStorageNodes: db.collection("org_storage_nodes"),
+    storagePolicies: db.collection("storage_policies"),
+    // Feature 3 — Milestone Escrow. See src/lib/escrow-workflow.js.
+    escrows: db.collection("escrows"),
+    // Feature 4 — Cryptographic Financial Attestation. See src/lib/financial-attestation.js.
+    financialAttestations: db.collection("financial_attestations"),
   };
 }
 
@@ -445,6 +465,7 @@ export async function ensureOrgIndexes() {
     policyKbEntries, policyKbAcknowledgements,
     guidedTasks, orgTrustRelationships, apiKeys,
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
+    signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -680,6 +701,16 @@ export async function ensureOrgIndexes() {
     resilienceCanaryAssets.createIndex({ orgId: 1, policyId: 1, categoryLabel: 1 }, { unique: true }),
     resilienceTestRuns.createIndex({ orgId: 1, policyId: 1, startedAt: -1 }),
     resilienceTestRuns.createIndex({ orgId: 1, status: 1 }),
+    // Four High-Impact Business Workspace Extensions SOW
+    signingRequests.createIndex({ orgId: 1, documentId: 1 }),
+    signingRequests.createIndex({ orgId: 1, status: 1 }),
+    signingRequests.createIndex({ orgId: 1, "signers.email": 1 }),
+    orgStorageNodes.createIndex({ orgId: 1, nodeWallet: 1 }, { unique: true }),
+    storagePolicies.createIndex({ orgId: 1, key: 1, version: 1 }, { unique: true }),
+    escrows.createIndex({ orgId: 1, purchaseOrderId: 1 }),
+    escrows.createIndex({ orgId: 1, status: 1 }),
+    financialAttestations.createIndex({ orgId: 1, statementType: 1, period: 1 }),
+    financialAttestations.createIndex({ orgId: 1, status: 1 }),
   ]);
 
   indexesEnsured = true;

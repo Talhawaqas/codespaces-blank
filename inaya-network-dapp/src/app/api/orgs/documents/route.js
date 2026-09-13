@@ -27,6 +27,7 @@
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
+import { ObjectId } from "mongodb";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
 import { logDocumentActivity } from "../../../../lib/document-workflow.js";
 import { getBulkDocumentAccess, isProjectMember, ACCESS_LEVELS } from "../../../../lib/document-permissions.js";
@@ -139,7 +140,9 @@ export async function POST(req) {
     await registerTx.wait();
 
     const now = new Date().toISOString();
+    const documentObjectId = new ObjectId();
     const insertResult = await orgDocuments.insertOne({
+      _id: documentObjectId,
       orgId: orgObjectId,
       departmentId: departmentObjectId,
       projectId: projectObjectId,
@@ -152,6 +155,13 @@ export async function POST(req) {
       txHash: registerTx.hash,
       status: "DRAFT", // Phase 2 workflow — see src/lib/document-workflow.js
       accessLevel, // Phase 3 permissions — see src/lib/document-permissions.js
+      // Four High-Impact Business Workspace Extensions SOW, Feature 1 (Inaya
+      // Sign) — additive versioning fields. A brand-new upload is version 1
+      // of its own group; see api/orgs/documents/[documentId]/versions/route.js
+      // for how a later version links back via documentGroupId.
+      documentGroupId: documentObjectId,
+      version: 1,
+      supersedesId: null,
       createdAt: now,
       deletedAt: null,
     });

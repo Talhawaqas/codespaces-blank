@@ -206,3 +206,48 @@ export function isCitizenRecordAssignee(membership, recordId, assignments) {
     (a) => a.recordId?.toString() === recordId?.toString() && a.email === membership.email
   );
 }
+
+// ============================================================
+// Four High-Impact Business Workspace Extensions SOW — role model
+//
+// signRole/storageRole/escrowRole/attestationRole are new, OPTIONAL fields
+// on the same org_members document, following financeRole/hrRole's exact
+// precedent above: never a restructure of the primary role field, just
+// another orthogonal axis a member may or may not have set. The SOW itself
+// suggested a generic permission-string registry (documents.sign,
+// escrow.create, etc.) — deliberately not adopted, since no such registry
+// exists anywhere else in this codebase (confirmed by inspection) and every
+// other domain uses this manager/staff role-field shape instead.
+// ============================================================
+
+export function canManageSigning(membership) {
+  return canManageOrg(membership) || membership?.signRole === "manager";
+}
+
+export function canAccessSigning(membership) {
+  return canManageSigning(membership) || membership?.signRole === "staff";
+}
+
+export function canManageStorage(membership) {
+  return canManageOrg(membership) || membership?.storageRole === "manager";
+}
+
+export function canAccessStorage(membership) {
+  return canManageStorage(membership) || membership?.storageRole === "staff";
+}
+
+export function canManageEscrow(membership) {
+  return canManageOrg(membership) || membership?.escrowRole === "manager";
+}
+
+export function canAccessEscrow(membership) {
+  return canManageEscrow(membership) || membership?.escrowRole === "staff";
+}
+
+export function canManageAttestations(membership) {
+  return canManageOrg(membership) || membership?.attestationRole === "manager";
+}
+
+export function canAccessAttestations(membership) {
+  return canManageAttestations(membership) || membership?.attestationRole === "staff";
+}
