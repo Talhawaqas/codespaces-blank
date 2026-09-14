@@ -2436,6 +2436,7 @@ export default function Home() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [selectedWalletName, setSelectedWalletName] = useState('');
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
+  const [showWeb3IntroModal, setShowWeb3IntroModal] = useState(false);
 
   // ========================================================
   // 🔔 NOTIFICATION CENTER — merges two sources:
@@ -2894,6 +2895,7 @@ export default function Home() {
   const [chatError, setChatError] = useState('');
   const chatScrollRef = useRef(null);
   const chatInputRef = useRef(null);
+  const web3IntroCloseButtonRef = useRef(null);
   const SUGGESTED_CHAT_PROMPTS = [
     "What is Inaya Network? (Simply, then technically)",
     "What does Inaya Network do for individuals and businesses?",
@@ -5052,6 +5054,45 @@ export default function Home() {
     }, 4000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Reassure Web2/business visitors that Web3 knowledge isn't required to
+  // get started, once per browser session -- shown well before the docs
+  // assistant auto-opens above so the two don't compete for attention.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (sessionStorage.getItem('inaya_web3_intro_dismissed')) return;
+    } catch {
+      return; // storage unavailable (private mode, etc.) -- skip rather than throw
+    }
+    const timer = setTimeout(() => setShowWeb3IntroModal(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissWeb3IntroModal = (reason) => {
+    setShowWeb3IntroModal(false);
+    try {
+      sessionStorage.setItem('inaya_web3_intro_dismissed', '1');
+    } catch {
+      // storage unavailable -- the modal simply won't remember the dismissal, which is fine
+    }
+    if (reason) track('web3_intro_popup_dismissed', { reason });
+  };
+
+  useEffect(() => {
+    if (!showWeb3IntroModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') dismissWeb3IntroModal('escape_key');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showWeb3IntroModal]);
+
+  useEffect(() => {
+    if (showWeb3IntroModal && web3IntroCloseButtonRef.current) {
+      web3IntroCloseButtonRef.current.focus();
+    }
+  }, [showWeb3IntroModal]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
@@ -7913,6 +7954,62 @@ export default function Home() {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          🌐 WEB3/CRYPTO NEWCOMER INTRO POPUP — homepage-only, session-scoped
+         ======================================================== */}
+      {showWeb3IntroModal && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]"
+          onClick={() => dismissWeb3IntroModal('backdrop_click')}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="web3-intro-heading"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#090e1a] border border-[#00f2fe]/20 w-full max-w-md rounded-2xl p-6 relative"
+          >
+            <button
+              ref={web3IntroCloseButtonRef}
+              onClick={() => dismissWeb3IntroModal('close_button')}
+              aria-label="Close"
+              className="absolute top-4 right-4 text-[#8a96ab] font-mono hover:text-white"
+            >
+              ✕
+            </button>
+
+            <h3 id="web3-intro-heading" className="text-white font-bold text-lg pr-8 mb-3">
+              New to Web3 or Crypto?
+            </h3>
+
+            <p className="text-[#94a3b8] text-sm leading-relaxed mb-6">
+              You don&apos;t need to understand wallets, tokens, or blockchain technology to get started with Inaya. Our Business Workspace gives you a familiar business environment to securely manage documents, invoices, procurement, inventory, team workflows, insights, and more — while Inaya handles the underlying infrastructure. Start with the tools your business already understands, and explore Web3 at your own pace.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="/business"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  track('web3_intro_popup_cta_click');
+                  dismissWeb3IntroModal(null);
+                }}
+                className="flex-1 text-center py-3 px-4 rounded-xl bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-sm hover:brightness-110 transition-all"
+              >
+                Explore Business Workspace
+              </a>
+              <button
+                onClick={() => dismissWeb3IntroModal('maybe_later')}
+                className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-[#8a96ab] font-mono text-sm hover:text-white hover:border-white/20 transition-all"
+              >
+                Maybe Later
+              </button>
+            </div>
           </div>
         </div>
       )}
