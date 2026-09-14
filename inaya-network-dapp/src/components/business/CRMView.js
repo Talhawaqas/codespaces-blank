@@ -16,6 +16,10 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import ConfirmButton from "./ConfirmButton";
+import Modal from "./ui/Modal";
+import StatusBadge from "./ui/StatusBadge";
+import FormField from "./ui/FormField";
+import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -24,16 +28,11 @@ async function api(path, options) {
   return data;
 }
 
-const STAGE_LABELS = { NEW: "New", QUALIFIED: "Qualified", PROPOSAL: "Proposal", NEGOTIATION: "Negotiation", WON: "Won", LOST: "Lost" };
+// STAGE_STYLES/STAGE_LABELS removed -- StatusBadge's shared STATUS_TONE
+// map (src/components/business/ui/StatusBadge.js) already covers every
+// one of these stage names with the exact same tones, and CSS uppercases
+// the text regardless of the source string's casing.
 const STAGE_ORDER = ["NEW", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"];
-const STAGE_STYLES = {
-  NEW: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
-  QUALIFIED: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
-  PROPOSAL: "bg-violet-400/10 text-violet-300 border-violet-400/30",
-  NEGOTIATION: "bg-amber-400/10 text-amber-400 border-amber-400/30",
-  WON: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
-  LOST: "bg-red-400/10 text-red-400 border-red-400/30",
-};
 const ACTIONS_BY_STAGE = {
   NEW: [["advance", "Advance"], ["win", "Mark won"], ["lose", "Mark lost"]],
   QUALIFIED: [["advance", "Advance"], ["regress", "Back"], ["win", "Mark won"], ["lose", "Mark lost"]],
@@ -121,25 +120,29 @@ function ContactsTab({ orgId, departments, focusContactId, onFocusHandled }) {
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New contact</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <RecordList>
         {!contacts ? (
           <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
         ) : contacts.length === 0 ? (
           <EmptyState compact icon="🧑‍💼" description="No contacts match these filters." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : (
-          <div className="space-y-2">
+          <RecordRows>
             {contacts.map((c) => (
-              <button key={c.id} onClick={() => setSelected(c)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-                <div className="min-w-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm">{c.name}</span>
-                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5 truncate">{c.company || "—"}{c.email ? ` · ${c.email}` : ""}</p>
-                </div>
-                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${c.type === "CUSTOMER" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/30"}`}>{c.type}</span>
-              </button>
+              <RecordRow
+                key={c.id}
+                onClick={() => setSelected(c)}
+                left={
+                  <>
+                    <span className="text-[var(--inaya-text-primary)] text-sm">{c.name}</span>
+                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5 truncate">{c.company || "—"}{c.email ? ` · ${c.email}` : ""}</p>
+                  </>
+                }
+                right={<StatusBadge status={c.type} tone={c.type === "CUSTOMER" ? "success" : "warning"} />}
+              />
             ))}
-          </div>
+          </RecordRows>
         )}
-      </div>
+      </RecordList>
 
       {showCreate && <CreateContactModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
       {selected && <ContactDetailModal orgId={orgId} contact={selected} onClose={() => setSelected(null)} onChanged={load} />}
@@ -176,18 +179,30 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New contact" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-          <option value="">Department…</option>
-          {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-        <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-          <option value="LEAD">Lead</option>
-          <option value="CUSTOMER">Customer</option>
-        </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <FormField label="Department" htmlFor="contact-dept" required>
+          <select id="contact-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            <option value="">Department…</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Type" htmlFor="contact-type">
+          <select id="contact-type" value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            <option value="LEAD">Lead</option>
+            <option value="CUSTOMER">Customer</option>
+          </select>
+        </FormField>
+        <FormField label="Name" htmlFor="contact-name" required>
+          <input id="contact-name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Full name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
+        <FormField label="Company" htmlFor="contact-company">
+          <input id="contact-company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Optional" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
+        <FormField label="Email" htmlFor="contact-email">
+          <input id="contact-email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Optional" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
+        <FormField label="Phone" htmlFor="contact-phone">
+          <input id="contact-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Optional" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create contact"}</button>
       </form>
@@ -217,7 +232,7 @@ function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
     <Modal title={contact.name} onClose={onClose}>
       <div className="space-y-3">
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{contact.company || "No company"}{contact.email ? ` · ${contact.email}` : ""}{contact.phone ? ` · ${contact.phone}` : ""}</p>
-        <span className={`inline-block text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${contact.type === "CUSTOMER" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/30"}`}>{contact.type}</span>
+        <StatusBadge status={contact.type} tone={contact.type === "CUSTOMER" ? "success" : "warning"} />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={toggleType} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
           {saving ? "…" : contact.type === "LEAD" ? "Convert to Customer" : "Revert to Lead"}
@@ -271,7 +286,10 @@ function DealsTab({ orgId, departments, email, onViewContact }) {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {STAGE_ORDER.map((stage) => (
             <div key={stage} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-3">
-              <h4 className={`text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border inline-block mb-2 ${STAGE_STYLES[stage]}`}>{STAGE_LABELS[stage]} ({byStage[stage].length})</h4>
+              <div className="mb-2 flex items-center gap-1.5">
+                <StatusBadge status={stage} />
+                <span className="text-[11px] text-[var(--inaya-text-muted)] font-mono">({byStage[stage].length})</span>
+              </div>
               <div className="space-y-1.5">
                 {byStage[stage].map((d) => (
                   <div key={d.id} className="bg-black/20 border border-white/5 rounded-lg p-2">
@@ -332,16 +350,24 @@ function CreateDealModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New deal" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-          <option value="">Department…</option>
-          {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-        <select value={contactId} onChange={(e) => setContactId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
-          <option value="">Contact…</option>
-          {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Deal title" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={value} onChange={(e) => setValue(e.target.value)} type="number" min="0" placeholder="Value in USD (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <FormField label="Department" htmlFor="deal-dept" required>
+          <select id="deal-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            <option value="">Department…</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Contact" htmlFor="deal-contact" required>
+          <select id="deal-contact" value={contactId} onChange={(e) => setContactId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+            <option value="">Contact…</option>
+            {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Deal title" htmlFor="deal-title" required>
+          <input id="deal-title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. Q3 renewal" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
+        <FormField label="Value (USD)" htmlFor="deal-value" hint="Optional">
+          <input id="deal-value" value={value} onChange={(e) => setValue(e.target.value)} type="number" min="0" placeholder="0" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !contactId || !title.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create deal"}</button>
       </form>
@@ -387,7 +413,7 @@ function DealDetailModal({ orgId, dealId, onClose, onChanged }) {
     <Modal title={deal.title} onClose={onClose}>
       <div className="space-y-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STAGE_STYLES[deal.status]}`}>{STAGE_LABELS[deal.status]}</span>
+          <StatusBadge status={deal.status} />
           {formatMoney(deal.value) && <span className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{formatMoney(deal.value)}</span>}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -409,16 +435,6 @@ function DealDetailModal({ orgId, dealId, onClose, onChanged }) {
   );
 }
 
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm truncate">{title}</h3>
-          <button onClick={onClose} className="text-[var(--inaya-text-muted)] hover:text-[var(--inaya-text-primary)] text-lg leading-none shrink-0">×</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
+// Local Modal removed -- now imports the shared ./ui/Modal (see
+// BUSINESS_WORKSPACE_UX_AUDIT.md #3.1: this was one of 12 byte-identical
+// copies).

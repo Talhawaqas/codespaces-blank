@@ -22,6 +22,10 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import ConfirmButton from "./ConfirmButton";
+import Modal from "./ui/Modal";
+import StatusBadge, { STATUS_TONE } from "./ui/StatusBadge";
+import FormField from "./ui/FormField";
+import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -32,13 +36,13 @@ async function api(path, options) {
 
 const STATUS_LABELS = { TODO: "To do", IN_PROGRESS: "In progress", BLOCKED: "Blocked", DONE: "Done", CANCELLED: "Cancelled" };
 const STATUS_ORDER = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELLED"];
-const STATUS_STYLES = {
-  TODO: "bg-white/5 text-[var(--inaya-text-muted)] border-white/10",
-  IN_PROGRESS: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
-  BLOCKED: "bg-amber-400/10 text-amber-400 border-amber-400/30",
-  DONE: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30",
-  CANCELLED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
-};
+// This file's own CANCELLED was violet (not the shared StatusBadge
+// default of neutral -- FinanceView/HRView use neutral for the same
+// status, an inconsistency the audit itself found, see
+// BUSINESS_WORKSPACE_UX_AUDIT.md #3.1) -- preserved via an explicit tone
+// override below so migrating to the shared component changes nothing
+// visually here.
+const STATUS_TONE_OVERRIDE = { CANCELLED: "special" };
 const PRIORITY_STYLES = {
   LOW: "text-[var(--inaya-text-muted)]",
   MEDIUM: "text-[#00f2fe]",
@@ -153,28 +157,26 @@ export default function TasksView({ orgId, canManage, email }) {
       {tasks && tasks.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {STATUS_ORDER.filter((s) => byStatus[s]).map((s) => (
-            <span key={s} className={`text-[11px] font-bold uppercase px-2.5 py-1 rounded-full border ${STATUS_STYLES[s]}`}>
-              {byStatus[s]} {STATUS_LABELS[s]}
-            </span>
+            <StatusBadge key={s} status={`${byStatus[s]} ${STATUS_LABELS[s]}`} tone={STATUS_TONE_OVERRIDE[s] || STATUS_TONE[s]} />
           ))}
         </div>
       )}
 
       {error && <p className="text-red-400 text-xs">{error}</p>}
 
-      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <RecordList>
         {!tasks ? (
           <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
         ) : tasks.length === 0 ? (
           <EmptyState compact icon="✅" description="No tasks match these filters." ctaLabel="Create one" onCta={() => setShowCreate(true)} />
         ) : (
-          <div className="space-y-2">
+          <RecordRows>
             {tasks.map((t) => (
               <TaskRow key={t.id} task={t} onOpen={() => setSelectedTaskId(t.id)} />
             ))}
-          </div>
+          </RecordRows>
         )}
-      </div>
+      </RecordList>
 
       {showCreate && (
         <CreateTaskModal
@@ -202,22 +204,23 @@ export default function TasksView({ orgId, canManage, email }) {
 function TaskRow({ task, onOpen }) {
   const overdue = isOverdue(task);
   return (
-    <button onClick={onOpen} className="w-full flex items-start justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold uppercase ${PRIORITY_STYLES[task.priority]}`}>●</span>
-          <span className="text-[var(--inaya-text-primary)] text-sm truncate">{task.title}</span>
-        </div>
-        <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5 truncate">
-          {task.departmentName || task.projectName ? `${task.departmentName || ""}` : null}
-          {task.assigneeEmail ? ` · ${task.assigneeEmail}` : " · Unassigned"}
-          {task.dueDate ? ` · ${overdue ? "Overdue " : "Due "}${formatDueDate(task.dueDate)}` : ""}
-        </p>
-      </div>
-      <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[task.status]}`}>
-        {STATUS_LABELS[task.status]}
-      </span>
-    </button>
+    <RecordRow
+      onClick={onOpen}
+      left={
+        <>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-bold uppercase ${PRIORITY_STYLES[task.priority]}`}>●</span>
+            <span className="text-[var(--inaya-text-primary)] text-sm truncate">{task.title}</span>
+          </div>
+          <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5 truncate">
+            {task.departmentName || task.projectName ? `${task.departmentName || ""}` : null}
+            {task.assigneeEmail ? ` · ${task.assigneeEmail}` : " · Unassigned"}
+            {task.dueDate ? ` · ${overdue ? "Overdue " : "Due "}${formatDueDate(task.dueDate)}` : ""}
+          </p>
+        </>
+      }
+      right={<StatusBadge status={task.status} tone={STATUS_TONE_OVERRIDE[task.status]} />}
+    />
   );
 }
 
@@ -267,27 +270,41 @@ function CreateTaskModal({ orgId, departments, onClose, onCreated }) {
     <Modal onClose={onClose} title="New task">
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-            <option value="">Department…</option>
-            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required disabled={!departmentId} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
-            <option value="">Project…</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <FormField label="Department" htmlFor="task-dept" required>
+            <select id="task-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+              <option value="">Department…</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </FormField>
+          <FormField label="Project" htmlFor="task-project" required>
+            <select id="task-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+              <option value="">Project…</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </FormField>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Task title" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab] resize-none" />
+        <FormField label="Title" htmlFor="task-title" required>
+          <input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Task title" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
+        <FormField label="Description" htmlFor="task-description" hint="Optional">
+          <textarea id="task-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab] resize-none" />
+        </FormField>
         <div className="grid grid-cols-2 gap-2">
-          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-            <option value="LOW">Low priority</option>
-            <option value="MEDIUM">Medium priority</option>
-            <option value="HIGH">High priority</option>
-            <option value="URGENT">Urgent</option>
-          </select>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
+          <FormField label="Priority" htmlFor="task-priority">
+            <select id="task-priority" value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+              <option value="LOW">Low priority</option>
+              <option value="MEDIUM">Medium priority</option>
+              <option value="HIGH">High priority</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </FormField>
+          <FormField label="Due date" htmlFor="task-due" hint="Optional">
+            <input id="task-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
+          </FormField>
         </div>
-        <input value={assigneeEmail} onChange={(e) => setAssigneeEmail(e.target.value)} type="email" placeholder="Assignee email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <FormField label="Assignee email" htmlFor="task-assignee" hint="Optional">
+          <input id="task-assignee" value={assigneeEmail} onChange={(e) => setAssigneeEmail(e.target.value)} type="email" placeholder="Optional" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        </FormField>
 
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !projectId || !title.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
@@ -349,7 +366,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
     <Modal onClose={onClose} title={task.title}>
       <div className="space-y-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[task.status]}`}>{STATUS_LABELS[task.status]}</span>
+          <StatusBadge status={task.status} tone={STATUS_TONE_OVERRIDE[task.status]} />
           <span className={`text-[11px] font-bold uppercase ${PRIORITY_STYLES[task.priority]}`}>{task.priority}</span>
           {task.dueDate && (
             <span className={`text-[11px] font-mono ${overdue ? "text-red-400" : "text-[var(--inaya-text-muted)]"}`}>
@@ -418,16 +435,4 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
   );
 }
 
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm truncate">{title}</h3>
-          <button onClick={onClose} className="text-[var(--inaya-text-muted)] hover:text-[var(--inaya-text-primary)] text-lg leading-none shrink-0">×</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
+// Local Modal removed -- now imports the shared ./ui/Modal.

@@ -54,7 +54,10 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
   // pending-approvals alert (department-level visibility, not manager-only),
   // so route their click somewhere that actually renders instead of a
   // silently-gated blank view.
-  const drillTo = (target) => onNavigate?.(target === "approvals" && !canManage ? "dashboard" : target);
+  // Business Workspace UX/UI Makeover SOW -- redirects to "osHome" (the
+  // former separate "dashboard" view was consolidated into it; see
+  // BUSINESS_WORKSPACE_UX_AUDIT.md #3.2).
+  const drillTo = (target) => onNavigate?.(target === "approvals" && !canManage ? "osHome" : target);
 
   const load = useCallback(async () => {
     try {

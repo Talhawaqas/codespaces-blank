@@ -30,7 +30,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { PricingCard } from "./PricingCard";
 import EmptyState from "../../components/EmptyState";
 import AccentGraphic from "../../components/AccentGraphic";
-import Skeleton from "../../components/Skeleton";
+import { Icon, ICONS } from "../../components/business/ui/icons";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
 import AIWidget from "../../components/business/AIWidget";
 import VoiceAssistantControl from "../../components/business/VoiceAssistantControl";
@@ -685,215 +685,17 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
 }
 
 // ============================================================
-// ICONS — small inline SVGs, no icon library dependency in this app.
-// ============================================================
-function Icon({ path, className = "w-[18px] h-[18px]" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {path}
-    </svg>
-  );
-}
-
-const ICONS = {
-  health: (
-    <>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M12 8v8M8 12h8" />
-    </>
-  ),
-  legal: (
-    <>
-      <path d="M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0l-3-6M19 7l-3 6a3 3 0 0 0 6 0l-3-6" />
-    </>
-  ),
-  regulated: (
-    <>
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-      <path d="M9 12l2 2 4-4" />
-    </>
-  ),
-  financial: (
-    <>
-      <path d="M3 17l5-6 4 4 8-9" />
-      <path d="M14 6h6v6" />
-    </>
-  ),
-  government: (
-    <>
-      <path d="M12 3l9 5H3l9-5z" />
-      <path d="M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18" />
-    </>
-  ),
-  resilience: (
-    <>
-      <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
-      <circle cx="12" cy="12" r="4" />
-    </>
-  ),
-  integrations: (
-    <>
-      <circle cx="6" cy="6" r="3" />
-      <circle cx="18" cy="18" r="3" />
-      <path d="M8.5 8.5l7 7M6 9v6a3 3 0 0 0 3 3h3" />
-    </>
-  ),
-  executive: (
-    <>
-      <path d="M3 21h18M6 21V10l6-4 6 4v11M10 21v-6h4v6" />
-    </>
-  ),
-  dataRooms: (
-    <>
-      <rect x="3" y="7" width="18" height="13" rx="2" />
-      <path d="M3 7l3-4h6l2 4" />
-    </>
-  ),
-  enterpriseHardening: (
-    <>
-      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
-      <path d="M9 12l2 2 4-4" />
-    </>
-  ),
-  dashboard: (
-    <>
-      <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
-      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
-      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
-      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
-    </>
-  ),
-  departments: (
-    <>
-      <rect x="4" y="3" width="12" height="18" rx="1" />
-      <path d="M8 7h1M11 7h1M8 11h1M11 11h1M8 15h1M11 15h1" />
-      <path d="M16 21v-7h4v7" />
-    </>
-  ),
-  projects: <path d="M3 7a1 1 0 0 1 1-1h4l2 2h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z" />,
-  documents: (
-    <>
-      <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
-      <path d="M14 3v5h5" />
-      <rect x="9.5" y="13" width="5" height="4" rx="1" />
-      <path d="M10.5 13v-1.5a1.5 1.5 0 0 1 3 0V13" />
-    </>
-  ),
-  approvals: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M8 12.5l2.5 2.5L16 9.5" />
-    </>
-  ),
-  tasks: (
-    <>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
-      <path d="M7.5 9l1.8 1.8L12.5 7.5" />
-      <path d="M15 8.5h4" />
-      <path d="M7.5 16h9" />
-    </>
-  ),
-  crm: (
-    <>
-      <circle cx="9" cy="7.5" r="3" />
-      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
-      <path d="M16.5 8.5a2.5 2.5 0 1 0 0-5" />
-      <path d="M15.5 15c3.5 0 5 2 5 5" />
-    </>
-  ),
-  procurement: (
-    <>
-      <path d="M3 7l2-4h14l2 4" />
-      <path d="M3 7h18v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z" />
-      <path d="M8 11a4 4 0 0 0 8 0" />
-    </>
-  ),
-  inventory: (
-    <>
-      <path d="M3 8l9-5 9 5-9 5-9-5Z" />
-      <path d="M3 8v9l9 5 9-5V8" />
-      <path d="M12 13v9" />
-    </>
-  ),
-  activity: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" />
-    </>
-  ),
-  aiAssistant: (
-    <>
-      <path d="M12 3a1 1 0 0 1 1 1v1.06a7.5 7.5 0 0 1 6.94 6.94H21a1 1 0 0 1 0 2h-1.06a7.5 7.5 0 0 1-6.94 6.94V22a1 1 0 0 1-2 0v-1.06a7.5 7.5 0 0 1-6.94-6.94H3a1 1 0 0 1 0-2h1.06A7.5 7.5 0 0 1 11 5.06V4a1 1 0 0 1 1-1Z" />
-      <circle cx="12" cy="12" r="3.2" />
-    </>
-  ),
-  send: <path d="M4 12l16-8-6 8 6 8-16-8Z" />,
-  logout: (
-    <>
-      <path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4" />
-      <path d="M16 17l5-5-5-5" />
-      <path d="M21 12H9" />
-    </>
-  ),
-  chevronRight: <path d="M9 18l6-6-6-6" />,
-  lock: (
-    <>
-      <rect x="5" y="10" width="14" height="10" rx="2" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-    </>
-  ),
-  billing: (
-    <>
-      <rect x="2.5" y="5" width="19" height="14" rx="2" />
-      <path d="M2.5 10h19" />
-      <path d="M6 15h4" />
-    </>
-  ),
-  finance: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v10" />
-      <path d="M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 1-3 2.2 0 3 6 1.5 6 4.3 0 1.2-1.3 2.2-3 2.2a3 3 0 0 1-3-1.5" />
-    </>
-  ),
-  hr: (
-    <>
-      <circle cx="8.5" cy="7.5" r="3.2" />
-      <path d="M2.5 20.5a6 6 0 0 1 12 0" />
-      <path d="M16 4.5a3.2 3.2 0 0 1 0 6.4" />
-      <path d="M14.5 14.5c2.8 0 5 1.9 5.5 4.6" />
-      <path d="M18.5 8.5v3M17 10h3" />
-    </>
-  ),
-  insights: (
-    <>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M7 15l3-4 3 2.5L17 8" />
-      <circle cx="17" cy="8" r="1.2" fill="currentColor" stroke="none" />
-    </>
-  ),
-};
-
-// The gear icon's cutout path above is fiddly to hand-write cleanly; use a
-// simpler bolt-free cog approximation instead so it actually renders well
-// at 18px.
-ICONS.settings = (
-  <>
-    <circle cx="12" cy="12" r="3.2" />
-    <path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7L16 16M8 8 6.3 6.3" />
-  </>
-);
-
-// ============================================================
 // SIDEBAR + WORKSPACE SHELL
 // ============================================================
+// Icon/ICONS now imported from components/business/ui/icons.js -- see
+// BUSINESS_WORKSPACE_UX_AUDIT.md #3.1 for why this used to be a locally
+// defined, unexported duplicate reinvented in 2 other files.
 // UI Enhancement Specs v2, §3 -- each item's `group` drives the sidebar's
 // micro-heading chunking. Order here is also render order, so items in
 // the same group stay contiguous; GROUP_LABELS below defines display order
 // and text independently of these internal keys.
 const NAV_ITEMS = [
   { key: "osHome", label: "OS Home", icon: "dashboard", group: "core" },
-  { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "core" },
   { key: "insights", label: "Insights", icon: "insights", group: "core" },
   { key: "brief", label: "Brief", icon: "insights", group: "core" },
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
@@ -915,9 +717,9 @@ const NAV_ITEMS = [
   { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated", group: "industry" },
   { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"], group: "industry" },
   { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
-  { key: "security", label: "Security", icon: "activity", group: "trust" },
-  { key: "resilience", label: "Trust & Resilience", icon: "resilience", manageOnly: true, group: "trust" },
-  { key: "resilienceTesting", label: "Recovery Resilience", icon: "resilience", manageOnly: true, group: "trust" },
+  { key: "security", label: "Account Security", icon: "activity", group: "trust" },
+  { key: "resilience", label: "Security & Resilience Controls", icon: "resilience", manageOnly: true, group: "trust" },
+  { key: "resilienceTesting", label: "Resilience Testing", icon: "resilience", manageOnly: true, group: "trust" },
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
@@ -941,6 +743,10 @@ const GROUP_LABELS = {
   enterprise: "Enterprise",
   settings: "Settings",
 };
+
+// Business Workspace UX/UI Makeover SOW -- see VIEW_TITLES.browse's own
+// comment for why this exists.
+const BROWSE_SECTION_LABELS = { departments: "Departments", projects: "Projects", documents: "Documents" };
 
 // Healthcare & Legal Expansion SOW — lets an existing org (created before
 // this feature, or simply changing business type) switch which vertical
@@ -1159,50 +965,68 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     }).catch(() => {});
   }, [orgId]);
 
+  // Business Workspace UX/UI Makeover SOW -- which of Departments/
+  // Projects/Documents was actually clicked, so the header can show the
+  // real section name instead of always "Company Records" (see
+  // BUSINESS_WORKSPACE_UX_AUDIT.md #3.2). All three still render the same
+  // OrgWorkspace drill-down component underneath -- this only affects the
+  // header title, not the routing.
+  const [browseSection, setBrowseSection] = useState("documents");
+
   function navigate(view, target) {
-    setActiveView(view === "departments" || view === "projects" || view === "documents" ? "browse" : view);
+    if (view === "departments" || view === "projects" || view === "documents") {
+      setBrowseSection(view);
+      setActiveView("browse");
+    } else {
+      setActiveView(view);
+    }
     setBrowseTarget(target || null);
     setMobileNavOpen(false);
   }
 
+  // Business Workspace UX/UI Makeover SOW -- each entry gains a short
+  // description (SOW §9's page-standardization: title + description),
+  // shown as the header's subtitle in place of the signed-in email (moved
+  // to the header's right-side controls area). "dashboard" removed: the
+  // former separate "Dashboard" screen was a redundant second home screen
+  // (see the audit's #3.2) and has been consolidated into "OS Home" below.
   const VIEW_TITLES = {
-    osHome: "OS Home",
-    dashboard: "Overview",
-    insights: "Business Insights",
-    brief: "Business Brief",
-    whatChanged: "What Changed?",
-    security: "Security",
-    browse: "Company Records",
-    tasks: "Tasks",
-    crm: "CRM",
-    procurement: "Procurement",
-    inventory: "Inventory",
-    finance: "Finance",
-    hr: "HR",
-    sign: "Inaya Sign",
-    escrow: "Milestone Escrow",
-    storageManager: "DePIN Storage",
-    attestations: "Attestations",
-    health: "Health OS",
-    legal: "Legal OS",
-    regulated: "Regulated OS",
-    financial: "Financial OS",
-    government: "Government OS",
-    resilience: "Trust & Resilience",
-    resilienceTesting: "Recovery Resilience",
-    integrations: "Integrations",
-    apiKeys: "API Keys",
-    executive: "Executive",
-    dataRooms: "Data Rooms",
-    enterpriseHardening: "Export & Migration",
-    approvals: "Approvals",
-    aiActions: "AI Action Requests",
-    auditTrail: "Audit Trail",
-    trustRelationships: "Cross-Org Trust",
-    activity: "Activity",
-    ai: "AI Assistant",
-    billing: "Billing",
-    settings: "Settings",
+    osHome: { title: "OS Home", description: `Welcome back — ${membership.orgName}. One place for what's happening across your organization.` },
+    insights: { title: "Business Insights", description: "KPIs, trends, and alerts for this company." },
+    brief: { title: "Business Brief", description: "A periodic recap of what happened and what needs attention." },
+    whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
+    security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
+    browse: { title: BROWSE_SECTION_LABELS[browseSection], description: "Company → Department → Project → Document." },
+    tasks: { title: "Tasks", description: "Track and assign work across departments and projects." },
+    crm: { title: "CRM", description: "Customers, leads, deals, and the sales pipeline." },
+    procurement: { title: "Procurement", description: "Purchase requests, purchase orders, and suppliers." },
+    inventory: { title: "Inventory", description: "Products, stock levels, warehouses, and transfers." },
+    finance: { title: "Finance", description: "Invoices, expenses, payments, and accounting." },
+    hr: { title: "HR", description: "Employees, leave requests, and department administration." },
+    sign: { title: "Inaya Sign", description: "Request and track signatures on company documents." },
+    escrow: { title: "Milestone Escrow", description: "Milestone-based payment holds tied to purchase orders." },
+    storageManager: { title: "DePIN Storage", description: "Decentralized storage capacity and policy for this company." },
+    attestations: { title: "Attestations", description: "Cryptographic attestations for financial statements." },
+    health: { title: "Health OS", description: "Clinical records and care workflows." },
+    legal: { title: "Legal OS", description: "Matters, clients, and legal document workflows." },
+    regulated: { title: "Regulated OS", description: "Compliance controls for regulated enterprises." },
+    financial: { title: "Financial OS", description: "Fund, investor, and portfolio management." },
+    government: { title: "Government OS", description: "Citizen records and case management." },
+    resilience: { title: "Security & Resilience Controls", description: "Vendors, ICT assets, privileged access, and resilience policy." },
+    resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
+    integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
+    apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
+    executive: { title: "Executive", description: "A leadership-level summary across every department." },
+    dataRooms: { title: "Data Rooms", description: "Secure, time-limited document sharing with outside parties." },
+    enterpriseHardening: { title: "Export & Migration", description: "Export company data and manage migration tooling." },
+    approvals: { title: "Approvals", description: "Documents awaiting your review." },
+    aiActions: { title: "AI Action Requests", description: "AI-proposed changes awaiting human approval." },
+    auditTrail: { title: "Audit Trail", description: "A cryptographically hash-chained, self-verifiable record of activity." },
+    trustRelationships: { title: "Cross-Org Trust", description: "Trust relationships with other Inaya organizations." },
+    activity: { title: "Activity", description: "The org-wide activity feed." },
+    ai: { title: "AI Assistant", description: "Ask about this company's real data, grounded and permission-scoped." },
+    billing: { title: "Billing", description: "Plan, usage, and payment details." },
+    settings: { title: "Settings", description: "Company type, AI features, team, and departments." },
   };
 
   return (
@@ -1232,8 +1056,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
             </button>
             <div className="min-w-0">
-              <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{VIEW_TITLES[activeView]}</h1>
-              <p className="text-[var(--inaya-text-muted)] text-[13px] font-mono truncate">{email}</p>
+              <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{VIEW_TITLES[activeView]?.title}</h1>
+              <p className="text-[var(--inaya-text-muted)] text-[13px] truncate" title={email}>{VIEW_TITLES[activeView]?.description}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -1281,9 +1105,6 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 
         <main className="p-5 md:p-8 max-w-6xl">
           {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
-          {activeView === "dashboard" && (
-            <DashboardView orgId={orgId} canManage={canManage} onNavigate={navigate} />
-          )}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}
           {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
@@ -1354,200 +1175,12 @@ const STATUS_STYLES = {
   ARCHIVED: "bg-violet-400/10 text-violet-300 border-violet-400/30",
 };
 
-function StatCard({ icon, label, value, sub }) {
-  return (
-    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex items-center gap-4">
-      <div className="w-11 h-11 rounded-xl bg-[#00f2fe]/10 flex items-center justify-center shrink-0">
-        <Icon path={ICONS[icon]} className="w-5 h-5 text-[#00f2fe]" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">{label}</p>
-        <p className="text-[var(--inaya-text-primary)] text-2xl font-extrabold leading-tight">{value}</p>
-        {sub && <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-function DashboardCard({ title, onViewAll, children }) {
-  return (
-    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{title}</h3>
-        {onViewAll && (
-          <button onClick={onViewAll} className="text-[12px] font-bold text-[#00f2fe] flex items-center gap-0.5">
-            View all <Icon path={ICONS.chevronRight} className="w-3 h-3" />
-          </button>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function DashboardView({ orgId, canManage, onNavigate }) {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-
-  const load = useCallback(async () => {
-    try {
-      const result = await api(`/api/orgs/dashboard?orgId=${orgId}`);
-      setData(result);
-    } catch (err) {
-      setError(err.message);
-    }
-  }, [orgId]);
-
-  useEffect(() => { load(); }, [load]);
-
-  if (error) return <p className="text-red-400 text-xs">{error}</p>;
-  if (!data) return <Skeleton count={3} borderColors={["border-[#00f2fe]", "border-violet-400", "border-[#00f2fe]"]} />;
-
-  const isDesktopApp = typeof window !== "undefined" && !!window.__TAURI__;
-
-  return (
-    <div className="space-y-6">
-      {/* Desktop app cross-promotion -- hidden when already running inside
-          the desktop app itself, same reasoning as not showing "Explore"
-          for a product you're already in. */}
-      {!isDesktopApp && (
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-[var(--inaya-overlay-10)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inaya-fade-in-up">
-          <div className="pointer-events-none absolute -right-6 -top-6 opacity-40 hidden sm:block" aria-hidden="true">
-            <AccentGraphic variant="business" size={120} />
-          </div>
-          <div className="relative">
-            <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
-              New · Desktop App
-            </span>
-            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
-            <p className="text-[var(--inaya-text-muted)] text-xs sm:text-sm mt-1 max-w-lg">
-              Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
-            </p>
-          </div>
-          <div className="relative flex gap-2 shrink-0 w-full sm:w-auto">
-            <a
-              href="/business/download"
-              className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110"
-            >
-              Download
-            </a>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="inaya-fade-in-up" style={{ animationDelay: "0.05s" }}>
-          <StatCard icon="departments" label="Departments" value={data.counts.departments} sub="Active departments" />
-        </div>
-        <div className="inaya-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <StatCard icon="projects" label="Projects" value={data.counts.projects} sub="Active projects" />
-        </div>
-        <div className="inaya-fade-in-up" style={{ animationDelay: "0.15s" }}>
-          <StatCard icon="documents" label="Documents" value={data.counts.documents} sub="Encrypted & secured" />
-        </div>
-      </div>
-
-      {canManage && data.pendingApprovals.length > 0 && (
-        <DashboardCard title={`Pending your approval (${data.pendingApprovals.length})`} onViewAll={() => onNavigate("approvals")}>
-          <div className="space-y-1">
-            {data.pendingApprovals.slice(0, 4).map((d) => (
-              <button
-                key={d.id}
-                onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
-              >
-                <span className="text-[var(--inaya-text-primary)] text-xs truncate">{d.filename}</span>
-                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
-              </button>
-            ))}
-          </div>
-        </DashboardCard>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DashboardCard title="Recent Departments" onViewAll={() => onNavigate("departments")}>
-          {data.recentDepartments.length === 0 ? (
-            <EmptyState compact icon="🏢" description="No departments yet." ctaLabel="Create one" onCta={() => onNavigate("departments")} />
-          ) : (
-            <div className="space-y-1">
-              {data.recentDepartments.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => onNavigate("projects", { deptId: d.id })}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[var(--inaya-overlay-5)] flex items-center justify-center shrink-0">
-                    <Icon path={ICONS.departments} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{d.name}</p>
-                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono">{d.projectCount} project{d.projectCount === 1 ? "" : "s"}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </DashboardCard>
-
-        <DashboardCard title="Recent Projects" onViewAll={() => onNavigate("projects")}>
-          {data.recentProjects.length === 0 ? (
-            <EmptyState compact icon="📁" description="No projects yet." ctaLabel="Create one" onCta={() => onNavigate("projects")} />
-          ) : (
-            <div className="space-y-1">
-              {data.recentProjects.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onNavigate("documents", { deptId: p.departmentId, projectId: p.id })}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{p.name}</p>
-                    <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{p.departmentName} · {p.documentCount} document{p.documentCount === 1 ? "" : "s"}</p>
-                  </div>
-                  <span className="flex items-center gap-1 text-[11px] font-bold uppercase text-emerald-400 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </DashboardCard>
-      </div>
-
-      <DashboardCard title="Encrypted Documents" onViewAll={() => onNavigate("documents")}>
-        {data.recentDocuments.length === 0 ? (
-          <EmptyState compact icon="🔐" description="No documents yet." ctaLabel="Upload one" onCta={() => onNavigate("documents")} />
-        ) : (
-          <div className="space-y-1">
-            {data.recentDocuments.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => onNavigate("documents", { deptId: d.departmentId, projectId: d.projectId })}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-5)] text-left"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[var(--inaya-overlay-5)] flex items-center justify-center shrink-0">
-                  <Icon path={ICONS.documents} className="w-4 h-4 text-[var(--inaya-text-muted)]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[var(--inaya-text-primary)] text-xs font-bold truncate">{d.filename}</p>
-                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono truncate">{d.departmentName} · {d.projectName}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[d.status] || STATUS_STYLES.DRAFT}`}>
-                    {d.status.replace("_", " ")}
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400">
-                    <Icon path={ICONS.lock} className="w-2.5 h-2.5" /> Encrypted
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </DashboardCard>
-    </div>
-  );
-}
+// StatCard/DashboardCard/DashboardView removed -- the former separate
+// "Dashboard" screen was a redundant second home screen (see
+// BUSINESS_WORKSPACE_UX_AUDIT.md #3.2); its real, useful content (desktop
+// promo, recent departments/projects/documents) was merged into
+// OsHomeView.js, which is now the Workspace's single home screen.
+// STATUS_STYLES above is kept -- ApprovalsView and OrgWorkspace still use it.
 
 // ============================================================
 // APPROVALS — pending/under-review documents this manager can act on.
