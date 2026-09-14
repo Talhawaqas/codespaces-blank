@@ -32,7 +32,11 @@ const DEFAULT_PROFILE = {
   branding: {},
   retentionPolicy: {},
   securityPolicy: {},
-  aiPolicy: { enabled: true },
+  // voiceEnabled defaults off (Inaya AI Voice Assistant SOW) -- a brand-new
+  // capability that requests microphone access and opens a real-time
+  // Gemini connection, kept an explicit per-org opt-in an owner/admin sets
+  // rather than silently on for every existing org.
+  aiPolicy: { enabled: true, voiceEnabled: false },
   notificationPolicy: {},
   exportPolicy: {},
 };

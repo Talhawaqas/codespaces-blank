@@ -19,7 +19,7 @@ export async function GET(req) {
 
     const [profile, classificationLevels] = await Promise.all([getOrgProfile(orgId), getOrgClassificationLevels(orgId)]);
     return NextResponse.json({
-      profile: { vertical: profile.vertical, industry: profile.industry, organizationType: profile.organizationType, timeZone: profile.timeZone, branding: profile.branding },
+      profile: { vertical: profile.vertical, industry: profile.industry, organizationType: profile.organizationType, timeZone: profile.timeZone, branding: profile.branding, aiPolicy: profile.aiPolicy },
       classificationLevels: classificationLevels.map((l) => ({ key: l.key, label: l.label, restricted: l.restricted })),
     });
   } catch (err) {
@@ -40,7 +40,7 @@ export async function PATCH(req) {
 
     const result = await updateOrgProfile({ orgId, updates, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
-    return NextResponse.json({ profile: { vertical: result.org.vertical, industry: result.org.industry } });
+    return NextResponse.json({ profile: { vertical: result.org.vertical, industry: result.org.industry, aiPolicy: result.org.aiPolicy } });
   } catch (err) {
     console.error("orgs/settings PATCH failed:", err);
     return NextResponse.json({ error: "Could not update organization settings." }, { status: 500 });

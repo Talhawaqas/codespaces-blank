@@ -33,6 +33,7 @@ import AccentGraphic from "../../components/AccentGraphic";
 import Skeleton from "../../components/Skeleton";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
 import AIWidget from "../../components/business/AIWidget";
+import VoiceAssistantControl from "../../components/business/VoiceAssistantControl";
 import TasksView from "../../components/business/TasksView";
 import CRMView from "../../components/business/CRMView";
 import ProcurementView from "../../components/business/ProcurementView";
@@ -986,6 +987,53 @@ function OrgVerticalSettings({ orgId, vertical, onChanged }) {
   );
 }
 
+// Inaya AI Voice Assistant SOW -- the per-org opt-in half of the feature
+// flag (isVoiceEnabledForOrg requires both this AND the global
+// VOICE_AI_ENABLED env var). Defaults off; an owner/admin turns it on
+// explicitly for their own company. Mirrors OrgVerticalSettings' pattern
+// exactly (same PATCH /api/orgs/settings endpoint, same save/error
+// handling shape).
+function VoiceAiSettings({ orgId, aiPolicy, onChanged }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const voiceEnabled = !!aiPolicy?.voiceEnabled;
+
+  async function handleToggle() {
+    setSaving(true);
+    setError("");
+    const nextPolicy = { ...aiPolicy, voiceEnabled: !voiceEnabled };
+    try {
+      await api("/api/orgs/settings", { method: "PATCH", body: JSON.stringify({ orgId, aiPolicy: nextPolicy }) });
+      onChanged(nextPolicy);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm mb-1">Voice AI Assistant</h3>
+          <p className="text-[var(--inaya-text-muted)] text-xs">Lets everyone in this company talk to Inaya by voice instead of typing, using the same business context, tools, and approval rules as the text assistant.</p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          role="switch"
+          aria-checked={voiceEnabled}
+          className={`shrink-0 w-12 h-7 rounded-full relative transition-colors disabled:opacity-40 ${voiceEnabled ? "bg-[#00f2fe]" : "bg-white/10"}`}
+        >
+          <span className={`absolute top-1 w-5 h-5 rounded-full bg-black transition-transform ${voiceEnabled ? "translate-x-6" : "translate-x-1"}`} />
+        </button>
+      </div>
+      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+    </div>
+  );
+}
+
 function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile }) {
   return (
     <>
@@ -1101,8 +1149,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   // real value loads, so there's a one-frame flash of "no health/legal
   // nav" rather than a flash of nav items that then disappear.
   const [orgVertical, setOrgVertical] = useState("general");
+  // Inaya AI Voice Assistant SOW -- the org's per-org opt-in, same fetch
+  // as orgVertical above (both live on the same profile document).
+  const [orgAiPolicy, setOrgAiPolicy] = useState({ enabled: true, voiceEnabled: false });
   useEffect(() => {
-    api(`/api/orgs/settings?orgId=${orgId}`).then((d) => setOrgVertical(d.profile?.vertical || "general")).catch(() => {});
+    api(`/api/orgs/settings?orgId=${orgId}`).then((d) => {
+      setOrgVertical(d.profile?.vertical || "general");
+      setOrgAiPolicy(d.profile?.aiPolicy || { enabled: true, voiceEnabled: false });
+    }).catch(() => {});
   }, [orgId]);
 
   function navigate(view, target) {
@@ -1278,6 +1332,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "settings" && canManage && (
             <div className="space-y-6">
               <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
+              <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
               <TeamView orgId={orgId} email={email} />
             </div>
           )}
@@ -1693,6 +1748,13 @@ function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange })
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+
+  // Inaya AI Voice Assistant SOW -- see AIWidget.js's identical check for
+  // why this is never trusted as the real authorization boundary.
+  useEffect(() => {
+    api(`/api/ai/voice-capability?orgId=${orgId}`).then((d) => setVoiceEnabled(!!d.enabled)).catch(() => setVoiceEnabled(false));
+  }, [orgId]);
 
   async function send(text) {
     const trimmed = (text ?? input).trim();
@@ -1716,6 +1778,16 @@ function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange })
       setSending(false);
     }
   }
+
+  const handleVoiceToolCall = useCallback(async (toolName, args) => {
+    const data = await api("/api/ai/voice-tool-relay", { method: "POST", body: JSON.stringify({ orgId, toolName, args, currentView }) });
+    api(`/api/orgs/guided-tasks?orgId=${orgId}`).then((d) => onGuidedTaskChange(d.tasks?.[0] || null)).catch(() => {});
+    return data.result;
+  }, [orgId, currentView, onGuidedTaskChange]);
+
+  const handleVoiceTranscriptEntry = useCallback((entry) => {
+    setMessages((prev) => [...prev, { role: entry.role, content: entry.text }]);
+  }, []);
 
   return (
     <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: 420 }}>
@@ -1752,6 +1824,13 @@ function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange })
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
 
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--inaya-overlay-5)]">
+        <VoiceAssistantControl
+          orgId={orgId}
+          currentView={currentView}
+          onToolCall={handleVoiceToolCall}
+          onTranscriptEntry={handleVoiceTranscriptEntry}
+          enabled={voiceEnabled}
+        />
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

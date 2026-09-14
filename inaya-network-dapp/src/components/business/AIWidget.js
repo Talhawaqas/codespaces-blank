@@ -12,8 +12,9 @@
 // as that view; a separate, shorter-lived chat history is an acceptable
 // tradeoff for not hijacking the user's current view to auto-open it.
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import GuidedTaskPanel from "./GuidedTaskPanel";
+import VoiceAssistantControl from "./VoiceAssistantControl";
 
 const SUGGESTIONS = [
   "What's overdue for my approval?",
@@ -30,8 +31,19 @@ export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskC
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Inaya AI Voice Assistant SOW -- checked once per mount, never trusted
+  // as the real authorization boundary (the voice-session/voice-tool-relay
+  // routes both re-check server-side on every request regardless).
+  useEffect(() => {
+    fetch(`/api/ai/voice-capability?orgId=${orgId}`)
+      .then((r) => r.json())
+      .then((d) => setVoiceEnabled(!!d.enabled))
+      .catch(() => setVoiceEnabled(false));
+  }, [orgId]);
 
   // Proactively open once per browser session, a few seconds after the
   // workspace loads -- same reasoning as the dApp widget's identical
@@ -87,6 +99,32 @@ export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskC
       setSending(false);
     }
   }
+
+  // Every voice tool call is relayed through the same authorized backend
+  // path text tools use (runBusinessTool via /api/ai/voice-tool-relay) --
+  // this callback never executes anything itself, only forwards.
+  const handleVoiceToolCall = useCallback(async (toolName, args) => {
+    const res = await fetch("/api/ai/voice-tool-relay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orgId, toolName, args, currentView }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "This lookup failed unexpectedly.");
+    if (onGuidedTaskChange) {
+      fetch(`/api/orgs/guided-tasks?orgId=${orgId}`)
+        .then((r) => r.json())
+        .then((d) => onGuidedTaskChange(d.tasks?.[0] || null))
+        .catch(() => {});
+    }
+    return data.result;
+  }, [orgId, currentView, onGuidedTaskChange]);
+
+  // Voice turns render through the exact same message-bubble list text
+  // uses -- no separate transcript UI.
+  const handleVoiceTranscriptEntry = useCallback((entry) => {
+    setMessages((prev) => [...prev, { role: entry.role, content: entry.text }]);
+  }, []);
 
   if (!isOpen) {
     return (
@@ -147,6 +185,14 @@ export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskC
       {error && <p className="text-red-400 text-[12px] px-4 pb-2">{error}</p>}
 
       <div className="flex items-center gap-2 p-3 border-t border-white/10 shrink-0">
+        <VoiceAssistantControl
+          orgId={orgId}
+          currentView={currentView}
+          onToolCall={handleVoiceToolCall}
+          onTranscriptEntry={handleVoiceTranscriptEntry}
+          enabled={voiceEnabled}
+          compact
+        />
         <input
           ref={inputRef}
           value={input}

@@ -426,6 +426,10 @@ export async function getOrgCollections() {
     // protection for the login/consume-style redirect flow). Short-lived,
     // TTL-indexed. See src/lib/integrationOauth.js.
     integrationOauthStates: db.collection("integration_oauth_states"),
+    // Inaya AI Voice Assistant SOW — session-level usage records (start/end,
+    // duration, request/tool-call/error counts, model). Never raw audio.
+    // See src/lib/ai-voice-session.js.
+    voiceSessions: db.collection("voice_sessions"),
   };
 }
 
@@ -470,7 +474,7 @@ export async function ensureOrgIndexes() {
     guidedTasks, orgTrustRelationships, apiKeys,
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
-    integrationOauthStates,
+    integrationOauthStates, voiceSessions,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -718,6 +722,9 @@ export async function ensureOrgIndexes() {
     financialAttestations.createIndex({ orgId: 1, status: 1 }),
     integrationOauthStates.createIndex({ state: 1 }, { unique: true }),
     integrationOauthStates.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    // Inaya AI Voice Assistant SOW
+    voiceSessions.createIndex({ orgId: 1, startedAt: -1 }),
+    voiceSessions.createIndex({ orgId: 1, userEmail: 1, startedAt: -1 }),
   ]);
 
   indexesEnsured = true;
