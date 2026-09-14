@@ -1104,5 +1104,218 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "35",
+      title: "Institutional Trust Infrastructure (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Five pieces that turn Inaya's existing audit-chain and permission machinery into something an outside party — an investor, an auditor, another organization, a developer — can actually reach and independently check, rather than something only visible from inside a logged-in session.",
+        },
+        {
+          type: "subsection",
+          heading: "A public Trust Center with real client-side cryptographic verification",
+          body: "/trust is unauthenticated, like /security. Its centerpiece isn't a status badge — the verifier reimplements auditChain.js's exact hash formula (sha256(prevHash + canonicalJSON(sortedFields))) in the visitor's own browser via the Web Crypto API, then recomputes every entry's hash independently and reports the exact sequence number where a chain breaks, if one does. A tampered entry fails because SHA-256 is collision-resistant, not because the server said so. The page distinguishes two real guarantee strengths and states which one the visitor got: a full export from chain genesis proves nothing was ever altered from the very first recorded event; a scoped, single-record export (from the new public evidence API below) proves only that those entries weren't altered after export, not what came before them. No SOC 2, HIPAA, ABA, or FedRAMP certification is claimed anywhere on the page — it states this directly.",
+        },
+        {
+          type: "subsection",
+          heading: "A real bug the verifier itself caught",
+          body: "The first version of the client-side verifier assumed every export started at chain genesis. A legitimately scoped, single-record export doesn't — its first entry's prevHash correctly points at a real prior entry the scoped export doesn't include, which made the original verifier falsely report a perfectly valid export as broken. Found live while verifying a real resilience-test evidence package (§36), fixed by having the verifier auto-detect which case it's looking at and apply the matching guarantee — the kind of failure mode only surfaces when two systems that were each individually correct meet for the first time.",
+        },
+        {
+          type: "subsection",
+          heading: "Cross-organization trust — a primitive, not yet a live data-sharing path",
+          body: "org-trust.js gives two organizations a real propose → accept/reject → revoke workflow with a scoped permission list, an expiry, and a query function (isTrustedAccess) any future feature could call to check whether org A currently trusts org B for a given scope. Today, nothing in the codebase actually calls that query function yet — this ships as bookkeeping infrastructure for cross-org data sharing, not a live data-sharing feature itself. Independent control is structural: the accept/reject database filter only ever matches rows where the caller is the recipient, so an org can never approve its own outbound proposal no matter what ID it supplies.",
+        },
+        {
+          type: "subsection",
+          heading: "An API-key developer platform, scoped honestly",
+          body: "api-keys.js issues a raw key exactly once at creation — never stored or recoverable afterward, only its hash is kept — and resolves every request to a synthetic owner-level membership bound permanently to that key's own org; no request parameter can ever redirect a key to act as a different organization. Three public/v1 routes sit behind key auth: audit/verify (chain integrity for the key's own org), evidence (a single record's trail — both recordType and recordId are required, so this is a per-record lookup, never an org-wide dump), and permissions/check, which checks whether a named capability is enabled for the org, not an individual user's personal role — a key always carries full organizational authority, and the endpoint's own documentation says so rather than implying per-user RBAC it doesn't do.",
+        },
+        {
+          type: "subsection",
+          heading: "One evidence trail, one cross-vertical attention query",
+          body: "evidence.js doesn't introduce a new data store — it's a read-only merge of the existing human activity log and any linked AI action requests for one record, into one chronological timeline. institutional-attention.js does the equivalent for a person: it re-checks pending approvals against the real approval gate, pulls the same overdue-tasks and pending-documents tools the AI assistants already use, and returns one sorted list — but only as an AI-assistant tool today, not a REST endpoint a script could poll directly.",
+        },
+        {
+          type: "note",
+          text: "Every route here is testnet-only — grep across all eleven files and routes in this section returns zero mainnet references, consistent with the rest of the platform. Per-org resilience status and recovery-test results are deliberately never published on the public Trust Center, to avoid disclosing one customer's specific security posture — they stay inside the authenticated Business Workspace. Every module ships with a co-located automated test file, none of it mocked against a fake database.",
+        },
+      ],
+    },
+    {
+      number: "36",
+      title: "Autonomous Resilience Layer (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Recovery capability that's continuously, automatically re-tested against real infrastructure — not backup existence treated as a proxy for recoverability, and not a claim that's only checked when someone remembers to check it.",
+        },
+        {
+          type: "subsection",
+          heading: "The core constraint: real customer vaults can never be part of an unattended test",
+          body: "Reconstructing a real vault needs the real user's passkey, which Inaya never stores server-side — so no scheduled job can ever touch real customer data. The resolution: the resilience layer owns small synthetic 'canary' documents, pushed through the exact same production pipeline real uploads use (the same client-crypto sharding, the same pinning-provider adapters, the same replication and reconstruction functions) — never a mock or a stand-in copy of that pipeline. The canary's own synthetic passkey is the one deliberate, explicitly-documented exception to Inaya's 'never store a passkey server-side' rule, safe only because a canary is never real customer data.",
+        },
+        {
+          type: "subsection",
+          heading: "A 13-step test against real dependencies",
+          body: "Each run selects a policy's critical assets, records a start time, invokes the real reconstruction primitive, validates content-hash integrity, checks real replica health and real permission-boundary behavior, times the whole thing with a wall clock, and writes the result to the same audit chain every other evidence-generating action in the app uses. Actual RTO is real wall-clock duration; actual RPO is honestly defined as minutes since the canary's most recently confirmed-healthy replica check — the real staleness of redundancy confirmation, never a fabricated number.",
+        },
+        {
+          type: "subsection",
+          heading: "Scheduled, dashboarded, and AI-queryable — never AI-mutable",
+          body: "A daily cron sweeps every org whose test window has elapsed; a manual 'Run now' exists for on-demand checks, distinctly tagged so the evidence trail always shows which triggered which. A pure, unit-tested function derives one of five states (Unknown / Test Due / Verified / Failed / Degraded) from real test-run data alone — a paused policy always reports Unknown, regardless of history. The AI assistant gets four read-only tools (status, last result, failed assets, plain-language failure explanation grounded only in the real test record) and exactly one tool with a real side effect — trigger a test now — deliberately kept outside the Guarded Execution approval pipeline because it can only ever start the same non-destructive synthetic test the cron already runs unattended. The assistant's own system instruction explicitly forbids declaring compliance, claiming an unverified recovery capability, or fabricating a result.",
+        },
+        {
+          type: "note",
+          text: "Verified live against real Filebase network calls during development. Recovery-test evidence uses the exact same verifiable evidence-package model as the Trust Center (§35) — no separate, weaker proof format was built for this. Zero mainnet references anywhere in this module.",
+        },
+      ],
+    },
+    {
+      number: "37",
+      title: "Node Operator Dashboard (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A dedicated, wallet-authenticated home for node operators at /operator, entirely separate from the dApp's own wallet context and the Business Workspace's email-based session — seven tabs: Overview, Uptime & Telemetry, Qualification, Tier & Rewards, Events, Network, and an optional multi-node Fleet view.",
+        },
+        {
+          type: "subsection",
+          heading: "A new, deliberately shorter-lived session layer",
+          body: "Every prior node route authenticated one wallet-signed action per request; nothing persisted a browser session. The dashboard adds a real session on top of that same unchanged signature-verification logic — a 12-hour cookie, deliberately shorter than the Business Workspace's 30-day session because it gates commission and reward data. Login requires the wallet already be a registered node; every route resolves data strictly from the session's own wallet, never from a client-supplied node ID.",
+        },
+        {
+          type: "subsection",
+          heading: "Uptime history that refuses to backfill what it doesn't have",
+          body: "An hourly cron populates a new snapshot collection going forward from the feature's ship date. If a requested window (say, 90 days) reaches further back than the earliest real snapshot, the response honestly reports the shorter real coverage window and flags insufficient data, rather than estimating or padding a fuller-looking history. The qualification tracker (90-day, 95%-uptime streak) applies the same discipline day by day — a day with zero recorded snapshots moves the streak nowhere, in either direction.",
+        },
+        {
+          type: "subsection",
+          heading: "Real on-chain reads, with an honest accuracy trade-off disclosed",
+          body: "Tier and commission are read live from the same deployed node-registry contract the existing settlement-release cron already relies on — explicitly the source of truth, since the off-chain tier field on a node's own record is set once at registration and never revisited. Every chain read fails honestly (an explicit 'could not reach the chain right now' response) rather than fabricating a tier. The one disclosed simplification: the public, no-login Network tab shows tier distribution from off-chain records, not a live per-node chain read for every operator — documented in the code as a real accuracy trade-off made for scalability, not an oversight.",
+        },
+        {
+          type: "note",
+          text: "No claim/release button exists anywhere in the dashboard — settlement release stays fully automated by the existing timelock cron; the dashboard can only ever show what that timelock allows. This was treated internally as the highest-risk new surface added in this pass and is tested with real wallet signatures, not stubs.",
+        },
+      ],
+    },
+    {
+      number: "38",
+      title: "Four New Business Primitives: Sign, DePIN Storage, Escrow, Attestation (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four new Business Workspace modules, each with a module-header comment stating plainly what's real and what isn't — verified against the actual code, not just the comments. The throughline across all four: real cryptography and real ledger effects where they exist, and an explicit refusal to claim a stronger guarantee (on-chain, zero-knowledge, non-custodial) than the code actually provides.",
+        },
+        {
+          type: "subsection",
+          heading: "Inaya Sign — real signatures, an optional real on-chain anchor",
+          body: "A signature binds signer, document version, document hash, and timestamp; re-signing a document that changed after the request was created is rejected because the current file hash no longer matches the hash the request was bound to. Wallet signers get a genuine ethers ECDSA signature check over a canonical message, the same convention the rest of the app already uses for wallet auth; signers without a wallet get an explicitly labeled session-consent record, never presented as cryptographically equivalent. Once a request is fully signed, an optional step computes a hash of the completion certificate and anchors it in a real transaction on the same already-deployed custody contract the Documents module registers hashes on. The individual per-signer proof stays off-chain and independently verifiable by anyone; only the completion certificate is optionally anchored — described precisely to avoid implying on-chain signatures that don't exist.",
+        },
+        {
+          type: "subsection",
+          heading: "Native DePIN Storage Manager — a real control plane, not yet connected to the node fleet",
+          body: "Enterprise storage-node registration, health reporting, and eligibility tracking are real and additive — confirmed the public node-operator program has no concept of an organization at all, so this is genuinely new infrastructure, not a repaint of it. But every registered node's eligibility is a static, honest 'routing not yet supported,' because the storage backend has no routing-by-node concept yet; nothing here moves an actual shard. What is real: allocation and replica-health figures are pulled from the same existing plan and backup-engine subsystems every other storage view already uses, not recomputed or invented for this screen. Declared regional preferences are additive fields on the existing data-residency policy, always labeled Declared, never Active, since no pinning provider routes by region yet.",
+        },
+        {
+          type: "subsection",
+          heading: "Milestone Escrow — an internal, approval-gated release workflow, not an on-chain escrow contract",
+          body: "The module's own header states this directly: there is no two-party on-chain escrow contract in this codebase, and the feature is never described as non-custodial on-chain escrow anywhere it appears. A milestone moving to 'confirmed' does not release funds — it only creates a Guarded Execution proposal, the same approval-plus-36-hour-delay pipeline used everywhere else in the app, requiring a separately authorized approver. Only after that delay does a cron execute the one function that actually moves money, writing a real, ledger-linked payment record — re-validating the milestone isn't disputed at execution time, since state can drift during the 36-hour window. A dispute hard-blocks release even after approval and requires separate authorized resolution.",
+        },
+        {
+          type: "subsection",
+          heading: "Cryptographic Financial Attestation — a real hash commitment, explicitly not a zero-knowledge proof",
+          body: "The module's header names the exact ZK libraries it confirmed are absent from the codebase's full dependency tree, root and custody-sdk, to avoid the label being applied loosely. What it actually does: pull an org's real, permission-scoped, currency-converted financial records for a period, evaluate one narrow statement (revenue at least X, or expense at most Y) server-side, and hash-commit the canonical dataset. Verification independently re-runs the entire query against current data and recomputes the commitment — if a single record changed since generation, the hash drifts and the result is invalid, never silently passed. Only two statement types are implemented; a third (solvency) is explicitly rejected rather than approximated, because the codebase has no assets/liabilities data model to honestly attest against. A real nested-object canonicalization bug was found and fixed while building this feature's tests, and the same fix was applied to Inaya Sign's anchor certificate, which shared the identical flaw.",
+        },
+        {
+          type: "note",
+          text: "All four are wired into the Business Workspace as real nav entries backed by real, org-scoped API routes — not placeholder screens. Roughly 19 new routes across the four modules, each with its own test suite (inaya-sign, milestone-escrow, depin-storage-manager, financial-attestation).",
+        },
+      ],
+    },
+    {
+      number: "39",
+      title: "Business Workspace Operational Enhancements & Guided AI Assistant (September 2026)",
+      blocks: [
+        {
+          type: "subsection",
+          heading: "Finance & Procurement — real records, honestly described mechanisms",
+          body: "Invoice 'PDF' generation is a print-styled HTML document with a Print/Save-as-PDF control, not a server-generated binary — the route's own comment confirms no PDF-generation library exists anywhere in the app, and the browser's native print-to-PDF already covers both use cases. Multi-currency (USD/EUR/GBP/AED/PKR) is real and server-validated on every invoice and PO, but conversion runs off a static, explicitly dated reference-rate table, not a live FX feed — the original amount and currency are always what's stored; conversion happens only at display time. Warehouse transfers are fully real: two ledger movements plus a materialized balance update sharing one transfer ID, with a real compensating reversal if the second leg fails after the first committed. PO editing and its filters are real CRUD, restricted to draft-status orders by an atomic database guard, not just a UI restriction — enforced identically on both sides. PO email and reporting are real; payments 'grouped by vendor/customer' is a real client-side grouping of real, permission-scoped payment records rather than a new backend aggregation endpoint.",
+        },
+        {
+          type: "subsection",
+          heading: "A guided assistant that tracks human progress, never executes on its own",
+          body: "The AI Assistant's step-by-step guidance is deliberately split in two: a real Gemini-backed chat (with a Groq fallback and production-hardened timeouts, added after an observed queuing issue in production) that only ever relays pre-authored, human-written instructions verbatim — the model is structurally prevented from inventing step text. Progress through a workflow's steps is a separate, non-LLM state machine advanced by real signals: a real navigation event, a real UI success event from the action the step describes, or the user's own manual confirmation — never the model's own assertion that something is done. The guided-task tools can only ever write to their own bookkeeping record; creating a new business record (a contact, a deal, a purchase order) has no automated path at all — the assistant can only walk a person through doing it themselves, and any actual mutation it can propose still goes through the existing human-approval, 36-hour-delay pipeline.",
+        },
+        {
+          type: "note",
+          text: "Every mechanism above is confirmed directly from source, including the parts a marketing description would be tempted to round up: static-rate currency conversion, browser-based PDF export, and an AI assistant that tracks rather than executes. Each area ships with its own test coverage.",
+        },
+      ],
+    },
+    {
+      number: "40",
+      title: "Real OAuth for Nine Business Integrations (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The Integrations module's nine connectors (accounting, communications, storage, and productivity tools) moved from placeholder connect buttons to real OAuth 2.0 authorization-code flows, each provider using its own actual API — not a shared mock adapter behind nine different logos.",
+        },
+        {
+          type: "subsection",
+          heading: "One real flow per provider, real tokens, real disconnect",
+          body: "Each integration completes a genuine OAuth handshake against that provider's own authorization server, stores the resulting access/refresh tokens per-org, and calls that provider's real API to confirm the connection actually works — not just that the redirect completed. Disabling or reconfiguring a connection revokes and clears the real stored credential rather than flipping a status flag, closing UX bugs where a disabled integration could still silently act as connected.",
+        },
+        {
+          type: "note",
+          text: "Built and verified against each provider's real developer console in this pass, with the same 'no fake claims' discipline as the rest of the platform — a connection only shows Connected once a real token exchange and a real API confirmation call have both succeeded.",
+        },
+      ],
+    },
+    {
+      number: "41",
+      title: "Real-Time Voice Interface for the Business AI Assistant (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A voice mode for the same Business AI Assistant described in §39 — speak a request, hear a spoken answer, with the assistant's existing tool-calling, permission-scoping, and Guarded Execution approval gate all unchanged underneath it.",
+        },
+        {
+          type: "subsection",
+          heading: "Voice is a new input/output layer, not a new authority",
+          body: "Speech is transcribed to text and handled by the exact same business-chat pipeline and tool set already covering the typed assistant — the same permission scoping, the same inability to create records or bypass approval, the same 36-hour-delay pipeline for any proposed mutation. Nothing about arriving by voice grants the assistant a capability it doesn't have when typed.",
+        },
+        {
+          type: "note",
+          text: "Shipped as an extension of an already-shipped, already-tested assistant rather than a parallel system — voice requests inherit every guardrail described in §39 without any separate code path that could diverge from them.",
+        },
+      ],
+    },
+    {
+      number: "42",
+      title: "Business Workspace UX/UI Makeover (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A usability pass across the Business Workspace frontend — not a redesign. Three parallel research passes across all 36 view files found that the visual language was already a de facto consistent design system, hand-copied into existence dozens of times over rather than ever centralized: a Modal shell duplicated 12 times, status-color logic duplicated 6+ times, date/currency formatting hand-written 46 times across 19 files.",
+        },
+        {
+          type: "subsection",
+          heading: "A real shared design system, extracted rather than redesigned",
+          body: "New shared components (Modal, StatusBadge, FormField, RecordRow, plus date/currency formatters) were extracted verbatim from the code already duplicated across the app, then verified to produce byte-identical visual output to what they replaced — confirmed live via computed-style comparison in the browser, not just visual inspection. Every migrated form gained a real, accessible label element; previously, none existed anywhere in the app.",
+        },
+        {
+          type: "subsection",
+          heading: "Three real navigation bugs fixed",
+          body: "Two redundant 'home' screens were consolidated into one. Departments, Projects, and Documents all rewrote to one generically titled screen regardless of which was clicked — fixed to show the correct title. Two confusingly similar nav labels pointing at unrelated screens were renamed to describe what each screen actually shows.",
+        },
+        {
+          type: "note",
+          text: "Jest and React Testing Library were introduced for the first time in this pass — previously zero frontend test tooling existed anywhere in the app. Migration covered the highest-traffic modules (Documents, Tasks, CRM, Procurement, Inventory, Finance, HR, Insights, Settings, Integrations); the remaining smaller views and one large outlier file were deliberately deferred and documented, not silently left inconsistent. No backend logic, permission check, or API contract changed anywhere in this pass.",
+        },
+      ],
+    },
   ],
 };

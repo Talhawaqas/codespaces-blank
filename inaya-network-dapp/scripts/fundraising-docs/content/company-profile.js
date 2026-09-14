@@ -67,6 +67,8 @@ export const companyProfile = {
             "Four purpose-built AI assistants (Docs, Business, Security, Learn) — Gemini-powered, each with a guardrail philosophy suited to its job; Docs, Security, and Learn are grounded by a shared RAG (retrieval-augmented generation) layer over a real, re-ingestable content index on MongoDB Atlas.",
             "Oracle & Automation Layer — an on-chain data registry and a self-operating keeper that executes pre-approved contract actions automatically, live on BSC Testnet.",
             "Sovereign Enterprise OS — the connecting layer across all of the above: unified identity, notifications, search, a real trust & health signal, and one AI assistant spanning business and security questions, on both web and Business Workspace.",
+            "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center with client-side cryptographic verification, cross-org trust primitives, a scoped API-key developer platform, and daily automated recovery testing against real infrastructure.",
+            "A Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth for nine external business tools, and a spoken-voice AI Assistant mode.",
           ],
         },
       ],

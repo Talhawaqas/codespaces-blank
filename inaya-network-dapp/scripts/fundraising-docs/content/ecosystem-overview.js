@@ -345,6 +345,121 @@ export const ecosystemOverview = {
     },
     {
       number: "15",
+      title: "Trust You Can Check Yourself, and Recovery That's Actually Re-Tested",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two additions that both answer the same question a different way: not 'trust us,' but 'here's how you check.'",
+        },
+        {
+          type: "bullets",
+          items: [
+            "A public Trust Center (inayanetwork.com/trust) that anyone can visit without logging in — and its centerpiece isn't a badge that just says 'Verified.' It recomputes the cryptographic proof itself, in your own browser, and tells you exactly where a record breaks if it ever does.",
+            "We found a real bug in that very verifier while testing it against a real record: it originally assumed every proof started from the very beginning of the chain, so a smaller, single-record proof was wrongly flagged as broken. Fixed, and now the page is honest about which of the two proof strengths you're actually looking at.",
+            "A real way for two organizations to formally trust each other — propose, accept, revoke — though today it's the foundation for that, not yet a feature anything else in the app uses to actually share data.",
+            "Developer API keys that always act as the organization that created them, never anyone else's — down to the design, not just the policy.",
+            "Recovery testing that actually runs, automatically, against real systems — using safe stand-in files Inaya owns itself, since testing with a real customer's files would require a password Inaya was never given in the first place. Every test's real pass/fail result becomes part of the same tamper-evident record everything else in this document already uses.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What this doesn't claim.",
+          text: "No SOC 2, HIPAA, ABA, or FedRAMP certification is claimed on the Trust Center — it says so directly. And a specific customer's own resilience-test results stay private to that customer, never published on the public page.",
+        },
+      ],
+    },
+    {
+      number: "16",
+      title: "A Real Home for Node Operators",
+      blocks: [
+        {
+          type: "lead",
+          text: "The people who actually run Inaya's storage nodes now have their own dashboard — separate login, separate from the wallet app, separate from Business Workspace — showing uptime, rewards, and network standing.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Real uptime history, not guessed — and if the dashboard doesn't yet have enough history to answer a question honestly (say, 90 days of data on day one), it says so instead of estimating.",
+            "Real numbers read directly from the blockchain for the things that matter most — an operator's tier and earnings — not a copy that could go stale.",
+            "There's deliberately no 'release my payment' button — payouts are already fully automatic on a timer nothing in this dashboard can shortcut; it can only show you where things stand.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "17",
+      title: "Four New Ways to Prove and Protect Business Value",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four new tools in Business Workspace, each doing something genuinely useful — described precisely, so nobody mistakes what's cryptographically guaranteed for what's a well-built internal workflow.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Inaya Sign — document signing with a real digital signature bound to the exact document and moment it was signed; if the document changes afterward, that signature stops being valid for it. A completed signing can optionally be stamped onto the blockchain as extra proof, on top of the signature itself.",
+            "DePIN Storage Manager — lets a business register and monitor its own storage nodes today; it doesn't yet route actual files through them the way the public node network does, and we say so plainly in the product rather than implying it already does.",
+            "Milestone Escrow — a real, enforced 'don't release payment until a milestone is confirmed' workflow, with mandatory human approval and a built-in waiting period before money actually moves. It's an internal safeguard, not a blockchain escrow contract holding funds — we describe it that way on purpose.",
+            "Financial Attestation — a business can cryptographically prove a claim about its own finances (like 'revenue exceeded $X this quarter') without a third party needing to see every underlying transaction, using a real cryptographic fingerprint that changes if a single number is later altered. It's a strong, real guarantee — just not the specific 'zero-knowledge proof' technique, which this doesn't use.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "18",
+      title: "Smarter Day-to-Day Operations",
+      blocks: [
+        {
+          type: "lead",
+          text: "Real improvements to the daily business tools, plus an AI assistant that guides rather than acts.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Invoices and purchase orders now support five currencies, always showing the original amount and a converted figure side by side, using a clearly dated reference rate rather than a live market feed.",
+            "One-click professional invoices, moving stock between warehouses with a full paper trail, editable purchase orders before they ship, and new downloadable reports.",
+            "An AI assistant that can now walk someone through a multi-step task, one real step at a time — but it never performs the step for you. It only advances once it sees real proof you actually did it, not just because you told it you did.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "19",
+      title: "Real Connections to the Tools You Already Use — and a Voice to Talk To",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two upgrades to how people actually interact with the platform day to day.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Nine business integrations (accounting, communication, storage, and productivity tools) now connect for real — a genuine sign-in with each provider, not a placeholder 'Connect' button. Disconnecting one now genuinely revokes access, instead of just hiding a status.",
+            "The Business AI Assistant can now be spoken to and talks back — the same assistant, the same limits, the same inability to take a real action without a real person's approval. Voice is a new way to reach it, not a new set of permissions.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "20",
+      title: "A Workspace That's Easier to Actually Use",
+      blocks: [
+        {
+          type: "lead",
+          text: "A real usability pass across Business Workspace — not a visual redesign, since the look was already consistent. The actual problem: the same interface pieces had been hand-copied dozens of times instead of built once and shared, and a few navigation choices genuinely confused people.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Two competing 'home' screens became one. Clicking Departments, Projects, or Documents used to all land on a screen generically titled 'Company Records' no matter which you clicked — now it correctly shows which one you're in.",
+            "Every form field got a real, readable label for the first time — previously, faint placeholder text was the only clue what a field was for.",
+            "None of this touched how permissions, security, or any backend logic works — it's exclusively about making the same real functionality easier to find and use.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "21",
       title: "How It All Actually Connects",
       blocks: [
         {

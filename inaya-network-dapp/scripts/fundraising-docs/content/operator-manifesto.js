@@ -75,6 +75,10 @@ export const operatorManifesto = {
               heading: "No Expensive Rigs Required",
               body: "Forget GPU mining. You don't need expensive compute hardware. A standard server or PC with a strong internet connection and reliable HDD/SSD space is enough.",
             },
+            {
+              heading: "Your Own Dashboard (September 2026)",
+              body: "A dedicated operator dashboard — separate wallet-signed login, real uptime history, real on-chain tier and earnings reads, and a qualification tracker — so you always know exactly where you stand, without digging through a block explorer.",
+            },
           ],
         },
       ],

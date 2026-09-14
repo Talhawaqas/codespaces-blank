@@ -171,7 +171,7 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, and — as of September 2026 — a Sovereign Enterprise OS layer connecting all of it (unified identity, notifications, search, and a real trust & health signal).",
+          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, and four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation).",
         },
         {
           type: "note",

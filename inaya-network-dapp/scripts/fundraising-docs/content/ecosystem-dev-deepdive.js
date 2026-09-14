@@ -587,5 +587,120 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "21",
+      title: "Institutional Trust Infrastructure Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["evidence.js: getEvidenceTrail, verifyOrgEvidenceIntegrity, exportEvidencePackage", "Read-only merge of listOrgActivityForRecord() + linked aiActionRequests into one timeline; integrity check is a pass-through to auditChain.js's verifyChainIntegrity()"],
+            ["org-trust.js: proposeTrustRelationship, respond, revokeTrustRelationship, isTrustedAccess", "New orgTrustRelationships collection; accept/reject filtered by findOneAndUpdate({toOrgId: caller}) so an org can never approve its own proposal; isTrustedAccess is a query primitive no other module calls yet"],
+            ["POST/GET /api/orgs/trust-relationships, PATCH /api/orgs/trust-relationships/[relationshipId]", "Session-authenticated cross-org trust CRUD"],
+            ["api-keys.js: generateToken/hashToken convention, requireApiKey", "Raw key shown once at creation, only hash persisted; resolves to a synthetic owner-level membership permanently bound to the key's own orgId — no request parameter can override it"],
+            ["POST/GET /api/orgs/api-keys, DELETE .../[apiKeyId]", "Session-authenticated key management, owner/admin only"],
+            ["GET /api/public/v1/audit/verify, /api/public/v1/evidence, /api/public/v1/permissions/check", "API-key-authenticated (Bearer). evidence requires both recordType+recordId (no org-wide dump); permissions/check reports an org-level capability flag, not per-user RBAC"],
+            ["institutional-attention.js: getAttentionItems", "AI-tool-only (get_attention_items in ai-os-router.js), not a REST route; merges pending-approvals (re-checked against the real approval gate), overdue tasks, pending documents"],
+            ["src/app/trust/page.js — /trust", "Public, unauthenticated. Client-side verifier reimplements auditChain.js's hash formula via Web Crypto; auto-detects genesis vs. scoped exports (fixed in 9345df5) and reports the correct guarantee strength for each"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Zero mainnet references across every file/route touched by this section, confirmed by direct grep. Every module ships a co-located test file (org-trust, evidence, institutional-attention, api-keys), none mocked against a fake database.",
+        },
+      ],
+    },
+    {
+      number: "22",
+      title: "Autonomous Resilience Layer Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["resilience-policy.js: createPolicy, updatePolicy, evaluateRtoRpo", "requiredRTOMinutes/RPOMinutes + critical-asset categories + test frequency; evaluateRtoRpo is a plain actual<=required comparison, no fuzzy scoring"],
+            ["resilience-canary.js: ensureResilienceHome, createCanaryAsset", "Synthetic org-owned documents (isResilienceCanary:true, hidden from normal browsing) pushed through the real InayaKernel.disperseAndSlice() + real pinning-provider .pin() + real backupEngine.replicateShard() — never a mock of these functions"],
+            ["resilience-orchestrator.js: runResilienceTest, runScheduledResilienceTests", "13-step test: real reconstruction via InayaKernel.reconstructAndDecrypt(), real getPinStatus() dependency check, real getDocumentAccessLevel() permission check, wall-clock RTO, replica-staleness-based RPO; atomic RUNNING-status duplicate-run guard"],
+            ["GET /api/cron/resilience-tests", "CRON_SECRET Bearer-gated daily sweep, registered in vercel.json; per-policy try/catch so one broken policy never blocks the rest"],
+            ["resilience-status.js: deriveState", "Pure function → Unknown / Test Due / Verified / Failed / Degraded, unit-tested directly; a PAUSED policy always reports Unknown regardless of test history"],
+            ["GET /api/orgs/resilience/status, POST /api/orgs/resilience/policies/[policyId]/run", "Dashboard read + manual 'Run now' (canManageOrg-gated, triggeredBy:'manual' vs. cron's 'schedule')"],
+            ["ai-resilience-tools.js: get_resilience_status, get_last_test_result, list_failed_assets, explain_test_failure, trigger_resilience_test_now", "First four are structurally read-only (no mutation code path exists); trigger_resilience_test_now can only start the same non-destructive test the cron runs, kept outside Guarded Execution because there is no destructive-workflow surface for it to gate"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Two small, additive fixes to the pre-existing backupEngine.js's replicateShard() (expose providerRef; accept an explicit primaryProviderRef) were required and made in this same pass, both non-breaking. Verified live against real Filebase network calls during development.",
+        },
+      ],
+    },
+    {
+      number: "23",
+      title: "Node Operator Dashboard Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["nodeOperatorAuth.js: loginWithWalletSignature, requireNodeSession, linkWalletToSession", "New node_sessions collection, 12h cookie (inaya_node_session), reuses the existing verifyNodeAuth() signature check unchanged; fleet-linking requires the linked wallet's own signature"],
+            ["nodeUptimeHistory.js: getUptimeForWindow", "Hourly-cron-populated node_uptime_snapshots; sets insufficientData:true and reports the real coverage window rather than backfilling or estimating history it doesn't have"],
+            ["nodeChainReads.js: getOnChainNodeInfo", "Real ethers.JsonRpcProvider reads against the deployed node-registry contract (same address the existing settlement-release cron uses); tier/commission explicitly sourced on_chain since the off-chain Mongo tier field is set once and never revisited; fails honest-empty, never fabricates a tier"],
+            ["GET /api/nodes/operator/{me,uptime,qualification,rewards,events,network,fleet}, POST .../link, .../login, .../logout", "network is the only unauthenticated route (public aggregate stats); every other route scopes strictly to the session's own wallet — no client-supplied node ID is ever trusted"],
+            ["GET /api/cron/nodes-snapshot", "Bearer CRON_SECRET-gated hourly snapshot job, registered in vercel.json"],
+            ["src/app/operator/page.js + OperatorOverview/Uptime/Qualification/Rewards/Events/Network/Fleet.js", "Seven-tab dashboard, standalone MetaMask connect-and-sign login independent of the dApp's WalletContext and Business Workspace's session"],
+          ],
+        },
+        {
+          type: "note",
+          text: "No claim/release control anywhere in the dashboard — settlement stays fully automated by the pre-existing timelock cron. Public /network reports off-chain tier distribution, not a live per-node chain read, an explicitly disclosed scalability trade-off. Tested with real ethers.Wallet signatures, treated internally as the highest-risk new surface in this pass.",
+        },
+      ],
+    },
+    {
+      number: "24",
+      title: "Four New Business Primitives Reference: Sign, DePIN Storage, Escrow, Attestation (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["signing-workflow.js: recordSignature, verifyInayaSignSignature, anchorSigningRequestOnChain, verifySigningRequest", "Wallet path = real ethers.verifyMessage() ECDSA check, 5-min freshness window; session_consent path is explicitly labeled, never presented as equivalent; anchor is a real, optional transaction (batchRegisterAssets on the existing custody contract) over a completion-certificate hash, not a per-signature on-chain record"],
+            ["storage-manager.js: registerOrgStorageNode, getOrgStorageOverview, reportOrgStorageNodeHealth", "New org-scoped control plane, confirmed unconnected to the public node-operator registry; eligibility is a static 'routing_not_yet_supported'; allocation/replica figures reused as-is from orgPlans.js + backupEngine.js, not recomputed"],
+            ["escrow-workflow.js: transitionEscrow, confirmMilestone, releaseMilestonePayment", "State machine only flips a status field; the ONLY function moving money is releaseMilestonePayment, reachable only after a proposeAiAction() Guarded Execution approval plus the standard 36h SETTLEMENT_DELAY_MS; writes a real payments row, re-validates dispute status at execution time"],
+            ["financial-attestation.js: buildCanonicalDataset, generateAttestation, verifyAttestation", "sha256 hash-commitment over real permission-scoped, currency-converted financial records; only revenue_threshold/expense_threshold implemented, solvency_threshold explicitly rejected (no assets/liabilities data model exists); verification independently re-runs the query and recomputes the commitment"],
+            ["POST/GET routes under /api/orgs/sign, /api/orgs/escrow, /api/orgs/storage, /api/orgs/attestations (~19 routes)", "SignView, EscrowView, StorageManagerView, AttestationsView in src/components/business/ — real nav entries in page.js's Operations group, real org-scoped API-backed screens"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Each module's own header comment states plainly what's real vs. not: Escrow is never described as on-chain or non-custodial anywhere in its code, routes, or UI; Attestation names the specific ZK libraries confirmed absent from the full dependency tree to avoid that label being misapplied; DePIN Storage Manager's region preferences are always labeled Declared, never Active. A real nested-object canonicalization bug found while testing Attestation was also fixed in Sign's anchor certificate, which shared the same flaw. Test coverage: inaya-sign, milestone-escrow, depin-storage-manager, financial-attestation.",
+        },
+      ],
+    },
+    {
+      number: "25",
+      title: "Business Workspace Operational Enhancements & Guided AI Assistant Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Function / route", "Purpose"],
+          rows: [
+            ["finance/invoices/[invoiceId]/pdf/route.js", "Returns print-styled HTML, not a binary PDF — the route's own comment confirms no PDF library exists in the app; values pulled verbatim from the invoice record, never recalculated"],
+            ["currency.js: convert, SUPPORTED_CURRENCIES, USD_RATES", "Static, explicitly dated reference-rate table (RATES_AS_OF), not a live FX feed by design; returns an error rather than guessing on unsupported pairs"],
+            ["inventory.js: transferStock, recordStockMovement", "Two ledger movements + a materialized stock_levels update sharing one transferId; a real compensating ADJUSTMENT reversal if the second leg fails after the first commits"],
+            ["purchase-order-workflow.js: updatePurchaseOrderItems", "Atomic findOneAndUpdate({status:'DRAFT'}) guard — editing outside DRAFT returns a real 409; reruns the same validator the create route uses"],
+            ["procurement/orders/[orderId]/email, procurement/reports", "Real supplier email with real line items via the existing sendEmail() primitive (documented no-op if RESEND_API_KEY unset); 5 real report types incl. CSV export"],
+            ["insights route.js + business-insights.js: computeBusinessInsights", "Real custom start/end date range on top of preset windows, validated (endDate<startDate → 400), computed via the same permission-scoped getAccessibleScope() every other route uses"],
+            ["business-chat/route.js — Gemini (gemini-3.5-flash-lite) via @google/genai, Groq fallback", "Real, production-hardened LLM call: per-call timeout, request-level safety budget, retry-on-503 — added after an observed Gemini-queuing production issue"],
+            ["guided-workflow-catalog.js (static data, no LLM calls) + guided-tasks.js (state machine)", "~10 hardcoded workflows; the model only ever relays pre-authored instruction text verbatim — structurally prevented from inventing step text; the task's own bookkeeping collection is the only thing it ever writes to"],
+            ["GuidedTaskPanel.js + inaya:guided-nav / inaya:guided-po-created custom events", "Step advancement fires from real navigation events, real UI success events, or a manual 'I did this' confirmation — never the model's own assertion that a step is done"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Creating a new business record (contact, deal, PO, document) has no automated tool path at all — the assistant can only guide a human through the real UI. Any actual mutation it can propose still routes through the pre-existing Guarded Execution approval-plus-36-hour-delay pipeline described in §26/§31. No new mutation surface was added by the guided-task feature itself.",
+        },
+      ],
+    },
   ],
 };

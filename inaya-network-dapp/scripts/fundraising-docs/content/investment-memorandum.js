@@ -142,6 +142,14 @@ export const investmentMemorandum = {
             // New addition, Sovereign Enterprise OS SOW, September 2026 — same
             // factual, no-financial-claims pattern as the lines above.
             "Sovereign Enterprise OS — a connecting layer tying the whole product together on both web and Business Workspace: unified identity, real cross-module notifications, one search across every module, a trust & health signal built from the real audit trail and backup data, and a single AI assistant spanning business and security questions. Desktop apps additionally support popping a module out into its own window.",
+            // New addition, Institutional Trust Infra + Autonomous
+            // Resilience Layer SOWs, September 2026 — same factual,
+            // no-financial-claims pattern as the lines above.
+            "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center (inayanetwork.com/trust) with client-side cryptographic verification of Inaya's own audit chain; cross-organization trust primitives; a scoped API-key developer platform; and recovery capability that's automatically re-tested daily against real infrastructure using system-owned synthetic assets, never real customer data.",
+            // New addition, September 2026 — Node Operator Dashboard,
+            // four new business primitives, real OAuth, voice AI, and the
+            // Business Workspace UX/UI makeover. Same factual pattern.
+            "Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth connections to nine external business tools, a spoken-voice mode for the Business AI Assistant, and a Business Workspace usability pass — each described in the ecosystem architecture and dev-deepdive documents with the precise scope of what's real versus what's UI-only, so no claim here overstates the underlying mechanism.",
           ],
         },
         {

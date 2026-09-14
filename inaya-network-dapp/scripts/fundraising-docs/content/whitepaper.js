@@ -232,6 +232,8 @@ export const whitepaper = {
             "Four Gemini-powered AI assistants — Docs, Business, Security, and Learn — sharing one technical pattern but different guardrail philosophies suited to their purpose; Docs, Security, and Learn are grounded by a shared RAG retrieval layer (see the Ecosystem Architecture document for full detail).",
             "Oracle & Automation Layer — an on-chain registry of approved data sources plus a self-operating keeper that executes pre-approved contract actions under smart-contract rules, not manual admin commands. Deployed and running live on BSC Testnet, publicly verifiable at inayanetwork.com/automation.",
             "Sovereign Enterprise OS — a connecting layer, not a new feature list: unified identity, cross-module notifications, one search across every module, a trust & health signal built from the real audit trail and backup data, and a single AI assistant spanning business and security questions, on both the web app and Business Workspace.",
+            "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center with client-side cryptographic verification of the audit chain, cross-organization trust primitives, a scoped API-key developer platform, and recovery capability automatically re-tested daily against real infrastructure using system-owned synthetic assets.",
+            "A Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth connections to nine external business tools, and a spoken-voice mode for the Business AI Assistant.",
           ],
         },
         {

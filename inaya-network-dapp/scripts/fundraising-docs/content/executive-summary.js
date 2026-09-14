@@ -8,7 +8,7 @@ export const executiveSummary = {
     kicker: "Sovereign Storage DePIN",
     title: "INAYA NETWORK",
     badge: "One-Page Executive Summary",
-    date: "August 2026",
+    date: "September 2026",
   },
   columns: [
     [
@@ -34,8 +34,8 @@ export const executiveSummary = {
           "Knowledge Base covering DePIN, encryption, and digital sovereignty",
           "Staking interface and business/pricing flows implemented",
           "Full interactive Proof-of-Storage scheduled for mainnet",
-          "Also live: a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, and four AI assistants (RAG-grounded Docs/Security/Learn plus a permission-scoped Business Assistant)",
-          "September 2026: a Sovereign Enterprise OS layer now ties the product together — unified identity, notifications, search, trust/health status, and one AI assistant spanning business and security questions, plus multi-window desktop support",
+          "Also live: a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, and a Sovereign Enterprise OS tying it all together (identity, notifications, search, trust/health, multi-window desktop)",
+          "September 2026: a self-verifying public Trust Center, a daily-retested Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Sign, DePIN Storage, Escrow, Attestation), real OAuth for 9 business tools, and a voice-enabled AI Assistant",
         ],
         // Approved addition (2 sentences, see fundraising docs SOW §5) —
         // deliberately prose, not more bullets, to keep this a compression
