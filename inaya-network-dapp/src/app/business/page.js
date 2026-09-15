@@ -68,6 +68,7 @@ import CommandPalette from "../../components/CommandPalette";
 import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
 import TrustRelationshipsView from "../../components/business/TrustRelationshipsView";
 import ApiKeysView from "../../components/business/ApiKeysView";
+import S3CompatView from "../../components/business/S3CompatView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
 import StorageManagerView from "../../components/business/StorageManagerView";
@@ -727,6 +728,7 @@ const NAV_ITEMS = [
   { key: "activity", label: "Activity", icon: "activity", group: "trust" },
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
+  { key: "s3Compat", label: "S3-Compatible Storage", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
   { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true, group: "enterprise" },
   { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true, group: "enterprise" },
@@ -1016,6 +1018,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
+    s3Compat: { title: "S3-Compatible Storage", description: "Consume this org's storage from AWS S3-compatible tools." },
     executive: { title: "Executive", description: "A leadership-level summary across every department." },
     dataRooms: { title: "Data Rooms", description: "Secure, time-limited document sharing with outside parties." },
     enterpriseHardening: { title: "Export & Migration", description: "Export company data and manage migration tooling." },
@@ -1138,6 +1141,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
+          {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
           {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
           {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}

@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
 import HackathonSection from '../components/HackathonSection';
+import S3CompatSection from '../components/S3CompatSection';
 import LearnSection from '../components/learn/LearnSection';
 import NetworkVisualization from '../components/security/NetworkVisualization';
 import GlobeBackground from '../components/GlobeBackground';
@@ -2081,6 +2082,7 @@ const NAV_GROUPS = [
       { label: 'Genesis Airdrop', icon: '🎁' },
       { label: 'Learn', icon: '🎓' },
       { label: 'Hackathon', icon: '🏆' },
+      { label: 'S3 Storage', icon: '☁️' },
     ],
   },
   {
@@ -7061,6 +7063,7 @@ export default function Home() {
           {currentPage === 'Learn' && <LearnSection walletAddress={walletAddress} />}
 
           {currentPage === 'Hackathon' && <HackathonSection walletAddress={walletAddress} getActiveProvider={getActiveProvider} />}
+          {currentPage === 'S3 Storage' && <S3CompatSection walletAddress={walletAddress} getActiveProvider={getActiveProvider} />}
 
           {/* VIEWPORT AREA 3: GENESIS AIRDROP CALCULATOR METRICS */}
           {currentPage === 'Genesis Airdrop' && (
