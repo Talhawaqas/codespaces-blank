@@ -316,3 +316,40 @@ export async function abortMultipartUpload({ orgId, uploadId }) {
   const res = await db.collection("s3_multipart_uploads").deleteOne({ _id: uploadId, orgId: toObjectId(orgId) });
   return res.deletedCount > 0;
 }
+
+// ---------------------------------------------------------------------
+// Azure Blob's own "staged upload" mechanism -- Put Block / Put Block List.
+// Azure's real equivalent of S3 multipart: a block blob's content is staged
+// as arbitrary client-chosen blockIds against a bucket+key (no separate
+// "create" call, unlike S3), then committed by Put Block List, which names
+// the exact order to assemble them in -- the client controls final byte
+// order via that list, not arrival order. Same buffer-then-assemble
+// approach as S3 multipart, run through the identical putS3Object()
+// pipeline at commit time.
+// ---------------------------------------------------------------------
+
+export async function stageAzureBlock({ orgId, bucket, key, blockId, bodyBuffer }) {
+  if (bodyBuffer.length > MAX_PART_BYTES) throw new Error(`Block exceeds the ${MAX_PART_BYTES} byte per-block limit.`);
+  const { db } = await getOrgCollections();
+  await db.collection("s3_azure_blocks").updateOne(
+    { orgId: toObjectId(orgId), bucket, key, blockId },
+    { $set: { dataBase64: bodyBuffer.toString("base64"), sizeBytes: bodyBuffer.length, createdAt: new Date().toISOString() } },
+    { upsert: true }
+  );
+}
+
+export async function commitAzureBlockList({ orgId, bucket, key, blockIds, contentType, actorEmail }) {
+  const { db } = await getOrgCollections();
+  const staged = await db.collection("s3_azure_blocks").find({ orgId: toObjectId(orgId), bucket, key, blockId: { $in: blockIds } }).toArray();
+  const byId = new Map(staged.map((b) => [b.blockId, b]));
+  const missing = blockIds.filter((id) => !byId.has(id));
+  if (missing.length > 0) throw new Error(`Block(s) not found on this blob: ${missing.join(", ")}`);
+
+  // Assemble in the EXACT order the client's block list specifies, not
+  // staging order -- this is the real Azure semantic (Put Block List's
+  // order is authoritative for the committed blob's byte layout).
+  const fullBuffer = Buffer.concat(blockIds.map((id) => Buffer.from(byId.get(id).dataBase64, "base64")));
+  const doc = await putS3Object({ orgId, bucket, key, bodyBuffer: fullBuffer, contentType, actorEmail });
+  await db.collection("s3_azure_blocks").deleteMany({ orgId: toObjectId(orgId), bucket, key });
+  return doc;
+}

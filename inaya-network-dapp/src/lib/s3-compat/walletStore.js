@@ -231,3 +231,29 @@ export async function abortMultipartUpload({ walletAddress, uploadId }) {
   const res = await db.collection("s3_wallet_multipart_uploads").deleteOne({ _id: uploadId, walletAddress: walletAddress.toLowerCase() });
   return res.deletedCount > 0;
 }
+
+// Azure Put Block / Put Block List -- see store.js's identical org-side
+// functions for the full explanation.
+
+export async function stageAzureBlock({ walletAddress, bucket, key, blockId, bodyBuffer }) {
+  if (bodyBuffer.length > MAX_PART_BYTES) throw new Error(`Block exceeds the ${MAX_PART_BYTES} byte per-block limit.`);
+  const { db } = await connectToDatabase();
+  await db.collection("s3_azure_wallet_blocks").updateOne(
+    { walletAddress: walletAddress.toLowerCase(), bucket, key, blockId },
+    { $set: { dataBase64: bodyBuffer.toString("base64"), sizeBytes: bodyBuffer.length, createdAt: new Date().toISOString() } },
+    { upsert: true }
+  );
+}
+
+export async function commitAzureBlockList({ walletAddress, bucket, key, blockIds, contentType }) {
+  const { db } = await connectToDatabase();
+  const owner = walletAddress.toLowerCase();
+  const staged = await db.collection("s3_azure_wallet_blocks").find({ walletAddress: owner, bucket, key, blockId: { $in: blockIds } }).toArray();
+  const byId = new Map(staged.map((b) => [b.blockId, b]));
+  const missing = blockIds.filter((id) => !byId.has(id));
+  if (missing.length > 0) throw new Error(`Block(s) not found on this blob: ${missing.join(", ")}`);
+  const fullBuffer = Buffer.concat(blockIds.map((id) => Buffer.from(byId.get(id).dataBase64, "base64")));
+  const doc = await putS3Object({ walletAddress, bucket, key, bodyBuffer: fullBuffer, contentType });
+  await db.collection("s3_azure_wallet_blocks").deleteMany({ walletAddress: owner, bucket, key });
+  return doc;
+}
