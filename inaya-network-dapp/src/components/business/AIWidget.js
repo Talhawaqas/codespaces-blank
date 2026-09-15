@@ -23,7 +23,7 @@ const SUGGESTIONS = [
   "Help me create a purchase order",
 ];
 
-export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskChange }) {
+export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskChange, voiceEnabled = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: "👋 Hi — I can help with your company's departments, projects, documents, and approvals. What do you need?" },
@@ -31,19 +31,16 @@ export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskC
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Inaya AI Voice Assistant SOW -- checked once per mount, never trusted
-  // as the real authorization boundary (the voice-session/voice-tool-relay
-  // routes both re-check server-side on every request regardless).
-  useEffect(() => {
-    fetch(`/api/ai/voice-capability?orgId=${orgId}`)
-      .then((r) => r.json())
-      .then((d) => setVoiceEnabled(!!d.enabled))
-      .catch(() => setVoiceEnabled(false));
-  }, [orgId]);
+  // Inaya AI Voice Assistant SOW -- voiceEnabled comes from the parent's
+  // orgAiPolicy state (fetched once, updated live the moment the Settings
+  // toggle is flipped), never re-fetched here -- an independent fetch on
+  // mount alone would go stale for as long as this widget stayed mounted
+  // after someone flipped the Settings toggle in the same session. Still
+  // never trusted as the real authorization boundary either way (the
+  // voice-session/voice-tool-relay routes both re-check server-side).
 
   // Proactively open once per browser session, a few seconds after the
   // workspace loads -- same reasoning as the dApp widget's identical

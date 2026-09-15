@@ -1036,7 +1036,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
           floating bubble/panel on top of that full page would be redundant. */}
       {activeView !== "ai" && (
-        <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} />
+        <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
       )}
       <Sidebar
         orgName={membership.orgName}
@@ -1147,7 +1147,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "trustRelationships" && canManage && <TrustRelationshipsView orgId={orgId} />}
           {activeView === "activity" && <ActivityView orgId={orgId} />}
           {activeView === "ai" && (
-            <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} />
+            <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
           )}
           {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
           {activeView === "settings" && canManage && (
@@ -1374,20 +1374,18 @@ const AI_SUGGESTIONS = [
   "Show me our recently approved documents.",
 ];
 
-function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange }) {
+function AIAssistantView({ orgId, currentView, guidedTask, onGuidedTaskChange, voiceEnabled = false }) {
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi — ask me about your company's departments, projects, documents, or recent activity, or tell me a task you want to do and I'll walk you through it step by step." },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
 
-  // Inaya AI Voice Assistant SOW -- see AIWidget.js's identical check for
-  // why this is never trusted as the real authorization boundary.
-  useEffect(() => {
-    api(`/api/ai/voice-capability?orgId=${orgId}`).then((d) => setVoiceEnabled(!!d.enabled)).catch(() => setVoiceEnabled(false));
-  }, [orgId]);
+  // Inaya AI Voice Assistant SOW -- voiceEnabled comes from the parent's
+  // orgAiPolicy state (see AIWidget.js's identical fix for why this isn't
+  // fetched independently here anymore), never trusted as the real
+  // authorization boundary either way.
 
   async function send(text) {
     const trimmed = (text ?? input).trim();
