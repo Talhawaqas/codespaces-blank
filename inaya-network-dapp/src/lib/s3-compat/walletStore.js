@@ -22,11 +22,31 @@
 // real confirmed transaction per object would make bulk `aws s3 sync`
 // impractically slow) -- see store.js's header for the full reasoning.
 
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { InayaKernel } from "@inaya-network/custody-sdk";
 import { connectToDatabase } from "../mongodb.js";
 import { getProvider, listAvailableProviders } from "../pinningProviders/index.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
+import { replicateShard, getBackupStatus } from "../backupEngine.js";
+
+export class ObjectProtectedError extends Error {
+  constructor(message, reason) {
+    super(message);
+    this.reason = reason; // "LegalHold" | "ObjectLocked"
+  }
+}
+
+function assertNotProtected(doc, actionLabel) {
+  if (!doc) return;
+  if (doc.legalHold) throw new ObjectProtectedError(`Cannot ${actionLabel}: object is under legal hold.`, "LegalHold");
+  if (doc.retentionUntil && new Date(doc.retentionUntil).getTime() > Date.now()) {
+    throw new ObjectProtectedError(`Cannot ${actionLabel}: object is retention-locked (${doc.retentionMode}) until ${doc.retentionUntil}.`, "ObjectLocked");
+  }
+}
+
+// Same backward-compatible fallback as store.js -- pre-existing wallet
+// S3-compat files have no isLatest field at all.
+const IS_LATEST = { $ne: false };
 
 function primaryProviderName() {
   const available = listAvailableProviders();
@@ -74,6 +94,64 @@ export async function deleteS3Bucket({ walletAddress, bucket }) {
   return { deleted: true };
 }
 
+// ---------------------------------------------------------------------
+// Versioning + Object Lock + Legal Hold (SOW §3/§4/§5) -- wallet-side twin
+// of store.js's identical functions, over metadata_folders/metadata_files
+// instead of projects/org_documents. See store.js for the full design
+// rationale (kept there rather than duplicated in every comment here).
+// ---------------------------------------------------------------------
+
+export async function putBucketVersioning({ walletAddress, bucket, status }) {
+  if (!["Enabled", "Suspended"].includes(status)) throw new Error('status must be "Enabled" or "Suspended".');
+  const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
+  const { db } = await connectToDatabase();
+  if (bucketDoc.versioningStatus == null && status === "Suspended") {
+    throw new Error("Versioning cannot be suspended before it has ever been enabled.");
+  }
+  await db.collection("metadata_folders").updateOne({ folderId: bucketDoc.folderId }, { $set: { versioningStatus: status } });
+  return { bucket, versioningStatus: status };
+}
+
+export async function getBucketVersioning({ walletAddress, bucket }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return null;
+  return { versioningStatus: bucketDoc.versioningStatus || "Unversioned", objectLockEnabled: !!bucketDoc.objectLockEnabled };
+}
+
+export async function enableBucketObjectLock({ walletAddress, bucket }) {
+  const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
+  if (bucketDoc.versioningStatus !== "Enabled") throw new Error("Object Lock requires bucket Versioning to be Enabled first.");
+  const { db } = await connectToDatabase();
+  await db.collection("metadata_folders").updateOne({ folderId: bucketDoc.folderId }, { $set: { objectLockEnabled: true } });
+  return { bucket, objectLockEnabled: true };
+}
+
+export async function putObjectRetention({ walletAddress, bucket, key, versionId, retentionMode, retentionUntil }) {
+  if (!["GOVERNANCE", "COMPLIANCE"].includes(retentionMode)) throw new Error('retentionMode must be "GOVERNANCE" or "COMPLIANCE".');
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc?.objectLockEnabled) throw new Error("Object Lock is not enabled on this bucket.");
+  const { db } = await connectToDatabase();
+  const query = { owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, ...(versionId ? { versionId } : { isLatest: IS_LATEST }) };
+  const doc = await db.collection("metadata_files").findOne(query);
+  if (!doc) throw new Error("Object/version not found.");
+  if (doc.retentionUntil && new Date(retentionUntil).getTime() < new Date(doc.retentionUntil).getTime()) {
+    throw new Error("A retention period cannot be shortened, only extended.");
+  }
+  await db.collection("metadata_files").updateOne({ _id: doc._id }, { $set: { retentionMode, retentionUntil: new Date(retentionUntil).toISOString() } });
+  return { bucket, key, versionId: doc.versionId, retentionMode, retentionUntil };
+}
+
+export async function putObjectLegalHold({ walletAddress, bucket, key, versionId, legalHold }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) throw new Error("NoSuchBucket");
+  const { db } = await connectToDatabase();
+  const query = { owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, ...(versionId ? { versionId } : { isLatest: IS_LATEST }) };
+  const doc = await db.collection("metadata_files").findOne(query);
+  if (!doc) throw new Error("Object/version not found.");
+  await db.collection("metadata_files").updateOne({ _id: doc._id }, { $set: { legalHold: !!legalHold } });
+  return { bucket, key, versionId: doc.versionId, legalHold: !!legalHold };
+}
+
 function bufferToFile(buffer, { key, contentType }) {
   return new File([buffer], key, { type: contentType || "application/octet-stream" });
 }
@@ -81,30 +159,44 @@ function bufferToFile(buffer, { key, contentType }) {
 export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, contentType }) {
   const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
   const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
+  const { db } = await connectToDatabase();
+  const owner = walletAddress.toLowerCase();
+
+  const versioningEnabled = bucketDoc.versioningStatus === "Enabled";
+  const existing = await db.collection("metadata_files").findOne({ owner, folderId: bucketDoc.folderId, filename: key, isLatest: IS_LATEST, deletedAt: null });
+  if (!versioningEnabled) assertNotProtected(existing, "overwrite this object");
 
   const salt = InayaKernel.generateSecureSalt();
   const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: passphrase, salt });
   const file = bufferToFile(bodyBuffer, { key, contentType });
   const { shardAlpha, shardBeta } = await InayaKernel.disperseAndSlice({ file, encryptionKey });
 
+  const now = new Date().toISOString();
+  const newId = randomUUID();
+
+  // Same real pin-name-collision bug fix as store.js's org-side putS3Object
+  // -- see that file's comment for the full explanation (Filebase uses
+  // `name` as its literal object key, so two versions pinned under the
+  // same name silently overwrote each other provider-side).
   const provider = getProvider(primaryProviderName());
   const [alphaResult, betaResult] = await Promise.all([
-    provider.pin(shardAlpha, { name: `s3-compat-wallet:${walletAddress}:${key}:alpha` }),
-    provider.pin(shardBeta, { name: `s3-compat-wallet:${walletAddress}:${key}:beta` }),
+    provider.pin(shardAlpha, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:alpha` }),
+    provider.pin(shardBeta, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:beta` }),
   ]);
 
-  const { db } = await connectToDatabase();
-  const now = new Date().toISOString();
-  const owner = walletAddress.toLowerCase();
-
-  await db.collection("metadata_files").updateMany({ owner, folderId: bucketDoc.folderId, filename: key, deletedAt: null }, { $set: { deletedAt: now } });
+  if (existing) {
+    if (versioningEnabled) {
+      await db.collection("metadata_files").updateOne({ _id: existing._id }, { $set: { isLatest: false } });
+    } else {
+      await db.collection("metadata_files").updateOne({ _id: existing._id }, { $set: { deletedAt: now } });
+    }
+  }
 
   // Real content hash salted with a fresh random component -- see
   // store.js's identical fix for why: S3 must allow re-uploading identical
   // bytes (same key or a different one), which a pure content hash would
   // collide on if metadata_files enforces uniqueness anywhere downstream.
-  const { createHash: createHashWallet } = await import("node:crypto");
-  const fileHash = createHashWallet("sha256").update(bodyBuffer).update(randomUUID()).digest("hex");
+  const fileHash = createHash("sha256").update(bodyBuffer).update(newId).digest("hex");
   const doc = {
     fileHash,
     owner,
@@ -117,23 +209,45 @@ export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, cont
     pinProvider: alphaResult.provider,
     encryptionMode: "server-managed",
     source: "s3-compat",
+    versionId: versioningEnabled ? newId : "null",
+    isLatest: true,
+    retentionMode: null,
+    retentionUntil: null,
+    legalHold: false,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
   };
   await db.collection("metadata_files").insertOne(doc);
+
+  // Automated Storage Health & Repair (SOW §7) -- same real backupEngine
+  // registration as store.js's org-side putS3Object; see that file's
+  // header comment for the full explanation of why this closes a real,
+  // previously-existing gap rather than adding a parallel system.
+  await Promise.all([
+    replicateShard({ fileHash, shardId: "alpha", content: shardAlpha, primaryProvider: alphaResult.provider, primaryCid: alphaResult.cid, primaryProviderRef: alphaResult.providerRef }).catch((err) =>
+      console.error("s3-compat walletStore putS3Object: backupEngine registration (alpha) failed (non-fatal):", err.message)
+    ),
+    replicateShard({ fileHash, shardId: "beta", content: shardBeta, primaryProvider: betaResult.provider, primaryCid: betaResult.cid, primaryProviderRef: betaResult.providerRef }).catch((err) =>
+      console.error("s3-compat walletStore putS3Object: backupEngine registration (beta) failed (non-fatal):", err.message)
+    ),
+  ]);
+
   return doc;
 }
 
-export async function headS3Object({ walletAddress, bucket, key }) {
+export async function headS3Object({ walletAddress, bucket, key, versionId }) {
   const bucketDoc = await getS3Bucket({ walletAddress, bucket });
   if (!bucketDoc) return null;
   const { db } = await connectToDatabase();
-  return db.collection("metadata_files").findOne({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, deletedAt: null });
+  if (versionId) {
+    return db.collection("metadata_files").findOne({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, versionId });
+  }
+  return db.collection("metadata_files").findOne({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, isLatest: IS_LATEST, deletedAt: null });
 }
 
-export async function getS3ObjectBody({ walletAddress, bucket, key }) {
-  const doc = await headS3Object({ walletAddress, bucket, key });
+export async function getS3ObjectBody({ walletAddress, bucket, key, versionId }) {
+  const doc = await headS3Object({ walletAddress, bucket, key, versionId });
   if (!doc) return null;
   const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
   const provider = getProvider(doc.pinProvider || primaryProviderName());
@@ -143,11 +257,24 @@ export async function getS3ObjectBody({ walletAddress, bucket, key }) {
   return { doc, buffer: Buffer.from(base64, "base64") };
 }
 
-export async function deleteS3Object({ walletAddress, bucket, key }) {
-  const doc = await headS3Object({ walletAddress, bucket, key });
-  if (!doc) return { deleted: true };
+export async function deleteS3Object({ walletAddress, bucket, key, versionId }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return { deleted: true };
   const { db } = await connectToDatabase();
-  await db.collection("metadata_files").updateOne({ fileHash: doc.fileHash, owner: doc.owner }, { $set: { deletedAt: new Date().toISOString() } });
+  const now = new Date().toISOString();
+  const owner = walletAddress.toLowerCase();
+
+  if (!versionId && bucketDoc.versioningStatus === "Enabled") {
+    const current = await db.collection("metadata_files").findOne({ owner, folderId: bucketDoc.folderId, filename: key, isLatest: IS_LATEST, deletedAt: null });
+    if (!current) return { deleted: true };
+    await db.collection("metadata_files").updateOne({ _id: current._id }, { $set: { deletedAt: now } });
+    return { deleted: true, deleteMarker: true };
+  }
+
+  const doc = await headS3Object({ walletAddress, bucket, key, versionId });
+  if (!doc) return { deleted: true };
+  assertNotProtected(doc, "delete this object");
+  await db.collection("metadata_files").updateOne({ _id: doc._id }, { $set: { deletedAt: now } });
   return { deleted: true };
 }
 
@@ -157,7 +284,7 @@ export async function listS3Objects({ walletAddress, bucket, prefix = "", delimi
   const { db } = await connectToDatabase();
   const docs = await db
     .collection("metadata_files")
-    .find({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, deletedAt: null, filename: { $regex: `^${escapeRegExp(prefix)}` } })
+    .find({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, deletedAt: null, isLatest: IS_LATEST, filename: { $regex: `^${escapeRegExp(prefix)}` } })
     .sort({ filename: 1 })
     .toArray();
 
@@ -172,6 +299,37 @@ export async function listS3Objects({ walletAddress, bucket, prefix = "", delimi
     }
   }
   return { contents: contents.slice(0, maxKeys), commonPrefixes: [...commonPrefixes].sort(), isTruncated: contents.length > maxKeys };
+}
+
+export async function listObjectVersions({ walletAddress, bucket, key }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return null;
+  const { db } = await connectToDatabase();
+  const docs = await db.collection("metadata_files").find({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key }).sort({ createdAt: -1 }).toArray();
+  return docs.map((d) => ({
+    versionId: d.versionId || "null",
+    isLatest: d.isLatest !== false,
+    deleteMarker: !!d.deletedAt,
+    sizeBytes: d.fileSizeBytes,
+    contentType: d.contentType,
+    etag: d.cidAlpha || d.fileHash,
+    lastModified: d.createdAt,
+    retentionMode: d.retentionMode || null,
+    retentionUntil: d.retentionUntil || null,
+    legalHold: !!d.legalHold,
+  }));
+}
+
+export async function restoreObjectVersion({ walletAddress, bucket, key, versionId }) {
+  const source = await getS3ObjectBody({ walletAddress, bucket, key, versionId });
+  if (!source) throw new Error("Version not found.");
+  return putS3Object({ walletAddress, bucket, key, bodyBuffer: source.buffer, contentType: source.doc.contentType });
+}
+
+export async function getS3ObjectHealth({ walletAddress, bucket, key, versionId }) {
+  const doc = await headS3Object({ walletAddress, bucket, key, versionId });
+  if (!doc) return null;
+  return getBackupStatus(doc.fileHash);
 }
 
 function escapeRegExp(str) {

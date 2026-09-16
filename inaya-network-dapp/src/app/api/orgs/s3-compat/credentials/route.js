@@ -20,7 +20,7 @@ import { getOrgCollections } from "../../../../../lib/orgs.js";
 
 export async function POST(req) {
   try {
-    const { orgId, label } = await req.json();
+    const { orgId, label, scope } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();
@@ -30,7 +30,16 @@ export async function POST(req) {
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (!canManageOrg(auth.membership)) return NextResponse.json({ error: "Only the owner or an admin can create an S3-compatible credential." }, { status: 403 });
 
-    const result = await issueS3Credential({ owner: { type: "org", orgId }, label, actorEmail: auth.session.email });
+    // Granular Storage Access Grants (SOW §2) -- `scope` is optional; when
+    // provided it's validated/normalized by credentials.js's own
+    // normalizeScope and enforced server-side on every request, never
+    // trusted as-is from this or any other caller.
+    let result;
+    try {
+      result = await issueS3Credential({ owner: { type: "org", orgId }, label, actorEmail: auth.session.email, scope });
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     return NextResponse.json({
       ...result,
       endpoint: "/api/s3",

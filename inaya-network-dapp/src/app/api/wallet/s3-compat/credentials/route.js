@@ -20,7 +20,7 @@ import { issueS3Credential, listS3Credentials, ensureS3CompatIndexes } from "../
 
 export async function POST(req) {
   try {
-    const { walletAddress, message, signature, timestamp, label } = await req.json();
+    const { walletAddress, message, signature, timestamp, label, scope } = await req.json();
     if (!walletAddress) return NextResponse.json({ error: "walletAddress is required." }, { status: 400 });
 
     verifyMetadataAuth({ action: "s3_credential_issue", resourceId: walletAddress, address: walletAddress, message, signature, timestamp });
@@ -28,7 +28,7 @@ export async function POST(req) {
     const { db } = await connectToDatabase();
     await ensureS3CompatIndexes(db);
 
-    const result = await issueS3Credential({ owner: { type: "wallet", walletAddress }, label, actorEmail: null });
+    const result = await issueS3Credential({ owner: { type: "wallet", walletAddress }, label, actorEmail: null, scope });
     return NextResponse.json({
       ...result,
       endpoint: "/api/s3",

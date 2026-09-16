@@ -9,7 +9,7 @@
 // secretAccessKey (already base64-ish) is re-encoded to valid base64 for
 // this path only (see resolveAzureCredential below).
 
-import { resolveS3Credential } from "./credentials.js";
+import { resolveS3Credential, checkScope } from "./credentials.js";
 import { verifySharedKeyRequest } from "./azureAuth.js";
 import { verifyConnection as verifyMicrosoftConnection } from "../integrationProviders/microsoft.js";
 import { getOrgCollections, normalizeEmail } from "../orgs.js";
@@ -62,28 +62,58 @@ async function authenticateViaEntra(bearerToken) {
   return { owner: { type: "org", orgId: membership.orgId.toString() }, accessKeyId: `entra:${email}` };
 }
 
+const OPERATION_BY_METHOD = { GET: "READ", HEAD: "READ", PUT: "WRITE", POST: "WRITE", DELETE: "DELETE" };
+
+/** Same server-derived target parsing as auth.js's deriveRequestTarget, over
+ *  /api/azure/[container]/[...blob] instead of /api/s3/[bucket]/[...key] --
+ *  container plays the same "bucket" role a granular grant scopes against. */
+function deriveRequestTarget(url) {
+  const segments = url.pathname.replace(/^\/api\/azure\/?/, "").split("/").filter(Boolean);
+  const container = segments[0] || null;
+  const blob = segments.length > 1 ? segments.slice(1).join("/") : null;
+  return { container, blob };
+}
+
 export async function authenticateAzureRequest(req, bodyBuffer) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) throw new AzureAuthError("AuthenticationFailed", "Missing Authorization header.", 403);
 
+  let credential, owner, accessKeyId;
   if (authHeader.startsWith("Bearer ")) {
-    return authenticateViaEntra(authHeader.slice("Bearer ".length).trim());
+    ({ owner, accessKeyId } = await authenticateViaEntra(authHeader.slice("Bearer ".length).trim()));
+    // Entra-authenticated requests carry the org's full membership-derived
+    // access, not any one issued credential's scope -- there is no
+    // s3_credentials row to check a grant against, matching how Entra auth
+    // already bypasses the credential store entirely for signature purposes.
+    return { owner, accessKeyId };
   }
 
   const accountMatch = authHeader.match(/^SharedKey\s+([^:]+):/);
   if (!accountMatch) throw new AzureAuthError("AuthenticationFailed", "Malformed Authorization header (expected SharedKey account:signature or Bearer <Entra token>).", 403);
 
-  const credential = await resolveS3Credential(accountMatch[1]);
+  credential = await resolveS3Credential(accountMatch[1]);
   if (!credential) throw new AzureAuthError("AuthenticationFailed", "The specified account name does not exist or its credential has been revoked.", 403);
 
+  const url = new URL(req.url);
   const result = verifySharedKeyRequest({
     method: req.method,
-    url: new URL(req.url),
+    url,
     headers: req.headers,
     bodyBuffer,
     accountKey: toValidBase64Key(credential.secretAccessKey),
   });
 
   if (!result.ok) throw new AzureAuthError("AuthenticationFailed", result.reason || "Signature verification failed.", 403);
+
+  const { container, blob } = deriveRequestTarget(url);
+  const operation = OPERATION_BY_METHOD[req.method] || "READ";
+  if (credential.scope?.bucket && !container) {
+    throw new AzureAuthError("AuthenticationFailed", "This credential is scoped to a specific container and cannot list all containers.", 403);
+  }
+  const scopeCheck = checkScope(credential, { bucket: container, key: blob, operation });
+  if (!scopeCheck.allowed) {
+    throw new AzureAuthError("AuthenticationFailed", `Denied by credential scope: ${scopeCheck.reason}.`, 403);
+  }
+
   return { owner: credential.owner, accessKeyId: credential.accessKeyId };
 }

@@ -9,9 +9,11 @@
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use keyring::Entry;
+use std::process::Child;
+use std::sync::Mutex as StdMutex;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::UpdaterExt;
@@ -445,12 +447,93 @@ fn check_for_updates(app: tauri::AppHandle) {
     });
 }
 
+// Inaya Drive (Storj-Inspired Storage Capability Expansion SOW §8) -- a
+// real Windows virtual-drive mount backed by this org's/wallet's
+// S3-compatible storage. Deliberately spawned as a SEPARATE child process
+// (inaya-drive-helper.exe, its own standalone Cargo crate under
+// /inaya-drive-helper at the repo root) rather than linked into this
+// binary: the Rust WinFSP binding (`winfsp` crate) is GPL-3.0-licensed,
+// and keeping it in its own process means inaya-desktop's own source and
+// binary stay fully proprietary -- the two communicate only via process
+// spawn/kill, never shared memory or a linked library. The child process
+// authenticates to Inaya's real /api/s3 endpoint with a normal, already-
+// existing S3 credential (issued the same way any AWS CLI/SDK credential
+// is, including one scoped via Granular Storage Access Grants) -- Inaya
+// Drive gets no special access this credential system doesn't already
+// grant to any other S3-compatible client.
+struct DriveState(StdMutex<Option<Child>>);
+
+// Resolves the helper binary. In development it sits at a fixed path
+// relative to this repo's own layout; a packaged release should instead
+// bundle it as a Tauri `externalBin` sidecar (renamed to the
+// target-triple-suffixed form Tauri's sidecar convention requires) --
+// that packaging step is real follow-up work, disclosed here rather than
+// silently assumed done, since this pass verified the mount itself
+// end-to-end by running the compiled helper directly, not through a
+// packaged Tauri build.
+fn resolve_drive_helper_path() -> Result<std::path::PathBuf, String> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let sibling = dir.join("inaya-drive-helper.exe");
+            if sibling.exists() {
+                return Ok(sibling);
+            }
+        }
+    }
+    let dev_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../inaya-drive-helper/target/debug/inaya-drive-helper.exe");
+    if dev_path.exists() {
+        return Ok(dev_path);
+    }
+    Err("inaya-drive-helper.exe was not found (checked next to this app, and the dev build path). Build it with `cargo build` in /inaya-drive-helper first.".into())
+}
+
+#[tauri::command]
+fn mount_inaya_drive(
+    window: tauri::WebviewWindow,
+    state: State<DriveState>,
+    endpoint: String,
+    access_key_id: String,
+    secret_access_key: String,
+    drive: String,
+) -> Result<String, String> {
+    verify_trusted_origin(&window)?;
+    if !drive.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false) || !drive.ends_with(':') {
+        return Err("drive must look like \"I:\".".into());
+    }
+    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
+    if guard.is_some() {
+        return Err("Inaya Drive is already mounted. Unmount it first.".into());
+    }
+    let helper = resolve_drive_helper_path()?;
+    let child = std::process::Command::new(helper)
+        .args(["--endpoint", &endpoint, "--access-key-id", &access_key_id, "--secret-access-key", &secret_access_key, "--drive", &drive])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    *guard = Some(child);
+    Ok(format!("Inaya Drive mounted at {}", drive))
+}
+
+#[tauri::command]
+fn unmount_inaya_drive(window: tauri::WebviewWindow, state: State<DriveState>) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
+    if let Some(mut child) = guard.take() {
+        // Killing the process is the actual unmount: FileSystemHost's own
+        // Drop impl (inaya-drive-helper/src/main.rs) removes the WinFSP
+        // mount point as part of process teardown.
+        child.kill().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(DriveState(StdMutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             notify_pending_approvals,
             notify_security_event,
@@ -459,7 +542,9 @@ pub fn run() {
             store_passkey_secure,
             retrieve_passkey_secure,
             clear_passkey_secure,
-            open_module_window
+            open_module_window,
+            mount_inaya_drive,
+            unmount_inaya_drive
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -511,7 +596,16 @@ pub fn run() {
                             let _ = window.set_focus();
                         }
                     }
-                    "quit" => app.exit(0),
+                    "quit" => {
+                        if let Some(state) = app.try_state::<DriveState>() {
+                            if let Ok(mut guard) = state.0.lock() {
+                                if let Some(mut child) = guard.take() {
+                                    let _ = child.kill();
+                                }
+                            }
+                        }
+                        app.exit(0)
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {

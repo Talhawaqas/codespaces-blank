@@ -65,14 +65,54 @@ export async function getOwnerS3Passphrase(owner) {
   return unwrapPassphrase(doc.wrappedPassphrase);
 }
 
+const VALID_OPERATIONS = ["READ", "WRITE", "DELETE", "LIST"];
+
+/** Normalizes+validates a caller-supplied scope into the exact shape stored and
+ *  later enforced -- never trusts the shape as-is. `null`/omitted fields mean
+ *  "unrestricted on this axis" (matching an ordinary owner-level credential),
+ *  not "denied" -- a credential with no scope object at all is the original,
+ *  fully-trusted owner-level credential Workstream A already shipped; this is
+ *  purely additive. Throws on a genuinely invalid scope rather than silently
+ *  narrowing it to something the caller didn't ask for. */
+function normalizeScope(scope) {
+  if (!scope) return null;
+  const out = {};
+  if (scope.bucket != null) {
+    if (typeof scope.bucket !== "string" || !scope.bucket) throw new Error("scope.bucket must be a non-empty string.");
+    out.bucket = scope.bucket;
+  }
+  if (scope.prefix != null) {
+    if (typeof scope.prefix !== "string") throw new Error("scope.prefix must be a string.");
+    if (!out.bucket) throw new Error("scope.prefix requires scope.bucket to also be set -- a prefix without a bucket is ambiguous.");
+    out.prefix = scope.prefix;
+  }
+  if (scope.operations != null) {
+    if (!Array.isArray(scope.operations) || scope.operations.length === 0) throw new Error("scope.operations must be a non-empty array.");
+    const bad = scope.operations.filter((op) => !VALID_OPERATIONS.includes(op));
+    if (bad.length > 0) throw new Error(`scope.operations contains invalid value(s): ${bad.join(", ")}. Must be one of ${VALID_OPERATIONS.join("/")}.`);
+    out.operations = [...new Set(scope.operations)];
+  }
+  if (scope.expiresAt != null) {
+    const t = new Date(scope.expiresAt).getTime();
+    if (!Number.isFinite(t)) throw new Error("scope.expiresAt must be a valid date/time.");
+    if (t <= Date.now()) throw new Error("scope.expiresAt must be in the future.");
+    out.expiresAt = new Date(t).toISOString();
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 /** Returns { accessKeyId, secretAccessKey } -- secretAccessKey is the only time
- *  the raw value is ever available; only its wrapped form is persisted. */
-export async function issueS3Credential({ owner, label, actorEmail }) {
+ *  the raw value is ever available; only its wrapped form is persisted.
+ *  `scope`, if supplied, is a server-enforced grant narrower than the owner's
+ *  full access (see normalizeScope/checkScope) -- e.g. { bucket: "finance",
+ *  prefix: "invoices/2026/", operations: ["READ"], expiresAt: "..." }. */
+export async function issueS3Credential({ owner, label, actorEmail, scope }) {
   await ensureOwnerS3Passphrase(owner);
   const { db } = await getOrgCollections();
   const accessKeyId = generateAccessKeyId();
   const secretAccessKey = generateSecretAccessKey();
   const now = new Date().toISOString();
+  const normalizedScope = normalizeScope(scope);
   await db.collection("s3_credentials").insertOne({
     ownerType: owner.type,
     ownerId: ownerId(owner),
@@ -80,11 +120,41 @@ export async function issueS3Credential({ owner, label, actorEmail }) {
     wrappedSecretAccessKey: wrapPassphrase(secretAccessKey),
     secretFingerprint: hashToken(secretAccessKey),
     label: label || null,
+    scope: normalizedScope,
     createdByEmail: actorEmail || null,
     createdAt: now,
     revokedAt: null,
   });
-  return { accessKeyId, secretAccessKey, createdAt: now };
+  return { accessKeyId, secretAccessKey, scope: normalizedScope, createdAt: now };
+}
+
+/** Server-side enforcement of a credential's stored scope -- called on every
+ *  S3/Azure request AFTER signature verification, using ONLY the scope
+ *  recorded at issuance time. Never reads bucket/prefix/operation off
+ *  anything the client supplies about its own permissions (the client
+ *  supplies the bucket/key/method it's requesting, which this function
+ *  checks against the stored grant -- it never supplies the grant itself).
+ *  Returns { allowed: true } or { allowed: false, reason }. A credential
+ *  with no `scope` at all (undefined/null) is the original owner-level
+ *  credential and is always allowed -- scoping is opt-in, not a silent
+ *  new restriction on every existing credential issued before this SOW. */
+export function checkScope(credential, { bucket, key, operation }) {
+  const scope = credential.scope;
+  if (!scope) return { allowed: true };
+
+  if (scope.expiresAt && new Date(scope.expiresAt).getTime() <= Date.now()) {
+    return { allowed: false, reason: "CredentialExpired" };
+  }
+  if (scope.bucket && bucket && scope.bucket !== bucket) {
+    return { allowed: false, reason: "BucketScopeDenied" };
+  }
+  if (scope.prefix && key != null && !key.startsWith(scope.prefix)) {
+    return { allowed: false, reason: "PrefixScopeDenied" };
+  }
+  if (scope.operations && operation && !scope.operations.includes(operation)) {
+    return { allowed: false, reason: "OperationScopeDenied" };
+  }
+  return { allowed: true };
 }
 
 export async function listS3Credentials(owner) {

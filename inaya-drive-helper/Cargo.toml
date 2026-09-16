@@ -1,0 +1,26 @@
+[package]
+name = "inaya-drive-helper"
+version = "0.1.0"
+description = "Inaya Drive -- a standalone Windows virtual-drive process that mounts an org's or wallet's S3-compatible Inaya storage as a real drive letter, backed by the existing, already-tested /api/s3 REST endpoint. Kept as its OWN separate process/binary (not linked into inaya-desktop's proprietary app) specifically because the WinFSP Rust binding (the `winfsp` crate) is GPL-3.0 licensed -- this process boundary keeps that license from applying to inaya-desktop's own source. This file (inaya-drive-helper) is itself GPL-3.0 as a consequence of depending on `winfsp`, and its source is kept available accordingly."
+license = "GPL-3.0"
+edition = "2021"
+
+[[bin]]
+name = "inaya-drive-helper"
+path = "src/main.rs"
+
+[dependencies]
+winfsp = "0.13"
+winfsp-sys = "0.12"
+windows = { version = "0.61", features = ["Win32_Foundation"] }
+reqwest = { version = "0.12", features = ["blocking"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+widestring = "1"
+url = "2"
+
+[build-dependencies]
+winfsp = "0.13"

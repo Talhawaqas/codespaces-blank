@@ -23,6 +23,20 @@ function joinKey(keyParts) {
   return (keyParts || []).join("/");
 }
 
+// PUT ?legal-hold / ?retention -- real S3 sub-resources
+// (PutObjectLegalHold/PutObjectRetention). Small, fixed XML shapes, same
+// pragmatic regex-extraction level as parseCompleteMultipartBody/
+// parseVersioningStatus elsewhere in this layer.
+function parseLegalHoldStatus(xmlBody) {
+  const match = xmlBody.match(/<Status>(ON|OFF)<\/Status>/);
+  return match ? match[1] : null;
+}
+function parseRetention(xmlBody) {
+  const mode = xmlBody.match(/<Mode>(GOVERNANCE|COMPLIANCE)<\/Mode>/);
+  const until = xmlBody.match(/<RetainUntilDate>([^<]+)<\/RetainUntilDate>/);
+  return mode && until ? { mode: mode[1], until: until[1] } : null;
+}
+
 export async function PUT(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
@@ -33,6 +47,20 @@ export async function PUT(req, { params }) {
     const uploadId = url.searchParams.get("uploadId");
     const partNumber = url.searchParams.get("partNumber");
 
+    if (url.searchParams.has("legal-hold")) {
+      const status = parseLegalHoldStatus(bodyBuffer.toString("utf8"));
+      if (!status) return s3Error("MalformedXML", "LegalHold must specify Status=ON or OFF.");
+      await store.putObjectLegalHold({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), legalHold: status === "ON", actorEmail: accessKeyId });
+      return new Response(null, { status: 200 });
+    }
+
+    if (url.searchParams.has("retention")) {
+      const retention = parseRetention(bodyBuffer.toString("utf8"));
+      if (!retention) return s3Error("MalformedXML", "Retention must specify Mode and RetainUntilDate.");
+      await store.putObjectRetention({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), retentionMode: retention.mode, retentionUntil: retention.until, actorEmail: accessKeyId });
+      return new Response(null, { status: 200 });
+    }
+
     if (uploadId && partNumber) {
       const etag = await store.uploadPart({ ...ownerArgs(owner), uploadId, partNumber: Number(partNumber), bodyBuffer });
       if (etag === null) return s3Error("NoSuchUpload", "The specified multipart upload does not exist.");
@@ -41,8 +69,9 @@ export async function PUT(req, { params }) {
 
     const contentType = req.headers.get("content-type") || "application/octet-stream";
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId });
-    return new Response(null, { status: 200, headers: { ETag: `"${doc.cidAlpha || doc.fileHash || ""}"` } });
+    return new Response(null, { status: 200, headers: { ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`, ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) } });
   } catch (err) {
+    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
     console.error("PUT /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
@@ -89,7 +118,22 @@ export async function GET(req, { params }) {
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
     const store = storeFor(owner);
     const key = joinKey(params.key);
-    const result = await store.getS3ObjectBody({ ...ownerArgs(owner), bucket: params.bucket, key });
+    const url = new URL(req.url);
+    const versionId = url.searchParams.get("versionId") || undefined;
+
+    if (url.searchParams.has("legal-hold")) {
+      const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
+      if (!doc) return s3Error("NoSuchKey", "The specified key does not exist.");
+      return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?><LegalHold xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>${doc.legalHold ? "ON" : "OFF"}</Status></LegalHold>`);
+    }
+    if (url.searchParams.has("retention")) {
+      const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
+      if (!doc) return s3Error("NoSuchKey", "The specified key does not exist.");
+      if (!doc.retentionMode) return s3Error("NoSuchObjectLockConfiguration", "There is no retention configured for this object.");
+      return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?><Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Mode>${doc.retentionMode}</Mode><RetainUntilDate>${doc.retentionUntil}</RetainUntilDate></Retention>`);
+    }
+
+    const result = await store.getS3ObjectBody({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
     if (!result) return s3Error("NoSuchKey", "The specified key does not exist.");
 
     const { doc, buffer } = result;
@@ -141,7 +185,8 @@ export async function HEAD(req, { params }) {
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
     const store = storeFor(owner);
     const key = joinKey(params.key);
-    const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key });
+    const url = new URL(req.url);
+    const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
     if (!doc) return new Response(null, { status: 404 });
     return new Response(null, {
       status: 200,
@@ -151,6 +196,7 @@ export async function HEAD(req, { params }) {
         ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
+        ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}),
       },
     });
   } catch (err) {
@@ -173,9 +219,12 @@ export async function DELETE(req, { params }) {
       return new Response(null, { status: 204 });
     }
 
-    await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key });
-    return new Response(null, { status: 204 });
+    const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
+    return new Response(null, { status: 204, headers: result?.deleteMarker ? { "x-amz-delete-marker": "true" } : {} });
   } catch (err) {
+    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") {
+      return s3Error("AccessDenied", err.message);
+    }
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
     console.error("DELETE /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");

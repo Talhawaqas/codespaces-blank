@@ -45,6 +45,7 @@ export async function PUT(req, { params }) {
         const doc = await store.commitAzureBlockList({ ...ownerArgs(owner), bucket: params.container, key: blob, blockIds, contentType, actorEmail: accessKeyId });
         return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${doc.cidAlpha || doc.fileHash || ""}"` } });
       } catch (err) {
+        if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
         return azureError("InvalidBlockList", err.message);
       }
     }
@@ -60,6 +61,7 @@ export async function PUT(req, { params }) {
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, bodyBuffer, contentType, actorEmail: accessKeyId });
     return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${doc.cidAlpha || doc.fileHash || ""}"` } });
   } catch (err) {
+    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
     console.error("PUT /api/azure/[container]/[...blob] failed:", err);
     return azureError("InternalError", err.message || "An internal error occurred.");
@@ -151,6 +153,7 @@ export async function DELETE(req, { params }) {
     await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, actorEmail: null });
     return new Response(null, { status: 202, headers: { "x-ms-version": "2021-08-06" } });
   } catch (err) {
+    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
     console.error("DELETE /api/azure/[container]/[...blob] failed:", err);
     return azureError("InternalError", "An internal error occurred.");
