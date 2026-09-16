@@ -6,6 +6,10 @@
 // collection shapes, grounded directly in the source. Companion to
 // ecosystem-architecture.js (the narrative version) — this one is a
 // lookup document, not a read-cover-to-cover one.
+//
+// ADDITIVE EDIT (September 2026) — appended new Section 26, a file/route
+// reference table for the Multi-Cloud Storage Compatibility and
+// Storj-Inspired Storage Capability Expansion SOWs' real output.
 
 export const ecosystemDevDeepdive = {
   cover: {
@@ -699,6 +703,34 @@ export const ecosystemDevDeepdive = {
         {
           type: "note",
           text: "Creating a new business record (contact, deal, PO, document) has no automated tool path at all — the assistant can only guide a human through the real UI. Any actual mutation it can propose still routes through the pre-existing Guarded Execution approval-plus-36-hour-delay pipeline described in §26/§31. No new mutation surface was added by the guided-task feature itself.",
+        },
+      ],
+    },
+    {
+      number: "26",
+      title: "Multi-Cloud Storage Compatibility & Enterprise Storage Governance Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["s3-compat/sigv4.js: verifySigV4Request, parseAuthorizationHeader", "Real AWS SigV4 verification — canonical request → string-to-sign → derived signing key (HMAC chain) → signature; 15-min clock-skew window; UNSIGNED-PAYLOAD support"],
+            ["s3-compat/azureAuth.js: verifySharedKeyRequest, s3-compat/azureAuthMiddleware.js: authenticateAzureRequest", "Azure Shared Key verification + real Microsoft Entra ID Bearer-token path (live Graph verification via integrationProviders/microsoft.js, mapped to org_members by email)"],
+            ["s3-compat/credentials.js: issueS3Credential, checkScope, normalizeScope", "Credential issuance with optional scope {bucket, prefix, operations, expiresAt}; checkScope() is the single enforcement function, called centrally in auth.js/azureAuthMiddleware.js after signature verification"],
+            ["s3-compat/store.js, walletStore.js: putS3Object, deleteS3Object, assertNotProtected", "Org- and wallet-side translation layers over org_documents/metadata_files; assertNotProtected() is the one chokepoint both the overwrite path and the delete path call through for Object Lock/Legal Hold enforcement"],
+            ["s3-compat/store.js: putBucketVersioning, listObjectVersions, restoreObjectVersion", "Bucket-level versioningStatus (Unversioned→Enabled→Suspended, one-way); restore copies an old version's bytes forward as a new current version rather than resurrecting the old version id"],
+            ["s3-compat/store.js: putObjectRetention, putObjectLegalHold, putLifecyclePolicy, runLifecycleEnforcement", "Object Lock (requires Versioning Enabled first; retention can extend, never shorten), Legal Hold, and per-bucket lifecycle rules with real enforcement that skips locked/held objects"],
+            ["api/s3/**/route.js, api/azure/**/route.js", "Full S3 and Azure REST surfaces, including real sub-resources (?versioning, ?object-lock, ?versions, ?legal-hold, ?retention, ?versionId=, Put Block/Put Block List)"],
+            ["api/cron/s3-lifecycle/route.js", "CRON_SECRET-gated route calling runLifecycleEnforcement() — same auth convention as api/cron/nodes-snapshot; registered in vercel.json's crons array"],
+            ["api/orgs/s3-compat/manage/route.js, S3CompatView.js", "Session-authenticated Business Workspace management API + console — separate from the SigV4-signed protocol surface, so Business Workspace never needs to hold/sign with an S3 credential"],
+            ["backupEngine.js: replicateShard (now called from putS3Object)", "Closes a real, previously-existing gap: S3/Azure-compat objects were pinned but never registered with the existing check-pins/verify-integrity/recovery crons"],
+            ["inaya-drive-helper/src/main.rs, sigv4.rs, s3client.rs", "Standalone Rust crate (GPL-3.0, isolated on purpose) implementing WinFSP's FileSystemContext trait over a Rust port of the SigV4 signer, backed by the real /api/s3 endpoint"],
+            ["inaya-desktop/src-tauri/src/lib.rs: mount_inaya_drive, unmount_inaya_drive", "Tauri commands that only spawn/kill inaya-drive-helper.exe as a child process — no GPL dependency in inaya-desktop's own Cargo.toml"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Test coverage: test/s3-compat-capabilities.test.mjs (19 tests: scope enforcement, versioning, Object Lock, Legal Hold, lifecycle, health registration) plus the pre-existing test/s3-compat-sigv4.test.mjs (9) and test/s3-compat-store.test.mjs (9) — all passing, zero regressions. Full writeup: docs/storj-inspired-storage-capability-expansion-report.md and docs/multi-cloud-storage-compatibility-report.md.",
         },
       ],
     },

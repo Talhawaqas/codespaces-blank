@@ -6,6 +6,14 @@
 // ecosystem-dev-deepdive.js (code reference) — how the pieces fit together
 // and why, without function signatures or addresses. Readable by someone
 // technical who doesn't need to touch the code.
+//
+// ADDITIVE EDIT (September 2026) — inserted a new Section 21 covering the
+// now-real multi-cloud (AWS S3/Azure Blob) storage compatibility and
+// enterprise storage governance suite, explicitly reconciled against
+// Section 02's zero-knowledge description rather than left to read as a
+// contradiction. The former Section 21 ("How It All Actually Connects")
+// shifted to Section 22 — no other section renumbered, no cross-references
+// to it existed elsewhere in this file.
 
 export const ecosystemOverview = {
   cover: {
@@ -460,6 +468,36 @@ export const ecosystemOverview = {
     },
     {
       number: "21",
+      title: "Multi-Cloud Storage Compatibility & Enterprise Storage Governance (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The storage layer now speaks the two protocols enterprise IT already standardizes on — a real AWS S3-compatible API and a real Azure Blob Storage-compatible API, each verified against the actual AWS CLI and the official Azure SDK, not a simplified approximation. An organization's existing scripts, backup tools, and SDKs connect directly, with no migration and no new tooling to install.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Scoped access credentials — a credential can be restricted to one bucket, one folder path, a specific set of operations (read/write/delete/list), and an expiry date, enforced server-side on every request.",
+            "Object versioning — overwriting a file keeps prior versions retrievable and restorable, opt-in per bucket.",
+            "Object Lock — immutable, time-locked retention for compliance, enforced identically whether the request comes through the S3 API, the Azure API, or Business Workspace.",
+            "Legal hold — an indefinite deletion block for litigation/investigation holds, independent of any retention timer.",
+            "Lifecycle policies — automated expiration by age, with locked or legally-held objects always exempt.",
+            "Inaya Drive — a real Windows drive letter backed by the same storage, live-tested end to end: mount, browse, open, save, and delete files the same way you would on any local or network drive.",
+          ],
+        },
+        {
+          type: "note",
+          label: "How this fits the zero-knowledge model described in Section 02.",
+          text: "Standard S3/Azure client tools were never built to encrypt a file client-side before sending it — that step doesn't exist in the AWS CLI or the Azure SDK. So objects written through this compatibility layer specifically use a server-managed encryption key, scoped per organization, itself encrypted at rest, with every use logged to that organization's own audit trail — the same trust model any real S3-compatible gateway product operates under. This is a disclosed, structurally necessary exception for this one access path; every other Inaya document — uploaded through the web app, mobile app, or Business Workspace — keeps the client-side-only model Section 02 describes, unchanged.",
+        },
+        {
+          type: "note",
+          text: "Inaya Drive's WinFSP-backed filesystem code runs as its own separate process (inaya-drive-helper), not linked into the desktop app's own binary — a deliberate licensing boundary, since the real Rust WinFSP binding is GPL-3.0 and this keeps that license off Inaya's proprietary desktop app entirely.",
+        },
+      ],
+    },
+    {
+      number: "22",
       title: "How It All Actually Connects",
       blocks: [
         {

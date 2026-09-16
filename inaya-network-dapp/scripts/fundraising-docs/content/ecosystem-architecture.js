@@ -6,6 +6,12 @@
 // from the actual codebase (contract source, API routes, real function
 // signatures) rather than product-narrative language — where something is
 // unbuilt, deferred, or has a known gap, it says so.
+//
+// ADDITIVE EDIT (September 2026) — appended new Section 43 covering the
+// Multi-Cloud Storage Compatibility (S3/Azure) and Storj-Inspired Storage
+// Capability Expansion SOWs' real, tested output — file/route names, real
+// bugs found and fixed, and disclosed scoping limits, matching this
+// document's own file-and-function-level density.
 
 export const ecosystemArchitecture = {
   cover: {
@@ -1314,6 +1320,69 @@ export const ecosystemArchitecture = {
         {
           type: "note",
           text: "Jest and React Testing Library were introduced for the first time in this pass — previously zero frontend test tooling existed anywhere in the app. Migration covered the highest-traffic modules (Documents, Tasks, CRM, Procurement, Inventory, Finance, HR, Insights, Settings, Integrations); the remaining smaller views and one large outlier file were deliberately deferred and documented, not silently left inconsistent. No backend logic, permission check, or API contract changed anywhere in this pass.",
+        },
+      ],
+    },
+    {
+      number: "43",
+      title: "Multi-Cloud Storage Compatibility & Enterprise Storage Governance (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two passes, back to back. The first built real, protocol-level AWS S3 and Azure Blob Storage compatibility — verified against the actual AWS CLI and the official @azure/storage-blob SDK, not a simplified approximation. The second closed the gap between that and what enterprise storage buyers actually require: granular access grants, versioning, immutable retention, legal hold, lifecycle policies, and a real desktop drive mount. Both S3 and Azure objects run through the exact same real encrypt/shard/pin pipeline every other Inaya upload uses — this is a protocol translation layer, not a parallel storage system.",
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Real SigV4 and Shared-Key request signing, implemented from the actual specs.",
+              body: "src/lib/s3-compat/sigv4.js (AWS Signature Version 4: canonical request → string-to-sign → derived signing key → HMAC) and azureAuth.js (Azure Shared Key). Both cross-checked line-by-line against the real SDKs' own bundled source, not just the public docs.",
+            },
+            {
+              heading: "Granular Storage Access Grants.",
+              body: "A credential can be scoped to one bucket, one prefix, a specific operation set (READ/WRITE/DELETE/LIST), and an expiry — enforced centrally in auth.js/azureAuthMiddleware.js after signature verification, deriving bucket/key/operation from the request's own URL rather than trusting anything the client claims.",
+            },
+            {
+              heading: "Object Versioning, Object Lock, Legal Hold — one shared enforcement chokepoint.",
+              body: "assertNotProtected() in store.js/walletStore.js is called from both the overwrite path and the delete path, so a lock or hold can never be bypassed by hitting the S3 API, the Azure API, or Business Workspace through a different route. Object Lock requires Versioning already Enabled — enforced, not just documented.",
+            },
+            {
+              heading: "Lifecycle policies, real enforcement.",
+              body: "Per-bucket expiration rules with a real enforcement pass (never expires a locked or legally-held object, even past its expiration day) — callable on demand or via the new /api/cron/s3-lifecycle route.",
+            },
+            {
+              heading: "A real, previously-unrecognized gap in storage health, closed.",
+              body: "S3/Azure-compat objects were pinned but never registered with the existing backupEngine.js health/repair pipeline (Section 27) — invisible to the check-pins/verify-integrity/recovery crons that already protect every other file. putS3Object now calls the same replicateShard() every other upload path calls.",
+            },
+            {
+              heading: "Inaya Drive — a real Windows drive letter, WinFSP-backed.",
+              body: "A standalone Rust process (inaya-drive-helper, its own Cargo crate) implements WinFSP's FileSystemContext trait, backed entirely by the same /api/s3 REST endpoint via a Rust port of the SigV4 signer. Kept as a separate process specifically because the Rust WinFSP binding is GPL-3.0 licensed — inaya-desktop spawns/kills it as a child process only, confirmed via a clean cargo check that zero GPL dependency reaches the proprietary desktop binary.",
+            },
+          ],
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["S3 REST surface", "src/app/api/s3/**/route.js — ListBuckets, bucket CRUD, ListObjectsV2, PutObject, GetObject (byte-range aware), HeadObject, DeleteObject, multipart upload, plus real sub-resources (?versioning, ?object-lock, ?versions, ?legal-hold, ?retention, ?versionId=)."],
+            ["Azure REST surface", "src/app/api/azure/**/route.js — List Containers, container CRUD, List Blobs, Put/Get/Delete Blob (Range-aware), Put Block / Put Block List. Dual auth: Shared Key or real Microsoft Entra ID Bearer tokens, verified live against Microsoft Graph."],
+            ["Business Workspace console", "src/app/api/orgs/s3-compat/manage/route.js + S3CompatView.js — bucket/version/lock/health visibility and controls, session-authenticated, separate from the SigV4-signed protocol surface."],
+            ["Test coverage", "19 new tests (test/s3-compat-capabilities.test.mjs) plus the pre-existing 9 (sigv4) + 9 (store) — all passing, zero regressions."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Real bugs found and fixed by real-tool testing, not code review.",
+          text: "(1) A pin-name collision: the pinning-provider name passed to provider.pin() was identical across every version of the same key, and Filebase (this environment's active provider) uses that name as its literal S3 object key — two versions pinned under the same name silently overwrote the same provider-side object. Invisible before Versioning existed; caught by the first version-retrieval test. (2) putLifecyclePolicy/deleteLifecyclePolicy passed a bucket name string as the audit log's recordId, which requires a real ObjectId — threw on every write. (3) Inaya Drive: a read exactly at end-of-file issued an invalid Range request the server correctly rejected as 416, surfacing to Windows as \"device not functioning.\" (4) Inaya Drive: delete silently failed because WinFSP's set_delete() callback — which must accept a delete before cleanup() can act on it — was never implemented. All four fixed and re-verified.",
+        },
+        {
+          type: "note",
+          label: "How this fits the zero-knowledge model in Section 05.",
+          text: "Standard S3/Azure client tools don't perform Inaya's client-side encryption step — that's not a gap, it's how the AWS CLI and Azure SDK work for everyone, on any platform. So objects written through this compatibility layer specifically use a server-managed key, scoped per organization, itself encrypted at rest, with every use logged to the organization's own audit trail. A real, disclosed exception for this one access path only — every other Inaya upload keeps the client-side-only model unchanged.",
+        },
+        {
+          type: "note",
+          text: "Disclosed, not silently different: no presigned-URL SigV4 signing (only header-based); no empty-folder creation via Inaya Drive (S3 has no native folder primitive — rejected cleanly, a folder appears once a file is saved inside it); Inaya Drive proven on Windows only this pass (no macOS/Linux hardware available to build/test FUSE); Object Mount packaged by running the compiled helper directly, not yet a proper Tauri externalBin sidecar. Full writeup: docs/storj-inspired-storage-capability-expansion-report.md and docs/multi-cloud-storage-compatibility-report.md.",
         },
       ],
     },
