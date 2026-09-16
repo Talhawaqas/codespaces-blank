@@ -31,6 +31,11 @@ export const multicloudGuide = {
             ["Azure Blob-compatible", "https://<your-inaya-host>/api/azure", "Any Azure CLI/SDK/tool that supports a custom Blob Storage endpoint"],
           ],
         },
+        {
+          type: "note",
+          label: "What to put in place of <your-inaya-host>.",
+          text: "For the standard, shared Inaya Network platform, replace it with www.inayanetwork.com — so the two endpoints above become https://www.inayanetwork.com/api/s3 and https://www.inayanetwork.com/api/azure. Every command example later in this guide uses the same placeholder; substitute the same value everywhere it appears. If your pilot is running on a dedicated or private instance instead of the shared platform, your Inaya account manager will give you that instance's specific hostname to use here instead.",
+        },
       ],
     },
     {
