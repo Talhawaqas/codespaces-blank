@@ -9,6 +9,13 @@
 // apply here (RevenueRouter/Escrow flow). All financial figures are
 // confirmed real values — live on-chain reads, production-hardcoded
 // constants, or founder-confirmed facts — not placeholders.
+//
+// ADDITIVE EDIT (September 2026) — Section 08 gained one factual line on
+// the now-real AWS S3/Azure Blob API compatibility and enterprise storage
+// governance suite (scoped credentials, versioning, locked retention,
+// legal hold, lifecycle policies, a desktop drive mount). No new numeric
+// claims; every item named is real and tested against the actual AWS
+// CLI/Azure SDK.
 
 export const storageBusinessModel = {
   cover: {
@@ -172,6 +179,11 @@ export const storageBusinessModel = {
         {
           type: "lead",
           text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, and four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation).",
+        },
+        {
+          type: "note",
+          label: "Enterprise interoperability, September 2026.",
+          text: "The storage layer itself now speaks the two protocols enterprise IT already standardizes on: a real, tested AWS S3-compatible API and Azure Blob Storage-compatible API (verified against the actual AWS CLI and the official Azure SDK — not a simplified approximation). On top of that sits an enterprise storage governance suite: scoped, time-limited access credentials; object version history with one-click restore; immutable locked retention for compliance; legal hold; automated lifecycle/retention policies; and a native desktop drive mount so storage appears as an ordinary drive letter. This closes the single largest objection enterprise storage buyers raise — migration cost — since existing tools and scripts connect with no rewrite.",
         },
         {
           type: "note",

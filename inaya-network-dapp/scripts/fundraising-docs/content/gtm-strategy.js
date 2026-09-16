@@ -55,6 +55,13 @@
 // lines shipped since (Security Layer, Inaya Learn, Investor Data Room,
 // desktop apps, AI assistants) — a factual addition, no numbers, no
 // competitive claims, doesn't touch anything PROTECTED or FLAGGED above.
+//
+// ADDITIVE EDIT (September 2026) — Section 01's "Current Position" bullet
+// list gained one more line: real, tested AWS S3 and Azure Blob API
+// compatibility, plus enterprise storage governance (scoped access grants,
+// object versioning, immutable/locked retention, legal hold, lifecycle
+// policies, a desktop drive mount). Factual only, no numbers, no
+// superlative competitive claims — doesn't touch anything PROTECTED above.
 
 export const gtmStrategy = {
   cover: {
@@ -120,6 +127,7 @@ export const gtmStrategy = {
             "Open-source developer resources",
             "Enterprise-oriented product architecture",
             "Beyond storage: a Business Workspace SaaS product (now including real business operations — Tasks, CRM, Procurement, Inventory — and a Finance & HR layer), a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and four purpose-built AI assistants — all live on the same infrastructure",
+            "Enterprise storage interoperability: real AWS S3 and Azure Blob Storage API compatibility (tested against the actual AWS CLI and the official Azure SDK), plus an enterprise storage governance suite — scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native desktop drive mount — so an enterprise customer's existing tools and workflows connect directly, with no migration required",
           ],
         },
         {
