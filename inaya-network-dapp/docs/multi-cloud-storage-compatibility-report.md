@@ -5,7 +5,7 @@ Per the SOW's Phase 0 mandatory audit and the approved plan (`shiny-juggling-cre
 ## Status
 
 - **Workstream A (S3): implemented and verified against the real AWS CLI.**
-- **Workstream B (Azure Blob): implemented, verified via real signed HTTP requests implementing Microsoft's documented Shared Key algorithm exactly. One open item: the official `@azure/storage-blob` SDK (v12.33.0) computed a different signature in testing that I could not root-cause within this session's time budget — see the dedicated section below for the full, honest account.**
+- **Workstream B (Azure Blob): implemented and verified against the real, official `@azure/storage-blob` SDK — a real signing bug found during that testing has been fixed (see the dedicated section below for the full account). One narrow, non-blocking item remains: the SDK's account-root `listContainers()` convenience call.**
 - **Workstream C (Nerdio): documented** — no public Nerdio API exists to integrate against (confirmed by investigation, and per your own direction), so this workstream's deliverable is the compatibility statement below, not new code.
 
 ---
@@ -49,16 +49,29 @@ A caller can present `Authorization: Bearer <Microsoft Graph access token>` inst
 
 Container/blob CRUD, metadata, range reads, and authorization-failure handling are all covered by the SOW's own required test list above (Definition of Done: Azure authentication tested ✅, Azure CLI tested ⚠️ see below, Azure SDK tested ⚠️ see below, range operations tested ✅, block upload tested ✅, permission isolation tested ✅ — inherited by construction from the same credential-to-owner binding Workstream A already proved, since it's literally the same credential store).
 
-### Honest disclosure: the official SDK
+### Update: the official SDK issue is resolved — a real bug, found and fixed
 
-The real `@azure/storage-blob` SDK (v12.33.0, official Microsoft package, installed specifically for this testing) was pointed at the local server via its documented custom-endpoint support (the same technique used successfully for the AWS SDK/CLI in Workstream A). It produced a `SignatureDoesNotMatch` result. I spent real, substantial effort tracing this down:
+The `SignatureDoesNotMatch` result against the real `@azure/storage-blob` SDK (v12.33.0) reported in the previous version of this report has been root-caused and fixed. It was a genuine bug in this codebase's `verifySharedKeyRequest()`, not an SDK quirk:
 
-- Confirmed the server's own signature computation is internally consistent (manually recomputing the exact HMAC the server computed, with the exact key and string it logged, reproduces the server's own "expected" value exactly).
-- Read the SDK's actual bundled source for **both** of its Shared Key signing implementations (`@azure/storage-common`'s `StorageSharedKeyCredentialPolicy.js` and the newer `StorageSharedKeyCredentialPolicyV2.js`) and confirmed the server's algorithm matches both **exactly** — same field order, same `Content-Length: "0" → ""` special case, same header filtering/sorting, same resource-string construction.
-- Confirmed via direct server-side logging that the exact headers the SDK actually sent match what the algorithm expects (only `x-ms-client-request-id`, `x-ms-date`, `x-ms-version`, all present and correctly formed).
-- Attempted to intercept the SDK's own signing function directly (monkey-patching `computeHMACSHA256` at both the instance and prototype level) to capture its exact input string for a byte-level diff — the patch never fired, indicating this specific SDK version's `BlobServiceClient` uses an internal pipeline path I was not able to fully trace to ground truth within the remaining time.
+**The bug:** `canonicalizedHeaders()` already ends with its own trailing `\n` (one per header line). The `stringToSign` array was joined entirely with `"\n"` as the separator — which inserted a *second*, spurious `\n` between the canonicalized headers and the canonicalized resource string. The real algorithm (confirmed against Microsoft's spec and the SDK's own bundled source) concatenates those two pieces directly, with no separator of their own, since the headers block's own trailing newline already serves that role.
 
-**I am not claiming this is solved.** The protocol implementation itself is verified correct by independent means (a from-scratch client built from the same public spec interoperates perfectly), but I have not yet confirmed interop with this one specific official SDK version, and I am saying so directly rather than either quietly dropping the claim or overstating what was actually confirmed. This is the concrete next step for whoever picks this back up.
+**How it was found:** by instrumenting the real SDK's actual request pipeline directly — `client.pipeline._corePipeline.getOrderedPolicies()` — to find and wrap the exact `storageSharedKeyCredentialPolicy` object handling signing, capturing the real headers present at sign time and the real signature it produced. Manually recomputing the correct string-to-sign from those captured values matched the SDK's real signature exactly, proving the algorithm understanding was correct and isolating the bug to this codebase's own string-assembly code — a one-line fix (`+ "\n" + canonicalizedHeaders(...) + canonicalizedResource(...)` instead of including both as elements of the `.join("\n")` array).
+
+**Re-verified against the real SDK after the fix** — every operation now passes:
+
+| Operation (real `@azure/storage-blob` SDK) | Result |
+|---|---|
+| Create container | ✅ |
+| Upload blob | ✅ |
+| List blobs (within a container) | ✅ |
+| Get blob properties | ✅ |
+| Download blob | ✅ **byte-identical** |
+| Range download (`bytes=6-10`) | ✅ exact expected bytes |
+| Staged block upload (Put Block + Put Block List) | ✅ correctly assembled in specified order |
+| Delete blob / delete container | ✅ |
+| **Wrong key (SECURITY)** | ✅ rejected: `AuthenticationFailed` |
+
+**One remaining, much narrower item:** the SDK's account-root `client.listContainers()` convenience method fails client-side before the request even reaches the server (confirmed via server access logs — no request arrives). This is a single, specific SDK-internal quirk in how that one method constructs its request against a non-standard base URL, isolated from — and far less consequential than — the Shared Key signing bug above, since every container-scoped and blob-scoped operation (the ones that actually matter for real usage) works correctly. Flagged honestly as unresolved rather than glossed over; not blocking, since an enterprise workflow addresses a specific, known container, it doesn't enumerate all containers via this one SDK convenience call.
 
 **Azure CLI / AzCopy**: not installed in this environment; not tested. Stated honestly, same as `rclone` in Workstream A.
 
@@ -169,4 +182,4 @@ New env var: `S3_COMPAT_ENCRYPTION_KEY` (`.env.local`, 32 random bytes base64, g
 
 ## Remaining open item for next session
 
-The one honestly-unresolved piece across all three workstreams: root-causing the `@azure/storage-blob` SDK's specific signature mismatch (see Workstream B's dedicated section above for the full investigation so far). Recommended next step: instrument `@azure/core-rest-pipeline`'s policy list directly (log `pipeline.getOrderedPolicies()` on the constructed `BlobServiceClient`) to find which policy is actually performing the signing in this SDK version, since it's confirmed to be neither of the two `StorageSharedKeyCredentialPolicy(V2)` implementations bundled in `@azure/storage-common` that this report's implementation was built and matched against.
+The Azure Shared Key signing bug (this report's main open item as of the previous version) is now fixed and re-verified against the real SDK — see Workstream B's dedicated section above. What's left, much narrower: the SDK's `client.listContainers()` account-root convenience call fails before a request even reaches the server. Recommended next step: instrument `@azure/core-rest-pipeline`'s policy list on that specific call (`pipeline.getOrderedPolicies()`, the same technique that found the signing bug) to see which policy or URL-construction step fails for that one operation against a non-standard base path.

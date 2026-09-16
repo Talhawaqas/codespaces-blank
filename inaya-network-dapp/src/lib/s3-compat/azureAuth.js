@@ -71,22 +71,31 @@ export function verifySharedKeyRequest({ method, url, headers, bodyBuffer, accou
   // as an empty string, not "0".
   const contentLengthHeader = headers.get("content-length");
   const contentLength = !contentLengthHeader || contentLengthHeader === "0" ? "" : contentLengthHeader;
-  const stringToSign = [
-    method.toUpperCase(),
-    headers.get("content-language") || "",
-    headers.get("content-encoding") || "",
-    contentLength,
-    headers.get("content-md5") || "",
-    headers.get("content-type") || "",
-    "", // Date -- empty because x-ms-date is used instead, per spec
-    headers.get("if-modified-since") || "",
-    headers.get("if-match") || "",
-    headers.get("if-none-match") || "",
-    headers.get("if-unmodified-since") || "",
-    headers.get("range") || "",
-    canonicalizedHeaders(headers),
-    canonicalizedResource(parsed.account, url.pathname, url.searchParams),
-  ].join("\n");
+  // NOTE: canonicalizedHeaders() already ends with its own trailing "\n" (one
+  // per header line) -- it must be concatenated directly against
+  // canonicalizedResource, NOT joined with an extra "\n" separator, or the
+  // string carries a spurious blank line the real algorithm never has. A
+  // real bug found here during Azure SDK interop debugging: the fixed
+  // 12-field block is what gets joined with "\n"; canonicalizedHeaders and
+  // canonicalizedResource are appended after with no separator of their own.
+  const stringToSign =
+    [
+      method.toUpperCase(),
+      headers.get("content-language") || "",
+      headers.get("content-encoding") || "",
+      contentLength,
+      headers.get("content-md5") || "",
+      headers.get("content-type") || "",
+      "", // Date -- empty because x-ms-date is used instead, per spec
+      headers.get("if-modified-since") || "",
+      headers.get("if-match") || "",
+      headers.get("if-none-match") || "",
+      headers.get("if-unmodified-since") || "",
+      headers.get("range") || "",
+    ].join("\n") +
+    "\n" +
+    canonicalizedHeaders(headers) +
+    canonicalizedResource(parsed.account, url.pathname, url.searchParams);
 
   const keyBuffer = Buffer.from(accountKey, "base64");
   const expectedSignature = createHmac("sha256", keyBuffer).update(stringToSign, "utf8").digest("base64");
