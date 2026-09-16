@@ -9,6 +9,14 @@
 // RevenueRouter/Escrow flow). All financial figures are confirmed real
 // values — live on-chain reads, production-hardcoded constants, or
 // founder-confirmed facts — not placeholders.
+//
+// ADDITIVE EDIT (September 2026) — Section 10's application-layer bullet
+// list gained one line naming the now-real AWS S3/Azure Blob API
+// compatibility and enterprise storage governance suite (scoped
+// credentials, versioning, locked retention, legal hold, lifecycle
+// policies, a desktop drive mount). Factual only — every item named is
+// real and tested against the actual AWS CLI/Azure SDK, no new numeric or
+// mainnet claims.
 
 export const whitepaper = {
   cover: {
@@ -234,6 +242,7 @@ export const whitepaper = {
             "Sovereign Enterprise OS — a connecting layer, not a new feature list: unified identity, cross-module notifications, one search across every module, a trust & health signal built from the real audit trail and backup data, and a single AI assistant spanning business and security questions, on both the web app and Business Workspace.",
             "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center with client-side cryptographic verification of the audit chain, cross-organization trust primitives, a scoped API-key developer platform, and recovery capability automatically re-tested daily against real infrastructure using system-owned synthetic assets.",
             "A Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth connections to nine external business tools, and a spoken-voice mode for the Business AI Assistant.",
+            "Multi-Cloud Storage Compatibility & Enterprise Storage Governance — a real, tested AWS S3-compatible API and Azure Blob Storage-compatible API (verified against the actual AWS CLI and the official Azure SDK), plus scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native Windows drive mount — so enterprise customers connect existing tools with no migration.",
           ],
         },
         {
