@@ -154,3 +154,100 @@ test("verifySigV4Request accepts UNSIGNED-PAYLOAD without hashing the body", () 
   });
   assert.equal(result.ok, true);
 });
+
+// ---------------------------------------------------------------------
+// Google Cloud Storage Compatibility Layer SOW -- GOOG4-HMAC-SHA256.
+// Same real algorithm as AWS4 above (the whole point of generalizing
+// sigv4.js rather than forking it), just Google's own documented constants:
+// x-goog-date/x-goog-content-sha256 headers, "GOOG4"+secret key-derivation
+// seed, "goog4_request" scope terminator. Built independently from the
+// server implementation, the same "manually re-implement the client side
+// from the public spec" technique used to verify the Azure Shared Key
+// signer earlier in this project -- a real interop proof, not just calling
+// the same code twice.
+// ---------------------------------------------------------------------
+
+function signRequestGoog4({ method, path, query = "", headers, bodyBuffer = Buffer.alloc(0), secretAccessKey = SECRET, accessKeyId = ACCESS_KEY, date, region = "auto", service = "s3" }) {
+  const googDate = date || new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = googDate.slice(0, 8);
+  const allHeaders = { host: "localhost:3000", "x-goog-date": googDate, "x-goog-content-sha256": sha256Hex(bodyBuffer), ...headers };
+  const signedHeaderNames = Object.keys(allHeaders).sort();
+  const canonicalHeaders = signedHeaderNames.map((k) => `${k}:${allHeaders[k]}\n`).join("");
+  const signedHeaders = signedHeaderNames.join(";");
+
+  const canonicalRequest = [method, path, query, canonicalHeaders, signedHeaders, sha256Hex(bodyBuffer)].join("\n");
+  const credentialScope = `${dateStamp}/${region}/${service}/goog4_request`;
+  const stringToSign = ["GOOG4-HMAC-SHA256", googDate, credentialScope, sha256Hex(canonicalRequest)].join("\n");
+
+  const kDate = hmac("GOOG4" + secretAccessKey, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, "goog4_request");
+  const signature = createHmac("sha256", kSigning).update(stringToSign, "utf8").digest("hex");
+
+  const authorization = `GOOG4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const headerMap = new Map(Object.entries(allHeaders));
+  headerMap.set("authorization", authorization);
+
+  return {
+    method,
+    url: new URL(`http://localhost:3000${path}${query ? "?" + query : ""}`),
+    headers: { get: (name) => headerMap.get(name.toLowerCase()) || null },
+    bodyBuffer,
+  };
+}
+
+test("verifySigV4Request accepts a correctly-signed GOOG4-HMAC-SHA256 request", () => {
+  const req = signRequestGoog4({ method: "GET", path: "/test-bucket" });
+  const result = verifySigV4Request({ ...req, secretAccessKey: SECRET });
+  assert.equal(result.ok, true);
+  assert.equal(result.accessKeyId, ACCESS_KEY);
+});
+
+test("verifySigV4Request rejects a GOOG4 request with the wrong secret", () => {
+  const req = signRequestGoog4({ method: "GET", path: "/test-bucket" });
+  const result = verifySigV4Request({ ...req, secretAccessKey: "aDifferentWrongSecret" });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "SignatureDoesNotMatch");
+});
+
+test("verifySigV4Request rejects a tampered GOOG4 request (body changed after signing)", () => {
+  const bodyBuffer = Buffer.from("original content");
+  const req = signRequestGoog4({ method: "PUT", path: "/test-bucket/key.txt", bodyBuffer });
+  const tamperedReq = { ...req, bodyBuffer: Buffer.from("tampered content") };
+  const result = verifySigV4Request({ ...tamperedReq, secretAccessKey: SECRET });
+  assert.equal(result.ok, false);
+});
+
+test("verifySigV4Request rejects an AWS4 signature replayed with GOOG4's algorithm label (cross-scheme confusion)", () => {
+  // A request correctly signed as AWS4 must NOT verify if only the
+  // Authorization header's algorithm word is swapped to GOOG4-HMAC-SHA256 --
+  // proves the two schemes' key derivation is genuinely different, not the
+  // same signature accepted under either label.
+  const req = signRequest({ method: "GET", path: "/test-bucket" });
+  const forgedAuth = req.headers.get("authorization").replace("AWS4-HMAC-SHA256", "GOOG4-HMAC-SHA256").replace("aws4_request", "goog4_request");
+  const headerMap = new Map();
+  headerMap.set("host", "localhost:3000");
+  headerMap.set("x-goog-date", req.headers.get("x-amz-date"));
+  headerMap.set("x-goog-content-sha256", req.headers.get("x-amz-content-sha256"));
+  headerMap.set("authorization", forgedAuth.replace(/SignedHeaders=[^,]+/, "SignedHeaders=host;x-goog-content-sha256;x-goog-date"));
+  const result = verifySigV4Request({
+    method: "GET",
+    url: req.url,
+    headers: { get: (name) => headerMap.get(name.toLowerCase()) || null },
+    bodyBuffer: Buffer.alloc(0),
+    secretAccessKey: SECRET,
+  });
+  assert.equal(result.ok, false);
+});
+
+test("parseAuthorizationHeader correctly identifies GOOG4-HMAC-SHA256 vs AWS4-HMAC-SHA256", () => {
+  const goog4 = parseAuthorizationHeader("GOOG4-HMAC-SHA256 Credential=INAYAAKTEST/20260101/auto/s3/goog4_request, SignedHeaders=host;x-goog-date, Signature=" + "b".repeat(64));
+  assert.equal(goog4.algorithm, "GOOG4-HMAC-SHA256");
+  assert.equal(goog4.scheme.dateHeader, "x-goog-date");
+  assert.equal(goog4.scheme.keySeed, "GOOG4");
+
+  const aws4 = parseAuthorizationHeader("AWS4-HMAC-SHA256 Credential=INAYAAKTEST/20260101/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=" + "a".repeat(64));
+  assert.equal(aws4.algorithm, "AWS4-HMAC-SHA256");
+  assert.equal(aws4.scheme.dateHeader, "x-amz-date");
+});

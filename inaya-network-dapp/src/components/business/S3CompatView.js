@@ -95,16 +95,18 @@ export default function S3CompatView({ orgId }) {
         <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm">S3-Compatible Storage</h3>
         <p className="text-[var(--inaya-text-muted)] text-xs mt-0.5 max-w-xl">
           Consume this org&apos;s Business Workspace storage from any AWS S3-compatible tool — the AWS CLI, an SDK,
-          rclone — without ever leaving Business Workspace or connecting a wallet. Objects written this way are
-          still encrypted, sharded, and redundantly pinned exactly like every other Inaya document, using a
-          server-managed encryption key scoped to this org (not the zero-knowledge, browser-only key model the
-          rest of Business Workspace uses — see the SOW report for why that distinction is necessary for
-          protocol compatibility, and how the key is protected).
+          rclone — without ever leaving Business Workspace or connecting a wallet. The same endpoint and credential
+          also accept Google Cloud Storage&apos;s XML API signing conventions (both its AWS4-HMAC-SHA256
+          interoperability mode and its native GOOG4-HMAC-SHA256 scheme) — one credential, no separate Google setup.
+          Objects written this way are still encrypted, sharded, and redundantly pinned exactly like every other
+          Inaya document, using a server-managed encryption key scoped to this org (not the zero-knowledge,
+          browser-only key model the rest of Business Workspace uses — see the SOW report for why that distinction
+          is necessary for protocol compatibility, and how the key is protected).
         </p>
       </div>
 
       <div className="bg-black/20 border border-white/5 rounded-lg p-3">
-        <p className="text-[var(--inaya-text-muted)] text-[11px] font-bold uppercase mb-1">Endpoint</p>
+        <p className="text-[var(--inaya-text-muted)] text-[11px] font-bold uppercase mb-1">Endpoint (AWS S3 &amp; Google Cloud Storage)</p>
         <code className="text-[12px] text-[var(--inaya-text-primary)] break-all">{endpointUrl}</code>
       </div>
 
