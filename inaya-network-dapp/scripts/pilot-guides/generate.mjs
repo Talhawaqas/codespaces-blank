@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { multicloudGuide } from "./multicloud-content.js";
 import { storageCapabilitiesGuide } from "./storage-capabilities-content.js";
+import { gcsGuide } from "./gcs-content.js";
 import { buildInvestmentMemorandumHTML } from "../fundraising-docs/template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,7 +47,10 @@ async function inlineBrandCss(html) {
 async function renderToPdf(browser, html, outputPath) {
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
+    // domcontentloaded, not networkidle0 -- brand.css is inlined as a
+    // <style> tag (no external requests), and this proved more reliable
+    // than networkidle0 on this machine's Chrome/puppeteer setup.
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.pdf({ path: outputPath, format: "A4", printBackground: true, preferCSSPageSize: true });
   } finally {
     await page.close();
@@ -57,10 +61,11 @@ async function main() {
   const targets = [
     { name: "inaya-pilot-guide-multicloud-storage.pdf", html: buildInvestmentMemorandumHTML(multicloudGuide) },
     { name: "inaya-pilot-guide-advanced-storage-capabilities.pdf", html: buildInvestmentMemorandumHTML(storageCapabilitiesGuide) },
+    { name: "inaya-pilot-guide-google-cloud-storage.pdf", html: buildInvestmentMemorandumHTML(gcsGuide) },
   ];
 
   const executablePath = findChrome();
-  const browser = await puppeteer.launch({ executablePath, headless: true });
+  const browser = await puppeteer.launch({ executablePath, headless: true, timeout: 30000 });
   try {
     for (const target of targets) {
       const fullHtml = await inlineBrandCss(target.html);
