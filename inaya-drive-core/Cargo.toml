@@ -1,0 +1,18 @@
+[package]
+name = "inaya-drive-core"
+version = "0.1.0"
+description = "Shared, OS-independent core for every Inaya Drive helper (Windows/WinFSP, Linux/FUSE): the real S3 client and AWS SigV4 signer, both proven end-to-end against the already-tested /api/s3 endpoint. No OS-specific filesystem dependency lives here -- that's each platform helper's own, separate crate -- which is what keeps this crate's own license unaffected by any one platform's filesystem-binding license (e.g. WinFSP's GPL-3.0)."
+license = "UNLICENSED"
+edition = "2021"
+
+[lib]
+name = "inaya_drive_core"
+path = "src/lib.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["blocking"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+chrono = "0.4"
+url = "2"

@@ -426,7 +426,15 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
 /** Real ListObjectsV2 semantics: prefix filter + delimiter-based "common
  *  prefixes" grouping, over the flat filename/key namespace -- S3 doesn't
  *  have real directories, "folders" are purely a shared-prefix convention,
- *  so this needs no hierarchy beyond what org_documents already has. */
+ *  so this needs no hierarchy beyond what org_documents already has.
+ *
+ *  Inaya Drive Empty Folder SOW: also merges in real, durable folder
+ *  records (s3_folders, below) that fall under this exact prefix+delimiter
+ *  -- a folder with zero objects would otherwise never appear in any
+ *  listing, since everything above is derived purely from object keys. A
+ *  client (the S3 protocol, or Inaya Drive) sees a real empty folder as an
+ *  ordinary CommonPrefixes entry, indistinguishable from an object-derived
+ *  one -- correct, standard S3 listing semantics either way. */
 export async function listS3Objects({ orgId, bucket, prefix = "", delimiter = "", maxKeys = 1000 }) {
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return null;
@@ -446,7 +454,236 @@ export async function listS3Objects({ orgId, bucket, prefix = "", delimiter = ""
       contents.push(doc);
     }
   }
+
+  if (delimiter) {
+    const parentFolderId = await resolveFolderIdForPrefix({ orgId, bucketDoc, prefix });
+    if (parentFolderId !== undefined) {
+      const { db } = await getOrgCollections();
+      const childFolders = await db.collection("s3_folders").find({ orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId, deletedAt: null }).toArray();
+      for (const f of childFolders) commonPrefixes.add(prefix + f.name + delimiter);
+    }
+  }
+
   return { contents: contents.slice(0, maxKeys), commonPrefixes: [...commonPrefixes].sort(), isTruncated: contents.length > maxKeys };
+}
+
+// ---------------------------------------------------------------------
+// Enterprise Adoption & Market Reach Expansion SOW, Workstream A --
+// migration job-level audit events. Deliberately NOT a new tracking
+// collection: a migration run's real state of record is the operator's
+// own local manifest file (see inaya-migration-agent/src/manifest.js);
+// this is only a start/complete/fail breadcrumb in the org's EXISTING
+// audit chain, satisfying §8.3's "reuse the existing audit chain rather
+// than creating a parallel audit system" literally.
+// ---------------------------------------------------------------------
+
+export async function recordMigrationEvent({ orgId, bucket, jobId, event, summary, actorEmail }) {
+  const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
+  await logOrgActivity({
+    orgId,
+    recordType: "s3_migration",
+    recordId: bucketDoc._id,
+    actorEmail: actorEmail || "migration-agent",
+    action: `MIGRATION_${event}`,
+    previousState: null,
+    newState: summary || null,
+    metadata: { jobId, bucket, summary: summary || null },
+  });
+  return { recorded: true };
+}
+
+// ---------------------------------------------------------------------
+// Inaya Drive -- User-Created Empty Folder Support SOW.
+//
+// Phase 0 finding: the wallet side already has a real, proven, durable
+// folder system (metadata_folders -- folderId/owner/name/parentFolderId/
+// createdAt/updatedAt/deletedAt, real create/rename/move/delete routes
+// under api/metadata/*-folder). The org side has no equivalent -- the
+// department/project hierarchy is the wrong granularity (it scopes
+// buckets themselves, not paths *within* one bucket). s3_folders below
+// mirrors metadata_folders' exact proven shape (same field names, same
+// soft-delete-with-orphan-to-parent semantics on delete) rather than
+// inventing a new one, scoped additionally by projectId since -- unlike
+// the wallet's single global tree -- an org can have many buckets, each
+// needing its own independent folder tree.
+//
+// Deliberately NOT linked to org_documents by any foreign key: an
+// object's location is still purely its flat `filename` key (unchanged);
+// a folder row exists ONLY to make an otherwise-invisible empty directory
+// listable and durable. Deleting a folder row therefore never touches any
+// object -- there was never a reference to orphan in the first place.
+// ---------------------------------------------------------------------
+
+function splitFolderPath(folderPath) {
+  return String(folderPath || "").split("/").filter(Boolean);
+}
+
+const FOLDER_NAME_RE = /^[^/\\\0]{1,255}$/;
+
+// Attaches a stable `.code` so the API route (and, through its HTTP
+// status, the Rust Drive client) can map each failure deterministically
+// instead of surfacing every folder error as an opaque 500 -- the SOW's
+// own explicit error-handling requirement.
+function folderError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function validateFolderSegment(name) {
+  if (name === "." || name === "..") throw folderError("InvalidFolderName", `Invalid folder name "${name}".`);
+  if (!FOLDER_NAME_RE.test(name)) throw folderError("InvalidFolderName", `Invalid folder name "${name}": must be 1-255 characters and contain no "/", "\\", or null byte.`);
+}
+
+/** Walks an already-existing folder chain (creates nothing). Returns the
+ *  leaf row, or null if any segment along the way is missing. */
+async function walkS3FolderChain({ orgId, bucketDoc, segments }) {
+  const { db } = await getOrgCollections();
+  const col = db.collection("s3_folders");
+  let parentFolderId = null;
+  let row = null;
+  for (const name of segments) {
+    row = await col.findOne({ orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId, name, deletedAt: null });
+    if (!row) return null;
+    parentFolderId = row.folderId;
+  }
+  return row;
+}
+
+/** Resolves what "parentFolderId" a listing prefix corresponds to, so
+ *  listS3Objects can find the right folder rows to merge in. Returns
+ *  `null` for the bucket root, a real folderId for a real sub-path, or
+ *  `undefined` if the prefix doesn't correspond to any known folder path
+ *  (nothing to merge). `prefix` is expected delimiter-terminated (e.g.
+ *  "documents/contracts/") or empty for the root. */
+async function resolveFolderIdForPrefix({ orgId, bucketDoc, prefix }) {
+  const segments = splitFolderPath(prefix);
+  if (segments.length === 0) return null;
+  const row = await walkS3FolderChain({ orgId, bucketDoc, segments });
+  return row ? row.folderId : undefined;
+}
+
+/** Creates a durable, empty-safe folder record at `folderPath` (e.g.
+ *  "documents/contracts/2026") within `bucket`. Ancestor segments are
+ *  auto-vivified (mkdir -p semantics) idempotently; the LEAF segment must
+ *  not already exist as a folder at that exact parent -- a real duplicate
+ *  rejection (SOW §6/§15), not silently merged. Does not touch, require,
+ *  or conflict with any existing object at an overlapping key -- an
+ *  object-derived pseudo-folder and a real folder row for the same path
+ *  coexist and are presented identically to a listing client. */
+export async function createS3Folder({ orgId, bucket, folderPath, actorEmail }) {
+  const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+  segments.forEach(validateFolderSegment);
+
+  const { db } = await getOrgCollections();
+  const col = db.collection("s3_folders");
+  const now = new Date().toISOString();
+  let parentFolderId = null;
+  let leaf = null;
+
+  for (let i = 0; i < segments.length; i++) {
+    const isLeaf = i === segments.length - 1;
+    const existing = await col.findOne({ orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId, name: segments[i], deletedAt: null });
+    if (existing) {
+      if (isLeaf) throw folderError("FolderAlreadyExists", `A folder named "${segments[i]}" already exists at this location.`);
+      parentFolderId = existing.folderId;
+      leaf = existing;
+      continue;
+    }
+    const folderId = new ObjectId().toString();
+    const doc = { folderId, orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId, name: segments[i], createdAt: now, updatedAt: now, deletedAt: null, createdByEmail: actorEmail || null };
+    await col.insertOne(doc);
+    parentFolderId = folderId;
+    leaf = doc;
+  }
+
+  await logOrgActivity({
+    orgId, recordType: "s3_folder", recordId: bucketDoc._id, actorEmail: actorEmail || "s3-compat", action: "FOLDER_CREATED",
+    previousState: null, newState: { bucket, folderPath }, metadata: { bucket, folderPath },
+  });
+  return { bucket, folderPath, folderId: leaf.folderId };
+}
+
+/** Returns { folderId, exists } for a folder path -- used by the Drive
+ *  helper to resolve whether an empty (no-object) directory is real,
+ *  distinct from head/get object lookups which only ever see files. */
+export async function getS3FolderInfo({ orgId, bucket, folderPath }) {
+  const bucketDoc = await getS3Bucket({ orgId, bucket });
+  if (!bucketDoc) return null;
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) return null;
+  const row = await walkS3FolderChain({ orgId, bucketDoc, segments });
+  return row ? { folderId: row.folderId, name: row.name, createdAt: row.createdAt } : null;
+}
+
+/** Soft-deletes the folder record at `folderPath`. Matches metadata_folders'
+ *  own proven delete-folder semantics exactly: child FOLDER rows are
+ *  orphaned to the bucket root (parentFolderId: null), never cascade-
+ *  deleted. Objects are untouched either way -- they were never linked to
+ *  a folder row (see module note above), so there is nothing to orphan or
+ *  cascade for them. */
+export async function deleteS3Folder({ orgId, bucket, folderPath, actorEmail }) {
+  const bucketDoc = await getS3Bucket({ orgId, bucket });
+  if (!bucketDoc) return { deleted: true };
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+
+  const folder = await walkS3FolderChain({ orgId, bucketDoc, segments });
+  if (!folder) return { deleted: true }; // idempotent, matching every other delete in this layer
+
+  const { db } = await getOrgCollections();
+  const col = db.collection("s3_folders");
+  const now = new Date().toISOString();
+  await col.updateOne({ folderId: folder.folderId }, { $set: { deletedAt: now, updatedAt: now } });
+  await col.updateMany({ orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId: folder.folderId }, { $set: { parentFolderId: null, updatedAt: now } });
+
+  await logOrgActivity({
+    orgId, recordType: "s3_folder", recordId: bucketDoc._id, actorEmail: actorEmail || "s3-compat", action: "FOLDER_DELETED",
+    previousState: { bucket, folderPath }, newState: null, metadata: { bucket, folderPath },
+  });
+  return { deleted: true };
+}
+
+/** Renames and/or moves a folder in one operation -- exactly what WinFSP's
+ *  own rename() callback represents (old path -> new path, which may
+ *  differ in name, parent, or both). The new parent path must already
+ *  exist (matching the proven api/metadata/move-folder route's own
+ *  requirement that a target parent be real, not auto-vivified). */
+export async function renameS3Folder({ orgId, bucket, oldFolderPath, newFolderPath, actorEmail }) {
+  const bucketDoc = await getS3Bucket({ orgId, bucket });
+  if (!bucketDoc) throw folderError("NoSuchBucket", "The specified bucket does not exist.");
+
+  const oldSegments = splitFolderPath(oldFolderPath);
+  const newSegments = splitFolderPath(newFolderPath);
+  if (oldSegments.length === 0 || newSegments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+  const newName = newSegments[newSegments.length - 1];
+  validateFolderSegment(newName);
+  const newParentSegments = newSegments.slice(0, -1);
+
+  const folder = await walkS3FolderChain({ orgId, bucketDoc, segments: oldSegments });
+  if (!folder) throw folderError("NoSuchFolder", "Folder not found.");
+
+  let newParentFolderId = null;
+  if (newParentSegments.length > 0) {
+    const newParent = await walkS3FolderChain({ orgId, bucketDoc, segments: newParentSegments });
+    if (!newParent) throw folderError("NoSuchParentFolder", "The destination parent folder does not exist.");
+    newParentFolderId = newParent.folderId;
+  }
+  if (newParentFolderId === folder.folderId) throw folderError("InvalidFolderName", "A folder cannot be moved into itself.");
+
+  const { db } = await getOrgCollections();
+  const col = db.collection("s3_folders");
+  const conflict = await col.findOne({ orgId: toObjectId(orgId), projectId: bucketDoc._id, parentFolderId: newParentFolderId, name: newName, deletedAt: null, folderId: { $ne: folder.folderId } });
+  if (conflict) throw folderError("FolderAlreadyExists", `A folder named "${newName}" already exists at the destination.`);
+
+  const now = new Date().toISOString();
+  await col.updateOne({ folderId: folder.folderId }, { $set: { name: newName, parentFolderId: newParentFolderId, updatedAt: now } });
+
+  await logOrgActivity({
+    orgId, recordType: "s3_folder", recordId: bucketDoc._id, actorEmail: actorEmail || "s3-compat", action: "FOLDER_RENAMED",
+    previousState: { bucket, folderPath: oldFolderPath }, newState: { bucket, folderPath: newFolderPath }, metadata: { bucket, oldFolderPath, newFolderPath },
+  });
+  return { bucket, folderPath: newFolderPath, folderId: folder.folderId };
 }
 
 /** SOW §3: "retrieval of a specific version" (listing side) + Business
@@ -455,6 +692,30 @@ export async function listS3Objects({ orgId, bucket, prefix = "", delimiter = ""
  *  via-delete-marker state), newest first -- deliberately including
  *  deletedAt-marked rows here (unlike listS3Objects), since a delete
  *  marker is itself a real, listable event in S3's version history. */
+/** Real S3 bucket-wide ListObjectVersions (Enterprise Adoption SOW,
+ *  Workstream B): every object's every version in the bucket, not just
+ *  one key -- required for real S3 SDK clients (Terraform's
+ *  force_destroy bucket-emptying flow calls exactly this). Single page
+ *  only, matching listObjectVersionsXml's own disclosed limitation. */
+export async function listAllObjectVersions({ orgId, bucket, prefix = "" }) {
+  const bucketDoc = await getS3Bucket({ orgId, bucket });
+  if (!bucketDoc) return null;
+  const { orgDocuments } = await getOrgCollections();
+  const docs = await orgDocuments
+    .find({ orgId: toObjectId(orgId), projectId: bucketDoc._id, filename: { $regex: `^${escapeRegExp(prefix)}` } })
+    .sort({ filename: 1, createdAt: -1 })
+    .toArray();
+  return docs.map((d) => ({
+    key: d.filename,
+    versionId: d.versionId || "null",
+    isLatest: d.isLatest !== false,
+    deleteMarker: !!d.deletedAt,
+    sizeBytes: d.sizeBytes,
+    etag: d.cidAlpha || d.fileHash,
+    lastModified: d.createdAt,
+  }));
+}
+
 export async function listObjectVersions({ orgId, bucket, key }) {
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return null;

@@ -23,6 +23,16 @@ function joinKey(keyParts) {
   return (keyParts || []).join("/");
 }
 
+// createS3Folder/deleteS3Folder/renameS3Folder (store.js/walletStore.js)
+// throw Error objects with one of these `.code`s attached -- map them to
+// their matching S3-shaped error response instead of falling through to a
+// generic 500, per the SOW's own deterministic-error-handling requirement.
+const FOLDER_ERROR_CODES = new Set(["FolderAlreadyExists", "InvalidFolderName", "NoSuchFolder", "NoSuchParentFolder", "NoSuchBucket"]);
+function folderAwareError(err) {
+  if (err?.code && FOLDER_ERROR_CODES.has(err.code)) return s3Error(err.code, err.message);
+  return null;
+}
+
 // PUT ?legal-hold / ?retention -- real S3 sub-resources
 // (PutObjectLegalHold/PutObjectRetention). Small, fixed XML shapes, same
 // pragmatic regex-extraction level as parseCompleteMultipartBody/
@@ -46,6 +56,17 @@ export async function PUT(req, { params }) {
     const url = new URL(req.url);
     const uploadId = url.searchParams.get("uploadId");
     const partNumber = url.searchParams.get("partNumber");
+
+    // ?folder -- Inaya-specific extension, NOT part of the real S3
+    // protocol (S3 has no empty-folder primitive). Creates a real,
+    // durable, empty-safe folder record at this key's path -- used by
+    // Inaya Drive's WinFSP mkdir handling, not by third-party S3 clients,
+    // which have no reason to send this query param. See
+    // docs/inaya-drive-empty-folder-creation-report.md.
+    if (url.searchParams.has("folder")) {
+      const result = await store.createS3Folder({ ...ownerArgs(owner), bucket: params.bucket, folderPath: key, actorEmail: accessKeyId });
+      return Response.json(result, { status: 200 });
+    }
 
     if (url.searchParams.has("legal-hold")) {
       const status = parseLegalHoldStatus(bodyBuffer.toString("utf8"));
@@ -73,6 +94,8 @@ export async function PUT(req, { params }) {
   } catch (err) {
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
+    const folderResp = folderAwareError(err);
+    if (folderResp) return folderResp;
     console.error("PUT /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
   }
@@ -81,7 +104,7 @@ export async function PUT(req, { params }) {
 export async function POST(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner } = await authenticateS3Request(req, bodyBuffer);
+    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer);
     const store = storeFor(owner);
     const key = joinKey(params.key);
     const url = new URL(req.url);
@@ -90,6 +113,16 @@ export async function POST(req, { params }) {
       const contentType = req.headers.get("content-type") || "application/octet-stream";
       const uploadId = await store.createMultipartUpload({ ...ownerArgs(owner), bucket: params.bucket, key, contentType });
       return xmlResponse(initiateMultipartUploadXml({ bucket: params.bucket, key, uploadId }));
+    }
+
+    // ?folder&to=<new-path> -- Inaya-specific rename/move for a folder
+    // created via PUT ?folder above. Same non-S3-protocol disclosure as
+    // PUT ?folder.
+    if (url.searchParams.has("folder")) {
+      const to = url.searchParams.get("to");
+      if (!to) return s3Error("InvalidRequest", "Renaming a folder requires ?to=<new-folder-path>.");
+      const result = await store.renameS3Folder({ ...ownerArgs(owner), bucket: params.bucket, oldFolderPath: key, newFolderPath: to, actorEmail: accessKeyId });
+      return Response.json(result, { status: 200 });
     }
 
     const uploadId = url.searchParams.get("uploadId");
@@ -108,6 +141,8 @@ export async function POST(req, { params }) {
     return s3Error("InvalidRequest", "Unrecognized POST operation.");
   } catch (err) {
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
+    const folderResp = folderAwareError(err);
+    if (folderResp) return folderResp;
     console.error("POST /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
   }
@@ -219,6 +254,12 @@ export async function DELETE(req, { params }) {
       return new Response(null, { status: 204 });
     }
 
+    // ?folder -- Inaya-specific extension, same disclosure as PUT ?folder.
+    if (url.searchParams.has("folder")) {
+      await store.deleteS3Folder({ ...ownerArgs(owner), bucket: params.bucket, folderPath: key, actorEmail: null });
+      return new Response(null, { status: 204 });
+    }
+
     const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
     return new Response(null, { status: 204, headers: result?.deleteMarker ? { "x-amz-delete-marker": "true" } : {} });
   } catch (err) {
@@ -226,6 +267,8 @@ export async function DELETE(req, { params }) {
       return s3Error("AccessDenied", err.message);
     }
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
+    const folderResp = folderAwareError(err);
+    if (folderResp) return folderResp;
     console.error("DELETE /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
   }

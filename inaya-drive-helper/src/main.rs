@@ -14,11 +14,8 @@
 // object keys map to nested paths using S3's own flat-namespace/prefix
 // convention, matching every other part of this SOW's storage model.
 
-mod s3client;
-mod sigv4;
-
 use clap::Parser;
-use s3client::S3Client;
+use inaya_drive_core::s3client::{self, S3Client};
 use std::ffi::c_void;
 use std::sync::Mutex;
 use widestring::{U16CStr, U16Str};
@@ -134,10 +131,44 @@ impl InayaFs {
                         return Some((EntryKind::Bucket, 0)); // reuse Bucket variant as "generic directory"
                     }
                 }
+                // A real, durable, EMPTY folder (Inaya Drive Empty Folder
+                // SOW) has no children, so the check above finds nothing --
+                // it only shows up as a CommonPrefix in its own PARENT's
+                // listing. Reuses the same list_objects RPC the block above
+                // already uses; no new server call.
+                if self.folder_exists_via_parent(bucket, key) {
+                    return Some((EntryKind::Bucket, 0));
+                }
                 None
             }
         }
     }
+
+    /// `key` is bucket-relative (e.g. "documents/contracts"). Lists the
+    /// key's own PARENT prefix and checks whether `key`'s leaf segment
+    /// appears there as a CommonPrefix -- the only way to see a folder
+    /// that has zero children of its own.
+    fn folder_exists_via_parent(&self, bucket: &str, key: &str) -> bool {
+        let (parent_prefix, leaf) = match key.rfind('/') {
+            Some(idx) => (format!("{}/", &key[..idx]), &key[idx + 1..]),
+            None => (String::new(), key),
+        };
+        match self.client.list_objects(bucket, &parent_prefix) {
+            Ok(entries) => entries.iter().any(|e| e.is_prefix && e.key == leaf),
+            Err(_) => false,
+        }
+    }
+}
+
+fn folder_error_to_fsp(e: s3client::FolderOpError) -> FspError {
+    eprintln!("inaya-drive-helper: folder operation failed: {e}");
+    let status = match e.status {
+        400 => windows::Win32::Foundation::STATUS_INVALID_PARAMETER,
+        404 => windows::Win32::Foundation::STATUS_OBJECT_NAME_NOT_FOUND,
+        409 => windows::Win32::Foundation::STATUS_OBJECT_NAME_COLLISION,
+        _ => windows::Win32::Foundation::STATUS_UNSUCCESSFUL,
+    };
+    FspError::NTSTATUS(status.0)
 }
 
 impl FileSystemContext for InayaFs {
@@ -189,14 +220,19 @@ impl FileSystemContext for InayaFs {
     ) -> FspResult<Self::FileContext> {
         let path = normalize_path(file_name);
         if create_options & FILE_DIRECTORY_FILE != 0 {
-            // Real, disclosed scoping limit: S3 has no native empty-folder
-            // primitive (a "folder" is only ever a shared key prefix). A
-            // folder appears automatically once a file is saved inside it
-            // -- the same behavior every real S3-backed drive tool (e.g.
-            // Cyberduck's mount, rclone mount) has by default. Explorer's
-            // own "New Folder" action is rejected cleanly rather than
-            // silently accepted and then invisible.
-            return Err(windows::Win32::Foundation::STATUS_NOT_SUPPORTED.into());
+            // Inaya Drive Empty Folder SOW: create a real, durable folder
+            // record via the ?folder extension (s3client::create_folder)
+            // instead of the previous hard rejection -- this is what makes
+            // Explorer's "New Folder" actually persist.
+            let (bucket, key) = split_bucket_key(&path);
+            let (bucket, key) = match (bucket, key) {
+                (Some(b), Some(k)) => (b, k),
+                _ => return Err(windows::Win32::Foundation::STATUS_NOT_SUPPORTED.into()),
+            };
+            self.client.create_folder(bucket, key).map_err(folder_error_to_fsp)?;
+            let fi = file_info.as_mut();
+            fill_file_info(fi, true, 0);
+            return Ok(FileHandle { path, kind: EntryKind::Bucket, size: Mutex::new(0), write_buffer: Mutex::new(None) });
         }
         let (bucket, key) = split_bucket_key(&path);
         if bucket.is_none() || key.is_none() {
@@ -274,6 +310,33 @@ impl FileSystemContext for InayaFs {
         Ok(())
     }
 
+    fn rename(&self, context: &Self::FileContext, _file_name: &U16CStr, new_file_name: &U16CStr, _replace_if_exists: bool) -> FspResult<()> {
+        // Inaya Drive Empty Folder SOW: folders only (renameS3Folder is the
+        // one real primitive this pass built). File rename has no backing
+        // store.js primitive yet -- a real, disclosed scope limit, not a
+        // silent gap, matching this repo's own "don't claim what isn't
+        // built" convention (see create()'s and open()'s equivalent
+        // comments elsewhere in this file).
+        if matches!(context.kind, EntryKind::Object) {
+            return Err(windows::Win32::Foundation::STATUS_NOT_SUPPORTED.into());
+        }
+        let new_path = normalize_path(new_file_name);
+        let (old_bucket, old_key) = split_bucket_key(&context.path);
+        let (new_bucket, new_key) = split_bucket_key(&new_path);
+        let (bucket, old_key, new_bucket, new_key) = match (old_bucket, old_key, new_bucket, new_key) {
+            (Some(b), Some(ok), Some(nb), Some(nk)) => (b, ok, nb, nk),
+            _ => return Err(windows::Win32::Foundation::STATUS_NOT_SUPPORTED.into()),
+        };
+        if bucket != new_bucket {
+            // Cross-bucket move: no backing primitive (renameS3Folder is
+            // scoped to one bucket, matching real S3-backed drives, which
+            // don't support cross-bucket rename either).
+            return Err(windows::Win32::Foundation::STATUS_NOT_SUPPORTED.into());
+        }
+        self.client.rename_folder(bucket, old_key, new_key).map_err(folder_error_to_fsp)?;
+        Ok(())
+    }
+
     fn set_delete(&self, _context: &Self::FileContext, _file_name: &U16CStr, _delete_file: bool) -> FspResult<()> {
         // Real bug found during live testing: without implementing this,
         // WinFSP's default (STATUS_INVALID_DEVICE_REQUEST) rejects every
@@ -286,7 +349,18 @@ impl FileSystemContext for InayaFs {
     fn cleanup(&self, context: &Self::FileContext, _file_name: Option<&U16CStr>, flags: u32) {
         if flags & CLEANUP_DELETE != 0 {
             if let (Some(bucket), Some(key)) = split_bucket_key(&context.path) {
-                let _ = self.client.delete_object(bucket, key);
+                // Branch on what's actually being deleted (Inaya Drive
+                // Empty Folder SOW) -- cleanup() previously assumed every
+                // deletable entry was a file, which is safe only because
+                // create() used to reject directory creation outright.
+                match context.kind {
+                    EntryKind::Object => {
+                        let _ = self.client.delete_object(bucket, key);
+                    }
+                    _ => {
+                        let _ = self.client.delete_folder(bucket, key);
+                    }
+                }
             }
             return;
         }
@@ -304,10 +378,21 @@ impl FileSystemContext for InayaFs {
         let names: Vec<(String, bool, u64)> = match &context.kind {
             EntryKind::Root => self.client.list_buckets().unwrap_or_default().into_iter().map(|n| (n, true, 0)).collect(),
             _ => {
-                let prefix = if context.path.is_empty() { String::new() } else { format!("{}/", context.path) };
+                // Real, pre-existing bug found during live mount testing of
+                // this SOW: `list_objects` takes a prefix RELATIVE to the
+                // bucket (it's appended after `/api/s3/{bucket}?prefix=`),
+                // but this used to pass `context.path` itself (which is
+                // "bucket/key", per FileHandle's own doc comment) -- so
+                // opening any REAL nested directory (bucket/subfolder) sent
+                // the bucket name twice (e.g. prefix=bucket/subfolder/
+                // against bucket "bucket"), silently returning zero
+                // entries for every nested folder. Only ever exercised
+                // before this SOW when a nested folder happened to contain
+                // objects; this SOW's empty-folder navigation makes nested
+                // listing a core path, which is what surfaced it live.
                 let (bucket, key_prefix) = split_bucket_key(&context.path);
                 let bucket = match bucket { Some(b) => b, None => return Ok(0) };
-                let full_prefix = match key_prefix { Some(_) => prefix, None => String::new() };
+                let full_prefix = match key_prefix { Some(k) => format!("{}/", k), None => String::new() };
                 self.client
                     .list_objects(bucket, &full_prefix)
                     .unwrap_or_default()

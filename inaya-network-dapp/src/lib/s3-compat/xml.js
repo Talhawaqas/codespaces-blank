@@ -21,6 +21,22 @@ const ERROR_STATUS = {
   InvalidRequest: 400,
   NoSuchUpload: 404,
   InternalError: 500,
+  // Inaya Drive Empty Folder SOW -- Inaya-specific codes for the ?folder
+  // extension (S3 itself has no folder concept, so none of these are real
+  // S3 error codes; disclosed as such wherever ?folder is documented).
+  FolderAlreadyExists: 409,
+  InvalidFolderName: 400,
+  NoSuchFolder: 404,
+  NoSuchParentFolder: 404,
+  // Real S3 error codes for genuinely-unimplemented bucket sub-resources
+  // (Enterprise Adoption SOW, Workstream B -- Terraform compatibility).
+  NoSuchBucketPolicy: 404,
+  NoSuchCORSConfiguration: 404,
+  NoSuchWebsiteConfiguration: 404,
+  ServerSideEncryptionConfigurationNotFoundError: 404,
+  ReplicationConfigurationNotFoundError: 404,
+  OwnershipControlsNotFoundError: 404,
+  NoSuchPublicAccessBlockConfiguration: 404,
 };
 
 export function s3Error(code, message, { requestId = "inaya-" + Date.now().toString(36) } = {}) {
@@ -36,6 +52,23 @@ export function xmlResponse(xml, { status = 200, headers = {} } = {}) {
 export function listAllMyBucketsXml(buckets) {
   const items = buckets.map((b) => `<Bucket><Name>${esc(b.name)}</Name><CreationDate>${esc(b.createdAt)}</CreationDate></Bucket>`).join("");
   return `<ListAllMyBucketsResult><Buckets>${items}</Buckets></ListAllMyBucketsResult>`;
+}
+
+/** Real S3's bucket-wide GET ?versions response shape -- needed for real
+ *  S3 SDK clients (e.g. Terraform's aws_s3_bucket force_destroy, which
+ *  must enumerate every version of every object before deleting the
+ *  bucket). Single-page only (no KeyMarker/VersionIdMarker pagination
+ *  yet) -- a genuine, disclosed limitation, not silently claimed complete;
+ *  see the Enterprise Adoption SOW report. */
+export function listObjectVersionsXml({ bucket, entries, isTruncated = false }) {
+  const items = entries
+    .map((v) =>
+      v.deleteMarker
+        ? `<DeleteMarker><Key>${esc(v.key)}</Key><VersionId>${esc(v.versionId)}</VersionId><IsLatest>${v.isLatest}</IsLatest><LastModified>${esc(v.lastModified)}</LastModified></DeleteMarker>`
+        : `<Version><Key>${esc(v.key)}</Key><VersionId>${esc(v.versionId)}</VersionId><IsLatest>${v.isLatest}</IsLatest><LastModified>${esc(v.lastModified)}</LastModified><ETag>&quot;${esc(v.etag || "")}&quot;</ETag><Size>${v.sizeBytes || 0}</Size><StorageClass>STANDARD</StorageClass></Version>`
+    )
+    .join("");
+  return `<ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>${esc(bucket)}</Name><IsTruncated>${isTruncated}</IsTruncated>${items}</ListVersionsResult>`;
 }
 
 export function listObjectsV2Xml({ bucket, prefix, delimiter, contents, commonPrefixes, isTruncated }) {

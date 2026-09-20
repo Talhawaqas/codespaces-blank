@@ -1,0 +1,16 @@
+[package]
+name = "inaya-drive-helper-linux"
+version = "0.1.0"
+description = "Inaya Drive -- a standalone Linux virtual-filesystem process that mounts an org's or wallet's S3-compatible Inaya storage as a real mount point, via FUSE (the `fuser` crate, MIT-licensed). Kept as its own separate process, matching the same architectural principle as the Windows helper (a filesystem-binding dependency lives in its own process, never linked into a proprietary desktop app) -- though unlike WinFSP, `fuser` itself carries no GPL obligation, so this crate is not GPL by inheritance the way inaya-drive-helper is. Shares the real, already-tested S3 client and SigV4 signer with the Windows helper via inaya-drive-core -- no second implementation of either."
+license = "UNLICENSED"
+edition = "2021"
+
+[[bin]]
+name = "inaya-drive-helper-linux"
+path = "src/main.rs"
+
+[dependencies]
+inaya-drive-core = { path = "../inaya-drive-core" }
+fuser = "0.14"
+clap = { version = "4", features = ["derive"] }
+libc = "0.2"

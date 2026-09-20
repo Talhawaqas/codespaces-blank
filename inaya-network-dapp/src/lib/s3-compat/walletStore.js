@@ -298,7 +298,186 @@ export async function listS3Objects({ walletAddress, bucket, prefix = "", delimi
       contents.push({ ...doc, sizeBytes: doc.fileSizeBytes });
     }
   }
+
+  // Inaya Drive Empty Folder SOW: merge in real metadata_folders rows so a
+  // folder with zero files still appears in the listing (see store.js's
+  // identical merge for the org side -- same reasoning applies here).
+  if (delimiter) {
+    const parentFolderId = await resolveFolderIdForPrefix({ walletAddress, bucketDoc, prefix });
+    if (parentFolderId !== undefined) {
+      const childFolders = await db.collection("metadata_folders").find({ owner: walletAddress.toLowerCase(), parentFolderId, deletedAt: null }).toArray();
+      for (const f of childFolders) commonPrefixes.add(prefix + f.name + delimiter);
+    }
+  }
+
   return { contents: contents.slice(0, maxKeys), commonPrefixes: [...commonPrefixes].sort(), isTruncated: contents.length > maxKeys };
+}
+
+// ---------------------------------------------------------------------
+// Inaya Drive -- User-Created Empty Folder Support SOW (wallet side).
+//
+// Reuses metadata_folders directly rather than a parallel structure: a
+// bucket IS already a root-level metadata_folders row (see the module
+// header), so an S3-style folder path within that bucket is just a real
+// nested metadata_folders chain rooted at the bucket's own folderId
+// instead of at the wallet's global root (parentFolderId: null). This is
+// the exact same primitive the wallet's own folder UI and
+// api/metadata/*-folder routes already use -- no new collection needed.
+// ---------------------------------------------------------------------
+
+function splitFolderPath(folderPath) {
+  return String(folderPath || "").split("/").filter(Boolean);
+}
+
+const FOLDER_NAME_RE = /^[^/\\\0]{1,255}$/;
+
+// Same deterministic-error-code convention as store.js's identical helper.
+function folderError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function validateFolderSegment(name) {
+  if (name === "." || name === "..") throw folderError("InvalidFolderName", `Invalid folder name "${name}".`);
+  if (!FOLDER_NAME_RE.test(name)) throw folderError("InvalidFolderName", `Invalid folder name "${name}": must be 1-255 characters and contain no "/", "\\", or null byte.`);
+}
+
+async function walletFolderChain({ walletAddress, bucketDoc, segments }) {
+  const { db } = await connectToDatabase();
+  const col = db.collection("metadata_folders");
+  let parentFolderId = bucketDoc.folderId;
+  let row = null;
+  for (const name of segments) {
+    row = await col.findOne({ owner: walletAddress.toLowerCase(), parentFolderId, name, deletedAt: null });
+    if (!row) return null;
+    parentFolderId = row.folderId;
+  }
+  return row;
+}
+
+/** `prefix` is delimiter-terminated (e.g. "documents/contracts/") or empty
+ *  for the bucket root. Returns the bucket's own folderId for the root,
+ *  a real folderId for a real sub-path, or `undefined` if unresolvable. */
+async function resolveFolderIdForPrefix({ walletAddress, bucketDoc, prefix }) {
+  const segments = splitFolderPath(prefix);
+  if (segments.length === 0) return bucketDoc.folderId;
+  const row = await walletFolderChain({ walletAddress, bucketDoc, segments });
+  return row ? row.folderId : undefined;
+}
+
+export async function createS3Folder({ walletAddress, bucket, folderPath }) {
+  const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+  segments.forEach(validateFolderSegment);
+
+  const { db } = await connectToDatabase();
+  const col = db.collection("metadata_folders");
+  const now = new Date().toISOString();
+  let parentFolderId = bucketDoc.folderId;
+  let leaf = null;
+
+  for (let i = 0; i < segments.length; i++) {
+    const isLeaf = i === segments.length - 1;
+    const existing = await col.findOne({ owner: walletAddress.toLowerCase(), parentFolderId, name: segments[i], deletedAt: null });
+    if (existing) {
+      if (isLeaf) throw folderError("FolderAlreadyExists", `A folder named "${segments[i]}" already exists at this location.`);
+      parentFolderId = existing.folderId;
+      leaf = existing;
+      continue;
+    }
+    const folderId = randomUUID();
+    const doc = { folderId, owner: walletAddress.toLowerCase(), name: segments[i], parentFolderId, createdAt: now, updatedAt: now, deletedAt: null };
+    await col.insertOne(doc);
+    parentFolderId = folderId;
+    leaf = doc;
+  }
+
+  return { bucket, folderPath, folderId: leaf.folderId };
+}
+
+export async function getS3FolderInfo({ walletAddress, bucket, folderPath }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return null;
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) return null;
+  const row = await walletFolderChain({ walletAddress, bucketDoc, segments });
+  return row ? { folderId: row.folderId, name: row.name, createdAt: row.createdAt } : null;
+}
+
+/** Matches metadata_folders' own proven delete-folder route exactly:
+ *  child folders are orphaned to the bucket root, never cascade-deleted;
+ *  objects are untouched (they're scoped by bucketDoc.folderId directly,
+ *  never by a nested folder row, so there's nothing to orphan for them). */
+export async function deleteS3Folder({ walletAddress, bucket, folderPath }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return { deleted: true };
+  const segments = splitFolderPath(folderPath);
+  if (segments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+
+  const folder = await walletFolderChain({ walletAddress, bucketDoc, segments });
+  if (!folder) return { deleted: true };
+
+  const { db } = await connectToDatabase();
+  const col = db.collection("metadata_folders");
+  const now = new Date().toISOString();
+  await col.updateOne({ folderId: folder.folderId }, { $set: { deletedAt: now, updatedAt: now } });
+  await col.updateMany({ owner: walletAddress.toLowerCase(), parentFolderId: folder.folderId }, { $set: { parentFolderId: bucketDoc.folderId, updatedAt: now } });
+  return { deleted: true };
+}
+
+export async function renameS3Folder({ walletAddress, bucket, oldFolderPath, newFolderPath }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) throw folderError("NoSuchBucket", "The specified bucket does not exist.");
+
+  const oldSegments = splitFolderPath(oldFolderPath);
+  const newSegments = splitFolderPath(newFolderPath);
+  if (oldSegments.length === 0 || newSegments.length === 0) throw folderError("InvalidFolderName", "Folder path must not be empty.");
+  const newName = newSegments[newSegments.length - 1];
+  validateFolderSegment(newName);
+  const newParentSegments = newSegments.slice(0, -1);
+
+  const folder = await walletFolderChain({ walletAddress, bucketDoc, segments: oldSegments });
+  if (!folder) throw folderError("NoSuchFolder", "Folder not found.");
+
+  let newParentFolderId = bucketDoc.folderId;
+  if (newParentSegments.length > 0) {
+    const newParent = await walletFolderChain({ walletAddress, bucketDoc, segments: newParentSegments });
+    if (!newParent) throw folderError("NoSuchParentFolder", "The destination parent folder does not exist.");
+    newParentFolderId = newParent.folderId;
+  }
+  if (newParentFolderId === folder.folderId) throw folderError("InvalidFolderName", "A folder cannot be moved into itself.");
+
+  const { db } = await connectToDatabase();
+  const col = db.collection("metadata_folders");
+  const conflict = await col.findOne({ owner: walletAddress.toLowerCase(), parentFolderId: newParentFolderId, name: newName, deletedAt: null, folderId: { $ne: folder.folderId } });
+  if (conflict) throw folderError("FolderAlreadyExists", `A folder named "${newName}" already exists at the destination.`);
+
+  const now = new Date().toISOString();
+  await col.updateOne({ folderId: folder.folderId }, { $set: { name: newName, parentFolderId: newParentFolderId, updatedAt: now } });
+  return { bucket, folderPath: newFolderPath, folderId: folder.folderId };
+}
+
+/** Wallet-side twin of store.js's listAllObjectVersions -- see its
+ *  comment for why this exists (real S3 SDK clients' bucket-wide GET
+ *  ?versions, e.g. Terraform's force_destroy). */
+export async function listAllObjectVersions({ walletAddress, bucket, prefix = "" }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) return null;
+  const { db } = await connectToDatabase();
+  const docs = await db
+    .collection("metadata_files")
+    .find({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: { $regex: `^${escapeRegExp(prefix)}` } })
+    .sort({ filename: 1, createdAt: -1 })
+    .toArray();
+  return docs.map((d) => ({
+    key: d.filename,
+    versionId: d.versionId || "null",
+    isLatest: d.isLatest !== false,
+    deleteMarker: !!d.deletedAt,
+    sizeBytes: d.fileSizeBytes,
+    etag: d.cidAlpha || d.fileHash,
+    lastModified: d.createdAt,
+  }));
 }
 
 export async function listObjectVersions({ walletAddress, bucket, key }) {

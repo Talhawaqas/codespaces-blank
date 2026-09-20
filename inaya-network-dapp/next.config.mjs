@@ -32,6 +32,17 @@ const buildId = `${gitSha}-sdk${sdkVersion}`;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enterprise Adoption SOW, Workstream B -- a real bug found via live
+  // Terraform testing: @aws-sdk/client-s3 (and other real S3 SDKs) build
+  // bucket-only requests (CreateBucket, DeleteBucket -- no object key)
+  // with a TRAILING SLASH (e.g. PUT /api/s3/mybucket/). Next.js's default
+  // trailing-slash redirect turned that into a 308, which every S3 SDK
+  // then fails to parse as a valid CreateBucket/DeleteBucket response
+  // (they expect a real 200/204, not a redirect) -- this is Next.js's own
+  // documented flag for exactly this class of API-compatibility problem,
+  // not a custom workaround. App-wide, but this app has no reliance on
+  // trailing-slash auto-redirect behavior for its own pages.
+  skipTrailingSlashRedirect: true,
   async generateBuildId() {
     return buildId;
   },

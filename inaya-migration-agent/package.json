@@ -1,0 +1,22 @@
+{
+  "name": "@inaya-network/migration-agent",
+  "version": "0.1.0",
+  "description": "Enterprise Adoption & Market Reach Expansion SOW, Workstream A -- a standalone local CLI that migrates existing data from AWS S3, Azure Blob, or Google Cloud Storage into Inaya. Credentials for both source and destination stay local to this process; the browser/web control plane never sees them.",
+  "type": "module",
+  "bin": {
+    "inaya-migrate": "./bin/inaya-migrate.mjs"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=120000 test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1123.0",
+    "@aws-sdk/lib-storage": "^3.1136.0",
+    "@azure/storage-blob": "^12.26.0",
+    "commander": "^12.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
