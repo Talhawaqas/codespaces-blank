@@ -430,6 +430,11 @@ export async function getOrgCollections() {
     // duration, request/tool-call/error counts, model). Never raw audio.
     // See src/lib/ai-voice-session.js.
     voiceSessions: db.collection("voice_sessions"),
+    // Evidence Graph & Trusted Business Event Layer SOW — the connecting
+    // layer's one new collection. Stores typed references to existing
+    // records (invoices, POs, PRs, AI action requests), never a copy of
+    // them. See src/lib/businessEvents.js.
+    businessEvents: db.collection("business_events"),
   };
 }
 
@@ -474,7 +479,7 @@ export async function ensureOrgIndexes() {
     guidedTasks, orgTrustRelationships, apiKeys,
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
-    integrationOauthStates, voiceSessions,
+    integrationOauthStates, voiceSessions, businessEvents,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -725,6 +730,10 @@ export async function ensureOrgIndexes() {
     // Inaya AI Voice Assistant SOW
     voiceSessions.createIndex({ orgId: 1, startedAt: -1 }),
     voiceSessions.createIndex({ orgId: 1, userEmail: 1, startedAt: -1 }),
+    // Evidence Graph & Trusted Business Event Layer SOW
+    businessEvents.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
+    businessEvents.createIndex({ orgId: 1, subjectType: 1, subjectId: 1 }),
+    businessEvents.createIndex({ orgId: 1, status: 1 }),
   ]);
 
   indexesEnsured = true;

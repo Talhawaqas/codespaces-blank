@@ -55,6 +55,26 @@ async function orgAiActionBullets({ orgId, sinceIso }) {
   return bullets;
 }
 
+// Evidence Graph & Trusted Business Event Layer SOW — counted from real,
+// already-timestamped business_events records, same "genuine period-over-
+// period counts, not fabricated deltas" discipline as orgAiActionBullets
+// above. Only surfaces HIGH-risk events created this period plus how many
+// passports were generated (from org_activity's own PASSPORT_GENERATED
+// entries) — a full listing belongs on the Evidence view itself, not this
+// digest.
+async function businessEventBullets({ orgId, sinceIso }) {
+  const { businessEvents, orgActivity } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const [highRiskCreated, passportsGenerated] = await Promise.all([
+    businessEvents.countDocuments({ orgId: orgObjectId, deletedAt: null, riskLevel: "HIGH", createdAt: { $gte: sinceIso } }),
+    orgActivity.countDocuments({ orgId: orgObjectId, recordType: "BUSINESS_EVENT", action: "PASSPORT_GENERATED", timestamp: { $gte: sinceIso } }),
+  ]);
+  const bullets = [];
+  if (highRiskCreated > 0) bullets.push(`${highRiskCreated} high-risk business event${highRiskCreated === 1 ? "" : "s"} opened this period.`);
+  if (passportsGenerated > 0) bullets.push(`${passportsGenerated} business event passport${passportsGenerated === 1 ? "" : "s"} generated this period.`);
+  return bullets;
+}
+
 async function notificationVolumeBullets({ scope, orgId, walletAddress, sinceIso }) {
   const { db } = await connectToDatabase();
   const filter =
@@ -93,11 +113,12 @@ function trustHealthBullets(snapshot) {
 
 async function generateOrgWhatChanged({ orgId, membership, email, period, orgName }) {
   const { sinceIso } = periodBounds(period);
-  const [brief, trustSnapshot, aiBullets, notifBullets] = await Promise.all([
+  const [brief, trustSnapshot, aiBullets, notifBullets, evidenceBullets] = await Promise.all([
     generateBusinessBrief({ orgId, membership, email, period, orgName, includeNarrative: false }),
     computeTrustHealthSnapshot({ scope: "org", orgId, membership, email }).catch(() => null),
     orgAiActionBullets({ orgId, sinceIso }).catch(() => []),
     notificationVolumeBullets({ scope: "org", orgId, sinceIso }).catch(() => []),
+    businessEventBullets({ orgId, sinceIso }).catch(() => []),
   ]);
 
   return {
@@ -107,6 +128,7 @@ async function generateOrgWhatChanged({ orgId, membership, email, period, orgNam
     sections: [
       { module: "business", bullets: brief.error ? [] : brief.highlights },
       { module: "ai", bullets: aiBullets },
+      { module: "evidence", bullets: evidenceBullets },
       { module: "notifications", bullets: notifBullets },
       { module: "trust", bullets: trustHealthBullets(trustSnapshot) },
     ],

@@ -172,6 +172,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     healthPatients, healthEncounters, healthCareTeamAssignments,
     legalClients, legalMatters, legalMatterTeamAssignments,
     financialFunds, financialFundTeamAssignments, financialEntities,
+    businessEvents,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -347,12 +348,25 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     canAccessFinancialEntities(membership) ? financialEntities.find({ orgId: orgObjectId }).sort({ type: 1, name: 1 }).toArray() : [],
   ]);
 
+  // Evidence Graph & Trusted Business Event Layer SOW — a business event
+  // is either department-scoped (its subject was) or, for AI-action-
+  // request subjects with no resolvable department, org-manager-only
+  // (departmentId: null). Same two-branch visibility rule
+  // canViewEvent() in businessEvents.js enforces on a single-event read,
+  // just expressed as one query instead of a per-row check.
+  const visibleBusinessEvents = await businessEvents.find({
+    orgId: orgObjectId,
+    deletedAt: null,
+    $or: [{ departmentId: { $in: visibleDeptIds } }, ...(isOrgManager ? [{ departmentId: null }] : [])],
+  }).sort({ createdAt: -1 }).toArray();
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
     visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
     visiblePatients, visibleEncounters, visibleClients, visibleMatters,
     visibleFunds, visibleEntities,
+    visibleBusinessEvents,
   };
 }
 

@@ -69,12 +69,26 @@ async function computeDataIntegrityDimension(orgId) {
 
 async function computeAuditIntegrityDimension(orgId) {
   const result = await verifyChainIntegrity(orgId);
-  const status = result.valid ? HEALTH_STATUS.GREEN : HEALTH_STATUS.RED;
+  // Evidence Graph & Trusted Business Event Layer SOW §20.6/§51 — Trust
+  // Health may consume graph-level signals such as unresolved high-risk
+  // events, without fabricating a score: an unresolved-count is a real
+  // number from a real query, not an invented risk index. This does NOT
+  // become an 11th dimension (see this file's header on the ten-dimension
+  // contract) — it's additive context on the dimension it's most related
+  // to (integrity of the org's own evidence trail).
+  const { businessEvents } = await getOrgCollections();
+  const unresolvedHighRisk = await businessEvents.countDocuments({ orgId: toObjectId(orgId), deletedAt: null, riskLevel: "HIGH", status: { $in: ["OPEN", "DECIDED"] } });
+
+  const chainBroken = !result.valid;
+  const status = chainBroken ? HEALTH_STATUS.RED : unresolvedHighRisk > 0 ? HEALTH_STATUS.AMBER : HEALTH_STATUS.GREEN;
+  const contributingFactors = [result.valid ? "Audit hash chain verified intact." : `Chain broken at sequence ${result.brokenAtSeq}: ${result.reason}`];
+  if (unresolvedHighRisk > 0) contributingFactors.push(`${unresolvedHighRisk} high-risk business event(s) still unresolved (not yet executed or closed).`);
   return {
-    score: result.valid ? 1 : 0, status,
-    contributingFactors: result.valid ? ["Audit hash chain verified intact."] : [`Chain broken at sequence ${result.brokenAtSeq}: ${result.reason}`],
-    scopeNotes: "Cryptographic hash-chain verification of this org's own audit trail.",
-    remediationLinks: [{ label: "Audit Trail", view: "auditTrail" }],
+    score: chainBroken ? 0 : unresolvedHighRisk > 0 ? 0.7 : 1,
+    status,
+    contributingFactors,
+    scopeNotes: "Cryptographic hash-chain verification of this org's own audit trail, plus unresolved high-risk Business Event count.",
+    remediationLinks: [{ label: "Audit Trail", view: "auditTrail" }, { label: "Evidence", view: "evidence" }],
   };
 }
 

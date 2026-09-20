@@ -21,7 +21,7 @@
 
 import { getAccessibleScope } from "./document-permissions.js";
 
-const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company", "legalName", "preferredName"];
+const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company", "legalName", "preferredName", "subjectLabel"];
 
 function matchText(record, query) {
   const q = query.toLowerCase();
@@ -57,6 +57,10 @@ const ENTITY_SOURCES = [
   { entityType: "patient", arrayKey: "visiblePatients", label: (r) => r.preferredName || r.legalName, view: "health" },
   { entityType: "client", arrayKey: "visibleClients", label: (r) => r.name, view: "legal" },
   { entityType: "matter", arrayKey: "visibleMatters", label: (r) => r.name, view: "legal" },
+  // Evidence Graph & Trusted Business Event Layer SOW — visibleBusinessEvents
+  // is already department/org-manager scoped by getAccessibleScope() itself,
+  // same no-leak-by-construction guarantee as every source above.
+  { entityType: "business event", arrayKey: "visibleBusinessEvents", label: (r) => r.subjectLabel || r.eventType, view: "evidence" },
 ];
 
 /** searchOrg({orgId, membership, email, query, limit}) — one call, every
