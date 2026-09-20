@@ -734,5 +734,33 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "27",
+      title: "Storage Interoperability Expansion Reference — Empty Folders, Migration Tooling, Signed URLs & GCS Auth (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["inaya-drive-core/src/lib.rs, s3client.rs, sigv4.rs", "New standalone Rust crate extracted out of inaya-drive-helper: the SigV4-signed S3 client and signer, with zero Windows/WinFSP dependency, now linked unmodified by both inaya-drive-helper (Windows/WinFSP, GPL-3.0) and the new inaya-drive-helper-linux (Linux/FUSE via the MIT-licensed fuser crate, UNLICENSED) — one real client implementation, not a per-platform rewrite. Each platform's own filesystem-trait binding (WinFSP's vs. FUSE's) stays separate, since the two OS filesystem APIs aren't interchangeable"],
+            ["s3-compat/store.js: createS3Folder, getS3FolderInfo, deleteS3Folder, renameS3Folder", "A real, durable folder record in a new s3_folders collection (mirroring the pre-existing Business Workspace metadata_folders shape) — a folder with zero objects is now listable via ?prefix&delimiter, where previously only shared object-key prefixes existed and an empty folder was invisible"],
+            ["inaya-migration-agent/bin/inaya-migrate.mjs", "Standalone Node CLI: --source aws|azure|gcs, resumable via a local --manifest file (skips already-verified keys on rerun), --dry-run, --objects for a scoped subset; every source/destination credential stays local to the invoking machine, never transmitted to or stored by Inaya"],
+            ["s3-compat/signedUrl.js: createSignedUrl, verifySignedUrl", "Query-string presigned GET URLs (X-Amz-Expires/X-Amz-Signature convention): reuses the existing SigV4 signing key derivation rather than a new secret, rejects on expiry, method mismatch, or any tampered query parameter"],
+            ["googleAuth.js: verifyGoogleIdToken, s3-compat/auth.js (Google ID-token branch)", "Google Sign-In accepted as a direct auth path on the S3-compat endpoint: verifies the Google ID token's signature and audience server-side, then resolves it to an existing org_members row by verified email — no separate Google-only permission tier or credential type"],
+            ["middleware.js: bucket-from-hostname rewrite, gated by S3_COMPAT_VIRTUAL_HOST_BASE", "Virtual-hosted-style addressing (bucket-name.base-host/key, matching real AWS/GCS convention) — the Host header is parsed and rewritten to the existing path-style route before any other S3/Azure code runs, so the protocol surface itself is unchanged; unset (off) by default"],
+            ["evidenceExporter.js: buildEvidencePackage, canonicalizeForExport", "Reads an org's own existing audit chain and storage-protection settings (Object Lock, versioning, retention) into one canonicalized, hash-stamped package — no new data is generated or claimed, only exported"],
+            ["evidencePdf.js: renderEvidencePdf", "Deterministic PDF rendering of the same package for a non-technical reader, hash printed on the document itself so a paper copy can still be checked against the JSON export"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Test coverage: test/s3-compat-empty-folder.test.mjs (15 tests: placeholder-key creation/listing/deletion, cross-platform key-prefix handling, mount-restart persistence), test/signed-url.test.mjs (9: expiry, tamper rejection, method restriction, real wall-clock expiration — not a simulated clock), test/evidence-exporter.test.mjs (5), test/migration.test.mjs (6) — all passing against the real dev database, zero regressions in the pre-existing S3/Azure-compat suites.",
+        },
+        {
+          type: "note",
+          text: "Two corrected findings, kept honest rather than restated as always-true: Google's own \"gcloud storage\" CLI was earlier reported unable to reach a third-party endpoint like Inaya's — it can, through an official (Google-labeled \"unstable\") configuration option, verified with real uploads and downloads. The older \"gsutil\" tool still cannot, due to a genuine bug in Google's own software; a workaround narrowed it further but did not fully resolve it. Remaining disclosed limitation: macOS Drive support is written but not yet compiled or tested on real Mac hardware. Full writeup: docs/inaya-drive-empty-folder-creation-report.md, docs/enterprise-adoption-and-market-reach-report.md, and docs/gcs-compatibility-extension-report.md.",
+        },
+      ],
+    },
   ],
 };

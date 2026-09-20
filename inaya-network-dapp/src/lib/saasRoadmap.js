@@ -385,6 +385,27 @@ export const ROADMAP_STAGES = [
     notes:
       "Live-verified: the Government OS vertical option renders correctly in the org-creation flow, and every new API route is statically confirmed to lock to the government vertical. 51 new automated tests cover the two load-bearing properties (citizen-record access requires an actual assignment; a published policy knowledge base entry can never be mutated in place) plus case-workflow transition legality, dashboard honesty (unknown is never shown as passing), and AI tool need-to-know enforcement. Not yet built: mobile screens (Government OS has zero mobile presence today, same gap as Financial/Private Capital/Regulated Enterprise OS), a real pilot-agency onboarding, and any government-specific procurement rule beyond an explicitly informational, non-binding competitive-bid threshold flag. No government certification, accreditation, FedRAMP authorization, or jurisdiction-specific compliance claim exists or is claimed — that requires separate authorities entirely outside this codebase.",
   },
+  {
+    number: 13,
+    title: "Storage Interoperability & Inaya Drive",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "Makes Business Workspace storage consumable through the exact tools an enterprise IT team already has — real AWS S3, Azure Blob, and Google Cloud Storage protocol compatibility, a real mounted drive letter on Windows and Linux, and a local migration tool that moves existing cloud data in — without rebuilding or weakening the encryption/sharding/DePIN pipeline underneath any of it.",
+    securityStatement: "A signed URL or federated Google sign-in can never grant more access than the credential or membership it's built on already has — verified by adversarial test, not just by design intent.",
+    features: [
+      "Real AWS SigV4 (AWS4-HMAC-SHA256) and native Google Cloud Storage (GOOG4-HMAC-SHA256) request signing on one endpoint",
+      "Real Azure Blob Shared Key compatibility, plus Microsoft Entra ID identity federation",
+      "Google Sign-In as a direct authentication path for the storage endpoint itself, mapped to existing organization membership — no separate Google-only permission tier",
+      "Temporary signed download URLs with real, tested expiration, tamper rejection, and method restriction",
+      "Virtual-hosted bucket addressing (bucket-name-in-the-hostname, matching real AWS/GCS convention), off by default until an operator configures it",
+      "Inaya Drive — a real Windows drive letter (WinFSP) and a real Linux mount (FUSE), including genuine empty-folder creation, file read/write, rename, and delete, all proven to survive a full mount-process restart",
+      "Local Data Migration Agent — moves existing AWS S3, Azure Blob, or Google Cloud Storage data into Inaya, resumable and integrity-verified, with every credential staying on the operator's own machine",
+      "Compliance Evidence Exporter — a read-only, downloadable JSON/PDF evidence package built from the organization's own existing audit chain and storage protection settings, with a cryptographic export hash",
+      "Validated against real, unmodified third-party tools: the AWS CLI, rclone, Terraform, and Google's own gcloud storage CLI",
+    ],
+    notes:
+      "Live-verified end-to-end: real SigV4/GOOG4/Shared-Key signature verification, a real signed-URL adversarial test suite (including waiting for genuine wall-clock expiration, not a simulated clock), real Terraform init/apply/plan/destroy and rclone upload/sync/download runs against the live endpoint, and Inaya Drive mounted for real on both a Windows machine and a Linux kernel (WSL2) with a full helper-process kill-and-restart persistence proof. macOS Drive support is written but not yet compiled or tested on real Mac hardware — explicitly not claimed until it is. No official AWS/Microsoft/Google partnership, certification, or full protocol parity is claimed anywhere; only what's been directly tested.",
+  },
 ];
 
 export const VISION = {

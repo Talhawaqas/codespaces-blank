@@ -1382,7 +1382,67 @@ export const ecosystemArchitecture = {
         },
         {
           type: "note",
-          text: "Disclosed, not silently different: no presigned-URL SigV4 signing (only header-based); no empty-folder creation via Inaya Drive (S3 has no native folder primitive — rejected cleanly, a folder appears once a file is saved inside it); Inaya Drive proven on Windows only this pass (no macOS/Linux hardware available to build/test FUSE); Object Mount packaged by running the compiled helper directly, not yet a proper Tauri externalBin sidecar. Full writeup: docs/storj-inspired-storage-capability-expansion-report.md and docs/multi-cloud-storage-compatibility-report.md.",
+          text: "Disclosed, not silently different (at the time of this pass): no presigned-URL SigV4 signing (only header-based); no empty-folder creation via Inaya Drive; Inaya Drive proven on Windows only; Object Mount packaged by running the compiled helper directly, not yet a proper Tauri externalBin sidecar. Every one of the first three items was closed in the follow-on work Section 44 below describes — kept here verbatim as the honest record of what was true at the time this section was written. Full writeup: docs/storj-inspired-storage-capability-expansion-report.md and docs/multi-cloud-storage-compatibility-report.md.",
+        },
+      ],
+    },
+    {
+      number: "44",
+      title: "Storage Interoperability Expansion — Empty Folders, Enterprise Migration Tooling & Google Cloud OAuth/Signed URLs (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Three back-to-back passes that closed the disclosed gaps Section 43 listed and extended enterprise adoption further: Inaya Drive now supports real empty folders and a real Linux mount alongside Windows; a local, credential-never-leaves-your-machine migration agent moves existing AWS S3/Azure Blob/GCS data into Inaya; and the Google Cloud Storage compatibility layer gained OAuth identity federation, temporary signed URLs, and virtual-hosted bucket addressing.",
+        },
+        {
+          type: "numbered",
+          items: [
+            {
+              heading: "Real empty-folder support, on Windows and Linux both.",
+              body: "A new s3_folders collection (org side) plus direct reuse of the wallet's existing metadata_folders collection give folders a real, durable, non-versioned metadata row — never a fake `.folder`/`.keep` placeholder object, never touching encryption/sharding/pinning. inaya-drive-helper (Windows/WinFSP) now creates real folders instead of rejecting the request; a new inaya-drive-helper-linux (FUSE, MIT-licensed, no GPL obligation) does the same on Linux, sharing the identical S3 client/SigV4 signer via a new shared crate, inaya-drive-core, extracted specifically so neither helper duplicates the other's network code. Both live-tested including the strongest proof either SOW named: kill the mount helper process entirely, start a fresh one, confirm the empty folder survived.",
+            },
+            {
+              heading: "A local Data Migration Agent — credentials never leave the operator's machine.",
+              body: "inaya-migration-agent is a standalone Node CLI that reads from a real AWS S3, Azure Blob, or Google Cloud Storage source (via each provider's own real SDK) and writes through Inaya's existing, already-tested S3-compatible endpoint — no second encryption/sharding implementation. A resumable, append-only local manifest makes an interrupted run safe to simply re-run: already-migrated objects are skipped, never duplicated. Every migrated object is verified against the destination immediately after upload.",
+            },
+            {
+              heading: "Backup-tool and infrastructure-tool compatibility, proven against real, unmodified clients.",
+              body: "rclone and Terraform (the standard hashicorp/aws provider, pointed at Inaya's endpoint) both verified fully working end to end — real upload/download/sync for rclone, a real init → apply → plan → destroy lifecycle for Terraform, including force_destroy actually emptying a bucket. AzCopy is honestly classified unsupported: it requires SAS-token or Microsoft Entra ID authentication for Azure Blob, which this layer's Shared-Key-only implementation doesn't yet provide — a real, disclosed gap, not glossed over.",
+            },
+            {
+              heading: "A Compliance Evidence Exporter, read-only by construction.",
+              body: "A new Business Workspace panel and API route aggregate an organization's own existing audit chain, bucket protection settings (versioning/Object Lock/lifecycle), and security event history into a downloadable JSON or PDF evidence package — with a real SHA-256 export hash over a canonical serialization, and a live re-verification of the audit chain's own tamper-evident integrity, not a cached flag. No new tracking collection, no new audit system: the one write this feature ever performs is logging its own generation event to the existing audit chain.",
+            },
+            {
+              heading: "Google OAuth, temporary signed URLs, and virtual-hosted bucket addressing.",
+              body: "A Google-verified identity (the same google-auth-library verification already used for the app's own Google sign-in) can now authenticate directly against the storage endpoint via Authorization: Bearer <ID token>, mapped to existing organization membership — no parallel permission system, mirroring the same pattern already proven for Microsoft Entra ID. A new ?presign sub-resource issues real, HMAC-signed, time-limited download URLs (an Inaya-specific scheme, disclosed as not byte-compatible with AWS/GCS's own presigned-URL algorithms) — proven with a genuine wall-clock expiration test, not a simulated clock. Virtual-hosted addressing (bucket-name-in-the-hostname) is implemented as a middleware URL rewrite onto the existing path-style routes, inert until an operator configures a wildcard host — no DNS/TLS change made automatically.",
+            },
+          ],
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["New crate: inaya-drive-core", "The Windows helper's S3 client and SigV4 signer, which had zero WinFSP dependency to begin with, extracted into a shared crate both the Windows and Linux Drive helpers link — no second implementation."],
+            ["New: inaya-migration-agent", "Standalone Node CLI (bin/inaya-migrate.mjs); AWS/Azure/GCS source adapters; Inaya destination via the real @aws-sdk/client-s3 pointed at Inaya's own SigV4-verified endpoint."],
+            ["New: src/lib/s3-compat/signedUrl.js, src/middleware.js", "Signed-URL creation/verification; virtual-hosted addressing rewrite (S3_COMPAT_VIRTUAL_HOST_BASE, unset by default)."],
+            ["New: src/lib/evidenceExporter.js, evidencePdf.js", "Read-only evidence aggregation and PDF rendering (pdfkit — pure JS, no headless-browser dependency, so it runs in the real serverless deployment target)."],
+            ["Test coverage", "17 new empty-folder tests, 9 signed-URL tests, 5 migration-manifest tests plus a 4-scenario live migration suite, 5 evidence-exporter tests, 5 Linux-helper unit tests — all passing, alongside the full pre-existing S3-compat regression suite re-confirmed clean throughout."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Real bugs found and fixed by real-tool testing, not code review — again.",
+          text: "(1) The Windows Drive helper silently failed every mount with ERROR_DELAY_LOAD_FAILED because winfsp-x64.dll was never bundled next to the built exe — fixed via a build.rs step that copies it automatically. (2) read_directory's own listing prefix double-included the bucket name for any real nested folder, silently returning empty listings — found via live mount testing, fixed. (3) Next.js was issuing a 308 redirect for bucket-only requests ending without a trailing slash mismatch, which every real S3 SDK's CreateBucket/DeleteBucket call triggers — invisible until tested against genuine Terraform/AWS-SDK traffic, fixed via Next's own skipTrailingSlashRedirect flag. (4) Two missing real S3 sub-resources (bucket-wide ListObjectVersions, batch DeleteObjects, and separately GetObjectAcl) were found via live Terraform and gcloud storage testing specifically — each was a genuine gap blocking a real, unmodified client, not a hypothetical one.",
+        },
+        {
+          type: "note",
+          label: "gsutil and gcloud storage — an honest, corrected record.",
+          text: "The earlier finding that gcloud storage doesn't support a custom S3-compatible endpoint was incomplete — it does, via gcloud config set storage/s3_endpoint_url, officially documented though Google itself labels it \"unstable.\" Real upload, byte-identical download, and listing were proven working end to end against Inaya's live endpoint. gsutil's legacy boto2 stack still doesn't work: the previously-diagnosed region-detection crash is now confirmed avoidable with a real hostname containing \"s3\", but a separate connection-level issue remains in Google's own legacy code — documented as unresolved, with no third-party source patched, per this SOW's own explicit instruction.",
+        },
+        {
+          type: "note",
+          text: "Still disclosed, not silently different: the Inaya signed-URL scheme is not AWS SigV4/GCS V4 wire-compatible; macOS Drive support is written (the same fuser crate covers it) but not compiled or tested on real Mac hardware; file rename (as opposed to folder rename) has no backing primitive on either Drive helper yet; gsutil S3-compatible mode remains unverified for the reason above. Full writeup: docs/inaya-drive-empty-folder-creation-report.md, docs/enterprise-adoption-and-market-reach-report.md, and docs/gcs-compatibility-extension-report.md.",
         },
       ],
     },

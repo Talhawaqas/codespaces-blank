@@ -492,7 +492,7 @@ export const ecosystemOverview = {
         },
         {
           type: "note",
-          text: "Inaya Drive's WinFSP-backed filesystem code runs as its own separate process (inaya-drive-helper), not linked into the desktop app's own binary — a deliberate licensing boundary, since the real Rust WinFSP binding is GPL-3.0 and this keeps that license off Inaya's proprietary desktop app entirely.",
+          text: "Inaya Drive's WinFSP-backed filesystem code runs as its own separate process (inaya-drive-helper), not linked into the desktop app's own binary — a deliberate licensing boundary, since the real Rust WinFSP binding is GPL-3.0 and this keeps that license off Inaya's proprietary desktop app entirely. Windows-only at the time this section was written — Section 23 below covers Linux support added since.",
         },
       ],
     },
@@ -507,6 +507,36 @@ export const ecosystemOverview = {
             "The protocol (contracts, node operators, encryption) and the applications (dApp, Business Workspace, mobile, desktop, AI) are cleanly separated — most of what a user touches day-to-day never has to think about the blockchain underneath it, even though it's doing real work a layer down.",
             "BNB Chain Testnet is still home base — the core protocol, staking, and node settlement all live there — but it's no longer the only chain involved: $INAYA now moves to several other testnets through the bridge described in Section 10. Nothing described in this document is live on mainnet yet, on any chain — that's the next major milestone, not a past one.",
           ],
+        },
+      ],
+    },
+    {
+      number: "23",
+      title: "Removing the Last Reasons Not to Switch (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The gap between \"Inaya is technically compatible with S3/Azure/GCS\" and \"a real enterprise can actually move over without friction\" closed further this month: existing data can now be migrated in directly, popular backup and infrastructure tools were tested against Inaya for real, and three genuine gaps enterprise buyers would have hit immediately — empty folders, Google account sign-in, and shareable download links — are now closed.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "A local Data Migration Agent moves existing AWS S3, Azure Blob, or Google Cloud Storage data directly into Inaya — every credential stays on the customer's own machine, never touching Inaya's servers or browser. Interrupted runs resume safely; nothing is ever silently duplicated.",
+            "Real backup/infrastructure tool compatibility, proven rather than assumed: rclone and Terraform both verified fully working end to end against the live endpoint, including Terraform's own full provision-and-tear-down lifecycle.",
+            "Inaya Drive now mounts on Linux as well as Windows, with real empty-folder creation on both — the same New Folder action any normal drive supports, proven to survive killing and restarting the mount process entirely.",
+            "Sign in to the storage endpoint directly with a Google account, mapped to existing organization permissions — no separate Google-only access tier.",
+            "Temporary, time-limited download links for sharing a single file without handing out a password — with a real, measured expiration, not a promised one.",
+            "A one-click Compliance Evidence Exporter — a downloadable, cryptographically-hashed evidence package built entirely from records Inaya already keeps, for a customer's own audit or legal process.",
+          ],
+        },
+        {
+          type: "note",
+          label: "An honest correction, not just a new feature.",
+          text: "An earlier finding that Google's own \"gcloud storage\" tool couldn't connect to a third-party endpoint like Inaya's turned out to be incomplete — it can, through an official (if Google-labeled \"unstable\") configuration option, and real uploads and downloads were proven working. The older \"gsutil\" tool still can't, due to a genuine bug in Google's own software that a workaround narrowed down further but didn't fully resolve — reported plainly rather than claimed fixed.",
+        },
+        {
+          type: "note",
+          text: "macOS support for Inaya Drive is written but not yet tested on real Mac hardware, and is not claimed as supported until it is. Full writeup: docs/inaya-drive-empty-folder-creation-report.md, docs/enterprise-adoption-and-market-reach-report.md, and docs/gcs-compatibility-extension-report.md.",
         },
       ],
     },

@@ -16,6 +16,7 @@ import puppeteer from "puppeteer-core";
 import { multicloudGuide } from "./multicloud-content.js";
 import { storageCapabilitiesGuide } from "./storage-capabilities-content.js";
 import { gcsGuide } from "./gcs-content.js";
+import { migrationAgentGuide } from "./migration-agent-content.js";
 import { buildInvestmentMemorandumHTML } from "../fundraising-docs/template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,6 +63,7 @@ async function main() {
     { name: "inaya-pilot-guide-multicloud-storage.pdf", html: buildInvestmentMemorandumHTML(multicloudGuide) },
     { name: "inaya-pilot-guide-advanced-storage-capabilities.pdf", html: buildInvestmentMemorandumHTML(storageCapabilitiesGuide) },
     { name: "inaya-pilot-guide-google-cloud-storage.pdf", html: buildInvestmentMemorandumHTML(gcsGuide) },
+    { name: "inaya-pilot-guide-data-migration.pdf", html: buildInvestmentMemorandumHTML(migrationAgentGuide) },
   ];
 
   const executablePath = findChrome();
