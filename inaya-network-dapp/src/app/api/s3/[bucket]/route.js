@@ -26,7 +26,7 @@ function parseVersioningStatus(xmlBody) {
 export async function PUT(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer);
+    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
     const store = storeFor(owner);
     const url = new URL(req.url);
 
@@ -76,7 +76,7 @@ export async function PUT(req, { params }) {
 
 export async function GET(req, { params }) {
   try {
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
+    const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key: null });
     const store = storeFor(owner);
     const url = new URL(req.url);
 
@@ -185,7 +185,7 @@ function escXml(s) {
 export async function POST(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner } = await authenticateS3Request(req, bodyBuffer);
+    const { owner } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
     const store = storeFor(owner);
     const url = new URL(req.url);
 
@@ -215,7 +215,7 @@ export async function POST(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
+    const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key: null });
     const store = storeFor(owner);
     const result = await store.deleteS3Bucket({ ...ownerArgs(owner), bucket: params.bucket });
     if (!result.deleted) return s3Error(result.reason, result.reason === "BucketNotEmpty" ? "The bucket you tried to delete is not empty." : "The specified bucket does not exist.");

@@ -110,6 +110,19 @@ export default function S3CompatView({ orgId }) {
         <code className="text-[12px] text-[var(--inaya-text-primary)] break-all">{endpointUrl}</code>
       </div>
 
+      <div className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-2">
+        <p className="text-[var(--inaya-text-muted)] text-[11px] font-bold uppercase">Additional access paths (Google Cloud Storage Extension)</p>
+        <p className="text-[var(--inaya-text-muted)] text-[11px] leading-relaxed">
+          <span className="text-[var(--inaya-text-primary)] font-bold">Google sign-in:</span> requests may also authenticate with <code className="text-[11px]">Authorization: Bearer &lt;Google ID token&gt;</code> instead of an access key — the Google account must belong to an active member of this org; access follows that membership&apos;s own permissions, not a separate Google-specific grant.
+        </p>
+        <p className="text-[var(--inaya-text-muted)] text-[11px] leading-relaxed">
+          <span className="text-[var(--inaya-text-primary)] font-bold">Temporary signed URLs:</span> any authenticated GET/HEAD request can add <code className="text-[11px]">?presign&amp;expiresIn=3600</code> to receive a time-limited, credential-scoped download link that needs no further authentication to use (up to 7 days) — see the API reference for details.
+        </p>
+        <p className="text-[var(--inaya-text-muted)] text-[11px] leading-relaxed">
+          <span className="text-[var(--inaya-text-primary)] font-bold">Virtual-hosted bucket addressing</span> (<code className="text-[11px]">https://&lt;bucket&gt;.&lt;host&gt;/&lt;object&gt;</code>) is supported when this deployment has a wildcard DNS host configured — ask your Inaya technical contact whether it&apos;s enabled for your environment; path-style addressing above always works regardless.
+        </p>
+      </div>
+
       {error && <p className="text-red-400 text-xs">{error}</p>}
 
       {justCreated && (

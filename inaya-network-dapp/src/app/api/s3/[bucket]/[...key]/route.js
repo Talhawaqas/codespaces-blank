@@ -12,6 +12,9 @@ import { authenticateS3Request, S3AuthError } from "../../../../../lib/s3-compat
 import * as orgStore from "../../../../../lib/s3-compat/store.js";
 import * as walletStore from "../../../../../lib/s3-compat/walletStore.js";
 import { s3Error, xmlResponse, initiateMultipartUploadXml, completeMultipartUploadXml, parseCompleteMultipartBody } from "../../../../../lib/s3-compat/xml.js";
+import { createSignedUrl } from "../../../../../lib/s3-compat/signedUrl.js";
+import { resolveS3Credential } from "../../../../../lib/s3-compat/credentials.js";
+import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
 
 function storeFor(owner) {
   return owner.type === "org" ? orgStore : walletStore;
@@ -50,9 +53,9 @@ function parseRetention(xmlBody) {
 export async function PUT(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer);
-    const store = storeFor(owner);
     const key = joinKey(params.key);
+    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key });
+    const store = storeFor(owner);
     const url = new URL(req.url);
     const uploadId = url.searchParams.get("uploadId");
     const partNumber = url.searchParams.get("partNumber");
@@ -104,9 +107,9 @@ export async function PUT(req, { params }) {
 export async function POST(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer);
-    const store = storeFor(owner);
     const key = joinKey(params.key);
+    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key });
+    const store = storeFor(owner);
     const url = new URL(req.url);
 
     if (url.searchParams.has("uploads")) {
@@ -150,11 +153,61 @@ export async function POST(req, { params }) {
 
 export async function GET(req, { params }) {
   try {
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
-    const store = storeFor(owner);
     const key = joinKey(params.key);
+    const { owner, accessKeyId } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
+    const store = storeFor(owner);
     const url = new URL(req.url);
     const versionId = url.searchParams.get("versionId") || undefined;
+
+    // ?presign -- GCS Compatibility Extension SOW, Phase 2. Creates a
+    // temporary signed download URL, not real S3/GCS presigned-URL
+    // compatibility (see signedUrl.js's own header for why). Requires the
+    // SAME real authentication as any other request on this route --
+    // "authorization inherited from creator" means the creator must
+    // already be allowed to read this object, checked identically via
+    // authenticateS3Request/checkScope above before we ever get here.
+    if (url.searchParams.has("presign")) {
+      const credential = await resolveS3Credential(accessKeyId);
+      if (!credential) {
+        return s3Error("InvalidRequest", "Presigned URLs require an HMAC access key credential (Google-OAuth-authenticated requests have no signing secret to presign with).");
+      }
+      const expiresInSeconds = Number(url.searchParams.get("expiresIn")) || 3600;
+      const qs = createSignedUrl({ accessKeyId, secretAccessKey: credential.secretAccessKey, method: "GET", bucket: params.bucket, key, expiresInSeconds });
+      const signedUrl = `${url.origin}${url.pathname}?${qs}`;
+      if (owner.type === "org") {
+        const bucketDoc = await store.getS3Bucket({ orgId: owner.orgId, bucket: params.bucket });
+        if (bucketDoc) {
+          await logOrgActivity({
+            orgId: owner.orgId,
+            recordType: "s3_signed_url",
+            recordId: bucketDoc._id,
+            actorEmail: accessKeyId,
+            action: "SIGNED_URL_CREATED",
+            previousState: null,
+            newState: null,
+            metadata: { bucket: params.bucket, key, expiresInSeconds },
+          }).catch(() => {}); // audit is best-effort here; a logging failure must never block a legitimate signed-URL response
+        }
+      }
+      return Response.json({ url: signedUrl, expiresInSeconds });
+    }
+
+    // ?acl -- real S3 GetObjectAcl. Found via live gcloud storage testing
+    // (GCS Compatibility Extension SOW, Phase 5): `gcloud storage objects
+    // describe`/`rm` call this internally before acting, and with no
+    // handler here it fell through to plain GetObject, returning the
+    // object's raw bytes where an ACL XML document was expected -- the
+    // client then crashed trying to parse file content as XML. A single,
+    // real, minimal AccessControlPolicy (the requester as sole FULL_CONTROL
+    // grantee -- this layer has no separate ACL model to represent
+    // honestly beyond credential-scoped ownership) resolves it.
+    if (url.searchParams.has("acl")) {
+      const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
+      if (!doc) return s3Error("NoSuchKey", "The specified key does not exist.");
+      return xmlResponse(
+        `<?xml version="1.0" encoding="UTF-8"?><AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Owner><ID>${accessKeyId}</ID><DisplayName>${accessKeyId}</DisplayName></Owner><AccessControlList><Grant><Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="CanonicalUser"><ID>${accessKeyId}</ID><DisplayName>${accessKeyId}</DisplayName></Grantee><Permission>FULL_CONTROL</Permission></Grant></AccessControlList></AccessControlPolicy>`
+      );
+    }
 
     if (url.searchParams.has("legal-hold")) {
       const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
@@ -217,9 +270,9 @@ export async function GET(req, { params }) {
 
 export async function HEAD(req, { params }) {
   try {
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
-    const store = storeFor(owner);
     const key = joinKey(params.key);
+    const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
+    const store = storeFor(owner);
     const url = new URL(req.url);
     const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
     if (!doc) return new Response(null, { status: 404 });
@@ -243,9 +296,9 @@ export async function HEAD(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0));
-    const store = storeFor(owner);
     const key = joinKey(params.key);
+    const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
+    const store = storeFor(owner);
     const url = new URL(req.url);
     const uploadId = url.searchParams.get("uploadId");
 

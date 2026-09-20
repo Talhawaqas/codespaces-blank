@@ -37,6 +37,9 @@ const ERROR_STATUS = {
   ReplicationConfigurationNotFoundError: 404,
   OwnershipControlsNotFoundError: 404,
   NoSuchPublicAccessBlockConfiguration: 404,
+  // GCS Compatibility Extension SOW -- OAuth + signed URLs.
+  AuthenticationFailed: 403,
+  SignedUrlExpired: 403,
 };
 
 export function s3Error(code, message, { requestId = "inaya-" + Date.now().toString(36) } = {}) {

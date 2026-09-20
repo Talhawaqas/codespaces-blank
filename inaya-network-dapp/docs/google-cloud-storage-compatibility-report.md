@@ -104,9 +104,11 @@ Per §18: no Google Cloud competitor was built, no new object-storage engine, no
 
 ## Known limitations (disclosed, not silently absent)
 
-- OAuth 2.0 / service-account identity mapping — not implemented (no validated enterprise workload required it this pass); documented as a future extension.
-- V4 signed URLs — not implemented (same reasoning); future extension.
-- Virtual-hosted-style addressing (`BUCKET.storage.googleapis.com`) — not implemented; requires a wildcard-DNS/subdomain-routing decision beyond this codebase. Path-style addressing (fully supported) remains available under Google's own continued support for it too.
-- `gsutil` S3-compatible mode — untested due to a real, external bug in Google's own vendored `boto` library (see above), not a limitation of this codebase's implementation.
-- `gcloud storage` — does not appear to support custom S3-compatible endpoints; not tested.
-- Presigned/signed-URL query-string signing (both AWS and GCS variants) — not implemented, same as the prior S3 SOW; header-based signing only.
+**Update — all five items below were addressed by the follow-on GCS Compatibility Extension SOW; see [gcs-compatibility-extension-report.md](gcs-compatibility-extension-report.md) for what changed and its own, still-current limitations.**
+
+- ~~OAuth 2.0 / service-account identity mapping — not implemented~~ → implemented (Google ID token Bearer auth).
+- ~~V4 signed URLs — not implemented~~ → implemented (Inaya-specific signed-URL scheme, disclosed as not byte-compatible with AWS/GCS's own presigned-URL algorithms).
+- ~~Virtual-hosted-style addressing — not implemented~~ → implemented (optional, off by default; requires an operator-configured wildcard host).
+- `gsutil` S3-compatible mode — **still unresolved**; the extension SOW found the originally-diagnosed region-detection crash is avoidable, but a separate connection-level issue remains in gsutil's own legacy `boto` 2.x stack.
+- `gcloud storage` — **corrected finding**: it *does* support custom S3-compatible endpoints (`gcloud config set storage/s3_endpoint_url`), officially documented though labeled "unstable" by Google's own CLI. Real upload/download/list verified working; see the extension report for the one narrow gap found and fixed (`GetObjectAcl`) and remaining client-side rough edges.
+- Presigned/signed-URL query-string signing — see the "V4 signed URLs" line above.
