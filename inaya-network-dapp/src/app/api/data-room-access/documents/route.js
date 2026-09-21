@@ -18,8 +18,9 @@ export async function GET(req) {
     const session = await getRoomSession(token);
     if (!session) return NextResponse.json({ error: "Your session is invalid or has expired." }, { status: 401 });
 
-    const { documents } = await listRoomDocuments(session);
-    return NextResponse.json({ documents: documents.map((d) => ({ id: d._id.toString(), title: d.title || d.name || null, classification: d.classification || null, uploadedAt: d.createdAt || d.uploadedAt || null })) });
+    const { documents, ndaRequired, ndaText } = await listRoomDocuments(session);
+    if (ndaRequired) return NextResponse.json({ documents: [], ndaRequired: true, ndaText: ndaText || null });
+    return NextResponse.json({ documents: documents.map((d) => ({ id: d._id.toString(), title: d.title || d.name || null, classification: d.classification || null, uploadedAt: d.createdAt || d.uploadedAt || null, section: d.section || null })) });
   } catch (err) {
     console.error("data-room-access/documents GET failed:", err);
     return NextResponse.json({ error: "Could not fetch documents." }, { status: 500 });

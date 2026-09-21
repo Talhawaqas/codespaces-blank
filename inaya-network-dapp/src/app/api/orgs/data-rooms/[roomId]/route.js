@@ -24,7 +24,11 @@ export async function GET(req, { params }) {
     if (!room) return NextResponse.json({ error: "Room not found." }, { status: 404 });
     const accessLog = await getRoomAccessLog(orgId, roomId);
     return NextResponse.json({
-      room: { id: room._id.toString(), roomType: room.roomType, name: room.name, documentIds: room.documentIds.map((id) => id.toString()), closedAt: room.closedAt },
+      room: {
+        id: room._id.toString(), roomType: room.roomType, name: room.name, documentIds: room.documentIds.map((id) => id.toString()), closedAt: room.closedAt,
+        templateId: room.templateId ? room.templateId.toString() : null, sections: room.sections || [], ndaRequired: !!room.ndaRequired,
+        documentSections: (room.documentSections || []).map((s) => ({ documentId: s.documentId.toString(), section: s.section })),
+      },
       accessLog: accessLog.map((a) => ({ externalEmail: a.externalEmail, action: a.action, documentId: a.documentId ? a.documentId.toString() : null, accessedAt: a.accessedAt })),
     });
   } catch (err) {
@@ -47,7 +51,7 @@ export async function PATCH(req, { params }) {
     const ctx = { orgId, roomId, actorEmail: auth.session.email, membership: auth.membership };
     let result;
     if (action === "close") result = await closeDataRoom(ctx);
-    else if (action === "addDocument") result = await addDocumentToRoom({ ...ctx, documentId: body.documentId });
+    else if (action === "addDocument") result = await addDocumentToRoom({ ...ctx, documentId: body.documentId, section: body.section });
     else if (action === "removeDocument") result = await removeDocumentFromRoom({ ...ctx, documentId: body.documentId });
     else if (action === "invite") result = await inviteExternalUser({ ...ctx, externalEmail: body.externalEmail, expiresInHours: body.expiresInHours });
     else if (action === "revoke") result = await revokeRoomAccess({ ...ctx, externalEmail: body.externalEmail });

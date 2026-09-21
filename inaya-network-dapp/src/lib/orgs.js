@@ -435,6 +435,11 @@ export async function getOrgCollections() {
     // records (invoices, POs, PRs, AI action requests), never a copy of
     // them. See src/lib/businessEvents.js.
     businessEvents: db.collection("business_events"),
+    // Modular Enterprise Adoption Features SOW, Feature 2 -- reusable
+    // Data Room configuration. Rooms themselves stay in the existing
+    // dataRooms collection (external-data-room.js); this is only the
+    // cloneable template shape. See src/lib/dataRoomTemplates.js.
+    dataRoomTemplates: db.collection("dataRoomTemplates"),
   };
 }
 
@@ -479,7 +484,7 @@ export async function ensureOrgIndexes() {
     guidedTasks, orgTrustRelationships, apiKeys,
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
-    integrationOauthStates, voiceSessions, businessEvents,
+    integrationOauthStates, voiceSessions, businessEvents, dataRoomTemplates,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -734,6 +739,8 @@ export async function ensureOrgIndexes() {
     businessEvents.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
     businessEvents.createIndex({ orgId: 1, subjectType: 1, subjectId: 1 }),
     businessEvents.createIndex({ orgId: 1, status: 1 }),
+    // Modular Enterprise Adoption Features SOW, Feature 2
+    dataRoomTemplates.createIndex({ orgId: 1, deletedAt: 1 }),
   ]);
 
   indexesEnsured = true;

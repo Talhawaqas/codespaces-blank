@@ -28,7 +28,11 @@ import { getOrgCollections, toObjectId, hashToken, generateToken } from "./orgs.
 import { canManageOrg, canManageFinancialEntities, canManageAudit } from "./orgGates.js";
 import { logOrgActivity } from "./org-activity-log.js";
 
-export const ROOM_TYPES = ["investor", "diligence", "audit"];
+// "legal" added for the Modular Enterprise Adoption Features SOW's Legal
+// Review Room template -- falls through canManageRoomType()'s existing
+// canManageOrg() default below, same as any other unlisted-but-valid type
+// would, so no new gate function is needed for it.
+export const ROOM_TYPES = ["investor", "diligence", "audit", "legal"];
 const EXTERNAL_MAGIC_LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes, same as every other magic link in this app
 const DEFAULT_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -38,7 +42,13 @@ function canManageRoomType(roomType, membership) {
   return canManageOrg(membership);
 }
 
-export async function createDataRoom({ orgId, roomType, name, relatedRecordId, actorEmail, membership }) {
+/** Modular Enterprise Adoption Features SOW, Feature 2 -- templateId/
+ *  sections/ndaRequired/ndaText are all optional and additive: a caller
+ *  that passes none of them (every existing caller) gets exactly the
+ *  room this function already created before this SOW. When a template
+ *  supplies them, they're stored on the room itself, not a second
+ *  "instance" record -- the room IS the instantiated template. */
+export async function createDataRoom({ orgId, roomType, name, relatedRecordId, templateId, sections, ndaRequired, ndaText, actorEmail, membership }) {
   if (!ROOM_TYPES.includes(roomType)) return { error: `Unknown room type "${roomType}".`, status: 400 };
   if (!canManageRoomType(roomType, membership)) return { error: "You don't have permission to create this type of room.", status: 403 };
   if (!name?.trim()) return { error: "A room name is required.", status: 400 };
@@ -48,13 +58,17 @@ export async function createDataRoom({ orgId, roomType, name, relatedRecordId, a
   const doc = {
     orgId: toObjectId(orgId), roomType, name: name.trim(),
     relatedRecordId: relatedRecordId ? toObjectId(relatedRecordId) : null,
-    documentIds: [], closedAt: null,
+    documentIds: [], documentSections: [], closedAt: null,
+    templateId: templateId ? toObjectId(templateId) : null,
+    sections: Array.isArray(sections) ? sections : [],
+    ndaRequired: !!ndaRequired,
+    ndaText: ndaRequired ? (ndaText || null) : null,
     createdByEmail: actorEmail, createdAt: now,
   };
   const result = await dataRooms.insertOne(doc);
   const inserted = { ...doc, _id: result.insertedId };
 
-  await logOrgActivity({ orgId, recordType: "DATA_ROOM", recordId: inserted._id, actorEmail, action: "CREATED", previousState: null, newState: null, metadata: { roomType, name: doc.name } });
+  await logOrgActivity({ orgId, recordType: "DATA_ROOM", recordId: inserted._id, actorEmail, action: "CREATED", previousState: null, newState: null, metadata: { roomType, name: doc.name, templateId: templateId || null, ndaRequired: doc.ndaRequired } });
   return { room: inserted };
 }
 
@@ -77,8 +91,12 @@ export async function closeDataRoom({ orgId, roomId, actorEmail, membership }) {
 
 /** The curated allowlist -- a room exposes exactly these document IDs,
  *  never an implicit "everything in the org" or "everything matching a
- *  query" grant. */
-export async function addDocumentToRoom({ orgId, roomId, documentId, actorEmail, membership }) {
+ *  query" grant. `section` (Modular Enterprise Adoption Features SOW) is
+ *  optional -- when the room came from a template with defined sections,
+ *  callers can tag which section a document belongs to for the folder-
+ *  structure view; a room with no template/sections works exactly as
+ *  before, ignoring the parameter. */
+export async function addDocumentToRoom({ orgId, roomId, documentId, section, actorEmail, membership }) {
   const { dataRooms, orgDocuments } = await getOrgCollections();
   const room = await dataRooms.findOne({ _id: toObjectId(roomId), orgId: toObjectId(orgId) });
   if (!room) return { error: "Room not found.", status: 404 };
@@ -87,14 +105,15 @@ export async function addDocumentToRoom({ orgId, roomId, documentId, actorEmail,
 
   const document = await orgDocuments.findOne({ _id: toObjectId(documentId), orgId: toObjectId(orgId) });
   if (!document) return { error: "Document not found in this org.", status: 404 };
+  if (section && Array.isArray(room.sections) && room.sections.length > 0 && !room.sections.includes(section)) {
+    return { error: `"${section}" is not one of this room's sections: ${room.sections.join(", ")}.`, status: 400 };
+  }
 
-  const updated = await dataRooms.findOneAndUpdate(
-    { _id: room._id, documentIds: { $ne: document._id } },
-    { $push: { documentIds: document._id } },
-    { returnDocument: "after" }
-  );
+  const update = { $push: { documentIds: document._id } };
+  if (section) update.$push.documentSections = { documentId: document._id, section };
+  const updated = await dataRooms.findOneAndUpdate({ _id: room._id, documentIds: { $ne: document._id } }, update, { returnDocument: "after" });
   const finalRoom = updated || room; // idempotent no-op if already added
-  await logOrgActivity({ orgId, recordType: "DATA_ROOM", recordId: room._id, actorEmail, action: "DOCUMENT_ADDED", previousState: null, newState: null, metadata: { documentId: document._id.toString() } });
+  await logOrgActivity({ orgId, recordType: "DATA_ROOM", recordId: room._id, actorEmail, action: "DOCUMENT_ADDED", previousState: null, newState: null, metadata: { documentId: document._id.toString(), section: section || null } });
   return { room: finalRoom };
 }
 
@@ -184,6 +203,24 @@ export async function getRoomSession(rawToken) {
   return session;
 }
 
+/** NDA acceptance (Modular Enterprise Adoption Features SOW) -- reuses
+ *  the SAME session a magic link already established rather than a
+ *  second identity step; listRoomDocuments() below refuses to serve any
+ *  document from an ndaRequired room until this has been called for that
+ *  exact session. Idempotent: accepting twice just keeps the original
+ *  timestamp. */
+export async function acceptRoomNda(rawToken) {
+  const session = await getRoomSession(rawToken);
+  if (!session) return { error: "invalid_or_expired", status: 400 };
+  if (session.ndaAcceptedAt) return { accepted: true, ndaAcceptedAt: session.ndaAcceptedAt };
+
+  const { dataRoomExternalSessions } = await getOrgCollections();
+  const now = new Date().toISOString();
+  await dataRoomExternalSessions.updateOne({ _id: session._id }, { $set: { ndaAcceptedAt: now } });
+  await recordRoomAccess({ session, action: "NDA_ACCEPTED" });
+  return { accepted: true, ndaAcceptedAt: now };
+}
+
 export async function revokeRoomAccess({ orgId, roomId, externalEmail, actorEmail, membership }) {
   const { dataRooms, dataRoomExternalSessions } = await getOrgCollections();
   const room = await dataRooms.findOne({ _id: toObjectId(roomId), orgId: toObjectId(orgId) });
@@ -201,14 +238,20 @@ export async function revokeRoomAccess({ orgId, roomId, externalEmail, actorEmai
 
 /** The only read path an external session ever uses -- scoped by
  *  session.orgId AND session.roomId, so cross-room and cross-tenant
- *  retrieval are both structurally impossible here, not just policy. */
+ *  retrieval are both structurally impossible here, not just policy.
+ *  NDA gate (Modular Enterprise Adoption Features SOW): a room created
+ *  with ndaRequired:true serves zero documents to a session that hasn't
+ *  called acceptRoomNda() for itself -- checked here, the one real read
+ *  path, not left to a caller to remember to check. */
 export async function listRoomDocuments(session) {
   const { dataRooms, orgDocuments } = await getOrgCollections();
   const room = await dataRooms.findOne({ _id: session.roomId, orgId: session.orgId });
   if (!room || room.closedAt) return { documents: [] };
+  if (room.ndaRequired && !session.ndaAcceptedAt) return { documents: [], ndaRequired: true, ndaText: room.ndaText };
   const documents = await orgDocuments.find({ _id: { $in: room.documentIds }, orgId: session.orgId }).toArray();
+  const sectionByDoc = new Map((room.documentSections || []).map((s) => [s.documentId.toString(), s.section]));
   await recordRoomAccess({ session, action: "LIST_DOCUMENTS" });
-  return { documents };
+  return { documents: documents.map((d) => ({ ...d, section: sectionByDoc.get(d._id.toString()) || null })) };
 }
 
 /** §229's access logging -- a real, non-best-effort append, since this is
