@@ -1508,5 +1508,38 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      title: "Modular Enterprise Adoption Layer — DirectSync, Data Room Templates, Cloud Backup Scheduler & What-If Studio (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four SOW features, each preceded by a mandatory capability audit (published as docs/MODULAR_ADOPTION_CAPABILITY_AUDIT.md) classifying every proposed capability as already-implemented, reusable, a genuine gap, or an architectural decision requiring sign-off — no feature here duplicates an existing system. DirectSync is a native background local-folder watcher; the other three extend existing Data Room, migration, and Digital Twin infrastructure rather than sitting beside it.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["New: inaya-desktop/src-tauri/src/directsync.rs", "DirectSync's engine — SQLite-backed local state (folders/sync_state tables), SHA-256 change detection (never trusts mtime alone), notify-debouncer-full for coalescing duplicate OS filesystem events and pairing rename from/to paths, and an upload path through inaya-drive-core's own S3Client/SigV4 signer — the same client inaya-drive-helper and inaya-drive-helper-linux already use against the real /api/s3 endpoint. A local delete only marks the row LOCALLY_DELETED; the remote object is never touched — backup semantics, not mirror semantics, by design."],
+            ["Modified: inaya-desktop/src-tauri/src/lib.rs", "10 new Tauri commands (directsync_add_folder, _remove_folder, _pause_folder, _resume_folder, _list_folders, _list_queue, _retry_failed, _store_credential, _credential_configured, _clear_credential, _pick_folder), all gated by the file's existing verify_trusted_origin defense-in-depth idiom. DirectSyncState is initialized in .setup() — restoring the credential from the OS keychain (via the same keyring crate already used for the master-node passkey) and resuming every enabled folder's watcher — and torn down on tray Quit, mirroring the existing DriveState pattern."],
+            ["New: src/lib/dataRoomTemplates.js", "Extends external-data-room.js (not a fork) with four built-in templates (Fundraising, M&A, Legal Review, Web3 Due-Diligence), org-owned custom templates, NDA gating, and section-tagged document uploads. createRoomFromTemplate() bridges into the existing createDataRoom()."],
+            ["New: src/lib/dataRoomEvidence.js", "Verified evidence export for a data room, reusing evidenceExporter.js's exact canonicalizeForExport/sha256 convention — the same technique businessEventPassport.js already established."],
+            ["New: src/lib/cloudBackupScheduler.js", "Orchestrates inaya-migration-agent's real, already-tested source adapters and runMigration() engine — linked via a file: dependency, not rewritten. Resolves two real semantic gaps in that package (a local-file Manifest incompatible with serverless invocations; permanent-once-migrated semantics wrong for a recurring backup) with its own Mongo-backed incremental diff (backupObjectState) and a duck-typed shim manifest, without modifying the shared package. Destination writes go through s3-compat/store.js directly, in-process, rather than round-tripping through the package's own HTTP-oriented client."],
+            ["New: src/lib/backupCryptoAndCredentials.js", "Envelope-encrypted (AES-256-GCM) storage of a customer's own AWS/Azure/GCS credentials, under a key dedicated solely to this feature — a disclosed, deliberate departure from the migration tool's own \"credentials never leave your machine\" design, necessary for anything to re-authenticate on a recurring schedule."],
+            ["Modified: src/lib/digitalTwinSimulate.js", "Added an independently-recomputable integrityHash (reusing evidenceExporter.js's canonicalization), simulationId, and a new listDigitalTwinSimulations() for scenario history — the What-If Studio UI's only new backend surface; the simulation engine itself is unchanged."],
+            ["New: src/components/business/WhatIfStudioView.js, DataRoomsView.js extensions, CloudBackupSchedulerView.js, DirectSyncView.js", "Business Workspace UI for all four features, following the existing self-contained-view convention. DirectSyncView calls native Tauri commands via window.__TAURI__.core.invoke() (the same pattern the app's existing pending-approvals/security-feed pollers use) and degrades to an honest \"requires the desktop app\" message in a plain browser tab."],
+            ["Test coverage", "Data Room Templates: 8 tests, zero regressions to external-data-room.test.mjs. Cloud Backup Scheduler: 12 tests, including a genuine end-to-end run through the real migration engine and real storage write path via node:test's mock.module() substituting only the external cloud source adapter. What-If Studio: 2 additional tests on the existing Digital Twin suite. DirectSync: 7 Rust unit tests plus 1 real, non-mocked #[ignore] end-to-end test run manually against a live dev server and a real, disposable S3-compat credential (read from environment variables, never hardcoded) — proving real upload+verify, duplicate-safety, change detection, rename with actual remote relocation, and delete-preserves-remote."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Two real bugs found and fixed during development.",
+          text: "cloudBackupScheduler.js's first version computed both objectsSeen and objectsChanged from the same value, so a no-op run's \"seen\" count silently equaled its \"changed\" count instead of reflecting every object actually examined — caught by a duplicate-safety test, fixed by tracking the diff's own seenKeys.size separately. directsync.rs's first version of handle_rename() only updated local SQLite bookkeeping without actually relocating the object in remote storage — caught by the real end-to-end test (a HEAD on the renamed key returned nothing), fixed by having the rename path PUT the unchanged local bytes under the new key and best-effort DELETE the old one.",
+        },
+        {
+          type: "note",
+          text: "Deliberately not built in this pass: DirectSync's \"Create Secure Link\" context-menu action (the reusable primitive, s3-compat/signedUrl.js's createSignedUrl/verifySignedUrl, was confirmed during the audit but wiring it in was deprioritized behind a fully tested core sync engine), a real-action handoff from a What-If simulation into the existing PENDING_APPROVAL flow (no concrete use case has proposed one yet), and DirectSync running independent of the desktop app being open at all (it runs as a background task inside inaya-desktop's existing process, not a fifth standalone native service — a deliberate reuse of real tray/background infrastructure over building a new OS-level service installer). Full writeup: docs/directsync-report.md, docs/cloud-backup-scheduler-report.md, and docs/MODULAR_ADOPTION_CAPABILITY_AUDIT.md.",
+        },
+      ],
+    },
   ],
 };

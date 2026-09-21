@@ -568,5 +568,32 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      title: "Modular Enterprise Adoption Layer — DirectSync, Data Rooms, Cloud Backup & What-If Studio (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four self-contained features, built after a mandatory audit of what already existed, so nothing here is a second version of a system Inaya already had: automatic local-folder backup, ready-made secure data-room templates, a recurring cloud-to-Inaya backup scheduler, and a visual front-end over the existing Digital Twin simulator.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "DirectSync — point it at a folder on your computer and it automatically, quietly backs it up into Inaya in the background. Duplicate-safe (it never re-uploads an unchanged file), resumable if the connection drops, and a local delete never deletes the backup — that's a deliberate safety choice, not an oversight.",
+            "Data Room Templates — four ready-made secure sharing setups (Fundraising, M&A, Legal Review, Web3 Due-Diligence) so a confidential document room with the right structure, NDA gate, and access rules can be created in seconds instead of built by hand each time.",
+            "Cloud Backup Scheduler — set it once, and a company's existing AWS, Azure, or Google Cloud storage stays automatically mirrored into Inaya on a recurring schedule, only re-copying what actually changed, with a simple Healthy/Warning/Degraded/Failed status at a glance.",
+            "What-If Scenario Studio — a proper interface over the existing \"what would happen if...\" simulator, with a history of past scenarios and a clear before-and-after comparison, so a manager doesn't need to know an API exists to use it.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Tested for real, not assumed to work.",
+          text: "DirectSync's core promises — no duplicate uploads, a rename doesn't create a second copy, a local delete never touches the backup — were each proven by running a real end-to-end test against a real running server and real files on a real Windows computer. That same test caught a genuine bug (a rename wasn't actually relocating the backed-up file) before this was called finished.",
+        },
+        {
+          type: "note",
+          text: "Honestly scoped: DirectSync currently runs on Windows, tested for real; the Linux version uses the same underlying pieces already proven to work on Linux elsewhere in Inaya, but hasn't itself been run on a real Linux machine yet, so it's marked unverified rather than claimed. Full writeup: docs/directsync-report.md, docs/cloud-backup-scheduler-report.md, and docs/MODULAR_ADOPTION_CAPABILITY_AUDIT.md.",
+        },
+      ],
+    },
   ],
 };

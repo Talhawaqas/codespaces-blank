@@ -3251,6 +3251,16 @@ export default function Home() {
         { text: "Secured community App Store hosting — developers submit their own app (IPFS CID or a sandboxed iframe embed), wallet-signed, threat-checked, and admin-approved before anything is public", done: true },
         { text: "Host apps via the SDK/CLI — InayaKernel.AppStore client plus a new `inaya deploy` CLI command pins a local static site to IPFS (the developer's own Pinata account) and submits it for App Store review in one step", done: true },
         { text: "MFA for Business Workspace — opt-in TOTP (QR code, any authenticator app) and SMS second factor on login, web + mobile; identity-scoped so one enrollment protects every org a member belongs to", done: true },
+        // Added September 2026 — Modular Enterprise Adoption Layer (four
+        // SOW features, each preceded by a published capability audit so
+        // nothing here duplicates existing storage/migration/simulation
+        // infrastructure): DirectSync, Data Room Templates, the Cloud
+        // Backup & Health Scheduler, and the What-If Scenario Studio.
+        // Shipped this cycle, not previously reflected here.
+        { text: "DirectSync — automatic local-folder backup from the Inaya desktop app, duplicate-safe and resumable, real end-to-end tested on Windows (Linux built on the same proven components but not yet run on real Linux hardware)", done: true },
+        { text: "Zero-Knowledge Data Room Templates — four ready-made secure room configurations (Fundraising, M&A, Legal Review, Web3 Due-Diligence) on the existing Data Room/NDA/audit infrastructure", done: true },
+        { text: "Smart Cloud Backup & Health Scheduler — recurring, incremental AWS S3/Azure Blob/Google Cloud Storage backup into Inaya, orchestrating the existing migration engine with real integrity verification and a six-state health status", done: true },
+        { text: "Interactive What-If Scenario Studio — Business Workspace UI over the existing Digital Twin simulation API, with scenario history and current-vs-simulated comparison", done: true },
       ],
     },
     {

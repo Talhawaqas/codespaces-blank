@@ -425,6 +425,23 @@ export const ROADMAP_STAGES = [
     notes:
       "Live-verified: 47 tests for the Evidence Graph layer and 9 tests for the Digital Twin layer, all passing against the real database, with zero regressions to any pre-existing test suite. The single strongest test in both layers is the same: run every simulation/scenario type, snapshot every record it reads before and after, and assert byte-for-byte equality — proving a simulation can never silently become a real action. Cross-organization Digital Twins (e.g., one company privately checking another's fulfilment capacity without seeing their internal data) were researched — zero-knowledge proofs, secure multiparty computation, and trusted-execution options were all evaluated — and deliberately deferred rather than built, since no validated customer need for it exists yet and building that cryptography speculatively isn't justified. Not yet built: a graph-visualization UI, versioned Twin snapshots for reproducibility, and natural-language scenario creation — the underlying model and API are complete and tested; the UI layer that would sit on top of them is a later pass.",
   },
+  {
+    number: 15,
+    title: "Modular Enterprise Adoption Layer — DirectSync, Data Room Templates, Cloud Backup Scheduler & What-If Studio",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "Four self-contained features that make the existing platform materially easier for a real company to adopt without changing how it already works — automatic local-folder backup, ready-made secure data-room templates, a recurring cloud-to-Inaya backup scheduler, and a visual front-end over the existing Digital Twin simulation layer — all built strictly on top of existing storage, permissions, audit, migration, and simulation infrastructure rather than as four disconnected new products.",
+    securityStatement: "A local file's own delete action can never delete its backup, a rename can never create a duplicate remote copy, and a what-if simulation can never mutate a real record — each guarantee proven by a real, non-mocked automated test, not just asserted by design.",
+    features: [
+      "DirectSync — a background local-folder watcher inside the Inaya desktop app; automatically, incrementally uploads new/changed files via the existing S3-compatible API, duplicate-safe and resumable across restarts, reusing the same real S3 client Inaya Drive already uses",
+      "Zero-Knowledge Data Room Templates — four ready-made room configurations (Fundraising, M&A, Legal Review, Web3 Due-Diligence) built on the existing Data Room, NDA, and audit infrastructure, not a second document-sharing system",
+      "Smart Cloud Backup & Health Scheduler — recurring, incremental AWS S3/Azure Blob/Google Cloud Storage backup into Inaya, orchestrating the existing, already-tested migration engine rather than a second copy of it, with real size-verified integrity checks and a six-state health status",
+      "Interactive What-If Scenario Studio — a Business Workspace view over the existing Digital Twin simulation API (not a second simulation engine), with scenario history, current-vs-simulated comparison, dependency impact, and integrity-hashed provenance",
+      "A mandatory capability audit was produced and published before any of the four features was built, classifying every proposed capability as already-implemented, reusable, or a genuine gap — nothing here duplicates an existing system",
+    ],
+    notes:
+      "Live-verified: Data Room Templates covered by 8 automated tests (zero regressions to the pre-existing external-data-room suite); Cloud Backup Scheduler by 12 tests, including a genuine end-to-end run through the real migration engine and real storage write path via Node's module-mocking (only the external cloud source is substituted); What-If Studio extends the existing, already-tested Digital Twin test suite with 2 additional tests. DirectSync is covered by 7 unit tests plus 1 real, non-mocked end-to-end test — a real folder watched, real files uploaded, real duplicate-safety, real rename, and real delete-preserves-remote-copy behavior, all run on real Windows hardware. DirectSync's Windows support is real and tested; Linux is built on the same already-proven cross-platform components (the identical S3 client already verified working on Linux elsewhere in the platform) but has not yet been run on a real Linux machine, so it is stated as not yet verified rather than claimed. A real bug — a rename only updating local bookkeeping without actually relocating the object in storage — was found by the end-to-end test and fixed before this stage was marked live.",
+  },
 ];
 
 export const VISION = {
