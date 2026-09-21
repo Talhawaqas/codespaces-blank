@@ -18,7 +18,7 @@
 // ELSE in the org references it, transitively" -- the traversal
 // businessEventSimulate.js's own single-record scope never needed.
 
-import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
+import { getOrgCollections, canAccessDepartment, canAccessStorage, toObjectId } from "./orgs.js";
 
 // Entity types this Twin can resolve dependents for, and the query that
 // finds "records of type X that reference entity Y." Each entry is kept
@@ -54,6 +54,12 @@ const DEPENDENT_RESOLVERS = {
     // A PO's line items reference products/warehouses -- resolved specially
     // in resolveDependents() below since they're nested, not a top-level FK.
   ],
+  // STORAGE_RESOURCE deliberately has NO entry here -- see resolveDependents()'s
+  // own special-case block below for why (neither storageResources nor
+  // storageSnapshots carry a departmentId, and the generic loop's
+  // no-departmentId default is "visible to everyone," which is wrong for a
+  // resource type gated by the distinct storageRole permission, not
+  // department membership).
 };
 
 // project_members and task.assigneeEmail reference a PERSON (email), not
@@ -100,6 +106,7 @@ function summarize(entityType, doc) {
   if (entityType === "PROJECT") return { name: doc.name };
   if (entityType === "SUPPLIER") return { name: doc.name, status: doc.status };
   if (entityType === "EMPLOYEE") return { name: doc.name || doc.memberEmail };
+  if (entityType === "STORAGE_SNAPSHOT") return { status: doc.status, objectCount: doc.manifest?.length ?? 0, createdAt: doc.createdAt };
   return {};
 }
 
@@ -153,6 +160,20 @@ export async function resolveDependents({ orgId, entityType, entityId, membershi
     for (const pair of productWarehousePairs) {
       const [productId, warehouseId] = pair.split(":");
       dependents.push({ targetType: "PRODUCT", targetId: productId, state: "INCLUDED", summary: { viaWarehouse: warehouseId } });
+    }
+  }
+
+  // Storage resources (IBM Cloud VPC Storage Gap Expansion SOW) are org-
+  // wide, gated by the distinct storageRole permission (canAccessStorage),
+  // never by department -- so this is a bespoke block, not a
+  // DEPENDENT_RESOLVERS entry, matching the SUPPLIER special-case pattern
+  // above. Fails closed: a caller without storage access sees the
+  // snapshot's existence as RESTRICTED, never its contents.
+  if (entityType === "STORAGE_RESOURCE") {
+    const visible = canAccessStorage(membership);
+    const snapshots = await collections.storageSnapshots.find({ orgId: orgObjectId, sourceResourceId: toObjectId(entityId), deletedAt: null }).toArray();
+    for (const snap of snapshots) {
+      dependents.push({ targetType: "STORAGE_SNAPSHOT", targetId: String(snap._id), state: visible ? "INCLUDED" : "RESTRICTED", summary: visible ? summarize("STORAGE_SNAPSHOT", snap) : undefined });
     }
   }
 

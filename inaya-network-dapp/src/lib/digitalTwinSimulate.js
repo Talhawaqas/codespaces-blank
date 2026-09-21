@@ -19,12 +19,13 @@
 // completion-date field), the result reports UNKNOWN with a stated
 // reason instead of inventing a plausible-looking number.
 
-import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
+import { getOrgCollections, canAccessDepartment, canAccessStorage, toObjectId } from "./orgs.js";
 import { resolveDependents, traverseDependencyGraph } from "./digitalTwin.js";
+import { getPlanHealth } from "./storageBackupPolicies.js";
 import { canonicalizeForExport } from "./evidenceExporter.js";
 import { createHash } from "node:crypto";
 
-export const SCENARIO_TYPES = ["SUPPLIER_UNAVAILABLE", "EMPLOYEE_ACCESS_REMOVED", "PROJECT_DELAYED", "WAREHOUSE_UNAVAILABLE"];
+export const SCENARIO_TYPES = ["SUPPLIER_UNAVAILABLE", "EMPLOYEE_ACCESS_REMOVED", "PROJECT_DELAYED", "WAREHOUSE_UNAVAILABLE", "STORAGE_RESOURCE_UNAVAILABLE", "BACKUP_POLICY_DISABLED"];
 
 // What-If Scenario Studio SOW §9.8 -- bumped only when a scenario
 // handler's actual logic changes (not on every commit), so a stored
@@ -155,11 +156,71 @@ async function simulateWarehouseUnavailable({ orgId, entityId, membership }) {
   };
 }
 
+// IBM Cloud VPC Storage Gap Expansion SOW, Workstream U -- "what happens
+// if this storage resource becomes unavailable" / "what happens if this
+// backup policy is disabled." Gated on canAccessStorage (the resource's
+// real access boundary, per digitalTwin.js's own STORAGE_RESOURCE
+// special-case comment), not canAccessDepartment -- storage resources
+// have no department scope.
+async function simulateStorageResourceUnavailable({ orgId, entityId, membership }) {
+  const { storageResources } = await getOrgCollections();
+  const resource = await storageResources.findOne({ _id: toObjectId(entityId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!resource) return { error: "Storage resource not found.", status: 404 };
+  if (!canAccessStorage(membership)) return { error: "You don't have permission to simulate this.", status: 403 };
+
+  const graph = await traverseDependencyGraph({ orgId, startType: "STORAGE_RESOURCE", startId: entityId, membership, maxDepth: 1 });
+  const snapshotEdges = graph.edges.filter((e) => e.to.targetType === "STORAGE_SNAPSHOT");
+
+  return {
+    scenario: { type: "STORAGE_RESOURCE_UNAVAILABLE", subject: { type: "STORAGE_RESOURCE", id: entityId, name: resource.name } },
+    directImpact: {
+      status: resource.attachmentState === "ATTACHED" ? "IMPACT_DETECTED" : "NO_IMPACT",
+      currentAttachmentState: resource.attachmentState,
+      attachedTo: resource.attachedTo,
+      availableSnapshots: snapshotEdges.filter((e) => e.to.state === "INCLUDED").map((e) => ({ snapshotId: e.to.targetId, ...e.to.summary })),
+    },
+    unknowns: [
+      { area: "DEPENDENT_CONSUMERS", ...unknown("No other Inaya resource type currently stores a foreign key referencing a storage resource, so nothing beyond this resource's own attachment state and snapshots can be traced as an effect.") },
+      { area: "RESTORE_TIME", ...unknown("No backend primitive exists to estimate restore duration ahead of actually running it -- see the Fast Restore workstream's own documented non-implementation.") },
+    ],
+    resultStatus: snapshotEdges.length > 0 ? "PARTIAL" : "COMPLETE",
+    noChangesWereMade: true,
+  };
+}
+
+async function simulateBackupPolicyDisabled({ orgId, entityId, membership }) {
+  const { storageBackupPolicies, storageBackupPlans, storageResources } = await getOrgCollections();
+  const policy = await storageBackupPolicies.findOne({ _id: toObjectId(entityId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!policy) return { error: "Backup policy not found.", status: 404 };
+  if (!canAccessStorage(membership)) return { error: "You don't have permission to simulate this.", status: 403 };
+
+  const plans = await storageBackupPlans.find({ orgId: toObjectId(orgId), policyId: policy._id, deletedAt: null }).toArray();
+  const resources = await storageResources.find({ orgId: toObjectId(orgId), deletedAt: null }).toArray();
+  const { matchesSelector } = await import("./storageResources.js");
+  const affectedResources = resources.filter((r) => matchesSelector(r.tags, policy.tagSelector));
+
+  return {
+    scenario: { type: "BACKUP_POLICY_DISABLED", subject: { type: "STORAGE_BACKUP_POLICY", id: entityId, name: policy.name } },
+    directImpact: {
+      status: affectedResources.length > 0 ? "IMPACT_DETECTED" : "NO_IMPACT",
+      resourcesNoLongerProtected: affectedResources.map((r) => ({ resourceId: String(r._id), name: r.name })),
+      plansAffected: plans.map((p) => ({ planId: String(p._id), frequency: p.frequency, currentHealth: getPlanHealth(p) })),
+    },
+    unknowns: [
+      { area: "TIME_TO_STALE", ...unknown("How soon a resource's already-existing snapshots become insufficient for recovery depends on that resource's own real change rate, which is not tracked as a projectable metric here.") },
+    ],
+    resultStatus: affectedResources.length > 0 ? "PARTIAL" : "COMPLETE",
+    noChangesWereMade: true,
+  };
+}
+
 const SCENARIO_HANDLERS = {
   SUPPLIER_UNAVAILABLE: simulateSupplierUnavailable,
   EMPLOYEE_ACCESS_REMOVED: simulateEmployeeAccessRemoved,
   PROJECT_DELAYED: simulateProjectDelayed,
   WAREHOUSE_UNAVAILABLE: simulateWarehouseUnavailable,
+  STORAGE_RESOURCE_UNAVAILABLE: simulateStorageResourceUnavailable,
+  BACKUP_POLICY_DISABLED: simulateBackupPolicyDisabled,
 };
 
 /** Read-only entry point. Never writes to any collection -- every handler

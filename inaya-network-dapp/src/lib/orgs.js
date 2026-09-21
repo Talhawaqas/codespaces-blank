@@ -453,6 +453,27 @@ export async function getOrgCollections() {
     backupSchedules: db.collection("backupSchedules"),
     backupRuns: db.collection("backupRuns"),
     backupObjectState: db.collection("backupObjectState"),
+    // IBM Cloud VPC Storage Gap Expansion SOW. storageResources is the
+    // unified registry (Workstream A) for the "volume"/"fileShare"
+    // resource types this SOW adds -- a genuine gap; no generic resource
+    // envelope existed before this (see storageResources.js's own header
+    // for why "volume"/"fileShare" are logical-only, never a real
+    // attachable block device or NFS server). storageSnapshots/
+    // consistencyGroups/snapshotGrants back the Snapshot Engine,
+    // Consistency Groups, and Cross-Org Snapshot Sharing (Workstreams
+    // E/F/I) -- see storageSnapshots.js. storageBackupPolicies/
+    // storageBackupPlans/storageBackupJobs back the tag-selector-driven
+    // Backup Policy Engine (Workstreams J/K/L/M) -- see
+    // storageBackupPolicies.js; distinct from backupSchedules above,
+    // which is Feature 3's external-cloud-to-Inaya sync, not this SOW's
+    // policy-driven native-resource snapshotting.
+    storageResources: db.collection("storageResources"),
+    storageSnapshots: db.collection("storageSnapshots"),
+    consistencyGroups: db.collection("consistencyGroups"),
+    snapshotGrants: db.collection("snapshotGrants"),
+    storageBackupPolicies: db.collection("storageBackupPolicies"),
+    storageBackupPlans: db.collection("storageBackupPlans"),
+    storageBackupJobs: db.collection("storageBackupJobs"),
   };
 }
 
@@ -499,6 +520,8 @@ export async function ensureOrgIndexes() {
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
     integrationOauthStates, voiceSessions, businessEvents, dataRoomTemplates,
     backupCredentials, backupSchedules, backupRuns, backupObjectState,
+    storageResources, storageSnapshots, consistencyGroups, snapshotGrants,
+    storageBackupPolicies, storageBackupPlans, storageBackupJobs,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -760,6 +783,14 @@ export async function ensureOrgIndexes() {
     backupSchedules.createIndex({ orgId: 1, status: 1, nextRunAt: 1 }),
     backupRuns.createIndex({ scheduleId: 1, startedAt: -1 }),
     backupObjectState.createIndex({ scheduleId: 1, sourceKey: 1 }, { unique: true }),
+    // IBM Cloud VPC Storage Gap Expansion SOW
+    storageResources.createIndex({ orgId: 1, type: 1, deletedAt: 1 }),
+    storageSnapshots.createIndex({ orgId: 1, sourceResourceId: 1, deletedAt: 1 }),
+    consistencyGroups.createIndex({ orgId: 1, createdAt: -1 }),
+    snapshotGrants.createIndex({ recipientOrgId: 1, revokedAt: 1 }),
+    storageBackupPolicies.createIndex({ orgId: 1, enabled: 1 }),
+    storageBackupPlans.createIndex({ policyId: 1 }),
+    storageBackupJobs.createIndex({ policyId: 1, startedAt: -1 }),
   ]);
 
   indexesEnsured = true;

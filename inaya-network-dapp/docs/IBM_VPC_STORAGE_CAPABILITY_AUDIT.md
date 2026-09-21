@@ -1,0 +1,33 @@
+# IBM Cloud VPC Storage Gap Expansion — Capability Audit
+
+**SOW:** IBM Cloud VPC Storage-Inspired Capability Expansion. **Status:** Audit completed before any implementation, per the SOW's own mandatory Phase 0 rule.
+
+## Audit Matrix
+
+| IBM capability | Inaya equivalent | Verdict | Evidence |
+|---|---|---|---|
+| Generic storage resource envelope (id/type/status/tags/region) | None | **GENUINE GAP** | Storage is purely object/document-shaped — `orgDocuments`, `s3-compat/store.js`'s bucket-as-`projects`-row model. No generic resource table exists anywhere. |
+| Block volume (attach/detach to compute) | None, and **no compute layer exists to attach to** | **GENUINE GAP — cannot be built as a real physical block device** | Repo-wide search for "volume" returns zero real hits; no hypervisor/VM/instance provisioning of any kind exists in this codebase. |
+| Network file share / NFS (multi-client) | Inaya Drive (single-owner mount via WinFSP/FUSE) | **GENUINE GAP — Drive is not equivalent** | `inaya-drive-helper`'s own header comment confirms it mounts one credential's own bucket namespace; no multi-client session/lock coordination, no NFS protocol server. |
+| First-class, multi-object point-in-time snapshot | Per-key S3 Versioning + Object Lock (`s3-compat/store.js`) | **PARTIAL — versioning exists, a whole-resource snapshot resource did not** | `putBucketVersioning`/`headS3Object` with an explicit `versionId` are real; nothing captured a manifest spanning a whole bucket as its own independently-listable, independently-restorable entity before this SOW. |
+| Consistency groups | None | **GENUINE GAP** | No matches anywhere for "consistency group." |
+| Cross-region snapshot copy | None; no "region" concept at all | **GENUINE GAP — "region" itself is unmodeled** | No resource in this codebase carries a `region` field; pinning-provider selection is by provider name, not geography. |
+| Fast restore / clone | None | **GENUINE GAP — not built** | No backend primitive exists to accelerate a restore beyond a normal copy. Per the SOW's own instruction, this is documented as not built rather than mislabeling a normal restore as "fast." |
+| Cross-organization snapshot sharing | Existing org/permission architecture (grant/revoke/expiry patterns already established elsewhere, e.g. Data Room Templates) | **GENUINE GAP — resource itself didn't exist, but the pattern to build it on did** | Reused, not reinvented. |
+| Tag-driven backup policy engine (selectors, multiple plans, retention) | `cloudBackupScheduler.js` (Modular Enterprise Adoption Features SOW, Feature 3) has real job-execution/health tracking, but is single-source-to-single-destination sync with no tag selector, no policy/plan hierarchy, no retention at all | **PARTIAL** | `createBackupSchedule`/`runBackupJob`/`computeHealthStatus` are real precedent for the shape; tag-selector matching, multi-plan-per-policy, and retention enforcement are all genuinely new. |
+| Backup job health with failure reasons | Same as above | **PARTIAL — pattern exists, applied to a new domain** | `HEALTH_STATUS` values/thresholds reused verbatim for consistency across both backup systems. |
+| Tags | S3-compat objects only (`normalizeTags`, `putObjectTagging`) | **EXISTS, narrowly scoped** | Generalized to the new storage-control-plane resource types in this SOW; the underlying object-level tag system is untouched. |
+| Terraform (custom provider for new resource types) | No Inaya-authored Terraform provider exists at all; "Terraform compatibility" means the stock `hashicorp/aws` provider works against the S3-compat REST API | **PARTIAL — real, but not what a custom-resource IaC extension needs** | Confirmed via `docs/enterprise-adoption-and-market-reach-report.md`. Building `inaya_volume`/`inaya_snapshot`/`inaya_backup_policy` Terraform resources requires a real, separate Go-based Terraform provider — out of scope for this pass, documented as deferred rather than attempted as a token implementation. |
+| Context-based/conditional access restrictions | `orgGates.js` is pure role + department + explicit assignment | **GENUINE GAP** | No time-of-day, network/IP-context, device-context, or risk-based conditional access exists anywhere in the permission model. Not built in this pass — no concrete use case identified yet. |
+| Evidence Graph integration point | `logOrgActivity` (audit chain) | **EXISTS, reused unchanged** | Every new mutation in this SOW's three new lib files calls it exactly the way every other org-scoped mutation in the codebase does. |
+| Digital Twin integration point | `digitalTwin.js`'s `DEPENDENT_RESOLVERS`/`resolveDependents`, `digitalTwinSimulate.js`'s `SCENARIO_HANDLERS` | **EXISTS, extended, not rebuilt** | A new `STORAGE_RESOURCE` special-case resolver block (storage resources are org-wide, gated by `canAccessStorage`, not department — the generic resolver table's no-departmentId-means-visible-to-everyone default would have been a real permission leak here) and two new scenario types. |
+| IBM Cloud Object Storage credentials for real interop validation | None present in this environment | **GENUINE GAP — not executable here** | `.env.local` contains 65 real variable names (Filebase, Pinata, MongoDB, blockchain RPCs, Stripe, Didit) and zero `IBM_COS_*`/`IBM_CLOUD_*` entries. Workstream R was not attempted, and is not claimed as tested. |
+| Instance-local scratch storage | No compute runtime | **NOT APPROPRIATE — confirmed non-goal** | Nothing built, per the SOW's own explicit instruction. |
+
+## Mandatory Rule Compliance
+
+No row above classified as already fully existing was reimplemented. `s3-compat/store.js`'s versioning, `cloudBackupScheduler.js`'s job/health pattern, the org permission model, `logOrgActivity`, and `digitalTwin.js`/`digitalTwinSimulate.js` were all extended or called directly, never forked or duplicated.
+
+## The One Architectural Finding That Shaped Everything
+
+Inaya has no compute/VM/hypervisor runtime of any kind. This single fact means two of the SOW's headline capabilities — real attachable block volumes and real multi-client NFS file shares — cannot be honestly built as physical infrastructure here without either fabricating a fake compute layer or lying about capability, both explicitly forbidden by the SOW itself. Both were built instead as logical, taggable, resizable resource models with a real, useful reservation/lock mechanism (for volumes) or declared bookkeeping (for file shares) — never described as physically attachable or mountable, with a static `physicalCapability` field on every resource stating exactly what's real.
