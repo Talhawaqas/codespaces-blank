@@ -27,3 +27,13 @@ tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-dialog = "2"
 keyring = "3"
+# DirectSync (Modular Enterprise Adoption Features SOW, Feature 1) --
+# inaya-drive-core is the same shared, already-tested S3 client/signer
+# crate inaya-drive-helper and inaya-drive-helper-linux both link, path-
+# dependency style matching inaya-drive-helper-linux's own Cargo.toml.
+inaya-drive-core = { path = "../../inaya-drive-core" }
+rusqlite = { version = "0.31", features = ["bundled"] }
+notify-debouncer-full = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+walkdir = "2"

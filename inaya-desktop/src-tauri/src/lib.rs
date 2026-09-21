@@ -13,10 +13,13 @@ use tauri::{
 };
 use keyring::Entry;
 use std::process::Child;
-use std::sync::Mutex as StdMutex;
+use std::sync::{Arc, Mutex as StdMutex};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::UpdaterExt;
+
+mod directsync;
+use directsync::{DirectSyncCredential, DirectSyncState, FolderConfig, QueueEntry, SyncEngine};
 
 const APP_URL: &str = "https://www.inayanetwork.com/business";
 const TRUSTED_ORIGIN: &str = "https://www.inayanetwork.com";
@@ -527,6 +530,153 @@ fn unmount_inaya_drive(window: tauri::WebviewWindow, state: State<DriveState>) -
     Ok(())
 }
 
+// DirectSync (Modular Enterprise Adoption Features SOW, Feature 1) -- see
+// directsync.rs's own module header for the full architecture rationale.
+// These commands are thin: all real logic (hashing, dedup, SQLite state,
+// the watcher thread, the upload/verify path) lives in directsync.rs; this
+// layer only does origin verification, input shaping, and keyring I/O for
+// the S3-compat credential DirectSync uploads with.
+const DIRECTSYNC_KEYRING_ACCOUNT: &str = "directsync-s3-credential";
+
+fn folder_id_for(local_path: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(local_path.as_bytes());
+    hex::encode(hasher.finalize())[..16].to_string()
+}
+
+#[tauri::command]
+fn directsync_store_credential(
+    window: tauri::WebviewWindow,
+    state: State<DirectSyncState>,
+    endpoint: String,
+    access_key_id: String,
+    secret_access_key: String,
+) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    let cred = DirectSyncCredential { endpoint, access_key_id, secret_access_key };
+    let serialized = serde_json::to_string(&cred).map_err(|e| e.to_string())?;
+    Entry::new(KEYRING_SERVICE, DIRECTSYNC_KEYRING_ACCOUNT)
+        .and_then(|e| e.set_password(&serialized))
+        .map_err(|e| e.to_string())?;
+    let mut guard = state.credential.lock().map_err(|e| e.to_string())?;
+    *guard = Some(cred);
+    Ok(())
+}
+
+#[tauri::command]
+fn directsync_credential_configured(window: tauri::WebviewWindow, state: State<DirectSyncState>) -> Result<bool, String> {
+    verify_trusted_origin(&window)?;
+    Ok(state.credential.lock().map_err(|e| e.to_string())?.is_some())
+}
+
+#[tauri::command]
+fn directsync_clear_credential(window: tauri::WebviewWindow, state: State<DirectSyncState>) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    match Entry::new(KEYRING_SERVICE, DIRECTSYNC_KEYRING_ACCOUNT).and_then(|e| e.delete_credential()) {
+        Ok(()) | Err(keyring::Error::NoEntry) => {}
+        Err(e) => return Err(e.to_string()),
+    }
+    // Stop every running watcher -- an upload thread must never keep using
+    // a credential the user just explicitly revoked (SOW §6.10 "explicit
+    // logout/revocation behavior").
+    let mut watchers = state.watchers.lock().map_err(|e| e.to_string())?;
+    for (_, handle) in watchers.drain() {
+        directsync::stop_watching_folder(&handle);
+    }
+    let mut guard = state.credential.lock().map_err(|e| e.to_string())?;
+    *guard = None;
+    Ok(())
+}
+
+#[tauri::command]
+fn directsync_pick_folder(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Result<Option<String>, String> {
+    verify_trusted_origin(&window)?;
+    Ok(app.dialog().file().blocking_pick_folder().map(|p| p.to_string()))
+}
+
+#[tauri::command]
+fn directsync_add_folder(
+    window: tauri::WebviewWindow,
+    state: State<DirectSyncState>,
+    local_path: String,
+    bucket: String,
+    prefix: String,
+) -> Result<String, String> {
+    verify_trusted_origin(&window)?;
+    if !std::path::Path::new(&local_path).is_dir() {
+        return Err("That local path does not exist or is not a folder.".into());
+    }
+    let folder = FolderConfig { id: folder_id_for(&local_path), local_path: local_path.clone(), bucket, prefix, enabled: true };
+    state.db.add_folder(&folder)?;
+
+    let client = state.build_client()?;
+    let engine = Arc::new(SyncEngine { db: state.db.clone(), client });
+    let handle = directsync::start_watching_folder(engine, folder.clone())?;
+    state.watchers.lock().map_err(|e| e.to_string())?.insert(folder.id.clone(), handle);
+    Ok(folder.id)
+}
+
+#[tauri::command]
+fn directsync_remove_folder(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    if let Some(handle) = state.watchers.lock().map_err(|e| e.to_string())?.remove(&folder_id) {
+        directsync::stop_watching_folder(&handle);
+    }
+    state.db.remove_folder(&folder_id)
+}
+
+#[tauri::command]
+fn directsync_pause_folder(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    state.db.set_folder_enabled(&folder_id, false)?;
+    if let Some(handle) = state.watchers.lock().map_err(|e| e.to_string())?.remove(&folder_id) {
+        directsync::stop_watching_folder(&handle);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn directsync_resume_folder(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    state.db.set_folder_enabled(&folder_id, true)?;
+    let folders = state.db.list_folders()?;
+    let folder = folders.into_iter().find(|f| f.id == folder_id).ok_or("Folder not found.")?;
+    let client = state.build_client()?;
+    let engine = Arc::new(SyncEngine { db: state.db.clone(), client });
+    let handle = directsync::start_watching_folder(engine, folder)?;
+    state.watchers.lock().map_err(|e| e.to_string())?.insert(folder_id, handle);
+    Ok(())
+}
+
+#[tauri::command]
+fn directsync_list_folders(window: tauri::WebviewWindow, state: State<DirectSyncState>) -> Result<Vec<FolderConfig>, String> {
+    verify_trusted_origin(&window)?;
+    state.db.list_folders()
+}
+
+#[tauri::command]
+fn directsync_list_queue(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: Option<String>) -> Result<Vec<QueueEntry>, String> {
+    verify_trusted_origin(&window)?;
+    state.db.list_queue(folder_id.as_deref())
+}
+
+#[tauri::command]
+fn directsync_retry_failed(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String) -> Result<usize, String> {
+    verify_trusted_origin(&window)?;
+    let requeued = state.db.requeue_failed(&folder_id)?;
+    // Re-kick the watcher's own full scan so the just-requeued rows are
+    // actually retried now rather than waiting for the next live event.
+    let folders = state.db.list_folders()?;
+    if let Some(folder) = folders.into_iter().find(|f| f.id == folder_id) {
+        if let Ok(client) = state.build_client() {
+            let engine = SyncEngine { db: state.db.clone(), client };
+            engine.scan_folder(&folder);
+        }
+    }
+    Ok(requeued)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -544,7 +694,18 @@ pub fn run() {
             clear_passkey_secure,
             open_module_window,
             mount_inaya_drive,
-            unmount_inaya_drive
+            unmount_inaya_drive,
+            directsync_store_credential,
+            directsync_credential_configured,
+            directsync_clear_credential,
+            directsync_pick_folder,
+            directsync_add_folder,
+            directsync_remove_folder,
+            directsync_pause_folder,
+            directsync_resume_folder,
+            directsync_list_folders,
+            directsync_list_queue,
+            directsync_retry_failed
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -554,6 +715,44 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // ---- DirectSync ----
+            // Restart recovery (SOW §6.6): restore the stored credential
+            // and re-start a watcher (which itself does a full folder scan
+            // before resuming live events -- see directsync.rs) for every
+            // folder that was enabled when the app last closed, so nothing
+            // requires the user to manually re-arm sync after a restart.
+            let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+            std::fs::create_dir_all(&app_data_dir)?;
+            let directsync_state = DirectSyncState::new(app_data_dir.join("directsync.sqlite"))
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+            if let Ok(Some(serialized)) = Entry::new(KEYRING_SERVICE, DIRECTSYNC_KEYRING_ACCOUNT).and_then(|e| match e.get_password() {
+                Ok(p) => Ok(Some(p)),
+                Err(keyring::Error::NoEntry) => Ok(None),
+                Err(err) => Err(err),
+            }) {
+                if let Ok(cred) = serde_json::from_str::<DirectSyncCredential>(&serialized) {
+                    if let Ok(mut guard) = directsync_state.credential.lock() {
+                        *guard = Some(cred);
+                    }
+                }
+            }
+
+            if let Ok(folders) = directsync_state.db.list_folders() {
+                if let Ok(client) = directsync_state.build_client() {
+                    let mut watchers = directsync_state.watchers.lock().unwrap();
+                    for folder in folders.into_iter().filter(|f| f.enabled) {
+                        let engine = Arc::new(SyncEngine { db: directsync_state.db.clone(), client: client.clone() });
+                        if let Ok(handle) = directsync::start_watching_folder(engine, folder.clone()) {
+                            watchers.insert(folder.id.clone(), handle);
+                        } else {
+                            log::error!("DirectSync: failed to resume watching folder {}", folder.local_path);
+                        }
+                    }
+                }
+            }
+            app.manage(directsync_state);
 
             // ---- Main window ----
             // Built here (rather than declared in tauri.conf.json) so the
@@ -601,6 +800,13 @@ pub fn run() {
                             if let Ok(mut guard) = state.0.lock() {
                                 if let Some(mut child) = guard.take() {
                                     let _ = child.kill();
+                                }
+                            }
+                        }
+                        if let Some(state) = app.try_state::<DirectSyncState>() {
+                            if let Ok(mut watchers) = state.watchers.lock() {
+                                for (_, handle) in watchers.drain() {
+                                    directsync::stop_watching_folder(&handle);
                                 }
                             }
                         }
