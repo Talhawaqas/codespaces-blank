@@ -50,6 +50,37 @@ function parseRetention(xmlBody) {
   return mode && until ? { mode: mode[1], until: until[1] } : null;
 }
 
+// AWS S3 Feature Expansion SOW, Phase 1 -- PUT/GET/DELETE ?tagging (real S3
+// PutObjectTagging/GetObjectTagging/DeleteObjectTagging), plus the
+// x-amz-tagging request header real S3 clients send on the initial PUT
+// (a URL-encoded query string, e.g. "env=prod&team=finance" -- NOT XML).
+function parseTaggingXml(xmlBody) {
+  const tags = {};
+  const tagRe = /<Tag>\s*<Key>([^<]*)<\/Key>\s*<Value>([^<]*)<\/Value>\s*<\/Tag>/g;
+  let match;
+  while ((match = tagRe.exec(xmlBody))) tags[match[1]] = match[2];
+  return tags;
+}
+function taggingXml(tags) {
+  const tagXml = Object.entries(tags || {})
+    .map(([k, v]) => `<Tag><Key>${k}</Key><Value>${v}</Value></Tag>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><Tagging xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><TagSet>${tagXml}</TagSet></Tagging>`;
+}
+function parseTaggingHeader(headerValue) {
+  if (!headerValue) return undefined;
+  const tags = {};
+  for (const pair of headerValue.split("&")) {
+    const [k, v] = pair.split("=");
+    if (k) tags[decodeURIComponent(k)] = decodeURIComponent(v || "");
+  }
+  return tags;
+}
+// x-amz-checksum-sha256 -- real S3 convention: base64, not hex.
+function checksumHeaders(doc) {
+  return doc?.contentSha256 ? { "x-amz-checksum-sha256": Buffer.from(doc.contentSha256, "hex").toString("base64") } : {};
+}
+
 export async function PUT(req, { params }) {
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
@@ -85,6 +116,12 @@ export async function PUT(req, { params }) {
       return new Response(null, { status: 200 });
     }
 
+    if (url.searchParams.has("tagging")) {
+      const tags = parseTaggingXml(bodyBuffer.toString("utf8"));
+      const result = await store.putObjectTagging({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), tags, actorEmail: accessKeyId });
+      return new Response(null, { status: 200, ...(result.versionId ? { headers: { "x-amz-version-id": result.versionId } } : {}) });
+    }
+
     if (uploadId && partNumber) {
       const etag = await store.uploadPart({ ...ownerArgs(owner), uploadId, partNumber: Number(partNumber), bodyBuffer });
       if (etag === null) return s3Error("NoSuchUpload", "The specified multipart upload does not exist.");
@@ -92,8 +129,12 @@ export async function PUT(req, { params }) {
     }
 
     const contentType = req.headers.get("content-type") || "application/octet-stream";
-    const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId });
-    return new Response(null, { status: 200, headers: { ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`, ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) } });
+    const tags = parseTaggingHeader(req.headers.get("x-amz-tagging"));
+    const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId, tags });
+    return new Response(null, {
+      status: 200,
+      headers: { ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`, ...checksumHeaders(doc), ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) },
+    });
   } catch (err) {
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
@@ -221,6 +262,12 @@ export async function GET(req, { params }) {
       return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?><Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Mode>${doc.retentionMode}</Mode><RetainUntilDate>${doc.retentionUntil}</RetainUntilDate></Retention>`);
     }
 
+    if (url.searchParams.has("tagging")) {
+      const doc = await store.headS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
+      if (!doc) return s3Error("NoSuchKey", "The specified key does not exist.");
+      return xmlResponse(taggingXml(doc.tags || {}));
+    }
+
     const result = await store.getS3ObjectBody({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
     if (!result) return s3Error("NoSuchKey", "The specified key does not exist.");
 
@@ -246,6 +293,7 @@ export async function GET(req, { params }) {
             "Content-Length": String(slice.length),
             ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
             "Accept-Ranges": "bytes",
+            ...checksumHeaders(doc),
           },
         });
       }
@@ -259,6 +307,7 @@ export async function GET(req, { params }) {
         ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
+        ...checksumHeaders(doc),
       },
     });
   } catch (err) {
@@ -284,6 +333,7 @@ export async function HEAD(req, { params }) {
         ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
+        ...checksumHeaders(doc),
         ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}),
       },
     });
@@ -310,6 +360,11 @@ export async function DELETE(req, { params }) {
     // ?folder -- Inaya-specific extension, same disclosure as PUT ?folder.
     if (url.searchParams.has("folder")) {
       await store.deleteS3Folder({ ...ownerArgs(owner), bucket: params.bucket, folderPath: key, actorEmail: null });
+      return new Response(null, { status: 204 });
+    }
+
+    if (url.searchParams.has("tagging")) {
+      await store.deleteObjectTagging({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), actorEmail: null });
       return new Response(null, { status: 204 });
     }
 

@@ -12,8 +12,42 @@ import { sha256Hex } from "./hash.js";
 const PIN_URL = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 const GATEWAY_URL = "https://gateway.pinata.cloud/ipfs";
 
+// AWS S3 Feature Expansion SOW testing (September 2026) -- this module
+// originally only checked PINATA_JWT. .env.local instead has
+// PINATA_API_KEY (a short ~20-char classic key id, "69c82bed4a...") and
+// PINATA_SECRET_API_KEY -- but PINATA_SECRET_API_KEY's actual VALUE is
+// itself a full Pinata "scoped key" JWT (687 chars, confirmed live:
+// decoding it shows a real authenticationType:"scopedKey" payload with
+// this account's own email and an embedded scopedKeyKey matching
+// PINATA_API_KEY's short id). Despite the "_SECRET_" name, it's the
+// bearer credential Pinata expects, not a classic secret to pair with
+// PINATA_API_KEY in a pinata_api_key/pinata_secret_api_key header pair
+// (that combination was tried first and rejected -- Pinata's own error
+// response echoed back this same JWT as what it resolves the pair to
+// internally). A JWT is always three dot-separated base64url segments
+// starting with "eyJ" (the fixed {"alg":...} header) -- detecting that
+// shape across every candidate env var means this doesn't have to
+// hardcode which specific variable name holds it.
+function looksLikeJwt(value) {
+  return typeof value === "string" && /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value.trim());
+}
+function resolveJwt() {
+  for (const candidate of [process.env.PINATA_JWT, process.env.PINATA_SECRET_API_KEY, process.env.PINATA_API_KEY]) {
+    if (looksLikeJwt(candidate)) return candidate.trim();
+  }
+  return null;
+}
+function authHeaders() {
+  const jwt = resolveJwt();
+  if (jwt) return { Authorization: `Bearer ${jwt}` };
+  const apiKey = process.env.PINATA_API_KEY;
+  const apiSecret = process.env.PINATA_SECRET_API_KEY;
+  if (apiKey && apiSecret) return { pinata_api_key: apiKey.trim(), pinata_secret_api_key: apiSecret.trim() };
+  throw new Error("pinningProviders/pinata: no usable Pinata credential found (checked PINATA_JWT, a JWT-shaped PINATA_API_KEY, and PINATA_API_KEY+PINATA_SECRET_API_KEY as a classic pair).");
+}
+
 export function isConfigured() {
-  return Boolean(process.env.PINATA_JWT);
+  return Boolean(resolveJwt()) || Boolean(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_API_KEY);
 }
 
 /** Pins `content` (a shard's ciphertext string) under Pinata's existing JSON-wrapper convention.
@@ -23,12 +57,9 @@ export function isConfigured() {
  *  treat every provider uniformly (see filebase.js, where providerRef is the S3 object key, not
  *  the CID). */
 export async function pin(content, { name } = {}) {
-  const pinataJWT = process.env.PINATA_JWT;
-  if (!pinataJWT) throw new Error("pinningProviders/pinata: PINATA_JWT is not configured.");
-
   const res = await fetch(PIN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${pinataJWT.trim()}` },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
       pinataContent: { shard: content },
       pinataMetadata: { name: name || "inaya_backup_replica" },
@@ -54,11 +85,8 @@ export async function fetchReplica(providerRef) {
 /** Cheap Tier-1 check: does Pinata still report holding this CID as pinned? Uses the pinList
  *  query API (filters by hash), not a full content fetch. */
 export async function getPinStatus(providerRef) {
-  const pinataJWT = process.env.PINATA_JWT;
-  if (!pinataJWT) throw new Error("pinningProviders/pinata: PINATA_JWT is not configured.");
-
   const res = await fetch(`https://api.pinata.cloud/data/pinList?hashContains=${encodeURIComponent(providerRef)}&status=pinned`, {
-    headers: { Authorization: `Bearer ${pinataJWT.trim()}` },
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`pinningProviders/pinata: pin-status check failed (HTTP ${res.status})`);
   const data = await res.json();
@@ -70,12 +98,9 @@ export async function getPinStatus(providerRef) {
  *  it (SOW's storage-efficiency requirement: "cleanup of obsolete copies"). Idempotent: Pinata's
  *  unpin returns 404/"already unpinned" for an already-gone CID, treated as success here too. */
 export async function unpin(providerRef) {
-  const pinataJWT = process.env.PINATA_JWT;
-  if (!pinataJWT) throw new Error("pinningProviders/pinata: PINATA_JWT is not configured.");
-
   const res = await fetch(`https://api.pinata.cloud/pinning/unpin/${providerRef}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${pinataJWT.trim()}` },
+    headers: authHeaders(),
   });
   if (!res.ok && res.status !== 404) {
     const errorText = await res.text();

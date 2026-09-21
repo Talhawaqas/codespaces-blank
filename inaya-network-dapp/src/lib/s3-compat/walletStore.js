@@ -152,11 +152,60 @@ export async function putObjectLegalHold({ walletAddress, bucket, key, versionId
   return { bucket, key, versionId: doc.versionId, legalHold: !!legalHold };
 }
 
+// AWS S3 Feature Expansion SOW, Phase 1 -- same tag validation as
+// store.js's normalizeTags(), duplicated rather than imported since
+// walletStore.js is a deliberately independent implementation from
+// store.js (see this file's own module header / store.js's header on why
+// org_documents and metadata_files stay genuinely separate).
+const MAX_TAG_COUNT = 10;
+const MAX_TAG_KEY_LEN = 128;
+const MAX_TAG_VALUE_LEN = 256;
+function normalizeTags(tags) {
+  if (!tags || typeof tags !== "object" || Array.isArray(tags)) throw new Error("tags must be a plain object of string key/value pairs.");
+  const entries = Object.entries(tags);
+  if (entries.length > MAX_TAG_COUNT) throw new Error(`A maximum of ${MAX_TAG_COUNT} tags is allowed per object.`);
+  const out = {};
+  for (const [key, value] of entries) {
+    if (typeof key !== "string" || !key || key.length > MAX_TAG_KEY_LEN) throw new Error(`Invalid tag key "${key}".`);
+    if (typeof value !== "string" || value.length > MAX_TAG_VALUE_LEN) throw new Error(`Invalid tag value for key "${key}".`);
+    out[key] = value;
+  }
+  return out;
+}
+
+async function findObjectForTagging({ walletAddress, bucket, key, versionId }) {
+  const bucketDoc = await getS3Bucket({ walletAddress, bucket });
+  if (!bucketDoc) throw new Error("NoSuchBucket");
+  const { db } = await connectToDatabase();
+  const query = { owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, ...(versionId ? { versionId } : { isLatest: IS_LATEST }) };
+  const doc = await db.collection("metadata_files").findOne(query);
+  if (!doc) throw new Error("Object/version not found.");
+  return { db, doc };
+}
+
+export async function putObjectTagging({ walletAddress, bucket, key, versionId, tags }) {
+  const clean = normalizeTags(tags);
+  const { db, doc } = await findObjectForTagging({ walletAddress, bucket, key, versionId });
+  await db.collection("metadata_files").updateOne({ _id: doc._id }, { $set: { tags: clean } });
+  return { bucket, key, versionId: doc.versionId, tags: clean };
+}
+
+export async function getObjectTagging({ walletAddress, bucket, key, versionId }) {
+  const { doc } = await findObjectForTagging({ walletAddress, bucket, key, versionId });
+  return { bucket, key, versionId: doc.versionId, tags: doc.tags || {} };
+}
+
+export async function deleteObjectTagging({ walletAddress, bucket, key, versionId }) {
+  const { db, doc } = await findObjectForTagging({ walletAddress, bucket, key, versionId });
+  await db.collection("metadata_files").updateOne({ _id: doc._id }, { $set: { tags: {} } });
+  return { bucket, key, versionId: doc.versionId };
+}
+
 function bufferToFile(buffer, { key, contentType }) {
   return new File([buffer], key, { type: contentType || "application/octet-stream" });
 }
 
-export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, contentType }) {
+export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, contentType, tags }) {
   const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
   const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
   const { db } = await connectToDatabase();
@@ -197,8 +246,14 @@ export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, cont
   // bytes (same key or a different one), which a pure content hash would
   // collide on if metadata_files enforces uniqueness anywhere downstream.
   const fileHash = createHash("sha256").update(bodyBuffer).update(newId).digest("hex");
+  // AWS S3 Feature Expansion SOW, Phase 5 -- same real, independently-
+  // verifiable checksum as store.js's org-side putS3Object; see that
+  // field's comment for why it's additive rather than a replacement for
+  // the salted fileHash above.
+  const contentSha256 = createHash("sha256").update(bodyBuffer).digest("hex");
   const doc = {
     fileHash,
+    contentSha256,
     owner,
     filename: key,
     folderId: bucketDoc.folderId,
@@ -214,6 +269,7 @@ export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, cont
     retentionMode: null,
     retentionUntil: null,
     legalHold: false,
+    tags: tags ? normalizeTags(tags) : {},
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

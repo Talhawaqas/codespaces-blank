@@ -16,10 +16,18 @@
 // GET  ?orgId=&action=versions&bucket=&key=
 // GET  ?orgId=&action=health&bucket=&key=&versionId=
 // GET  ?orgId=&action=lifecycle&bucket=
-// POST { orgId, action: "versioning"|"object-lock"|"retention"|"legal-hold"|"restore"|"lifecycle"|"lifecycle-run", ...}
+// GET  ?orgId=&action=tags&bucket=&key=
+// GET  ?orgId=&action=inventory&bucket=&format=json|csv    -- AWS S3 Feature Expansion SOW, Phase 2
+// GET  ?orgId=&action=analytics&bucket=                     -- AWS S3 Feature Expansion SOW, Phase 11
+// GET  ?orgId=&action=policy-analysis                       -- AWS S3 Feature Expansion SOW, Phase 9
+// POST { orgId, action: "versioning"|"object-lock"|"retention"|"legal-hold"|"restore"|"lifecycle"|"lifecycle-run"|"tags"|"batch", ...}
 
 import { NextResponse } from "next/server";
 import { requireMembership, canManageOrg } from "../../../../../lib/orgs.js";
+import { buildStorageInventory, renderInventoryCsv } from "../../../../../lib/s3-compat/inventory.js";
+import { computeS3BucketAnalytics } from "../../../../../lib/s3-compat/analytics.js";
+import { analyzeS3CredentialPolicies } from "../../../../../lib/s3-compat/policyAnalyzer.js";
+import { runBatchOperation } from "../../../../../lib/s3-compat/batchOperations.js";
 import * as store from "../../../../../lib/s3-compat/store.js";
 
 export async function GET(req) {
@@ -61,6 +69,26 @@ export async function GET(req) {
       if (!bucket) return NextResponse.json({ error: "bucket is required." }, { status: 400 });
       const policy = await store.getLifecyclePolicy({ orgId, bucket });
       return NextResponse.json({ policy });
+    }
+    if (action === "tags") {
+      if (!bucket || !key) return NextResponse.json({ error: "bucket and key are required." }, { status: 400 });
+      const result = await store.getObjectTagging({ orgId, bucket, key, versionId: url.searchParams.get("versionId") });
+      return NextResponse.json(result);
+    }
+    if (action === "inventory") {
+      const inventory = await buildStorageInventory({ orgId, bucket });
+      if (url.searchParams.get("format") === "csv") {
+        return new Response(renderInventoryCsv(inventory), { status: 200, headers: { "Content-Type": "text/csv", "Content-Disposition": `attachment; filename="inaya-s3-inventory-${orgId}.csv"` } });
+      }
+      return NextResponse.json(inventory);
+    }
+    if (action === "analytics") {
+      const analytics = await computeS3BucketAnalytics({ orgId, bucket });
+      return NextResponse.json(analytics);
+    }
+    if (action === "policy-analysis") {
+      const analysis = await analyzeS3CredentialPolicies({ type: "org", orgId });
+      return NextResponse.json(analysis);
     }
     return NextResponse.json({ error: "Unrecognized action." }, { status: 400 });
   } catch (err) {
@@ -110,6 +138,14 @@ export async function POST(req) {
     }
     if (action === "lifecycle-run") {
       const result = await store.runLifecycleEnforcement({});
+      return NextResponse.json(result);
+    }
+    if (action === "tags") {
+      const result = await store.putObjectTagging({ orgId, bucket, key, versionId, tags: body.tags, actorEmail });
+      return NextResponse.json(result);
+    }
+    if (action === "batch") {
+      const result = await runBatchOperation({ orgId, bucket, keys: body.keys, operation: body.operation, params: body.params, actorEmail });
       return NextResponse.json(result);
     }
     return NextResponse.json({ error: "Unrecognized action." }, { status: 400 });

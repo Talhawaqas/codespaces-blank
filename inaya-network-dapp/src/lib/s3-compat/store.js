@@ -202,6 +202,62 @@ export async function putObjectLegalHold({ orgId, bucket, key, versionId, legalH
   return { bucket, key, versionId: doc.versionId, legalHold: !!legalHold };
 }
 
+const MAX_TAG_COUNT = 10; // matches real S3's own object-tag limit
+const MAX_TAG_KEY_LEN = 128;
+const MAX_TAG_VALUE_LEN = 256;
+
+/** Validates a caller-supplied tag set into the exact shape stored --
+ *  AWS S3 Feature Expansion SOW, Phase 1. Mirrors normalizeScope()'s own
+ *  "never trust the shape as-is" discipline in credentials.js. */
+function normalizeTags(tags) {
+  if (!tags || typeof tags !== "object" || Array.isArray(tags)) throw new Error("tags must be a plain object of string key/value pairs.");
+  const entries = Object.entries(tags);
+  if (entries.length > MAX_TAG_COUNT) throw new Error(`A maximum of ${MAX_TAG_COUNT} tags is allowed per object.`);
+  const out = {};
+  for (const [key, value] of entries) {
+    if (typeof key !== "string" || !key || key.length > MAX_TAG_KEY_LEN) throw new Error(`Invalid tag key "${key}".`);
+    if (typeof value !== "string" || value.length > MAX_TAG_VALUE_LEN) throw new Error(`Invalid tag value for key "${key}".`);
+    out[key] = value;
+  }
+  return out;
+}
+
+async function findObjectForTagging({ orgId, bucket, key, versionId }) {
+  const bucketDoc = await getS3Bucket({ orgId, bucket });
+  if (!bucketDoc) throw new Error("NoSuchBucket");
+  const { orgDocuments } = await getOrgCollections();
+  const query = { orgId: toObjectId(orgId), projectId: bucketDoc._id, filename: key, ...(versionId ? { versionId } : { isLatest: { $ne: false } }) };
+  const doc = await orgDocuments.findOne(query);
+  if (!doc) throw new Error("Object/version not found.");
+  return { orgDocuments, doc };
+}
+
+export async function putObjectTagging({ orgId, bucket, key, versionId, tags, actorEmail }) {
+  const clean = normalizeTags(tags);
+  const { orgDocuments, doc } = await findObjectForTagging({ orgId, bucket, key, versionId });
+  await orgDocuments.updateOne({ _id: doc._id }, { $set: { tags: clean } });
+  await logOrgActivity({
+    orgId, recordType: "s3_object", recordId: doc._id, actorEmail: actorEmail || "s3-compat", action: "OBJECT_TAGS_SET",
+    previousState: { tags: doc.tags || {} }, newState: { tags: clean }, metadata: { bucket, key, versionId: doc.versionId },
+  });
+  return { bucket, key, versionId: doc.versionId, tags: clean };
+}
+
+export async function getObjectTagging({ orgId, bucket, key, versionId }) {
+  const { doc } = await findObjectForTagging({ orgId, bucket, key, versionId });
+  return { bucket, key, versionId: doc.versionId, tags: doc.tags || {} };
+}
+
+export async function deleteObjectTagging({ orgId, bucket, key, versionId, actorEmail }) {
+  const { orgDocuments, doc } = await findObjectForTagging({ orgId, bucket, key, versionId });
+  await orgDocuments.updateOne({ _id: doc._id }, { $set: { tags: {} } });
+  await logOrgActivity({
+    orgId, recordType: "s3_object", recordId: doc._id, actorEmail: actorEmail || "s3-compat", action: "OBJECT_TAGS_DELETED",
+    previousState: { tags: doc.tags || {} }, newState: { tags: {} }, metadata: { bucket, key, versionId: doc.versionId },
+  });
+  return { bucket, key, versionId: doc.versionId };
+}
+
 /** Builds a Node-global File from raw bytes -- disperseAndSlice() only needs
  *  .arrayBuffer()/.type/.name, which Node 18+'s built-in File implements. */
 function bufferToFile(buffer, { key, contentType }) {
@@ -211,7 +267,7 @@ function bufferToFile(buffer, { key, contentType }) {
 /** Real encrypt -> shard -> pin -> register pipeline. Returns the inserted
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
-export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail }) {
+export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags }) {
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
   const { orgDocuments } = await getOrgCollections();
@@ -262,6 +318,16 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // index's constraint.
   const fileHash = createHash("sha256").update(bodyBuffer).update(documentId.toString()).digest("hex");
 
+  // AWS S3 Feature Expansion SOW, Phase 5 -- a genuine, additional checksum
+  // field: the REAL, unsalted SHA-256 of the plaintext bytes as uploaded,
+  // independently verifiable by a client that hashes the same bytes
+  // locally. Deliberately separate from fileHash above, which is salted
+  // with this document's own _id for an unrelated legacy dedup reason (see
+  // that field's own comment) and therefore can't serve this purpose --
+  // this field is additive, not a replacement, and touches nothing about
+  // how fileHash/dedup already works.
+  const contentSha256 = createHash("sha256").update(bodyBuffer).digest("hex");
+
   // Versioning (SOW §3): when Enabled, the prior live object at this key is
   // demoted to a non-latest version and KEPT (real S3 semantics -- a new PUT
   // never destroys prior versions' bytes). When not enabled, real S3's own
@@ -283,6 +349,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     projectId: bucketDoc._id,
     filename: key, // the full S3 key, slashes included -- S3 keys are flat strings, not real paths
     fileHash,
+    contentSha256,
     contentType: contentType || "application/octet-stream",
     sizeBytes: bodyBuffer.length,
     cidAlpha: alphaResult.providerRef,
@@ -303,6 +370,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     retentionMode: null,
     retentionUntil: null,
     legalHold: false,
+    tags: tags ? normalizeTags(tags) : {},
     createdAt: now,
     deletedAt: null,
   };
