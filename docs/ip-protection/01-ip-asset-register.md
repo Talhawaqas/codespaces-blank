@@ -18,6 +18,20 @@
 
 **Note:** custody-sdk is intentionally excluded from the main monorepo's own git tracking (`.gitignore`) because it is developed as its own independent repository, not because it is untracked. Its full history is preserved in its own repo above.
 
+### 1.1 Packages published from the custody-sdk repository's own workspace (`custody-sdk/packages/`)
+
+These are not separate repositories — they are workspace packages inside the same `github.com/Talhawaqas/custody-sdk` repo above, each independently published to npm. Confirmed directly against the live npm registry on 2026-09-21:
+
+| Package | npm name | Published Version | First Commit (within custody-sdk) |
+|---|---|---|---|
+| React SDK | `@inaya-network/react` | 0.1.0 | 2026-08-01 |
+| CLI | `inaya-cli` | 0.1.0 | 2026-08-01 |
+| Project scaffolding tool | `create-inaya-dapp` | 0.2.0 | 2026-08-01 |
+| Node operator daemon | `@inaya-network/node-daemon` | 0.1.0 | 2026-08-17 |
+| Bridge SDK | `@inaya-network/bridge-sdk` | **Not yet published** (confirmed 404 on the npm registry, 2026-09-21) | 2026-08-29 |
+
+The node daemon's own source lives at `custody-sdk/packages/node-daemon`; the announcement script at `inaya-network-dapp/NODE_DAEMON_ANNOUNCEMENT_SCRIPT.md` is a separate, unrelated file (marketing copy, not source).
+
 ## 2. Native Applications (within the main monorepo)
 
 | Asset | Path | First Commit Touching Path | Current Version | Purpose |
@@ -59,22 +73,13 @@ First commits touching these paths: `contracts/` — 2026-08-03; `solana/` — 2
 
 **Note:** No separate, versioned brand-guideline document (color palette, usage rules, logo variants) was found in the repository. If one exists outside this workspace, add it here; if not, consider creating one — it strengthens both the trademark record and everyday brand consistency.
 
-## 6. Published Packages Referenced in the Roadmap, Not Found in This Workspace
-
-Per `inaya-network-dapp/src/lib/saasRoadmap.js` and `inaya-network-dapp/src/app/page.js`, the following are recorded as shipped/published but their source was not located within this specific local checkout during this compilation pass — their repository location should be confirmed and added here:
-
-- `@inaya-network/react` (npm)
-- `inaya-cli` (npm)
-- `create-inaya-dapp` (npm)
-- Node daemon software (`@inaya-network/node-daemon`, per the roadmap's Node software release entry — an announcement script for it exists at `inaya-network-dapp/NODE_DAEMON_ANNOUNCEMENT_SCRIPT.md`, but the daemon's own source was not located here)
-
-## 7. AI Systems, Security Layer, and Other Internal Systems (by reference)
+## 6. AI Systems, Security Layer, and Other Internal Systems (by reference)
 
 These are extensive and change frequently — rather than duplicate an inventory that will immediately go stale, this register points to where the authoritative, current list already lives:
 
 - **AI systems / RAG / retrieval** — `inaya-network-dapp/src/lib/rag/`, `inaya-network-dapp/src/lib/inaya-knowledge.js`, and the various AI assistant route handlers under `inaya-network-dapp/src/app/api/ai/`.
 - **Security Layer** — `inaya-network-dapp/src/lib/security*.js` and the `InayaThreatRegistry.sol`/`InayaThreatReporter.sol` contracts listed above.
-- **Node software** — see Section 6 (location not confirmed in this workspace).
+- **Node software** — `custody-sdk/packages/node-daemon` (see Section 1.1).
 - **Full feature-by-feature inventory** — `inaya-network-dapp/scripts/pilot-guides/complete-feature-guide-content.js`, the source for the already-generated `Inaya_Complete_Feature_Guide.pdf`, is the most complete existing catalog of shipped features and their backing files.
 
 ## Evidence Preservation
