@@ -440,6 +440,19 @@ export async function getOrgCollections() {
     // dataRooms collection (external-data-room.js); this is only the
     // cloneable template shape. See src/lib/dataRoomTemplates.js.
     dataRoomTemplates: db.collection("dataRoomTemplates"),
+    // Modular Enterprise Adoption Features SOW, Feature 3 -- Smart Cloud
+    // Backup & Health Scheduler. backupCredentials holds an org's
+    // envelope-encrypted cloud-source secret (see
+    // backupCryptoAndCredentials.js); backupSchedules is the recurring
+    // job definition; backupRuns is one row per execution;
+    // backupObjectState is the per-object sync-state this scheduler uses
+    // to detect a changed source object on the NEXT run (distinct from
+    // inaya-migration-agent's own one-time Manifest, which never
+    // re-checks a key once migrated -- see cloudBackupScheduler.js).
+    backupCredentials: db.collection("backupCredentials"),
+    backupSchedules: db.collection("backupSchedules"),
+    backupRuns: db.collection("backupRuns"),
+    backupObjectState: db.collection("backupObjectState"),
   };
 }
 
@@ -485,6 +498,7 @@ export async function ensureOrgIndexes() {
     resiliencePolicies, resilienceCanaryAssets, resilienceTestRuns,
     signingRequests, orgStorageNodes, storagePolicies, escrows, financialAttestations,
     integrationOauthStates, voiceSessions, businessEvents, dataRoomTemplates,
+    backupCredentials, backupSchedules, backupRuns, backupObjectState,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -741,6 +755,11 @@ export async function ensureOrgIndexes() {
     businessEvents.createIndex({ orgId: 1, status: 1 }),
     // Modular Enterprise Adoption Features SOW, Feature 2
     dataRoomTemplates.createIndex({ orgId: 1, deletedAt: 1 }),
+    // Modular Enterprise Adoption Features SOW, Feature 3
+    backupCredentials.createIndex({ orgId: 1, revokedAt: 1 }),
+    backupSchedules.createIndex({ orgId: 1, status: 1, nextRunAt: 1 }),
+    backupRuns.createIndex({ scheduleId: 1, startedAt: -1 }),
+    backupObjectState.createIndex({ scheduleId: 1, sourceKey: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;

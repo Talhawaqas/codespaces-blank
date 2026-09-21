@@ -13,10 +13,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1123.0",
     "@aws-sdk/client-sns": "^3.1124.0",
+    "@aws-sdk/lib-storage": "^3.1136.0",
     "@azure/storage-blob": "^12.33.0",
     "@coral-xyz/anchor": "^0.32.1",
     "@google/genai": "^2.13.0",
     "@inaya-network/custody-sdk": "^1.0.8-beta",
+    "@inaya-network/migration-agent": "file:../inaya-migration-agent",
     "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-phantom": "^0.9.29",
