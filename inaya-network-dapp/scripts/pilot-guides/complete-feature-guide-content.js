@@ -506,6 +506,27 @@ export const completeFeatureGuide = {
     },
     {
       number: "30",
+      title: "Storage Control Plane — Volumes, Snapshots, and Backup Policies",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            { heading: "Create a storage resource.", body: "Open the Storage Control Plane tab and create a volume or file share: give it a name, an optional logical region label, and an optional capacity in GB. Every resource is backed by a real S3-compatible bucket, tagged like any other Inaya storage object, and its capacity can only be expanded later, never shrunk." },
+            { heading: "Attach or detach a volume.", body: "Reserve a volume to a named consumer (a free-text label you choose, e.g. a desktop-app instance or a sync job) so two systems can't believe they own the same volume at once. Detach it when the consumer is done." },
+            { heading: "Take a snapshot.", body: "Capture a real, point-in-time snapshot of a resource's current objects — genuinely incremental at capture time, since it references existing versions rather than copying bytes. Restore it later, copy it into a different resource, or share it with another organization on a revocable, expiring grant." },
+            { heading: "Set up an automated backup policy.", body: "Create a policy that selects resources by tag, then add one or more plans (daily/weekly/monthly/long-term) with a retention count. Inaya's own hourly cron sweep runs due plans automatically and enforces retention — deleting only the oldest snapshots beyond your configured count, with every deletion logged." },
+            { heading: "Check backup job health.", body: "See each plan's health status (Healthy/Warning/Degraded/Failed/Paused) and its run history from the same tab." },
+            { heading: "Automate it with Terraform.", body: "Declare volumes, snapshots, and backup policies/plans as code with terraform-provider-inaya, authenticated with an org API key — see Section 45." },
+          ],
+        },
+        {
+          type: "note",
+          text: "A \"volume\" or \"file share\" here is a logical, taggable storage container — not a physical attachable disk or a mountable network drive. Inaya has no virtual-machine layer for a disk to attach to, so every resource states its own physical capability plainly rather than implying more than it actually delivers.",
+        },
+      ],
+    },
+    {
+      number: "31",
       title: "Inaya Drive — Mounting Storage as a Real Drive",
       blocks: [
         {
@@ -520,7 +541,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "31",
+      number: "32",
       title: "Migrating Existing Cloud Data Into Inaya",
       blocks: [
         {
@@ -536,7 +557,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "32",
+      number: "33",
       title: "Integrations, API Keys, and Data Rooms",
       blocks: [
         {
@@ -550,7 +571,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "33",
+      number: "34",
       title: "Executive Dashboard and Export & Migration",
       blocks: [
         {
@@ -566,7 +587,7 @@ export const completeFeatureGuide = {
     // PART I — AI ASSISTANTS, BILLING, AND SETTINGS
     // =====================================================================
     {
-      number: "34",
+      number: "35",
       title: "The AI Business Assistant",
       blocks: [
         {
@@ -584,7 +605,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "35",
+      number: "36",
       title: "Billing and Organization Settings",
       blocks: [
         {
@@ -600,7 +621,7 @@ export const completeFeatureGuide = {
     // PART J — INDUSTRY-SPECIFIC WORKSPACES
     // =====================================================================
     {
-      number: "36",
+      number: "37",
       title: "Industry-Specific Workspaces (Health, Legal, Financial, Regulated, Government OS)",
       blocks: [
         {
@@ -627,7 +648,7 @@ export const completeFeatureGuide = {
     // PART K — SECURITY LAYER, LEARN, INVESTOR DATA ROOM, TRUST CENTER
     // =====================================================================
     {
-      number: "37",
+      number: "38",
       title: "The Security Layer (Public Threat Intelligence)",
       blocks: [
         {
@@ -641,7 +662,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "38",
+      number: "39",
       title: "Inaya Learn",
       blocks: [
         {
@@ -655,7 +676,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "39",
+      number: "40",
       title: "Investor Data Room",
       blocks: [
         {
@@ -672,7 +693,7 @@ export const completeFeatureGuide = {
     // PART L — MOBILE, DESKTOP, AND CROSS-CHAIN
     // =====================================================================
     {
-      number: "40",
+      number: "41",
       title: "The Mobile App",
       blocks: [
         {
@@ -686,7 +707,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "41",
+      number: "42",
       title: "The Desktop Apps",
       blocks: [
         {
@@ -694,13 +715,13 @@ export const completeFeatureGuide = {
           items: [
             { heading: "Install the Business Workspace desktop app.", body: "Download the Windows or Linux desktop app for Business Workspace from its download page. It's the same backend and features as the web version, in a native window." },
             { heading: "Install the main dApp desktop app.", body: "Download the separate desktop app for the main wallet/vault/staking dApp, for the same reason — a native, always-available window instead of a browser tab." },
-            { heading: "Mount Inaya Drive from the desktop app.", body: "The Business Workspace desktop app can start and stop your Inaya Drive mount (Section 30) directly from its own interface, without a separate command-line step." },
+            { heading: "Mount Inaya Drive from the desktop app.", body: "The Business Workspace desktop app can start and stop your Inaya Drive mount (Section 31) directly from its own interface, without a separate command-line step." },
           ],
         },
       ],
     },
     {
-      number: "42",
+      number: "43",
       title: "The Cross-Chain Bridge",
       blocks: [
         {
@@ -718,7 +739,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "43",
+      number: "44",
       title: "Web3 App Store",
       blocks: [
         {
@@ -734,7 +755,7 @@ export const completeFeatureGuide = {
     // PART M — DEVELOPER TOOLS
     // =====================================================================
     {
-      number: "44",
+      number: "45",
       title: "Building on Inaya — SDK, CLI, and Node Operators",
       blocks: [
         {
@@ -744,12 +765,13 @@ export const completeFeatureGuide = {
             { heading: "Install the custody-sdk.", body: "Add the custody-sdk client library to your own project to programmatically encrypt, shard, and store files against Inaya's infrastructure — the same library the web app itself is built on." },
             { heading: "Run a node operator daemon.", body: "Install and run the published node-operator daemon if you want to contribute storage/compute capacity to the network." },
             { heading: "Use the Node Operator Dashboard.", body: "Go to inayanetwork.com/operator to monitor your node's fleet status, uptime, qualification progress, and rewards in one dashboard." },
+            { heading: "Automate storage infrastructure with Terraform.", body: "Use terraform-provider-inaya to declare storage volumes, file shares, snapshots, and backup policies/plans as code, authenticated with an org API key — its full create/read/update/delete cycle is tested against a real Inaya deployment. Not yet published to the Terraform Registry; build it locally from its own repo directory and point Terraform at the binary with a dev_overrides config in the meantime." },
           ],
         },
       ],
     },
     {
-      number: "45",
+      number: "46",
       title: "Network Stats, Status, and Getting Help",
       blocks: [
         {
