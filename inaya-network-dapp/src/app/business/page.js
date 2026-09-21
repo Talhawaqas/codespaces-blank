@@ -72,6 +72,7 @@ import ApiKeysView from "../../components/business/ApiKeysView";
 import S3CompatView from "../../components/business/S3CompatView";
 import BusinessEventsView from "../../components/business/BusinessEventsView";
 import WhatIfStudioView from "../../components/business/WhatIfStudioView";
+import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
 import StorageManagerView from "../../components/business/StorageManagerView";
@@ -737,6 +738,7 @@ const NAV_ITEMS = [
   { key: "s3Compat", label: "S3-Compatible Storage", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
   { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true, group: "enterprise" },
+  { key: "cloudBackup", label: "Cloud Backup", icon: "health", manageOnly: true, group: "enterprise" },
   { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true, group: "enterprise" },
   { key: "ai", label: "AI Assistant", icon: "aiAssistant", group: "settings" },
   { key: "billing", label: "Billing", icon: "billing", manageOnly: true, group: "settings" },
@@ -1027,6 +1029,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     s3Compat: { title: "S3-Compatible Storage", description: "Consume this org's storage from AWS S3-compatible tools." },
     executive: { title: "Executive", description: "A leadership-level summary across every department." },
     dataRooms: { title: "Data Rooms", description: "Secure, time-limited document sharing with outside parties." },
+    cloudBackup: { title: "Cloud Backup", description: "Recurring, incremental backups of your own cloud storage into Inaya, with health monitoring." },
     enterpriseHardening: { title: "Export & Migration", description: "Export company data and manage migration tooling." },
     approvals: { title: "Approvals", description: "Documents awaiting your review." },
     aiActions: { title: "AI Action Requests", description: "AI-proposed changes awaiting human approval." },
@@ -1153,6 +1156,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
           {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
+          {activeView === "cloudBackup" && canManage && <CloudBackupSchedulerView orgId={orgId} />}
           {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
