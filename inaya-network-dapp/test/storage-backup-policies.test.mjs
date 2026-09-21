@@ -12,9 +12,9 @@ import { putS3Object } from "../src/lib/s3-compat/store.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
 import { createStorageResource } from "../src/lib/storageResources.js";
 import {
-  createBackupPolicy, listBackupPolicies, setBackupPolicyEnabled,
+  createBackupPolicy, listBackupPolicies, setBackupPolicyEnabled, getBackupPolicy, deleteBackupPolicy,
   createBackupPlan, listBackupPlans, runBackupPolicyPlan, listBackupJobs,
-  findDueBackupPlans, getPlanHealth,
+  findDueBackupPlans, getPlanHealth, getBackupPlan, deleteBackupPlan,
 } from "../src/lib/storageBackupPolicies.js";
 
 const RUN_ID = randomUUID().slice(0, 8);
@@ -158,6 +158,37 @@ test("findDueBackupPlans only returns plans whose policy is still enabled", asyn
   const dueIds = due.map((p) => p._id.toString());
   assert.ok(dueIds.includes(duePlan._id.toString()));
   assert.ok(!dueIds.includes(duePausedPlan._id.toString()), "a plan whose policy is paused must never be treated as due");
+});
+
+test("deleteBackupPolicy soft-deletes, disables the policy, and its plans stop being due; deleteBackupPlan soft-deletes a plan", async () => {
+  const { orgId, membership } = await makeTestOrg("delete-policy");
+  const { policy } = await createBackupPolicy({ orgId, name: "To Delete", tagSelector: {}, membership, actorEmail: membership.email });
+  const { plan } = await createBackupPlan({ orgId, policyId: policy._id, frequency: "daily", retentionCount: 3, membership, actorEmail: membership.email });
+  await collections.storageBackupPlans.updateOne({ _id: plan._id }, { $set: { nextRunAt: new Date(Date.now() - 1000).toISOString() } });
+
+  const fetched = await getBackupPolicy({ orgId, policyId: policy._id, membership });
+  assert.equal(fetched.policy.name, "To Delete");
+
+  const del = await deleteBackupPolicy({ orgId, policyId: policy._id, membership, actorEmail: membership.email });
+  assert.equal(del.deleted, true);
+
+  const afterDelete = await getBackupPolicy({ orgId, policyId: policy._id, membership });
+  assert.equal(afterDelete.status, 404, "a deleted policy must no longer resolve");
+
+  const { policies } = await listBackupPolicies({ orgId, membership });
+  assert.ok(!policies.some((p) => p._id.toString() === policy._id.toString()));
+
+  const due = await findDueBackupPlans(200);
+  assert.ok(!due.map((p) => p._id.toString()).includes(plan._id.toString()), "a plan whose policy was deleted must never be treated as due");
+
+  const planFetched = await getBackupPlan({ orgId, planId: plan._id, membership });
+  assert.equal(planFetched.plan._id.toString(), plan._id.toString());
+  assert.ok(planFetched.plan.health);
+
+  const planDel = await deleteBackupPlan({ orgId, planId: plan._id, membership, actorEmail: membership.email });
+  assert.equal(planDel.deleted, true);
+  const planAfterDelete = await getBackupPlan({ orgId, planId: plan._id, membership });
+  assert.equal(planAfterDelete.status, 404);
 });
 
 test("listBackupPolicies and listBackupPlans are org-isolated", async () => {

@@ -102,6 +102,33 @@ export async function setBackupPolicyEnabled({ orgId, policyId, enabled, members
   return { policy: updated };
 }
 
+export async function getBackupPolicy({ orgId, policyId, membership }) {
+  const denied = await assertAccess(membership, false);
+  if (denied) return denied;
+  const { storageBackupPolicies } = await getOrgCollections();
+  const policy = await storageBackupPolicies.findOne({ _id: toObjectId(policyId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!policy) return { error: "Policy not found.", status: 404 };
+  return { policy };
+}
+
+/** Soft-delete, same pattern as storageResources.js/storageSnapshots.js --
+ *  deletedAt was always part of this collection's schema (set to null at
+ *  creation) but nothing ever set it. findDueBackupPlans() and
+ *  runBackupPolicyPlan() already filter on deletedAt: null for policies,
+ *  so this is the missing setter, not a new field. Plans under a deleted
+ *  policy are left as-is (historical record); they simply stop being
+ *  picked up by the cron sweep once their policy no longer resolves. */
+export async function deleteBackupPolicy({ orgId, policyId, membership, actorEmail }) {
+  const denied = await assertAccess(membership, true);
+  if (denied) return denied;
+  const { storageBackupPolicies } = await getOrgCollections();
+  const policy = await storageBackupPolicies.findOne({ _id: toObjectId(policyId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!policy) return { error: "Policy not found.", status: 404 };
+  await storageBackupPolicies.updateOne({ _id: policy._id }, { $set: { deletedAt: new Date().toISOString(), enabled: false } });
+  await logOrgActivity({ orgId, recordType: "STORAGE_BACKUP_POLICY", recordId: policy._id, actorEmail, action: "DELETED", previousState: null, newState: "DELETED", metadata: {} });
+  return { deleted: true };
+}
+
 // ---------------------------------------------------------------------
 // Backup Plans (Workstream K) -- Policy -> many Plans
 // ---------------------------------------------------------------------
@@ -136,6 +163,29 @@ export async function listBackupPlans({ orgId, policyId, membership }) {
   if (policyId) query.policyId = toObjectId(policyId);
   const plans = await storageBackupPlans.find(query).sort({ createdAt: -1 }).toArray();
   return { plans: plans.map((p) => ({ ...p, health: computeHealthStatus({ enabled: true, consecutiveFailures: p.consecutiveFailures, lastRunAt: p.lastRunAt, frequency: p.frequency }) })) };
+}
+
+export async function getBackupPlan({ orgId, planId, membership }) {
+  const denied = await assertAccess(membership, false);
+  if (denied) return denied;
+  const { storageBackupPlans } = await getOrgCollections();
+  const plan = await storageBackupPlans.findOne({ _id: toObjectId(planId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!plan) return { error: "Plan not found.", status: 404 };
+  return { plan: { ...plan, health: getPlanHealth(plan) } };
+}
+
+/** Soft-delete -- same rationale as deleteBackupPolicy() above: deletedAt
+ *  was always part of this collection's schema, findDueBackupPlans()
+ *  already filters on it, and nothing ever set it until now. */
+export async function deleteBackupPlan({ orgId, planId, membership, actorEmail }) {
+  const denied = await assertAccess(membership, true);
+  if (denied) return denied;
+  const { storageBackupPlans } = await getOrgCollections();
+  const plan = await storageBackupPlans.findOne({ _id: toObjectId(planId), orgId: toObjectId(orgId), deletedAt: null });
+  if (!plan) return { error: "Plan not found.", status: 404 };
+  await storageBackupPlans.updateOne({ _id: plan._id }, { $set: { deletedAt: new Date().toISOString() } });
+  await logOrgActivity({ orgId, recordType: "STORAGE_BACKUP_PLAN", recordId: plan._id, actorEmail, action: "DELETED", previousState: null, newState: "DELETED", metadata: {} });
+  return { deleted: true };
 }
 
 // ---------------------------------------------------------------------
