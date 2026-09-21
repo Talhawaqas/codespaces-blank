@@ -71,6 +71,7 @@ import TrustRelationshipsView from "../../components/business/TrustRelationships
 import ApiKeysView from "../../components/business/ApiKeysView";
 import S3CompatView from "../../components/business/S3CompatView";
 import BusinessEventsView from "../../components/business/BusinessEventsView";
+import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
 import StorageManagerView from "../../components/business/StorageManagerView";
@@ -726,6 +727,7 @@ const NAV_ITEMS = [
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "evidence", label: "Evidence", icon: "lock", group: "trust" },
+  { key: "whatIf", label: "What-If Studio", icon: "insights", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
   { key: "complianceEvidence", label: "Compliance Evidence", icon: "lock", manageOnly: true, group: "trust" },
   { key: "trustRelationships", label: "Cross-Org Trust", icon: "activity", manageOnly: true, group: "trust" },
@@ -1029,6 +1031,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     approvals: { title: "Approvals", description: "Documents awaiting your review." },
     aiActions: { title: "AI Action Requests", description: "AI-proposed changes awaiting human approval." },
     evidence: { title: "Evidence", description: "Business Events connecting invoices, purchase orders, and AI decisions into one traceable, provable story." },
+    whatIf: { title: "What-If Studio", description: "Model a business disruption using your organization's own real data — read-only, before anything real changes." },
     auditTrail: { title: "Audit Trail", description: "A cryptographically hash-chained, self-verifiable record of activity." },
     complianceEvidence: { title: "Compliance Evidence", description: "Downloadable evidence packages built from this company's own existing storage protection and audit records." },
     trustRelationships: { title: "Cross-Org Trust", description: "Trust relationships with other Inaya organizations." },
@@ -1154,6 +1157,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "evidence" && <BusinessEventsView orgId={orgId} />}
+          {activeView === "whatIf" && <WhatIfStudioView orgId={orgId} />}
           {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
           {activeView === "complianceEvidence" && canManage && <ComplianceEvidenceView orgId={orgId} />}
           {activeView === "trustRelationships" && canManage && <TrustRelationshipsView orgId={orgId} />}

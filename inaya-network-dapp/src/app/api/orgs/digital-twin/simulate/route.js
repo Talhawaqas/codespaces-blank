@@ -1,5 +1,6 @@
 // app/api/orgs/digital-twin/simulate/route.js
 //
+// GET  /api/orgs/digital-twin/simulate?orgId=&limit=  -> scenario history
 // POST /api/orgs/digital-twin/simulate
 // Body: { orgId, scenarioType, entityId, params? }
 //   scenarioType: SUPPLIER_UNAVAILABLE | EMPLOYEE_ACCESS_REMOVED | PROJECT_DELAYED | WAREHOUSE_UNAVAILABLE
@@ -13,7 +14,26 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
-import { simulateDigitalTwinScenario, SCENARIO_TYPES } from "../../../../../lib/digitalTwinSimulate.js";
+import { simulateDigitalTwinScenario, listDigitalTwinSimulations, SCENARIO_TYPES } from "../../../../../lib/digitalTwinSimulate.js";
+
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const orgId = searchParams.get("orgId");
+    if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
+
+    await ensureOrgIndexes();
+    const auth = await requireMembership(req, orgId);
+    if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
+    const history = await listDigitalTwinSimulations({ orgId, limit });
+    return NextResponse.json({ history });
+  } catch (err) {
+    console.error("orgs/digital-twin/simulate GET failed:", err);
+    return NextResponse.json({ error: "Could not fetch simulation history." }, { status: 500 });
+  }
+}
 
 export async function POST(req) {
   try {

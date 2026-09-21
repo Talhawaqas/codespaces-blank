@@ -16,7 +16,9 @@ import { ObjectId } from "mongodb";
 import { getOrgCollections, ensureOrgIndexes } from "../src/lib/orgs.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
 import { resolveDependents, traverseDependencyGraph } from "../src/lib/digitalTwin.js";
-import { simulateDigitalTwinScenario } from "../src/lib/digitalTwinSimulate.js";
+import { simulateDigitalTwinScenario, listDigitalTwinSimulations } from "../src/lib/digitalTwinSimulate.js";
+import { canonicalizeForExport } from "../src/lib/evidenceExporter.js";
+import { createHash } from "node:crypto";
 
 const RUN_ID = randomUUID().slice(0, 8);
 const cleanup = { orgIds: [] };
@@ -260,4 +262,46 @@ test("SECURITY: every scenario type leaves every collection it reads byte-for-by
 
   const twinAudits = await collections.orgActivity.find({ orgId: org.orgId, recordType: "DIGITAL_TWIN_SIMULATION", action: "SIMULATION_RUN" }).toArray();
   assert.equal(twinAudits.length, 4, "each of the 4 simulations run above must have logged exactly one DIGITAL_TWIN_SIMULATION audit entry");
+});
+
+// ---------------------------------------------------------------------
+// What-If Scenario Studio SOW — provenance, integrity, and history
+// ---------------------------------------------------------------------
+
+test("a simulation result carries a real, independently-recomputable integrity hash and provenance", async () => {
+  const org = await makeOrg("provenance");
+  const supplierId = await makeSupplier(org);
+  await makePO(org, { supplierId, status: "APPROVED" });
+
+  const { simulation } = await simulateDigitalTwinScenario({ orgId: org.orgId, scenarioType: "SUPPLIER_UNAVAILABLE", entityId: supplierId, membership: org.owner, actorEmail: org.ownerEmail });
+  assert.ok(simulation.simulationId);
+  assert.ok(simulation.integrityHash);
+  assert.equal(simulation.modelVersion, "1.0");
+  assert.equal(simulation.rulesVersion, "1.0");
+  assert.ok(simulation.runAt);
+
+  const recomputed = createHash("sha256")
+    .update(canonicalizeForExport({ scenario: simulation.scenario, directImpact: simulation.directImpact, indirectImpact: simulation.indirectImpact || null, unknowns: simulation.unknowns, modelVersion: simulation.modelVersion, rulesVersion: simulation.rulesVersion }))
+    .digest("hex");
+  assert.equal(recomputed, simulation.integrityHash, "the integrity hash must be independently recomputable from the result's own content");
+});
+
+test("scenario history lists past simulations for the org, most recent first, and never leaks another org's runs", async () => {
+  const orgA = await makeOrg("history-a");
+  const orgB = await makeOrg("history-b");
+  const supplierA = await makeSupplier(orgA);
+  const supplierB = await makeSupplier(orgB);
+
+  await simulateDigitalTwinScenario({ orgId: orgA.orgId, scenarioType: "SUPPLIER_UNAVAILABLE", entityId: supplierA, membership: orgA.owner, actorEmail: orgA.ownerEmail });
+  await new Promise((r) => setTimeout(r, 5));
+  await simulateDigitalTwinScenario({ orgId: orgA.orgId, scenarioType: "SUPPLIER_UNAVAILABLE", entityId: supplierA, membership: orgA.owner, actorEmail: orgA.ownerEmail });
+  await simulateDigitalTwinScenario({ orgId: orgB.orgId, scenarioType: "SUPPLIER_UNAVAILABLE", entityId: supplierB, membership: orgB.owner, actorEmail: orgB.ownerEmail });
+
+  const historyA = await listDigitalTwinSimulations({ orgId: orgA.orgId });
+  assert.equal(historyA.length, 2);
+  assert.ok(new Date(historyA[0].runAt) >= new Date(historyA[1].runAt), "history must be most-recent-first");
+  assert.ok(historyA.every((h) => h.scenarioType === "SUPPLIER_UNAVAILABLE" && h.integrityHash));
+
+  const historyB = await listDigitalTwinSimulations({ orgId: orgB.orgId });
+  assert.equal(historyB.length, 1);
 });

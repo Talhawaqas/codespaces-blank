@@ -21,8 +21,16 @@
 
 import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
 import { resolveDependents, traverseDependencyGraph } from "./digitalTwin.js";
+import { canonicalizeForExport } from "./evidenceExporter.js";
+import { createHash } from "node:crypto";
 
 export const SCENARIO_TYPES = ["SUPPLIER_UNAVAILABLE", "EMPLOYEE_ACCESS_REMOVED", "PROJECT_DELAYED", "WAREHOUSE_UNAVAILABLE"];
+
+// What-If Scenario Studio SOW §9.8 -- bumped only when a scenario
+// handler's actual logic changes (not on every commit), so a stored
+// modelVersion genuinely identifies which rules produced a past result.
+export const MODEL_VERSION = "1.0";
+export const RULES_VERSION = "1.0";
 
 function unknown(reason) {
   return { status: "UNKNOWN", reason };
@@ -159,7 +167,17 @@ const SCENARIO_HANDLERS = {
  *  own read-only resolvers). Logs the simulation request itself for
  *  auditability, but never against the subject entity's own recordType
  *  (same discipline businessEventSimulate.js established: a simulation
- *  must never appear in a record's own history as if it were real). */
+ *  must never appear in a record's own history as if it were real).
+ *
+ *  What-If Scenario Studio SOW §9.8/9.9 -- attaches provenance (a real
+ *  simulation ID from the audit entry itself, the model/rules version
+ *  that actually ran, and an integrity hash over the full result) so a
+ *  past simulation is independently re-checkable: recompute the hash
+ *  over the same {scenario, directImpact, indirectImpact, unknowns}
+ *  fields and confirm it matches what was recorded at the time. Reuses
+ *  evidenceExporter.js's own canonicalize function -- one hashing
+ *  convention across every Inaya feature that hashes a result, not a
+ *  second one invented here. */
 export async function simulateDigitalTwinScenario({ orgId, scenarioType, entityId, membership, actorEmail, params = {} }) {
   const handler = SCENARIO_HANDLERS[scenarioType];
   if (!handler) return { error: `Unknown scenario type "${scenarioType}". Must be one of ${SCENARIO_TYPES.join(", ")}.`, status: 400 };
@@ -167,12 +185,41 @@ export async function simulateDigitalTwinScenario({ orgId, scenarioType, entityI
   const result = await handler({ orgId, entityId, membership, ...params });
   if (result.error) return result;
 
+  const provenance = { modelVersion: MODEL_VERSION, rulesVersion: RULES_VERSION };
+  const integrityHash = createHash("sha256")
+    .update(canonicalizeForExport({ scenario: result.scenario, directImpact: result.directImpact, indirectImpact: result.indirectImpact || null, unknowns: result.unknowns, ...provenance }))
+    .digest("hex");
+
   const { logOrgActivity } = await import("./org-activity-log.js");
-  await logOrgActivity({
+  const event = await logOrgActivity({
     orgId, recordType: "DIGITAL_TWIN_SIMULATION", recordId: toObjectId(orgId), actorEmail,
     action: "SIMULATION_RUN", previousState: null, newState: null,
-    metadata: { scenarioType, entityId: String(entityId), resultStatus: result.resultStatus },
+    metadata: { scenarioType, entityId: String(entityId), resultStatus: result.resultStatus, integrityHash, ...provenance },
   });
 
-  return { simulation: result };
+  return { simulation: { ...result, simulationId: event.eventId, ...provenance, integrityHash, runAt: event.timestamp, runByEmail: actorEmail } };
+}
+
+/** Scenario history (SOW's "scenario history" UI requirement) -- reads
+ *  the same audit/activity entries simulateDigitalTwinScenario() itself
+ *  writes, org-scoped, most recent first. No second storage location for
+ *  "past simulations" -- the audit log already durably records them. */
+export async function listDigitalTwinSimulations({ orgId, limit = 50 }) {
+  const { orgActivity } = await getOrgCollections();
+  const entries = await orgActivity
+    .find({ orgId: toObjectId(orgId), recordType: "DIGITAL_TWIN_SIMULATION", action: "SIMULATION_RUN" })
+    .sort({ timestamp: -1 })
+    .limit(limit)
+    .toArray();
+  return entries.map((e) => ({
+    simulationId: e.eventId,
+    scenarioType: e.metadata?.scenarioType,
+    entityId: e.metadata?.entityId,
+    resultStatus: e.metadata?.resultStatus,
+    integrityHash: e.metadata?.integrityHash,
+    modelVersion: e.metadata?.modelVersion,
+    rulesVersion: e.metadata?.rulesVersion,
+    runAt: e.timestamp,
+    runByEmail: e.actorEmail,
+  }));
 }
