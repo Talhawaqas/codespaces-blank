@@ -1541,5 +1541,41 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      title: "IBM Cloud VPC Storage-Inspired Capability Expansion & a Real Terraform Provider (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A mandatory Phase 0 audit (docs/IBM_VPC_STORAGE_CAPABILITY_AUDIT.md) found the one fact that shaped every design decision below: Inaya has no compute/VM/hypervisor runtime of any kind. IBM VPC's block-volume model assumes a running instance to attach a device to; Inaya has nothing of the sort. Rather than fabricate a fake compute layer or quietly skip the workstream, every \"physical infrastructure\" capability was rebuilt as an honest, useful, logical control-plane abstraction, labeled as exactly that. Once real Go tooling was set up in this environment, the SOW's own explicitly-deferred Terraform workstream was also built and tested end-to-end.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["New: src/lib/storageResources.js", "The Storage Resource Registry — no generic resource envelope existed anywhere in this codebase before this SOW. createStorageResource/listStorageResources/getStorageResource/expandStorageResourceCapacity/deleteStorageResource, every resource backed by a real S3-compat bucket. attachVolume/detachVolume is a real reservation/lock (attachedTo is a caller-supplied free-text label, never a fabricated device path); addMountTarget/removeMountTarget on a file share are declared, bookkeeping-only records (physicallyMountable: false). Both resource types carry a static physicalCapability field that is never upgraded to imply real capability. Capacity only ever increases, per the SOW's own explicit rule."],
+            ["New: src/lib/storageSnapshots.js", "Built entirely on s3-compat/store.js's existing per-key S3 Versioning — creating a snapshot enables bucket Versioning and records a manifest of every current key's versionId; no bytes are copied at capture time, making the \"incremental\" label genuinely true rather than asserted. restoreSnapshot() is a real copy-forward restore. Consistency groups capture member snapshots sequentially and honestly carry consistencyBoundary: \"SEQUENTIAL_NOT_ATOMIC\" rather than a false claim of simultaneous crash consistency. Cross-org sharing (shareSnapshot/revokeSnapshotGrant/resolveSnapshotGrant) fails closed on wrong recipient, revocation, or expiry."],
+            ["New: src/lib/storageBackupPolicies.js", "The Inaya-native complement to cloudBackupScheduler.js (which pulls FROM an external cloud source INTO one hardcoded bucket) — this policy-selects the org's OWN storageResources.js resources by tag and recurringly snapshots them, with real multi-plan-per-policy (daily/weekly/monthly/longTerm) and real retention enforcement (oldest snapshots beyond a plan's retentionCount deleted, every deletion audited via logOrgActivity). Health status mirrors cloudBackupScheduler.js's own HEALTH_STATUS thresholds exactly."],
+            ["16 new API routes + 1 cron route", "src/app/api/orgs/storage/{resources,snapshots,consistency-groups,backup-policies,backup-plans,backup-jobs}/**/route.js (session-cookie auth, requireMembership) plus src/app/api/cron/storage-backup-run/route.js (vercel.json, hourly)."],
+            ["New: src/app/api/public/v1/storage/** (added with the Terraform provider)", "A parallel, bearer-API-key-authenticated namespace (requireApiKey, same resolution guarantee as the existing public/v1/evidence route — orgId always comes from the key, never the request body). Built specifically because Terraform runs headless and can't use requireMembership()'s session-cookie resolution. Backed by two small additive lib functions the schema already anticipated: deleteBackupPolicy/deleteBackupPlan soft-delete via a deletedAt field that existed on both collections from day one with nothing that ever set it — findDueBackupPlans() and runBackupPolicyPlan() already filtered on it."],
+            ["New: terraform-provider-inaya/ (Go, terraform-plugin-framework)", "inaya_storage_resource, inaya_snapshot, inaya_backup_policy, inaya_backup_plan resources against a hand-rolled ~250-line HTTP client (internal/client/client.go) — no generated SDK, the surface is 8 routes. Every attribute without a real backend update path (name, type, region, tags on a resource; name/tag_selector on a policy; every field on a plan) is RequiresReplace rather than silently no-opping a change the backend can't actually make; capacity_gb is the one real in-place Update, and a decrease is surfaced as a Terraform-level error, not silently ignored."],
+            ["Test coverage", "35 automated tests across storageResources.js, storageSnapshots.js, storageBackupPolicies.js, and the Digital Twin integration, all passing against the real database and real S3-compat write path (6 pre-existing, unrelated tests in the same run failed on an external Pinata account-quota block, not on anything in this SOW). The Terraform provider's full create/read/update/delete cycle — including cross-resource references, a no-op plan showing zero drift, and an in-place capacity expand — was run against a real local Inaya dev server with real MongoDB-backed state, not a dry run."],
+          ],
+        },
+        {
+          type: "note",
+          label: "The STORAGE_RESOURCE Digital Twin permission gate is a bespoke special case, not the generic table entry.",
+          text: "digitalTwin.js's resolveDependents() gained a dedicated STORAGE_RESOURCE block (imports canAccessStorage) rather than a DEPENDENT_RESOLVERS table entry, because storage resources are org-wide — gated by the distinct canAccessStorage permission, not department membership. The generic table's own \"no departmentId means visible to everyone\" default would have been a real permission/data leak for this entity type.",
+        },
+        {
+          type: "note",
+          label: "A real bug found during the Terraform provider's own end-to-end testing.",
+          text: "createBackupPlan()'s and createSnapshot()'s own return values omit fields only the list/get functions compute or attach (health, createdAt) — so inaya_backup_plan.health and inaya_snapshot.created_at came back blank immediately after terraform apply, correcting themselves only on the next refresh. Fixed by having every resource's Create() re-fetch via the corresponding Get call before writing Terraform state, for all four resource types.",
+        },
+        {
+          type: "note",
+          text: "Deliberately not built: fast/accelerated restore (no backend primitive exists to make one honestly faster than the normal copy-forward restore above — never labeled \"fast\" to check a box), real physical block-volume attach or real multi-client NFS mounting (structurally impossible without a compute layer that doesn't exist), context-based/conditional access restrictions (no concrete use case identified yet beyond the existing role/department/assignment model), and live interop validation against real IBM Cloud Object Storage (blocked on IBM Cloud not accepting the available payment method during account sign-up, not on anything left to build — the exact ibmcloud CLI commands to obtain the needed instance/HMAC credentials/endpoint are documented and ready once an account exists). The Terraform provider itself is not yet published to the Terraform Registry — it runs from a local build via dev_overrides today. Full writeup: docs/ibm-vpc-storage-expansion-report.md, docs/IBM_VPC_STORAGE_CAPABILITY_AUDIT.md, and terraform-provider-inaya/README.md.",
+        },
+      ],
+    },
   ],
 };

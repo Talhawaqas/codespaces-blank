@@ -595,5 +595,32 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      title: "A Storage Control Plane and a Real Terraform Provider (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Inspired by IBM Cloud's own VPC storage product line: a proper control panel for a business's own Inaya storage — volumes, file shares, point-in-time snapshots, automated backup schedules — plus, once real developer tooling was set up, a genuine Terraform provider so an IT team can manage all of it as code the same way they already manage their other cloud infrastructure.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Storage volumes and file shares — a single, organized place to create, tag, resize, and track a company's storage, each one backed by a real Inaya storage bucket underneath.",
+            "Real point-in-time snapshots — genuinely incremental (a snapshot only stores what changed, not a full copy every time), restorable, and shareable with another organization on a revocable, expiring basis.",
+            "Automated backup policies — pick which storage to protect by label, set a daily/weekly/monthly/long-term schedule and how many backups to keep, and Inaya handles the rest automatically, including cleaning up old backups.",
+            "A real Terraform plugin — the same kind of automation tool IT teams already use for AWS or Azure now works for Inaya's storage too, letting infrastructure be defined and version-controlled as code instead of clicked through a website.",
+          ],
+        },
+        {
+          type: "note",
+          label: "The one honest limit, stated plainly.",
+          text: "IBM's \"attachable hard drive\" feature assumes a running virtual computer to plug it into — Inaya doesn't run virtual computers for customers, so that specific piece is a real, useful control-panel substitute (reservations and organized tracking) rather than a literal physical disk. Every storage resource states this plainly rather than implying more than it delivers.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: 35 automated tests against the real database and real storage system, plus the new Terraform plugin's full create-change-delete cycle run against a real running copy of Inaya, not a dry run — a real bug (blank status information right after creating something) was caught and fixed along the way. The Terraform plugin isn't published to Terraform's public directory yet; that's a small follow-up step, not more engineering. Full writeup: docs/ibm-vpc-storage-expansion-report.md and terraform-provider-inaya/README.md.",
+        },
+      ],
+    },
   ],
 };

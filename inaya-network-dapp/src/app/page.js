@@ -3261,6 +3261,16 @@ export default function Home() {
         { text: "Zero-Knowledge Data Room Templates — four ready-made secure room configurations (Fundraising, M&A, Legal Review, Web3 Due-Diligence) on the existing Data Room/NDA/audit infrastructure", done: true },
         { text: "Smart Cloud Backup & Health Scheduler — recurring, incremental AWS S3/Azure Blob/Google Cloud Storage backup into Inaya, orchestrating the existing migration engine with real integrity verification and a six-state health status", done: true },
         { text: "Interactive What-If Scenario Studio — Business Workspace UI over the existing Digital Twin simulation API, with scenario history and current-vs-simulated comparison", done: true },
+        // Added September 2026 — IBM Cloud VPC Storage-inspired storage
+        // control plane (volumes/file shares, snapshots, consistency
+        // groups, cross-org sharing, automated backup policies) plus a
+        // real Terraform provider, once real Go tooling was available in
+        // this environment. Shipped this cycle, not previously reflected
+        // here.
+        { text: "Storage Control Plane — volume/file-share resource registry, attach/detach reservation model, and mount-target bookkeeping, each honestly labeled logical-only (no compute layer exists for real physical attach/mount)", done: true },
+        { text: "Storage Snapshot Engine — genuinely incremental point-in-time snapshots built on existing S3-compatible object versioning, real copy-forward restore, consistency groups with an honestly disclosed non-atomic capture boundary, cross-region copy, and cross-org sharing that fails closed on wrong org/revocation/expiry", done: true },
+        { text: "Automated Storage Backup Policy Engine — tag-selector-scoped policies, daily/weekly/monthly/long-term plans, real retention enforcement with every deletion audited, health status shared with the existing Cloud Backup Scheduler", done: true },
+        { text: "terraform-provider-inaya — a real Go-based Terraform provider (storage resources, snapshots, backup policies/plans) tested end-to-end against a live local deployment; not yet published to the Terraform Registry", done: true },
       ],
     },
     {
