@@ -762,5 +762,59 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "28",
+      title: "AWS S3-Inspired Storage Feature Expansion Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["s3-compat/store.js, walletStore.js: putObjectTagging, getObjectTagging, deleteObjectTagging", "Real S3 tag semantics enforced server-side (10-tag max, 128/256-char key/value limits), stored as an additive `tags` field on the existing object document, never a second metadata collection"],
+            ["s3-compat/store.js, walletStore.js: contentSha256 field on putS3Object", "The real, unsalted SHA-256 of uploaded bytes, computed and stored alongside the pre-existing salted fileHash (salted for an unrelated legacy dedup reason and therefore not independently client-verifiable) — exposed as x-amz-checksum-sha256 on GET/HEAD/PUT"],
+            ["Object route ([...key]/route.js): ?tagging (PUT/GET/DELETE), x-amz-tagging header", "Real S3 PutObjectTagging/GetObjectTagging/DeleteObjectTagging sub-resource dispatch, plus tag-at-upload-time support via the standard x-amz-tagging query-string-style header"],
+            ["New: s3-compat/inventory.js: buildStorageInventory, renderInventoryCsv", "Org-scoped JSON/CSV export of every live object (bucket, key, size, tags, checksum, version/lock state), computed from existing org_documents records only"],
+            ["New: s3-compat/batchOperations.js: runBatchOperation", "SET_TAGS/SET_RETENTION/SET_LEGAL_HOLD across up to 1,000 keys, implemented as a loop over the existing per-object primitives with per-key success/failure reporting — no new low-level mutation path, Object Lock/Legal Hold enforced identically to a single manual request"],
+            ["New: s3-compat/analytics.js: computeS3BucketAnalytics", "Real per-bucket object count/total-size/average-size/largest-objects/version-count/locked-count/legal-hold-count/tag-distribution, computed live, no materialized metrics table"],
+            ["New: s3-compat/policyAnalyzer.js: analyzeS3CredentialPolicies", "Read-only credential-scope analysis (UNRESTRICTED_CREDENTIAL, NO_EXPIRY, BROAD_DESTRUCTIVE_SCOPE, BROAD_UNSCOPED findings) over the existing s3_credentials collection via listS3Credentials — zero writes; unusedCredentials is explicitly null (not []), since no lastUsedAt field exists to support that claim"],
+            ["Fixed: pinningProviders/pinata.js: authHeaders/resolveJwt", "Detects a usable Pinata credential by shape (a JWT is three dot-separated base64url segments starting with \"eyJ\") across PINATA_JWT, PINATA_SECRET_API_KEY, and PINATA_API_KEY rather than one hardcoded variable name — this environment's real credential was a scoped-key JWT stored under PINATA_SECRET_API_KEY, previously unrecognized"],
+            ["Test coverage", "test/s3-compat-expansion.test.mjs (9 tests: checksum correctness, tag validation limits, mixed-success batch jobs, Object Lock bypass rejection inside a batch job, org-scoped inventory isolation, per-bucket analytics correctness, policy-analyzer read-only guarantee) — all passing, plus the full pre-existing 57-test S3-compat suite (store/capabilities/empty-folder/sigv4) re-confirmed clean"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Explicitly out of scope for this pass, per the SOW's own audit-first instruction not to build a feature merely because AWS has it: event notifications/webhooks (zero existing outbound-webhook infrastructure anywhere in this codebase to build on — only inbound receivers for Stripe/referrals/KYC exist); MFA/step-up authentication (Object Lock/Legal Hold already provide real, server-enforced protection against the highest-risk destructive action); Block Public Access (confirmed not applicable — the S3-compat auth layer has exactly three authenticated paths and a hard rejection otherwise, so there is no unauthenticated read path to block). Full writeup: docs/aws-s3-feature-expansion-report.md.",
+        },
+      ],
+    },
+    {
+      number: "29",
+      title: "Evidence Graph & Digital Twin Reference — Business Events, Passports, and Dependency-Graph Simulation (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["New: src/lib/businessEvents.js: createBusinessEvent, getBusinessEvent, listBusinessEvents, addBusinessEventRelationship, getBusinessEventTimeline", "References an existing invoice/PO/PR/AI-action-request by {subjectType, subjectId}, never copies it; department-scoped (or org-manager-only for AI-action subjects with no resolvable department) via the same canAccessDepartment/canManageOrg gates every other Business Operations record uses; timeline merges real org_activity entries from the event, its subject, and every linked relationship target"],
+            ["New: src/lib/businessEventExplain.js: explainBusinessEvent", "Why? explainability — resolves each relationship target into INCLUDED/RESTRICTED/REFERENCED/UNAVAILABLE, evaluates one real, disclosed amount-threshold rule, and surfaces only the structured fields an AI action request actually stores (proposedAction, riskLevel, requestedContextSummary) — never internal reasoning, since none is persisted"],
+            ["New: src/lib/businessEventPassport.js: buildBusinessEventPassport, verifyBusinessEventPassport, renderBusinessEventPassportPdf", "Reuses evidenceExporter.js's exact canonicalizeForExport hashing convention for the manifest hash; verification independently recomputes the hash and live-reverifies the org's audit chain, returning VERIFIED/INVALID/INCOMPLETE/UNKNOWN"],
+            ["New: src/lib/businessEventSimulate.js: simulateBusinessEventDecision", "Re-derives PO_TRANSITIONS/PR_TRANSITIONS legality and the real canManageOrg/canAccessDepartment authorization checks without ever importing transitionPurchaseOrder/transitionPurchaseRequest/reviewAiAction — zero write path by construction"],
+            ["New: src/lib/digitalTwin.js: resolveDependents, traverseDependencyGraph", "Computes the dependency graph on demand from real foreign keys already on real records (supplierId on a PO, departmentId everywhere, projectId on tasks/deals, assigneeEmail on tasks) — depth-bounded (default 3) breadth-first traversal, RESTRICTED nodes included but never traversed further"],
+            ["New: src/lib/digitalTwinSimulate.js: simulateDigitalTwinScenario", "SUPPLIER_UNAVAILABLE, EMPLOYEE_ACCESS_REMOVED, PROJECT_DELAYED, WAREHOUSE_UNAVAILABLE — each traverses the real dependency graph and reports a numeric consequence only when a real stored field backs it (e.g. a task's own dueDate); every other effect is explicit UNKNOWN with a stated reason"],
+            ["API", "/api/orgs/business-events/** (create/list/detail/relationships/why/passport/verify/simulate), POST /api/orgs/digital-twin/simulate — all session-authenticated via the existing requireMembership pattern"],
+            ["Test coverage", "47 tests across test/business-events.test.mjs, test/business-event-passport.test.mjs, test/business-event-simulate.test.mjs; 9 tests in test/digital-twin.test.mjs — all passing against the real database, zero regressions to document-permissions.test.mjs or trust-health-v2.test.mjs"],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real permission gap found and fixed during development.",
+          text: "stockLevels rows have no departmentId of their own (see inventory.js) — the generic per-dependent-doc permission check that correctly gates every other entity type in digitalTwin.js would have silently defaulted a stockLevel row to visible regardless of the caller's actual department access, since there was no departmentId field on the doc itself to check. Fixed by gating simulateWarehouseUnavailable() on the WAREHOUSE entity's own departmentId before any traversal begins, rather than relying on the generic per-dependent check; documented directly on resolveDependents() so a future caller doesn't reintroduce the same gap by exposing a raw \"traverse anything\" endpoint without the same starting-point check.",
+        },
+        {
+          type: "note",
+          text: "Cross-organization Digital Twins were evaluated in a dedicated feasibility pass (docs/digital-twin-cross-org-privacy-feasibility.md) covering zero-knowledge proofs, secure multiparty computation, trusted execution, cryptographic commitments, and a scoped purpose-bound API — recommendation is to defer until a real, named cross-org query use case exists, reusing the pre-existing orgTrustRelationships collection and the existing audit chain when that need arrives, rather than building ZK/MPC/TEE infrastructure speculatively. Twin snapshots for reproducibility, a graph-visualization UI, and natural-language scenario creation are likewise deferred. Full writeup: docs/evidence-graph-business-event-layer-report.md, docs/digital-twin-simulation-layer-report.md, docs/digital-twin-cross-org-privacy-feasibility.md.",
+        },
+      ],
+    },
   ],
 };

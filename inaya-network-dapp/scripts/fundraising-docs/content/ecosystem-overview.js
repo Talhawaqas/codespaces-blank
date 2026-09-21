@@ -540,5 +540,33 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      number: "24",
+      title: "From Storage to Trust: Evidence, Simulation, and a Rounder Storage Feature Set (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two things happened this month that push Inaya further past \"technically compatible\" and toward \"a platform a company can actually build trust workflows on\": storage picked up the remaining features an IT team expects (labels, an inventory report, bulk actions, a security checkup), and a new layer connects invoices, purchase orders, and AI decisions into one provable story — plus the ability to ask \"what would happen if...\" about the business itself, safely, before committing to anything real.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Storage objects can now be labeled (tagged), given a real independently-verifiable fingerprint, exported as a one-click inventory report, and updated in bulk across up to 1,000 files at once — all while Object Lock and legal holds remain fully enforced, never bypassed by a bulk action.",
+            "A new Business Event links an invoice, purchase order, or AI-proposed action to everything Inaya checked about it — with a one-click \"Why?\" explanation and a portable, cryptographically-provable passport an auditor or partner can independently verify.",
+            "A \"What If?\" simulator answers questions like \"what happens if I approve this purchase?\" or \"what happens if a supplier becomes unavailable?\" using the company's own real, connected data — and is proven, by automated test, to never actually change anything just by asking.",
+            "The same simulation extends into a lightweight Digital Twin: supplier unavailable, employee loses project access, project delayed, or warehouse unavailable — each answer is honest about what's genuinely unknown rather than guessing.",
+          ],
+        },
+        {
+          type: "note",
+          label: "An honest correction, not just a new feature.",
+          text: "A genuine, previously-unnoticed misconfiguration was found and fixed during this work: the intended backup storage provider (Pinata) had a broken credential and had never actually been receiving backup data — the platform was silently relying on its secondary provider as if it were primary. Now fixed and verified with a real, live round trip.",
+        },
+        {
+          type: "note",
+          text: "Deliberately not built yet: storage event notifications/webhooks (no existing outbound-webhook infrastructure to build on), and connecting two different companies' Digital Twins to each other privately (would require heavyweight cryptography not yet justified by a real customer need — researched and documented, ready for when it is). Full writeup: docs/aws-s3-feature-expansion-report.md, docs/evidence-graph-business-event-layer-report.md, and docs/digital-twin-simulation-layer-report.md.",
+        },
+      ],
+    },
   ],
 };

@@ -114,7 +114,7 @@ export const companyProfile = {
         },
         {
           type: "note",
-          text: "These three phases remain the core protocol-layer roadmap. The application layer (Section 03) — Business Workspace, Security Layer, Inaya Learn, and the Investor Data Room — has since grown into a significant, independently-scoped body of work alongside it, tracked on its own roadmap rather than folded into these three phases. That application-layer roadmap now includes a 13th stage, Storage Interoperability & Inaya Drive — real AWS S3/Azure Blob/Google Cloud Storage protocol compatibility, a real mounted Inaya Drive on Windows and Linux, a local data migration tool, and a compliance evidence exporter, all live and tested (see inayanetwork.com/business/roadmap).",
+          text: "These three phases remain the core protocol-layer roadmap. The application layer (Section 03) — Business Workspace, Security Layer, Inaya Learn, and the Investor Data Room — has since grown into a significant, independently-scoped body of work alongside it, tracked on its own roadmap rather than folded into these three phases. That application-layer roadmap now includes a 13th stage, Storage Interoperability & Inaya Drive — real AWS S3/Azure Blob/Google Cloud Storage protocol compatibility, a real mounted Inaya Drive on Windows and Linux, a local data migration tool, and a compliance evidence exporter, all live and tested — and a 14th stage, Evidence Graph & Digital Twin, connecting business records into one traceable, cryptographically-provable story with a read-only \"What If?\" simulator, all live and tested (see inayanetwork.com/business/roadmap).",
         },
       ],
     },

@@ -1446,5 +1446,67 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "45",
+      title: "AWS S3-Inspired Storage Feature Expansion (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "An audit-first pass against Amazon S3's own published feature catalogue — implementing only what the audit found genuinely missing and valuable, not cloning AWS's product. Object tags, a real independently-verifiable checksum, a storage inventory export, bulk batch operations, per-bucket analytics, and a read-only credential policy analyzer were added; event notifications/webhooks and MFA/step-up authentication were evaluated and explicitly deferred, with the reasoning documented rather than silently dropped.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["store.js/walletStore.js: putObjectTagging/getObjectTagging/deleteObjectTagging", "Real S3 tag semantics (10-tag limit, 128/256-char key/value limits), wired into the object route's ?tagging sub-resource and the x-amz-tagging upload header."],
+            ["store.js/walletStore.js: contentSha256 field", "The real, unsalted SHA-256 of uploaded bytes — additive and distinct from the pre-existing fileHash field, which is deliberately salted for an unrelated legacy dedup reason and can't itself serve as a client-verifiable checksum. Exposed as x-amz-checksum-sha256."],
+            ["New: src/lib/s3-compat/inventory.js", "Org-scoped JSON/CSV export of every live object with its tags, checksum, and lock state — reusing existing records, no new tracking collection."],
+            ["New: src/lib/s3-compat/batchOperations.js", "Bulk tag/retention/legal-hold across up to 1,000 keys, built strictly as a loop over the existing per-object primitives — a locked object fails only its own key in the per-key result, Object Lock/Legal Hold is never bypassed."],
+            ["New: src/lib/s3-compat/analytics.js, policyAnalyzer.js", "Real per-bucket object count/size/version/lock counts and tag distribution; a read-only credential-scope analyzer flagging unrestricted/no-expiry/broad-destructive-scope credentials from real stored fields only — \"unused credential\" is honestly reported as not-computed, never fabricated, since no lastUsedAt field exists to support that claim."],
+            ["Test coverage", "9 new tests (test/s3-compat-expansion.test.mjs) plus the full pre-existing 57-test S3-compat regression suite re-confirmed clean, zero regressions."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real, pre-existing bug found and fixed along the way.",
+          text: "pinningProviders/pinata.js only implemented Pinata's newer JWT auth, while this environment's actual credential was stored as PINATA_API_KEY (a short key id) / PINATA_SECRET_API_KEY (which, despite its name, holds the real scoped-key JWT) — meaning Pinata had been silently unusable and the platform was falling back to Filebase as its de facto primary shard-storage provider instead of Filebase's intended backup-replication role. Fixed by detecting a JWT by its actual shape across all three candidate variables rather than one hardcoded name, and verified live with a real pin/status/fetch/unpin round trip.",
+        },
+        {
+          type: "note",
+          text: "Explicitly deferred, not silently skipped: event notifications/webhooks (this codebase has zero outbound-webhook infrastructure anywhere — only inbound receivers for Stripe/referrals/KYC exist — building real signed delivery, retry, and dead-letter handling is a separate-scope undertaking); MFA/step-up authentication (Object Lock and Legal Hold already provide real, server-enforced protection against permanent deletion, the highest-risk case a step-up mechanism would otherwise protect); Block Public Access (confirmed not applicable — no code path anywhere in the S3-compat auth layer permits an unauthenticated read, so there is nothing to block). Full writeup: docs/aws-s3-feature-expansion-report.md.",
+        },
+      ],
+    },
+    {
+      number: "46",
+      title: "Evidence Graph & Digital Twin — Trusted Business Events and What-If Simulation (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two connected SOWs: the Evidence Graph links an organization's existing invoices, purchase orders, purchase requests, and AI-proposed actions into one traceable Business Event with a portable cryptographic-proof passport and a read-only What If simulator; the Digital Twin extends that same read-only simulation discipline into a broader dependency graph across the organization's real entity landscape, answering \"what would happen if a supplier became unavailable, an employee lost project access, a project was delayed, or a warehouse went offline.\"",
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["New: src/lib/businessEvents.js", "The Business Event core — references a subject by {subjectType, subjectId} rather than copying it, department/org-manager scoped exactly like every other Business Operations record. Every mutation flows through the existing logOrgActivity(), which already writes into the real cryptographic audit chain — no second audit system."],
+            ["New: src/lib/businessEventExplain.js", "The Why? view — permission-aware evidence resolution (RESTRICTED/INCLUDED/REFERENCED/UNAVAILABLE), AI findings limited to real stored fields, never internal model chain-of-thought, because none is persisted anywhere to begin with."],
+            ["New: src/lib/businessEventPassport.js", "A JSON+PDF Business Event Passport reusing the existing Compliance Evidence Exporter's exact canonicalize/hash convention, with independent VERIFIED/INVALID/INCOMPLETE/UNKNOWN re-verification."],
+            ["New: src/lib/businessEventSimulate.js", "Read-only What If simulation — re-derives transition legality/authorization from the real state tables and permission gates without ever importing the real transition functions."],
+            ["New: src/lib/digitalTwin.js, digitalTwinSimulate.js", "A dependency graph computed on demand from real, existing foreign keys (a supplier's own POs, a project's own tasks, a person's own task assignments) — no new graph database. Four named scenarios (SUPPLIER_UNAVAILABLE, EMPLOYEE_ACCESS_REMOVED, PROJECT_DELAYED, WAREHOUSE_UNAVAILABLE), each reporting a numeric consequence only when a real stored field backs it, UNKNOWN otherwise."],
+            ["Test coverage", "47 tests for the Evidence Graph layer, 9 for the Digital Twin layer, all passing against the real database. The strongest test in both: run every simulation type, snapshot every touched record before/after, assert byte-for-byte equality — a simulation can never silently become a real mutation."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real permission gap found and fixed during development.",
+          text: "stockLevels rows carry no departmentId of their own (see inventory.js) — the generic per-dependent permission check that correctly gates every other entity type would have silently defaulted a stock-level row to visible regardless of the caller's actual department access. Fixed by gating the WAREHOUSE_UNAVAILABLE scenario on the warehouse's own department before any traversal begins, and covered by a dedicated security test.",
+        },
+        {
+          type: "note",
+          text: "Cross-organization Digital Twins (two companies privately checking each other's fulfilment capacity without exposing internal data) were evaluated, not built: zero-knowledge proofs, secure multiparty computation, and trusted-execution options were all assessed and the recommendation is to defer, since no validated customer need exists yet and building that cryptography speculatively isn't justified. Graph-visualization UI, versioned Twin snapshots, and natural-language scenario creation are likewise deferred until the underlying model has real usage to build on. Full writeup: docs/evidence-graph-business-event-layer-report.md and docs/digital-twin-simulation-layer-report.md, docs/digital-twin-cross-org-privacy-feasibility.md.",
+        },
+      ],
+    },
   ],
 };
