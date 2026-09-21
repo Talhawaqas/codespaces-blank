@@ -2102,6 +2102,7 @@ const NAV_GROUPS = [
     title: 'Developers',
     items: [
       { label: 'Build on Inaya', icon: '⚙️', href: '/build' },
+      { label: 'Documentation', icon: '📚', href: '/docs' },
     ],
   },
   {

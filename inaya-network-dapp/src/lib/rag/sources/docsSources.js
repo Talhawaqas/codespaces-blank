@@ -26,9 +26,41 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import matter from "gray-matter";
 import { chunkMarkdownByHeading, chunkQaPairs, chunkStructuredSections } from "../chunking.js";
 import { INAYA_KNOWLEDGE_BASE } from "../../inaya-knowledge.js";
 import { faqs } from "../../../app/faq/page.js";
+
+// Official Documentation Platform SOW -- content/docs/**/*.md, added as a
+// new source the same shape as every other one here (real content this
+// app already ships, nothing authored just for ingestion). See
+// docs/architecture/information-architecture.md for why this lives in a
+// new content/docs/ directory rather than the internal docs/ one.
+function walkContentDocs(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkContentDocs(full));
+    else if (entry.name.endsWith(".md")) out.push(full);
+  }
+  return out;
+}
+
+function docsPlatformSources() {
+  const dir = path.join(process.cwd(), "content", "docs");
+  return walkContentDocs(dir).map((file) => {
+    const { data, content } = matter(fs.readFileSync(file, "utf8"));
+    const url = data.product === "Developer Platform" ? `/docs/developer/${data.slug}` : `/docs/products/${data.slug}`;
+    return {
+      sourceId: `docs-platform:${data.slug}`,
+      domain: "docs",
+      adapter: () => chunkMarkdownByHeading(`# ${data.title}\n\n${content}`, {
+        sourceId: `docs-platform:${data.slug}`, domain: "docs", category: data.product, version: data.status, url,
+      }),
+    };
+  });
+}
 
 function readPublicFile(relativePath) {
   try {
@@ -95,4 +127,5 @@ export const DOCS_SOURCES = [
     domain: "docs",
     adapter: () => fundraisingDocAdapter(doc),
   })),
+  ...docsPlatformSources(),
 ];
