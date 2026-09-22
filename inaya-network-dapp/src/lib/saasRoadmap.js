@@ -459,6 +459,24 @@ export const ROADMAP_STAGES = [
     notes:
       "Live-verified: 35 automated tests across the storage resource, snapshot, backup policy, and Digital Twin integration layers, all passing against the real database and real S3-compatible storage write path, plus the Terraform provider's full create/read/update/delete cycle run against a real local Inaya deployment with real MongoDB-backed state — not a dry run. That testing caught and fixed a real bug (the provider's computed health/created_at fields were briefly blank immediately after creation, before the next refresh). Not built: fast/accelerated restore (no backend primitive exists to make one honestly faster than a normal restore), real physical block-volume attach or real multi-client NFS mounting (structurally impossible without a compute layer Inaya doesn't have), and live interop validation against real IBM Cloud Object Storage (blocked on IBM's own account sign-up, not on anything left to build). The Terraform provider is not yet published to the Terraform Registry — it runs from a local build today.",
   },
+  {
+    number: 17,
+    title: "Official Documentation Platform — Product Guides, API/SDK/CLI Reference, Search, and an OpenAPI Spec",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "An IBM Cloud Docs-inspired official documentation portal at inayanetwork.com/docs — real product guides, a hand-verified API/SDK/CLI reference, a real keyword search, release notes, and a downloadable OpenAPI spec, all built directly from the actual shipped implementation rather than aspirational copy.",
+    securityStatement: "Every page's status badge (Live/Testnet/Beta/Planned/Deprecated) is enforced by the content loader itself — a page with a missing or invalid status fails to build rather than silently defaulting to a reassuring label.",
+    features: [
+      "Product Guides, API Reference (all 11 public/v1 endpoints), SDK Reference (all 5 published npm packages), and CLI Reference (all 3 published CLI tools) — every fact hand-verified against the real route files, package.json/README content, and exports, not generated or assumed",
+      "A real markdown+frontmatter content engine with automatic table-of-contents generation, explicit related-doc cross-references, and a content loader that fails loudly on a missing field or duplicate slug rather than rendering a broken page",
+      "A real client-side keyword search, kept deliberately separate from — and linking out to — the existing semantic AI Docs Assistant, which the new content was wired into as a new RAG source rather than a second AI stack",
+      "A downloadable OpenAPI 3.0 spec generated directly from the same verified API reference data (no OpenAPI spec existed anywhere in this codebase before), validated with a real OpenAPI parser",
+      "Release Notes rendered directly from this same roadmap's own stage data, so it can never drift into a second, hand-maintained changelog",
+      "The site's first-ever \"Documentation\" navigation entry point — confirmed absent anywhere before this",
+    ],
+    notes:
+      "Live-verified: 10 automated tests (frontmatter/slug/status validation, cross-reference integrity, and an OpenAPI-spec-matches-reference-data regression guard), a clean production build, and real browser verification including a genuine mobile-layout bug found and fixed (a search button overlapping its own placeholder text at narrow widths). Shipping this also surfaced and fixed an unrelated, pre-existing production issue: Vercel deployments had been silently failing for roughly 20 hours because a sibling local package's own dependencies were never installed in that environment — fixed with a postinstall hook, verified by simulating a clean install before shipping. Not built: a Tutorials/Solutions/FAQ-as-a-system content type, API/SDK/CLI drift checking against the live route files, a full CI validation/accessibility/SEO suite, an admin/governance interface, and an API playground — the SOW's own 15-phase plan spans well beyond this pass, and this stage covers Phases 0–3 plus slices of 4–7.",
+  },
 ];
 
 export const VISION = {

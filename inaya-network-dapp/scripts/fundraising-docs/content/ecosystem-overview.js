@@ -622,5 +622,33 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      title: "Official Documentation Platform — inayanetwork.com/docs (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A real, official documentation site, in the spirit of IBM Cloud's own docs portal: product guides, a full API/SDK/CLI reference, search, release notes, and a downloadable machine-readable spec — every claim on it verified against the actual product, not aspirational copy.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Product guides, written in plain language, covering storage, the storage control plane, Inaya Drive, Business Workspace, and Security.",
+            "A complete reference for developers — every public API endpoint, all five published developer packages, and every command across our three command-line tools, documented straight from the real thing, not written from memory.",
+            "Real search, plus a link to the existing AI Docs Assistant for anyone who'd rather just ask a question in plain English.",
+            "Release notes that can never go stale, because they're generated from the same roadmap data the public roadmap page itself uses — one source of truth, not two lists someone has to remember to keep in sync.",
+            "A downloadable technical specification of the API (the industry-standard \"OpenAPI\" format), so a developer's tools can talk to Inaya's API automatically instead of someone typing it all in by hand.",
+          ],
+        },
+        {
+          type: "note",
+          label: "A bonus catch along the way.",
+          text: "Building this also turned up a real, unrelated problem: our live website had actually stopped picking up updates about 20 hours earlier, silently, because of a packaging issue with one internal tool. That's now fixed and confirmed working — every update from this stretch of work, including this documentation site itself, is live on the real site.",
+        },
+        {
+          type: "note",
+          text: "Honestly scoped: this is the first phase of a much larger vision for the documentation site — it doesn't yet have guided tutorials, a full library of solved use cases, or a formal build-checking pipeline. What's live today is real and tested, not a placeholder. Full writeup: docs/official-documentation-platform-report.md.",
+        },
+      ],
+    },
   ],
 };

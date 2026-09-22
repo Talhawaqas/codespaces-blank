@@ -1577,5 +1577,37 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      title: "Official Documentation Platform (IBM Cloud Docs-Inspired) — inayanetwork.com/docs (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A mandatory Phase 0 audit (docs/audit/documentation-inventory.md) confirmed no /docs, /help, or KB route existed anywhere in this codebase, no OpenAPI spec existed, and no MDX tooling was in use — but a real, production RAG pipeline already grounded three AI assistants. This SOW builds a real documentation platform on that foundation rather than a second AI stack: Phases 0–3 plus slices of 4–7 of the SOW's own 15-phase plan.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "Detail"],
+          rows: [
+            ["New: content/docs/**/*.md + src/lib/docsContent.js", "A new content directory, deliberately separate from the internal, SOW-report-only docs/ directory (every file sampled there self-identifies as an internal architecture doc, none RAG-ingested, none public). The loader (gray-matter, the one new small dependency) validates every required frontmatter field and rejects a duplicate slug by throwing, not by best-effort rendering; a table of contents is derived from real ## / ### headings, never hand-maintained separately."],
+            ["New: src/app/docs/** (Next.js App Router), src/components/docs/**", "Homepage (real client-side search + four working destination cards, no card linking to an empty page), product guide pages, developer pages, and a DocsShell client component scoping the light/dark theme toggle to a local wrapper div rather than the document root, so it can never affect any other page on the site (tailwind.config.js's darkMode:\"class\" was added, previously unset)."],
+            ["New: src/lib/docsApiReference.js, docsSdkReference.js, docsCliReference.js", "Hand-authored directly from the Phase 0 audit — all 11 real /api/public/v1/** routes, all 5 published npm packages, and all 3 published CLI tools' real commands. No OpenAPI spec or route-annotation system existed to generate from, so this reference data is the authoritative source for both the rendered pages and, as of this pass, the generated OpenAPI spec."],
+            ["New: scripts/docs/generate-openapi.mjs → public/openapi.json", "Generates a real OpenAPI 3.0.3 document directly from docsApiReference.js (path parameters auto-derived from each route's own {placeholder} syntax, query/body parameters mapped from the existing reference data). Validated with @apidevtools/swagger-parser; a test asserts the spec's paths/operations/security/path-params can never drift from the reference data the rendered pages use."],
+            ["New: src/app/docs/release-notes/page.js", "Renders directly from src/lib/saasRoadmap.js's existing ROADMAP_STAGES rather than a second, hand-authored changelog — the same source of truth /business/roadmap itself renders from, so the two can never disagree."],
+            ["New: content/docs/developer/contributing.md", "Honestly documents that no formal CI/review gate exists yet for this content, rather than implying one does."],
+            ["Reused, not rebuilt: src/lib/rag/sources/docsSources.js", "Gained one new docs-platform:* source per content/docs/**/*.md file, the exact same shape as the 15 existing fundraising:* sources — the existing Docs AI Assistant (POST /api/ai/chat) now retrieves from this new content on its next reingest cycle, without a second AI stack."],
+            ["Test coverage", "10 tests total: docs-content.test.mjs (9 — unique slugs, required-field/status validation, relatedDocs cross-reference integrity, heading extraction, search-index shape, product grouping) and docs-openapi.test.mjs (1 — the spec-matches-reference-data regression guard). A clean npm run build with every /docs route statically generated, plus real browser verification (including a genuine mobile bug found and fixed — a search button overlapping its own placeholder text at narrow widths)."],
+          ],
+        },
+        {
+          type: "note",
+          label: "An unrelated, pre-existing production bug found and fixed along the way.",
+          text: "Shipping this surfaced that Vercel deployments had been failing silently for roughly 20 hours (confirmed via `vercel ls`/`vercel inspect --logs`) — cloudBackupScheduler.js imports ../inaya-migration-agent, a file: dependency, but Vercel only ever ran `npm install` inside inaya-network-dapp, never inside that sibling package, so its own @aws-sdk/client-s3 / @azure/storage-blob dependencies were never present in that environment (it worked locally only because that directory's node_modules had been populated by hand at some point). Fixed with a postinstall hook, verified by moving the local node_modules aside to simulate a fresh clone before shipping — not just assumed fixed.",
+        },
+        {
+          type: "note",
+          text: "Deliberately not built this pass: a Tutorials/Solutions/FAQ-as-a-system content type (the schema/renderer support them; no content exists yet), API/SDK/CLI drift checking against the live route files (the reference data is accurate today but nothing detects future divergence), a full CI validation/accessibility/SEO suite, an admin/governance interface, an API playground, and the docs.inayanetwork.com subdomain (ships at /docs on the existing deployment instead, which the SOW itself names as an acceptable fallback). Full writeup: docs/official-documentation-platform-report.md, docs/audit/documentation-inventory.md, and docs/architecture/information-architecture.md.",
+        },
+      ],
+    },
   ],
 };

@@ -3272,6 +3272,11 @@ export default function Home() {
         { text: "Storage Snapshot Engine — genuinely incremental point-in-time snapshots built on existing S3-compatible object versioning, real copy-forward restore, consistency groups with an honestly disclosed non-atomic capture boundary, cross-region copy, and cross-org sharing that fails closed on wrong org/revocation/expiry", done: true },
         { text: "Automated Storage Backup Policy Engine — tag-selector-scoped policies, daily/weekly/monthly/long-term plans, real retention enforcement with every deletion audited, health status shared with the existing Cloud Backup Scheduler", done: true },
         { text: "terraform-provider-inaya — a real Go-based Terraform provider (storage resources, snapshots, backup policies/plans) tested end-to-end against a live local deployment; not yet published to the Terraform Registry", done: true },
+        // Added September 2026 — the Official Documentation Platform
+        // (IBM Cloud Docs-inspired), live at inayanetwork.com/docs.
+        // Shipped this cycle, not previously reflected here.
+        { text: "Official Documentation Platform — inayanetwork.com/docs, with real Product Guides, an API/SDK/CLI reference hand-verified against the actual routes/packages, a client-side search, Release Notes, and a downloadable OpenAPI spec", done: true },
+        { text: "Fixed a pre-existing production deployment failure — Vercel builds had been silently failing for ~20 hours before this was found and fixed with a postinstall dependency-install hook", done: true },
       ],
     },
     {

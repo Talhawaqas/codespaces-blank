@@ -772,6 +772,27 @@ export const completeFeatureGuide = {
     },
     {
       number: "46",
+      title: "The Official Documentation Platform",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            { heading: "Open the documentation site.", body: "Go to inayanetwork.com/docs, or select \"Documentation\" from the main navigation's \"Developers\" group." },
+            { heading: "Browse Product Guides.", body: "Read real, verified guides for Storage, the Storage Control Plane, Inaya Drive, Business Workspace, and Security — organized by product." },
+            { heading: "Look up the API Reference.", body: "Every public/v1 endpoint, with authentication, parameters, and response shapes — or download the full OpenAPI specification for use in Postman, Insomnia, or a code generator." },
+            { heading: "Look up the SDK and CLI Reference.", body: "All 5 published npm packages and every command across all 3 published CLI tools, documented straight from their real exports and commands." },
+            { heading: "Search or ask.", body: "Use the built-in keyword search, or ask the AI Docs Assistant on the main site a question in plain language — it's grounded in this same documentation and cites the pages it draws from." },
+            { heading: "Check Release Notes.", body: "Go to inayanetwork.com/docs/release-notes for what shipped, stage by stage — rendered directly from the same roadmap data the public roadmap page uses, so the two can never disagree." },
+          ],
+        },
+        {
+          type: "note",
+          text: "Honestly scoped: this first phase doesn't yet include guided tutorials, a solutions library, or a formal contribution/review pipeline — what's live today is real, tested, and verified against the actual shipped product rather than aspirational copy.",
+        },
+      ],
+    },
+    {
+      number: "47",
       title: "Network Stats, Status, and Getting Help",
       blocks: [
         {

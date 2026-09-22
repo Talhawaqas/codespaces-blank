@@ -888,5 +888,37 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      title: "Official Documentation Platform Reference — inayanetwork.com/docs (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Preceded by a published, mandatory Phase 0 audit (docs/audit/documentation-inventory.md) and a Phase 1 information-architecture doc (docs/architecture/information-architecture.md) — both cited by file path throughout the code below, not just in prose.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["New: src/lib/docsContent.js: loadAllDocs, getDocBySlug, listDocsByProduct, listAllProducts, buildSearchIndex, resolveRelatedDocs, extractHeadings/slugifyHeading (internal)", "Server-only (node:fs), reads content/docs/**/*.md via gray-matter. loadAllDocs() throws on any of REQUIRED_FIELDS (slug/title/description/product/category/contentType/status) missing, an invalid status outside VALID_STATUSES, or a duplicate slug — a hard failure, not a best-effort skip. extractHeadings() derives the TOC from real ## / ### lines via regex, never hand-maintained separately. buildSearchIndex() deliberately omits full page content from its return shape (verified by test/docs-content.test.mjs) so the client-side search bundle never ships full markdown bodies."],
+            ["New: src/lib/docsApiReference.js, docsSdkReference.js, docsCliReference.js", "Plain exported arrays (API_ENDPOINTS, SDK_PACKAGES, CLI_TOOLS), each entry hand-verified against the real route file / package.json+README / bin script during the Phase 0 audit. No generation step reads the live route files yet — this is the one documented, deferred drift-checking gap."],
+            ["New: src/app/docs/layout.js, page.js, products/[slug]/page.js, developer/[slug]/page.js, api/page.js, api/[slug]/page.js, sdk/page.js, sdk/[slug]/page.js, cli/page.js, cli/[slug]/page.js, search/page.js, release-notes/page.js", "generateStaticParams() on every dynamic route pre-renders all real slugs at build time (confirmed in the build output as ● SSG entries, not ƒ dynamic). Each detail page calls notFound() for an unknown slug rather than rendering an empty shell."],
+            ["New: src/components/docs/DocsShell.js, MarkdownRenderer.js, Breadcrumbs.js, TableOfContents.js, StatusBadge.js, RelatedDocs.js, DocsSearchClient.js", "DocsShell scopes the dark/light theme to a `dark` class on its own wrapper div (never document root), reading/writing a inaya-docs-theme localStorage key inside try/catch per this codebase's established browser-storage discipline. MarkdownRenderer wraps the already-installed react-markdown/remark-gfm (previously used only for the AI chat widget) with a CodeBlock component adding a real copy-to-clipboard button and per-language label. DocsSearchClient ranks title matches (score 10) above tag (6), description (4), and heading (3) matches — a real, if simple, relevance ordering, not a linear scan returned in file order."],
+            ["New: scripts/docs/generate-openapi.mjs", "buildOperation() auto-derives path parameters from each endpoint's own {placeholder} syntax in docsApiReference.js's path field (pathParams()), separately maps GET query parameters (queryParams()) and POST/PATCH body parameters into a requestBody schema (requestBodySchema()) from the same params array's free-text `in` field. Every operation declares security: [{bearerAuth: []}] and a standard 401/403/404 response set. npm run docs:openapi regenerates public/openapi.json on demand; it is not wired into the Next.js build itself, so a docsApiReference.js edit requires a manual regenerate today (a real, documented gap, not automatic sync)."],
+            ["New: src/app/docs/release-notes/page.js", "Imports ROADMAP_STAGES/STATUS_LABELS directly from src/lib/saasRoadmap.js — sorts by stage number descending, maps each stage's own status string (LIVE/TESTNET/BETA/PLANNED) through STATUS_TO_DOCS_STATUS into the same StatusBadge component every other /docs page uses, and renders each stage's existing features/securityStatement/notes fields verbatim rather than re-deriving or summarizing them."],
+            ["New: src/lib/rag/sources/docsSources.js: docsPlatformSources(), walkContentDocs() (internal)", "Walks content/docs/ the same way docsContent.js's loader does (a small, deliberate duplication rather than a shared cross-module import, since the two have different failure semantics — the loader throws on bad frontmatter, the RAG adapter should not take down ingestion for one malformed page). Prepends a synthetic `# ${title}` line before calling chunkMarkdownByHeading(), since content/docs/**/*.md bodies start at ## Overview with no H1 of their own, and chunkMarkdownByHeading() falls back to sourceId as the title when no H1 is found."],
+            ["Test coverage", "test/docs-content.test.mjs (9 tests): unique slugs, every required field + valid status present across every real file, getDocBySlug resolution including the null case, every relatedDocs entry resolving to a real page, heading extraction, search-index shape (including the explicit content-leakage negative assertion), product grouping, and a gray-matter parse smoke test independent of the loader. test/docs-openapi.test.mjs (1 test): runs the real generator via child_process.execSync, then asserts the spec's path set exactly equals API_ENDPOINTS' paths, every declared method has a security block, and every {placeholder} in a path has a matching path parameter — a genuine regression guard against the spec silently drifting from the rendered reference pages, not just a smoke test that the generator doesn't crash."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A pre-existing, unrelated production bug found and fixed during this pass.",
+          text: "`vercel ls`/`vercel inspect --logs` showed every Production deployment failing for the prior ~20 hours with `Module not found: Can't resolve '@aws-sdk/client-s3'` / `'@azure/storage-blob'`, traced to `../inaya-migration-agent/src/adapters/{aws,azure}.js` — a `file:../inaya-migration-agent` dependency whose own `package.json` dependencies were never installed by Vercel, since Vercel's install step only ever runs inside `inaya-network-dapp`. It worked locally purely by accident (that directory's `node_modules` had been populated by hand at some earlier point). Fixed with a `postinstall` script (`npm install --prefix ../inaya-migration-agent --omit=dev --no-audit --no-fund || echo ...`, non-fatal by design so a checkout without that sibling directory still installs cleanly) — verified by moving the local `inaya-migration-agent/node_modules` aside to simulate Vercel's fresh clone, confirming the hook re-populates it, and running a full `npm run build` before shipping, not just assuming the fix worked.",
+        },
+        {
+          type: "note",
+          text: "Deliberately not built: API/SDK/CLI drift detection against the live route files/package exports (the reference data is accurate as of this audit but nothing re-verifies it on a schedule); a Tutorials/Solutions/FAQ-as-a-system content type; wiring generate-openapi.mjs into the Next.js build pipeline itself; a full CI validation/accessibility/SEO test suite; an admin/governance interface for this content; and an API playground. Full writeup: docs/official-documentation-platform-report.md.",
+        },
+      ],
+    },
   ],
 };
