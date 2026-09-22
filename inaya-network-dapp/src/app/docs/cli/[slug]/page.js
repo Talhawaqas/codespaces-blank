@@ -29,6 +29,15 @@ export default function CliToolPage({ params }) {
         <code>{tool.install}</code>
       </pre>
 
+      {tool.guideUrl && (
+        <a
+          href={tool.guideUrl}
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#0B63E5] dark:text-[#5AA9FF] border border-[#0B63E5]/30 dark:border-[#5AA9FF]/30 rounded-md px-3 py-1.5 hover:bg-[#0B63E5]/5 mb-6"
+        >
+          Full step-by-step guide (PDF)
+        </a>
+      )}
+
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">Commands</h2>
       <div className="space-y-3">
         {tool.commands.map((c) => (

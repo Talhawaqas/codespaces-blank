@@ -5,7 +5,7 @@ import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
   title: "CLI Reference",
-  description: "Every real command across Inaya's three published CLI tools.",
+  description: "Every real command across Inaya's published CLI tools.",
 };
 
 export default function CliIndexPage() {
@@ -13,7 +13,7 @@ export default function CliIndexPage() {
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10">
       <Breadcrumbs items={[{ label: "Docs", href: "/docs" }, { label: "CLI Reference" }]} />
       <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">CLI Reference</h1>
-      <p className="text-slate-500 dark:text-slate-400 mb-6">Three published command-line tools.</p>
+      <p className="text-slate-500 dark:text-slate-400 mb-6">{CLI_TOOLS.length} published command-line tools.</p>
       <div className="grid sm:grid-cols-2 gap-4">
         {CLI_TOOLS.map((tool) => (
           <Link

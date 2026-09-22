@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { loadAllDocs } from "../../lib/docsContent.js";
+import { SDK_PACKAGES } from "../../lib/docsSdkReference.js";
+import { CLI_TOOLS } from "../../lib/docsCliReference.js";
 import StatusBadge from "../../components/docs/StatusBadge.js";
 
 export const metadata = {
@@ -7,15 +9,14 @@ export const metadata = {
   description: "Search Inaya documentation — product guides, API reference, SDK reference, and CLI reference for the whole Inaya Network platform.",
 };
 
-const PRIMARY_CARDS = [
-  { href: "/docs/products/storage", title: "Product Guides", description: "Storage, Business Workspace, Security, and more — organized by product." },
-  { href: "/docs/api", title: "API Reference", description: "Every public/v1 endpoint — auth, parameters, responses." },
-  { href: "/docs/sdk", title: "SDK Reference", description: "All 5 published npm packages, documented from their real exports." },
-  { href: "/docs/cli", title: "CLI Reference", description: "inaya, create-inaya-dapp, and inaya-node-daemon — every real command." },
-];
-
 export default function DocsHomePage() {
   const docs = loadAllDocs();
+  const primaryCards = [
+    { href: "/docs/products/storage", title: "Product Guides", description: "Storage, Business Workspace, Security, and more — organized by product." },
+    { href: "/docs/api", title: "API Reference", description: "Every public/v1 endpoint — auth, parameters, responses." },
+    { href: "/docs/sdk", title: "SDK Reference", description: `All ${SDK_PACKAGES.length} published npm packages, documented from their real exports.` },
+    { href: "/docs/cli", title: "CLI Reference", description: `All ${CLI_TOOLS.length} published CLI tools — every real command.` },
+  ];
   const recentlyUpdated = [...docs].sort((a, b) => (b.lastVerifiedAt || "").localeCompare(a.lastVerifiedAt || "")).slice(0, 5);
 
   return (
@@ -49,7 +50,7 @@ export default function DocsHomePage() {
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PRIMARY_CARDS.map((card) => (
+          {primaryCards.map((card) => (
             <Link
               key={card.href}
               href={card.href}

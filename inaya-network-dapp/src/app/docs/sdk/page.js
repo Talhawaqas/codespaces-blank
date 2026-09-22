@@ -5,7 +5,7 @@ import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
   title: "SDK Reference",
-  description: "All 5 published Inaya npm packages, documented from their real exports and README content.",
+  description: "Every published Inaya SDK package, documented from its real exports and README content.",
 };
 
 export default function SdkIndexPage() {
@@ -13,7 +13,7 @@ export default function SdkIndexPage() {
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10">
       <Breadcrumbs items={[{ label: "Docs", href: "/docs" }, { label: "SDK Reference" }]} />
       <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">SDK Reference</h1>
-      <p className="text-slate-500 dark:text-slate-400 mb-6">Five packages, all confirmed published and live on the public npm registry.</p>
+      <p className="text-slate-500 dark:text-slate-400 mb-6">{SDK_PACKAGES.length} packages, all confirmed published and live on the public npm registry. See also the <a href="/docs/cli" className="text-[#0B63E5] dark:text-[#5AA9FF] hover:underline">CLI Reference</a> for command-line tools.</p>
       <div className="grid sm:grid-cols-2 gap-4">
         {SDK_PACKAGES.map((pkg) => (
           <Link
