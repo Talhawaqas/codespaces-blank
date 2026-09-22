@@ -12,7 +12,16 @@ export default function ApiIndexPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10">
       <Breadcrumbs items={[{ label: "Docs", href: "/docs" }, { label: "API Reference" }]} />
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">API Reference</h1>
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">API Reference</h1>
+        <a
+          href="/openapi.json"
+          className="text-sm font-medium text-[#0B63E5] dark:text-[#5AA9FF] border border-[#0B63E5]/30 dark:border-[#5AA9FF]/30 rounded-md px-3 py-1.5 hover:bg-[#0B63E5]/5 shrink-0"
+          download
+        >
+          Download OpenAPI spec
+        </a>
+      </div>
       <p className="text-slate-500 dark:text-slate-400 mb-6">{API_AUTH_NOTE}</p>
       <div className="rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800">
         {API_ENDPOINTS.map((ep) => (

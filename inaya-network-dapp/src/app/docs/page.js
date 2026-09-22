@@ -93,6 +93,12 @@ export default function DocsHomePage() {
               Prefer to ask a question in plain language? The <Link href="/" className="text-[#0B63E5] dark:text-[#5AA9FF] hover:underline">AI Docs Assistant</Link> on the main site is grounded in Inaya&rsquo;s own documentation and cites the pages it draws from.
             </p>
           </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mt-8 mb-3">More</h2>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link href="/docs/release-notes" className="text-[#0B63E5] dark:text-[#5AA9FF] hover:underline">Release Notes</Link>
+            <Link href="/openapi.json" className="text-[#0B63E5] dark:text-[#5AA9FF] hover:underline">OpenAPI spec</Link>
+            <Link href="/docs/developer/contributing" className="text-[#0B63E5] dark:text-[#5AA9FF] hover:underline">Contributing to these docs</Link>
+          </div>
         </div>
       </section>
     </div>

@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/docs/api", label: "API" },
   { href: "/docs/sdk", label: "SDK" },
   { href: "/docs/cli", label: "CLI" },
+  { href: "/docs/release-notes", label: "Release Notes" },
 ];
 
 /** Theme is scoped to a `dark` class on this shell's own root element, not

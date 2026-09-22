@@ -1,0 +1,1031 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Inaya Network Public API",
+    "version": "v1",
+    "description": "Every public/v1 request needs Authorization: Bearer <api key>. An org owner/admin issues a key from the Business Workspace's API Keys settings (src/app/api/orgs/api-keys/route.js), or Terraform can be pointed at one via INAYA_API_KEY. The key resolves to exactly one organization server-side (requireApiKey() in src/lib/api-keys.js) -- no request body or query parameter can ever point it at a different org."
+  },
+  "servers": [
+    {
+      "url": "https://app.inaya.network",
+      "description": "Production"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An Inaya org API key. See /docs/api."
+      }
+    }
+  },
+  "paths": {
+    "/api/public/v1/evidence": {
+      "get": {
+        "summary": "Fetch the evidence trail for one business record.",
+        "operationId": "get_evidence",
+        "tags": [
+          "/api/public/v1/evidence"
+        ],
+        "parameters": [
+          {
+            "name": "recordType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The record's type, e.g. INVOICE, PURCHASE_ORDER."
+          },
+          {
+            "name": "recordId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The record's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record's evidence trail (getEvidenceTrail()) -- the same tamper-evident audit chain data the Business Workspace's own Audit Trail view reads.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/audit/verify": {
+      "get": {
+        "summary": "Verify the calling organization's full audit-chain integrity.",
+        "operationId": "get_audit-verify",
+        "tags": [
+          "/api/public/v1/audit"
+        ],
+        "responses": {
+          "200": {
+            "description": "A pass/fail integrity result over the org's entire audit chain (verifyOrgEvidenceIntegrity()).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/permissions/check": {
+      "get": {
+        "summary": "Check whether a named permission gate is enabled for the calling organization.",
+        "operationId": "get_permissions-check",
+        "tags": [
+          "/api/public/v1/permissions"
+        ],
+        "parameters": [
+          {
+            "name": "gate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One of 17 gate names, e.g. canManageFinance, canAccessAudit, canManageGovernment -- see orgGates.js for the full list."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ gate, allowed }. Note: an API key always resolves a synthetic owner-level membership, so this checks that a capability exists and is enabled for the org, not a specific human's individual role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/storage/resources": {
+      "get": {
+        "summary": "List or create storage resources (volumes / file shares).",
+        "operationId": "get_storage-resources-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "\"volume\" or \"fileShare\"."
+          },
+          {
+            "name": "tag.<key>",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Any number of tag.<key>=<value> params filter by tag."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { resources: [...] }. POST: { resource: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List or create storage resources (volumes / file shares).",
+        "operationId": "post_storage-resources-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { resources: [...] }. POST: { resource: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  },
+                  "name": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  },
+                  "region": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  },
+                  "capacity": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  },
+                  "performanceProfile": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  },
+                  "tags": {
+                    "description": "Creates a resource -- see the Storage Control Plane product guide for the full field meanings."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/storage/resources/{resourceId}": {
+      "get": {
+        "summary": "Read, expand the capacity of, or delete one storage resource.",
+        "operationId": "get_storage-resource-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The resourceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { resource }. PATCH: { requestedGB }. DELETE: { deleted: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Read, expand the capacity of, or delete one storage resource.",
+        "operationId": "patch_storage-resource-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The resourceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { resource }. PATCH: { requestedGB }. DELETE: { deleted: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "description": "action must be \"expand\"; capacity is increase-only, a decrease is rejected with a 400."
+                  },
+                  "newCapacityGB": {
+                    "description": "action must be \"expand\"; capacity is increase-only, a decrease is rejected with a 400."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Read, expand the capacity of, or delete one storage resource.",
+        "operationId": "delete_storage-resource-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The resourceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { resource }. PATCH: { requestedGB }. DELETE: { deleted: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/storage/snapshots": {
+      "get": {
+        "summary": "List or create point-in-time snapshots of a storage resource.",
+        "operationId": "get_snapshots-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The source inaya_storage_resource id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { snapshots: [...] }. POST: { snapshot: {...} } -- a real, incremental, independently-verifiable capture; see the Storage Control Plane guide.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List or create point-in-time snapshots of a storage resource.",
+        "operationId": "post_snapshots-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { snapshots: [...] }. POST: { snapshot: {...} } -- a real, incremental, independently-verifiable capture; see the Storage Control Plane guide.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/storage/snapshots/{snapshotId}": {
+      "get": {
+        "summary": "Read or delete one snapshot.",
+        "operationId": "get_snapshot-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "snapshotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The snapshotId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { snapshot }. DELETE: { deleted: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Read or delete one snapshot.",
+        "operationId": "delete_snapshot-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "snapshotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The snapshotId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { snapshot }. DELETE: { deleted: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/storage/backup-policies": {
+      "get": {
+        "summary": "List or create a tag-selector-scoped automated backup policy.",
+        "operationId": "get_backup-policies-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { policies: [...] }. POST: { policy: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List or create a tag-selector-scoped automated backup policy.",
+        "operationId": "post_backup-policies-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { policies: [...] }. POST: { policy: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "tagSelector is a {key: value} map; notificationPolicy is \"onFailure\" (default), \"always\", or \"never\"."
+                  },
+                  "tagSelector": {
+                    "description": "tagSelector is a {key: value} map; notificationPolicy is \"onFailure\" (default), \"always\", or \"never\"."
+                  },
+                  "notificationPolicy": {
+                    "description": "tagSelector is a {key: value} map; notificationPolicy is \"onFailure\" (default), \"always\", or \"never\"."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/storage/backup-policies/{policyId}": {
+      "get": {
+        "summary": "Read, pause/resume, or delete one backup policy.",
+        "operationId": "get_backup-policy-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The policyId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { policy }. PATCH: { policy }. DELETE: { deleted: true } (soft delete).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Read, pause/resume, or delete one backup policy.",
+        "operationId": "patch_backup-policy-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The policyId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { policy }. PATCH: { policy }. DELETE: { deleted: true } (soft delete).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "description": "true to resume, false to pause."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Read, pause/resume, or delete one backup policy.",
+        "operationId": "delete_backup-policy-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The policyId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { policy }. PATCH: { policy }. DELETE: { deleted: true } (soft delete).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/storage/backup-plans": {
+      "get": {
+        "summary": "List or create a schedule + retention rule under a backup policy.",
+        "operationId": "get_backup-plans-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter to one policy's plans."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { plans: [...] } (each with a computed health field). POST: { plan: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List or create a schedule + retention rule under a backup policy.",
+        "operationId": "post_backup-plans-list-create",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { plans: [...] } (each with a computed health field). POST: { plan: {...} }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "policyId": {
+                    "description": "frequency is one of daily/weekly/monthly/longTerm."
+                  },
+                  "frequency": {
+                    "description": "frequency is one of daily/weekly/monthly/longTerm."
+                  },
+                  "retentionCount": {
+                    "description": "frequency is one of daily/weekly/monthly/longTerm."
+                  },
+                  "priority": {
+                    "description": "frequency is one of daily/weekly/monthly/longTerm."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/storage/backup-plans/{planId}": {
+      "get": {
+        "summary": "Read or delete one backup plan.",
+        "operationId": "get_backup-plan-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The planId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { plan } (with health). DELETE: { deleted: true } (soft delete).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Read or delete one backup plan.",
+        "operationId": "delete_backup-plan-detail",
+        "tags": [
+          "/api/public/v1/storage"
+        ],
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The planId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { plan } (with health). DELETE: { deleted: true } (soft delete).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "node --env-file=.env.local --experimental-test-module-mocks --test --test-timeout=60000 test/*.test.mjs",
     "test:ui": "jest",
+    "docs:openapi": "node scripts/docs/generate-openapi.mjs",
     "postinstall": "npm install --prefix ../inaya-migration-agent --omit=dev --no-audit --no-fund || echo \"postinstall: ../inaya-migration-agent not present or its install failed -- skipping (cloudBackupScheduler.js's build will fail without it, but this must never hard-fail an install that doesn't need it, e.g. a fresh clone of just this repo)\""
   },
   "dependencies": {
