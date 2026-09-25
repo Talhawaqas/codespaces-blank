@@ -4,3 +4,12 @@ node_modules/
 
 .vercel
 .env*
+
+# Compiled build artifacts (source is tracked, binaries are not)
+jdbc-driver/target/
+odbc-driver/*.dll
+odbc-driver/*.a
+odbc-driver/*.exp
+odbc-driver/*.lib
+odbc-driver/test/*.exe
+odbc-driver/test/*.o

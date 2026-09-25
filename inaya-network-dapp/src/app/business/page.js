@@ -75,6 +75,8 @@ import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import DirectSyncView from "../../components/business/DirectSyncView";
 import StorageControlPlaneView from "../../components/business/StorageControlPlaneView";
+import DataSourcesView from "../../components/business/DataSourcesView";
+import SqlConsoleView from "../../components/business/SqlConsoleView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
 import StorageManagerView from "../../components/business/StorageManagerView";
@@ -739,6 +741,8 @@ const NAV_ITEMS = [
   { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "directSync", label: "DirectSync", icon: "documents", group: "enterprise" },
   { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
+  { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
+  { key: "sqlConsole", label: "SQL Console", icon: "activity", manageOnly: true, group: "enterprise" },
   { key: "s3Compat", label: "S3-Compatible Storage", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
   { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true, group: "enterprise" },
@@ -1032,6 +1036,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
     directSync: { title: "DirectSync", description: "Automatic local-folder backup into Inaya from the desktop app." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
+    dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
+    sqlConsole: { title: "SQL Console", description: "Run read-only SQL against your published virtual tables." },
     s3Compat: { title: "S3-Compatible Storage", description: "Consume this org's storage from AWS S3-compatible tools." },
     executive: { title: "Executive", description: "A leadership-level summary across every department." },
     dataRooms: { title: "Data Rooms", description: "Secure, time-limited document sharing with outside parties." },
@@ -1161,6 +1167,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
           {activeView === "directSync" && <DirectSyncView />}
           {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
+          {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
+          {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
           {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}

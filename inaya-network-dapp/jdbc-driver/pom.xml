@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mainframe & Legacy Data Access + Real-Time SQL Virtualization SOW.
+
+  A real, compilable, testable JDBC 4.2 driver for Inaya's SQL
+  virtualization gateway (see ../src/lib/legacyDataAccess/). It talks to
+  the real /api/public/v1/data-sources/{id}/{query,metadata,health}
+  routes over HTTPS/HTTP with an org API key, the same transport
+  verified live in this SOW's completion report.
+
+  Scope, stated honestly (see README.md): read only (SELECT only, no
+  PreparedStatement parameter binding, no transactions/commit/rollback,
+  no batch updates, no stored procedures), matching the SQL gateway's
+  own phase gating (write-back is not enabled this pass). Every
+  unimplemented java.sql interface method throws
+  SQLFeatureNotSupportedException rather than silently no-opping or
+  returning a fabricated value.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>network.inaya</groupId>
+  <artifactId>inaya-jdbc-driver</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <name>Inaya JDBC Driver</name>
+  <description>Real-time SQL virtualization JDBC driver for the Inaya Mainframe &amp; Legacy Data Access gateway.</description>
+
+  <properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20250107</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>inaya-jdbc-driver-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

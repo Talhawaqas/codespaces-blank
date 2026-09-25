@@ -66,6 +66,8 @@ import {
   canAccessSigning,
   canManageStorage,
   canAccessStorage,
+  canManageDataSources,
+  canAccessDataSources,
   canManageEscrow,
   canAccessEscrow,
   canManageAttestations,
@@ -79,6 +81,7 @@ export {
   canManageFinancialEntities, canAccessFinancialEntities, isFundTeamMember,
   canManageGovernment, canAccessGovernment, isCitizenRecordAssignee,
   canManageSigning, canAccessSigning, canManageStorage, canAccessStorage,
+  canManageDataSources, canAccessDataSources,
   canManageEscrow, canAccessEscrow, canManageAttestations, canAccessAttestations,
 };
 
@@ -474,6 +477,24 @@ export async function getOrgCollections() {
     storageBackupPolicies: db.collection("storageBackupPolicies"),
     storageBackupPlans: db.collection("storageBackupPlans"),
     storageBackupJobs: db.collection("storageBackupJobs"),
+    // Mainframe & Legacy Data Access + Real-Time SQL Virtualization SOW.
+    // legacyDataSources is the connector registry (one row per configured
+    // source, e.g. a "relational" node:sqlite reference connector --
+    // Adabas/VSAM/IMS/RMS adapters are documented as not built this pass,
+    // see docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md).
+    // legacySourceCredentials holds the envelope-encrypted connection
+    // secret (see legacyDataAccess/credentials.js -- same AES-256-GCM
+    // shape as backupCryptoAndCredentials.js, its own dedicated key).
+    // legacyVirtualSchemas/legacyVirtualTables back the metadata/virtual-
+    // schema engine (Phase 2). legacyQueryLog is a query-shape audit trail
+    // (never full result contents -- SOW Section 22.4) distinct from, and
+    // in addition to, the shared orgActivity log every lifecycle event
+    // here also writes to.
+    legacyDataSources: db.collection("legacyDataSources"),
+    legacySourceCredentials: db.collection("legacySourceCredentials"),
+    legacyVirtualSchemas: db.collection("legacyVirtualSchemas"),
+    legacyVirtualTables: db.collection("legacyVirtualTables"),
+    legacyQueryLog: db.collection("legacyQueryLog"),
   };
 }
 
@@ -522,6 +543,7 @@ export async function ensureOrgIndexes() {
     backupCredentials, backupSchedules, backupRuns, backupObjectState,
     storageResources, storageSnapshots, consistencyGroups, snapshotGrants,
     storageBackupPolicies, storageBackupPlans, storageBackupJobs,
+    legacyDataSources, legacySourceCredentials, legacyVirtualSchemas, legacyVirtualTables, legacyQueryLog,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -791,6 +813,11 @@ export async function ensureOrgIndexes() {
     storageBackupPolicies.createIndex({ orgId: 1, enabled: 1 }),
     storageBackupPlans.createIndex({ policyId: 1 }),
     storageBackupJobs.createIndex({ policyId: 1, startedAt: -1 }),
+    legacyDataSources.createIndex({ orgId: 1, deletedAt: 1 }),
+    legacySourceCredentials.createIndex({ orgId: 1, dataSourceId: 1, revokedAt: 1 }),
+    legacyVirtualSchemas.createIndex({ orgId: 1, dataSourceId: 1 }),
+    legacyVirtualTables.createIndex({ orgId: 1, virtualSchemaId: 1, name: 1 }),
+    legacyQueryLog.createIndex({ orgId: 1, dataSourceId: 1, startedAt: -1 }),
   ]);
 
   indexesEnsured = true;

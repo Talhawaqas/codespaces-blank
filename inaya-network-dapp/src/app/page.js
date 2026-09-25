@@ -3277,6 +3277,15 @@ export default function Home() {
         // Shipped this cycle, not previously reflected here.
         { text: "Official Documentation Platform — inayanetwork.com/docs, with real Product Guides, an API/SDK/CLI reference hand-verified against the actual routes/packages, a client-side search, Release Notes, and a downloadable OpenAPI spec", done: true },
         { text: "Fixed a pre-existing production deployment failure — Vercel builds had been silently failing for ~20 hours before this was found and fixed with a postinstall dependency-install hook", done: true },
+        // Added September 2026 — Mainframe & Legacy Data Access +
+        // Real-Time SQL Virtualization (Software AG CONNX-inspired): a
+        // connector framework, metadata/virtual schema engine, SQL
+        // gateway, a real tested relational reference connector, and a
+        // real JDBC driver. Shipped this cycle, not previously reflected
+        // here.
+        { text: "Mainframe & Legacy Data Access — real connector framework, metadata/virtual schema engine, and SQL gateway (parse/authorize/execute/audit), tested end-to-end against a real relational reference connector; no Adabas/VSAM/IMS/RMS-OpenVMS environment exists yet to validate a real mainframe connector", done: true },
+        { text: "A real JDBC driver (jdbc-driver/) — genuine, compiled java.sql.Driver implementation, tested end-to-end including a standalone-jar smoke test", done: true },
+        { text: "A real ODBC driver (odbc-driver/) — genuine, compiled Win32 DLL exporting 28 standard ODBC entry points, built with MinGW-w64 GCC against the real ODBC SDK, verified end-to-end (19/19 checks); Driver-Manager registration for Excel/Power BI needs local admin rights, documented as an external dependency", done: true },
       ],
     },
     {

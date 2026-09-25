@@ -236,6 +236,14 @@ export function canAccessStorage(membership) {
   return canManageStorage(membership) || membership?.storageRole === "staff";
 }
 
+export function canManageDataSources(membership) {
+  return canManageOrg(membership) || membership?.dataSourceRole === "manager";
+}
+
+export function canAccessDataSources(membership) {
+  return canManageDataSources(membership) || membership?.dataSourceRole === "staff";
+}
+
 export function canManageEscrow(membership) {
   return canManageOrg(membership) || membership?.escrowRole === "manager";
 }

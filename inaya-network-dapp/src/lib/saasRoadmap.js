@@ -477,6 +477,25 @@ export const ROADMAP_STAGES = [
     notes:
       "Live-verified: 10 automated tests (frontmatter/slug/status validation, cross-reference integrity, and an OpenAPI-spec-matches-reference-data regression guard), a clean production build, and real browser verification including a genuine mobile-layout bug found and fixed (a search button overlapping its own placeholder text at narrow widths). Shipping this also surfaced and fixed an unrelated, pre-existing production issue: Vercel deployments had been silently failing for roughly 20 hours because a sibling local package's own dependencies were never installed in that environment — fixed with a postinstall hook, verified by simulating a clean install before shipping. Not built: a Tutorials/Solutions/FAQ-as-a-system content type, API/SDK/CLI drift checking against the live route files, a full CI validation/accessibility/SEO suite, an admin/governance interface, and an API playground — the SOW's own 15-phase plan spans well beyond this pass, and this stage covers Phases 0–3 plus slices of 4–7.",
   },
+  {
+    number: 18,
+    title: "Mainframe & Legacy Data Access — Real-Time SQL Virtualization, a Connector Framework, and Real JDBC + ODBC Drivers",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A Software AG CONNX-inspired live SQL virtualization layer: connect a data source, publish it as a versioned virtual schema, and query it in real time with standard SQL and standard client tooling — without moving the data or replacing the source system. Built as a real connector framework plus a real, tested reference connector, since no Adabas/VSAM/IMS/RMS-OpenVMS environment exists to validate against yet.",
+    securityStatement: "A query can only touch a table that has actually been published as a virtual table for that data source — an unpublished or unauthorized table fails closed with a real 403, never a silent partial result — and write operations are rejected outright rather than silently no-opped, since the gateway is read-only this pass.",
+    features: [
+      "Connector framework/SDK — a pluggable connector interface (isConfigured/testConnection/discoverMetadata/executeQuery/health/capabilities), following the same pattern already established by Inaya's storage pinning providers",
+      "A real relational reference connector (Node's own node:sqlite) — real connection, real metadata discovery, real SQL execution, proven end-to-end since no mainframe environment exists in this environment to validate a real Adabas/VSAM/IMS/RMS connector against",
+      "Metadata & virtual schema engine — real schema discovery with explicit, versioned publishing; a re-import never silently overwrites a previously published schema",
+      "SQL gateway — a real SQL parser, authorization against exactly what's been published, real query execution with row/timeout limits, and every query (succeeded, denied, or failed) audited to the same shared audit trail every other Inaya feature uses",
+      "A real JDBC driver (jdbc-driver/) — a genuine, compiled java.sql.Driver implementation, tested end-to-end including a standalone-jar smoke test with zero other classpath dependencies",
+      "A real ODBC driver (odbc-driver/) — a genuine, compiled Win32 DLL exporting 28 standard ODBC entry points, built with MinGW-w64 GCC against the real ODBC SDK, verified end-to-end (19/19 checks) by loading the compiled DLL directly and driving its real exported functions",
+      "A real REST API (/api/public/v1/data-sources/**) and Business Workspace admin UI (Data Sources + SQL Console tabs)",
+    ],
+    notes:
+      "Live-verified: 11 automated tests for the connector/metadata/gateway layer, 7 automated JDBC integration tests, and 19 automated ODBC driver tests, all run against a real running dev server and real SQLite fixtures, not mocked. Real bugs were found and fixed by this testing: Java's HTTP client defaulted to attempting an HTTP/2 upgrade the dev server crashed on; result-set column order was initially inferred from JSON object key order (which the JSON spec never actually guarantees), fixed by having the gateway emit an explicit ordered column list; and a corrupted dev-server webpack cache caused intermittent 500s during ODBC testing, fixed by clearing the cache and restarting. Not built: Adabas/VSAM/IMS/RMS-OpenVMS connectors (no real vendor environment available — RMS/OpenVMS and Adabas both have a realistic, low-cost path to one; VSAM/IMS require a genuine z/OS environment, a much larger undertaking), write-back, and federated cross-source joins. The ODBC driver's registration with the Windows ODBC Driver Manager (the step Excel/Power BI need) requires local administrator rights not available in this environment — the driver itself was verified for real by loading the compiled DLL directly, bypassing the Driver Manager; see docs/mainframe-legacy-data-access-report.md for the full breakdown.",
+  },
 ];
 
 export const VISION = {
