@@ -74,6 +74,8 @@ import {
   canAccessAttestations,
   canManageNAS,
   canAccessNAS,
+  canManageAiSecurity,
+  canAccessAiSecurity,
 } from "./orgGates.js";
 
 export {
@@ -86,6 +88,7 @@ export {
   canManageDataSources, canAccessDataSources,
   canManageEscrow, canAccessEscrow, canManageAttestations, canAccessAttestations,
   canManageNAS, canAccessNAS,
+  canManageAiSecurity, canAccessAiSecurity,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -504,6 +507,10 @@ export async function getOrgCollections() {
     nasUsers: db.collection("nasUsers"),
     nasBackupRuns: db.collection("nasBackupRuns"),
     nasRecoveryDrills: db.collection("nasRecoveryDrills"),
+    // AI Security Workflow 2026 SOW
+    aiSecurityChecks: db.collection("aiSecurityChecks"),
+    aiSecurityPolicies: db.collection("aiSecurityPolicies"),
+    aiModelRegistry: db.collection("aiModelRegistry"),
   };
 }
 
@@ -554,6 +561,7 @@ export async function ensureOrgIndexes() {
     storageBackupPolicies, storageBackupPlans, storageBackupJobs,
     legacyDataSources, legacySourceCredentials, legacyVirtualSchemas, legacyVirtualTables, legacyQueryLog,
     nasAppliances, nasShares, nasUsers, nasBackupRuns, nasRecoveryDrills,
+    aiSecurityChecks, aiSecurityPolicies, aiModelRegistry,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -834,6 +842,12 @@ export async function ensureOrgIndexes() {
     nasUsers.createIndex({ orgId: 1, applianceId: 1, revokedAt: 1 }),
     nasBackupRuns.createIndex({ orgId: 1, shareId: 1, startedAt: -1 }),
     nasRecoveryDrills.createIndex({ orgId: 1, shareId: 1, startedAt: -1 }),
+    // AI Security Workflow 2026 SOW
+    aiSecurityChecks.createIndex({ orgId: 1, createdAt: -1 }),
+    aiSecurityChecks.createIndex({ orgId: 1, decision: 1, createdAt: -1 }),
+    aiSecurityChecks.createIndex({ requestId: 1 }),
+    aiSecurityPolicies.createIndex({ orgId: 1, active: 1 }),
+    aiModelRegistry.createIndex({ id: 1 }, { unique: true }),
   ]);
 
   indexesEnsured = true;

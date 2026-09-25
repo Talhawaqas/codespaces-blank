@@ -252,6 +252,19 @@ export function canAccessNAS(membership) {
   return canManageNAS(membership) || membership?.nasRole === "staff";
 }
 
+// AI Security Workflow 2026 SOW. Policy changes and model approvals are
+// manage-only (canManageOrg); viewing the security event feed/dashboard
+// and asking "Why?" about a decision is available to any authenticated
+// org member, since a blocked/redacted request should always be
+// explainable to the person it happened to.
+export function canManageAiSecurity(membership) {
+  return canManageOrg(membership);
+}
+
+export function canAccessAiSecurity(membership) {
+  return Boolean(membership);
+}
+
 export function canManageEscrow(membership) {
   return canManageOrg(membership) || membership?.escrowRole === "manager";
 }

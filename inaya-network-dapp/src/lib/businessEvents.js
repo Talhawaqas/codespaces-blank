@@ -67,6 +67,10 @@ export const EVENT_TYPES = {
   PURCHASE_ORDER: "PURCHASE_ORDER",
   PURCHASE_REQUEST: "PURCHASE_REQUEST",
   AI_ACTION_REQUEST: "AI_ACTION",
+  // AI Security Workflow 2026 SOW -- a non-ALLOW AI security decision
+  // (BLOCK/REDACT/WARN/REQUIRE_APPROVAL) becomes a real Business Event,
+  // not a second audit trail (see aiSecurity/events.js).
+  AI_SECURITY_CHECK: "AI_SECURITY_CHECK",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -77,6 +81,10 @@ const SUBJECT_RESOLVERS = {
   PURCHASE_ORDER: { collectionKey: "purchaseOrders", hasDepartment: true },
   PURCHASE_REQUEST: { collectionKey: "purchaseRequests", hasDepartment: true },
   AI_ACTION_REQUEST: { collectionKey: "aiActionRequests", hasDepartment: false },
+  // Same "no department of its own" shape as AI_ACTION_REQUEST -- an AI
+  // security check isn't scoped to one department, so it falls back to
+  // org-manager-only visibility (departmentId: null), same as above.
+  AI_SECURITY_CHECK: { collectionKey: "aiSecurityChecks", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -105,6 +113,12 @@ function amountOf(subject) {
  *  consistent for a user who sees both. */
 function classifyEventRisk(subjectType, subject) {
   if (subjectType === "AI_ACTION_REQUEST") return subject.riskLevel || "MEDIUM";
+  // aiSecurityChecks.severity is already one of the shared SEVERITIES
+  // (policyTypes.js) -- CRITICAL/HIGH map onto this graph's HIGH bucket
+  // since BusinessEvent itself has no CRITICAL tier.
+  if (subjectType === "AI_SECURITY_CHECK") {
+    return subject.severity === "CRITICAL" || subject.severity === "HIGH" ? "HIGH" : subject.severity === "MEDIUM" ? "MEDIUM" : "LOW";
+  }
   return classifyAiActionRisk(subjectType, undefined);
 }
 
@@ -208,6 +222,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "INVOICE") return { ...base, label: subject.invoiceNumber || null };
   if (subjectType === "PURCHASE_ORDER" || subjectType === "PURCHASE_REQUEST") return { ...base, label: subject.title || subject.description || null };
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
+  if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
   return base;
 }
 
