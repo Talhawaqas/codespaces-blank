@@ -119,4 +119,6 @@ The live deployment checks are recorded in §8.
 
 ## 8. Deployment and live verification
 
-_To be completed after the build, push and live smoke test._
+- Commit `ed59fc2` pushed to `main`; Vercel production deployment `codespaces-blank-19koo6pz6` reached **Ready** (2 min build).
+- **Verified live (unauthenticated, 2026-09-25):** `/verify-document` and `/shared-document/<token>` pages load (200); every authenticated document API returns 401 without a session; a bad delivery token returns 404 "This link is invalid."; the cron endpoint rejects a caller without `CRON_SECRET` (401); the public verify endpoint validates its input (400 without a PDF).
+- **Not verified live:** generating a PDF on the production site. That path needs a signed-in session, and no session was available in the test environment. The same code is exercised by the 3 e2e tests and the type/lifecycle suites locally (including Arabic and Urdu), but font tracing into the Vercel function (`outputFileTracingIncludes`) has not yet been confirmed in production. Check: sign in, open Business → Document Automation → Create, choose any invoice and press Preview. If the fonts were not traced, the renderer falls back to Helvetica, records `unicodeFonts:false` in the renderer info, and Arabic text would print blank.
