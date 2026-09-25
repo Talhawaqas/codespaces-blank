@@ -78,6 +78,7 @@ import StorageControlPlaneView from "../../components/business/StorageControlPla
 import DataSourcesView from "../../components/business/DataSourcesView";
 import NasManagementView from "../../components/business/NasManagementView";
 import AiSecurityView from "../../components/business/AiSecurityView";
+import DocumentAutomationView from "../../components/business/DocumentAutomationView";
 import SqlConsoleView from "../../components/business/SqlConsoleView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
@@ -718,6 +719,7 @@ const NAV_ITEMS = [
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
+  { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
   { key: "hr", label: "HR", icon: "hr", group: "operations" },
   { key: "sign", label: "Inaya Sign", icon: "documents", group: "operations" },
   { key: "escrow", label: "Milestone Escrow", icon: "finance", group: "operations" },
@@ -1042,6 +1044,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
     nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage appliances, shares, and users -- with recycle bin, backup to Inaya, and verified recovery drills." },
+    documentAutomation: { title: "Document Automation", description: "Generate official, numbered, encrypted, verifiable documents from your Finance, CRM and Procurement records - with approval, secure delivery and a full evidence trail." },
     aiSecurity: { title: "AI Security", description: "What every AI request was allowed to see, what security checks ran, and why a request was blocked, redacted, or approved." },
     sqlConsole: { title: "SQL Console", description: "Run read-only SQL against your published virtual tables." },
     s3Compat: { title: "S3-Compatible Storage", description: "Consume this org's storage from AWS S3-compatible tools." },
@@ -1175,6 +1178,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
           {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
           {activeView === "nas" && <NasManagementView orgId={orgId} />}
+          {activeView === "documentAutomation" && <DocumentAutomationView orgId={orgId} canManage={canManage} />}
           {activeView === "aiSecurity" && <AiSecurityView orgId={orgId} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
@@ -1182,7 +1186,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
           {activeView === "cloudBackup" && canManage && <CloudBackupSchedulerView orgId={orgId} />}
           {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}
-          {activeView === "approvals" && canManage && <ApprovalsView orgId={orgId} onNavigate={navigate} />}
+          {activeView === "approvals" && canManage && (
+            <div className="space-y-4">
+              <ApprovalsView orgId={orgId} onNavigate={navigate} />
+              <PendingGeneratedDocuments orgId={orgId} onNavigate={navigate} />
+            </div>
+          )}
           {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
           {activeView === "evidence" && <BusinessEventsView orgId={orgId} />}
           {activeView === "whatIf" && <WhatIfStudioView orgId={orgId} />}
@@ -1229,6 +1238,30 @@ const STATUS_STYLES = {
 // ============================================================
 // APPROVALS — pending/under-review documents this manager can act on.
 // ============================================================
+// Document Automation SOW section 30/32 -- generated documents waiting for a
+// human to approve the exact version. Only lists what this member may see;
+// the decision itself is made in the Document Automation view.
+function PendingGeneratedDocuments({ orgId, onNavigate }) {
+  const [docs, setDocs] = useState(null);
+  useEffect(() => {
+    api(`/api/orgs/documents-automation/documents?orgId=${orgId}&status=PENDING_APPROVAL&limit=25`).then((r) => setDocs(r.documents)).catch(() => setDocs([]));
+  }, [orgId]);
+  if (!docs || docs.length === 0) return null;
+  return (
+    <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] mb-3">Generated documents awaiting approval</h3>
+      <div className="space-y-2">
+        {docs.map((d) => (
+          <button key={d.id} onClick={() => { window.history.replaceState(null, "", `/business?view=documentAutomation&doc=${d.id}`); onNavigate("documentAutomation"); }} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-[var(--inaya-overlay-5)] rounded-lg p-3 text-left">
+            <span className="min-w-0"><span className="block text-[var(--inaya-text-primary)] text-sm truncate">{d.documentNumber} · v{d.documentVersion}</span><span className="block text-[var(--inaya-text-muted)] text-[12px] font-mono">{d.documentType.replace("_", " ")} · {d.counterpartyName || "—"} · {d.currency} {d.grandTotal}</span></span>
+            <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border border-amber-400/30 text-amber-400 bg-amber-400/10 shrink-0">Review</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ApprovalsView({ orgId, onNavigate }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");

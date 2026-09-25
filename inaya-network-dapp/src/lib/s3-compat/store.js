@@ -267,7 +267,7 @@ function bufferToFile(buffer, { key, contentType }) {
 /** Real encrypt -> shard -> pin -> register pipeline. Returns the inserted
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
-export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags }) {
+export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName }) {
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
   const { orgDocuments } = await getOrgCollections();
@@ -301,7 +301,10 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // retrievable. Salting with this write's own new documentId guarantees
   // a distinct provider-side object per version, exactly like the
   // fileHash salting fix elsewhere in this file.
-  const provider = getProvider(primaryProviderName());
+  // `providerName` lets a caller with its own resilience policy (the Document
+  // Automation engine falls back to another configured provider when the
+  // primary is unavailable) choose one; everyone else keeps the default.
+  const provider = getProvider(providerName || primaryProviderName());
   const [alphaResult, betaResult] = await Promise.all([
     provider.pin(shardAlpha, { name: `s3-compat:${orgId}:${key}:${documentId}:alpha` }),
     provider.pin(shardBeta, { name: `s3-compat:${orgId}:${key}:${documentId}:beta` }),

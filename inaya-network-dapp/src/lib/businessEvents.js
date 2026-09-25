@@ -71,6 +71,10 @@ export const EVENT_TYPES = {
   // (BLOCK/REDACT/WARN/REQUIRE_APPROVAL) becomes a real Business Event,
   // not a second audit trail (see aiSecurity/events.js).
   AI_SECURITY_CHECK: "AI_SECURITY_CHECK",
+  // Document Automation SOW -- a generated document is itself a Business
+  // Event subject, so its whole provenance chain shows up in the existing
+  // timeline / passport / explain views (see documentAutomation/evidence.js).
+  GENERATED_DOCUMENT: "DOCUMENT_AUTOMATION",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -85,6 +89,9 @@ const SUBJECT_RESOLVERS = {
   // security check isn't scoped to one department, so it falls back to
   // org-manager-only visibility (departmentId: null), same as above.
   AI_SECURITY_CHECK: { collectionKey: "aiSecurityChecks", hasDepartment: false },
+  // Department-scoped like its source record; a document with no department
+  // (a business report) falls back to org-manager-only visibility.
+  GENERATED_DOCUMENT: { collectionKey: "generatedDocuments", hasDepartment: true },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -162,7 +169,7 @@ export async function createBusinessEvent({ orgId, subjectType, subjectId, membe
   const { subject, resolver } = resolved;
 
   let departmentId = null;
-  if (resolver.hasDepartment) {
+  if (resolver.hasDepartment && subject.departmentId) {
     departmentId = subject.departmentId;
     if (!canAccessDepartment(membership, departmentId)) return { error: "You don't have permission to do that.", status: 403 };
   } else {
@@ -223,6 +230,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "PURCHASE_ORDER" || subjectType === "PURCHASE_REQUEST") return { ...base, label: subject.title || subject.description || null };
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
+  if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };
   return base;
 }
 
@@ -315,6 +323,12 @@ function deriveStatus(subjectType, subject) {
   if (subjectType === "PURCHASE_REQUEST") {
     if (s === "APPROVED") return "DECIDED";
     if (["REJECTED", "CANCELLED"].includes(s)) return "CLOSED";
+    return "OPEN";
+  }
+  if (subjectType === "GENERATED_DOCUMENT") {
+    if (s === "PAID") return "EXECUTED";
+    if (["REJECTED", "VOID", "CANCELLED", "EXPIRED", "SUPERSEDED"].includes(s)) return "CLOSED";
+    if (["APPROVED", "FINALIZED", "DELIVERED", "VIEWED"].includes(s)) return "DECIDED";
     return "OPEN";
   }
   if (subjectType === "AI_ACTION_REQUEST") {

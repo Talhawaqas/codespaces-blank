@@ -22,6 +22,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { computeBusinessInsights } from "./business-insights.js";
+import { documentAutomationBullets } from "./documentAutomation/briefIntegration.js";
 
 export const BRIEF_PERIODS = { daily: 1, weekly: 7, monthly: 30, yearly: 365 };
 const PERIOD_LABELS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
@@ -102,6 +103,10 @@ export async function generateBusinessBrief({ orgId, membership, email, period, 
   const periodLabel = PERIOD_LABELS[period];
   const insights = await computeBusinessInsights({ orgId, membership, email, periodDays: BRIEF_PERIODS[period] });
   const highlights = buildHighlights(insights, periodLabel);
+  // Document Automation SOW §31 -- meaningful document events, counted only
+  // across documents this reader may see; never allowed to fail the brief.
+  const sinceIso = new Date(Date.now() - BRIEF_PERIODS[period] * 86400000).toISOString();
+  highlights.push(...(await documentAutomationBullets({ orgId, membership, email, sinceIso }).catch(() => [])));
 
   const summary = includeNarrative
     ? await generateNarrative({ periodLabel, orgName: orgName || "your company", highlights, alerts: insights.alerts })

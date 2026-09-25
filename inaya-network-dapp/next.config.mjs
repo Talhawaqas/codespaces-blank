@@ -43,6 +43,17 @@ const nextConfig = {
   // not a custom workaround. App-wide, but this app has no reliance on
   // trailing-slash auto-redirect behavior for its own pages.
   skipTrailingSlashRedirect: true,
+  // Document Automation SOW: the bundled Unicode fonts are read from disk at
+  // render time, which Next's file tracing cannot see on its own; without
+  // this they would be missing from the serverless functions that render.
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/orgs/documents-automation/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
+      "/api/orgs/finance/invoices/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
+      "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
+      "/api/cron/execute-approved-ai-actions": ["./src/lib/documentAutomation/fonts/**/*"],
+    },
+  },
   async generateBuildId() {
     return buildId;
   },

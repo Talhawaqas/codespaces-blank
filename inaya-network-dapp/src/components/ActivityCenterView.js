@@ -21,6 +21,8 @@ const PERIOD_OPTIONS = [
 const MODULE_LABELS = {
   business: "Business",
   ai: "AI Actions",
+  evidence: "Evidence",
+  documents: "Documents",
   notifications: "Notifications",
   trust: "Trust & Health",
   data: "Sovereign Vault",

@@ -30,6 +30,7 @@ import { generateBusinessBrief, BRIEF_PERIODS } from "./business-brief.js";
 import { computeTrustHealthSnapshot } from "./trustHealth.js";
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { connectToDatabase } from "./mongodb.js";
+import { documentAutomationBullets, documentHealthSnapshot } from "./documentAutomation/briefIntegration.js";
 
 export { BRIEF_PERIODS };
 
@@ -104,6 +105,9 @@ function trustHealthBullets(snapshot) {
   if (snapshot.scope === "org") {
     if (!snapshot.auditTrail?.intact) bullets.push(`Audit trail integrity check failed at entry #${snapshot.auditTrail?.brokenAtSeq}.`);
     if (snapshot.aiActions?.pendingHighRisk > 0) bullets.push(`${snapshot.aiActions.pendingHighRisk} high-risk AI action(s) awaiting approval.`);
+    if (snapshot.documents?.failed > 0) bullets.push(`${snapshot.documents.failed} generated document(s) have a failed storage/generation/delivery step.`);
+    if (snapshot.documents?.evidencePending > 0) bullets.push(`${snapshot.documents.evidencePending} generated document(s) are waiting for their evidence chain to be completed.`);
+    if (snapshot.documents?.staleApproval > 0) bullets.push(`${snapshot.documents.staleApproval} document approval request(s) have gone stale.`);
   } else {
     if (snapshot.backup?.assetsNeedingRecovery > 0) bullets.push(`${snapshot.backup.assetsNeedingRecovery} asset(s) currently need backup recovery.`);
     if (snapshot.security?.recentBlocked > 0) bullets.push(`${snapshot.security.recentBlocked} recent blocked threat event(s) for this wallet.`);
@@ -113,12 +117,13 @@ function trustHealthBullets(snapshot) {
 
 async function generateOrgWhatChanged({ orgId, membership, email, period, orgName }) {
   const { sinceIso } = periodBounds(period);
-  const [brief, trustSnapshot, aiBullets, notifBullets, evidenceBullets] = await Promise.all([
+  const [brief, trustSnapshot, aiBullets, notifBullets, evidenceBullets, documentBullets] = await Promise.all([
     generateBusinessBrief({ orgId, membership, email, period, orgName, includeNarrative: false }),
     computeTrustHealthSnapshot({ scope: "org", orgId, membership, email }).catch(() => null),
     orgAiActionBullets({ orgId, sinceIso }).catch(() => []),
     notificationVolumeBullets({ scope: "org", orgId, sinceIso }).catch(() => []),
     businessEventBullets({ orgId, sinceIso }).catch(() => []),
+    documentAutomationBullets({ orgId, membership, email, sinceIso }).catch(() => []),
   ]);
 
   return {
@@ -129,6 +134,7 @@ async function generateOrgWhatChanged({ orgId, membership, email, period, orgNam
       { module: "business", bullets: brief.error ? [] : brief.highlights },
       { module: "ai", bullets: aiBullets },
       { module: "evidence", bullets: evidenceBullets },
+      { module: "documents", bullets: documentBullets },
       { module: "notifications", bullets: notifBullets },
       { module: "trust", bullets: trustHealthBullets(trustSnapshot) },
     ],

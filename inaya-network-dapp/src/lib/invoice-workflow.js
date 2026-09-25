@@ -61,6 +61,13 @@ export async function transitionInvoice({ orgId, invoiceId, action, membership, 
     newState: definition.to, metadata: note ? { note } : {},
   });
 
+  // Document Automation SOW §9 -- keep any generated invoice documents in
+  // step with the Finance record (PAID / CANCELLED). Non-fatal and lazily
+  // imported: a document-sync problem must never fail a real transition.
+  if (["markPaid", "cancel"].includes(action)) {
+    import("./documentAutomation/lifecycle.js").then((m) => m.syncInvoiceDocuments({ orgId, invoiceId })).catch((err) => console.error("invoice-workflow: document sync failed (non-fatal):", err.message));
+  }
+
   return { invoice: updated };
 }
 

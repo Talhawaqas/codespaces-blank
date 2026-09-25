@@ -139,6 +139,7 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
   const [notes, setNotes] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [lineItems, setLineItems] = useState([{ description: "", quantity: "1", unitPrice: "" }]);
+  const [terms, setTerms] = useState({ paymentTerms: "", poNumber: "", taxPercent: "", discountPercent: "", shippingAmount: "", feeAmount: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -166,6 +167,9 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
         body: JSON.stringify({
           orgId, departmentId, contactId, dueDate, currency, notes: notes.trim() || undefined,
           lineItems: lineItems.map((it) => ({ description: it.description.trim(), quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
+          ...(terms.paymentTerms.trim() ? { paymentTerms: terms.paymentTerms.trim() } : {}),
+          ...(terms.poNumber.trim() ? { poNumber: terms.poNumber.trim() } : {}),
+          ...Object.fromEntries(["taxPercent", "discountPercent", "shippingAmount", "feeAmount"].filter((k) => terms[k] !== "").map((k) => [k, Number(terms[k])])),
         }),
       });
       onCreated();
@@ -197,8 +201,8 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
           {lineItems.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_60px_80px_24px] gap-1.5">
               <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="0.01" step="0.01" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" step="0.01" placeholder="Price" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="0.000001" step="any" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" step="any" placeholder="Price" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
               <button type="button" onClick={() => removeItem(i)} disabled={lineItems.length === 1} className="text-[var(--inaya-text-muted)] hover:text-red-400 disabled:opacity-30 text-lg leading-none">×</button>
             </div>
           ))}
@@ -206,6 +210,13 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
           <p className="text-right text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">Total: ${total.toFixed(2)}</p>
         </div>
 
+        <div className="grid grid-cols-2 gap-1.5 border-t border-white/5 pt-3">
+          <p className="col-span-2 text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Commercial terms (optional)</p>
+          {[["paymentTerms", "Payment terms (e.g. Net 30)"], ["poNumber", "Customer PO number"], ["taxPercent", "Tax % (blank = company default)"], ["discountPercent", "Invoice discount %"], ["shippingAmount", "Shipping amount"], ["feeAmount", "Fees amount"]].map(([k, label]) => (
+            <input key={k} value={terms[k]} onChange={(e) => setTerms({ ...terms, [k]: e.target.value })} placeholder={label} aria-label={label} inputMode={k === "paymentTerms" || k === "poNumber" ? "text" : "decimal"} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+          ))}
+          <p className="col-span-2 text-[10px] text-[var(--inaya-text-muted)]">The stored total is computed exactly by the server (tax, discount, shipping and fees included) - the amount shown above is only a line-item estimate.</p>
+        </div>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !contactId || !dueDate} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create invoice"}</button>
@@ -306,20 +317,20 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
 // ============================================================
 // NATIVE DOCUMENT & INVOICE AUTOMATION ENGINE
 //
-// A real, fingerprinted, encrypted-and-stored PDF -- distinct from the
-// existing "Generate PDF Invoice" link above (which opens a browser
-// print-to-PDF view). This panel drives the actual document-automation
-// pipeline: real pdfkit rendering, a real atomic document number, a real
-// SHA-256 document hash, real server-managed encrypted storage, and a
-// real time-limited secure delivery link -- not a second, competing
-// invoice feature, an additive one shown alongside the existing action.
+// The invoice-side entry point into the full engine (Document Automation
+// view): idempotent generation of an official, numbered, evidence-recorded,
+// encrypted document. Approval, finalization, secure delivery, verification
+// and the Document Passport live in the Document Automation view -- this
+// panel shows where the invoice's documents stand and jumps there. It sits
+// alongside the older "Generate PDF Invoice" print view, which is unchanged.
 // ============================================================
+const DOC_STATUS_STYLE = { GENERATED: "text-blue-300", PENDING_APPROVAL: "text-amber-300", APPROVED: "text-emerald-300", FINALIZED: "text-emerald-300", DELIVERED: "text-emerald-300", VIEWED: "text-emerald-300", PAID: "text-emerald-300", SUPERSEDED: "text-[var(--inaya-text-muted)]", VOID: "text-red-300", CANCELLED: "text-[var(--inaya-text-muted)]", EXPIRED: "text-amber-300", REJECTED: "text-red-300" };
+
 function DocumentAutomationPanel({ orgId, invoiceId }) {
   const [documents, setDocuments] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
-  const [shareLink, setShareLink] = useState(null);
-  const [sharing, setSharing] = useState(false);
+  const [attemptKey, setAttemptKey] = useState(() => `fin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 
   const load = useCallback(async () => {
     try {
@@ -332,12 +343,14 @@ function DocumentAutomationPanel({ orgId, invoiceId }) {
 
   useEffect(() => { load(); }, [load]);
 
-  async function generate() {
+  async function generate(forceNewVersion) {
     setGenerating(true);
     setError("");
-    setShareLink(null);
     try {
-      await api(`/api/orgs/finance/invoices/${invoiceId}/generate-document`, { method: "POST", body: JSON.stringify({ orgId }) });
+      // The key is stable for one attempt, so a double click or a retry
+      // after a dropped connection returns the same document, never two.
+      await api(`/api/orgs/finance/invoices/${invoiceId}/generate-document`, { method: "POST", body: JSON.stringify({ orgId, idempotencyKey: attemptKey, forceNewVersion }) });
+      setAttemptKey(`fin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
       await load();
     } catch (err) {
       setError(err.message);
@@ -346,54 +359,25 @@ function DocumentAutomationPanel({ orgId, invoiceId }) {
     }
   }
 
-  async function createLink(documentId) {
-    setSharing(true);
-    setError("");
-    try {
-      const result = await api(`/api/orgs/documents-automation/${documentId}/share`, { method: "POST", body: JSON.stringify({ orgId, expiresPreset: "7d" }) });
-      setShareLink({ documentId, url: `${window.location.origin}/api/documents-automation/deliver/${result.token}`, expiresAt: result.expiresAt });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSharing(false);
-    }
-  }
-
-  const current = (documents || []).find((d) => d.status === "FINALIZED");
+  const latest = (documents || [])[0];
 
   return (
     <div className="space-y-2 border-t border-white/5 pt-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Official Document</p>
-        <button onClick={generate} disabled={generating} className="text-[11px] font-bold uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
-          {generating ? "Generating…" : current ? "Regenerate (new version)" : "Generate official document"}
+        <button onClick={() => generate(!!latest)} disabled={generating} className="text-[11px] font-bold uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
+          {generating ? "Generating…" : latest ? "New version" : "Generate official document"}
         </button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      {current && (
-        <div className="text-xs space-y-1 bg-black/25 rounded-lg p-2.5 border border-white/5">
-          <div className="flex justify-between">
-            <span className="text-[var(--inaya-text-muted)]">Document</span>
-            <span className="text-[var(--inaya-text-primary)] font-mono">{current.documentNumber} · v{current.documentVersion}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[var(--inaya-text-muted)]">Hash</span>
-            <span className="text-[var(--inaya-text-primary)] font-mono">{current.documentHash.slice(0, 16)}…</span>
-          </div>
-          <button onClick={() => createLink(current.id || current._id)} disabled={sharing} className="w-full mt-1 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] hover:bg-white/15 disabled:opacity-40">
-            {sharing ? "Creating link…" : "Create secure delivery link"}
-          </button>
-          {shareLink && (
-            <div className="text-[11px] bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 space-y-1">
-              <div className="text-emerald-300">Link expires {new Date(shareLink.expiresAt).toLocaleString()}</div>
-              <input readOnly value={shareLink.url} onClick={(e) => e.target.select()} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-[var(--inaya-text-primary)] font-mono text-[10px]" />
-            </div>
-          )}
+      {documents && documents.length === 0 && <p className="text-[11px] text-[var(--inaya-text-muted)]">No official document yet. Generating creates a numbered, encrypted PDF with a full evidence trail; approval and sharing are handled in Document Automation.</p>}
+      {(documents || []).map((d) => (
+        <div key={d.id} className="text-xs flex items-center justify-between bg-black/25 rounded-lg p-2.5 border border-white/5">
+          <span className="text-[var(--inaya-text-primary)] font-mono">{d.documentNumber} · v{d.documentVersion}</span>
+          <span className={`text-[11px] font-semibold ${DOC_STATUS_STYLE[d.status] || ""}`}>{d.status.replace("_", " ").toLowerCase()}{d.pipelineState && d.pipelineState !== "COMPLETE" ? ` · ${d.pipelineState.replace("_", " ").toLowerCase()}` : ""}</span>
         </div>
-      )}
-      {documents && documents.length > 1 && (
-        <p className="text-[10px] text-[var(--inaya-text-muted)]">{documents.length - 1} superseded version{documents.length > 2 ? "s" : ""} retained.</p>
-      )}
+      ))}
+      {latest && <a href={`/business?view=documentAutomation&doc=${latest.id}`} className="inline-block text-[11px] font-bold uppercase text-[#00f2fe]">Open in Document Automation →</a>}
     </div>
   );
 }

@@ -5,6 +5,8 @@
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../../lib/orgs.js";
+import { parseInvoiceExtras, validateInvoiceLines, computeInvoiceTotals } from "../../../../../../lib/documentAutomation/invoiceTerms.js";
+import { getDocumentSettings } from "../../../../../../lib/documentAutomation/settings.js";
 
 function computeTotal(lineItems) {
   return lineItems.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitPrice), 0);
@@ -15,7 +17,9 @@ function serializeInvoice(inv) {
     id: inv._id.toString(), orgId: inv.orgId.toString(), departmentId: inv.departmentId.toString(),
     contactId: inv.contactId.toString(), invoiceNumber: inv.invoiceNumber, issueDate: inv.issueDate, dueDate: inv.dueDate,
     lineItems: inv.lineItems, subtotal: inv.subtotal, total: inv.total, currency: inv.currency, status: inv.status,
-    notes: inv.notes || null, createdByEmail: inv.createdByEmail, createdAt: inv.createdAt, updatedAt: inv.updatedAt,
+    notes: inv.notes || null, paymentTerms: inv.paymentTerms || null, reference: inv.reference || null, poNumber: inv.poNumber || null,
+    documentTerms: inv.documentTerms || null, officialDocumentNumber: inv.officialDocumentNumber || null,
+    createdByEmail: inv.createdByEmail, createdAt: inv.createdAt, updatedAt: inv.updatedAt,
   };
 }
 
@@ -48,7 +52,8 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const { orgId, dueDate, lineItems: rawItems, notes } = await req.json();
+    const body = await req.json();
+    const { orgId, dueDate, lineItems: rawItems, notes } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadAuthorized(req, orgId, params.invoiceId);
@@ -59,12 +64,27 @@ export async function PATCH(req, { params }) {
     const updateFields = { updatedAt: new Date().toISOString() };
     if (dueDate !== undefined) updateFields.dueDate = dueDate;
     if (notes !== undefined) updateFields.notes = notes ? String(notes).trim() : null;
+    // Validate and normalize (the previous code stored rawItems unvalidated).
+    const extras = parseInvoiceExtras(body);
+    if (extras.error) return NextResponse.json({ error: extras.error }, { status: 400 });
+    let lineItems = invoice.lineItems;
     if (rawItems !== undefined) {
-      if (!Array.isArray(rawItems) || rawItems.length === 0) return NextResponse.json({ error: "At least one line item is required." }, { status: 400 });
-      const total = computeTotal(rawItems);
-      updateFields.lineItems = rawItems;
-      updateFields.subtotal = total;
-      updateFields.total = total;
+      const v = validateInvoiceLines(rawItems);
+      if (v.error) return NextResponse.json({ error: v.error }, { status: 400 });
+      lineItems = v.lineItems;
+      updateFields.lineItems = lineItems;
+    }
+    Object.assign(updateFields, extras.top);
+    const mergedTerms = { ...(invoice.documentTerms || {}), ...extras.terms };
+    if (Object.keys(extras.terms).length) updateFields.documentTerms = mergedTerms;
+    if (rawItems !== undefined || Object.keys(extras.terms).length) {
+      try {
+        const settings = await getDocumentSettings(orgId);
+        const t = computeInvoiceTotals({ lineItems, currency: invoice.currency || "USD", terms: mergedTerms, orgDefaultTaxPercent: settings.billingProfile.defaultTaxPercent });
+        updateFields.subtotal = t.subtotal; updateFields.total = t.total;
+      } catch (calcErr) {
+        return NextResponse.json({ error: `Cannot total this invoice: ${calcErr.message}` }, { status: 400 });
+      }
     }
 
     await invoices.updateOne({ _id: invoice._id }, { $set: updateFields });

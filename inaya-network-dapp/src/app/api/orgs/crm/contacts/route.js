@@ -13,6 +13,7 @@
 // its history/notes/deals stay attached across that transition.
 
 import { NextResponse } from "next/server";
+import { normalizeAddress } from "../../../../../lib/documentAutomation/settings.js";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 
@@ -29,6 +30,7 @@ function serializeContact(c) {
     phone: c.phone || null,
     company: c.company || null,
     notes: c.notes || null,
+    taxId: c.taxId || null, paymentTerms: c.paymentTerms || null, billingAddress: c.billingAddress || null, shippingAddress: c.shippingAddress || null,
     createdByEmail: c.createdByEmail,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
@@ -75,11 +77,17 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, type: rawType, name: rawName, email, phone, company, notes } = await req.json();
+    const body = await req.json();
+    const { orgId, departmentId, type: rawType, name: rawName, email, phone, company, notes } = body;
     const name = String(rawName || "").trim();
     if (!orgId || !departmentId) return NextResponse.json({ error: "orgId and departmentId are required." }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Contact name is required." }, { status: 400 });
     const type = CONTACT_TYPES.includes(rawType) ? rawType : "LEAD";
+    const billing = normalizeAddress(body.billingAddress, "billingAddress");
+    const shipping = normalizeAddress(body.shippingAddress, "shippingAddress");
+    if (billing.error || shipping.error) return NextResponse.json({ error: billing.error || shipping.error }, { status: 400 });
+    const taxId = body.taxId ? String(body.taxId).trim().slice(0, 64) : null;
+    const paymentTerms = body.paymentTerms ? String(body.paymentTerms).trim().slice(0, 200) : null;
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
@@ -101,12 +109,13 @@ export async function POST(req) {
       phone: phone ? String(phone).trim() : null,
       company: company ? String(company).trim() : null,
       notes: notes ? String(notes).trim() : null,
+      taxId, paymentTerms, billingAddress: billing.value, shippingAddress: shipping.value,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
 
     return NextResponse.json(serializeContact({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, type, name,
-      email, phone, company, notes, createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
+      email, phone, company, notes, taxId, paymentTerms, billingAddress: billing.value, shippingAddress: shipping.value, createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }));
   } catch (err) {
     console.error("orgs/crm/contacts POST failed:", err);

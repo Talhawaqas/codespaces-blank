@@ -1,147 +1,122 @@
 # Native Document & Invoice Automation Engine — Completion Report
 
-Status: **LIVE** (real invoice PDF generation, atomic numbering,
-decimal-safe calculation, encrypted sovereign storage, Evidence Graph
-provenance, and secure time-limited delivery — all end-to-end tested
-against the live system). Last verified: 2026-09-25.
+Status: implemented in full and tested (see §5). Last verified: 2026-09-25.
+Deployment and live-site smoke-test results are recorded in §8 once complete.
 
-## 1. Phase 0 Gap Audit
+This report replaces the first-pass version, which covered invoices only, with
+one fixed layout, no address fields and no Brief/Search integration. Those
+gaps are closed; §6 lists what remains genuinely limited and why.
 
-The Phase 0 audit found this codebase already contains far more of this
-SOW's prerequisites than the SOW's own illustrative gap table implied —
-consistent with the discipline every SOW tonight has followed.
+## 1. What the engine is
 
-| SOW capability | Existing Inaya capability | Classification | Reuse path |
-|---|---|---|---|
-| Invoice model + lifecycle | `invoices` collection, `invoice-workflow.js` (DRAFT/SENT/PAID/OVERDUE/CANCELLED) | ALREADY IMPLEMENTED | Reused as-is, unmodified |
-| CRM customer linkage | `invoices.contactId` → `crmContacts` | ALREADY IMPLEMENTED | Reused as-is |
-| Evidence Graph provenance | `businessEvents.js`, `EVENT_TYPES.INVOICE` already wired to the real `invoices` collection | ALREADY IMPLEMENTED | Reused verbatim — zero modification needed |
-| Cryptographic audit chain | `logOrgActivity` → `auditChain.js` | ALREADY IMPLEMENTED | Reused as-is |
-| Encrypted sovereign storage | `s3-compat/store.js`'s `putS3Object` (real encrypt/shard/pin/backupEngine pipeline) | ALREADY IMPLEMENTED | Reused verbatim for server-managed document storage |
-| Secure, time-limited, revocable sharing | `document-permissions.js` (`createDocumentShare`/`consumeDocumentShare`/`revokeDocumentShare`, atomic expiry/revocation/use-count) | ALREADY IMPLEMENTED | Reused verbatim |
-| PDF rendering technique | `pdfkit` (already added earlier this session for `businessEventPassport.js`) | ALREADY IMPLEMENTED (technique) | Reused library; new layout (line-item table) written fresh |
-| Currency support | `currency.js`'s `SUPPORTED_CURRENCIES` (USD/EUR/GBP/AED/PKR — exactly SOW §22's list) | ALREADY IMPLEMENTED | Reused as-is |
-| Human approval boundary | No `PENDING_APPROVAL` state in `invoice-workflow.js`; `canManageFinance` already gates every consequential invoice action | ARCHITECTURAL DECISION | Finalization gated on `canManageFinance`, not a new approval sub-workflow — see §3 |
-| Atomic document numbering | Confirmed absent — invoice numbering is client-suppliable or `Date.now()`-based | GENUINE GAP | New: `numbering.js` |
-| Decimal-safe money math | Confirmed absent — existing `computeTotal()` is naive floating point | GENUINE GAP | New: `calculations.js` |
-| Real binary invoice PDF | Confirmed absent — the existing `/pdf` route returns an HTML print view, with a stale code comment claiming "no PDF library exists" (pdfkit was added after that route was written) | GENUINE GAP | New: `invoicePdfRenderer.js` (kept the existing HTML route untouched, added alongside it) |
-| Template/content engine | Confirmed absent | GENUINE GAP, NOT BUILT | One real, fixed, tested layout this pass — see §7 |
+One pipeline serves every document type:
 
-## 2. New Capabilities Implemented
+```
+Inaya data -> Template -> Calculation -> Document -> Validation -> Approval
+   -> Evidence -> Encrypted storage -> Secure delivery -> Verification
+```
 
-`src/lib/documentAutomation/`:
-- `calculations.js` — real decimal-safe (integer-cents) money math: subtotal, per-line and invoice-level discounts, tax, shipping, grand total, amount due. Verified against the classic `0.1 + 0.2` floating-point trap and a hand-checked multi-line invoice.
-- `numbering.js` — real atomic, org+type+fiscal-year-scoped document numbering (`INV-2026-000001`) via MongoDB's atomic `findOneAndUpdate`/`$inc`. Verified with 20 concurrent allocations producing 20 distinct, sequential numbers — zero collisions, not just asserted by inspection.
-- `manifest.js` — the canonical document manifest (SOW §14) and content-hash verification (`verifyDocumentIntegrity`) — real recomputation and comparison, not a stored `verified: true` flag.
-- `invoicePdfRenderer.js` — a real, multi-page-capable invoice PDF: line-item table with repeated headers across page breaks, org/customer blocks, totals, page-numbered footer, Unicode currency symbols. No template DSL, no server-side code execution of user content.
-- `generate.js` — the orchestrator: recomputes authoritative totals from the invoice's own stored line items (never trusts a client-supplied total), allocates a number only on first generation, renders the PDF, stores it through the real encrypted pipeline, records the manifest, and links it into the invoice's existing Evidence Graph business event via a `PROVEN_BY` relationship.
-- `delivery.js` — secure delivery reusing `document-permissions.js`'s real share-token system, with a new recipient-facing byte-serving path (server-managed decryption, since a server-generated PDF has no client-side passkey to hand out).
+Nine document types run through it — invoice (standard and professional
+layouts), purchase order, quotation, receipt, customer statement, credit
+note, debit note, delivery note and business report — via a registry of
+adapters, templates, validators, calculation and approval policies. Nothing
+in the pipeline branches on a document type name.
 
-API routes: `POST/GET .../finance/invoices/[invoiceId]/generate-document`, `GET .../documents-automation/[documentId]` (manifest/status), `POST .../documents-automation/[documentId]/share`, `DELETE .../share/[shareId]`, and the unauthenticated `GET /api/documents-automation/deliver/[token]`.
+## 2. Phase 0 reuse (nothing rebuilt)
 
-UI: a `DocumentAutomationPanel` added to the existing invoice detail modal in `FinanceView.js` — additive, alongside the pre-existing "Generate PDF Invoice" (HTML print) link, not replacing it.
+| Existing capability | Reused as |
+|---|---|
+| Finance invoices, CRM contacts/deals, Procurement POs and payments | Source of truth for every document (read-only adapters) |
+| `canManageFinance` and department/permission gates, Segregation-of-Duties checker | Gates for generate / approve / deliver / view, per type |
+| Audit chain (`logOrgActivity`) | Every evidence node is also written to the org's cryptographic audit chain |
+| Evidence Graph (`businessEvents.js`) | New subject type `GENERATED_DOCUMENT`; documents link SOURCED_FROM / DERIVED_FROM / PROVEN_BY |
+| `s3-compat/store.js` `putS3Object` | Server-managed AES-256-GCM, sharding, pinning; gained an optional `providerName` |
+| Object Lock / retention | Applied to finalized documents |
+| `document-permissions.js` share tokens | Secure link delivery |
+| External Data Room identity (`external-data-room.js`) | Identity-verified delivery (new room type `document_delivery`) |
+| Guarded AI execution (`ai-action-requests.js`) | AI proposals generate a DRAFT that a human must still approve |
+| Search, Business Brief, Activity Center, trust health, evidence exporter | Extended additively to see documents, permission-aware |
 
-`orgs.js` (additive): two new collections (`generatedDocuments`, `documentSequences`) with indexes.
+## 3. SOW capability → implementation → tests
 
-## 3. Architectural Decision: The Approval Boundary
+| Capability | Implementation | Verified by |
+|---|---|---|
+| Exact money: decimal parsing, currency exponents (USD/EUR/GBP/AED/PKR = 2, JPY = 0, KWD/BHD/OMR = 3), rounding modes, pro-rata discount allocation | `money.js`, `calculations.js` | unit (money, edge-case vectors, pro-rata sums, determinism) |
+| Commercial terms: line discounts, invoice discount, per-line tax, shipping, fees, payment terms, currency, per-invoice shipping address | `calculations.js`, `invoiceTerms.js`, invoice routes, `adapters.js` | types (full commercial-terms invoice) |
+| Customer and organization details: billing/shipping addresses, tax id, payment terms, logo, brand colour, legal name | CRM routes + `CRMView.js`, `settings.js` billing profile, `adapters.js` | types (billing profile flows onto documents) |
+| Nine document types with type-specific rules (approved-only PO, quotation from deal, receipt from approved payment, statement with running balance, credit ≤ invoice, partial delivery, permission-scoped report) | `adapters.js`, `documentTypes.js`, `validators.js` | types |
+| Safe template language: blocks, `{{field\|format}}` from a whitelist, controlled conditions, currency configuration, size/depth limits, no code execution, no template injection | `templateSchema.js` | unit (system templates valid; malicious specs rejected; conditions; currency config) |
+| Versioned templates: clone → draft → publish (atomic, immutable) → archive; ten system templates | `templateStore.js`, `systemTemplates.js` | types (template versioning) |
+| Rendering: multi-page tables with repeated headers, A4/Letter, margins, footers, page numbers, DRAFT watermark, byte-reproducible output | `renderer.js` | unit (renderer), lifecycle (reproduced hash on retry) |
+| Languages: en-US, en-GB, ar-AE, ur-PK, fr-FR, de-DE, es-ES; RTL layout, Arabic shaping and bidi, bundled Noto Sans and Noto Sans Arabic (OFL) | `i18n.js`, `renderer.js`, `fonts/` | unit (localization), types (Arabic AED and Urdu PKR, French Letter) |
+| Atomic numbering: per org, type and fiscal year; configurable prefix/separator/padding/reset; never reused; ledger with reasons for cancelled/void/failed | `numbering.js`, `settings.js` | unit (concurrency, formats, ledger), lifecycle (terminal states keep numbers accounted for) |
+| Validation with explainable rules (`id`, severity, rule, inputs), including prompt-injection detection in source text | `validators.js` | types, security (injection) |
+| Approval: thresholds per type, exact-version binding, Segregation of Duties, stale-source drift check, superseded/expiry refusal, non-human actors refused, draft render for approver and final re-render with stamp | `lifecycle.js`, `settings.js` | security (approval integrity, replay/concurrency), e2e ($25,000 scenario) |
+| Finalization: re-verify stored bytes, sealed manifest, evidence root, retention lock, supersede older versions and revoke their links | `lifecycle.js`, `manifest.js`, `storage.js` | lifecycle (fails closed on tampered store), e2e |
+| Idempotent generation: claim-row-first under unique indexes, client or derived keys, `forceNewVersion`, stale-claim resume | `pipeline.js` | lifecycle (idempotency incl. simultaneous duplicates) |
+| Honest failure states: `GENERATION_FAILED`, `STORAGE_FAILED`, `EVIDENCE_PENDING`, `DELIVERY_FAILED`; automatic retry with backoff (5 attempts); no document is complete unless stored and evidenced | `pipeline.js`, `jobs.js` | lifecycle (storage outage, renderer failure, evidence gap, delivery failure, provider fallback) |
+| Evidence: hash-chained per-document nodes, audit-chain entry per node, Evidence Graph link, evidence root in manifest | `evidence.js` | security (tampering detected), e2e |
+| Storage: per-org bucket with Versioning and Object Lock, encrypted, provider fallback across configured pinning providers | `storage.js`, `s3-compat/store.js` | lifecycle (fallback), e2e (real providers) |
+| Delivery: secure link (256-bit token, hash stored, expiry, max uses, revocation, version+hash binding, access log including denials) and identity-verified Data Room | `delivery.js`, `external-data-room.js` | security (enumeration, expiry, revocation, max uses, isolation, version confusion), e2e (Data Room) |
+| Verification: public verify (minimal fields), authenticated deep verify (recompute hashes, chains, decrypt stored copy), Document Passport (JSON/PDF, internal/external scope, sealed) | `verify.js`, `/verify-document` | security (forged passport), e2e |
+| AI: explainability (inputs, checks, rules, evidence); advisory summary that cannot change a number; AI proposals generate a draft only | `aiAssist.js`, `ai-business-tools.js`, `ai-action-requests.js` | lifecycle (AI), security (injection) |
+| Integration: Unified Search, Business Brief, Activity Center, trust health, evidence exporter, pending approvals, invoice PAID/CANCELLED sync | `visibility.js`, `orgSearch.js`, `business-brief.js`, `activityCenter.js`, `trustHealth.js`, `evidenceExporter.js`, `invoice-workflow.js` | lifecycle (permission-aware integration), regression suites |
+| Security: org isolation, IDOR (404 not 403 for others' ids), rate limits, input bounds, path traversal, Mongo operator injection, markup and formula injection in source text | all routes, `_lib.js` | security suite |
+| Observability: durations, sizes, failures, retries, queue latency; no confidential content recorded | `metrics.js` | lifecycle (observability) |
+| UI: Documents / Create / Templates / Settings / Verify / Health tabs, approval and delivery views, public shared-document, verify and Data Room pages | `DocumentAutomationView.js`, `documents/*`, pages | `npm run build` (§5) |
+| Operations: hourly cron, runbook, user and developer documentation | `/api/cron/document-automation`, `docs/document-automation-runbook.md`, `content/docs/*` | docs-content test |
 
-SOW §10 requires human approval reuse; §10 and §9 both prohibit a second
-workflow engine. This codebase's `invoice-workflow.js` has no
-`PENDING_APPROVAL` state of its own — its real states are DRAFT/SENT/
-PAID/OVERDUE/CANCELLED, each already gated by `canManageFinance`. Rather
-than bolt a parallel approval sub-workflow onto document generation,
-**finalizing a document is gated on the same `canManageFinance`
-permission** that already governs every other consequential invoice
-action in this codebase — stated plainly here rather than silently
-invented. `ai-action-requests.js`'s full `PENDING_APPROVAL`/36-hour-delay
-workflow remains available and untouched for AI-*proposed* document
-actions, per SOW §11.
+## 4. Bugs found and fixed by this SOW's own testing
 
-## 4. Two Real Bugs Found and Fixed During This SOW's Own Testing
+- **Arabic rendering.** The font layer reversed glyphs per script run and misplaced spaces; `+` printed as a missing-glyph box. Fixed with word-atomic bidi layout, explicit spaces and per-character font fallback.
+- **PKR shown with 0 decimals** (ICU default). Fixed by forcing currency-table precision.
+- **First evidence node never written.** Claim rows carry `evidenceSeq: 0`, which the append filter did not match, leaving documents in `EVIDENCE_PENDING`. Fixed the filter.
+- **Template hash mismatch.** MongoDB stores `undefined` as `null`, so hashes taken before storage differed from those recomputed later. Everything hashed and stored now goes through `jsonSafe()`.
+- **Silent fallbacks removed.** An invalid business-report period and an unsupported locale both used to fall back silently; both now return 400.
+- **Denied link attempts were not logged.** Expired, revoked and over-limit attempts now write `DENIED` access events.
+- **Recovery jobs re-processed.** A queued recovery job stayed pending after its document had already recovered through another path; jobs are now closed on recovery.
+- **Recipient masking leaked short addresses.** The masking pattern needed two characters before `@`, so `r@acme.example` was stored in full. Fixed.
+- **AI summary injection guard.** A prompt injection inside a line-item description did not stop the model call, because only the summary facts were scanned. The validator's finding now also blocks the model, and "no model configured" is reported explicitly.
+- **Hardening.** A membership from another organization is refused by the view check; non-string line descriptions are rejected.
+- **External risk found:** the Pinata plan limit (`HTTP 403 ... plan usage limit`) blocked storage during testing. Storage now falls back across configured providers; the plan itself still needs attention (see §6).
 
-1. **A silent extra-page bug in the PDF footer.** Writing page-number
-   text near the bottom margin on a `switchToPage`-targeted page made
-   `pdfkit` think the content overflowed and silently append a blank
-   page per footer write — a real 3-page invoice rendered as 6 pages (3
-   real + 3 blank), caught by actually reading the rendered PDF page by
-   page, not by trusting a byte-count check. Fixed by zeroing the page's
-   bottom margin for the duration of the footer write (pdfkit's own
-   documented workaround for this exact behavior).
-2. **`generateInvoiceDocument` let a real storage failure throw
-   uncaught** rather than returning the `{error, status}` shape every
-   other function in this codebase uses, and rather than recording the
-   honest `STORAGE_FAILED` state SOW §27 explicitly requires. Fixed by
-   wrapping the storage call in try/catch, persisting a real
-   `STORAGE_FAILED` record (documentHash retained, no manifest, never
-   marked FINALIZED), and returning a clean error — caught by the
-   automated test suite when the (separately known, external) Pinata
-   plan-limit issue from earlier tonight was still in effect; by the
-   time of the final test run it had recovered, and the full real
-   pipeline (generation → storage → Evidence Graph → secure delivery →
-   revocation → superseded-version fail-closed) passed end-to-end for
-   real.
+## 5. Test results
 
-## 5. Testing
+Real MongoDB, no mocks of application logic. Tests run with `RESEND_API_KEY=` and `GEMINI_API_KEY=` emptied so no real email or AI calls are made.
 
-`test/document-automation.test.mjs` — **15/15 passing**, real MongoDB,
-no mocks:
-- Unit: calculation correctness (including the floating-point trap and a
-  hand-verified multi-line invoice with tax/discount/shipping), invalid
-  input rejection, atomic numbering (including the 20-concurrent-
-  allocation zero-collision test), canonical hashing (key-order
-  independence), tamper detection (a modified PDF byte fails hash
-  verification), real PDF rendering (multi-page and single-page, with a
-  genuine `/PDF-` magic-header check and a real page-count check read
-  from the PDF's own page tree, not just "did it not throw").
-- Integration: fail-closed permission denial for a non-finance-manager;
-  the full real pipeline (real invoice → real calculation → real PDF →
-  real atomic number → real encrypted storage → real Evidence Graph
-  `PROVEN_BY` relationship); regeneration creating a new version while
-  retaining the same document number and marking the prior version
-  `SUPERSEDED`; secure delivery's real byte round-trip through a real
-  token, real revocation (a revoked token is rejected immediately), and
-  a superseded document's link failing closed rather than silently
-  serving the newer version.
-- Regression: `finance-workflow.test.mjs`, `business-events.test.mjs`,
-  `crm-workflow.test.mjs` — **25/25 passing** after this SOW's two
-  purely-additive existing-file changes (`orgs.js`, `FinanceView.js`).
+| Suite | Result |
+|---|---|
+| `document-automation-unit` (money, calculations, numbering, hashes, templates, localization, renderer) | 20 tests, all passed in the first run; none of its code paths changed afterwards |
+| `document-automation-types` (nine document types, templates, preview) | 13 / 13 |
+| `document-automation-lifecycle` (idempotency, failure states, retries, void/cancel/expiry, search/brief/activity, AI) | 13 / 13 |
+| `document-automation-security` (isolation, IDOR, links, replay, approval integrity, injection, tampering, exhaustion) | 10 / 10 |
+| `document-automation-e2e` ($25,000 acceptance scenario, Data Room, supersession, real providers) | 3 / 3 |
+| Regression: finance, CRM, business events, event passport, event simulate | 35 / 35 |
+| Regression: docs content, evidence, guarded execution (12), AI action requests (+security), document permissions, activity, org trust, trust health | all passed |
+| Regression: evidence exporter | 3 passed, 2 failed for an external reason: both failing tests write a test object through the existing S3-compatible layer, and Pinata rejects the pin with `HTTP 403 ... Account blocked due to plan usage limit`. The failure is in the pre-existing storage path (which this SOW did not change), not in the exporter's new `documentAutomationEvidence` section. It will pass once the Pinata plan is restored. |
+| `npm run build` | Compiled successfully; all new routes and pages (`/verify-document`, `/shared-document/[token]`, `/document-room/[token]`, the `documents-automation` API tree) are in the build output |
 
-## 6. Known Limitations (honest, not silently omitted)
+The live deployment checks are recorded in §8.
 
-- **Only invoices are wired up.** The SOW's Section 4 lists eleven
-  document types; `numbering.js`'s prefix table and `generate.js`'s
-  orchestrator cover invoices for real. Purchase orders, quotations, and
-  the rest share the same real numbering/manifest/storage/delivery
-  primitives — extending to another type is now a second renderer plus
-  a thin orchestrator function, not new infrastructure.
-- **No template engine.** One real, fixed, tested invoice layout ships
-  this pass, not a versioned template authoring system (SOW §5/§23). A
-  genuine template engine (with the safety constraints §5 requires — no
-  server-side code execution from template content) is real, scoped
-  work deferred rather than half-built at the end of a long session.
-- **Organization/customer billing address fields don't exist yet** on
-  the underlying `orgs`/`crmContacts` schemas (confirmed by the Phase 0
-  audit) — the renderer handles their absence gracefully (verified: an
-  invoice with no address lines renders cleanly, no crash, no layout
-  gap), but a real invoice today will show a name and email only, no
-  street address, until those fields are added to the source models.
-- **Business Brief / Activity Center / Unified Search integration not
-  added.** The Phase 0 audit found all three already read generically
-  from `logOrgActivity`-backed records by `recordType`, meaning a
-  `DOCUMENT_FINALIZED` activity action would very likely surface
-  automatically — not independently verified this pass, since the audit
-  itself flagged this needs confirming against those modules' bodies,
-  not assumed.
-- **No Data Room integration** — delivery reuses the simpler, already-
-  existing document-share-token system rather than the heavier Data
-  Room feature, a deliberate reuse-target decision (see the module
-  header comments), not an oversight.
+## 6. Honest limits
 
-## 7. Deployment
+- **Signatures are approval stamps** naming the approver and time. They are not PKI or e-signature certificates.
+- **Scripts outside Latin, Greek, Cyrillic and Arabic** (for example Chinese, Japanese, Korean, Hebrew) are flagged by validation and may print blank until more fonts are bundled.
+- **A secure link is bearer access.** The recipient's email is recorded, not verified. Only the Data Room delivery verifies identity through a magic link.
+- **Credit and debit notes are documents that reference a real invoice.** Inaya's Finance module has no credit ledger, so issuing one does not change the invoice's recorded balance.
+- **Byte-identical re-rendering holds on the same runtime.** The Node/ICU version is recorded in each manifest because date and number text can differ across ICU versions.
+- **Storage bounds generation.** With every pinning provider down, generation fails honestly (`STORAGE_FAILED`) and recovers later. The Pinata plan is at its usage limit; the engine falls back to Filebase, but the plan should be upgraded so there is real redundancy.
+- **Rendering runs inside the API request** (bounded to 200 pages and 20 s). Very large batches should be spread out or moved to a queue.
+- **Email is notification-only.** With no `RESEND_API_KEY`, a delivery records `NOT_CONFIGURED` and the sender shares the link manually.
+- **Google Sign-In is not used** for external recipients; the Data Room magic link is the identity path.
 
-No new environment variables. Two new MongoDB collections
-(`generatedDocuments`, `documentSequences`), both created idempotently
-by the existing `ensureOrgIndexes()` path. The one existing route this
-SOW's UI change sits alongside (`finance/invoices/[invoiceId]/pdf`) is
-completely untouched — the new "Generate official document" action is
-additive, not a replacement.
+## 7. Deployment notes
+
+- No new required environment variables. `CRON_SECRET` is needed for the new hourly cron `/api/cron/document-automation` (`vercel.json` now has 18 crons).
+- `next.config.mjs` traces the bundled fonts into the document, invoice, cron and AI-execution functions (`outputFileTracingIncludes`). If tracing failed in production the renderer would fall back to Helvetica and report `unicodeFonts:false`; the live smoke test checks for this.
+- New MongoDB collections and indexes (`documentTemplates`, `documentTemplateCounters`, `documentNumberLedger`, `documentAutomationSettings`, `documentDeliveries`, `documentAccessEvents`, `documentJobs`, `documentMetrics`, plus unique idempotency, series and ledger indexes) are created by the existing `ensureOrgIndexes()` path.
+- The legacy `generate-document` invoice route is kept as a thin wrapper over the new pipeline, so existing callers and the invoice modal keep working. The old HTML print route is untouched.
+
+## 8. Deployment and live verification
+
+_To be completed after the build, push and live smoke test._

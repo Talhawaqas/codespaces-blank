@@ -666,6 +666,31 @@ async function proposeInvoiceDecision(args, ctx) {
   };
 }
 
+/** Document Automation SOW §11 -- AI may PROPOSE generating an official
+ *  document for an invoice; it never generates, approves or finalizes one
+ *  itself. Same guarded path as every other propose_* tool: a human with the
+ *  real permission approves the request, a 36h delay applies, and the cron
+ *  executor then only GENERATES the document (actor type "ai") -- approval
+ *  and finalization of the document itself remain human-only. */
+async function proposeInvoiceDocument(args, ctx) {
+  const { invoiceNumber } = args || {};
+  if (!invoiceNumber) return { error: "invoiceNumber is required." };
+  const matches = ctx.scope.visibleInvoices.filter((i) => matchesName(i.invoiceNumber, invoiceNumber));
+  if (matches.length === 0) return { notFound: true, invoiceNumber };
+  if (matches.length > 1) return { ambiguous: true, matches: matches.slice(0, 5).map((i) => ({ invoiceNumber: i.invoiceNumber, status: i.status, total: i.total })) };
+  const invoice = matches[0];
+  const canPropose = canAccessDepartment(ctx.membership, invoice.departmentId) && canManageFinance(ctx.membership);
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_invoice_document",
+    targetRecordType: "DOCUMENT_GENERATION", targetRecordId: invoice._id, proposedAction: "generate",
+    args: { documentType: "invoice", sourceId: invoice._id.toString() },
+    requestedContextSummary: `Generate the official invoice document for ${invoice.invoiceNumber} (${invoice.currency} ${invoice.total}).`,
+    actorEmail: ctx.email, canPropose,
+  });
+  if (result.error) return { error: result.error };
+  return { submitted: true, deduped: !!result.deduped, message: `Submitted for approval: generate the official document for invoice ${invoice.invoiceNumber}. A Finance Manager (or owner/admin) needs to approve it in the AI Action Requests panel; even then it only creates a draft document that a human must still approve and finalize.` };
+}
+
 /** Mirrors transitionLeaveRequest()'s gate exactly: approve/reject require
  *  canManageHR; cancel allows canManageHR OR the employee themselves
  *  (isOwnRequest, matched against ctx.email — the real authenticated
@@ -1156,6 +1181,15 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "propose_invoice_document",
+    description: "Propose generating the official PDF document for an invoice. This does NOT create anything immediately — it submits a request for a Finance Manager (or owner/admin) to approve in the AI Action Requests panel, and even after approval it only creates a DRAFT document that a human still has to approve and finalize.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: { invoiceNumber: { type: Type.STRING, description: "The invoice number, or a distinctive part of it." } },
+      required: ["invoiceNumber"],
+    },
+  },
+  {
     name: "propose_leave_decision",
     description: "Propose a decision on an employee's pending leave request (approve, reject, or cancel). This does NOT change the request immediately — it submits a request for an HR Manager (or the employee themselves, for a cancellation) to approve in the AI Action Requests panel, and even after approval it only executes 36 hours later.",
     parameters: {
@@ -1293,6 +1327,7 @@ const TOOL_IMPLEMENTATIONS = {
   propose_document_transition: proposeDocumentTransition,
   propose_employee_transition: proposeEmployeeTransition,
   propose_invoice_decision: proposeInvoiceDecision,
+  propose_invoice_document: proposeInvoiceDocument,
   propose_leave_decision: proposeLeaveDecision,
   propose_purchase_order_transition: proposePurchaseOrderTransition,
   propose_purchase_request_transition: proposePurchaseRequestTransition,
@@ -1323,7 +1358,7 @@ Keep answers concise and concrete: reference actual filenames, department/projec
 
 For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows. For a periodic recap ("give me my weekly brief", "daily summary", "how did this month go"), use get_business_brief instead — narrate its real highlights/alerts in your own words rather than just listing them back verbatim.
 
-For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request with no matching propose_* tool AND no matching guided workflow below (changing permissions, sending an external communication, or anything else this file has no tool for), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
+For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_invoice_document, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request with no matching propose_* tool AND no matching guided workflow below (changing permissions, sending an external communication, or anything else this file has no tool for), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
 
 For "help me do X", "walk me through X", or "how do I create/submit/find X" requests that match a supported guided workflow (creating a contact, deal, purchase order, or document; receiving inventory; submitting or reviewing an approval; generating a business report; finding a record; or navigating to a workspace function), call start_guided_task with the matching workflowKey. Give ONLY the first step's instruction back to the user — never list the whole workflow up front. The user completes each real step themselves in the actual UI (or clicks "I did this" in the guided task panel); most steps advance automatically or via that button, without you needing to do anything further. Only call advance_guided_task_step yourself when you've independently verified the outcome with another tool — never just because the user said "done" in chat. If the user asks about progress mid-task, call get_guided_task_status rather than guessing which step they're on. If they want to stop, pause, or start over, use cancel_guided_task / set_guided_task_paused rather than just replying that you will. A guided task never touches a real business record by itself — it only tracks which step the user is on; the real record only changes when the user performs the actual action (or, for the propose_* transitions above, once a human approves it).
 

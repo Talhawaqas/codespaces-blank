@@ -32,7 +32,9 @@ import { logOrgActivity } from "./org-activity-log.js";
 // Review Room template -- falls through canManageRoomType()'s existing
 // canManageOrg() default below, same as any other unlisted-but-valid type
 // would, so no new gate function is needed for it.
-export const ROOM_TYPES = ["investor", "diligence", "audit", "legal"];
+// "document_delivery" (Document Automation SOW §16/§17): one room per delivered
+// generated document, identity-verified via the same magic-link session.
+export const ROOM_TYPES = ["investor", "diligence", "audit", "legal", "document_delivery"];
 const EXTERNAL_MAGIC_LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes, same as every other magic link in this app
 const DEFAULT_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 

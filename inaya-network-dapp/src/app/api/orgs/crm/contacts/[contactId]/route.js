@@ -7,6 +7,7 @@
 // DELETE soft-deletes.
 
 import { NextResponse } from "next/server";
+import { normalizeAddress } from "../../../../../../lib/documentAutomation/settings.js";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
 
 const CONTACT_TYPES = ["LEAD", "CUSTOMER"];
@@ -16,6 +17,7 @@ function serializeContact(c) {
     id: c._id.toString(), orgId: c.orgId.toString(), departmentId: c.departmentId.toString(),
     type: c.type, name: c.name, email: c.email || null, phone: c.phone || null,
     company: c.company || null, notes: c.notes || null,
+    taxId: c.taxId || null, paymentTerms: c.paymentTerms || null, billingAddress: c.billingAddress || null, shippingAddress: c.shippingAddress || null,
     createdByEmail: c.createdByEmail, createdAt: c.createdAt, updatedAt: c.updatedAt,
   };
 }
@@ -72,6 +74,14 @@ export async function PATCH(req, { params }) {
     if (phone !== undefined) updateFields.phone = phone ? String(phone).trim() : null;
     if (company !== undefined) updateFields.company = company ? String(company).trim() : null;
     if (notes !== undefined) updateFields.notes = notes ? String(notes).trim() : null;
+    if (body.taxId !== undefined) updateFields.taxId = body.taxId ? String(body.taxId).trim().slice(0, 64) : null;
+    if (body.paymentTerms !== undefined) updateFields.paymentTerms = body.paymentTerms ? String(body.paymentTerms).trim().slice(0, 200) : null;
+    for (const key of ["billingAddress", "shippingAddress"]) {
+      if (body[key] === undefined) continue;
+      const r = normalizeAddress(body[key], key);
+      if (r.error) return NextResponse.json({ error: r.error }, { status: 400 });
+      updateFields[key] = r.value;
+    }
 
     await crmContacts.updateOne({ _id: contact._id }, { $set: updateFields });
     const updated = await crmContacts.findOne({ _id: contact._id });

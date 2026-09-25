@@ -8,7 +8,7 @@
 // check this codebase already performs elsewhere (canAccessDepartment,
 // canManageOrg) — nothing here is invented for display purposes.
 
-import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
+import { getOrgCollections, canAccessDepartment, canManageOrg, toObjectId } from "./orgs.js";
 import { getBusinessEvent } from "./businessEvents.js";
 import { verifyChainIntegrity } from "./auditChain.js";
 
@@ -22,6 +22,11 @@ const RESOLVABLE_TYPES = {
   AI_ACTION_REQUEST: { collectionKey: "aiActionRequests", hasDepartment: false, label: (r) => r.proposedAction },
   SUPPLIER: { collectionKey: "suppliers", hasDepartment: true, label: (r) => r.name },
   DOCUMENT: { collectionKey: "orgDocuments", hasDepartment: false, label: (r) => r.filename },
+  // Document Automation SOW -- generated documents and their source records.
+  GENERATED_DOCUMENT: { collectionKey: "generatedDocuments", hasDepartment: true, label: (r) => `${r.documentNumber} v${r.documentVersion}` },
+  CRM_CONTACT: { collectionKey: "crmContacts", hasDepartment: true, label: (r) => r.name },
+  CRM_DEAL: { collectionKey: "crmDeals", hasDepartment: true, label: (r) => r.title },
+  PAYMENT: { collectionKey: "payments", hasDepartment: true, label: (r) => `${r.direction} ${r.amount}` },
 };
 
 /** Resolves one relationship target into an evidence-panel row, honoring
@@ -37,7 +42,7 @@ async function resolveEvidenceItem({ orgId, membership, targetType, targetId }) 
   const record = await collections[spec.collectionKey].findOne({ _id: toObjectId(targetId), orgId: toObjectId(orgId) });
   if (!record) return { targetType, targetId: String(targetId), state: "UNAVAILABLE" };
 
-  const visible = spec.hasDepartment ? canAccessDepartment(membership, record.departmentId) : true;
+  const visible = spec.hasDepartment && record.departmentId ? canAccessDepartment(membership, record.departmentId) : spec.hasDepartment ? canManageOrg(membership) : true;
   if (!visible) return { targetType, targetId: String(targetId), state: "RESTRICTED" };
 
   return { targetType, targetId: String(targetId), state: "INCLUDED", label: spec.label(record) || null, status: record.status || null };

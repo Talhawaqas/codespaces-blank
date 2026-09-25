@@ -53,6 +53,7 @@
 // uses for workflow transitions — that's what makes concurrent access
 // against a maxUses-limited link race-safe without extra locking.
 
+import { documentVisibilityFilter } from "./documentAutomation/visibility.js";
 import { randomBytes, createHash } from "node:crypto";
 import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, canAccessHealthRecords, canAccessLegalMatters, canAccessFinancialEntities, toObjectId } from "./orgs.js";
 import { logDocumentActivity } from "./activity-log.js";
@@ -172,7 +173,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     healthPatients, healthEncounters, healthCareTeamAssignments,
     legalClients, legalMatters, legalMatterTeamAssignments,
     financialFunds, financialFundTeamAssignments, financialEntities,
-    businessEvents,
+    businessEvents, generatedDocuments,
   } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const isOrgManager = canManageOrg(membership);
@@ -360,13 +361,23 @@ export async function getAccessibleScope({ orgId, membership, email }) {
     $or: [{ departmentId: { $in: visibleDeptIds } }, ...(isOrgManager ? [{ departmentId: null }] : [])],
   }).sort({ createdAt: -1 }).toArray();
 
+  // Document Automation SOW §31 -- generated documents, filtered by the
+  // ONE shared visibility rule (documentAutomation/visibility.js): finance
+  // documents need finance access, and every document needs department
+  // access (or, with no department, org-manager / own authorship). Only the
+  // lightweight fields Unified Search reads are fetched.
+  const visibleGeneratedDocuments = await generatedDocuments.find(
+    { orgId: orgObjectId, deletedAt: null, status: { $ne: "DRAFT" }, ...documentVisibilityFilter({ membership, email, visibleDepartmentIds: visibleDeptIds }) },
+    { projection: { documentNumber: 1, documentVersion: 1, documentType: 1, status: 1, counterpartyName: 1, searchText: 1, departmentId: 1, createdAt: 1, currency: 1, grandTotal: 1 } }
+  ).sort({ createdAt: -1 }).limit(500).toArray();
+
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
     visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
     visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
     visiblePatients, visibleEncounters, visibleClients, visibleMatters,
     visibleFunds, visibleEntities,
-    visibleBusinessEvents,
+    visibleBusinessEvents, visibleGeneratedDocuments,
   };
 }
 

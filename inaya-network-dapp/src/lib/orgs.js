@@ -514,6 +514,16 @@ export async function getOrgCollections() {
     // Native Document & Invoice Automation Engine SOW
     generatedDocuments: db.collection("generatedDocuments"),
     documentSequences: db.collection("documentSequences"),
+    // Document Automation SOW (full engine): versioned templates, the
+    // auditable number ledger, per-org settings, delivery/access records.
+    documentTemplates: db.collection("documentTemplates"),
+    documentTemplateCounters: db.collection("documentTemplateCounters"),
+    documentNumberLedger: db.collection("documentNumberLedger"),
+    documentAutomationSettings: db.collection("documentAutomationSettings"),
+    documentDeliveries: db.collection("documentDeliveries"),
+    documentAccessEvents: db.collection("documentAccessEvents"),
+    documentJobs: db.collection("documentJobs"),
+    documentMetrics: db.collection("documentMetrics"),
   };
 }
 
@@ -566,6 +576,7 @@ export async function ensureOrgIndexes() {
     nasAppliances, nasShares, nasUsers, nasBackupRuns, nasRecoveryDrills,
     aiSecurityChecks, aiSecurityPolicies, aiModelRegistry,
     generatedDocuments,
+    documentTemplates, documentNumberLedger, documentAutomationSettings, documentDeliveries, documentAccessEvents, documentJobs, documentMetrics,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -855,6 +866,22 @@ export async function ensureOrgIndexes() {
     // Native Document & Invoice Automation Engine SOW
     generatedDocuments.createIndex({ orgId: 1, sourceRecordType: 1, sourceRecordId: 1, createdAt: -1 }),
     generatedDocuments.createIndex({ orgId: 1, documentNumber: 1 }),
+    generatedDocuments.createIndex({ orgId: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: "string" } } }),
+    generatedDocuments.createIndex({ orgId: 1, seriesKey: 1, documentVersion: 1 }, { unique: true, partialFilterExpression: { seriesKey: { $type: "string" } } }),
+    generatedDocuments.createIndex({ orgId: 1, status: 1, createdAt: -1 }),
+    generatedDocuments.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
+    documentTemplates.createIndex({ orgId: 1, templateKey: 1, version: 1 }, { unique: true }),
+    documentTemplates.createIndex({ orgId: 1, documentType: 1, status: 1 }),
+    documentNumberLedger.createIndex({ orgId: 1, number: 1 }, { unique: true }),
+    documentNumberLedger.createIndex({ orgId: 1, documentType: 1, fiscalYear: 1, sequence: 1 }),
+    documentAutomationSettings.createIndex({ orgId: 1 }, { unique: true }),
+    documentDeliveries.createIndex({ orgId: 1, documentId: 1, createdAt: -1 }),
+    documentDeliveries.createIndex({ orgId: 1, deliveryKey: 1 }, { unique: true, partialFilterExpression: { deliveryKey: { $type: "string" } } }),
+    documentAccessEvents.createIndex({ orgId: 1, documentId: 1, at: -1 }),
+    documentJobs.createIndex({ orgId: 1, documentId: 1, kind: 1, status: 1 }),
+    documentJobs.createIndex({ status: 1, nextAttemptAt: 1 }),
+    documentMetrics.createIndex({ orgId: 1, metric: 1, at: -1 }),
+    documentMetrics.createIndex({ atDate: 1 }, { expireAfterSeconds: 90 * 24 * 3600 }),
   ]);
 
   indexesEnsured = true;

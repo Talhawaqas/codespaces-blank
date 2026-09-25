@@ -24,6 +24,7 @@ import { getPublicSecurityStats, getRecentSecurityEvents } from "./security.js";
 import { getBackupStatus } from "./backupEngine.js";
 import { combineShardStates, HEALTH_STATES } from "./backupHealth.js";
 import { connectToDatabase } from "./mongodb.js";
+import { documentHealthSnapshot } from "./documentAutomation/briefIntegration.js";
 
 export const OVERALL_STATUS = { GOOD: "good", ATTENTION: "attention", CRITICAL: "critical" };
 
@@ -34,12 +35,13 @@ export const OVERALL_STATUS = { GOOD: "good", ATTENTION: "attention", CRITICAL: 
 const MAX_ASSETS_CHECKED = 25;
 
 async function computeOrgSnapshot({ orgId, membership, email }) {
-  const [chainResult, pendingActions, approvedActions, insights, platformSecurity] = await Promise.all([
+  const [chainResult, pendingActions, approvedActions, insights, platformSecurity, documents] = await Promise.all([
     verifyChainIntegrity(orgId),
     listAiActionRequests({ orgId, status: "PENDING_APPROVAL" }),
     listAiActionRequests({ orgId, status: "APPROVED" }),
     computeBusinessInsights({ orgId, membership, email, periodDays: 30 }).catch(() => null),
     getPublicSecurityStats().catch(() => null),
+    documentHealthSnapshot({ orgId }).catch(() => null),
   ]);
 
   const now = Date.now();
@@ -50,7 +52,7 @@ async function computeOrgSnapshot({ orgId, membership, email }) {
 
   let overallStatus = OVERALL_STATUS.GOOD;
   if (!chainResult.valid || byRisk.HIGH > 0) overallStatus = OVERALL_STATUS.CRITICAL;
-  else if (byRisk.MEDIUM > 0 || stalePastSettlement > 0) overallStatus = OVERALL_STATUS.ATTENTION;
+  else if (byRisk.MEDIUM > 0 || stalePastSettlement > 0 || (documents && (documents.failed > 0 || documents.evidencePending > 0 || documents.staleApproval > 0))) overallStatus = OVERALL_STATUS.ATTENTION;
 
   return {
     scope: "org",
@@ -64,6 +66,7 @@ async function computeOrgSnapshot({ orgId, membership, email }) {
       pendingLowRisk: byRisk.LOW,
       stalePastSettlement,
     },
+    documents: documents ? { failed: documents.failed, evidencePending: documents.evidencePending, awaitingApproval: documents.awaitingApproval, staleApproval: documents.staleApproval } : null,
     businessHealth: insights
       ? {
           overduePendingApprovals: insights.kpis?.pendingApprovals?.value ?? null,

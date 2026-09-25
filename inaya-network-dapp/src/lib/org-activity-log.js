@@ -38,7 +38,11 @@ export async function logOrgActivity({ orgId, recordType, recordId, actorEmail, 
   // contention exhausting retries) must never block the actual workflow
   // transition that's already committed.
   try {
-    await appendAuditEntry({ orgId, recordType, recordId, actorEmail, action, previousState, newState, metadata });
+    const entry = await appendAuditEntry({ orgId, recordType, recordId, actorEmail, action, previousState, newState, metadata });
+    // Returned (never stored on the org_activity row) so callers that keep
+    // their own evidence trail -- the Document Automation engine -- can
+    // cross-reference the exact chain entry that recorded this event.
+    event.auditChain = { seq: entry.seq, entryHash: entry.entryHash };
   } catch (err) {
     console.error("org-activity-log: audit chain append failed:", err.message);
   }

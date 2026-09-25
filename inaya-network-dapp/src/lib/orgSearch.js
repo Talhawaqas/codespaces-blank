@@ -21,7 +21,7 @@
 
 import { getAccessibleScope } from "./document-permissions.js";
 
-const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company", "legalName", "preferredName", "subjectLabel"];
+const SEARCHABLE_FIELDS = ["name", "title", "filename", "invoiceNumber", "description", "email", "company", "legalName", "preferredName", "subjectLabel", "searchText"];
 
 function matchText(record, query) {
   const q = query.toLowerCase();
@@ -61,6 +61,10 @@ const ENTITY_SOURCES = [
   // is already department/org-manager scoped by getAccessibleScope() itself,
   // same no-leak-by-construction guarantee as every source above.
   { entityType: "business event", arrayKey: "visibleBusinessEvents", label: (r) => r.subjectLabel || r.eventType, view: "evidence" },
+  // Document Automation SOW §31 -- searchable by number, customer, date,
+  // status and type through the flat `searchText` field; already filtered
+  // by getAccessibleScope()'s shared document visibility rule.
+  { entityType: "generated document", arrayKey: "visibleGeneratedDocuments", label: (r) => `${r.documentNumber} v${r.documentVersion}`, subtitle: (r) => `${String(r.documentType).replace("_", " ")} - ${String(r.status).toLowerCase().replace("_", " ")}${r.counterpartyName ? ` - ${r.counterpartyName}` : ""}`, view: "documentAutomation" },
 ];
 
 /** searchOrg({orgId, membership, email, query, limit}) — one call, every
@@ -84,7 +88,7 @@ export async function searchOrg({ orgId, membership, email, query, limit = 20 })
         entityType: source.entityType,
         id: record._id?.toString?.() || String(record._id),
         title: label,
-        subtitle: source.entityType,
+        subtitle: source.subtitle ? source.subtitle(record) : source.entityType,
         view: source.view,
         actionUrl: `/business?view=${source.view}`,
       });

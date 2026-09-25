@@ -109,6 +109,24 @@ async function gatherAuditEvidence(orgId, { sinceIso }) {
   };
 }
 
+/** Document Automation SOW §36 -- finalized generated documents, as another
+ *  section of this SAME exporter (not a second export engine): counts by
+ *  type/status, the manifest fingerprints of the most recent finalized
+ *  documents, and how many carry a complete evidence chain. Read-only. */
+async function gatherDocumentEvidence(orgId) {
+  const { generatedDocuments } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const [byStatus, recent] = await Promise.all([
+    generatedDocuments.aggregate([{ $match: { orgId: orgObjectId, deletedAt: null } }, { $group: { _id: { type: "$documentType", status: "$status" }, count: { $sum: 1 } } }]).toArray(),
+    generatedDocuments.find({ orgId: orgObjectId, deletedAt: null, manifest: { $ne: null } }, { projection: { documentNumber: 1, documentType: 1, documentVersion: 1, status: 1, documentHash: 1, finalizedAt: 1, "manifest.manifestHash": 1, "manifest.evidenceRoot": 1, evidenceSeq: 1 } }).sort({ finalizedAt: -1 }).limit(200).toArray(),
+  ]);
+  return {
+    countsByTypeAndStatus: byStatus.map((r) => ({ type: r._id.type, status: r._id.status, count: r.count })),
+    recentFinalized: recent.map((d) => ({ number: d.documentNumber, type: d.documentType, version: d.documentVersion, status: d.status, documentHash: d.documentHash, manifestHash: d.manifest?.manifestHash || null, evidenceRoot: d.manifest?.evidenceRoot || null, evidenceNodes: d.evidenceSeq || 0, finalizedAt: d.finalizedAt })),
+    immutability: "Finalized documents are stored in a versioned, Object Lock-enabled bucket with a retention period; superseded versions are retained, never overwritten.",
+  };
+}
+
 /** Builds the full evidence package for one org. `sinceIso`/`untilIso`
  *  scope the reporting period (SOW §6.4 "reporting period"); omit both
  *  for "everything on record." Never mutates anything -- every call here
@@ -118,10 +136,11 @@ export async function buildEvidencePackage({ orgId, actorEmail, sinceIso = null,
   const org = await orgs.findOne({ _id: toObjectId(orgId) });
   if (!org) throw new Error("Organization not found.");
 
-  const [storage, security, audit] = await Promise.all([
+  const [storage, security, audit, documents] = await Promise.all([
     gatherStorageEvidence(orgId),
     gatherSecurityEvidence(orgId, { sinceIso }),
     gatherAuditEvidence(orgId, { sinceIso }),
+    gatherDocumentEvidence(orgId).catch(() => null),
   ]);
 
   const generatedAt = new Date().toISOString();
@@ -137,6 +156,7 @@ export async function buildEvidencePackage({ orgId, actorEmail, sinceIso = null,
     storageEvidence: storage,
     securityEvidence: security,
     auditEvidence: audit,
+    documentAutomationEvidence: documents,
     cryptographicEvidence: {
       // Objects written through the S3-compat layer use Inaya's real
       // server-managed envelope-encryption model (see store.js's own

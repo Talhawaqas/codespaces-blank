@@ -88,6 +88,15 @@ const EXECUTORS = {
   // approved the proposal AND the 36h delay has genuinely passed. See
   // escrow-workflow.js's releaseMilestonePayment() header comment.
   ESCROW: ({ orgId, args, actorEmail }) => releaseMilestonePayment({ orgId, escrowId: args.escrowId, milestoneIndex: args.milestoneIndex, actorEmail }),
+  // Document Automation SOW §11 -- an approved AI proposal only ever
+  // GENERATES a draft document (actor type "ai" is recorded in its evidence
+  // chain). Approving and finalizing that document is human-only: lifecycle.js
+  // refuses any non-human actor. Lazy import: documentAutomation reaches back
+  // into businessEvents -> this file, so a static import would be a cycle.
+  DOCUMENT_GENERATION: async ({ orgId, args, actorEmail }) => {
+    const { createDocument } = await import("./documentAutomation/pipeline.js");
+    return createDocument({ orgId, documentType: args.documentType, sourceId: args.sourceId, options: args.options, membership: SYSTEM_EXECUTOR_MEMBERSHIP, email: actorEmail, actorType: "ai", idempotencyKey: `ai-${String(args.sourceId)}-${String(args.documentType)}-${new Date().toISOString().slice(0, 10)}` });
+  },
 };
 
 // Enterprise OS SOW, Phase 3 — same "wrap in try/catch, log and continue,
@@ -191,6 +200,7 @@ const RISK_LEVELS = {
   PURCHASE_ORDER: "HIGH",
   "COMPLIANCE_POLICY:amend": "HIGH",
   "ESCROW:release": "HIGH",
+  "DOCUMENT_GENERATION:generate": "MEDIUM",
 };
 
 export function classifyRisk(targetRecordType, proposedAction) {

@@ -31,7 +31,7 @@ export async function GET(req) {
   const managerOrgIds = memberships.filter(canManageOrg).map((m) => m.orgId);
 
   if (managerOrgIds.length === 0) {
-    return NextResponse.json({ documents: [] });
+    return NextResponse.json({ documents: [], generatedDocuments: [] });
   }
 
   const docs = await orgDocuments
@@ -45,7 +45,23 @@ export async function GET(req) {
   const projectDocs = await projects.find({ _id: { $in: docs.map((d) => d.projectId) } }).toArray();
   const projectNameById = new Map(projectDocs.map((p) => [p._id.toString(), p.name]));
 
+  // Document Automation SOW section 30: generated documents waiting for approval,
+  // as an ADDITIVE key so the desktop wrapper's existing "documents" handling is
+  // unchanged. Owner/admin only (the same scope as the list above); finance
+  // managers see theirs in the workspace Approvals view.
+  const { generatedDocuments } = await getOrgCollections();
+  const pendingGenerated = await generatedDocuments
+    .find({ orgId: { $in: managerOrgIds }, status: "PENDING_APPROVAL", deletedAt: null })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .toArray();
+
   return NextResponse.json({
+    generatedDocuments: pendingGenerated.map((d) => ({
+      id: d._id.toString(), documentNumber: d.documentNumber, documentType: d.documentType, documentVersion: d.documentVersion,
+      orgId: d.orgId.toString(), orgName: orgNameById.get(d.orgId.toString()) || "Unknown", currency: d.currency || null, grandTotal: d.grandTotal ?? null,
+      counterpartyName: d.counterpartyName || null, requestedAt: d.approval?.requestedAt || d.createdAt,
+    })),
     documents: docs.map((d) => ({
       id: d._id.toString(),
       filename: d.filename,

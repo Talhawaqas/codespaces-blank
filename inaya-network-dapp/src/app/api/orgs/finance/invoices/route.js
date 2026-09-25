@@ -11,6 +11,8 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { INVOICE_STATES } from "../../../../../lib/invoice-workflow.js";
 import { isSupportedCurrency } from "../../../../../lib/currency.js";
+import { parseInvoiceExtras, validateInvoiceLines, computeInvoiceTotals } from "../../../../../lib/documentAutomation/invoiceTerms.js";
+import { getDocumentSettings } from "../../../../../lib/documentAutomation/settings.js";
 
 function computeTotal(lineItems) {
   return lineItems.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitPrice), 0);
@@ -21,23 +23,14 @@ function serializeInvoice(inv) {
     id: inv._id.toString(), orgId: inv.orgId.toString(), departmentId: inv.departmentId.toString(),
     contactId: inv.contactId.toString(), invoiceNumber: inv.invoiceNumber, issueDate: inv.issueDate, dueDate: inv.dueDate,
     lineItems: inv.lineItems, subtotal: inv.subtotal, total: inv.total, currency: inv.currency, status: inv.status,
-    notes: inv.notes || null, createdByEmail: inv.createdByEmail, createdAt: inv.createdAt, updatedAt: inv.updatedAt,
+    notes: inv.notes || null, paymentTerms: inv.paymentTerms || null, reference: inv.reference || null, poNumber: inv.poNumber || null,
+    documentTerms: inv.documentTerms || null, officialDocumentNumber: inv.officialDocumentNumber || null,
+    createdByEmail: inv.createdByEmail, createdAt: inv.createdAt, updatedAt: inv.updatedAt,
   };
 }
 
 function validateLineItems(raw) {
-  if (!Array.isArray(raw) || raw.length === 0) return { error: "At least one line item is required." };
-  const lineItems = [];
-  for (const item of raw) {
-    const description = String(item?.description || "").trim();
-    const quantity = Number(item?.quantity);
-    const unitPrice = Number(item?.unitPrice);
-    if (!description) return { error: "Every line item needs a description." };
-    if (!Number.isFinite(quantity) || quantity <= 0) return { error: `Invalid quantity for "${description}".` };
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) return { error: `Invalid unit price for "${description}".` };
-    lineItems.push({ description, quantity, unitPrice });
-  }
-  return { lineItems };
+  return validateInvoiceLines(raw);
 }
 
 export async function GET(req) {
@@ -79,7 +72,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, contactId, invoiceNumber, issueDate, dueDate, lineItems: rawItems, notes, currency } = await req.json();
+    const body = await req.json();
+    const { orgId, departmentId, contactId, invoiceNumber, issueDate, dueDate, lineItems: rawItems, notes, currency } = body;
     if (!orgId || !departmentId || !contactId || !dueDate) {
       return NextResponse.json({ error: "orgId, departmentId, contactId, and dueDate are required." }, { status: 400 });
     }
@@ -87,6 +81,8 @@ export async function POST(req) {
     if (!isSupportedCurrency(invoiceCurrency)) return NextResponse.json({ error: `Unsupported currency "${invoiceCurrency}".` }, { status: 400 });
     const { lineItems, error: itemsError } = validateLineItems(rawItems);
     if (itemsError) return NextResponse.json({ error: itemsError }, { status: 400 });
+    const extras = parseInvoiceExtras(body);
+    if (extras.error) return NextResponse.json({ error: extras.error }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
@@ -105,20 +101,29 @@ export async function POST(req) {
     const contact = await crmContacts.findOne({ _id: contactObjectId, orgId: orgObjectId, deletedAt: null });
     if (!contact) return NextResponse.json({ error: "Contact not found." }, { status: 404 });
 
-    const total = computeTotal(lineItems);
+    // Stored subtotal/total come from the same exact decimal engine the
+    // generated document uses (Document Automation SOW section 8), never float math.
+    let subtotal; let total;
+    try {
+      const settings = await getDocumentSettings(orgId);
+      ({ subtotal, total } = computeInvoiceTotals({ lineItems, currency: invoiceCurrency, terms: extras.terms, orgDefaultTaxPercent: settings.billingProfile.defaultTaxPercent }));
+    } catch (calcErr) {
+      return NextResponse.json({ error: `Cannot total this invoice: ${calcErr.message}` }, { status: 400 });
+    }
     const now = new Date().toISOString();
     const result = await invoices.insertOne({
       orgId: orgObjectId, departmentId: departmentObjectId, contactId: contactObjectId,
       invoiceNumber: invoiceNumber ? String(invoiceNumber).trim() : `INV-${Date.now().toString(36).toUpperCase()}`,
-      issueDate: issueDate || now, dueDate, lineItems, subtotal: total, total, currency: invoiceCurrency,
+      issueDate: issueDate || now, dueDate, lineItems, subtotal, total, currency: invoiceCurrency,
       status: "DRAFT", notes: notes ? String(notes).trim() : null,
+      ...extras.top, ...(Object.keys(extras.terms).length ? { documentTerms: extras.terms } : {}),
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
 
     return NextResponse.json(serializeInvoice({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, contactId: contactObjectId,
       invoiceNumber: invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`, issueDate: issueDate || now, dueDate,
-      lineItems, subtotal: total, total, currency: invoiceCurrency, status: "DRAFT", notes,
+      lineItems, subtotal, total, currency: invoiceCurrency, status: "DRAFT", notes, ...extras.top, documentTerms: Object.keys(extras.terms).length ? extras.terms : null,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }));
   } catch (err) {

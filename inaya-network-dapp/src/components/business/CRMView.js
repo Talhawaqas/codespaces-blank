@@ -150,6 +150,30 @@ function ContactsTab({ orgId, departments, focusContactId, onFocusHandled }) {
   );
 }
 
+// Document Automation SOW section 7: billing/shipping addresses, tax id and
+// payment terms so invoices, quotations and statements print complete customer
+// details. All optional; an existing contact is unchanged.
+const ADDRESS_FIELDS = [["line1", "Address line 1"], ["line2", "Address line 2"], ["city", "City"], ["region", "State / region"], ["postalCode", "Postal code"], ["country", "Country"]];
+const inputCls = "w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]";
+
+function AddressFields({ label, value, onChange }) {
+  return (
+    <fieldset className="space-y-1.5 border-t border-white/5 pt-2">
+      <legend className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">{label}</legend>
+      <div className="grid grid-cols-2 gap-1.5">
+        {ADDRESS_FIELDS.map(([k, ph]) => (
+          <input key={k} aria-label={`${label} ${ph}`} placeholder={ph} value={value[k] || ""} onChange={(e) => onChange({ ...value, [k]: e.target.value })} className={inputCls} />
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function cleanAddress(a) {
+  const out = Object.fromEntries(Object.entries(a || {}).filter(([, v]) => String(v || "").trim()).map(([k, v]) => [k, String(v).trim()]));
+  return Object.keys(out).length ? out : null;
+}
+
 function CreateContactModal({ orgId, departments, onClose, onCreated }) {
   const [departmentId, setDepartmentId] = useState("");
   const [type, setType] = useState("LEAD");
@@ -157,6 +181,10 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
   const [companyName, setCompanyName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [billing, setBilling] = useState({});
+  const [shipping, setShipping] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -166,7 +194,7 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/crm/contacts", { method: "POST", body: JSON.stringify({ orgId, departmentId, type, name: name.trim(), company: companyName.trim() || undefined, email: contactEmail.trim() || undefined, phone: phone.trim() || undefined }) });
+      await api("/api/orgs/crm/contacts", { method: "POST", body: JSON.stringify({ orgId, departmentId, type, name: name.trim(), company: companyName.trim() || undefined, email: contactEmail.trim() || undefined, phone: phone.trim() || undefined, taxId: taxId.trim() || undefined, paymentTerms: paymentTerms.trim() || undefined, billingAddress: cleanAddress(billing) || undefined, shippingAddress: cleanAddress(shipping) || undefined }) });
       window.dispatchEvent(new CustomEvent("inaya:guided-contact-created"));
       onCreated();
     } catch (err) {
@@ -203,6 +231,12 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
         <FormField label="Phone" htmlFor="contact-phone">
           <input id="contact-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Optional" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         </FormField>
+        <div className="grid grid-cols-2 gap-1.5 border-t border-white/5 pt-2">
+          <input aria-label="Tax ID" placeholder="Tax ID / VAT (optional)" value={taxId} onChange={(e) => setTaxId(e.target.value)} className={inputCls} />
+          <input aria-label="Payment terms" placeholder="Payment terms, e.g. Net 30" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className={inputCls} />
+        </div>
+        <AddressFields label="Billing address" value={billing} onChange={setBilling} />
+        <AddressFields label="Shipping address" value={shipping} onChange={setShipping} />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create contact"}</button>
       </form>
@@ -213,6 +247,25 @@ function CreateContactModal({ orgId, departments, onClose, onCreated }) {
 function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [taxId, setTaxId] = useState(contact.taxId || "");
+  const [paymentTerms, setPaymentTerms] = useState(contact.paymentTerms || "");
+  const [billing, setBilling] = useState(contact.billingAddress || {});
+  const [shipping, setShipping] = useState(contact.shippingAddress || {});
+
+  async function saveBilling() {
+    setSaving(true);
+    setError("");
+    try {
+      await api(`/api/orgs/crm/contacts/${contact.id}`, { method: "PATCH", body: JSON.stringify({ orgId, taxId: taxId.trim() || null, paymentTerms: paymentTerms.trim() || null, billingAddress: cleanAddress(billing), shippingAddress: cleanAddress(shipping) }) });
+      onChanged();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function toggleType() {
     setSaving(true);
@@ -233,6 +286,25 @@ function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
       <div className="space-y-3">
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{contact.company || "No company"}{contact.email ? ` · ${contact.email}` : ""}{contact.phone ? ` · ${contact.phone}` : ""}</p>
         <StatusBadge status={contact.type} tone={contact.type === "CUSTOMER" ? "success" : "warning"} />
+        {!editing && (
+          <div className="space-y-1 text-[12px] font-mono text-[var(--inaya-text-muted)]">
+            <p>Tax ID: {contact.taxId || "—"} · Payment terms: {contact.paymentTerms || "—"}</p>
+            <p>Billing: {contact.billingAddress ? Object.values(contact.billingAddress).join(", ") : "—"}</p>
+            <p>Shipping: {contact.shippingAddress ? Object.values(contact.shippingAddress).join(", ") : "—"}</p>
+            <button onClick={() => setEditing(true)} className="text-[11px] font-bold uppercase text-[#00f2fe]">Edit billing details</button>
+          </div>
+        )}
+        {editing && (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-1.5">
+              <input aria-label="Tax ID" placeholder="Tax ID / VAT" value={taxId} onChange={(e) => setTaxId(e.target.value)} className={inputCls} />
+              <input aria-label="Payment terms" placeholder="Payment terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className={inputCls} />
+            </div>
+            <AddressFields label="Billing address" value={billing} onChange={setBilling} />
+            <AddressFields label="Shipping address" value={shipping} onChange={setShipping} />
+            <button onClick={saveBilling} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{saving ? "…" : "Save billing details"}</button>
+          </div>
+        )}
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={toggleType} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
           {saving ? "…" : contact.type === "LEAD" ? "Convert to Customer" : "Revert to Lead"}
