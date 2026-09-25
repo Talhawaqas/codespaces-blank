@@ -244,6 +244,14 @@ export function canAccessDataSources(membership) {
   return canManageDataSources(membership) || membership?.dataSourceRole === "staff";
 }
 
+export function canManageNAS(membership) {
+  return canManageOrg(membership) || membership?.nasRole === "manager";
+}
+
+export function canAccessNAS(membership) {
+  return canManageNAS(membership) || membership?.nasRole === "staff";
+}
+
 export function canManageEscrow(membership) {
   return canManageOrg(membership) || membership?.escrowRole === "manager";
 }

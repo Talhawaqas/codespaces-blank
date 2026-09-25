@@ -72,6 +72,8 @@ import {
   canAccessEscrow,
   canManageAttestations,
   canAccessAttestations,
+  canManageNAS,
+  canAccessNAS,
 } from "./orgGates.js";
 
 export {
@@ -83,6 +85,7 @@ export {
   canManageSigning, canAccessSigning, canManageStorage, canAccessStorage,
   canManageDataSources, canAccessDataSources,
   canManageEscrow, canAccessEscrow, canManageAttestations, canAccessAttestations,
+  canManageNAS, canAccessNAS,
 };
 
 export const ROLES = ["owner", "admin", "member"];
@@ -495,6 +498,12 @@ export async function getOrgCollections() {
     legacyVirtualSchemas: db.collection("legacyVirtualSchemas"),
     legacyVirtualTables: db.collection("legacyVirtualTables"),
     legacyQueryLog: db.collection("legacyQueryLog"),
+    // Sovereign NAS SOW
+    nasAppliances: db.collection("nasAppliances"),
+    nasShares: db.collection("nasShares"),
+    nasUsers: db.collection("nasUsers"),
+    nasBackupRuns: db.collection("nasBackupRuns"),
+    nasRecoveryDrills: db.collection("nasRecoveryDrills"),
   };
 }
 
@@ -544,6 +553,7 @@ export async function ensureOrgIndexes() {
     storageResources, storageSnapshots, consistencyGroups, snapshotGrants,
     storageBackupPolicies, storageBackupPlans, storageBackupJobs,
     legacyDataSources, legacySourceCredentials, legacyVirtualSchemas, legacyVirtualTables, legacyQueryLog,
+    nasAppliances, nasShares, nasUsers, nasBackupRuns, nasRecoveryDrills,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -818,6 +828,12 @@ export async function ensureOrgIndexes() {
     legacyVirtualSchemas.createIndex({ orgId: 1, dataSourceId: 1 }),
     legacyVirtualTables.createIndex({ orgId: 1, virtualSchemaId: 1, name: 1 }),
     legacyQueryLog.createIndex({ orgId: 1, dataSourceId: 1, startedAt: -1 }),
+    // Sovereign NAS SOW
+    nasAppliances.createIndex({ orgId: 1, deletedAt: 1 }),
+    nasShares.createIndex({ orgId: 1, applianceId: 1, deletedAt: 1 }),
+    nasUsers.createIndex({ orgId: 1, applianceId: 1, revokedAt: 1 }),
+    nasBackupRuns.createIndex({ orgId: 1, shareId: 1, startedAt: -1 }),
+    nasRecoveryDrills.createIndex({ orgId: 1, shareId: 1, startedAt: -1 }),
   ]);
 
   indexesEnsured = true;

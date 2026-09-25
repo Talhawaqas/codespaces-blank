@@ -76,6 +76,7 @@ import CloudBackupSchedulerView from "../../components/business/CloudBackupSched
 import DirectSyncView from "../../components/business/DirectSyncView";
 import StorageControlPlaneView from "../../components/business/StorageControlPlaneView";
 import DataSourcesView from "../../components/business/DataSourcesView";
+import NasManagementView from "../../components/business/NasManagementView";
 import SqlConsoleView from "../../components/business/SqlConsoleView";
 import ResilienceView from "../../components/business/ResilienceView";
 import SignView from "../../components/business/SignView";
@@ -742,6 +743,7 @@ const NAV_ITEMS = [
   { key: "directSync", label: "DirectSync", icon: "documents", group: "enterprise" },
   { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
   { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
+  { key: "nas", label: "Sovereign NAS", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "sqlConsole", label: "SQL Console", icon: "activity", manageOnly: true, group: "enterprise" },
   { key: "s3Compat", label: "S3-Compatible Storage", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
@@ -1037,6 +1039,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     directSync: { title: "DirectSync", description: "Automatic local-folder backup into Inaya from the desktop app." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
+    nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage appliances, shares, and users -- with recycle bin, backup to Inaya, and verified recovery drills." },
     sqlConsole: { title: "SQL Console", description: "Run read-only SQL against your published virtual tables." },
     s3Compat: { title: "S3-Compatible Storage", description: "Consume this org's storage from AWS S3-compatible tools." },
     executive: { title: "Executive", description: "A leadership-level summary across every department." },
@@ -1168,6 +1171,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "directSync" && <DirectSyncView />}
           {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
           {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
+          {activeView === "nas" && <NasManagementView orgId={orgId} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
