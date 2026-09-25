@@ -511,6 +511,9 @@ export async function getOrgCollections() {
     aiSecurityChecks: db.collection("aiSecurityChecks"),
     aiSecurityPolicies: db.collection("aiSecurityPolicies"),
     aiModelRegistry: db.collection("aiModelRegistry"),
+    // Native Document & Invoice Automation Engine SOW
+    generatedDocuments: db.collection("generatedDocuments"),
+    documentSequences: db.collection("documentSequences"),
   };
 }
 
@@ -562,6 +565,7 @@ export async function ensureOrgIndexes() {
     legacyDataSources, legacySourceCredentials, legacyVirtualSchemas, legacyVirtualTables, legacyQueryLog,
     nasAppliances, nasShares, nasUsers, nasBackupRuns, nasRecoveryDrills,
     aiSecurityChecks, aiSecurityPolicies, aiModelRegistry,
+    generatedDocuments,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -848,6 +852,9 @@ export async function ensureOrgIndexes() {
     aiSecurityChecks.createIndex({ requestId: 1 }),
     aiSecurityPolicies.createIndex({ orgId: 1, active: 1 }),
     aiModelRegistry.createIndex({ id: 1 }, { unique: true }),
+    // Native Document & Invoice Automation Engine SOW
+    generatedDocuments.createIndex({ orgId: 1, sourceRecordType: 1, sourceRecordId: 1, createdAt: -1 }),
+    generatedDocuments.createIndex({ orgId: 1, documentNumber: 1 }),
   ]);
 
   indexesEnsured = true;
