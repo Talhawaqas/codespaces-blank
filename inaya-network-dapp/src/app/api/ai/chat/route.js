@@ -25,6 +25,7 @@ import { GoogleGenAI } from '@google/genai';
 import { assessRisk } from '@/lib/fraudRisk';
 import { retrieveContext, formatAttribution } from '@/lib/rag/retrieve';
 import { wrapContextBlock } from '@/lib/rag/sanitize';
+import { guardAiInput } from '@/lib/aiSecurity/routeGuard';
 import {
   convertGeminiContentsToGroqMessages,
   groqCompleteStream,
@@ -358,6 +359,18 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+
+    // ----------------------------------------------------------
+    // AI Security Workflow: input gateway before any model call.
+    // This public docs assistant has no organization, so it runs against the
+    // platform default policy and is rate-limited per client IP. Its reply is
+    // streamed, so the OUTPUT-side PII mask cannot be applied here; the input
+    // check (prompt injection, PII, abuse) is what protects this surface, and
+    // it has no access to private data (public docs RAG only).
+    // ----------------------------------------------------------
+
+    const guard = await guardAiInput({ req, surface: "docs-chat", messages });
+    if (guard.response) return guard.response;
 
     // ----------------------------------------------------------
     // Provider availability

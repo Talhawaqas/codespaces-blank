@@ -19,6 +19,7 @@ import { GoogleGenAI } from "@google/genai";
 import { buildSecurityContext, runSecurityTool, SECURITY_TOOL_DECLARATIONS, securitySystemInstruction } from "../../../../lib/ai-security-tools.js";
 import { ensureSecurityIndexes } from "../../../../lib/security.js";
 import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
+import { guardAiInput, guardAiOutput } from "../../../../lib/aiSecurity/routeGuard.js";
 
 const MAX_TOOL_ROUNDS = 5;
 // See business-chat/route.js's identical constants for the full story: a
@@ -114,6 +115,10 @@ export async function POST(req) {
 
     await ensureSecurityIndexes();
 
+    // AI Security Workflow: input gateway (platform policy; rate-limited per identity)
+    const guard = await guardAiInput({ req, actor: `identity:${String(identityId).slice(0, 80)}`, surface: "security-chat", messages });
+    if (guard.response) return guard.response;
+
     const ai = getGeminiClient();
     if (!ai && !isGroqConfigured()) {
       console.error("security-chat: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
@@ -157,7 +162,8 @@ export async function POST(req) {
       finalText = "I wasn't able to put together an answer for that — could you try rephrasing?";
     }
 
-    return NextResponse.json({ reply: finalText });
+    const out = await guardAiOutput({ actorKey: guard.actorKey, surface: "security-chat", security: guard.security, text: finalText });
+    return NextResponse.json({ reply: out.text, security: out.security });
   } catch (err) {
     console.error("security-chat failed:", err);
     return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });

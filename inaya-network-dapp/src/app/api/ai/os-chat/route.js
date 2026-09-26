@@ -21,6 +21,7 @@ import { GoogleGenAI } from "@google/genai";
 import { ensureOrgIndexes, requireMembership, canManageOrg, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
 import { buildOsContext, runOsTool, getOsToolDeclarations, osSystemInstruction } from "../../../../lib/ai-os-router.js";
 import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
+import { guardAiInput, guardAiOutput } from "../../../../lib/aiSecurity/routeGuard.js";
 
 const MAX_TOOL_ROUNDS = 5;
 const CALL_TIMEOUT_MS = 15_000;
@@ -113,6 +114,10 @@ export async function POST(req) {
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    // AI Security Workflow: input gateway before any model call (blocks prompt injection, PII, abuse)
+    const guard = await guardAiInput({ req, orgId, actor: auth.session.email, surface: "os-chat", messages });
+    if (guard.response) return guard.response;
+
     const ai = getGeminiClient();
     if (!ai && !isGroqConfigured()) {
       console.error("os-chat: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
@@ -166,7 +171,8 @@ export async function POST(req) {
       finalText = "I wasn't able to put together an answer for that — could you try rephrasing?";
     }
 
-    return NextResponse.json({ reply: finalText });
+    const out = await guardAiOutput({ orgId, actorKey: guard.actorKey, surface: "os-chat", security: guard.security, text: finalText });
+    return NextResponse.json({ reply: out.text, security: out.security });
   } catch (err) {
     console.error("os-chat failed:", err);
     return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });

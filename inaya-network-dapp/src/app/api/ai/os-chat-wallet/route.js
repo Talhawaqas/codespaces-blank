@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { buildOsContext, runOsTool, getOsToolDeclarations, osSystemInstruction } from "../../../../lib/ai-os-router.js";
 import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
+import { guardAiInput, guardAiOutput } from "../../../../lib/aiSecurity/routeGuard.js";
 
 const MAX_TOOL_ROUNDS = 5;
 const CALL_TIMEOUT_MS = 15_000;
@@ -103,6 +104,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "messages array is required." }, { status: 400 });
     }
 
+    // AI Security Workflow: input gateway (platform policy; rate-limited per wallet)
+    const guard = await guardAiInput({ req, actor: `wallet:${String(walletAddress).slice(0, 80)}`, surface: "os-chat-wallet", messages });
+    if (guard.response) return guard.response;
+
     const ai = getGeminiClient();
     if (!ai && !isGroqConfigured()) {
       console.error("os-chat-wallet: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
@@ -147,7 +152,8 @@ export async function POST(req) {
       finalText = "I wasn't able to put together an answer for that — could you try rephrasing?";
     }
 
-    return NextResponse.json({ reply: finalText });
+    const out = await guardAiOutput({ actorKey: guard.actorKey, surface: "os-chat-wallet", security: guard.security, text: finalText });
+    return NextResponse.json({ reply: out.text, security: out.security });
   } catch (err) {
     console.error("os-chat-wallet failed:", err);
     return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });

@@ -55,7 +55,9 @@ export async function recordAiSecurityEvent({
   const isConsequential = decisionResult.decision !== "ALLOW";
 
   const doc = {
-    orgId: toObjectId(orgId),
+    // null for organization-less surfaces (public/wallet AI routes): recorded in
+    // the AI security log, but there is no org audit chain or Evidence Graph to write to
+    orgId: orgId ? toObjectId(orgId) : null,
     requestId, timestamp: now,
     actorEmail: actorEmail || null, sessionId: sessionId || null,
     surface, vertical: vertical || null,
@@ -81,13 +83,13 @@ export async function recordAiSecurityEvent({
   // store.js's backupEngine registration calls) for secondary evidence
   // writes that must never make the actual security decision (already
   // returned to the caller before this function runs) fail or hang.
-  logOrgActivity({
+  if (orgId) logOrgActivity({
     orgId, recordType: "AI_SECURITY_CHECK", recordId: insertedId, actorEmail: actorEmail || "system",
     action: `AI_${decisionResult.decision}`, previousState: null, newState: decisionResult.decision,
     metadata: { category, severity: decisionResult.severity, surface, requestId, controlsTriggered: decisionResult.controlsTriggered },
   }).catch((err) => console.error("recordAiSecurityEvent: logOrgActivity failed (non-fatal):", err.message));
 
-  if (isConsequential) {
+  if (isConsequential && orgId) {
     // Recording evidence about a security decision must not depend on
     // the ACTING user's own org role -- the person most likely to
     // trigger a BLOCK (a non-manager attempting something they

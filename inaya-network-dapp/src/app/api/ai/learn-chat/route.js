@@ -20,6 +20,7 @@ import { GoogleGenAI } from "@google/genai";
 import { buildLearnContext, runLearnTool, LEARN_TOOL_DECLARATIONS, learnSystemInstruction } from "../../../../lib/ai-learn-tools.js";
 import { ensureLearnIndexes } from "../../../../lib/learn.js";
 import { runGroqToolLoop, isGroqConfigured } from "../../../../lib/groqFallback.js";
+import { guardAiInput, guardAiOutput } from "../../../../lib/aiSecurity/routeGuard.js";
 
 const MAX_TOOL_ROUNDS = 5;
 // See business-chat/route.js's identical constants for the full story: a
@@ -114,6 +115,10 @@ export async function POST(req) {
 
     await ensureLearnIndexes();
 
+    // AI Security Workflow: input gateway (platform policy; per wallet, or per client IP when anonymous)
+    const guard = await guardAiInput({ req, actor: walletAddress ? `wallet:${String(walletAddress).slice(0, 80)}` : null, surface: "learn-chat", messages });
+    if (guard.response) return guard.response;
+
     const ai = getGeminiClient();
     if (!ai && !isGroqConfigured()) {
       console.error("learn-chat: neither GEMINI_API_KEY nor GROQ_API_KEY is configured.");
@@ -157,7 +162,8 @@ export async function POST(req) {
       finalText = "I wasn't able to put together an answer for that — could you try rephrasing?";
     }
 
-    return NextResponse.json({ reply: finalText });
+    const out = await guardAiOutput({ actorKey: guard.actorKey, surface: "learn-chat", security: guard.security, text: finalText });
+    return NextResponse.json({ reply: out.text, security: out.security });
   } catch (err) {
     console.error("learn-chat failed:", err);
     return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });

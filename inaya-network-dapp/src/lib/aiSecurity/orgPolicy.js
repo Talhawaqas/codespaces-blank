@@ -23,6 +23,8 @@ export const DEFAULT_AI_POLICY = Object.freeze({
 });
 
 export async function getOrgAiPolicy(orgId) {
+  // Public / wallet-scoped surfaces have no organization: platform default policy.
+  if (!orgId) return { ...DEFAULT_AI_POLICY, policyId: "default", version: 0 };
   const { aiSecurityPolicies } = await getOrgCollections();
   const active = await aiSecurityPolicies.findOne({ orgId: toObjectId(orgId), active: true });
   if (!active) return { ...DEFAULT_AI_POLICY, policyId: "default", version: 0 };
