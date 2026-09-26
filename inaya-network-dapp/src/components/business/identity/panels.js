@@ -59,7 +59,7 @@ export function ProvidersPanel({ orgId, canManage }) {
     <div className="space-y-4">
       <Err error={l.error || act.error} /><Secret title="Signing secret (used to sign webhooks sent to Inaya)" value={shown} />
       <Table rows={l.data?.providers} empty="No provider yet." columns={[
-        { label: "Name", render: (p) => `${p.name}` }, { label: "Kind", key: "kind" }, { label: "Tenant", render: (p) => <code className="text-xs">{p.providerTenantId}</code> },
+        { label: "Name", render: (p) => `${p.name}` }, { label: "Provider id", render: (p) => <code className="text-xs select-all">{p.providerId}</code> }, { label: "Kind", key: "kind" }, { label: "Tenant", render: (p) => <code className="text-xs">{p.providerTenantId}</code> },
         { label: "Status", render: (p) => <Pill value={p.status === "ACTIVE" ? "OK" : "DISABLED"} label={p.status} /> }, { label: "Last event", render: (p) => fmtTime(p.lastEventAt) }, { label: "Last sync", render: (p) => fmtTime(p.lastSyncAt) },
         { label: "Last error", render: (p) => p.lastError || "" },
         { label: "", render: (p) => canManage ? <span className="flex gap-1"><Btn small onClick={() => setEdit(edit === p.providerId ? null : p.providerId)}>Policy</Btn>
