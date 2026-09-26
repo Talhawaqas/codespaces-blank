@@ -65,6 +65,7 @@ export function ProvidersPanel({ orgId, canManage }) {
         { label: "", render: (p) => canManage ? <span className="flex gap-1"><Btn small onClick={() => setEdit(edit === p.providerId ? null : p.providerId)}>Policy</Btn>
           <Btn small onClick={() => act.run(async () => { const r = await send(orgId, `providers/${p.providerId}/rotate-secret`); setShown(r.signingSecret); return r; }, "Rotate the signing secret? The old one stops working immediately.")}>Rotate secret</Btn>
           <Btn small danger onClick={() => act.run(() => send(orgId, `providers/${p.providerId}`, {}, "DELETE"), "Disable this provider? Events from it will be refused.")}>Disable</Btn></span> : null }]} />
+      {canManage && <GraphCard orgId={orgId} providers={(l.data?.providers || []).filter((p) => p.kind === "entra")} onSaved={l.reload} />}
       {edit && <PolicyEditor orgId={orgId} provider={l.data.providers.find((p) => p.providerId === edit)} onSaved={() => { setEdit(null); l.reload(); }} />}
       {canManage && (
         <Card title="Connect a provider">
@@ -291,3 +292,25 @@ export function PeoplePanel({ orgId, canManage }) {
 }
 
 export { Stat, Secret, area };
+
+function GraphCard({ orgId, providers, onSaved }) {
+  const [f, setF] = useState({ providerId: "", clientId: "", tenantId: "", clientSecret: "", groupIds: "", autoPull: false });
+  const act = useAction(() => { setF((x) => ({ ...x, clientSecret: "" })); onSaved?.(); });
+  if (!providers.length) return null;
+  const pid = f.providerId || providers[0].providerId;
+  return (
+    <Card title="Microsoft Graph pull (optional, your own app registration)">
+      <Err error={act.error} />
+      <div className="grid gap-3 md:grid-cols-3">
+        <Select label="Entra provider" value={pid} onChange={(v) => setF({ ...f, providerId: v })} options={providers.map((p) => ({ value: p.providerId, label: p.name }))} />
+        <Input label="Application (client) id" value={f.clientId} onChange={(v) => setF({ ...f, clientId: v })} />
+        <Input label="Directory (tenant) id" value={f.tenantId} onChange={(v) => setF({ ...f, tenantId: v })} />
+        <Input label="Client secret (stored encrypted, never shown again)" type="password" value={f.clientSecret} onChange={(v) => setF({ ...f, clientSecret: v })} />
+        <Input label="Group object ids to read (comma separated, optional)" value={f.groupIds} onChange={(v) => setF({ ...f, groupIds: v })} />
+        <label className="flex items-center gap-2 pt-5 text-xs"><input type="checkbox" checked={f.autoPull} onChange={(e) => setF({ ...f, autoPull: e.target.checked })} />Pull and reconcile daily</label>
+      </div>
+      <Btn busy={act.busy} disabled={!f.clientId || !f.tenantId} onClick={() => act.run(() => send(orgId, `providers/${pid}`, { graph: { clientId: f.clientId, tenantId: f.tenantId, clientSecret: f.clientSecret || undefined, groupIds: f.groupIds.split(",").map((x) => x.trim()).filter(Boolean), autoPull: f.autoPull } }, "PATCH"))}>Save Graph settings</Btn>
+      <Note>Needs the application permissions User.Read.All and GroupMember.Read.All with admin consent. Then use Drift → Pull from Microsoft Graph.</Note>
+    </Card>
+  );
+}
