@@ -45,9 +45,9 @@ Nothing on this page claims compatibility that has not been tested against the r
 | Webhook security (signature, timestamp window, replay, size, tenant binding) | VERIFIED | Tested through the real route handler. |
 | Service credentials, scopes, MSP isolation and delegated roles | VERIFIED | Cross-tenant attempts are tested and audited. |
 | Reconciliation, access reviews, orphans, temporary access, bulk jobs, outbound events | VERIFIED | Tested on a real database. |
-| SCIM 2.0 server | PARTIAL | Protocol behavior tested with SCIM requests. Not exercised by a real Entra or Okta provisioning job. |
-| Microsoft Entra ID: events in Entra-shaped payloads | PARTIAL | Adapter tested with representative payloads. No real Entra tenant was used. |
-| Microsoft Graph pull (your own app registration) | UNVERIFIED | Tested against a local stand-in for Microsoft. Never run against a real tenant. |
+| SCIM 2.0 server with Microsoft Entra provisioning | VERIFIED (2026-09-26, on-demand) | Real Entra provisioning service: connection test passed, a user was created as a joiner, and disabling the user in Entra ran a leaver with all six revocation steps verified. A full scheduled provisioning cycle and group-membership push were not observed (PARTIAL). Okta: UNVERIFIED. |
+| Microsoft Entra ID: events in Entra-shaped payloads (webhook) | PARTIAL | Adapter tested with representative payloads. Real Entra was verified through SCIM and Graph (rows above and below), not through this webhook shape. |
+| Microsoft Graph pull (your own app registration) | VERIFIED (2026-09-26) | Run against a real Entra tenant: client-credentials token, user paging and group reads, drift report produced. Only a small test tenant (3 users) was used; large-directory behavior is untested. |
 | Active Directory (through an RMM, Rewst or a connector) | UNVERIFIED | Adapter tested with representative payloads. No real domain. |
 | Active Directory direct (LDAP from Inaya) | UNSUPPORTED | Inaya never connects inbound to your domain controllers. |
 | Rewst | UNVERIFIED | Reference workflows are provided. No real Rewst workspace was used. |

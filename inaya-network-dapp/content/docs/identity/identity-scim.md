@@ -13,7 +13,9 @@ lastVerifiedAt: "2026-09-26"
 relatedDocs: [identity-integration, identity-microsoft-entra, identity-lifecycle, identity-mapping]
 ---
 
-**Status: PARTIAL.** Implemented from RFC 7643/7644 and tested with SCIM requests. Not exercised by a real Entra or Okta provisioning job.
+**Status: VERIFIED with Microsoft Entra (2026-09-26, on-demand provisioning); Okta UNVERIFIED.** Implemented from RFC 7643/7644 and tested with SCIM requests. The real Entra provisioning service then passed its connection test, created a user (a joiner), and, after the user was disabled in Entra, sent the deactivation that ran a leaver with all six revocation steps verified. **Not yet observed:** a full scheduled provisioning cycle and Entra pushing group membership (on-demand runs create the group but do not carry members).
+
+> **Entra setting you must change:** Entra's default SCIM mapping sends `externalId` from `mailNickname`, which can be renamed. Inaya treats `externalId` as the immutable identity, so in the provisioning attribute mappings map `externalId` from **objectId** before you start provisioning.
 
 ## Set up
 
