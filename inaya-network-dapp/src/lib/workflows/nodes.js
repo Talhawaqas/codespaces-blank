@@ -76,6 +76,7 @@ export const NODE_TYPES = {
   "data.business_brief": dataNode("Get Business Brief", "insights", { validate: (c, e) => { if (c.period && !["daily", "weekly", "monthly", "yearly"].includes(c.period)) e.push("period must be daily, weekly, monthly or yearly."); } }),
   "data.evidence_events": dataNode("Get Evidence Graph events", "evidence"),
   "data.twin_result": dataNode("Get Digital Twin simulation result", "twin"),
+  "data.bookkeeping": dataNode("Get AI Bookkeeper summary (Inaya)", "finance", { validate: (c, e) => limitNum(c, "limit", 1, 50, e) }),
   "data.inaya_support_tickets": dataNode("Get Customer Support Tickets (Inaya)", "support", { validate: (c, e) => { limitNum(c, "limit", 1, 100, e); if (c.view !== undefined && !["all_open", "unassigned", "new", "escalated", "sla_at_risk", "sla_breached", "high_priority", "urgent"].includes(c.view)) e.push("view must be one of all_open, unassigned, new, escalated, sla_at_risk, sla_breached, high_priority, urgent."); } }),
   "data.support_tickets": {
     category: "data", label: "Get Support Tickets (helpdesk via HTTP)", ports: ["out"], risk: "read", scope: "external_http",
@@ -158,6 +159,11 @@ export const NODE_TYPES = {
       if (!isObj(c.args) || !Object.keys(c.args).length) e.push("args must map the tool's arguments (values may use {{ }} templates).");
       if (c.requiresApproval === false) e.push("Approval cannot be disabled: every consequential action goes through the existing controlled-action approval.");
     },
+  },
+  // AI Bookkeeper SOW section 33/59: the INTERNAL bookkeeping pass (categorize, match, queue exceptions). Never changes an invoice, expense or payment.
+  "action.bookkeeping_run": {
+    category: "action", label: "Run AI Bookkeeper pass (internal, non-authoritative)", ports: ["out"], risk: "low", scope: "finance",
+    validate: (c, e) => { limitNum(c, "limit", 1, 1000, e); if (c.useAi !== undefined && typeof c.useAi !== "boolean") e.push("useAi must be true or false."); },
   },
   "action.report": {
     category: "action", label: "Generate report", ports: ["out"], risk: "read",

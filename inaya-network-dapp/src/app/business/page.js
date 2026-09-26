@@ -80,6 +80,7 @@ import NasManagementView from "../../components/business/NasManagementView";
 import WorkflowsView from "../../components/business/WorkflowsView";
 import SupportView from "../../components/business/SupportView";
 import IdentityView from "../../components/business/IdentityView";
+import BookkeeperView from "../../components/business/BookkeeperView";
 import AiSecurityView from "../../components/business/AiSecurityView";
 import DocumentAutomationView from "../../components/business/DocumentAutomationView";
 import SqlConsoleView from "../../components/business/SqlConsoleView";
@@ -722,6 +723,7 @@ const NAV_ITEMS = [
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
+  { key: "bookkeeper", label: "AI Bookkeeper", icon: "finance", group: "operations" },
   { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
   { key: "hr", label: "HR", icon: "hr", group: "operations" },
   { key: "sign", label: "Inaya Sign", icon: "documents", group: "operations" },
@@ -1191,6 +1193,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
           {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
           {activeView === "identity" && <IdentityView orgId={orgId} canManage={canManage} />}
+          {activeView === "bookkeeper" && <BookkeeperView orgId={orgId} canManage={canManage} canAdmin={canManage} hasFinance={canManage || !!(membership?.financeRole)} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}

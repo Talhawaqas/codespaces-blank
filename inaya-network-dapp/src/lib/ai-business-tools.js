@@ -1291,6 +1291,21 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "get_bookkeeping_status",
+    description: "Answer questions about the AI Bookkeeper: which transactions are unmatched, what is in the finance review queue, why a payment was matched to an invoice (the stored rule-based explanation), top spend categories, missing supporting documents for a month, and reconciliation metrics. Read-only. Use this for \"what invoices are still unmatched\", \"which supplier payments need review\", \"why was this payment matched\", \"what documents are missing for reconciliation\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        topic: { type: Type.STRING, enum: ["overview", "unmatched", "review_queue", "explain_match", "category_spend", "missing_documents", "metrics"], description: "What to look up. Default overview." },
+        transactionId: { type: Type.STRING, description: "For explain_match: the transaction id." },
+        search: { type: Type.STRING, description: "For explain_match: part of the bank description if the id is unknown." },
+        from: { type: Type.STRING, description: "Start date YYYY-MM-DD (optional)." },
+        to: { type: Type.STRING, description: "End date YYYY-MM-DD (optional)." },
+        period: { type: Type.STRING, description: "For missing_documents: month as YYYY-MM." },
+      },
+    },
+  },
+  {
     name: "get_business_brief",
     description: "Get a Daily, Weekly, Monthly, or Yearly business brief — real highlights (revenue, expenses, tasks completed, deals won, all compared to the equivalent previous period) plus current alerts. Use this for requests like \"give me my weekly brief\", \"what's my daily summary\", or \"how did this month go\".",
     parameters: {
@@ -1322,6 +1337,7 @@ const TOOL_IMPLEMENTATIONS = {
   get_document_access: getDocumentAccess,
   get_business_insights: getBusinessInsights,
   get_business_brief: getBusinessBrief,
+  get_bookkeeping_status: async (args, ctx) => (await import("./bookkeeper/assistant.js")).bookkeeperAssistantTool(args, ctx),
   propose_task_status_change: proposeTaskStatusChange,
   propose_expense_decision: proposeExpenseDecision,
   propose_document_transition: proposeDocumentTransition,

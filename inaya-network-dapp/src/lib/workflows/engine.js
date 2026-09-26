@@ -248,6 +248,14 @@ async function executeNode(node, env) {
     return { output: { submitted: true, requestId: r.requestId, status: r.status, tool: cfgRaw.tool }, meta: { actionClass: "high" }, waiting: cfgRaw.waitForApproval !== false };
   }
 
+  if (type === "action.bookkeeping_run") {
+    if (mode !== "production") return { output: { simulated: true, wouldRun: { limit: cfgRaw.limit || 500, useAi: cfgRaw.useAi !== false }, note: `In ${mode} mode the bookkeeping pass was not run.` }, meta: { actionClass: "low", simulated: true } };
+    const { runBookkeeperForWorkflow } = await import("../bookkeeper/workflow.js");
+    const r = await runBookkeeperForWorkflow({ orgId: exec.orgId, membership: dataCtx.membership, email: exec.runAs, cfg: cfgRaw });
+    if (r.error) throw Object.assign(new Error(r.error), { retryable: false, code: "BOOKKEEPING_REFUSED" });
+    return { output: r, meta: { actionClass: "low" } };
+  }
+
   if (type === "action.report") {
     const outputs = Object.fromEntries(Object.entries(results).filter(([, r]) => r.status === "COMPLETED").map(([k, r]) => [k, { type: r.type, output: r.output }]));
     const { orgs } = await getOrgCollections();

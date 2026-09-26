@@ -88,6 +88,9 @@ export const EVENT_TYPES = {
   SUPPORT_TICKET: "SUPPORT_TICKET",
   // Identity Integration SOW -- a joiner / mover / leaver / revocation run is an Evidence Graph subject (see identity/evidence.js).
   IDENTITY_LIFECYCLE: "IDENTITY_LIFECYCLE",
+  // AI Bookkeeper SOW -- a bank transaction and a captured financial document are Evidence Graph subjects (see bookkeeper/record.js).
+  BOOKKEEPING_TRANSACTION: "BOOKKEEPING_TRANSACTION",
+  BOOKKEEPING_DOCUMENT: "BOOKKEEPING_DOCUMENT",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -113,6 +116,8 @@ const SUBJECT_RESOLVERS = {
   SUPPORT_TICKET: { collectionKey: "supportTickets", hasDepartment: false },
   // Lifecycle runs have no department: org-manager-only visibility.
   IDENTITY_LIFECYCLE: { collectionKey: "identityRuns", hasDepartment: false },
+  BOOKKEEPING_TRANSACTION: { collectionKey: "bkTransactions", hasDepartment: true },
+  BOOKKEEPING_DOCUMENT: { collectionKey: "bkDocuments", hasDepartment: true },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -260,6 +265,8 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
   if (subjectType === "NAS_SHARE") return { ...base, label: subject.shareName || null, amount: null };
   if (subjectType === "IDENTITY_LIFECYCLE") return { ...base, label: `${subject.type || "Lifecycle"}: ${subject.email || subject.externalId || ""}`, status: subject.state || null, amount: null };
+  if (subjectType === "BOOKKEEPING_TRANSACTION") return { ...base, label: `${subject.currency || ""} ${subject.amount ?? ""} ${String(subject.description || "").slice(0, 60)}`.trim(), status: subject.status || null, amount: subject.amount ?? null };
+  if (subjectType === "BOOKKEEPING_DOCUMENT") return { ...base, label: `${subject.documentType || "Document"} ${subject.fields?.invoiceNumber?.value || subject.filename || ""}`.trim(), status: subject.status || null, amount: subject.fields?.total?.value ?? null };
   if (subjectType === "SUPPORT_TICKET") return { ...base, label: subject.number || null, status: subject.status || null, amount: null };
   if (subjectType === "WORKFLOW_EXECUTION") return { ...base, label: `${subject.workflowName || "Workflow"} v${subject.workflowVersion} run`, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };

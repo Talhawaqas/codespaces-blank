@@ -51,6 +51,12 @@ const READERS = {
     return { invoices: cap(rows, cfg.limit), count: rows.length, totalOverdue: rows.reduce((a, r) => a + r.total, 0), over10k: rows.filter((r) => r.total >= 10000).length };
   },
 
+  async bookkeeping(cfg, ctx) {
+    // AI Bookkeeper summary for the EXECUTING identity (department scope and finance permission apply).
+    const { readBookkeeperSummary } = await import("../bookkeeper/workflow.js");
+    return readBookkeeperSummary({ orgId: ctx.orgId, membership: ctx.membership, email: ctx.email, cfg });
+  },
+
   async inaya_support_tickets(cfg, ctx) {
     // Inaya's own Customer Support module (permission-scoped exactly like the agent console: queue/team visibility applies).
     const { listTickets } = await import("../support/tickets.js");

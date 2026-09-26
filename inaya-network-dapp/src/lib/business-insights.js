@@ -224,9 +224,22 @@ export async function computeBusinessInsights({ orgId, membership, email, period
   const severityRank = { high: 0, medium: 1, low: 2 };
   alerts.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
 
+  // AI Bookkeeper SOW section 28: validated bookkeeping metrics, through the SAME permission scope as every other figure here (finance access +
+  // the departments this member may see). Never throws: a bookkeeping problem must not break the rest of Business Insights.
+  let bookkeeping = null;
+  try {
+    const { canAccessFinance, canManageOrg } = await import("./orgs.js");
+    if (canAccessFinance(membership)) {
+      const { departmentScope } = await import("./bookkeeper/api.js");
+      const { bookkeepingInsights } = await import("./bookkeeper/insights.js");
+      bookkeeping = await bookkeepingInsights({ orgId, departmentIds: canManageOrg(membership) ? null : await departmentScope({ orgId, membership }), from: new Date(periodStart).toISOString().slice(0, 10), to: new Date(periodEnd).toISOString().slice(0, 10) });
+    }
+  } catch (err) { console.error("business-insights: bookkeeping block failed (non-fatal):", err.message); }
+
   return {
     periodDays: days,
     generatedAt: new Date().toISOString(),
+    bookkeeping,
     kpis,
     trends,
     comparison,

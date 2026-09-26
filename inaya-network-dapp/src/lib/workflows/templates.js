@@ -70,6 +70,21 @@ function financeExceptionMonitor() {
   };
 }
 
+function financeOperationsManager() {
+  return {
+    nodes: [
+      n("trigger", "trigger.schedule", "Daily schedule", 40, 160, { schedule: { ...DAILY_SCHEDULE, time: "06:30" } }),
+      n("run", "action.bookkeeping_run", "Categorize, match and reconcile (internal)", 300, 160, { limit: 500 }),
+      n("summary", "data.bookkeeping", "Bookkeeping summary", 560, 160, { limit: 20 }),
+      n("check", "condition.if", "Anything to review?", 820, 160, { expression: "nodes.summary.output.reviewCount > 0" }),
+      n("alert", "notify.inaya", "Finance review needed", 1080, 80, { title: "Bookkeeping: {{ nodes.summary.output.reviewCount }} item(s) need review", body: "The AI Bookkeeper matched what it could and queued the rest for a person. Nothing was posted or paid automatically.", severity: "warning", audience: "managers", alertType: "bookkeeper_review" }),
+      n("note", "evidence.record", "Evidence", 1080, 240, { note: "Bookkeeping pass: {{ nodes.run.output.reconciliation.processed }} processed, {{ nodes.run.output.reconciliation.autoMatched }} auto-matched, {{ nodes.summary.output.reviewCount }} for review" }),
+    ],
+    edges: [e("trigger", "run"), e("run", "summary"), e("summary", "check"), e("check", "alert", "true"), e("check", "note", "false")],
+    settings: SETTINGS(["finance", "notify", "evidence"]),
+  };
+}
+
 function supportEscalation() {
   return {
     nodes: [
@@ -152,6 +167,7 @@ function notificationTest() {
 const T = [
   { id: "daily-business-health", name: "Daily Business Health", category: "Operations", description: "Every morning: CRM, support, overdue invoices and tasks → KPI snapshot → AI Operations Manager → urgent alert or daily report.", requiredIntegrations: ["helpdesk (optional)", "Slack (optional)"], build: dailyBusinessHealth },
   { id: "finance-exception-monitor", name: "Finance Exception Monitor", category: "Finance", description: "Watch overdue invoices against thresholds, classify with AI, alert managers when urgent.", requiredIntegrations: [], build: financeExceptionMonitor },
+  { id: "finance-operations-manager", name: "Finance Operations Manager", category: "Finance", description: "Every morning: run the AI Bookkeeper pass (categorize, match, reconcile, queue exceptions), summarize, and tell finance what needs a person. Nothing is posted or paid automatically.", requiredIntegrations: [], build: financeOperationsManager },
   { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check Inaya Customer Support every hour for tickets that breached or are about to breach their SLA, or are urgent, and alert managers. (To read an external helpdesk instead, use the Get Support Tickets (helpdesk via HTTP) node.)", requiredIntegrations: [], build: supportEscalation },
   { id: "inventory-risk", name: "Inventory Risk", category: "Supply chain", description: "Combine inventory, procurement and sales demand and warn about stock-out risk.", requiredIntegrations: [], build: inventoryRisk },
   { id: "trust-security-operations", name: "Trust / Security Operations", category: "Security", description: "Daily trust health, security events and backup integrity summary with alerts.", requiredIntegrations: [], build: trustSecurityOps },

@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/identity",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/bookkeeper",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
