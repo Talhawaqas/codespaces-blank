@@ -42,7 +42,7 @@ export async function ensureNotificationIndexes() {
 }
 
 export const NOTIFICATION_CATEGORIES = [
-  "security", "approval", "ai", "data", "business", "web3", "system",
+  "security", "approval", "ai", "data", "business", "web3", "system", "support",
   // Healthcare & Legal Expansion SOW, Phase 1 — these four have no exact
   // existing-category fit (retention/incident/compliance-control/external-
   // share are distinct concerns from a generic "security" or "approval"

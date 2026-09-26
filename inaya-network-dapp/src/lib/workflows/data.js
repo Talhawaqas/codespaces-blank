@@ -51,6 +51,18 @@ const READERS = {
     return { invoices: cap(rows, cfg.limit), count: rows.length, totalOverdue: rows.reduce((a, r) => a + r.total, 0), over10k: rows.filter((r) => r.total >= 10000).length };
   },
 
+  async inaya_support_tickets(cfg, ctx) {
+    // Inaya's own Customer Support module (permission-scoped exactly like the agent console: queue/team visibility applies).
+    const { listTickets } = await import("../support/tickets.js");
+    const { getSettings } = await import("../support/settings.js");
+    const settings = await getSettings(ctx.orgId);
+    const limit = Math.min(Number(cfg.limit) || 50, 100);
+    const r = await listTickets({ orgId: ctx.orgId, settings, membership: ctx.membership, email: ctx.email, view: cfg.view || "all_open", limit });
+    if (r.error) throw Object.assign(new Error(r.error), { retryable: false, code: "PERMISSION_DENIED" });
+    const tickets = r.tickets.map((t) => ({ id: t.id, number: t.number, subject: String(t.subject || "").slice(0, 200), status: String(t.status).toLowerCase(), priority: String(t.priority).toLowerCase(), createdAt: t.createdAt, slaState: t.sla?.state || null, slaBreached: t.sla?.state === "BREACHED", slaAtRisk: t.sla?.state === "AT_RISK", assigned: !!t.assigneeEmail, channel: t.channel, source: "inaya-support" }));
+    return { tickets, count: r.total, openCount: r.total, urgentCount: tickets.filter((t) => ["urgent", "high"].includes(t.priority)).length, slaBreachedCount: tickets.filter((t) => t.slaBreached).length, slaAtRiskCount: tickets.filter((t) => t.slaAtRisk).length, unassignedCount: tickets.filter((t) => !t.assigned).length, source: "Inaya Customer Support" };
+  },
+
   async employee_tasks(cfg, { bc }) {
     const now = Date.now();
     const all = bc.scope.visibleTasks.map((t) => ({ title: t.title, status: t.status, priority: t.priority || null, dueDate: t.dueDate || null, assigneeEmail: t.assigneeEmail || null, projectName: name(bc.projNameById, t.projectId), overdue: !!(t.dueDate && Date.parse(t.dueDate) < now && !["DONE", "CANCELLED"].includes(t.status)) }));

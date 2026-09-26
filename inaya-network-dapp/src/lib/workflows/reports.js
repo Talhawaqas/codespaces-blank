@@ -26,7 +26,7 @@ export function buildReport({ reportType = "daily_operations", title = null, org
   const invoices = by((t, o) => t === "data.overdue_invoices" && o);
   const tasks = by((t) => t === "data.employee_tasks");
   const crm = by((t) => t === "data.crm_sales");
-  const support = by((t) => t === "data.support_tickets");
+  const support = by((t) => t === "data.support_tickets" || t === "data.inaya_support_tickets");
   const inventory = by((t) => t === "data.inventory");
   const trust = by((t) => t === "data.trust_health");
   const security = by((t) => t === "data.security_events");

@@ -75,6 +75,10 @@
     {
       "path": "/api/cron/workflows",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/support",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

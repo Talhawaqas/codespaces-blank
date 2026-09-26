@@ -22,7 +22,7 @@ function dailyBusinessHealth() {
     nodes: [
       n("trigger", "trigger.schedule", "Daily Schedule Trigger", 40, 260, { schedule: DAILY_SCHEDULE }),
       n("crm", "data.crm_sales", "Get CRM / Sales Data", 300, 40, { limit: 100 }),
-      n("support", "data.support_tickets", "Get Support Tickets", 300, 180, { url: "https://helpdesk.example.com/api/tickets", allowedHosts: ["helpdesk.example.com"], rowsPath: "tickets", method: "GET" }, { disabled: true, note: "Needs your helpdesk API (Inaya has no ticketing module). Enable after setting the URL and a credential." }),
+      n("support", "data.support_tickets", "Get Support Tickets", 300, 180, { url: "https://helpdesk.example.com/api/tickets", allowedHosts: ["helpdesk.example.com"], rowsPath: "tickets", method: "GET" }, { disabled: true, note: "Reads an EXTERNAL helpdesk over HTTP: set its URL and a credential, then enable. If you use Inaya Customer Support, replace this step with Get Customer Support Tickets (Inaya), which needs no URL or credential." }),
       n("invoices", "data.overdue_invoices", "Get Overdue Invoices", 300, 320, { limit: 100 }),
       n("tasks", "data.employee_tasks", "Get Employee Tasks", 300, 460, { limit: 100 }),
       n("merge", "transform.merge", "Merge Business Data", 560, 260, {}),
@@ -74,14 +74,14 @@ function supportEscalation() {
   return {
     nodes: [
       n("trigger", "trigger.schedule", "Schedule", 40, 160, { schedule: { kind: "interval", everyMinutes: 60, timezone: "UTC", enabled: true } }),
-      n("support", "data.support_tickets", "Support tickets", 300, 160, { url: "https://helpdesk.example.com/api/tickets", allowedHosts: ["helpdesk.example.com"], rowsPath: "tickets", method: "GET" }, { disabled: true, note: "Needs your helpdesk API URL and credential." }),
-      n("sla", "transform.filter", "SLA check", 560, 160, { input: "support", expression: "row.slaBreached == true or row.priority == 'urgent'" }),
+      n("support", "data.inaya_support_tickets", "Open support tickets (Inaya)", 300, 160, { view: "all_open", limit: 100 }),
+      n("sla", "transform.filter", "SLA check", 560, 160, { input: "support", expression: "row.slaBreached == true or row.slaAtRisk == true or row.priority == 'urgent'" }),
       n("urgent", "condition.if", "Urgent?", 820, 160, { expression: "count(nodes.sla.output) > 0" }),
-      n("escalate", "notify.inaya", "Escalation", 1080, 100, { title: "Support escalation: {{ count(nodes.sla.output) }} tickets at risk", body: "Tickets breaching SLA or marked urgent need attention.", severity: "critical", audience: "managers", alertType: "support_escalation" }),
+      n("escalate", "notify.inaya", "Escalation", 1080, 100, { title: "Support escalation: {{ count(nodes.sla.output) }} tickets at risk", body: "Tickets breaching or close to breaching their SLA, or marked urgent, need attention.", severity: "critical", audience: "managers", alertType: "support_escalation" }),
       n("note", "evidence.record", "Evidence", 1080, 240, { note: "Support queue checked: {{ count(nodes.sla.output) }} at risk" }),
     ],
     edges: [e("trigger", "support"), e("support", "sla"), e("sla", "urgent"), e("urgent", "escalate", "true"), e("urgent", "note", "false")],
-    settings: SETTINGS(["external_http", "notify", "evidence"]),
+    settings: SETTINGS(["support", "notify", "evidence"]),
   };
 }
 
@@ -152,7 +152,7 @@ function notificationTest() {
 const T = [
   { id: "daily-business-health", name: "Daily Business Health", category: "Operations", description: "Every morning: CRM, support, overdue invoices and tasks → KPI snapshot → AI Operations Manager → urgent alert or daily report.", requiredIntegrations: ["helpdesk (optional)", "Slack (optional)"], build: dailyBusinessHealth },
   { id: "finance-exception-monitor", name: "Finance Exception Monitor", category: "Finance", description: "Watch overdue invoices against thresholds, classify with AI, alert managers when urgent.", requiredIntegrations: [], build: financeExceptionMonitor },
-  { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check the helpdesk for SLA breaches and urgent tickets and escalate.", requiredIntegrations: ["helpdesk"], build: supportEscalation },
+  { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check Inaya Customer Support every hour for tickets that breached or are about to breach their SLA, or are urgent, and alert managers. (To read an external helpdesk instead, use the Get Support Tickets (helpdesk via HTTP) node.)", requiredIntegrations: [], build: supportEscalation },
   { id: "inventory-risk", name: "Inventory Risk", category: "Supply chain", description: "Combine inventory, procurement and sales demand and warn about stock-out risk.", requiredIntegrations: [], build: inventoryRisk },
   { id: "trust-security-operations", name: "Trust / Security Operations", category: "Security", description: "Daily trust health, security events and backup integrity summary with alerts.", requiredIntegrations: [], build: trustSecurityOps },
   { id: "notification-test", name: "Notification Delivery Test", category: "Setup", description: "Sends one test message to the in-app inbox, Slack and Gmail so you can confirm delivery before relying on an alert. Slack and Gmail steps start disabled until you attach a credential.", requiredIntegrations: ["Slack webhook (optional)", "Gmail (optional)"], build: notificationTest },

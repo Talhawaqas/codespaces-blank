@@ -11,6 +11,7 @@
 // approval system (ai-action-requests.js), never around it.
 
 import { canAccessFinance, canManageOrg } from "../orgGates.js";
+import { isSupportStaff } from "../support/access.js";
 import { validateExpression, EXPRESSION_FUNCTIONS } from "./expr.js";
 import { validateSchedule } from "./schedule.js";
 
@@ -20,7 +21,7 @@ export const CATEGORIES = ["trigger", "data", "transformation", "ai", "condition
 
 /** Data scopes a workflow must declare (settings.dataScopes) for the nodes it uses,
  *  and that the EXECUTING identity must hold. HR is intentionally not offered. */
-export const DATA_SCOPES = ["crm", "tasks", "finance", "procurement", "inventory", "projects", "documents", "security", "backup", "trust", "insights", "evidence", "twin", "ai", "notify", "external_http", "propose"];
+export const DATA_SCOPES = ["crm", "tasks", "finance", "procurement", "inventory", "projects", "documents", "security", "backup", "trust", "insights", "evidence", "twin", "ai", "notify", "external_http", "propose", "support"];
 
 /** Does this membership hold the scope? (Live membership; never the definition's claim.) */
 export function scopeHeld(membership, scope) {
@@ -28,6 +29,7 @@ export function scopeHeld(membership, scope) {
   switch (scope) {
     case "finance": return canAccessFinance(membership);
     case "security": case "backup": case "external_http": return canManageOrg(membership);
+    case "support": return isSupportStaff(membership);
     case "propose": return true; // per-action permission is enforced by the propose tool itself
     default: return DATA_SCOPES.includes(scope);
   }
@@ -74,6 +76,7 @@ export const NODE_TYPES = {
   "data.business_brief": dataNode("Get Business Brief", "insights", { validate: (c, e) => { if (c.period && !["daily", "weekly", "monthly", "yearly"].includes(c.period)) e.push("period must be daily, weekly, monthly or yearly."); } }),
   "data.evidence_events": dataNode("Get Evidence Graph events", "evidence"),
   "data.twin_result": dataNode("Get Digital Twin simulation result", "twin"),
+  "data.inaya_support_tickets": dataNode("Get Customer Support Tickets (Inaya)", "support", { validate: (c, e) => { limitNum(c, "limit", 1, 100, e); if (c.view !== undefined && !["all_open", "unassigned", "new", "escalated", "sla_at_risk", "sla_breached", "high_priority", "urgent"].includes(c.view)) e.push("view must be one of all_open, unassigned, new, escalated, sla_at_risk, sla_breached, high_priority, urgent."); } }),
   "data.support_tickets": {
     category: "data", label: "Get Support Tickets (helpdesk via HTTP)", ports: ["out"], risk: "read", scope: "external_http",
     // Inaya has no ticketing system of its own; this reads the organization's helpdesk through the controlled connector.

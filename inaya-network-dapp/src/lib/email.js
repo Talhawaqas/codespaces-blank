@@ -17,7 +17,9 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM || "Inaya Network <onboarding@resend.dev>";
 
-export async function sendEmail({ to, subject, html, text }) {
+// `headers` (for example Message-ID / In-Reply-To, so replies thread safely) and `replyTo` are optional and
+// additive: every existing caller is unchanged.
+export async function sendEmail({ to, subject, html, text, headers, replyTo }) {
   if (!RESEND_API_KEY) {
     console.warn(`sendEmail: RESEND_API_KEY not set — skipping real delivery to ${to}. Set RESEND_API_KEY in .env.local to enable.`);
     return { sent: false, reason: "not_configured" };
@@ -27,7 +29,7 @@ export async function sendEmail({ to, subject, html, text }) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html, text }),
+      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html, text, ...(headers ? { headers } : {}), ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
     if (!res.ok) {
       // Status only — never the response body, this call carries our API key

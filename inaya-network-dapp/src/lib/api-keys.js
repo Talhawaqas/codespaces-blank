@@ -53,7 +53,9 @@ export async function requireApiKey(req) {
   const rawKey = authHeader.slice("Bearer ".length).trim();
 
   const { apiKeys } = await getOrgCollections();
-  const key = await apiKeys.findOne({ tokenHash: hashToken(rawKey), revokedAt: null });
+  // Customer Service SOW: support-kind keys (scoped, possibly bound to a portal customer) must never open an
+  // existing owner-level public route, so this legacy resolver refuses them.
+  const key = await apiKeys.findOne({ tokenHash: hashToken(rawKey), revokedAt: null, kind: { $ne: "support" } });
   if (!key) return { error: "Invalid or revoked API key.", status: 401 };
 
   return { orgId: key.orgId.toString(), membership: { role: "owner" } };

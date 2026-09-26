@@ -84,6 +84,8 @@ export const EVENT_TYPES = {
   // action -> notification chain appears in the same timeline/passport views
   // (see workflows/evidence.js).
   WORKFLOW_EXECUTION: "WORKFLOW_AUTOMATION",
+  // Customer Portal & Customer Service SOW -- a support ticket is an Evidence Graph subject (see support/record.js).
+  SUPPORT_TICKET: "SUPPORT_TICKET",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -105,6 +107,8 @@ const SUBJECT_RESOLVERS = {
   NAS_SHARE: { collectionKey: "nasShares", hasDepartment: false },
   // An execution has no department of its own: org-manager-only visibility.
   WORKFLOW_EXECUTION: { collectionKey: "workflowExecutions", hasDepartment: false },
+  // Tickets have no department: org-manager-only visibility in the graph (customers never see graph data).
+  SUPPORT_TICKET: { collectionKey: "supportTickets", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -251,6 +255,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
   if (subjectType === "NAS_SHARE") return { ...base, label: subject.shareName || null, amount: null };
+  if (subjectType === "SUPPORT_TICKET") return { ...base, label: subject.number || null, status: subject.status || null, amount: null };
   if (subjectType === "WORKFLOW_EXECUTION") return { ...base, label: `${subject.workflowName || "Workflow"} v${subject.workflowVersion} run`, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };
   return base;

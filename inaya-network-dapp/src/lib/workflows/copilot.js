@@ -19,7 +19,7 @@ import { fail } from "./common.js";
 
 const CATALOG = `Node types (use exactly these):
 trigger.schedule {schedule:{kind:"daily"|"weekly"|"monthly"|"interval",time:"HH:MM",timezone:"UTC",daysOfWeek:[0-6],dayOfMonth:1-31,everyMinutes:n}}; trigger.manual {}
-data.overdue_invoices {minAmount:number,limit}; data.crm_sales {}; data.employee_tasks {onlyOverdue:boolean}; data.procurement {}; data.inventory {}; data.projects {}; data.documents {}; data.trust_health {}; data.security_events {days}; data.backup_status {}; data.business_brief {period:"daily"|"weekly"|"monthly"|"yearly"}; data.evidence_events {}
+data.overdue_invoices {minAmount:number,limit}; data.crm_sales {}; data.employee_tasks {onlyOverdue:boolean}; data.procurement {}; data.inventory {}; data.projects {}; data.documents {}; data.trust_health {}; data.security_events {days}; data.backup_status {}; data.business_brief {period:"daily"|"weekly"|"monthly"|"yearly"}; data.evidence_events {}; data.inaya_support_tickets {view:"all_open"|"unassigned"|"sla_at_risk"|"sla_breached"|"urgent",limit} (needs the support scope; rows have slaBreached, slaAtRisk, priority)
 transform.merge {}; transform.filter {input:"nodeKey",expression}; transform.sort {input,by,direction}; transform.aggregate {input,metrics:[{as,op:"count"|"sum"|"avg"|"min"|"max",field}]}; kpi.snapshot {periodDays}
 ai.agent {systemInstructions,thresholds:[{name,expression,op,value}],tools:[names],inputFrom:[nodeKeys],memory:{enabled:true}}
 condition.if {expression}  (ports "true" and "false")
@@ -29,7 +29,7 @@ action.propose {tool:"propose_invoice_decision"|"propose_task_status_change"|...
 simulation.twin {scenarioType,entityName}; evidence.record {note}
 Expressions read earlier results as nodes.<key>.output.<field> (for example nodes.invoices.output.totalOverdue, nodes.agent.output.result.urgent) and support and/or/not, comparisons, +-*/, and functions count, sum, avg, max, min, round.
 Templates in title/body use {{ expression }}.
-Data scopes: ${DATA_SCOPES.join(", ")} (list in settings.dataScopes every scope the nodes need: crm, finance, tasks, procurement, inventory, projects, documents, security, backup, trust, insights, evidence, twin, ai, notify, propose).
+Data scopes: ${DATA_SCOPES.join(", ")} (list in settings.dataScopes every scope the nodes need: crm, finance, tasks, procurement, inventory, projects, documents, security, backup, trust, insights, evidence, twin, ai, notify, propose, support).
 Tools for ai.agent: read_crm, read_invoices, read_tasks, read_inventory, read_procurement, read_trust_health, read_security_status, read_evidence_graph, query_digital_twin, create_notification, generate_report.`;
 
 const SYSTEM = [

@@ -78,6 +78,7 @@ import StorageControlPlaneView from "../../components/business/StorageControlPla
 import DataSourcesView from "../../components/business/DataSourcesView";
 import NasManagementView from "../../components/business/NasManagementView";
 import WorkflowsView from "../../components/business/WorkflowsView";
+import SupportView from "../../components/business/SupportView";
 import AiSecurityView from "../../components/business/AiSecurityView";
 import DocumentAutomationView from "../../components/business/DocumentAutomationView";
 import SqlConsoleView from "../../components/business/SqlConsoleView";
@@ -737,6 +738,7 @@ const NAV_ITEMS = [
   { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "workflows", label: "Automations", icon: "aiAssistant", group: "operations" },
+  { key: "support", label: "Customer Support", icon: "activity", group: "operations" },
   { key: "evidence", label: "Evidence", icon: "lock", group: "trust" },
   { key: "whatIf", label: "What-If Studio", icon: "insights", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
@@ -1047,6 +1049,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
     nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage with RAID pools, snapshots and immutable protection, quotas, ACLs, backup and verified recovery, replication, ransomware response, evidence and What-If simulation." },
     documentAutomation: { title: "Document Automation", description: "Generate official, numbered, encrypted, verifiable documents from your Finance, CRM and Procurement records - with approval, secure delivery and a full evidence trail." },
+    support: { title: "Customer Support", description: "Tickets, queues, SLAs, the knowledge base and the customer portal, with AI that assists and never decides alone." },
     workflows: { title: "Automations", description: "Build, schedule and audit workflows that combine your data, an AI Operations Manager, rules and notifications, with human approval for anything that changes a record and evidence for every run." },
     aiSecurity: { title: "AI Security", description: "What every AI request was allowed to see, what security checks ran, and why a request was blocked, redacted, or approved." },
     sqlConsole: { title: "SQL Console", description: "Run read-only SQL against your published virtual tables." },
@@ -1184,6 +1187,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "documentAutomation" && <DocumentAutomationView orgId={orgId} canManage={canManage} />}
           {activeView === "aiSecurity" && <AiSecurityView orgId={orgId} />}
           {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
+          {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}

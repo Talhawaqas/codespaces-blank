@@ -7692,6 +7692,8 @@ export default function Home() {
                 <span className="text-white/10">·</span>
                 <a href="/terms" className="hover:text-[#00f2fe] transition-colors">Terms of Service</a>
                 <span className="text-white/10">·</span>
+                <a href="/support" className="hover:text-[#00f2fe] transition-colors">Get support</a>
+                <span className="text-white/10">·</span>
                 <a href="/.well-known/security.txt" className="hover:text-[#00f2fe] transition-colors">security.txt</a>
               </div>
             </div>

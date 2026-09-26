@@ -541,6 +541,8 @@ export async function getOrgCollections() {
     documentAccessEvents: db.collection("documentAccessEvents"),
     documentJobs: db.collection("documentJobs"),
     documentMetrics: db.collection("documentMetrics"),
+    // Customer Portal SOW: the Evidence Graph resolves ticket subjects through this shared collection map
+    supportTickets: db.collection("supportTickets"),
     // AI Business Operations Manager SOW
     workflows: db.collection("workflows"),
     workflowVersions: db.collection("workflowVersions"),

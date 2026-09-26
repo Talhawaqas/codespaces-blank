@@ -1026,6 +1026,827 @@
           }
         ]
       }
+    },
+    "/api/public/v1/support/tickets": {
+      "get": {
+        "summary": "List a customer's tickets or create one. Needs a support API key with tickets:read / tickets:write.",
+        "operationId": "get_support-tickets",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "customerEmail, status, limit, skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "customerEmail is only used by a service (unbound) key; a customer-bound key always acts as its own customer. status is open or resolved."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { tickets: [...], total }. POST: 201 { ticket, duplicate } in the customer-safe shape (public messages and customer-facing status only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List a customer's tickets or create one. Needs a support API key with tickets:read / tickets:write.",
+        "operationId": "post_support-tickets",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { tickets: [...], total }. POST: 201 { ticket, duplicate } in the customer-safe shape (public messages and customer-facing status only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subject": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  },
+                  "description": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  },
+                  "type": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  },
+                  "category": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  },
+                  "customerEmail": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  },
+                  "linkedInvoiceNumber": {
+                    "description": "customerEmail is required for a service key and forbidden to differ from the bound customer for a bound key. Send an Idempotency-Key header (8-100 characters): a retry returns the first ticket instead of creating another. Priority is decided by policy, not by the caller."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/tickets/{ticketId}": {
+      "get": {
+        "summary": "Read one ticket as its customer would see it.",
+        "operationId": "get_support-ticket-detail",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ticketId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ ticket } with public messages, attachments and the customer-facing status. Internal notes, routing, SLA internals and AI output are never included. A ticket the key may not see is a 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/tickets/{ticketId}/replies": {
+      "post": {
+        "summary": "Add a customer reply to a ticket (tickets:write).",
+        "operationId": "post_support-ticket-replies",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ticketId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "201 { message }. A reply on a closed ticket is refused (409) with a path to a follow-up request; a reply on a solved ticket reopens it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "description": "Plain text. Markup is not stored."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/tickets/{ticketId}/close": {
+      "post": {
+        "summary": "Mark a ticket resolved on behalf of its customer (tickets:write).",
+        "operationId": "post_support-ticket-close",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ticketId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ ticket } with the customer-facing status SOLVED. The customer may reopen it inside the reopen window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/tickets/{ticketId}/reopen": {
+      "post": {
+        "summary": "Reopen a solved ticket (tickets:write).",
+        "operationId": "post_support-ticket-reopen",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ticketId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ ticket }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "description": "Short text recorded in the audit trail."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/tickets/{ticketId}/attachments": {
+      "post": {
+        "summary": "Attach a file to a ticket (attachments:write).",
+        "operationId": "post_support-ticket-attachments",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ticketId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "201 { attachment: { id, filename, contentType, sizeBytes } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "description": "Up to 4 MB after decoding. Executables and scripts are refused; files are stored encrypted and are policy-checked only (there is no antivirus engine)."
+                  },
+                  "contentBase64": {
+                    "description": "Up to 4 MB after decoding. Executables and scripts are refused; files are stored encrypted and are policy-checked only (there is no antivirus engine)."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/knowledge": {
+      "get": {
+        "summary": "Search published knowledge-base articles a customer may read (knowledge:read).",
+        "operationId": "get_support-knowledge",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "q, limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search text and result count."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ results: [{ slug, title, summary, snippet }] }. Read one article at /api/public/v1/support/knowledge/{slug}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/invoices": {
+      "get": {
+        "summary": "Read-only list of the customer's invoices from your Finance records (invoices:read).",
+        "operationId": "get_support-invoices",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "customerEmail",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Service keys only."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ invoices: [{ invoiceNumber, issueDate, dueDate, status, currency, total }] }. Only the customer's own CRM contact is ever read; nothing is copied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/queues": {
+      "get": {
+        "summary": "List active queue names (queues:read).",
+        "operationId": "get_support-queues",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ queues: [{ id, name, description }] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/ideas": {
+      "post": {
+        "summary": "Submit an idea on behalf of a bound customer (ideas:write; customer-bound keys only).",
+        "operationId": "post_support-ideas",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "responses": {
+          "200": {
+            "description": "201 { idea }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "description": "Ideas are private unless the organization enables voting and the customer opts in."
+                  },
+                  "description": {
+                    "description": "Ideas are private unless the organization enables voting and the customer opts in."
+                  },
+                  "expectedBenefit": {
+                    "description": "Ideas are private unless the organization enables voting and the customer opts in."
+                  },
+                  "communityVisible": {
+                    "description": "Ideas are private unless the organization enables voting and the customer opts in."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/ai/chat": {
+      "post": {
+        "summary": "Ask the AI assistant a question as a bound customer (ai:chat).",
+        "operationId": "post_support-ai-chat",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ sessionId, reply: { text, citations, handoffOffered } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "description": "The assistant answers only from published articles the customer may read and cites them. If it cannot answer, handoffOffered is true."
+                  },
+                  "sessionId": {
+                    "description": "The assistant answers only from published articles the customer may read and cites them. If it cannot answer, handoffOffered is true."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/events": {
+      "get": {
+        "summary": "Ordered feed of support events for a service key (events:read).",
+        "operationId": "get_support-events",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "since, limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ISO timestamp cursor and page size (max 200)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ events: [{ id, type, createdAt, ticketId, data }] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/support/uploads": {
+      "post": {
+        "summary": "Start a large attachment upload (attachments:write). Files up to 25 MB are sent in 3 MB chunks.",
+        "operationId": "post_support-uploads",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ uploadId, chunkBytes, chunks, filename }. Then PUT /api/public/v1/support/uploads/{uploadId}?index=N with the raw bytes of chunk N (chunkBytes each, the last one shorter), and POST /api/public/v1/support/uploads/{uploadId} to assemble, scan and store the file. A file that fails the malware scan is refused with reasonCode MALWARE_DETECTED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ticketId": {
+                    "description": "Type and size are checked before any bytes are sent. sha256 (hex) is optional and, when given, verified after assembly."
+                  },
+                  "filename": {
+                    "description": "Type and size are checked before any bytes are sent. sha256 (hex) is optional and, when given, verified after assembly."
+                  },
+                  "size": {
+                    "description": "Type and size are checked before any bytes are sent. sha256 (hex) is optional and, when given, verified after assembly."
+                  },
+                  "sha256": {
+                    "description": "Type and size are checked before any bytes are sent. sha256 (hex) is optional and, when given, verified after assembly."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/support/uploads/{uploadId}": {
+      "put": {
+        "summary": "Send one chunk (PUT ?index=N) or complete the upload (POST).",
+        "operationId": "put_support-upload-chunk",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The uploadId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PUT: { received: N }. POST: { attachment: { id, filename, contentType, sizeBytes } }, or 409 with the list of chunks received if some are missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Send one chunk (PUT ?index=N) or complete the upload (POST).",
+        "operationId": "post_support-upload-chunk",
+        "tags": [
+          "/api/public/v1/support"
+        ],
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The uploadId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PUT: { received: N }. POST: { attachment: { id, filename, contentType, sizeBytes } }, or 409 with the list of chunks received if some are missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   }
 }
