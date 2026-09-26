@@ -54,7 +54,7 @@ Test files: `test/identity-engine.test.mjs` (11), `test/identity-api.test.mjs` (
 ## What is NOT verified (read this)
 
 - **Verified against real Microsoft Entra (2026-09-26, a 3-user test tenant, production Inaya):** Graph pull (token, paging, groups, drift report); SCIM provisioning by Entra's own service (connection test, user create as joiner, disable in Entra then leaver with all six revocation steps verified). Finding: Entra's default SCIM `externalId` is `mailNickname` (renameable), so the mapping must be changed to `objectId`; documented.
-- **Still not verified:** a full scheduled Entra provisioning cycle and group-membership push; Okta; **Active Directory** (no domain used; direct LDAP is unsupported by design, via RMM/Rewst UNVERIFIED); **Rewst** (no workspace yet; reference workflows are not a Rewst export); RMM, PSA and HR products.
+- **Still not verified:** a full scheduled Entra provisioning cycle and group-membership push; Okta; **Active Directory** (no domain used; direct LDAP is unsupported by design, via RMM/Rewst UNVERIFIED); **Rewst itself** (no workspace; Rewst's paid, personal email domains are refused at sign-up; the API it would call was verified from an external client on 2026-09-26; reference workflows are not a Rewst export); RMM, PSA and HR products.
 - Inaya cannot recall tokens issued by another provider (documented; access is blocked through the membership check instead).
 - Sessions are per email, not per organization: a leaver's sessions are ended only when they have no other active membership (policy `sessionRevocation: always` overrides).
 - Workflow and integration credentials are flagged, not auto-revoked.

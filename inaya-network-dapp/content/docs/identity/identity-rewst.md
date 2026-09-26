@@ -13,7 +13,9 @@ lastVerifiedAt: "2026-09-26"
 relatedDocs: [identity-integration, identity-api, identity-security, identity-msp, identity-rmm-psa-hr]
 ---
 
-**Status: UNVERIFIED.** Inaya's API and webhooks are tested through their real handlers. No real Rewst workspace has been used, so no Rewst compatibility is claimed. The reference workflows below describe the calls a Rewst workflow makes; they are **not** an importable Rewst export.
+**Works with any automation platform through the API. Rewst verification pending.**
+
+Rewst, like any automation platform, drives Inaya with ordinary signed HTTPS requests, and that is what has been verified: on 2026-09-26 the identity API was exercised from outside against the live site with a service credential (dry run, joiner, idempotent replay, leaver with all six revocation steps verified, and refusal of restore, credential creation and cross-organization access). Automated tests cover the same endpoints. **No real Rewst workspace has been used**, so Rewst itself is **UNVERIFIED**: its configuration screens, secret handling and response mapping have not been exercised. The reference workflows below describe the calls a Rewst workflow makes; they are **not** an importable Rewst export.
 
 ## Two directions
 
@@ -53,4 +55,4 @@ await IdentityIntegration.disableUser({ baseUrl, credential, organizationId, use
 
 ## Before you claim it works
 
-Run the workflow against a non-production Inaya organization with a real Rewst workspace, then record the result here. Until then this page stays UNVERIFIED.
+Run the workflow against a non-production Inaya organization with a real Rewst workspace, then record the result here. Until then, describe it as: works with any automation platform through our API; Rewst verification pending.

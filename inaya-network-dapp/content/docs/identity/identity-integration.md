@@ -50,7 +50,8 @@ Nothing on this page claims compatibility that has not been tested against the r
 | Microsoft Graph pull (your own app registration) | VERIFIED (2026-09-26) | Run against a real Entra tenant: client-credentials token, user paging and group reads, drift report produced. Only a small test tenant (3 users) was used; large-directory behavior is untested. |
 | Active Directory (through an RMM, Rewst or a connector) | UNVERIFIED | Adapter tested with representative payloads. No real domain. |
 | Active Directory direct (LDAP from Inaya) | UNSUPPORTED | Inaya never connects inbound to your domain controllers. |
-| Rewst | UNVERIFIED | Reference workflows are provided. No real Rewst workspace was used. |
+| Any automation platform through the API (signed webhooks, service credentials) | VERIFIED (2026-09-26) | Exercised from outside against the live site: dry run, joiner, idempotent replay, leaver with verified revocation, and refusal of privileged actions. |
+| Rewst specifically | UNVERIFIED | Works through the same API; reference workflows are provided, but no real Rewst workspace was used. Rewst verification pending. |
 | RMM, PSA, HR adapters | UNVERIFIED | Generic normalization tested with representative payloads. |
 | Okta, Google Workspace, Ping native connectors; Entra change-notification subscription management | FUTURE | Not built. |
 | Recalling Microsoft-issued tokens | UNSUPPORTED | Inaya cannot recall tokens another provider issued. See [Joiner, mover, leaver](/docs/identity-lifecycle). |
