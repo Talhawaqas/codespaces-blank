@@ -90,5 +90,9 @@ export async function resolveCanApprove({ orgId, targetRecordType, targetRecordI
     // a redundant check: canManageEscrow (or org owner/admin) only.
     return { canApprove: canManageEscrow(membership) };
   }
+  if (targetRecordType === "IDENTITY_LIFECYCLE") {
+    // Granting privilege from an external identity source: only an owner/admin may approve (and never the source itself).
+    return { canApprove: canManageOrg(membership) };
+  }
   return { canApprove: false, reason: `Unknown targetRecordType "${targetRecordType}".` };
 }

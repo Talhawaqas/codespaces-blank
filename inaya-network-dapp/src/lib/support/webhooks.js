@@ -27,6 +27,7 @@ export function assertWebhookUrl(raw) {
   if (u.protocol !== "https:" && !(local && u.protocol === "http:")) throw new Error("Only https URLs are allowed.");
   if (u.username || u.password) throw new Error("Credentials must not be embedded in the URL.");
   const host = u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (["169.254.169.254", "metadata.google.internal"].includes(host)) throw new Error("Cloud metadata endpoints are blocked.");
   if (!local) {
     if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Local and internal host names are blocked.");
     if (net.isIP(host) && isPrivateAddress(host)) throw new Error("Private, loopback and link-local addresses are blocked.");
@@ -44,7 +45,7 @@ function safeLookup(hostname, options, cb) {
   });
 }
 
-function post(u, body, headers, timeoutMs = 10000) {
+export function post(u, body, headers, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     const mod = u.protocol === "https:" ? https : http;
     const req = mod.request({ protocol: u.protocol, hostname: u.hostname.replace(/^\[|\]$/g, ""), port: u.port || undefined, path: `${u.pathname}${u.search}`, method: "POST", headers, lookup: safeLookup, timeout: timeoutMs, agent: false }, (res) => {

@@ -79,6 +79,10 @@
     {
       "path": "/api/cron/support",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/identity",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

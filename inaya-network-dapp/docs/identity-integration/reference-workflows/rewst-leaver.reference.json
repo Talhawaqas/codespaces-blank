@@ -1,0 +1,42 @@
+{
+  "_note": "REFERENCE ONLY. This describes the calls a Rewst workflow makes; it is NOT a Rewst export and has never been imported into a real Rewst workspace (status: UNVERIFIED). Rebuild it with your Rewst HTTP steps.",
+  "name": "Inaya leaver (offboarding)",
+  "trigger": { "type": "webhook-or-ticket", "description": "HR termination or PSA offboarding ticket" },
+  "variables": {
+    "INAYA_BASE_URL": "https://<your-inaya-host>",
+    "INAYA_CREDENTIAL": "<idc_... service credential with identity:revoke (store in a Rewst secret)>",
+    "INAYA_ORGANIZATION_ID": "<customer organization id (MSP credentials only)>"
+  },
+  "steps": [
+    { "id": "disable_directory_account", "description": "Disable the Active Directory / Entra account (your side).", "type": "your-directory-step" },
+    {
+      "id": "inaya_revoke",
+      "type": "http",
+      "request": {
+        "method": "POST",
+        "url": "{{INAYA_BASE_URL}}/api/integrations/identity/users/{{ticket.user_email}}/revoke",
+        "headers": {
+          "Authorization": "Bearer {{INAYA_CREDENTIAL}}",
+          "X-Inaya-Organization": "{{INAYA_ORGANIZATION_ID}}",
+          "Idempotency-Key": "offboard-{{ticket.id}}",
+          "Content-Type": "application/json"
+        },
+        "body": { "reason": "Offboarding ticket {{ticket.id}}", "mode": "full" }
+      },
+      "expect": { "status": 200, "path": "revocation.state" }
+    },
+    {
+      "id": "check_state",
+      "type": "branch",
+      "cases": [
+        { "when": "revocation.state == 'REVOCATION_COMPLETE'", "then": "close_ticket" },
+        { "when": "revocation.state == 'REVOCATION_PARTIAL'", "then": "note_partial" },
+        { "when": "revocation.state == 'REVOCATION_FAILED'", "then": "escalate" }
+      ]
+    },
+    { "id": "note_partial", "description": "The person is already frozen in Inaya. Inaya retries unfinished steps by itself; add a ticket note and re-check later with GET /revocations.", "type": "ticket-note" },
+    { "id": "escalate", "description": "Page a human. Retry with POST /revocations/retry {\"email\": ...}.", "type": "ticket-escalate" },
+    { "id": "close_ticket", "description": "Attach revocation.revocationId to the ticket as evidence and close it.", "type": "ticket-close" }
+  ],
+  "optionalInbound": "Register an Inaya outbound webhook for access.revoked pointing at a Rewst webhook trigger (Identity & Access > Events out); verify X-Inaya-Signature with the secret shown once."
+}

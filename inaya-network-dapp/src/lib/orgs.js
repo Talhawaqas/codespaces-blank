@@ -544,6 +544,7 @@ export async function getOrgCollections() {
     // Customer Portal SOW: the Evidence Graph resolves ticket subjects through this shared collection map
     supportTickets: db.collection("supportTickets"),
     // AI Business Operations Manager SOW
+    identityRuns: db.collection("identity_runs"), // Identity Integration SOW -- an identity lifecycle run is an Evidence Graph subject (see identity/evidence.js)
     workflows: db.collection("workflows"),
     workflowVersions: db.collection("workflowVersions"),
     workflowExecutions: db.collection("workflowExecutions"),

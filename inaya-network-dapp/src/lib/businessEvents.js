@@ -86,6 +86,8 @@ export const EVENT_TYPES = {
   WORKFLOW_EXECUTION: "WORKFLOW_AUTOMATION",
   // Customer Portal & Customer Service SOW -- a support ticket is an Evidence Graph subject (see support/record.js).
   SUPPORT_TICKET: "SUPPORT_TICKET",
+  // Identity Integration SOW -- a joiner / mover / leaver / revocation run is an Evidence Graph subject (see identity/evidence.js).
+  IDENTITY_LIFECYCLE: "IDENTITY_LIFECYCLE",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -109,6 +111,8 @@ const SUBJECT_RESOLVERS = {
   WORKFLOW_EXECUTION: { collectionKey: "workflowExecutions", hasDepartment: false },
   // Tickets have no department: org-manager-only visibility in the graph (customers never see graph data).
   SUPPORT_TICKET: { collectionKey: "supportTickets", hasDepartment: false },
+  // Lifecycle runs have no department: org-manager-only visibility.
+  IDENTITY_LIFECYCLE: { collectionKey: "identityRuns", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -255,6 +259,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
   if (subjectType === "NAS_SHARE") return { ...base, label: subject.shareName || null, amount: null };
+  if (subjectType === "IDENTITY_LIFECYCLE") return { ...base, label: `${subject.type || "Lifecycle"}: ${subject.email || subject.externalId || ""}`, status: subject.state || null, amount: null };
   if (subjectType === "SUPPORT_TICKET") return { ...base, label: subject.number || null, status: subject.status || null, amount: null };
   if (subjectType === "WORKFLOW_EXECUTION") return { ...base, label: `${subject.workflowName || "Workflow"} v${subject.workflowVersion} run`, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };

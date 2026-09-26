@@ -79,6 +79,7 @@ import DataSourcesView from "../../components/business/DataSourcesView";
 import NasManagementView from "../../components/business/NasManagementView";
 import WorkflowsView from "../../components/business/WorkflowsView";
 import SupportView from "../../components/business/SupportView";
+import IdentityView from "../../components/business/IdentityView";
 import AiSecurityView from "../../components/business/AiSecurityView";
 import DocumentAutomationView from "../../components/business/DocumentAutomationView";
 import SqlConsoleView from "../../components/business/SqlConsoleView";
@@ -739,6 +740,7 @@ const NAV_ITEMS = [
   { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
   { key: "workflows", label: "Automations", icon: "aiAssistant", group: "operations" },
   { key: "support", label: "Customer Support", icon: "activity", group: "operations" },
+  { key: "identity", label: "Identity & Access", icon: "lock", manageOnly: true, group: "enterprise" },
   { key: "evidence", label: "Evidence", icon: "lock", group: "trust" },
   { key: "whatIf", label: "What-If Studio", icon: "insights", group: "trust" },
   { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
@@ -1188,6 +1190,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "aiSecurity" && <AiSecurityView orgId={orgId} />}
           {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
           {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
+          {activeView === "identity" && <IdentityView orgId={orgId} canManage={canManage} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
           {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
           {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}

@@ -1847,6 +1847,460 @@
           }
         ]
       }
+    },
+    "/api/integrations/identity/status": {
+      "get": {
+        "summary": "Sync status for the organization: providers, events waiting or failed, unfinished revocations, last drift report. Needs identity:read.",
+        "operationId": "get_identity-status",
+        "tags": [
+          "/api/integrations/identity/status"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ providers, events: { pending, failed, stale }, revocations: { unfinished }, identities: { active, disabledOrRevoked }, lastDriftReport }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/integrations/identity/users/{user}": {
+      "get": {
+        "summary": "One person's membership, linked external identities and every grant with its source (external baseline, manual override, existing, temporary). Needs identity:read.",
+        "operationId": "get_identity-user",
+        "tags": [
+          "/api/integrations/identity/users"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ user: { email, membership, externalIdentities, access: { effective, grants[] } } }. No secrets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/integrations/identity/users/provision": {
+      "post": {
+        "summary": "Apply one lifecycle event (create, update, disable, enable, department or group change) for a provider, or preview it with dryRun. Needs identity:provision.",
+        "operationId": "post_identity-user-provision",
+        "tags": [
+          "/api/integrations/identity/users"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ status: PROCESSED | DUPLICATE | STALE | PENDING | UNRESOLVED | DRY_RUN, runId, state }. With dryRun: { plan, liveMutation: false }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "description": "event follows the canonical schema (type, subject.externalId, ...). Repeating an eventId is a no-op. Send Idempotency-Key on the request."
+                  },
+                  "event": {
+                    "description": "event follows the canonical schema (type, subject.externalId, ...). Repeating an eventId is a no-op. Send Idempotency-Key on the request."
+                  },
+                  "dryRun": {
+                    "description": "event follows the canonical schema (type, subject.externalId, ...). Repeating an eventId is a no-op. Send Idempotency-Key on the request."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/identity/users/{user}/revoke": {
+      "post": {
+        "summary": "Revoke (mode full) or restrict (mode restrict) a person's access now. Frozen first, then sessions, credentials, permissions, sharing and break-glass are ended and each is verified. Needs identity:revoke.",
+        "operationId": "post_identity-user-revoke",
+        "tags": [
+          "/api/integrations/identity/users"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ revocation: { state: REVOCATION_COMPLETE | REVOCATION_PARTIAL | REVOCATION_FAILED, steps } }. The last active owner cannot be revoked (409 LAST_OWNER).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "description": "mode is full or restrict. With dryRun the Digital Twin impact preview is returned and nothing changes."
+                  },
+                  "mode": {
+                    "description": "mode is full or restrict. With dryRun the Digital Twin impact preview is returned and nothing changes."
+                  },
+                  "dryRun": {
+                    "description": "mode is full or restrict. With dryRun the Digital Twin impact preview is returned and nothing changes."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/identity/users/{user}/restore": {
+      "post": {
+        "summary": "Restore a revoked or restricted person. Access is re-derived from the source, not from the old snapshot. Needs a signed-in owner or admin; a service credential is refused.",
+        "operationId": "post_identity-user-restore",
+        "tags": [
+          "/api/integrations/identity/users"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ restored, from, rederived, pendingApproval[] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/integrations/identity/dry-run": {
+      "post": {
+        "summary": "Show exactly what an event would do, without changing anything. Needs identity:read.",
+        "operationId": "post_identity-dry-run",
+        "tags": [
+          "/api/integrations/identity/dry-run"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ status: DRY_RUN, plan, liveMutation: false, text } where text is exportable and ends with LIVE MUTATION: NO.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "description": "The provider and the event to evaluate."
+                  },
+                  "event": {
+                    "description": "The provider and the event to evaluate."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/identity/reconcile": {
+      "post": {
+        "summary": "Post a directory export in chunks (snapshotId, users, last) and get a drift report when the last chunk arrives. Reports only; nothing is deleted. Needs identity:reconcile.",
+        "operationId": "post_identity-reconcile",
+        "tags": [
+          "/api/integrations/identity/reconcile"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ received, chunk, complete } and, on the last chunk, { report: { summary: { MATCH, DRIFT, CONFLICT, UNRESOLVED }, findings[] } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "description": "Up to 1000 users per request; set last true on the final chunk."
+                  },
+                  "snapshotId": {
+                    "description": "Up to 1000 users per request; set last true on the final chunk."
+                  },
+                  "users": {
+                    "description": "Up to 1000 users per request; set last true on the final chunk."
+                  },
+                  "last": {
+                    "description": "Up to 1000 users per request; set last true on the final chunk."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/identity/mappings": {
+      "get": {
+        "summary": "List or create group/attribute mappings. POST needs identity:mapping. Owner can never be granted; admin is privileged and needs a human approval.",
+        "operationId": "get_identity-mappings",
+        "tags": [
+          "/api/integrations/identity/mappings"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { mappings[] }. POST: 201 { mapping }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List or create group/attribute mappings. POST needs identity:mapping. Owner can never be granted; admin is privileged and needs a human approval.",
+        "operationId": "post_identity-mappings",
+        "tags": [
+          "/api/integrations/identity/mappings"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { mappings[] }. POST: 201 { mapping }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "description": "match is { type: group, value } or { type: attribute, attribute, value }; grants are department, project or role grants."
+                  },
+                  "name": {
+                    "description": "match is { type: group, value } or { type: attribute, attribute, value }; grants are department, project or role grants."
+                  },
+                  "match": {
+                    "description": "match is { type: group, value } or { type: attribute, attribute, value }; grants are department, project or role grants."
+                  },
+                  "grants": {
+                    "description": "match is { type: group, value } or { type: attribute, attribute, value }; grants are department, project or role grants."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

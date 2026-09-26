@@ -93,6 +93,12 @@ const EXECUTORS = {
   // chain). Approving and finalizing that document is human-only: lifecycle.js
   // refuses any non-human actor. Lazy import: documentAutomation reaches back
   // into businessEvents -> this file, so a static import would be a cycle.
+  // Identity Integration SOW §38 -- a privileged role/scope that an EXTERNAL system asked for is applied only here, after a human
+  // approved it and the delay passed. Removal of access never goes through this path. See identity/approvals.js.
+  IDENTITY_LIFECYCLE: async ({ orgId, args, actorEmail }) => {
+    const { executeApprovedGrant } = await import("./identity/approvals.js");
+    return executeApprovedGrant({ orgId, args, actorEmail });
+  },
   DOCUMENT_GENERATION: async ({ orgId, args, actorEmail }) => {
     const { createDocument } = await import("./documentAutomation/pipeline.js");
     return createDocument({ orgId, documentType: args.documentType, sourceId: args.sourceId, options: args.options, membership: SYSTEM_EXECUTOR_MEMBERSHIP, email: actorEmail, actorType: "ai", idempotencyKey: `ai-${String(args.sourceId)}-${String(args.documentType)}-${new Date().toISOString().slice(0, 10)}` });
@@ -201,6 +207,7 @@ const RISK_LEVELS = {
   "COMPLIANCE_POLICY:amend": "HIGH",
   "ESCROW:release": "HIGH",
   "DOCUMENT_GENERATION:generate": "MEDIUM",
+  "IDENTITY_LIFECYCLE:grant": "HIGH",
 };
 
 export function classifyRisk(targetRecordType, proposedAction) {
