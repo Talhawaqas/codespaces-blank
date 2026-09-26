@@ -106,8 +106,10 @@ export default function Editor({ orgId, workflow, catalog, onSaved, onClose }) {
       const keys = new Set(d.nodes.map((n) => n.key));
       const prefix = t.type.split(".")[1].replace(/[^a-zA-Z0-9]/g, "").replace(/^./, (c) => c.toLowerCase());
       const key = uid(keys, prefix);
-      const r = canvas.current.getBoundingClientRect();
-      d.nodes.push({ key, type: t.type, name: t.label, config: clone(HINTS[t.type] || {}), position: { x: Math.round((r.width / 2 - view.x) / view.z - NODE_W / 2 + (d.nodes.length % 5) * 14), y: Math.round((r.height / 2 - view.y) / view.z - NODE_H / 2 + (d.nodes.length % 5) * 14) } });
+      // drop the new box just below the lowest existing one, so boxes never pile up on each other
+      const maxY = d.nodes.length ? Math.max(...d.nodes.map((n) => n.position.y)) : 0;
+      const firstX = d.nodes.length ? Math.min(...d.nodes.map((n) => n.position.x)) : 40;
+      d.nodes.push({ key, type: t.type, name: t.label, config: clone(HINTS[t.type] || {}), position: { x: firstX, y: maxY + NODE_H + 40 } });
       setSelected(key);
     });
   };
@@ -142,8 +144,15 @@ export default function Editor({ orgId, workflow, catalog, onSaved, onClose }) {
   });
   const publish = () => run("publish", async () => {
     if (dirty) await save();
-    const r = await api(`/api/orgs/workflows/${wfId}/publish`, { method: "POST", body: JSON.stringify({ orgId }) });
-    setMsg(`Published version ${r.version}.${r.webhookSecret ? ` Webhook secret (shown once): ${r.webhookSecret}` : ""}`); await load(); onSaved?.();
+    try {
+      const r = await api(`/api/orgs/workflows/${wfId}/publish`, { method: "POST", body: JSON.stringify({ orgId }) });
+      setMsg(`Published version ${r.version}.${r.webhookSecret ? ` Webhook secret (shown once): ${r.webhookSecret}` : ""}`); await load(); onSaved?.();
+    } catch (e) {
+      // put the actual reasons in the banner (and the Validation box) instead of only saying "it failed"
+      const v = await api("/api/orgs/workflows/validate", { method: "POST", body: JSON.stringify({ orgId, definition: def }) }).catch(() => null);
+      if (v) setValidation(v);
+      throw new Error(v?.errors?.length ? `${e.message} Fix: ${v.errors.map((x) => x.message).join(" • ")}` : e.message);
+    }
   }).then(() => {});
   const rollback = (version) => run("rollback", async () => { await api(`/api/orgs/workflows/${wfId}/rollback`, { method: "POST", body: JSON.stringify({ orgId, version }) }); setMsg(`Version ${version} is active again.`); await load(); onSaved?.(); });
   const publishErrors = err && /validation/i.test(err);
