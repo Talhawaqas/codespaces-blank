@@ -1,196 +1,124 @@
-# Inaya Sovereign NAS / Inaya Edge Storage — Completion Report
+# Inaya Sovereign NAS / Edge Storage — Completion Report
 
-Status: **LIVE** (functional core — appliance/share/user management, real
-SMB, real NFS, recycle bin, backup-to-Inaya, verified recovery drills,
-Digital Twin integration). Last verified: 2026-09-25.
+Status: implemented and tested end to end on the one documented profile (a Linux
+VM appliance). **Not** validated on physical hardware. Last verified 2026-09-25.
 
-This report classifies every capability area from
-`Inaya_Sovereign_NAS_Actual_Edge_Appliance_SOW.md` per the SOW's own
-taxonomy (ALREADY IMPLEMENTED / PARTIALLY IMPLEMENTED / GENUINE GAP /
-EXTERNAL DEPENDENCY / HARDWARE-DEPENDENT / CUSTOMER-ENVIRONMENT-DEPENDENT
-/ ARCHITECTURAL DECISION REQUIRED / NOT APPROPRIATE), following the
-mandatory Phase 0 audit → build-a-real-provable-slice → document-the-rest
-discipline this SOW itself requires (Section 52/56: "stop at the
-boundary and document the exact limitation").
+This report replaces the first-pass report, which built roughly a third of the
+SOW and did not list the workstreams it skipped. Every workstream of
+`Inaya_Sovereign_NAS_Actual_Edge_Appliance_SOW.md` is now either implemented and
+tested, or has an explicit, evidenced boundary in §5. Deployment profile,
+support matrix and the recovery runbook are in `docs/nas-runbook.md`.
 
-## Summary
+## 1. What is real (and proven against real systems)
 
-| Area | Status |
+| Layer | What runs |
 |---|---|
-| Org identity, permissions, audit chain, Evidence Graph, Digital Twin, S3/Azure-compat, encryption pattern | ALREADY IMPLEMENTED — reused as-is, zero duplication |
-| Real SMB/CIFS file server | ALREADY IMPLEMENTED (this SOW) — Samba 4.23, real, tested from both a real Windows client and a real Linux client |
-| Real NFS file server | ALREADY IMPLEMENTED (this SOW) — nfs-kernel-server, NFSv4.2, real, tested from a real Linux client |
-| NAS appliance/share/user control plane | ALREADY IMPLEMENTED (this SOW) — real provisioning, not bookkeeping |
-| Recycle bin (Workstream K) | ALREADY IMPLEMENTED (this SOW) — Samba's real vfs_recycle module |
-| NAS → Inaya backup (Workstream M) | ALREADY IMPLEMENTED (this SOW) — reuses the existing s3-compat encrypt/shard/pin/backupEngine pipeline verbatim; **currently blocked by an external Pinata account limit, see below** |
-| Verified recovery drill (Workstream X) | ALREADY IMPLEMENTED (this SOW) — same external blocker as backup |
-| Digital Twin integration (Workstream W) | ALREADY IMPLEMENTED (this SOW) — appliances register as real `storageResources`, reusing the existing `STORAGE_RESOURCE_UNAVAILABLE` scenario for free |
-| Quota enforcement (Workstream I) | GENUINE GAP / CUSTOMER-ENVIRONMENT-DEPENDENT — see below |
-| Storage pool / RAID / ZFS / Btrfs (Workstream D) | HARDWARE-DEPENDENT — no real multi-disk hardware exists in this environment; not attempted, not faked |
-| Hardware health / SMART / UPS (Workstream Q) | HARDWARE-DEPENDENT — same reason |
-| Ransomware/threat-aware protection (Workstream L) | NOT BUILT this pass — deferred, see below |
-| NAS replication (NAS-to-NAS, Workstream N) | NOT BUILT this pass — no second physical/VM appliance to replicate to |
-| iSCSI, local S3 gateway, Kubernetes CSI (Sections 34–36) | NOT APPROPRIATE this pass — SOW's own "do not implement merely for feature-count parity" guardrail; no real use case established yet |
-| Production physical-hardware deployment proof (Section 36A.2) | NOT DONE — this pass's one documented profile is a WSL2 Linux appliance, not physical hardware; see below |
+| Appliance | Ubuntu 26.04 (WSL2 VM): Samba 4.23, nfs-kernel-server (NFSv4.2), mdadm RAID1, Btrfs, ext4 quotas, POSIX ACLs, chattr immutability, avahi |
+| Appliance agent | `src/lib/nas/appliance/inaya-nas-agent.py` — one validated JSON request per operation, argument-list commands only, path containment, hash-pinned versioned install with rollback |
+| Control plane | `src/lib/nas/*` (25 modules), 49 API route files under `/api/orgs/nas`, an 18-section console, a worker (`scripts/nas-worker.mjs`, `/api/cron/nas`) |
+| Reuse (nothing duplicated) | org identity/permissions (`orgGates`), cryptographic audit chain, Evidence Graph, Digital Twin engine, evidence exporter, s3-compat encrypted storage, notifications |
 
-## What was built and genuinely proven this SOW
+## 2. SOW workstream → implementation → proof
 
-**The appliance runtime** (SOW Section 36A.1's required single documented
-profile): a real Linux NAS appliance — Samba 4.23 + `nfs-kernel-server`
-(NFSv3/4/4.1/4.2, real kernel `nfsd` module) — running on this machine's
-WSL2 "Ubuntu" distro, reached from the Next.js server via `wsl.exe`
-(`src/lib/nas/agent.js`). A production physical/VM appliance would run
-its own `inaya-nas-agent` daemon instead (SOW Section 8.2) — not built
-this pass, since no second physical/VM appliance exists to build and
-validate it against; the agent's interface is deliberately narrow so
-that backend can be swapped in later without touching any caller.
+| SOW | Implementation | Proof |
+|---|---|---|
+| A Runtime / 8.3 local autonomy | Agent + boot recovery (`ensure_online`): after a restart pools re-attach, mirrors reassemble, services start; local file access needs no cloud | Real unclean VM kill; data, permissions, exports, immutable snapshot all intact (`nas-realclient` Test C). Appliance-to-Inaya reachability is measured and shown as degraded, not fatal |
+| B SMB | Samba shares generated from a spec (valid/read/write/invalid lists, hosts allow, hidden, enabled, recycle); rename; fail-closed config validation with rollback | Windows client (this machine's SMB stack), `smbclient` |
+| C NFS | NFSv4 exports, explicit client networks (`*`, `/0` rejected), ro/rw, root_squash | Kernel NFSv4.2 client: mount, CRUD, two concurrent clients, remount |
+| D Pools / disks | mdadm RAID1 or single + Btrfs; status, guarded failure injection, replace/rebuild, scrub, disk inventory with SMART/temperature honestly UNKNOWN on virtual disks | Real disk failure: degraded but writable, rebuild ONLINE, scrub clean; a deliberately corrupted block is detected by checksums and the file read fails rather than returning bad bytes |
+| E Snapshots | Btrfs copy-on-write (`copy-on-write`) or full copy (`full-copy`), manual + scheduled + retention, manifest hash, file/share restore side-by-side or in place (reason required) | `nas-storage` |
+| F WORM / immutable | Immutable snapshot = writable snapshot → `chattr -R +i` → read-only (`rm -rf` and `btrfs subvolume delete` refused); WORM share = append-only directories + immutable settled files until retention; governance (owner override + reason) vs compliance (no override) | Root-level deletion/modify/rename blocked; real SMB user and Windows client cannot delete or overwrite a sealed file; locks lapse at retention |
+| G Identity | Accounts only for org members holding a NAS role; groups; service accounts; password rotation; disable/enable; Samba lockout policy + unlock; org changes reconcile to the appliance. AD/LDAP not implemented | `nas-access` incl. real lockout (`NT_STATUS_ACCOUNT_LOCKED_OUT`) |
+| H Permissions / ACLs | Org eligibility → Samba lists + POSIX folder ACLs incl. explicit deny; department boundary; fail closed | Samba refuses a read-only writer, a denied user, an ACL-denied folder, a disabled share; a revoked org member is locked out on the appliance |
+| I Quotas | Btrfs qgroup limits; ext4 quota volumes with per-user limits; states NORMAL/WARNING/NEAR_LIMIT/HARD_LIMIT/FULL with alerts; non-enforcing backends say so | Writes refused at the limit (agent, real SMB user cap, Windows client error) |
+| J Locking | Samba locking; `smbstatus` locks/sessions; plain-language `explainLock` | Windows exclusive lock blocks a second client (real sharing violation); lock released afterwards |
+| K Recycle bin | Real vfs_recycle; list, restore (never overwrites silently), purge, retention purge | Deleted over SMB, restored byte-identical |
+| L Ransomware | Baseline scan (change/delete ratios, extension changes, entropy jumps, ransom notes, failed logons, snapshot-deletion attempts) → classify → immutable snapshot → alert → lockdown (automatic only if enabled + CRITICAL, always expires; exempt shares never locked) | Simulation on test shares; lockdown made the share read-only over real SMB; recovery from the last clean snapshot |
+| M Backup | One engine, target adapter; file-level dedup; resumable runs; read-back verification; recovery-point manifests; restore original/alternate/object | Test D (backup → delete local → restore → bytes match); interrupted and outage runs resume without duplicates |
+| N Replication | rsync + manifest verification, repair of a corrupted replica, test failover (read-only) and promotion; NAS→Inaya = the backup engine on a schedule | `nas-protection`; same-host target only (§5) |
+| O Multi-cloud | Inaya sovereign + S3-compatible targets (SSRF-safe, probe-tested, secrets encrypted); GCS interoperability code shared but untested and disabled until its test passes | Real Filebase backup + verify + restore |
+| P Tiering | Proposals only; different-manager approval; verified copy before stubbing; reversible recall; legal holds | `nas-protection` |
+| Q Hardware health | Measured CPU/RAM/load/disk I/O/SMB sessions/network; each value MEASURED/DERIVED/ESTIMATED/UNKNOWN | Overview + Hardware Health |
+| R Discovery | Hostname, IPv4/IPv6, avahi mDNS verified inside the appliance (NAT limit stated) | `nas-access` |
+| S Remote access | LOCAL_ONLY / PRIVATE_NETWORK / GATEWAY enforced by Samba `hosts allow`; public networks rejected; audited | LAN address refused in gateway mode; loopback works |
+| T Console | 18 sections, plain-language overview cards | `npm run build` |
+| U Evidence | Every consequential action → evidence row whose hash the audit chain commits to; NAS share is an Evidence Graph subject | Forged/edited rows and audit entries detected |
+| V Proof of state | State commitments, drift diff, manifest re-derivation | `nas-protection` |
+| W Digital Twin | Five NAS What-If scenarios on the existing engine; read-only; current vs simulated; explicit unknowns | Live registry and DB unchanged by simulations |
+| X Recovery drill | Test restores; readiness never READY from a backup alone | `nas-protection` |
+| Y Compliance package | `nasEvidence` section of the existing exporter; no certification claim | `nas-protection` |
+| Z Updates | Preflight, config backup, hash-pinned install, auto rollback, never during a critical job | Update, blocked-by-job and rollback verified |
+| 39 Jobs | Idempotent keys, checkpoints, backoff, stale-worker recovery, full state set | Racing/dead workers, resume |
+| 37/38 Security | See §4 | `nas-security` |
+| 47 Performance | Measured, with context, in `docs/nas-performance.json` | `nas-realclient` |
 
-**Real, hand-verified end-to-end SMB** (before any automated test was
-written): from this actual Windows machine, via `net use` + PowerShell —
-real write, read-back, rename, `mkdir`, nested write/read, directory
-listing, delete, service restart + persistence verification,
-disconnect/reconnect, and a real wrong-password rejection (`System error
-1326`). From a real Linux client (`smbclient`, inside WSL): real
-put/get/delete. Real recycle-bin proof: a file deleted over SMB was
-found intact under `.recycle/<user>/` via a mapped drive.
+## 3. Test evidence
 
-**Real, hand-verified end-to-end NFS**: mounted via NFSv4.2 from a real
-Linux client (WSL itself), full CRUD (write/read/rename/mkdir/nested
-write-read/delete), unmount/remount persistence — all genuine.
+Real appliance and real MongoDB; no mocks of application logic. In-memory
+pinning providers are used for speed in the backup tests; the cloud-target test
+uses a real S3-compatible provider (Filebase).
 
-**The control plane** (`src/lib/nas/{credentials,agent,appliances,shares,
-users,backup}.js`, `src/app/api/orgs/nas/**`,
-`src/components/business/NasManagementView.js`): org-scoped appliance/
-share/user registries with real permission gates (`canManageNAS`/
-`canAccessNAS` in `orgGates.js`, following the exact established
-pattern), envelope-encrypted credentials (`NAS_ENCRYPTION_KEY`, same
-AES-256-GCM shape as every other secret class in this codebase), and
-every consequential mutation logged to the **existing shared audit
-chain** (`logOrgActivity`) — no second audit system.
+| Suite | Tests |
+|---|---|
+| `nas-unit` (ACL mapping, quota calc, policy evaluation, backup selection/dedup, manifest hashing, evidence vocabulary, threat classification, SSRF guard) | 9 / 9 |
+| `nas-storage` (pools, quotas, snapshots, WORM) | 23 / 23 |
+| `nas-access` (permissions, groups, lockout, recycle, NFS, remote access, discovery) | 20 / 20 |
+| `nas-protection` (backup, Test D, drills, cloud, replication, tiering, ransomware, jobs, twin, state, updates, worker) | 47 / 47 |
+| `nas-security` (HTTP layer via real route handlers with minted sessions, tenant isolation, traversal/symlink, secrets, forged evidence, corruption) | 14 / 14 |
+| `nas-realclient` (Windows SMB, Linux NFS/smbclient, unclean restart, measured throughput) | 15 / 15 |
+| Regression: first-pass `nas.test.mjs` | 17 / 17 |
 
-**`test/nas.test.mjs`** (17 tests, real, against the live appliance —
-**13/17 passing**, the remaining 4 blocked by an external account limit,
-not a code defect, see below): covers appliance registration + a real
-TCP-reachability health check, Digital Twin `storageResources`
-integration, user provisioning creating a real Samba login, a real
-per-user SMB write/read via `smbclient` using that freshly-issued
-credential (not a shared admin account), real recycle-bin verification,
-fail-closed permission denial (both for an unauthorized appliance
-registration and for granting NAS access to a member without the
-`nasRole` grant), and full teardown that really removes the share and
-user from the appliance, not just the database row.
+### Measured performance (SOW 47)
 
-## Two real bugs found and fixed during this SOW's testing
+Recorded by `test/nas-realclient.test.mjs` into `docs/nas-performance.json`, with context. **Development-profile numbers only** — virtual disks, a virtual NAT network, an 8-vCPU laptop-class host — and not product guarantees.
 
-1. **A silent multi-hour hang**: `NasAgentClient.writeFile()` originally
-   piped file content into `wsl.exe`'s stdin (`base64 -d`). A test run
-   sat at ~44ms of actual CPU time across roughly 7 hours of wall clock
-   before being killed — `wsl.exe` does not reliably propagate Node's
-   stdin-close/EOF into the nested WSL2 process, so the inner `base64 -d`
-   blocked forever waiting for more input. Fixed by writing content to a
-   real temp file on the Windows side (reachable from WSL2 under
-   `/mnt/<drive>/...`) and having the WSL command read from that file
-   instead of stdin — no stdin bridge, no hang. Every other raw
-   `execFileAsync` call in `agent.js` was also given an explicit
-   `timeout` as a backstop.
-2. **A cross-module permission-gate mismatch**: registering a NAS
-   appliance also creates a `storageResources` entry (for Digital Twin
-   reuse), but `storageResources.js`'s own `createStorageResource` is
-   gated on `canManageStorage` — a *different* permission than
-   `canManageNAS`. A real NAS manager without a separate, unrelated
-   "storage manager" grant was rejected with "Only a storage manager can
-   do that." Fixed by having this one internal bookkeeping call run
-   under a synthetic elevated membership (`{role:"owner"}`), the same
-   pattern `api-keys.js`'s `requireApiKey()` already uses for
-   system-level actions that must not be gated by an unrelated
-   subsystem's own permission.
-3. (Found, not a bug in this SOW's own code, but real and fixed here
-   because NAS backup depends on it) **NAS backup initially failed** with
-   "This account has no S3-compatibility passphrase yet." `putS3Object`
-   requires an org-level S3 passphrase that's normally only created when
-   an admin explicitly issues an S3 API credential — NAS backup is an
-   *internal* use of that same pipeline, not the org deliberately
-   managing S3 credentials, so requiring that manual step first would be
-   a confusing, unnecessary gate. Fixed by calling the existing
-   `ensureOwnerS3Passphrase()` (the same function `issueS3Credential()`
-   itself calls) at the start of every backup run.
+| Measurement | Result | Client / filesystem |
+|---|---|---|
+| Sequential write, 100 MB (flushed to the server) | 264 MB/s | Windows SMB, ext4 directory share |
+| Sequential read, 100 MB | 136 MB/s (upper bound: may be partly served by the Windows client cache) | Windows SMB, ext4 directory share |
+| Sequential write / read, 200 MB | 223 / 213 MB/s | NFSv4.2 kernel client (loopback) |
+| Sequential write, 100 MB | 137 MB/s | `smbclient` (loopback), Btrfs on RAID1 |
+| 4 concurrent writers, 4 x 25 MB | 105 MB/s aggregate | `smbclient` x4, Btrfs on RAID1 |
+| Snapshot creation (copy-on-write) including a full manifest hash of the data | 4.6 s | Btrfs (the snapshot itself is near-instant; most of this is hashing) |
+| Appliance back in service after an unclean VM kill (first agent call) | 9.4 s | pools mounted, Samba/NFS started |
 
-## External blocker: Pinata account plan limit (affects more than NAS)
+Encryption, backup and restore throughput to Inaya storage were not benchmarked separately; those paths run through the existing storage pipeline and depend on the pinning provider.
 
-The remaining 4 NAS test failures (`writeFile`→backup, the recovery
-drill, and the resulting audit-trail assertion) all fail with the
-identical error:
+SOW 52A: Test A (Windows) ✔, B (Linux NFS) ✔, C (restart persistence) ✔, D
+(Inaya backup) ✔, E (control-plane outage: cloud-dependent work queues and
+retries, local access continues) ✔ via job states and outage tests, F (security
+boundary) ✔, G (evidence) ✔, H (Digital Twin) ✔, I (real failure recovery:
+disk failure/rebuild, corruption, VM kill) ✔.
 
-```
-pinningProviders/pinata: pin failed (HTTP 403):
-{"error":{"reason":"FORBIDDEN","details":"Account blocked due to plan usage limit"}}
-```
+## 4. Bugs the testing found and fixed
 
-This was verified to be **environment-wide, not NAS-specific**: the
-pre-existing, already-shipped `test/s3-compat-store.test.mjs` suite
-(entirely unrelated to this SOW) fails with the exact same error on the
-exact same operation (`putS3Object`). This is this dev environment's
-Pinata account hitting its plan's usage limit — an **EXTERNAL
-DEPENDENCY**, not a defect in any code from this SOW or any prior one.
-**This currently blocks all Inaya backup/S3-compat write operations
-platform-wide**, not just NAS backup — worth flagging as an operational
-issue independent of this SOW (upgrade the Pinata plan, or configure
-Filebase as primary, to restore write capability).
+1. **Shell-string interpolation** (first pass): passwords/names went into `bash -c`. Replaced by the JSON agent with argument-list execution and validation (SOW 37).
+2. **Lockdown loophole**: Samba's `write list` overrides `read only`, so a locked-down or read-only share still let listed users write. A read-only share never emits a write list now.
+3. **Unlock did nothing**: `pdbedit -z` leaves Samba's autolock flag; unlock now clears it (`-c "[-L]"`).
+4. **WSL2 idle shutdown** unmounted pools and stopped Samba; boot recovery on first agent call plus a keep-alive for the VM profile.
+5. **Manifest injection**: a file name containing a newline could forge a manifest line; control characters are rejected in paths and such files are skipped and counted.
+6. **Scrub reported as a crash** when it found errors; it now returns the counts.
+7. Resume carried over stale failures; evidence and notification wiring in tests; several harness issues (SMB `!` escapes, `wsl.exe` re-parsing `sh -c`, Windows client caches).
 
-The NAS backup/recovery-drill code path is proven correct up to and
-including the exact point it hands off to the existing, previously-
-shipped `putS3Object`/`getS3ObjectBody` functions — the failure occurs
-*inside* that already-proven pipeline, not in any new NAS code.
+## 5. Boundaries — stated, not hidden
 
-## Quotas (Workstream I) — genuine gap, honestly reported
+* **Physical hardware (SOW 36A.2): not done.** The profile is a VM with virtual disks. SMART/temperature/UPS are UNKNOWN by design. This is the largest remaining gap.
+* **NAS→NAS replication** was tested with the target on the same host (`transport: local-host`); cross-host transport is not implemented.
+* **Immutable/WORM** is governance-grade: root on the appliance can lift the flag.
+* **AD/LDAP, iSCSI, local S3 gateway, Kubernetes CSI: not implemented.** iSCSI was evaluated (kernel target modules load; no target stack installed; no use case) → FUTURE. macOS untested. GCS interoperability untested; Azure outbound not implemented.
+* **Where it runs:** the control plane must be able to run the agent; the hosted website (Vercel) cannot reach a NAS on a customer network, so the worker is deliberately not in `vercel.json`.
+* **Encryption on the backup path** is server-managed (SMB/NFS clients do not run Inaya's browser-side encryption).
+* **Windows client behaviour:** deletes and handle releases can appear delayed because of client caching; tests assert the outcome on the appliance.
+* **External:** the Pinata plan limit affects other Inaya storage; NAS backup uses provider fallback (Pinata first, then others). Two older evidence-exporter tests still fail for that reason.
+* No compliance certification of any kind is claimed.
 
-Share quotas are stored as a **policy** (`requestedBytes`) for reporting
-purposes, but `enforced: false` is always returned and asserted by the
-test suite. This WSL2 appliance's ext4 root filesystem is mounted
-without `usrquota`/`grpquota` (confirmed via `mount`), and remounting a
-managed WSL2 VHD to add quota support isn't safely doable without real
-risk of corrupting the distro. This is
-**CUSTOMER-ENVIRONMENT-DEPENDENT**: a real multi-disk Linux appliance
-with a quota-enabled ext4/XFS filesystem (the ordinary real-world case)
-would flip this to `true` with no API shape change — the data model
-already carries the distinction.
+## 6. Regression and build
 
-## What wasn't attempted, and why
+* First-pass `nas.test.mjs`: 17 / 17 (its backup step previously failed on the Pinata plan limit and now passes through provider fallback; one assertion was updated because recycle entries no longer expose absolute appliance paths).
+* Shared-module suites touched by this work — business events, event passport, event simulate, evidence, Digital Twin, docs-content (which now includes the new Sovereign NAS page): **44 / 44**.
+* Evidence exporter: 3 pass; 2 tests fail for the external reason already known — they write a test object through the pre-existing S3-compatible path, which Pinata rejects (`HTTP 403 ... plan usage limit`). They are unrelated to the NAS section added to the exporter.
+* `npm run build`: compiled, exit 0; all 49 NAS route files, the cron route and the console are in the build output.
 
-- **Physical hardware deployment** (SOW Section 36A.2's mandatory proof
-  before calling this a "production NAS prototype"): not done. This
-  pass's appliance is a WSL2 Linux distro, not physical/VM hardware with
-  real disks. This is the single largest remaining gap against the SOW's
-  own definition of done — genuinely needs real hardware or a dedicated
-  VM with attached virtual disks to close.
-- **Storage pools, RAID, ZFS/Btrfs, SMART, UPS**: HARDWARE-DEPENDENT,
-  same reason — WSL2 exposes one shared virtual disk, not multiple real
-  drives to pool/mirror/monitor.
-- **Ransomware/threat-aware protection** (Workstream L): not built. A
-  real implementation needs genuine file-activity telemetry over time to
-  tune detection thresholds against — deferred rather than shipping a
-  guessed heuristic and calling it threat detection.
-- **NAS-to-NAS replication** (Workstream N): not built — there is only
-  one appliance in this environment to replicate *from*, no second one
-  to replicate *to*.
-- **iSCSI, local S3 gateway, Kubernetes CSI**: NOT APPROPRIATE this pass
-  per the SOW's own explicit "do not implement merely for feature-count
-  parity" instruction (Sections 34–36) — no real use case has been
-  established yet.
-- **The full 18-section Management Console** (Workstream T): this pass
-  ships Overview/Appliances/Shares/Users/Backup/Recovery in one focused
-  view (`NasManagementView.js`); Security/Hardware-Health/Twin/Updates
-  panels are the documented next-pass polish once there's real hardware
-  health and threat telemetry to show.
+## 7. Deployment
 
-## Next steps
-
-1. Resolve the Pinata account limit (or configure Filebase as the
-   primary provider) to unblock backup/recovery-drill verification —
-   this is an account/billing action, not an engineering one.
-2. Deploy to real hardware or a dedicated VM with attached virtual disks
-   to close Section 36A.2's physical-deployment requirement and unlock
-   Workstream D/Q (real pools, RAID, SMART, UPS).
-3. Once real hardware exists, revisit quota enforcement (ext4/XFS with
-   `usrquota` mount options) and ransomware detection (real telemetry to
-   tune against).
+New collections and indexes are created by `ensureOrgIndexes()`. New environment: none required beyond `NAS_ENCRYPTION_KEY` (already used). Start the worker on the appliance host. See `docs/nas-runbook.md`.

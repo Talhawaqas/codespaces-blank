@@ -1,0 +1,81 @@
+{
+  "measuredAt": "2026-09-26T00:00:08.125Z",
+  "environment": {
+    "hardware": "8 vCPU (11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz), 32 GB RAM host; appliance = WSL2 VM (6.18.33.2-microsoft-standard-WSL2)",
+    "filesystem": "btrfs on mdadm RAID1 on loop devices on ext4 (virtual disk) for pool shares; ext4 for directory shares",
+    "network": "Windows host -> WSL2 NAT virtual switch (172.21.35.48); Linux clients over loopback",
+    "note": "Virtual disks and a virtual network: numbers are for this development profile only and are not product guarantees."
+  },
+  "results": [
+    {
+      "test": "Windows SMB sequential write, 100 MB (flushed to the server)",
+      "bytes": 104857600,
+      "seconds": 0.379,
+      "MBps": 263.9,
+      "client": "Windows SMB (Node fs over UNC)",
+      "filesystem": "ext4 dir share",
+      "concurrency": 1
+    },
+    {
+      "test": "Windows SMB sequential read, 100 MB",
+      "bytes": 104857600,
+      "seconds": 0.733,
+      "MBps": 136.4,
+      "client": "Windows SMB (Node fs over UNC)",
+      "filesystem": "ext4 dir share",
+      "concurrency": 1,
+      "note": "read just after the write, so part may be served from the Windows client cache; treat as an upper bound"
+    },
+    {
+      "test": "NFSv4.2 sequential write, 200 MB (fsync)",
+      "bytes": 209715200,
+      "seconds": 0.897,
+      "MBps": 223,
+      "client": "Linux kernel NFS client (loopback)",
+      "filesystem": "ext4 dir share",
+      "concurrency": 1
+    },
+    {
+      "test": "NFSv4.2 sequential read, 200 MB",
+      "bytes": 209715200,
+      "seconds": 0.941,
+      "MBps": 212.5,
+      "client": "Linux kernel NFS client (loopback)",
+      "filesystem": "ext4 dir share",
+      "concurrency": 1
+    },
+    {
+      "test": "Appliance recovery after unclean VM kill (first agent call)",
+      "bytes": 0,
+      "seconds": 9.368,
+      "MBps": null,
+      "note": "pools re-attached, mounted, Samba/NFS started"
+    },
+    {
+      "test": "Linux smbclient sequential write, 100 MB",
+      "bytes": 104857600,
+      "seconds": 0.731,
+      "MBps": 136.8,
+      "client": "smbclient (Linux, loopback)",
+      "filesystem": "btrfs on RAID1",
+      "concurrency": 1
+    },
+    {
+      "test": "Linux smbclient 4 concurrent writers, 4 x 25 MB",
+      "bytes": 104857600,
+      "seconds": 0.953,
+      "MBps": 104.9,
+      "client": "smbclient x4",
+      "filesystem": "btrfs on RAID1",
+      "concurrency": 4
+    },
+    {
+      "test": "Btrfs snapshot creation (copy-on-write), incl. manifest hashing of 100 MB+ of data",
+      "bytes": 0,
+      "seconds": 4.583,
+      "MBps": null,
+      "snapshotReportedCreateLatencyMs": 573,
+      "note": "the snapshot itself is near-instant; the reported latency covers only the snapshot; total includes a full manifest hash"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ const RESOLVABLE_TYPES = {
   DOCUMENT: { collectionKey: "orgDocuments", hasDepartment: false, label: (r) => r.filename },
   // Document Automation SOW -- generated documents and their source records.
   GENERATED_DOCUMENT: { collectionKey: "generatedDocuments", hasDepartment: true, label: (r) => `${r.documentNumber} v${r.documentVersion}` },
+  NAS_SHARE: { collectionKey: "nasShares", hasDepartment: false, label: (r) => r.shareName },
   CRM_CONTACT: { collectionKey: "crmContacts", hasDepartment: true, label: (r) => r.name },
   CRM_DEAL: { collectionKey: "crmDeals", hasDepartment: true, label: (r) => r.title },
   PAYMENT: { collectionKey: "payments", hasDepartment: true, label: (r) => `${r.direction} ${r.amount}` },

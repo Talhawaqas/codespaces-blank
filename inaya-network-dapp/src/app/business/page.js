@@ -1043,7 +1043,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     directSync: { title: "DirectSync", description: "Automatic local-folder backup into Inaya from the desktop app." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
-    nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage appliances, shares, and users -- with recycle bin, backup to Inaya, and verified recovery drills." },
+    nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage with RAID pools, snapshots and immutable protection, quotas, ACLs, backup and verified recovery, replication, ransomware response, evidence and What-If simulation." },
     documentAutomation: { title: "Document Automation", description: "Generate official, numbered, encrypted, verifiable documents from your Finance, CRM and Procurement records - with approval, secure delivery and a full evidence trail." },
     aiSecurity: { title: "AI Security", description: "What every AI request was allowed to see, what security checks ran, and why a request was blocked, redacted, or approved." },
     sqlConsole: { title: "SQL Console", description: "Run read-only SQL against your published virtual tables." },

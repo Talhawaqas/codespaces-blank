@@ -75,6 +75,10 @@ export const EVENT_TYPES = {
   // Event subject, so its whole provenance chain shows up in the existing
   // timeline / passport / explain views (see documentAutomation/evidence.js).
   GENERATED_DOCUMENT: "DOCUMENT_AUTOMATION",
+  // Sovereign NAS SOW (Workstream U) -- a NAS share is an Evidence Graph
+  // subject so backups, snapshots, restores and threat responses appear in
+  // the same timeline/passport views (see nas/evidence.js).
+  NAS_SHARE: "NAS_STORAGE",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -92,6 +96,8 @@ const SUBJECT_RESOLVERS = {
   // Department-scoped like its source record; a document with no department
   // (a business report) falls back to org-manager-only visibility.
   GENERATED_DOCUMENT: { collectionKey: "generatedDocuments", hasDepartment: true },
+  // A share has no department of its own: org-manager-only visibility.
+  NAS_SHARE: { collectionKey: "nasShares", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -230,6 +236,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "PURCHASE_ORDER" || subjectType === "PURCHASE_REQUEST") return { ...base, label: subject.title || subject.description || null };
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
+  if (subjectType === "NAS_SHARE") return { ...base, label: subject.shareName || null, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };
   return base;
 }
@@ -325,6 +332,7 @@ function deriveStatus(subjectType, subject) {
     if (["REJECTED", "CANCELLED"].includes(s)) return "CLOSED";
     return "OPEN";
   }
+  if (subjectType === "NAS_SHARE") return s === "DELETED" ? "CLOSED" : "OPEN";
   if (subjectType === "GENERATED_DOCUMENT") {
     if (s === "PAID") return "EXECUTED";
     if (["REJECTED", "VOID", "CANCELLED", "EXPIRED", "SUPERSEDED"].includes(s)) return "CLOSED";

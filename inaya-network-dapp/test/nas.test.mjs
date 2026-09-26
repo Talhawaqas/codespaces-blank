@@ -141,7 +141,7 @@ test("full real lifecycle: register appliance -> health -> digital-twin resource
     const cmd = `smbclient //${NAS_HOST}/${t.shareName} -U ${t.unixUsername}%${t.password} -c 'put /etc/hostname recycleme.txt; del recycleme.txt'`;
     await execFileAsync("wsl.exe", ["-d", process.env.NAS_WSL_DISTRO || "Ubuntu", "-u", "root", "--", "bash", "-c", cmd], { timeout: 15000 });
     const result = await listRecycleBin({ orgId, shareId: t.shareId, membership });
-    assert.ok(result.entries.some((e) => e.path.includes("recycleme.txt")), `expected recycleme.txt in the recycle bin, got: ${JSON.stringify(result.entries)}`);
+    assert.ok(result.entries.some((e) => e.originalPath.includes("recycleme.txt")), `expected recycleme.txt in the recycle bin, got: ${JSON.stringify(result.entries)}`);
   });
 
   await t.test("writeFile via the agent, then backupShareToInaya pushes real bytes through the real s3-compat pipeline", async () => {

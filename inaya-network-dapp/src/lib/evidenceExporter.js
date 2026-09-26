@@ -136,11 +136,13 @@ export async function buildEvidencePackage({ orgId, actorEmail, sinceIso = null,
   const org = await orgs.findOne({ _id: toObjectId(orgId) });
   if (!org) throw new Error("Organization not found.");
 
-  const [storage, security, audit, documents] = await Promise.all([
+  const [storage, security, audit, documents, nas] = await Promise.all([
     gatherStorageEvidence(orgId),
     gatherSecurityEvidence(orgId, { sinceIso }),
     gatherAuditEvidence(orgId, { sinceIso }),
     gatherDocumentEvidence(orgId).catch(() => null),
+    // Sovereign NAS SOW Workstream Y: a section of THIS exporter, not a second one.
+    import("./nas/compliance.js").then((m) => m.gatherNasEvidence(orgId)).catch(() => null),
   ]);
 
   const generatedAt = new Date().toISOString();
@@ -157,6 +159,7 @@ export async function buildEvidencePackage({ orgId, actorEmail, sinceIso = null,
     securityEvidence: security,
     auditEvidence: audit,
     documentAutomationEvidence: documents,
+    nasEvidence: nas,
     cryptographicEvidence: {
       // Objects written through the S3-compat layer use Inaya's real
       // server-managed envelope-encryption model (see store.js's own

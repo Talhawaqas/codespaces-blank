@@ -24,8 +24,10 @@ import { resolveDependents, traverseDependencyGraph } from "./digitalTwin.js";
 import { getPlanHealth } from "./storageBackupPolicies.js";
 import { canonicalizeForExport } from "./evidenceExporter.js";
 import { createHash } from "node:crypto";
+import { NAS_SCENARIO_HANDLERS, NAS_SCENARIO_TYPES } from "./nas/twin.js";
 
-export const SCENARIO_TYPES = ["SUPPLIER_UNAVAILABLE", "EMPLOYEE_ACCESS_REMOVED", "PROJECT_DELAYED", "WAREHOUSE_UNAVAILABLE", "STORAGE_RESOURCE_UNAVAILABLE", "BACKUP_POLICY_DISABLED"];
+// Sovereign NAS SOW Workstream W adds the NAS_* scenarios (nas/twin.js) to this same table.
+export const SCENARIO_TYPES = ["SUPPLIER_UNAVAILABLE", "EMPLOYEE_ACCESS_REMOVED", "PROJECT_DELAYED", "WAREHOUSE_UNAVAILABLE", "STORAGE_RESOURCE_UNAVAILABLE", "BACKUP_POLICY_DISABLED", ...NAS_SCENARIO_TYPES];
 
 // What-If Scenario Studio SOW §9.8 -- bumped only when a scenario
 // handler's actual logic changes (not on every commit), so a stored
@@ -221,6 +223,7 @@ const SCENARIO_HANDLERS = {
   WAREHOUSE_UNAVAILABLE: simulateWarehouseUnavailable,
   STORAGE_RESOURCE_UNAVAILABLE: simulateStorageResourceUnavailable,
   BACKUP_POLICY_DISABLED: simulateBackupPolicyDisabled,
+  ...NAS_SCENARIO_HANDLERS,
 };
 
 /** Read-only entry point. Never writes to any collection -- every handler
