@@ -27,7 +27,7 @@ import { localTestHostsAllowed } from "./http.js";
 import { redact, fail } from "./common.js";
 
 export const RIGHTS = ["view", "edit", "execute", "publish", "manageCredentials", "manageTemplates", "viewExecutions", "exportEvidence"];
-const NAME_RE = /^[\w .,&()'/-]{2,80}$/u;
+const NAME_RE = /^[^\u0000-\u001f<>]{2,80}$/u; // any readable name (colons, dashes, accents...), no control characters or angle brackets
 
 /** The caller's effective rights on one workflow (SOW §56). Org owners/admins hold all. */
 export function rightsFor(workflow, membership, email) {

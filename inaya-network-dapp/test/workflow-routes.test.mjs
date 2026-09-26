@@ -110,7 +110,7 @@ test("catalog, templates, metrics, health, evaluations and copilot routes", asyn
   const repList = await call(tpl.GET, req("GET", "/api/orgs/workflows/templates", { token: tok.rep, query: { orgId: org.oid } }));
   assert.equal(owned.body.templates.length, 7); assert.ok(repList.body.templates.length < 7, "templates needing scopes the member lacks are not offered");
   const create = await load("tplc", "../src/app/api/orgs/workflows/templates/[templateId]/create/route.js");
-  const made = await call(create.POST, req("POST", "/api/orgs/workflows/templates/finance-exception-monitor/create", { token: tok.owner, body: { orgId: org.oid, name: "Finance from template" } }), { templateId: "finance-exception-monitor" });
+  const made = await call(create.POST, req("POST", "/api/orgs/workflows/templates/finance-exception-monitor/create", { token: tok.owner, body: { orgId: org.oid, name: "Finance from template 09-26 12:30 (Q3)" } }), { templateId: "finance-exception-monitor" });
   assert.equal(made.status, 201); assert.equal(made.body.workflow.status, "DRAFT");
   const met = await load("met", "../src/app/api/orgs/workflows/metrics/route.js");
   assert.ok((await call(met.GET, req("GET", "/api/orgs/workflows/metrics", { token: tok.owner, query: { orgId: org.oid } }))).body.totals);
