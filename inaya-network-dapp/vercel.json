@@ -71,6 +71,10 @@
     {
       "path": "/api/cron/document-automation",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/workflows",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

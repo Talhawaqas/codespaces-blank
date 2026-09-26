@@ -261,6 +261,12 @@ export async function simulateDigitalTwinScenario({ orgId, scenarioType, entityI
     metadata: { scenarioType, entityId: String(entityId), resultStatus: result.resultStatus, integrityHash, ...provenance },
   });
 
+  // AI Business Operations Manager SOW: a completed simulation can start a workflow (never one started by a workflow itself).
+  if (params?.source !== "workflow") {
+    import("./workflows/queue.js").then((m) => m.emitWorkflowEvent({ orgId, type: "twin_complete", key: scenarioType, eventId: event.eventId, payload: { scenarioType, simulationId: event.eventId, resultStatus: result.resultStatus, integrityHash } }))
+      .catch((err) => console.error("workflow twin trigger failed (non-fatal):", err.message));
+  }
+
   return { simulation: { ...result, simulationId: event.eventId, ...provenance, integrityHash, runAt: event.timestamp, runByEmail: actorEmail } };
 }
 

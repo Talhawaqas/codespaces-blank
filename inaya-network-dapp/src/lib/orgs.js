@@ -541,6 +541,17 @@ export async function getOrgCollections() {
     documentAccessEvents: db.collection("documentAccessEvents"),
     documentJobs: db.collection("documentJobs"),
     documentMetrics: db.collection("documentMetrics"),
+    // AI Business Operations Manager SOW
+    workflows: db.collection("workflows"),
+    workflowVersions: db.collection("workflowVersions"),
+    workflowExecutions: db.collection("workflowExecutions"),
+    workflowEffects: db.collection("workflowEffects"),
+    workflowMemory: db.collection("workflowMemory"),
+    workflowCredentials: db.collection("workflowCredentials"),
+    workflowEvidence: db.collection("workflowEvidence"),
+    workflowEvaluations: db.collection("workflowEvaluations"),
+    workflowRequests: db.collection("workflowRequests"),
+    workflowWebhookHits: db.collection("workflowWebhookHits"),
   };
 }
 
@@ -595,6 +606,7 @@ export async function ensureOrgIndexes() {
     aiSecurityChecks, aiSecurityPolicies, aiModelRegistry,
     generatedDocuments,
     documentTemplates, documentNumberLedger, documentAutomationSettings, documentDeliveries, documentAccessEvents, documentJobs, documentMetrics,
+    workflows, workflowVersions, workflowExecutions, workflowEffects, workflowMemory, workflowCredentials, workflowEvidence, workflowEvaluations, workflowRequests, workflowWebhookHits,
   } = await getOrgCollections();
 
   await Promise.all([
@@ -919,6 +931,25 @@ export async function ensureOrgIndexes() {
     documentAccessEvents.createIndex({ orgId: 1, documentId: 1, at: -1 }),
     documentJobs.createIndex({ orgId: 1, documentId: 1, kind: 1, status: 1 }),
     documentJobs.createIndex({ status: 1, nextAttemptAt: 1 }),
+    // AI Business Operations Manager SOW
+    workflows.createIndex({ orgId: 1, deletedAt: 1, updatedAt: -1 }),
+    workflows.createIndex({ orgId: 1, name: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } }),
+    workflows.createIndex({ status: 1, "schedule.nextRunAt": 1 }),
+    workflowVersions.createIndex({ orgId: 1, workflowId: 1, version: 1 }, { unique: true }),
+    workflowExecutions.createIndex({ orgId: 1, workflowId: 1, createdAt: -1 }),
+    workflowExecutions.createIndex({ orgId: 1, createdAt: -1 }),
+    workflowExecutions.createIndex({ orgId: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: "string" } } }),
+    workflowExecutions.createIndex({ status: 1, nextAttemptAt: 1 }),
+    workflowEffects.createIndex({ orgId: 1, effectKey: 1 }, { unique: true }),
+    workflowMemory.createIndex({ orgId: 1, workflowId: 1, createdAt: -1 }),
+    workflowMemory.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    workflowCredentials.createIndex({ orgId: 1, status: 1 }),
+    workflowEvidence.createIndex({ orgId: 1, executionId: 1, createdAt: 1 }),
+    workflowEvaluations.createIndex({ orgId: 1, workflowId: 1, createdAt: -1 }),
+    workflowRequests.createIndex({ orgId: 1, key: 1 }, { unique: true }),
+    workflowRequests.createIndex({ createdAt: 1 }, { expireAfterSeconds: 86400 }),
+    workflowWebhookHits.createIndex({ workflowId: 1, nonce: 1 }, { unique: true }),
+    workflowWebhookHits.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 }),
     documentMetrics.createIndex({ orgId: 1, metric: 1, at: -1 }),
     documentMetrics.createIndex({ atDate: 1 }, { expireAfterSeconds: 90 * 24 * 3600 }),
   ]);

@@ -79,6 +79,11 @@ export const EVENT_TYPES = {
   // subject so backups, snapshots, restores and threat responses appear in
   // the same timeline/passport views (see nas/evidence.js).
   NAS_SHARE: "NAS_STORAGE",
+  // AI Business Operations Manager SOW -- a workflow execution is an Evidence
+  // Graph subject so its trigger -> data -> AI -> decision -> approval ->
+  // action -> notification chain appears in the same timeline/passport views
+  // (see workflows/evidence.js).
+  WORKFLOW_EXECUTION: "WORKFLOW_AUTOMATION",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -98,6 +103,8 @@ const SUBJECT_RESOLVERS = {
   GENERATED_DOCUMENT: { collectionKey: "generatedDocuments", hasDepartment: true },
   // A share has no department of its own: org-manager-only visibility.
   NAS_SHARE: { collectionKey: "nasShares", hasDepartment: false },
+  // An execution has no department of its own: org-manager-only visibility.
+  WORKFLOW_EXECUTION: { collectionKey: "workflowExecutions", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -227,6 +234,13 @@ export async function createBusinessEvent({ orgId, subjectType, subjectId, membe
   const event = { ...doc, _id: insertedId };
   if (event.riskLevel === "HIGH") await notifyManagersOfHighRiskEvent({ orgId, event });
 
+  // AI Business Operations Manager SOW: an Evidence Graph event can start a workflow. Fire-and-forget (a workflow
+  // problem must never break the evidence write) and never for a workflow's own execution records (no feedback loop).
+  if (subjectType !== "WORKFLOW_EXECUTION") {
+    import("./workflows/queue.js").then((m) => m.emitWorkflowEvent({ orgId, type: "evidence_event", key: subjectType, eventId: insertedId, payload: { subjectType, subjectId: String(subjectId), riskLevel: doc.riskLevel } }))
+      .catch((err) => console.error("workflow evidence trigger failed (non-fatal):", err.message));
+  }
+
   return { event };
 }
 
@@ -237,6 +251,7 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "AI_ACTION_REQUEST") return { ...base, label: subject.proposedAction || null, status: subject.status };
   if (subjectType === "AI_SECURITY_CHECK") return { ...base, label: `${subject.decision}: ${subject.category}`, status: subject.decision };
   if (subjectType === "NAS_SHARE") return { ...base, label: subject.shareName || null, amount: null };
+  if (subjectType === "WORKFLOW_EXECUTION") return { ...base, label: `${subject.workflowName || "Workflow"} v${subject.workflowVersion} run`, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };
   return base;
 }
