@@ -5,7 +5,7 @@
 // credential, to a customer with an active link) -> rate limit -> Idempotency-Key replay protection -> handleIdentityApi (capabilities, validation,
 // audit). The route never trusts an organization id from the client.
 import { NextResponse } from "next/server";
-import { ensureOrgIndexes, getRawSessionToken, getSession, getMembership, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
+import { ensureOrgIndexes, getRawSessionToken, SESSION_COOKIE, getSession, getMembership, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
 import { checkRateLimit } from "../../../../lib/rateLimit.js";
 import { canManageOrg } from "../../../../lib/orgGates.js";
 import { authenticateCredential } from "../../../../lib/identity/credentials.js";
@@ -39,6 +39,7 @@ export async function identityRoute(req, ctx) {
       if (r.error) return NextResponse.json({ error: r.error, ...(r.reasonCode ? { reasonCode: r.reasonCode } : {}) }, { status: r.status, headers: H });
       A = { orgId: r.ctx.orgId, kind: "service", email: null, label: r.ctx.actor, caps: capsForScopes(r.ctx.scopes), humanAdmin: false, membership: null, providerId: r.ctx.providerId, credentialId: r.ctx.credentialId };
     } else {
+      if (!req.cookies.get(SESSION_COOKIE)?.value) return NextResponse.json({ error: "Not signed in." }, { status: 401, headers: H });
       if (!requested || typeof requested !== "string" || requested.length > 40) return NextResponse.json({ error: "orgId is required." }, { status: 400, headers: H });
       const session = await getSession(getRawSessionToken(req));
       if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401, headers: H });
