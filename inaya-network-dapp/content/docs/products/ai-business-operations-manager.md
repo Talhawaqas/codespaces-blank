@@ -49,7 +49,7 @@ The idea is: **data, then AI, then a decision, then governance, then action, the
 ## What is real and what is not yet verified
 
 - Gemini, the scheduler, the queue, permissions, evidence, approvals, the Digital Twin and Inaya notifications are exercised by automated tests against the real database.
-- **Slack and Gmail sending are implemented and tested against stand-ins only.** They are not marked verified until a real message has been delivered. Slack uses an incoming-webhook URL; Gmail uses an OAuth refresh token you create once.
+- **Slack and Gmail sending have been verified live** (2026-09-26): a real production run delivered through a Slack incoming webhook and the Gmail API. Slack uses an incoming-webhook URL; Gmail uses an OAuth refresh token you create once. A repeat run on the same day is deduplicated and does not send again.
 - **Inaya has no support-ticket module.** The "Get Support Tickets" step reads your own helpdesk through the HTTP connector and has only been tested against a local test server.
 - Schedules run from Inaya's five-minute background job, so a schedule fires within about five minutes of its time.
 

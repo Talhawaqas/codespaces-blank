@@ -1,6 +1,6 @@
 # AI Business Operations Manager — Audit, Plan and Implementation Report
 
-Status: **implemented and verified against the real database; Slack, Gmail and a real helpdesk are NOT yet verified live** (see section 10). Test results are in section 11.
+Status: **implemented and verified against the real database. Slack and Gmail were verified live on 2026-09-26** (see section 10). A real helpdesk is not yet verified. Test results are in section 11.
 
 Principle followed: AUDIT → REUSE → CONNECT → IMPLEMENT ONLY GENUINE GAPS → TEST → SECURE → PROVE.
 
@@ -155,8 +155,8 @@ Real defects these tests found and that are fixed: disabling a workflow with no 
 
 ## 10. Honest limitations and unverified items
 
-- **Slack sending** is implemented (incoming-webhook credential; a Slack-app token path also exists but needs `chat:write`, which Inaya's existing Slack connection does not request) and tested against a capturing stand-in only. **Not verified against real Slack** until a real message is delivered.
-- **Gmail sending** is implemented through the Gmail API with an OAuth refresh token (`scripts/gmail-refresh-token.mjs`) and tested against a stand-in only. **Not verified against real Gmail.** Google's `gmail.send` is a sensitive scope: a personal (non-Workspace) account must publish the consent screen or the token expires after 7 days.
+- **Slack sending: VERIFIED LIVE (2026-09-26).** A published production workflow ("Notification Delivery Test") posted through a real Slack incoming webhook; the recorded provider response was HTTP 200 and the delivery was marked DELIVERED. (A Slack-app token path also exists but needs `chat:write`, which Inaya's existing Slack connection does not request; it is not verified.)
+- **Gmail sending: VERIFIED LIVE (2026-09-26).** The same production run sent through the real Gmail API using an OAuth refresh token; the recorded response was HTTP 200 and the delivery was marked DELIVERED. Google's `gmail.send` is a sensitive scope: a personal (non-Workspace) account must publish the consent screen or the refresh token expires after 7 days. Repeat runs on the same day are deduplicated and do not send again by design.
 - **Email** node uses Inaya's existing provider (Resend); without `RESEND_API_KEY` the node fails honestly.
 - **Support tickets:** Inaya has no support module. The node reads a customer's own helpdesk through the HTTP connector and has only been exercised against a local test server. A native support module is a separate piece of work (proposed as its own SOW).
 - **Org suspension:** Inaya has no "disable organization" feature today; the engine honours `disabledAt` / status `DISABLED` or `SUSPENDED` on the organization record if one is set.
