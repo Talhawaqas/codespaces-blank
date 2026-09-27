@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { verifyMetadataAuth } from '../../../lib/metadata-auth.js';
+import { checkRateLimit } from '../../../lib/rateLimit.js';
+
+const POINT_ACTIONS = ['SIGNUP', 'UPLOAD', 'RETRIEVE', 'SOCIAL'];
 
 // Safe Fallback: If service role key is missing in Vercel settings, it uses public anon key
 const supabase = createClient(
@@ -36,10 +40,27 @@ export async function GET(request) {
 // ========================================================
 export async function POST(request) {
   try {
-    const { walletAddress, actionType, handle } = await request.json();
-    
+    const { walletAddress, actionType, handle, message, signature, timestamp } = await request.json();
+
     if (!walletAddress) {
       return NextResponse.json({ error: 'Missing walletAddress parameter' }, { status: 400 });
+    }
+    if (!POINT_ACTIONS.includes(actionType)) {
+      return NextResponse.json({ error: `actionType must be one of ${POINT_ACTIONS.join(', ')}.` }, { status: 400 });
+    }
+
+    // SQA (S1): this route used to trust the claimed wallet with no proof, so anyone could mint points for any
+    // wallet without limit. The caller must now prove control of the wallet (same signed-message scheme as the
+    // metadata routes: action "awardPoints", resourceId = actionType), and repeatable actions are rate limited.
+    try {
+      verifyMetadataAuth({ action: 'awardPoints', resourceId: actionType, extra: actionType === 'SOCIAL' ? { handle: String(handle || '').trim() } : undefined, address: walletAddress, message, signature, timestamp });
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 401 });
+    }
+    try {
+      await checkRateLimit({ action: `points:${actionType}`, key: walletAddress.toLowerCase(), max: actionType === 'UPLOAD' || actionType === 'RETRIEVE' ? 50 : 5, windowMs: 24 * 60 * 60 * 1000 });
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
     }
 
     const address = walletAddress.toLowerCase();
@@ -57,7 +78,11 @@ export async function POST(request) {
     let pointsToAdd = 0;
     let isSocial = false;
 
-    if (actionType === 'SIGNUP') pointsToAdd = 50;
+    if (actionType === 'SIGNUP') {
+      // one-time award: a repeat signup for a wallet that already has a ledger row adds nothing
+      if (user) return NextResponse.json({ success: true, total_points: user.total_points || 0, alreadyAwarded: true });
+      pointsToAdd = 50;
+    }
     if (actionType === 'UPLOAD') pointsToAdd = 100;
     if (actionType === 'RETRIEVE') pointsToAdd = 20;
     
