@@ -23,6 +23,7 @@ import { ethers } from "ethers";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/mongodb";
+import { claimSettlement, completeSettlement, failSettlement, getProgress, recordProgress } from "../../../lib/stripeSettlement.js";
 
 // Both settlement paths can involve multiple on-chain transactions with
 // confirmations â€” this can easily exceed Vercel's default function timeout.
@@ -93,6 +94,11 @@ export async function POST(req) {
   const session = event.data.object;
   const checkoutType = session.metadata?.checkoutType || "corporate_reserve";
 
+  // SQA-007: only act on money that has actually been collected (a completed session can still be unpaid for delayed payment methods)
+  if (session.payment_status && session.payment_status !== "paid") {
+    return NextResponse.json({ received: true, ignored: "payment not completed" });
+  }
+
   try {
     // Keyed by orgId, not email â€” the org member already has a real
     // session, so this doesn't need (and shouldn't require) customer_details.email.
@@ -108,20 +114,36 @@ export async function POST(req) {
     }
 
     if (checkoutType === "payg_upload") {
-      const result = await settlePaygUpload(session, customerEmail);
-      return NextResponse.json({ received: true, ...result });
+      return await settleOnce(session, checkoutType, () => settlePaygUpload(session, customerEmail));
     } else if (checkoutType === "egress_unlock") {
       const result = await settleEgressUnlock(session, customerEmail);
       return NextResponse.json({ received: true, ...result });
     } else {
-      const result = await settleCorporateReserve(session, customerEmail);
-      return NextResponse.json({ received: true, ...result });
+      return await settleOnce(session, checkoutType, () => settleCorporateReserve(session, customerEmail));
     }
   } catch (err) {
     // Payment already succeeded at this point â€” settlement failing needs to
     // alert someone, not silently 500 and lose the customer's money's worth.
     console.error(`[FAILED] Settlement failed after successful payment (${checkoutType}):`, err);
     return NextResponse.json({ error: "Settlement failed", details: err.message }, { status: 500 });
+  }
+}
+
+// SQA-007: on-chain settlements run at most once per Stripe session, and a failed one resumes from the step it reached.
+async function settleOnce(session, type, run) {
+  const claim = await claimSettlement(session.id, type);
+  if (!claim.claimed) {
+    if (claim.status === "completed") return NextResponse.json({ received: true, duplicate: true, ...(claim.result || {}) });
+    console.error(`[ATTENTION] Stripe session ${session.id} (${type}) is ${claim.status} -- not re-running an on-chain settlement automatically`);
+    return NextResponse.json({ error: "Settlement already in progress or needs operator review", status: claim.status }, { status: 409 });
+  }
+  try {
+    const result = await run();
+    await completeSettlement(session.id, result);
+    return NextResponse.json({ received: true, ...result });
+  } catch (err) {
+    await failSettlement(session.id, err);
+    throw err;
   }
 }
 
@@ -137,29 +159,40 @@ async function settleCorporateReserve(session, customerEmail) {
   const treasuryWallet = new ethers.Wallet(TREASURY_WALLET_PRIVATE_KEY, provider);
   const usdt = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, treasuryWallet);
 
+  const done = await getProgress(session.id); // steps a previous failed attempt already completed
   const decimals = await usdt.decimals();
   const invoiceAmountWei = ethers.parseUnits(String(amountUsd), decimals);
 
   // 1. Approve + settle via RevenueRouter â€” same call page.js makes with a connected wallet.
-  const routerAllowance = await usdt.allowance(treasuryWallet.address, REVENUE_ROUTER_ADDRESS);
-  if (routerAllowance < invoiceAmountWei) {
-    const approveTx = await usdt.approve(REVENUE_ROUTER_ADDRESS, ethers.MaxUint256);
-    await approveTx.wait();
+  let routerTxHash = done.routerTxHash;
+  if (!routerTxHash) {
+    const routerAllowance = await usdt.allowance(treasuryWallet.address, REVENUE_ROUTER_ADDRESS);
+    if (routerAllowance < invoiceAmountWei) {
+      const approveTx = await usdt.approve(REVENUE_ROUTER_ADDRESS, ethers.MaxUint256);
+      await approveTx.wait();
+    }
+    const router = new ethers.Contract(REVENUE_ROUTER_ADDRESS, ROUTER_ABI, treasuryWallet);
+    const routerTx = await router.processCorporateInvoice(invoiceAmountWei);
+    await routerTx.wait();
+    routerTxHash = routerTx.hash;
+    await recordProgress(session.id, { routerTxHash });
   }
-  const router = new ethers.Contract(REVENUE_ROUTER_ADDRESS, ROUTER_ABI, treasuryWallet);
-  const routerTx = await router.processCorporateInvoice(invoiceAmountWei);
-  await routerTx.wait();
 
   // 2. Escrow the 39% COGS share for the standard 12-month vesting schedule.
   const cogsAmountWei = (invoiceAmountWei * 39n) / 100n;
-  const escrowAllowance = await usdt.allowance(treasuryWallet.address, CORPORATE_ESCROW_ADDRESS);
-  if (escrowAllowance < cogsAmountWei) {
-    const approveEscrowTx = await usdt.approve(CORPORATE_ESCROW_ADDRESS, ethers.MaxUint256);
-    await approveEscrowTx.wait();
+  let escrowTxHash = done.escrowTxHash;
+  if (!escrowTxHash) {
+    const escrowAllowance = await usdt.allowance(treasuryWallet.address, CORPORATE_ESCROW_ADDRESS);
+    if (escrowAllowance < cogsAmountWei) {
+      const approveEscrowTx = await usdt.approve(CORPORATE_ESCROW_ADDRESS, ethers.MaxUint256);
+      await approveEscrowTx.wait();
+    }
+    const escrow = new ethers.Contract(CORPORATE_ESCROW_ADDRESS, ESCROW_ABI, treasuryWallet);
+    const escrowTx = await escrow.createEscrow(treasuryWallet.address, OPERATOR_POOL_ADDRESS, cogsAmountWei);
+    await escrowTx.wait();
+    escrowTxHash = escrowTx.hash;
+    await recordProgress(session.id, { escrowTxHash });
   }
-  const escrow = new ethers.Contract(CORPORATE_ESCROW_ADDRESS, ESCROW_ABI, treasuryWallet);
-  const escrowTx = await escrow.createEscrow(treasuryWallet.address, OPERATOR_POOL_ADDRESS, cogsAmountWei);
-  await escrowTx.wait();
 
   // This is the piece localStorage can't do for a card customer:
   // persist the entitlement in a real database, keyed by email.
@@ -173,8 +206,8 @@ async function settleCorporateReserve(session, customerEmail) {
         tier,
         amountUsd,
         stripeSessionId: session.id,
-        routerTxHash: routerTx.hash,
-        escrowTxHash: escrowTx.hash,
+        routerTxHash,
+        escrowTxHash,
         activatedAt: now,
         expiresAt: now + TIER_TERM_MS,
       },
@@ -182,8 +215,8 @@ async function settleCorporateReserve(session, customerEmail) {
     { upsert: true }
   );
 
-  console.log(`[OK] Corporate plan activated on-chain for ${customerEmail}: ${tier} (router tx ${routerTx.hash})`);
-  return { routerTxHash: routerTx.hash, escrowTxHash: escrowTx.hash };
+  console.log(`[OK] Corporate plan activated on-chain for ${customerEmail}: ${tier} (router tx ${routerTxHash})`);
+  return { routerTxHash, escrowTxHash };
 }
 
 // ============================================================
@@ -255,22 +288,27 @@ async function settlePaygUpload(session, customerEmail) {
     }
   }
 
-  const registerTx = await custody.batchRegisterAssets([fileHash], [sizeBytes], [cidAlpha], [cidBeta]);
-  await registerTx.wait();
+  let registerTxHash = (await getProgress(session.id)).registerTxHash;
+  if (!registerTxHash) {
+    const registerTx = await custody.batchRegisterAssets([fileHash], [sizeBytes], [cidAlpha], [cidBeta]);
+    await registerTx.wait();
+    registerTxHash = registerTx.hash;
+    await recordProgress(session.id, { registerTxHash });
+  }
 
   const { db } = await connectToDatabase();
-  await db.collection("payg_assets").insertOne({
+  await db.collection("payg_assets").updateOne({ stripeSessionId: session.id }, { $set: {
     email: customerEmail.toLowerCase(),
     filename,
     fileHash,
     sizeBytes: Number(sizeBytes),
     stripeSessionId: session.id,
-    txHash: registerTx.hash,
+    txHash: registerTxHash,
     uploadedAt: Date.now(),
-  });
+  } }, { upsert: true });
 
-  console.log(`[OK] PAYG asset registered on-chain for ${customerEmail}: ${filename} (tx ${registerTx.hash})`);
-  return { registerTxHash: registerTx.hash };
+  console.log(`[OK] PAYG asset registered on-chain for ${customerEmail}: ${filename} (tx ${registerTxHash})`);
+  return { registerTxHash };
 }
 
 // ============================================================
