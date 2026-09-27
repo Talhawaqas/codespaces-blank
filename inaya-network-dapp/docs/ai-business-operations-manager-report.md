@@ -31,7 +31,7 @@ Principle followed: AUDIT → REUSE → CONNECT → IMPLEMENT ONLY GENUINE GAPS 
 
 Additional facts that shape the design:
 
-- **There is no support-ticket system in Inaya.** The "Get Support Tickets" node therefore reads from the
+- **(Superseded 2026-09-26: Inaya now has a native support-ticket module, see the Customer Portal report and the `data.inaya_support_tickets` node.) There was no support-ticket system in Inaya when this was written.** The "Get Support Tickets" node therefore reads from the
   organization's own helpdesk through the controlled HTTP connector (credential reference + allowed hosts). It is
   labeled **unverified against any real helpdesk vendor** and is tested against a local test server only.
 - **Slack**: an OAuth connection exists (`integrationProviders/slack.js`) but nothing sends messages → genuine gap. **Gmail**: only

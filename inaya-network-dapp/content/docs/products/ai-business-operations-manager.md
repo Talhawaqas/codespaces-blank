@@ -50,7 +50,7 @@ The idea is: **data, then AI, then a decision, then governance, then action, the
 
 - Gemini, the scheduler, the queue, permissions, evidence, approvals, the Digital Twin and Inaya notifications are exercised by automated tests against the real database.
 - **Slack and Gmail sending have been verified live** (2026-09-26): a real production run delivered through a Slack incoming webhook and the Gmail API. Slack uses an incoming-webhook URL; Gmail uses an OAuth refresh token you create once. A repeat run on the same day is deduplicated and does not send again.
-- **Inaya has no support-ticket module.** The "Get Support Tickets" step reads your own helpdesk through the HTTP connector and has only been tested against a local test server.
+- **Support tickets.** Inaya now has its own Customer Support module (see Customer Portal & Customer Service), and Automations can read it directly through the native "Inaya support tickets" step, limited to what the person running the workflow may see. The older "Get Support Tickets" step, which reads an outside helpdesk through the HTTP connector, has only been tested against a local test server, not a real helpdesk product.
 - Schedules run from Inaya's five-minute background job, so a schedule fires within about five minutes of its time.
 
 ## Set up Slack and Gmail

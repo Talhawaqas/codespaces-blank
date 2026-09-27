@@ -146,7 +146,7 @@ export const multicloudGuide = {
         {
           type: "bullets",
           items: [
-            "Presigned URLs (`aws s3 presign`) are not yet supported — every request must be signed normally by the CLI/SDK.",
+            "Presigned URLs: AWS SigV4 presigned URLs (aws s3 presign, SDK presigners) are supported and were verified against the real AWS CLI on 27 September 2026 (expiry up to 7 days, bound to one method and one object). Google-style X-Goog-* signed URLs use the same code path but are not verified against a Google client.",
             "Not every third-party backup tool has been tested against this endpoint yet; ask your Inaya contact for the current tested-tool list before relying on one for production backups.",
           ],
         },
