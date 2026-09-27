@@ -1854,5 +1854,61 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "56",
+      title: "Managed Database Service — Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Vercel serverless functions cannot host a persistent database engine process (no listening TCP port survives between invocations, no container/VM layer exists in this stack). Workstream A therefore provisions and controls a REAL database on a real external provider, through a provider-adapter interface identical in shape to pinningProviders/* and legacyDataAccess/connectorRegistry.js.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["Provider registry", "rds/providerRegistry.js", "Flat name -> module map, filtered by isConfigured() -- adding a second provider is one file, not an architecture change."],
+            ["Supabase provider", "rds/providers/supabase.js", "Real calls to api.supabase.com/v1: create/list/get/pause/restore/delete a project, list backups, restore-PITR, run a SQL statement."],
+            ["Control plane", "rds/instances.js", "Inaya's own record (name, status, department scoping), audit, Evidence Graph -- delegates every real operation to the provider, never talks to Supabase directly itself."],
+            ["Credential handling", "integrationCrypto.js (reused)", "The database password is AES-256-GCM encrypted with the same key already used for OAuth tokens (INTEGRATION_ENCRYPTION_KEY) -- never stored or logged in plaintext."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "Read replicas and failover are NOT claimed as supported -- Supabase's High Availability is a paid, project-level flag this provider can request, but failover behaviour has not been verified through a real incident, so createReplica()/failover() honestly return NOT_SUPPORTED rather than a guess.",
+        },
+      ],
+    },
+    {
+      number: "57",
+      title: "AI/ML Studio & Document Intelligence — Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Document Intelligence generalizes bookkeeper/extract.js's proven deterministic-then-AI-corroborated pattern to an arbitrary analyzer field schema instead of a fixed invoice-field list. AI/ML Studio's governance layer is metadata over sources that already exist -- it never stores a second copy of any data.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["Analyzer registry", "docIntelligence/analyzers.js", "6 built-in analyzers (synthesized in code, never stored) plus custom ones with a DRAFT->TESTING->READY->ACTIVE->DISABLED->ARCHIVED lifecycle."],
+            ["Extraction engine", "docIntelligence/extract.js", "Schema-driven EXTRACT/CLASSIFY/GENERATE; reuses bookkeeper's textFromBuffer() and support/ai.js's gatedJson() (the existing AI Security Gateway) -- no second AI-calling seam."],
+            ["Catalog", "mlStudio/catalog.js", "A TABLE/ANALYZER/DOCUMENT_PROJECT entry is VERIFIED against the real source (a legacyDataAccess virtual table, a Document Intelligence analyzer, or an org_documents project) before it is accepted."],
+            ["Data quality", "mlStudio/dataQuality.js", "NOT_NULL/UNIQUE/RANGE/ROW_COUNT_MIN rules run through legacyDataAccess's EXISTING read-only SQL gateway -- no second query engine."],
+            ["Model registry", "mlStudio/models.js", "Real artifact hashing (sha256) and encrypted, sharded storage (s3-compat/store.js, reused verbatim); same lifecycle taxonomy as analyzers."],
+            ["Sandboxed execution", "mlStudio/execution.js", "One code snippet, one fresh @vercel/sandbox microVM, stopped immediately after -- network denied by default, Inaya's own server environment never passed in (env: {}), rate-limited, audited."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Why this is not a notebook, by design.",
+          text: "No saved kernel state between calls, no cell-to-cell variable sharing -- a persistent notebook needs a persistent sandbox and a session-management layer this pass does not build. Calling this a \"notebook\" would be exactly the unsafe pseudo-notebook the SOW that scoped this work says never to ship.",
+        },
+        {
+          type: "note",
+          text: "Every new subject type (DOC_INTELLIGENCE_RESULT, RDS_INSTANCE, ML_STUDIO_MODEL) is registered in businessEvents.js's existing SUBJECT_RESOLVERS -- the same Evidence Graph every other feature uses, not a second one.",
+        },
+      ],
+    },
   ],
 };

@@ -1129,5 +1129,73 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "39",
+      title: "Managed Database Service Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Capability audit: RDS_SAGEMAKER_DOCINT_CAPABILITY_AUDIT.md. Real, current Supabase Management API endpoints confirmed against supabase.com/docs/reference/api before any code was written.",
+        },
+        {
+          type: "table",
+          headers: ["File", "Purpose"],
+          rows: [
+            ["src/lib/rds/providerRegistry.js", "Provider registry; only \"supabase\" registered this pass."],
+            ["src/lib/rds/providers/supabase.js", "POST/GET/DELETE /v1/projects, .../pause, .../restore, .../database/backups, .../database/backups/restore-pitr, .../database/query -- Bearer SUPABASE_ACCESS_TOKEN, read at call time only."],
+            ["src/lib/rds/instances.js", "Control plane: provision/list/status/start/stop/deprovision/snapshots/PITR-restore/query, owner-or-admin gated, DB password AES-256-GCM encrypted via integrationCrypto.js."],
+            ["src/lib/rds/record.js", "audit/link/notify -- RDS_INSTANCE Evidence Graph subject."],
+            ["src/app/api/orgs/rds/instances/[[...]]/route.js (4 route files)", "Session-authenticated REST surface."],
+            ["src/components/business/DatabasesView.js", "Business Workspace panel: provision, start/stop, delete (typed-name confirmation)."],
+            ["Test coverage", "test/rds-instances.test.mjs -- 6/6, real database for Inaya's own records; the Supabase API itself intercepted at the fetch boundary so no real project is ever created by CI."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "40",
+      title: "Document Intelligence Studio Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File", "Purpose"],
+          rows: [
+            ["src/lib/docIntelligence/analyzers.js", "6 built-in analyzers (invoice/PO/receipt/contract/classify/summarize) + custom, DRAFT->TESTING->READY->ACTIVE->DISABLED->ARCHIVED lifecycle."],
+            ["src/lib/docIntelligence/extract.js", "extractDeterministicGeneric() (schema-driven, requires an explicit \":\"/\"#\" separator for string/date fields to avoid false-positive matches), extractFieldsWithAi/classifyWithAi/generateWithAi (all through support/ai.js's gatedJson), mergeFields() (grounding-capped confidence, identical discipline to bookkeeper/extract.js's mergeAi)."],
+            ["src/lib/docIntelligence/analyze.js", "Orchestrator: scanBuffer -> storeBytes (s3-compat, own \"doc-intelligence\" bucket) -> extract/classify/generate -> review routing -> Evidence Graph."],
+            ["src/lib/docIntelligence/review.js", "Versioned corrections (result.corrections[] appended, never overwrites result.fields) -- currentFields() is the read-time projection that overlays them."],
+            ["src/lib/docIntelligence/evaluate.js", "precision/recall/fieldAccuracy/groundingRate/correctionRate, reported as separate named metrics."],
+            ["src/app/api/orgs/doc-intelligence/{analyzers,analyze,results,review,evaluate}/[[...]]/route.js (8 route files)", "Session-authenticated REST surface; member can submit, owner/admin manages the registry and review queue."],
+            ["src/components/business/DocIntelligenceView.js", "Business Workspace panel: submit, view fields/grounding, resolve review items."],
+            ["Test coverage", "test/doc-intelligence.test.mjs -- 10/10, real database, real Evidence Graph, real cross-org isolation check."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "41",
+      title: "AI/ML Studio Reference (September 2026)",
+      blocks: [
+        {
+          type: "table",
+          headers: ["File", "Purpose"],
+          rows: [
+            ["src/lib/mlStudio/catalog.js", "registerCatalogEntry() VERIFIES the ref against a real source (getVirtualTableByName / getAnalyzer / a real org_documents project) before accepting it -- no dangling entries possible."],
+            ["src/lib/mlStudio/dataQuality.js", "createRule/runRule -- NOT_NULL/UNIQUE/RANGE/ROW_COUNT_MIN translated to SQL and run through legacyDataAccess/sqlGateway.js's EXISTING executeVirtualQuery(); REGEX honestly refused (no portable REGEXP in the reference SQLite connector)."],
+            ["src/lib/mlStudio/models.js", "registerModel() hashes the artifact (sha256), stores it via s3-compat/store.js (same encrypted, sharded, multi-provider path as everything else), same lifecycle taxonomy as analyzers."],
+            ["src/lib/mlStudio/evaluations.js", "recordEvaluation() -- an arbitrary named-metrics object (up to 30 metrics), CHECKED_BY-linked to the model version."],
+            ["src/lib/mlStudio/execution.js", "runCodeSnippet() -- @vercel/sandbox, python3 -c / node -e, networkPolicy \"deny-all\" by default, env: {} (Inaya's own secrets never passed in), 2-minute hard cap, rate-limited 20/hour, owner/admin only."],
+            ["src/app/api/orgs/ml-studio/{catalog,models,execute}/[[...]]/route.js (9 route files)", "Session-authenticated REST surface."],
+            ["src/components/business/MlStudioView.js", "Business Workspace panel: model list, code-execution form with live stdout/stderr."],
+            ["Test coverage", "test/ml-studio.test.mjs (5/5, real SQLite fixture) + test/ml-studio-execution.test.mjs (5/5, real live Vercel Sandbox microVMs, not mocked)."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real bug this suite caught before shipping.",
+          text: "orgs.js registered the ML_STUDIO_MODEL Evidence Graph collection under the wrong physical Mongo collection name (ml_models vs. the real ml_model_versions) -- Evidence Graph linking silently failed until the ml-studio test's own assertion caught it. Fixed and re-verified green.",
+        },
+      ],
+    },
   ],
 };

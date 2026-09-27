@@ -904,5 +904,34 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      number: "34",
+      title: "Managed Database, Document Intelligence & AI/ML Studio (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A real, hosted PostgreSQL database provisioned and managed from inside Inaya; a general document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Databases: provision, start, stop, back up, restore-to-a-point-in-time, and query a real PostgreSQL database through a real external provider (Supabase), all from the Business Workspace — Inaya's own infrastructure cannot run a database engine, so it manages a real one elsewhere rather than pretending to host one itself.",
+            "Document Intelligence: built-in readers for invoices, purchase orders, receipts and contracts, plus a tool to build a custom one for any other document type, each with a version and a status (draft, testing, ready, live) before it is trusted with real work.",
+            "Every extracted value shows its confidence and whether it was actually found in the document's own text — a correction a person makes is added to the record, never silently overwriting what the system originally read.",
+            "AI/ML Studio: a catalogue of an organization's data and models, automatic data-quality checks (missing values, duplicates, out-of-range numbers) against a real data source, and a model registry that fingerprints and version-tracks whatever a data team uploads.",
+            "A single \"run this code\" button for a data scientist or an AI agent, executed in a brand-new, disposable, internet-off-by-default sandbox that is destroyed the moment it finishes — never a shared, always-on notebook.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "Not a persistent notebook (nothing is remembered between two runs) and not a claim that Inaya trains AI models itself — a \"model\" here is metadata and a file a team already produced elsewhere, tracked and versioned, not trained on Inaya's own infrastructure.",
+        },
+        {
+          type: "note",
+          text: "Tested for real against the live database, a real SQLite-backed data source, and a real, live sandbox created and destroyed on Inaya's own cloud account for each test (26 tests in total, all passing) — including a real bug the tests themselves caught and fixed before anything shipped.",
+        },
+      ],
+    },
   ],
 };
