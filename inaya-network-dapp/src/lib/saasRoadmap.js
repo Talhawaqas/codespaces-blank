@@ -550,7 +550,7 @@ export const ROADMAP_STAGES = [
       "Search, Business Brief, Activity Center and trust-health integration, permission-aware",
     ],
     notes:
-      "Verified against the real database, including a storage-outage simulation and provider fallback. The Pinata plan limit blocked storage during testing; storage now falls back across configured providers. Not verified live: generating a PDF on the production site (that path needs a signed-in session, which the test environment did not have; the same code runs in the end-to-end tests). A secure link is bearer access — the recipient's email is recorded, not verified, except in Data Room delivery. Country-specific e-invoicing formats are not built. Follow-up under investigation: one document-number ledger assertion in the lifecycle suite after an invoice cancel.",
+      "Verified against the real database, including a storage-outage simulation and provider fallback. The Pinata plan limit blocked storage during testing; storage now falls back across configured providers. Live PDF generation, including Arabic and Urdu, was confirmed on the production site on 2026-09-27 (a bundler defect that broke every PDF export on Vercel was found by this live check and fixed the same day; see SQA-026 in the defect registry). A secure link is bearer access — the recipient's email is recorded, not verified, except in Data Room delivery. Country-specific e-invoicing formats are not built. Follow-up under investigation: one document-number ledger assertion in the lifecycle suite after an invoice cancel.",
   },
   {
     number: 22,
