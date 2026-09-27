@@ -16,8 +16,12 @@
 // pick the one with the MOST free capacity (greedy bin-packing — naturally spreads
 // load away from nearly-full nodes), tie-broken by highest uptime score.
 
-import clientPromise from '@/lib/mongodb';
+import clientPromise from '../../../../lib/mongodb.js';
 import { NextResponse } from 'next/server';
+import { verifyMetadataAuth } from '../../../../lib/metadata-auth.js';
+import { checkRateLimit } from '../../../../lib/rateLimit.js';
+
+const MAX_ASSIGN_GB = 1000; // a single reservation can never claim more than this
 
 const UPTIME_THRESHOLD_BPS = 9000;              // 90% gate, matches your Operator Manifesto
 const HEARTBEAT_STALE_MS = 24 * 60 * 60 * 1000; // node considered offline beyond this
@@ -35,11 +39,25 @@ export async function POST(request) {
       requiredCapacityGB = 1,
       minTier = 'Entry',           // 'Entry' | 'Mid' | 'Enterprise'
       excludeWallet = null,         // don't assign a customer's own wallet to itself
-      fallbackWallet = null         // bootstrap operator wallet, used if no real operator qualifies yet
+      fallbackWallet = null,        // bootstrap operator wallet, used if no real operator qualifies yet
+      address, message, signature, timestamp
     } = body;
 
-    if (!requiredCapacityGB || requiredCapacityGB <= 0) {
-      return NextResponse.json({ error: 'requiredCapacityGB must be a positive number.' }, { status: 400 });
+    // SQA (S1): unauthenticated callers could reserve (and never release) capacity on every node. The caller must
+    // now prove control of a wallet (signed message: action "assignNode") and is rate limited.
+    try {
+      verifyMetadataAuth({ action: 'assignNode', resourceId: 'node-assignment', extra: { requiredCapacityGB, minTier }, address, message, signature, timestamp });
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 401 });
+    }
+    try {
+      await checkRateLimit({ action: 'nodes:assign', key: String(address).toLowerCase(), max: 60, windowMs: 60 * 60 * 1000 });
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+
+    if (typeof requiredCapacityGB !== 'number' || !Number.isFinite(requiredCapacityGB) || requiredCapacityGB <= 0 || requiredCapacityGB > MAX_ASSIGN_GB) {
+      return NextResponse.json({ error: `requiredCapacityGB must be a positive number no larger than ${MAX_ASSIGN_GB}.` }, { status: 400 });
     }
 
     const client = await clientPromise;
