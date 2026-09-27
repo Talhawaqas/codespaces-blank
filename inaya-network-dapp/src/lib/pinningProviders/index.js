@@ -15,10 +15,11 @@
 
 import * as pinata from "./pinata.js";
 import * as filebase from "./filebase.js";
+import * as local from "./local.js"; // opt-in dev/CI provider, never active in production (see local.js)
 
 export { sha256Hex } from "./hash.js";
 
-export const PROVIDERS = { pinata, filebase };
+export const PROVIDERS = { pinata, filebase, local };
 
 export function getProvider(name) {
   const provider = PROVIDERS[name];
