@@ -27,6 +27,9 @@ export async function ensureS3CompatIndexes(db) {
   await db.collection("s3_credentials").createIndex({ accessKeyId: 1 }, { unique: true });
   await db.collection("s3_credentials").createIndex({ ownerType: 1, ownerId: 1 });
   await db.collection("s3_owner_keys").createIndex({ ownerType: 1, ownerId: 1 }, { unique: true });
+  // SQA-016: uploadPart upserts by (uploadId, partNumber) and complete/abort look parts up by uploadId; without this every part write scanned the collection
+  await db.collection("s3_multipart_parts").createIndex({ uploadId: 1, partNumber: 1 }, { unique: true });
+  await db.collection("s3_wallet_multipart_parts").createIndex({ uploadId: 1, partNumber: 1 }, { unique: true });
 }
 
 function ownerId(owner) {

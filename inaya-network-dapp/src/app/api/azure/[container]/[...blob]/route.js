@@ -6,6 +6,7 @@
 //   GET    .../blob                                      -> Get Blob (Range header aware)
 //   HEAD   .../blob                                       -> Get Blob Properties
 //   DELETE .../blob                                       -> Delete Blob
+import { etagOf } from "../../../../../lib/s3-compat/etag.js";
 import { authenticateAzureRequest, AzureAuthError } from "../../../../../lib/s3-compat/azureAuthMiddleware.js";
 import * as orgStore from "../../../../../lib/s3-compat/store.js";
 import * as walletStore from "../../../../../lib/s3-compat/walletStore.js";
@@ -43,7 +44,7 @@ export async function PUT(req, { params }) {
       const contentType = req.headers.get("x-ms-blob-content-type") || req.headers.get("content-type") || "application/octet-stream";
       try {
         const doc = await store.commitAzureBlockList({ ...ownerArgs(owner), bucket: params.container, key: blob, blockIds, contentType, actorEmail: accessKeyId });
-        return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${doc.cidAlpha || doc.fileHash || ""}"` } });
+        return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${etagOf(doc)}"` } });
       } catch (err) {
         if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
         return azureError("InvalidBlockList", err.message);
@@ -59,7 +60,7 @@ export async function PUT(req, { params }) {
     }
     const contentType = req.headers.get("x-ms-blob-content-type") || req.headers.get("content-type") || "application/octet-stream";
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, bodyBuffer, contentType, actorEmail: accessKeyId });
-    return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${doc.cidAlpha || doc.fileHash || ""}"` } });
+    return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${etagOf(doc)}"` } });
   } catch (err) {
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
@@ -96,7 +97,7 @@ export async function GET(req, { params }) {
             "Content-Length": String(slice.length),
             "x-ms-blob-type": "BlockBlob",
             "x-ms-version": "2021-08-06",
-            ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+            ETag: `"${etagOf(doc)}"`,
           },
         });
       }
@@ -110,7 +111,7 @@ export async function GET(req, { params }) {
         "x-ms-blob-type": "BlockBlob",
         "x-ms-version": "2021-08-06",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
-        ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+        ETag: `"${etagOf(doc)}"`,
       },
     });
   } catch (err) {
@@ -135,7 +136,7 @@ export async function HEAD(req, { params }) {
         "x-ms-blob-type": "BlockBlob",
         "x-ms-version": "2021-08-06",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
-        ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+        ETag: `"${etagOf(doc)}"`,
       },
     });
   } catch (err) {

@@ -26,6 +26,9 @@ import { randomUUID, createHash } from "node:crypto";
 import { InayaKernel } from "@inaya-network/custody-sdk";
 import { connectToDatabase } from "../mongodb.js";
 import { getProvider, listAvailableProviders } from "../pinningProviders/index.js";
+import { completeOnce } from "./multipartCompletion.js";
+import { etagOf, md5Hex, multipartEtag } from "./etag.js";
+import { cachedObjectBody } from "./objectBodyCache.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
 
@@ -205,7 +208,7 @@ function bufferToFile(buffer, { key, contentType }) {
   return new File([buffer], key, { type: contentType || "application/octet-stream" });
 }
 
-export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, contentType, tags }) {
+export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, contentType, tags, etagOverride }) {
   const bucketDoc = await ensureS3Bucket({ walletAddress, bucket });
   const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
   const { db } = await connectToDatabase();
@@ -227,11 +230,24 @@ export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, cont
   // -- see that file's comment for the full explanation (Filebase uses
   // `name` as its literal object key, so two versions pinned under the
   // same name silently overwrote each other provider-side).
-  const provider = getProvider(primaryProviderName());
-  const [alphaResult, betaResult] = await Promise.all([
-    provider.pin(shardAlpha, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:alpha` }),
-    provider.pin(shardBeta, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:beta` }),
-  ]);
+  // SQA-017: try the preferred provider, then every other configured one (see store.js for the full explanation). Pinning precedes any database
+  // write, and reads use the stored pinProvider, so a fallback-pinned object is read back from the provider that holds it.
+  const providerOrder = [primaryProviderName(), ...listAvailableProviders().filter((p) => p !== primaryProviderName())];
+  let alphaResult; let betaResult; let pinError;
+  for (const candidate of providerOrder) {
+    try {
+      const provider = getProvider(candidate);
+      [alphaResult, betaResult] = await Promise.all([
+        provider.pin(shardAlpha, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:alpha` }),
+        provider.pin(shardBeta, { name: `s3-compat-wallet:${walletAddress}:${key}:${newId}:beta` }),
+      ]);
+      break;
+    } catch (err) {
+      pinError = err; alphaResult = undefined; betaResult = undefined;
+      console.error(`s3-compat walletStore putS3Object: provider "${candidate}" refused the pin (${String(err.message).slice(0, 100)})${providerOrder.length > 1 ? "; trying the next configured provider" : ""}`);
+    }
+  }
+  if (!alphaResult || !betaResult) throw pinError;
 
   if (existing) {
     if (versioningEnabled) {
@@ -254,6 +270,7 @@ export async function putS3Object({ walletAddress, bucket, key, bodyBuffer, cont
   const doc = {
     fileHash,
     contentSha256,
+    etag: etagOverride || md5Hex(bodyBuffer), // SQA-023: the real S3 ETag, see etag.js
     owner,
     filename: key,
     folderId: bucketDoc.folderId,
@@ -303,14 +320,18 @@ export async function headS3Object({ walletAddress, bucket, key, versionId }) {
 }
 
 export async function getS3ObjectBody({ walletAddress, bucket, key, versionId }) {
-  const doc = await headS3Object({ walletAddress, bucket, key, versionId });
+  const doc = await headS3Object({ walletAddress, bucket, key, versionId }); // authorization/existence are checked fresh on EVERY request, before the cache
   if (!doc) return null;
-  const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
-  const provider = getProvider(doc.pinProvider || primaryProviderName());
-  const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
-  const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
-  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-  return { doc, buffer: Buffer.from(base64, "base64") };
+  // SQA-020: concurrent and repeated reads of this immutable version share one fetch-and-decrypt (see objectBodyCache.js)
+  const { buffer } = await cachedObjectBody(`wallet:${String(walletAddress).toLowerCase()}:${doc._id}`, async () => {
+    const passphrase = await getOwnerS3Passphrase(walletOwner(walletAddress));
+    const provider = getProvider(doc.pinProvider || primaryProviderName());
+    const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
+    const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
+    const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+    return { buffer: Buffer.from(base64, "base64") };
+  });
+  return { doc, buffer };
 }
 
 export async function deleteS3Object({ walletAddress, bucket, key, versionId }) {
@@ -531,7 +552,7 @@ export async function listAllObjectVersions({ walletAddress, bucket, prefix = ""
     isLatest: d.isLatest !== false,
     deleteMarker: !!d.deletedAt,
     sizeBytes: d.fileSizeBytes,
-    etag: d.cidAlpha || d.fileHash,
+    etag: etagOf(d),
     lastModified: d.createdAt,
   }));
 }
@@ -547,7 +568,7 @@ export async function listObjectVersions({ walletAddress, bucket, key }) {
     deleteMarker: !!d.deletedAt,
     sizeBytes: d.fileSizeBytes,
     contentType: d.contentType,
-    etag: d.cidAlpha || d.fileHash,
+    etag: etagOf(d),
     lastModified: d.createdAt,
     retentionMode: d.retentionMode || null,
     retentionUntil: d.retentionUntil || null,
@@ -594,7 +615,7 @@ export async function createMultipartUpload({ walletAddress, bucket, key, conten
 
 export async function uploadPart({ walletAddress, uploadId, partNumber, bodyBuffer }) {
   const { db } = await connectToDatabase();
-  const upload = await db.collection("s3_wallet_multipart_uploads").findOne({ _id: uploadId, walletAddress: walletAddress.toLowerCase() });
+  const upload = await db.collection("s3_wallet_multipart_uploads").findOne({ _id: uploadId, walletAddress: walletAddress.toLowerCase(), completionState: { $exists: false } }); // no new parts once completion has started (SQA-018)
   if (!upload) return null;
   if (bodyBuffer.length > MAX_PART_BYTES) throw new Error(`Part exceeds the ${MAX_PART_BYTES} byte per-part limit.`);
   const { createHash } = await import("node:crypto");
@@ -607,15 +628,23 @@ export async function uploadPart({ walletAddress, uploadId, partNumber, bodyBuff
 
 export async function completeMultipartUpload({ walletAddress, uploadId }) {
   const { db } = await connectToDatabase();
-  const upload = await db.collection("s3_wallet_multipart_uploads").findOne({ _id: uploadId, walletAddress: walletAddress.toLowerCase() });
-  if (!upload) return null;
-  const parts = await db.collection("s3_wallet_multipart_parts").find({ uploadId }).sort({ partNumber: 1 }).toArray();
+  const uploads = db.collection("s3_wallet_multipart_uploads");
+  uploads.deleteMany({ completionState: "completed", completedAt: { $lt: new Date(Date.now() - 24 * 3600 * 1000).toISOString() } }).catch(() => {});
+  return completeOnce({
+    uploads, ownerFilter: { walletAddress: walletAddress.toLowerCase() }, uploadId,
+    readResult: (id) => db.collection("metadata_files").findOne({ _id: id }),
+    run: (upload) => completeWalletMultipartOnce({ db, walletAddress, uploadId, upload }),
+  });
+}
+
+async function completeWalletMultipartOnce({ db, walletAddress, uploadId, upload }) {
+  // SQA-016: order the parts here, not in the database (a database-side sort of base64 parts exceeds the 32 MB in-memory sort limit)
+  const parts = (await db.collection("s3_wallet_multipart_parts").find({ uploadId }).toArray()).sort((a, b) => a.partNumber - b.partNumber);
   if (parts.length === 0) throw new Error("Cannot complete a multipart upload with zero parts.");
   const fullBuffer = Buffer.concat(parts.map((p) => Buffer.from(p.dataBase64, "base64")));
-  const doc = await putS3Object({ walletAddress, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType });
+  const doc = await putS3Object({ walletAddress, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType, etagOverride: multipartEtag(parts.map((p) => p.etag)) });
   await db.collection("s3_wallet_multipart_parts").deleteMany({ uploadId });
-  await db.collection("s3_wallet_multipart_uploads").deleteOne({ _id: uploadId });
-  return doc;
+  return doc; // the upload record stays (marked completed) so a retried Complete request gets the same answer
 }
 
 export async function abortMultipartUpload({ walletAddress, uploadId }) {

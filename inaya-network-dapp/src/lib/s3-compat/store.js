@@ -27,6 +27,9 @@ import { createHash } from "node:crypto";
 import { InayaKernel } from "@inaya-network/custody-sdk";
 import { getOrgCollections, toObjectId } from "../orgs.js";
 import { getProvider, listAvailableProviders } from "../pinningProviders/index.js";
+import { completeOnce } from "./multipartCompletion.js";
+import { etagOf, md5Hex, multipartEtag } from "./etag.js";
+import { cachedObjectBody } from "./objectBodyCache.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
@@ -267,7 +270,7 @@ function bufferToFile(buffer, { key, contentType }) {
 /** Real encrypt -> shard -> pin -> register pipeline. Returns the inserted
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
-export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName }) {
+export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride }) {
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
   const { orgDocuments } = await getOrgCollections();
@@ -304,11 +307,26 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // `providerName` lets a caller with its own resilience policy (the Document
   // Automation engine falls back to another configured provider when the
   // primary is unavailable) choose one; everyone else keeps the default.
-  const provider = getProvider(providerName || primaryProviderName());
-  const [alphaResult, betaResult] = await Promise.all([
-    provider.pin(shardAlpha, { name: `s3-compat:${orgId}:${key}:${documentId}:alpha` }),
-    provider.pin(shardBeta, { name: `s3-compat:${orgId}:${key}:${documentId}:beta` }),
-  ]);
+  // SQA-017: a caller that does not pick a provider gets the preferred one first and then every other configured provider, in order.
+  // Before, an exhausted or blocked provider (Pinata HTTP 403 "plan usage limit") made every S3/Azure write return 500 even though a second
+  // working provider was configured. Pinning happens BEFORE any database row is written, so a failed attempt leaves no record behind. Reads
+  // use the pinProvider stored on the object, so an object pinned through a fallback is read back from the provider that holds it.
+  const providerOrder = providerName ? [providerName] : [primaryProviderName(), ...listAvailableProviders().filter((p) => p !== primaryProviderName())];
+  let alphaResult; let betaResult; let pinError;
+  for (const candidate of providerOrder) {
+    try {
+      const provider = getProvider(candidate);
+      [alphaResult, betaResult] = await Promise.all([
+        provider.pin(shardAlpha, { name: `s3-compat:${orgId}:${key}:${documentId}:alpha` }),
+        provider.pin(shardBeta, { name: `s3-compat:${orgId}:${key}:${documentId}:beta` }),
+      ]);
+      break;
+    } catch (err) {
+      pinError = err; alphaResult = undefined; betaResult = undefined;
+      console.error(`s3-compat putS3Object: provider "${candidate}" refused the pin (${String(err.message).slice(0, 100)})${providerOrder.length > 1 ? "; trying the next configured provider" : ""}`);
+    }
+  }
+  if (!alphaResult || !betaResult) throw pinError;
 
   // org_documents.fileHash has a UNIQUE index (from the existing wallet/
   // treasury upload path, where re-uploading identical bytes is deliberately
@@ -353,6 +371,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     filename: key, // the full S3 key, slashes included -- S3 keys are flat strings, not real paths
     fileHash,
     contentSha256,
+    etag: etagOverride || md5Hex(bodyBuffer), // SQA-023: the real S3 ETag (content MD5, or md5-of-part-md5s-N for multipart), see etag.js
     contentType: contentType || "application/octet-stream",
     sizeBytes: bodyBuffer.length,
     cidAlpha: alphaResult.providerRef,
@@ -443,14 +462,18 @@ export async function headS3Object({ orgId, bucket, key, versionId }) {
  *  there is no partial-decrypt path). Returns the full plaintext Buffer;
  *  callers slice the requested range. */
 export async function getS3ObjectBody({ orgId, bucket, key, versionId }) {
-  const doc = await headS3Object({ orgId, bucket, key, versionId });
+  const doc = await headS3Object({ orgId, bucket, key, versionId }); // authorization/existence/retention are checked fresh on EVERY request, before the cache
   if (!doc) return null;
-  const passphrase = await getOrgS3Passphrase(orgId);
-  const provider = getProvider(doc.pinProvider || primaryProviderName());
-  const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
-  const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
-  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-  return { doc, buffer: Buffer.from(base64, "base64") };
+  // SQA-020: concurrent and repeated reads of this immutable version share one fetch-and-decrypt (see objectBodyCache.js)
+  const { buffer } = await cachedObjectBody(`org:${orgId}:${doc._id}`, async () => {
+    const passphrase = await getOrgS3Passphrase(orgId);
+    const provider = getProvider(doc.pinProvider || primaryProviderName());
+    const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
+    const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
+    const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+    return { buffer: Buffer.from(base64, "base64") };
+  });
+  return { doc, buffer };
 }
 
 /** Real S3 semantics: DELETE without a versionId on a VERSIONED bucket
@@ -782,7 +805,7 @@ export async function listAllObjectVersions({ orgId, bucket, prefix = "" }) {
     isLatest: d.isLatest !== false,
     deleteMarker: !!d.deletedAt,
     sizeBytes: d.sizeBytes,
-    etag: d.cidAlpha || d.fileHash,
+    etag: etagOf(d),
     lastModified: d.createdAt,
   }));
 }
@@ -801,7 +824,7 @@ export async function listObjectVersions({ orgId, bucket, key }) {
     deleteMarker: !!d.deletedAt,
     sizeBytes: d.sizeBytes,
     contentType: d.contentType,
-    etag: d.cidAlpha || d.fileHash,
+    etag: etagOf(d),
     lastModified: d.createdAt,
     retentionMode: d.retentionMode || null,
     retentionUntil: d.retentionUntil || null,
@@ -996,7 +1019,7 @@ export async function createMultipartUpload({ orgId, bucket, key, contentType, a
 
 export async function uploadPart({ orgId, uploadId, partNumber, bodyBuffer }) {
   const { db } = await getOrgCollections();
-  const upload = await db.collection("s3_multipart_uploads").findOne({ _id: uploadId, orgId: toObjectId(orgId) });
+  const upload = await db.collection("s3_multipart_uploads").findOne({ _id: uploadId, orgId: toObjectId(orgId), completionState: { $exists: false } }); // no new parts once completion has started (SQA-018)
   if (!upload) return null;
   if (bodyBuffer.length > MAX_PART_BYTES) {
     throw new Error(`Part exceeds the ${MAX_PART_BYTES} byte per-part limit.`);
@@ -1011,18 +1034,28 @@ export async function uploadPart({ orgId, uploadId, partNumber, bodyBuffer }) {
 }
 
 export async function completeMultipartUpload({ orgId, uploadId, actorEmail }) {
-  const { db } = await getOrgCollections();
-  const upload = await db.collection("s3_multipart_uploads").findOne({ _id: uploadId, orgId: toObjectId(orgId) });
-  if (!upload) return null;
-  const parts = await db.collection("s3_multipart_parts").find({ uploadId }).sort({ partNumber: 1 }).toArray();
+  const { db, orgDocuments } = await getOrgCollections();
+  const uploads = db.collection("s3_multipart_uploads");
+  // housekeeping: completed upload records are kept for a day so a retried Complete request still gets its answer (SQA-018)
+  uploads.deleteMany({ completionState: "completed", completedAt: { $lt: new Date(Date.now() - 24 * 3600 * 1000).toISOString() } }).catch(() => {});
+  return completeOnce({
+    uploads, ownerFilter: { orgId: toObjectId(orgId) }, uploadId,
+    readResult: (id) => orgDocuments.findOne({ _id: id }),
+    run: (upload) => completeMultipartUploadOnce({ db, orgId, uploadId, upload, actorEmail }),
+  });
+}
+
+async function completeMultipartUploadOnce({ db, orgId, uploadId, upload, actorEmail }) {
+  // SQA-016: the parts carry their bytes (base64), so a database-side sort had to hold every part in memory and failed with
+  // QueryExceededMemoryLimitNoDiskUseAllowed (32 MB) for any object over roughly 24 MB. Fetch and order them here instead.
+  const parts = (await db.collection("s3_multipart_parts").find({ uploadId }).toArray()).sort((a, b) => a.partNumber - b.partNumber);
   if (parts.length === 0) throw new Error("Cannot complete a multipart upload with zero parts.");
 
   const fullBuffer = Buffer.concat(parts.map((p) => Buffer.from(p.dataBase64, "base64")));
-  const doc = await putS3Object({ orgId, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType, actorEmail });
+  const doc = await putS3Object({ orgId, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType, actorEmail, etagOverride: multipartEtag(parts.map((p) => p.etag)) });
 
   await db.collection("s3_multipart_parts").deleteMany({ uploadId });
-  await db.collection("s3_multipart_uploads").deleteOne({ _id: uploadId });
-  return doc;
+  return doc; // the upload record itself stays (marked completed) so a retried Complete request gets the same answer
 }
 
 export async function abortMultipartUpload({ orgId, uploadId }) {

@@ -8,6 +8,7 @@
 //   HEAD   .../key                          -> HeadObject
 //   DELETE .../key                          -> DeleteObject
 //   DELETE .../key?uploadId=X                -> AbortMultipartUpload
+import { etagOf } from "../../../../../lib/s3-compat/etag.js";
 import { authenticateS3Request, S3AuthError } from "../../../../../lib/s3-compat/auth.js";
 import * as orgStore from "../../../../../lib/s3-compat/store.js";
 import * as walletStore from "../../../../../lib/s3-compat/walletStore.js";
@@ -133,7 +134,7 @@ export async function PUT(req, { params }) {
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId, tags });
     return new Response(null, {
       status: 200,
-      headers: { ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`, ...checksumHeaders(doc), ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) },
+      headers: { ETag: `"${etagOf(doc)}"`, ...checksumHeaders(doc), ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) },
     });
   } catch (err) {
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
@@ -179,7 +180,7 @@ export async function POST(req, { params }) {
       parseCompleteMultipartBody(bodyBuffer.toString("utf8"));
       const doc = await store.completeMultipartUpload({ ...ownerArgs(owner), uploadId, actorEmail: null });
       if (!doc) return s3Error("NoSuchUpload", "The specified multipart upload does not exist.");
-      return xmlResponse(completeMultipartUploadXml({ bucket: params.bucket, key, etag: doc.cidAlpha || doc.fileHash }));
+      return xmlResponse(completeMultipartUploadXml({ bucket: params.bucket, key, etag: etagOf(doc) }));
     }
 
     return s3Error("InvalidRequest", "Unrecognized POST operation.");
@@ -291,9 +292,9 @@ export async function GET(req, { params }) {
             "Content-Type": doc.contentType || "application/octet-stream",
             "Content-Range": `bytes ${start}-${end}/${total}`,
             "Content-Length": String(slice.length),
-            ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+            ETag: `"${etagOf(doc)}"`,
             "Accept-Ranges": "bytes",
-            ...checksumHeaders(doc),
+            // SQA-021: no x-amz-checksum for a PARTIAL body -- the stored checksum is of the whole object, so the AWS CLI's validation of it failed every ranged GET
           },
         });
       }
@@ -304,7 +305,7 @@ export async function GET(req, { params }) {
       headers: {
         "Content-Type": doc.contentType || "application/octet-stream",
         "Content-Length": String(buffer.length),
-        ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+        ETag: `"${etagOf(doc)}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
         ...checksumHeaders(doc),
@@ -330,7 +331,7 @@ export async function HEAD(req, { params }) {
       headers: {
         "Content-Type": doc.contentType || "application/octet-stream",
         "Content-Length": String(doc.sizeBytes ?? doc.fileSizeBytes ?? 0),
-        ETag: `"${doc.cidAlpha || doc.fileHash || ""}"`,
+        ETag: `"${etagOf(doc)}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
         ...checksumHeaders(doc),

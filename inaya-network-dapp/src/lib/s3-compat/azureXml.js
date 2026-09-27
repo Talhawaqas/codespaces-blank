@@ -3,6 +3,8 @@
 // Azure Blob-shaped XML response builders. Same "no XML library, these
 // shapes are simple enough to template directly" judgment as xml.js.
 
+import { etagOf } from "./etag.js";
+
 function esc(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -43,7 +45,7 @@ export function listBlobsXml({ container, prefix, blobs, blobPrefixes }) {
   const items = blobs
     .map(
       (b) =>
-        `<Blob><Name>${esc(b.filename)}</Name><Properties><Last-Modified>${esc(new Date(b.createdAt).toUTCString())}</Last-Modified><Etag>&quot;${esc(b.cidAlpha || b.fileHash || "")}&quot;</Etag><Content-Length>${b.sizeBytes ?? b.fileSizeBytes ?? 0}</Content-Length><Content-Type>${esc(b.contentType)}</Content-Type><BlobType>BlockBlob</BlobType></Properties></Blob>`
+        `<Blob><Name>${esc(b.filename)}</Name><Properties><Last-Modified>${esc(new Date(b.createdAt).toUTCString())}</Last-Modified><Etag>&quot;${esc(etagOf(b))}&quot;</Etag><Content-Length>${b.sizeBytes ?? b.fileSizeBytes ?? 0}</Content-Length><Content-Type>${esc(b.contentType)}</Content-Type><BlobType>BlockBlob</BlobType></Properties></Blob>`
     )
     .join("");
   const prefixItems = (blobPrefixes || []).map((p) => `<BlobPrefix><Name>${esc(p)}</Name></BlobPrefix>`).join("");

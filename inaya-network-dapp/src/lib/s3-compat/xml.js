@@ -6,6 +6,8 @@
 // responses are simple enough to template directly, same "don't add a
 // dependency for something this small" judgment as the rest of the repo.
 
+import { etagOf } from "./etag.js";
+
 function esc(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -78,7 +80,7 @@ export function listObjectsV2Xml({ bucket, prefix, delimiter, contents, commonPr
   const items = contents
     .map(
       (doc) =>
-        `<Contents><Key>${esc(doc.filename)}</Key><LastModified>${esc(doc.createdAt)}</LastModified><ETag>&quot;${esc(doc.cidAlpha || "")}&quot;</ETag><Size>${doc.sizeBytes}</Size><StorageClass>STANDARD</StorageClass></Contents>`
+        `<Contents><Key>${esc(doc.filename)}</Key><LastModified>${esc(doc.createdAt)}</LastModified><ETag>&quot;${esc(etagOf(doc))}&quot;</ETag><Size>${doc.sizeBytes}</Size><StorageClass>STANDARD</StorageClass></Contents>`
     )
     .join("");
   const prefixItems = commonPrefixes.map((p) => `<CommonPrefixes><Prefix>${esc(p)}</Prefix></CommonPrefixes>`).join("");
