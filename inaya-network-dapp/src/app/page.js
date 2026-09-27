@@ -3287,6 +3287,17 @@ export default function Home() {
         { text: "Mainframe & Legacy Data Access — real connector framework, metadata/virtual schema engine, and SQL gateway (parse/authorize/execute/audit), tested end-to-end against a real relational reference connector; no Adabas/VSAM/IMS/RMS-OpenVMS environment exists yet to validate a real mainframe connector", done: true },
         { text: "A real JDBC driver (jdbc-driver/) — genuine, compiled java.sql.Driver implementation, tested end-to-end including a standalone-jar smoke test", done: true },
         { text: "A real ODBC driver (odbc-driver/) — genuine, compiled Win32 DLL exporting 28 standard ODBC entry points, built with MinGW-w64 GCC against the real ODBC SDK, verified end-to-end (19/19 checks); Driver-Manager registration for Excel/Power BI needs local admin rights, documented as an external dependency", done: true },
+        // Added September 2026 — the deployments after Mainframe & Legacy Data Access: Sovereign NAS, AI Security Workflow, Document & Invoice
+        // Automation, AI Business Operations Manager, Customer Portal (with Help & Support), Identity Integration, AI Bookkeeper, and the
+        // whole-codebase quality review. Statuses follow the roadmap accuracy rule: unverified pieces are named, not implied.
+        { text: "Sovereign NAS — a managed on-premises SMB/NFS file server with RAID pools, snapshots, WORM immutability, ransomware lockdown, backup and recovery, tested end to end on a real Linux appliance; not yet validated on physical hardware", done: true },
+        { text: "Inaya AI Security Workflow — one gateway in front of every text AI (prompt-injection and personal-data detection, per-organization policy, human approval, audit and Evidence Graph records), live-verified with a real blocked attack; the voice assistant is not covered", done: true },
+        { text: "Native Document & Invoice Automation Engine — nine document types generated from real Finance, CRM and Procurement records with exact money maths, approval, encrypted storage and secure delivery", done: true },
+        { text: "AI Business Operations Manager — visual automations with an AI agent, approvals, evidence and notifications; Slack and Gmail delivery verified live from production", done: true },
+        { text: "Customer Portal & Customer Service — tickets, customer portal, SLAs, knowledge base, AI assist and Help & Support for Inaya's own users; inbound email and single sign-on are built but not yet verified with real providers", done: true },
+        { text: "Identity Integration — Microsoft Entra directory pull and SCIM joiner/leaver verified against a real Entra tenant with six verified revocation steps; Rewst, Active Directory and Okta are built but not yet verified", done: true },
+        { text: "AI Bookkeeper — statement import, document extraction, matching, reconciliation and a human review queue that never posts without a person; live bank feeds, real email and WhatsApp accounts and OCR are not yet verified, and Inaya has no general ledger", done: true },
+        { text: "Whole-codebase quality review — critical bridge, payment and storage defects found and fixed with regression tests, plus sweeps proving cross-company and anonymous access control; the review is still in progress (Azure/Google/Terraform tooling, mobile/desktop devices, concurrency and performance remain)", done: false },
       ],
     },
     {

@@ -496,6 +496,149 @@ export const ROADMAP_STAGES = [
     notes:
       "Live-verified: 11 automated tests for the connector/metadata/gateway layer, 7 automated JDBC integration tests, and 19 automated ODBC driver tests, all run against a real running dev server and real SQLite fixtures, not mocked. Real bugs were found and fixed by this testing: Java's HTTP client defaulted to attempting an HTTP/2 upgrade the dev server crashed on; result-set column order was initially inferred from JSON object key order (which the JSON spec never actually guarantees), fixed by having the gateway emit an explicit ordered column list; and a corrupted dev-server webpack cache caused intermittent 500s during ODBC testing, fixed by clearing the cache and restarting. Not built: Adabas/VSAM/IMS/RMS-OpenVMS connectors (no real vendor environment available — RMS/OpenVMS and Adabas both have a realistic, low-cost path to one; VSAM/IMS require a genuine z/OS environment, a much larger undertaking), write-back, and federated cross-source joins. The ODBC driver's registration with the Windows ODBC Driver Manager (the step Excel/Power BI need) requires local administrator rights not available in this environment — the driver itself was verified for real by loading the compiled DLL directly, bypassing the Driver Manager; see docs/mainframe-legacy-data-access-report.md for the full breakdown.",
   },
+  {
+    number: 19,
+    title: "Sovereign NAS — an On-Premises SMB/NFS Storage Appliance Managed and Audited by Inaya",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A control plane and appliance agent that turn a Linux machine into a managed on-premises file server: Windows, Mac and Linux computers use it like any office file server (SMB and NFS), while Inaya sets it up, controls who can open what, snapshots it, protects it from ransomware, backs it up and records every action in the tamper-evident audit trail. The office keeps working when the internet is down.",
+    securityStatement: "Access fails closed: a share grants only what the person's organization membership, NAS role and folder permissions allow, and a revoked member is locked out on the appliance itself. Immutable (WORM) content cannot be deleted or changed, even by an administrator or root, until its retention date; governance mode needs an owner override with a recorded reason, compliance mode has no override at all.",
+    features: [
+      "SMB shares and NFSv4 exports generated from a spec, with fail-closed configuration validation and rollback, verified against a real Windows SMB client and the Linux kernel NFS client",
+      "Storage pools on real RAID1 or single disks with Btrfs, disk inventory, guarded failure injection, replace/rebuild and scrub; a deliberately corrupted block is detected and the read fails rather than returning bad bytes",
+      "Copy-on-write snapshots (manual, scheduled, retention) with file and share restore, and immutable snapshots and WORM shares that root-level deletion, modification and rename cannot defeat",
+      "Identity and permissions tied to the organization: NAS accounts only for members holding a NAS role, groups, service accounts, password rotation, lockout policy, POSIX ACLs with explicit deny, department boundaries",
+      "Quotas with warning/near-limit/hard-limit states, real file locking with plain-language lock explanations, and a recycle bin whose restore never silently overwrites",
+      "Ransomware detection (change and delete ratios, extension changes, entropy jumps, ransom notes, failed logons, snapshot-deletion attempts) with automatic immutable snapshot, alert, time-limited lockdown and recovery from the last clean snapshot",
+      "Backup with file-level dedup, resumable runs, read-back verification and restore drills; replication with manifest verification; recovery runbook",
+      "Local autonomy: after an unclean restart the pools re-attach, mirrors reassemble and services start by themselves, with cloud reachability shown as degraded, not fatal",
+      "49 API route files, an 18-section Business Workspace console and a background worker, reusing the existing permissions, audit chain, Evidence Graph, Digital Twin and encrypted storage",
+    ],
+    notes:
+      "Implemented and tested end to end on ONE documented profile: a Linux VM appliance (Ubuntu 26.04, Samba, NFSv4.2, mdadm, Btrfs) with real disk failure, crash recovery and real Windows and Linux clients. NOT validated on physical hardware (SMART, temperature and UPS are reported UNKNOWN on virtual disks) — the largest remaining gap and the next step before selling hardware. NAS-to-NAS replication was tested on one host only; Active Directory/LDAP login, iSCSI, a local S3 gateway and Kubernetes CSI are not implemented; macOS is untested.",
+  },
+  {
+    number: 20,
+    title: "AI Security Workflow — One Checked, Recorded Checkpoint for Every Text AI in Inaya",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A single AI Security Gateway that sits in front of Inaya's AI assistants so the AI cannot be tricked by hidden instructions, cannot leak personal data, and cannot act without permission. Every request passes identity, guardrails, model policy and monitoring, and every decision is recorded so a company can later see why something was allowed, warned, redacted, blocked or sent for human approval.",
+    securityStatement: "Retrieved documents and user text are treated as untrusted data: instructions hidden inside them cannot widen permissions or trigger actions, and a risky AI action still goes through the existing human-approval flow (approval, then a 36-hour delay, then execution). The gateway blocks and records; it is strong protection, not a certification, and does not claim to make an AI model perfect.",
+    features: [
+      "Deterministic prompt-injection detection and personal/sensitive-data detection on user input and documents, before the model sees them",
+      "A policy engine per organization (allow, warn, redact, block, require human approval), a model registry, and rate limiting wired into every route",
+      "Decisions written to the existing tamper-evident audit chain and to the Evidence Graph as a new AI_SECURITY_CHECK subject — no second audit system",
+      "Coverage of all six text AI routes: the business assistant, wallet assistant, security assistant, Learn assistant, documentation assistant and the OS chat",
+      "An AI Security view in the Business Workspace showing what each request was allowed to see, which checks ran and why one was blocked or redacted",
+    ],
+    notes:
+      "Live-verified: 23/23 adversarial tests, and a real HTTP round trip against the running server in which a real injection attempt on the business assistant was blocked while normal chat was unaffected. Known boundaries: the voice assistant (speech goes browser to Gemini Live directly) is not gateway-covered; the documentation assistant streams with input-side checks only; routes that have no organization log without an organization audit chain. No independent security certification is claimed.",
+  },
+  {
+    number: 21,
+    title: "Native Document & Invoice Automation Engine — Generate, Approve, Store and Send Business Documents",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "One pipeline that creates professional business documents from the records Inaya already holds (Finance, CRM, Procurement): data, template, exact calculation, document, validation, approval, evidence, encrypted storage, secure delivery, verification. Nine document types run through the same engine: invoices (standard and professional layouts), purchase orders, quotations, receipts, customer statements, credit notes, debit notes, delivery notes and business reports.",
+    securityStatement: "Documents are always derived from the authoritative records, never retyped; a template can contain no executable code; finalized documents are locked (Object Lock) and encrypted; every step is written to the audit chain and Evidence Graph. An AI proposal only ever produces a DRAFT that a person must approve.",
+    features: [
+      "Exact money handling: decimal parsing, per-currency exponents (USD/EUR/GBP/AED/PKR two decimals, JPY none, KWD/BHD/OMR three), rounding modes, pro-rata discount allocation, tax, shipping and fees, and a running balance on statements",
+      "Type-specific rules: approved-only purchase orders, quotations from deals, receipts from approved payments, credit notes limited to the invoice, partial delivery notes, permission-scoped reports",
+      "A safe template language: whitelisted fields and formats, controlled conditions, size and depth limits, no code execution and no template injection",
+      "Approval and segregation of duties, evidence linking each document to its source records, encrypted sharded storage, and secure link delivery or identity-verified delivery through the Data Room",
+      "Honest failure states (storage outage, renderer failure, evidence gap, delivery failure) with resumable jobs; a failed document never appears complete and keeps its allocated number for the retry",
+      "Search, Business Brief, Activity Center and trust-health integration, permission-aware",
+    ],
+    notes:
+      "Verified against the real database, including a storage-outage simulation and provider fallback. The Pinata plan limit blocked storage during testing; storage now falls back across configured providers. Not verified live: generating a PDF on the production site (that path needs a signed-in session, which the test environment did not have; the same code runs in the end-to-end tests). A secure link is bearer access — the recipient's email is recorded, not verified, except in Data Room delivery. Country-specific e-invoicing formats are not built. Follow-up under investigation: one document-number ledger assertion in the lifecycle suite after an invoice cancel.",
+  },
+  {
+    number: 22,
+    title: "AI Business Operations Manager — Visual Automations, Approvals, Evidence and Notifications",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A visual, node-based workflow builder inside the Business Workspace. A company draws its own routines (a schedule, a webhook or an event as the trigger, then steps that read its own data, ask the AI to summarize or decide, send notifications, or wait for a person's approval), publishes them, and Inaya runs them on its own with a full step-by-step record. Ready-made templates cover daily business health, invoice follow-up, support escalation, and the Finance Operations Manager routine for the AI Bookkeeper.",
+    securityStatement: "The AI reads only what the person who owns the automation may see, can suggest but never change records by itself, and every consequential step goes through the existing Controlled Actions approval flow. Connection credentials are stored encrypted, shown once and never returned, logged or audited.",
+    features: [
+      "A visual editor with validation, publishing, versions, and safe replay that never repeats an action",
+      "Triggers: schedule, signed webhook, API key and event; a durable queue with retries, idempotency and stale-run recovery, driven by the existing cron (no second scheduler)",
+      "Nodes for permission-scoped data, an AI agent with workflow-scoped memory, conditions, approvals, Slack and email notifications, and evidence",
+      "Every run explains itself: inputs, decisions and the reason behind each step, linked into the Evidence Graph and the Business Event Passport",
+      "Data readers and action nodes added by later features (support tickets, bookkeeping) through the same engine",
+    ],
+    notes:
+      "Verified against the real database. Slack sending and Gmail delivery were each verified live from a published production workflow on 2026-09-26. A real external helpdesk product is NOT verified (tested against a local stand-in only).",
+  },
+  {
+    number: 23,
+    title: "Customer Portal & Customer Service — Tickets, Portal, SLAs, Knowledge Base, AI Assist, and Help & Support for Inaya Users",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A complete support desk built into Inaya, on the customer and invoice records the company already has. Customers sign in to their own portal to raise tickets, attach files and follow the conversation; the company's team works them in a console with queues, assignment, business-hours SLAs that pause and resume correctly, saved replies, internal notes customers never see, a help centre with search, an AI helper that answers from the company's own articles with citations, satisfaction ratings, idea voting, analytics and an open API. Inaya's own users get Help & Support: Business Workspace members raise a ticket to Inaya's support desk, with an email copy to the support mailbox, and dApp visitors are pointed to the portal.",
+    securityStatement: "One company's customers can never see another's, and one customer can never see another's tickets; internal notes never reach customers; the AI is untrusted input, cannot change anything by itself and hands over to a person when unsure. Every uploaded file is scanned for malware and stored encrypted; portal sign-in links are single-use and login never reveals whether an address exists.",
+    features: [
+      "Ticketing with routing, priority policy, business-hours SLAs (nights, weekends, holidays, time zones, pause/resume), macros, merge/relate, incidents and bulk actions",
+      "A responsive, accessible customer portal at /portal/<name> with one-time-link sign-in (and company single sign-on via OpenID Connect with PKCE)",
+      "A knowledge base with search, an AI answer helper with citations and human hand-off, ratings, ideas and voting, analytics that show honest empty states",
+      "Open API with scoped API keys, signed webhooks (SSRF-safe) and export; a native workflow node and support data scope for Automations",
+      "Help & Support: a Business Workspace view that files tickets in Inaya's own support desk from the verified account, five requests per hour, idempotent against double submission, with an email copy to the support mailbox (Reply-To set to the requester)",
+    ],
+    notes:
+      "Verified against the real database; Help & Support verified by seven automated tests and a live production check of the endpoints. NOT yet verified against real providers: reply-by-email through the inbound email provider (built, setup pending), company single sign-on, and the malware scanner. To make Help & Support fully visible to dApp visitors, the Inaya Network organization's portal must be switched on in Customer Support settings.",
+  },
+  {
+    number: 24,
+    title: "Identity Integration — Microsoft Entra, Active Directory, SCIM, Rewst and MSP Multi-Tenancy",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "When a company hires, changes or dismisses someone in its own directory, Inaya follows automatically and can prove the person really lost access. Access is keyed to the provider's immutable identity, changes are planned, executed and verified, and a leaver's revocation is checked step by step: freeze, sessions, credentials, permissions, sharing and break-glass, with failed steps listed and retryable. Managed-service providers can look after several customer companies with strict separation.",
+    securityStatement: "Nothing widens access silently: an owner can never be granted by a directory rule, administrator changes go through Controlled Actions, manual exceptions carry a recorded reason, and ambiguous identity matches fail closed. Webhooks require HTTPS, signature, timestamp, replay protection and tenant checks.",
+    features: [
+      "Joiner, mover and leaver lifecycle with dry-run, approval, idempotency and an evidence trail (audit chain and Evidence Graph)",
+      "Standard SCIM 2.0 (Users and Groups) endpoints and an optional Microsoft Graph directory pull",
+      "Six independently verified revocation steps with states PENDING / PARTIAL / COMPLETE / FAILED and retry of only the unverified steps",
+      "Group and attribute mapping (versioned), temporary access, access reviews, orphan detection, manager replacement, incident restrict/restore, credential lifecycle",
+      "MSP delegation with two-sided links and four delegated roles, re-verified on every request; a REST API and outbound events for automation platforms such as Rewst",
+      "Reconciliation (MATCH / DRIFT / CONFLICT / UNRESOLVED) and an Identity & Access console (15 tabs) with no fabricated metrics",
+    ],
+    notes:
+      "Verified against a REAL Microsoft Entra tenant: the Graph directory pull, and the SCIM connection test, joiner and leaver as sent by Entra's own provisioning service, including a leaver with six verified revocation steps. NOT verified: group-membership push from Entra, Rewst (a paid product not available to test; Inaya works with any automation platform through its open API), Active Directory (no domain used; direct LDAP is unsupported by design), Okta, and HR/PSA/RMM tools, which are built as generic adapters only. Documentation labels each integration VERIFIED, PARTIAL, UNVERIFIED, UNSUPPORTED or FUTURE.",
+  },
+  {
+    number: 25,
+    title: "AI Bookkeeper — Bank Statements, Bills and Receipts Matched, Categorized and Reconciled with Human Review",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "The AI reads bills, receipts and bank statements, works out what each is and which payments and invoices it matches, and sends anything doubtful or risky to a person. Statements are imported (CSV and OFX/QFX), documents arrive by upload, a signed email relay or WhatsApp, every extracted figure carries where it came from, and confidence is explained and configurable (default 99 percent).",
+    securityStatement: "The AI never changes an invoice, expense or payment by itself: a person confirms a match, which records a payment and creates a DRAFT expense, and marking an invoice paid is only ever proposed through the existing Controlled Actions. Risk overrides confidence: a large or unusual payment always needs a manager, however sure the AI is. Text hidden inside a document is untrusted, lowers confidence below any automatic threshold and raises an anomaly.",
+    features: [
+      "Duplicate-safe bank statement import (CSV and OFX/QFX), document ingestion with malware scan, magic-byte checks, hashing and encrypted storage, and field extraction with provenance and arithmetic validation",
+      "Categorization by rule, then approved mapping, then history, then AI; payment-to-bill and receipt-to-invoice matching including part payments, over/under payments, fees, one payment covering several invoices, currency differences, and purchase-order / goods-received / bill three-way match",
+      "A review queue with ten actions (approve, reject, edit, re-match, split, merge, mark duplicate, request document, defer, escalate) that learns corrections without rewriting history",
+      "Anomaly signals with mandatory wording (\"Potential anomaly detected: human review required\"), configurable and audited thresholds, reports (CSV), a month-end checklist that is explicitly not a statutory close, and read-only what-if scenarios labelled SIMULATED",
+      "Business Insights, AI assistant tool, a Finance Operations Manager automation template, notifications, Evidence Graph and audit chain — all reusing existing systems, with no second ledger",
+    ],
+    notes:
+      "Verified against the real database (flow, unit and security suites, including organization and department isolation, webhook signatures and replay, and hostile files). NOT verified against real outside accounts: live bank feeds (no provider is registered; import statements instead), a live email provider, a real WhatsApp Business account (tested against a stand-in for Meta), and OCR of images and scanned PDFs (no local OCR engine; depends on the AI model and is never auto-processed). Inaya has no general ledger and none was invented; no savings figures are estimated. Excel and PDF report exports are not offered.",
+  },
+  {
+    number: 26,
+    title: "Whole-Codebase Quality Review & Hardening — Independent SQA Across the Ecosystem",
+    status: ROADMAP_STATUS.IN_PROGRESS,
+    description:
+      "An independent quality audit that deliberately tries to break Inaya rather than re-running existing tests: every API route is probed for access-control gaps, real client tools (the official AWS command line, rclone) are driven against Inaya's storage, and the money, bridge and payment flows are attacked. Each confirmed defect is reproduced, fixed and locked in with an automated regression test, and everything is recorded in a defect registry with severity, root cause and status. Phase one is delivered; the review is continuing across the remaining repositories.",
+    securityStatement: "Findings are fixed without weakening permissions, changing public behavior unnecessarily or disabling tests. No 'bug-free' claim is made: the final report states what is ready, what carries evidence-backed risk and what could not be verified.",
+    features: [
+      "Critical bridge fix: the relayer now signs only messages the source blockchain really emitted (verified against the real contract), and public registration routes can no longer overwrite or forge transfers",
+      "Card payments settle on-chain exactly once (a retried payment notification used to settle twice) and an unpaid checkout session can no longer identify a customer",
+      "Storage fixes found with the real AWS command line: object names with spaces, brackets or non-ASCII characters authenticate; large uploads complete once; presigned URLs work; ranged reads pass client validation; the S3 ETag is the content MD5; writes fall back when one storage provider is blocked",
+      "Access-control fixes: points, node assignment, the test faucet, the public node listing and anonymous endpoints; signatures with far-future timestamps no longer stay valid forever",
+      "Two whole-product sweeps guard the result: no company can reach another company's data through any of 453 organization routes, and no other route changes anything for an anonymous visitor (225 routes); all cron routes refuse a wrong secret",
+      "Test-suite health: the standard contract test run works again (175 passing), a test-runner hang that would freeze automated checks was fixed, and non-breaking dependency fixes were applied",
+    ],
+    notes:
+      "In progress. Done: main dApp routes, bridge, payments, S3 layer against the AWS CLI and rclone, contract suite, dependency audit. Still to do: Azure, Google Cloud Storage and Terraform against Inaya storage with their real tools; mobile, desktop and Inaya Drive on real devices (needs hardware); concurrency and failure injection; smart-contract static analysis; performance; CI review; and a complete re-run of the 179 test files. Open risks recorded: wallet-address metadata reads are unauthenticated by design, card-customer identity is the payer's email, the main dApp is on a Next.js version whose fix needs a major upgrade, and deleting an object does not yet unpin its provider copy. Provider plan limits (Pinata blocked, Filebase at its 500-pin free limit) need the owner's action.",
+  },
 ];
 
 export const VISION = {
