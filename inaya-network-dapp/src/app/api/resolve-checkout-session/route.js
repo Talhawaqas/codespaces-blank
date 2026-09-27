@@ -23,6 +23,12 @@ export async function GET(req) {
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // SQA-008 (S1): the cookie set below identifies this browser as `email` for a year and unlocks that customer's file list. A session
+    // that was opened but never paid still carries whatever email was typed into the form, so anyone could obtain a cookie for a victim's
+    // email without paying. Only a completed, PAID session may identify anyone.
+    if (session.status !== "complete" || session.payment_status !== "paid") {
+      return NextResponse.json({ error: "This checkout session has not been paid." }, { status: 402 });
+    }
     const email = session.customer_details?.email;
 
     if (!email) {
