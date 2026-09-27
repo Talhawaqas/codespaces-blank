@@ -5,12 +5,16 @@
 // screen; a future admin route can read this same collection.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 import { ensureLearnIndexes, getLearnCollections, validateReportInput } from "../../../../lib/learn.js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
+    // SQA-012: anonymous endpoint -- bounded per IP so it cannot be used to flood the database or harvest records
+    try { await checkRateLimit({ action: "learn:report", key: getClientIp(req), max: 20, windowMs: 3600000 }); }
+    catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
     const body = await req.json();
 
     let clean;

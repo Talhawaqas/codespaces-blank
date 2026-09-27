@@ -8,6 +8,7 @@
 // to render the "pending / verified / rejected" messaging the SOW asks for.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 import { ObjectId } from "mongodb";
 import { getReferralCollections, ensureReferralIndexes, normalizeEmail } from "../../../../lib/referrals.js";
 import { reconcilePendingReferrer, reconcilePendingReferral } from "../../../../lib/referral-reconciliation.js";
@@ -15,6 +16,9 @@ import { reconcilePendingReferrer, reconcilePendingReferral } from "../../../../
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
+  // SQA-012: anonymous, email-keyed read -- bounded per IP so records cannot be harvested in bulk
+  try { await checkRateLimit({ action: "referrals:read", key: getClientIp(req), max: 120, windowMs: 3600000 }); }
+  catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
   try {
     const { searchParams } = new URL(req.url);
     const email = normalizeEmail(searchParams.get("email") || "");

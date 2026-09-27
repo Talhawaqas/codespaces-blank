@@ -6,12 +6,16 @@
 // network) the frontend gathers itself — see page.js's feedback modal.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 import { ensureFeedbackIndexes, getFeedbackCollections, validateFeedbackInput, cleanContextFields } from "../../../../lib/feedback.js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
+    // SQA-012: anonymous endpoint -- bounded per IP so it cannot be used to flood the database or harvest records
+    try { await checkRateLimit({ action: "feedback:submit", key: getClientIp(req), max: 10, windowMs: 3600000 }); }
+    catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
     const body = await req.json();
 
     let clean;

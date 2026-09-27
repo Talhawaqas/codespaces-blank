@@ -19,6 +19,7 @@
 // referrals/history/route.js's header comment for the same reasoning.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../lib/rateLimit.js";
 import { getReferralCollections, normalizeEmail } from "../../../lib/referrals.js";
 
 const LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -26,6 +27,9 @@ const LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 export const dynamic = "force-dynamic";
 export async function GET(req) {
   try {
+    // SQA-012: anonymous endpoint -- bounded per IP so it cannot be used to flood the database or harvest records
+    try { await checkRateLimit({ action: "notifications:read", key: getClientIp(req), max: 240, windowMs: 3600000 }); }
+    catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
     const { searchParams } = new URL(req.url);
     const email = normalizeEmail(searchParams.get("email") || "");
     if (!email) return NextResponse.json({ notifications: [] });

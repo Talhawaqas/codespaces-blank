@@ -10,12 +10,16 @@
 // would slot in here without touching the schema.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 import { getReferralCollections, normalizeEmail } from "../../../../lib/referrals.js";
 import { reconcilePendingReferral } from "../../../../lib/referral-reconciliation.js";
 
 export const dynamic = 'force-dynamic';
 export async function GET(req) {
   try {
+    // SQA-012: anonymous endpoint -- bounded per IP so it cannot be used to flood the database or harvest records
+    try { await checkRateLimit({ action: "referrals:read", key: getClientIp(req), max: 120, windowMs: 3600000 }); }
+    catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
     const { searchParams } = new URL(req.url);
     const email = normalizeEmail(searchParams.get("email") || "");
     if (!email) return NextResponse.json({ error: "email is required." }, { status: 400 });

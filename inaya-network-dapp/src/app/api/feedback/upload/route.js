@@ -9,6 +9,7 @@
 // var, no new pinning account.
 
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit.js";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,12 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "ap
 
 export async function POST(req) {
   try {
-    const formData = await req.formData();
+    // SQA-012: anonymous upload that is pinned to OUR storage account -- bounded per IP so it cannot be used to run up the bill
+    try { await checkRateLimit({ action: "feedback:upload", key: getClientIp(req), max: 10, windowMs: 3600000 }); }
+    catch (err) { return NextResponse.json({ error: err.message }, { status: 429 }); }
+    let formData;
+    try { formData = await req.formData(); }
+    catch { return NextResponse.json({ error: "Send the file as multipart/form-data." }, { status: 400 }); }
     const file = formData.get("file");
     if (!file || typeof file === "string") {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });
