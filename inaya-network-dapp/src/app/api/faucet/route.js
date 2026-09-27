@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { getClientIp } from '../../../lib/ipAddress.js';
+import { checkRateLimit } from '../../../lib/rateLimit.js';
 import {
   recordFaucetRequest,
   getTotalInayaSentToWallet,
   isNewFaucetWallet,
   getUniqueWalletCount,
+  reserveInayaDrip,
+  releaseInayaDrip,
   FAUCET_INAYA_LIFETIME_CAP,
   FAUCET_MAX_UNIQUE_WALLETS,
 } from '../../../lib/faucet.js';
@@ -45,6 +48,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Invalid wallet address." }, { status: 400 });
     }
 
+    // SQA-009: bound how many wallets one address can farm per day (the per-wallet lifetime cap alone does not stop many fresh wallets)
+    try { await checkRateLimit({ action: 'faucet', key: getClientIp(request), max: 20, windowMs: 24 * 60 * 60 * 1000 }); }
+    catch (err) { return NextResponse.json({ success: false, error: err.message }, { status: 429 }); }
+
     const provider = new ethers.JsonRpcProvider(RPC_URL);
     const treasury = new ethers.Wallet(FAUCET_PRIVATE_KEY, provider);
 
@@ -67,9 +74,19 @@ export async function POST(request) {
       const remaining = FAUCET_INAYA_LIFETIME_CAP - alreadyReceivedInaya;
       const dripAmountStr = String(Math.min(remaining, parseFloat(INAYA_DRIP_AMOUNT)));
       const dripAmount = ethers.parseUnits(dripAmountStr, inayaDecimals);
-      const tx = await inayaToken.transfer(walletAddress, dripAmount);
-      await tx.wait();
-      results.inaya = { sent: true, amount: dripAmountStr, txHash: tx.hash };
+      // SQA-009: reserve atomically BEFORE sending, so parallel requests cannot all pass the cap
+      if (!(await reserveInayaDrip(walletAddress, parseFloat(dripAmountStr)))) {
+        results.inaya = { sent: false, reason: `This wallet has already received (or has a pending request for) its maximum test $INAYA allowance (${FAUCET_INAYA_LIFETIME_CAP}).` };
+      } else {
+        try {
+          const tx = await inayaToken.transfer(walletAddress, dripAmount);
+          await tx.wait();
+          results.inaya = { sent: true, amount: dripAmountStr, txHash: tx.hash };
+        } catch (err) {
+          await releaseInayaDrip(walletAddress, parseFloat(dripAmountStr)); // nothing was sent, so give the allowance back
+          throw err;
+        }
+      }
     }
 
     const usdtDecimals = await usdtToken.decimals();

@@ -110,6 +110,28 @@ export async function getTotalInayaSentToWallet(walletAddress) {
   return docs.reduce((sum, d) => sum + (parseFloat(d.inayaAmount) || 0), 0);
 }
 
+/**
+ * SQA-009 (S2): the cap check above and the transfer below used to be separate steps with the record written afterwards, so N parallel
+ * requests for one wallet all saw an unused cap and each received a full drip. The amount is now RESERVED atomically before anything
+ * is sent (a conditional $inc that cannot exceed the cap), and released again if the transfer fails.
+ * @returns {Promise<boolean>} true if the reservation fits under the lifetime cap
+ */
+export async function reserveInayaDrip(walletAddress, amount) {
+  const { db } = await getFaucetCollections();
+  const reservations = db.collection("faucet_reservations");
+  const wallet = walletAddress.toLowerCase();
+  // seed once with what this wallet already received before reservations existed (concurrent seeds are harmless)
+  try { await reservations.updateOne({ _id: wallet }, { $setOnInsert: { reserved: await getTotalInayaSentToWallet(wallet), createdAt: new Date() } }, { upsert: true }); }
+  catch (err) { if (err?.code !== 11000) throw err; }
+  const res = await reservations.findOneAndUpdate({ _id: wallet, reserved: { $lte: FAUCET_INAYA_LIFETIME_CAP - amount } }, { $inc: { reserved: amount }, $set: { updatedAt: new Date() } });
+  return !!res;
+}
+
+export async function releaseInayaDrip(walletAddress, amount) {
+  const { db } = await getFaucetCollections();
+  await db.collection("faucet_reservations").updateOne({ _id: walletAddress.toLowerCase() }, { $inc: { reserved: -amount } });
+}
+
 /** True if this wallet has never successfully received anything from the
  *  faucet before -- used to decide whether the 1000-unique-wallet cap
  *  applies to this request (existing wallets can still top up to their
