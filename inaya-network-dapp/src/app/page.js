@@ -8,6 +8,7 @@ import NotificationsBell from '../components/NotificationsBell';
 import CommandPalette from '../components/CommandPalette';
 import ActivityCenterView from '../components/ActivityCenterView';
 import OsHomeSection from '../components/OsHomeSection';
+import SupportTicketLink from '../components/SupportTicketLink';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReferralSection from '../components/ReferralSection';
@@ -7900,6 +7901,7 @@ export default function Home() {
               <p className="text-[12px] text-[#8a96ab] font-mono mt-1">Testnet feedback — helps us prioritize what to fix/build next.</p>
             </div>
 
+            <SupportTicketLink className="text-[12px] text-[#8a96ab] font-mono text-center mb-3" />
             {feedbackSuccess ? (
               <div className="text-center py-6">
                 <p className="text-emerald-400 font-bold text-sm">✅ Thanks — feedback submitted!</p>

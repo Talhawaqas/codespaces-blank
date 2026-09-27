@@ -14,12 +14,14 @@
 // fallback, so missing email config degrades to "share the link manually"
 // instead of breaking anything.
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.EMAIL_FROM || "Inaya Network <onboarding@resend.dev>";
+// Read at call time (not import time) so configuration changes and tests take effect without re-importing this module.
+const resendKey = () => process.env.RESEND_API_KEY;
+const fromEmail = () => process.env.EMAIL_FROM || "Inaya Network <onboarding@resend.dev>";
 
 // `headers` (for example Message-ID / In-Reply-To, so replies thread safely) and `replyTo` are optional and
 // additive: every existing caller is unchanged.
 export async function sendEmail({ to, subject, html, text, headers, replyTo }) {
+  const RESEND_API_KEY = resendKey(); const FROM_EMAIL = fromEmail();
   if (!RESEND_API_KEY) {
     console.warn(`sendEmail: RESEND_API_KEY not set — skipping real delivery to ${to}. Set RESEND_API_KEY in .env.local to enable.`);
     return { sent: false, reason: "not_configured" };

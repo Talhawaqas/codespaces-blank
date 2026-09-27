@@ -103,3 +103,9 @@ Create a support API key in **Settings → Webhooks & API keys**. Keys carry nam
 - Attachments are limited to 25 MB each.
 - Invoices are read-only and show the fields Finance stores; Inaya has no "outstanding balance" field to show.
 - A message's text is stored as plain text; rich formatting in email is reduced to text.
+
+## Help & Support for Inaya users
+
+Inaya runs its own support desk on this same module. Signed-in Business Workspace members open **Help & Support**, describe the problem and send it; the request becomes a ticket in Inaya's desk, filed from the verified account email (never from anything typed in the form), with their organization attached as context only if they belong to it. Requests are limited to five per hour, and a repeated submission never creates a second ticket. Visitors without a workspace session (for example in the dApp) get a link to the customer portal, where they sign in with an emailed one-time link.
+
+Two server settings connect it: `INAYA_SUPPORT_ORG_ID` (the organization whose Customer Support module receives the tickets) and, optionally, `INAYA_SUPPORT_NOTIFY_EMAIL` (a mailbox that also receives a copy of every new ticket, with the requester as Reply-To so staff can answer from that mailbox). Replies typed in the mailbox are ordinary email to the requester; turning email replies into ticket messages needs the inbound email provider, which is not yet live.
