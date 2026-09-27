@@ -14,6 +14,12 @@ const { ethers } = hre;
 describe("InayaHackathonRewards — mainnet activation (chain id 56)", function () {
   it("activates only on chain 56, then lets a configured winner claim", async function () {
     const network = await ethers.provider.getNetwork();
+    // SQA-011: this test only means something on a network that reports chain id 56 (hardhat.mainnet-sim.config.js). Under the default
+    // config it used to FAIL, so the standard `npx hardhat test` could never be green. It now reports itself as skipped (visibly pending,
+    // with the reason) unless run through `npm run test:mainnet-sim`, which runs it under its own config.
+    if (network.chainId !== 56n) {
+      this.skip();
+    }
     expect(network.chainId).to.equal(56n);
 
     const [owner, alice] = await ethers.getSigners();

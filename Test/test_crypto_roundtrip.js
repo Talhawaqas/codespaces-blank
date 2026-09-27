@@ -1,39 +1,33 @@
-import { generateSecureSalt, deriveVaultKey, reconstructAndDecrypt } from './src/crypto.js';
+import { generateSecureSalt, deriveVaultKey, disperseAndSlice, reconstructAndDecrypt } from '../inaya-network-dapp/custody-sdk/src/crypto.js';
 
-// Emulates disperseAndSlice's encryption step directly (skipping FileReader,
-// which is browser-only) to test the real encrypt -> shard -> reconstruct -> decrypt round trip.
+// SQA-010: this script was a stale reimplementation (it imported ./src/crypto.js, which does not exist at the repo root, and assumed
+// deriveVaultKey returned a WebCrypto key), and that import failure aborted the ENTIRE `npx hardhat test` run. It now mirrors the
+// SDK's maintained test_crypto_roundtrip.mjs: it exercises the REAL disperseAndSlice()/reconstructAndDecrypt() pair in plain Node.js.
+// A minimal object with .name/.type/.arrayBuffer() stands in for a browser File.
 async function testRoundTrip() {
   const passkey = "test_passkey_12345";
   const salt = generateSecureSalt(16);
   const vaultKey = await deriveVaultKey({ passkey, salt });
 
-  const originalText = "data:text/plain;base64,SGVsbG8gSW5heWEgTmV0d29yayE="; // fake "data URL"
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = new TextEncoder();
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, vaultKey.key, enc.encode(originalText));
+  const originalText = "Hello Inaya Network!";
+  const fakeFile = {
+    name: "test.txt",
+    type: "text/plain",
+    arrayBuffer: async () => new TextEncoder().encode(originalText).buffer,
+  };
 
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
-  combined.set(salt, 0);
-  combined.set(iv, salt.length);
-  combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+  const sharded = await disperseAndSlice({ file: fakeFile, encryptionKey: vaultKey });
+  console.log("Shard Alpha length:", sharded.shardAlpha.length, "| Shard Beta length:", sharded.shardBeta.length);
+  console.log("Neither shard alone is valid base64 of the full payload:", sharded.shardAlpha !== sharded.shardAlpha + sharded.shardBeta);
 
-  let binary = ''; for (let i = 0; i < combined.byteLength; i++) binary += String.fromCharCode(combined[i]);
-  const cipherTextString = Buffer.from(binary, 'binary').toString('base64');
-
-  const midpoint = Math.ceil(cipherTextString.length / 2);
-  const shardAlpha = cipherTextString.slice(0, midpoint);
-  const shardBeta = cipherTextString.slice(midpoint);
-
-  console.log("Shard Alpha length:", shardAlpha.length, "| Shard Beta length:", shardBeta.length);
-  console.log("Neither shard alone is valid base64 of the full payload:", shardAlpha !== cipherTextString);
-
-  const restored = await reconstructAndDecrypt({ shardAlpha, shardBeta, passkey });
-  console.log("Restored matches original:", restored === originalText);
-  if (restored !== originalText) {
-    console.log("MISMATCH! Got:", restored);
+  const restored = await reconstructAndDecrypt({ shardAlpha: sharded.shardAlpha, shardBeta: sharded.shardBeta, passkey });
+  const expectedDataUrl = `data:text/plain;base64,${Buffer.from(originalText, "utf-8").toString("base64")}`;
+  console.log("Restored matches original:", restored === expectedDataUrl);
+  if (restored !== expectedDataUrl) {
+    console.log("MISMATCH! Expected:", expectedDataUrl, "Got:", restored);
     process.exit(1);
   }
-  console.log("✅ Full round trip (encrypt -> shard -> reconstruct -> decrypt) verified working.");
+  console.log("Full round trip (encrypt -> shard -> reconstruct -> decrypt) verified working in plain Node.js.");
 }
 
-testRoundTrip().catch(e => { console.error("❌ FAILED:", e); process.exit(1); });
+testRoundTrip().catch(e => { console.error("FAILED:", e); process.exit(1); });

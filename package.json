@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:contracts": "hardhat test",
+    "test:mainnet-sim": "hardhat test Test/HackathonRewards.mainnetActivation.test.js --config hardhat.mainnet-sim.config.js"
   },
   "dependencies": {
     "@google/genai": "^2.13.0",
