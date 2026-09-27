@@ -40,6 +40,8 @@ None of these was caught by the existing unit tests; each was reproduced with `a
 
 Environment finding (not fixed by code): the Filebase pin bucket is at its 500-pin limit. A read-only audit found 204 pins belonging to organizations that no longer exist; 118 of them are referenced by no stored document. Nothing was deleted. Deleting an object never unpins the provider copy, which is the underlying leak (OPEN, see below).
 
+| SQA-026 | **S1** | Every PDF render on Vercel (Document Automation, Business Event Passport export) failed: `Cannot find module '#standard-fonts/Helvetica'`. Found by the first live generation. | pdfkit was bundled but loads its fonts through a build-time absolute path and a package `imports` alias the file tracer cannot follow; the font data was not shipped. | pdfkit kept external; its font data (with the shared `chunks/` helper) listed in the tracing includes for all API routes. Verified in a simulated function holding only the shipped files (standard-fonts PDF and an Arabic PDF with the bundled Noto font). | `test/pdf-serverless-config.test.mjs` (config guard) plus the simulation; live confirmation pending | FIXED, awaiting live confirmation |
+
 ## Test infrastructure improvement
 
 `test/_next-hooks.mjs` now resolves the `@/` alias and extensionless imports the way Next does, so route files that use them can be imported by the plain-Node test runner. Before this, routes such as the bridge and node-assignment routes were untestable.

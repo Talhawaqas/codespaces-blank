@@ -47,7 +47,16 @@ const nextConfig = {
   // render time, which Next's file tracing cannot see on its own; without
   // this they would be missing from the serverless functions that render.
   experimental: {
+    // SQA-026 (S1, found by the live production check of Document Automation): pdfkit was BUNDLED into the server chunks, but it loads its built-in
+    // fonts at runtime through a path frozen at build time (/vercel/path0/.../node_modules/pdfkit/js/pdfkit.node.mjs). That folder is not shipped to
+    // the serverless function, so every PDF render failed with "Cannot find module '#standard-fonts/Helvetica'". Keeping it external makes Vercel ship
+    // the real package (package.json, its "imports" map, the font data) next to the function. Affects every route that renders a PDF.
+    serverComponentsExternalPackages: ["pdfkit"],
     outputFileTracingIncludes: {
+      // pdfkit loads its built-in fonts through a package "imports" alias (#standard-fonts/*) that Next's file tracer cannot follow, so the font data
+      // files must be listed explicitly or they are missing from the function (verified with a trace simulation, SQA-026).
+      "/api/**/*": ["./node_modules/pdfkit/js/standard-fonts/**/*.cjs", "./node_modules/pdfkit/js/data/**/*"], // **: the font files require a shared chunks/ helper
+
       "/api/orgs/documents-automation/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
       "/api/orgs/finance/invoices/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
       "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
