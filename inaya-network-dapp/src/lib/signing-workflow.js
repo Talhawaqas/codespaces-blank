@@ -86,7 +86,7 @@ export function verifyInayaSignSignature({ action, requestId, documentHash, wall
   if (!walletAddress || !message || !signature || typeof timestamp !== "number") {
     throw new Error("Missing signature fields — walletAddress, message, signature, and timestamp are all required.");
   }
-  if (Date.now() - timestamp > MAX_SIGNATURE_AGE_MS) {
+  if (Math.abs(Date.now() - timestamp) > MAX_SIGNATURE_AGE_MS) {
     throw new Error("Signature expired — please retry.");
   }
   const expected = buildInayaSignMessage({ action, requestId, documentHash, timestamp });

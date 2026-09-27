@@ -23,7 +23,7 @@ export function verifyNodeAuth({ action, nodeId, operatorWallet, message, signat
   if (nodeId !== operatorWallet.toLowerCase()) {
     throw new Error("nodeId must be the operator wallet's own lowercased address.");
   }
-  if (Date.now() - timestamp > MAX_SIGNATURE_AGE_MS) {
+  if (Math.abs(Date.now() - timestamp) > MAX_SIGNATURE_AGE_MS) {
     throw new Error("Signature expired — please retry.");
   }
 

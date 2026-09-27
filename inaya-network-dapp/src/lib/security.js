@@ -194,7 +194,7 @@ export function verifySecurityReportAuth({ nodeAddress, indicator, category, con
   if (!nodeAddress || !message || !signature || typeof timestamp !== "number") {
     throw new Error("Missing auth fields — nodeAddress, message, signature, and timestamp are all required.");
   }
-  if (Date.now() - timestamp > MAX_SIGNATURE_AGE_MS) {
+  if (Math.abs(Date.now() - timestamp) > MAX_SIGNATURE_AGE_MS) {
     throw new Error("Signature expired — please retry.");
   }
 
