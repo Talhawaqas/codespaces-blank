@@ -65,3 +65,4 @@ Ten templates ship ready to use (standard and professional invoice, purchase ord
 - Scripts outside Latin, Greek, Cyrillic and Arabic script (for example Chinese or Hebrew) are flagged and may print blank until more fonts are bundled.
 - A secure link is bearer access; only the Data Room delivery verifies the recipient's identity.
 - Byte-identical re-rendering is guaranteed on the same runtime; the runtime (Node/ICU) is recorded because date and number text can differ between ICU versions.
+- Arabic and Urdu rendering has not yet been checked on the production site (English Preview and Generate have been, 2026-09-27).
