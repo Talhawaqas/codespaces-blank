@@ -21,6 +21,10 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect();
 }
 
+// Exposed so the test runner can close the connection when a test file finishes (test/_close-mongo.mjs); otherwise an open connection keeps the
+// process alive after its tests pass and the whole run hangs. Harmless in production.
+globalThis.__inayaMongoClientPromise = clientPromise;
+
 export async function connectToDatabase() {
   const client = await clientPromise;
   const db = client.db("inaya_network_corporate");
