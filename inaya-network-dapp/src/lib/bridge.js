@@ -48,29 +48,44 @@ export function validateTransferInput({ sourceChainId, destChainId, amount, user
   }
 }
 
-export async function recordTransferInitiated(doc) {
+export { hashBridgeMessage, verifyMessageOnSource } from "./bridgeMessage.js";
+import { hashBridgeMessage } from "./bridgeMessage.js";
+
+/**
+ * Records a transfer for status tracking.
+ *
+ * Client-supplied data (the public /initiate-transfer, /unstake, /claim routes) is UNTRUSTED (SQA-005): it may only CREATE a
+ * pending document, never modify an existing one (previously an upsert let anyone overwrite the message, amount and status of any
+ * transfer, including resetting a completed one), and a message is kept only if it hashes to its id. Whether the source chain
+ * really emitted it is decided separately by verifyMessageOnSource / the event indexer, which pass { verified: true }.
+ */
+export async function recordTransferInitiated(doc, { verified = false } = {}) {
   await ensureBridgeIndexes();
   const { transfers } = await getBridgeCollections();
+  const now = new Date();
+  let message = doc.message || null;
+  if (message) { try { if (hashBridgeMessage(message).toLowerCase() !== String(doc.messageHash).toLowerCase()) message = null; } catch { message = null; } }
+  const insert = {
+    sourceChainId: doc.sourceChainId,
+    destChainId: doc.destChainId,
+    amount: doc.amount,
+    userAddress: normalizeAddress(doc.userAddress),
+    sourceTxHash: doc.sourceTxHash,
+    kind: doc.kind || "transfer", // 'transfer' | 'stake' | 'unstake' | 'claim' | 'backfill'
+    status: "pending",
+    sourceVerified: false,
+    createdAt: now,
+  };
+  if (!verified) {
+    // `message` only ever lands on insert; it is not relayed until the source chain confirms it
+    await transfers.updateOne({ _id: doc.messageHash }, { $setOnInsert: { ...insert, message, updatedAt: now } }, { upsert: true });
+    return;
+  }
+  // verified by the source chain: attach the CHAIN's message, never lower an existing status, never touch amount/userAddress of a known doc
+  const { sourceVerified, sourceTxHash, ...insertOnly } = insert; void sourceVerified; void sourceTxHash;
   await transfers.updateOne(
     { _id: doc.messageHash },
-    {
-      $set: {
-        sourceChainId: doc.sourceChainId,
-        destChainId: doc.destChainId,
-        amount: doc.amount,
-        userAddress: normalizeAddress(doc.userAddress),
-        sourceTxHash: doc.sourceTxHash,
-        kind: doc.kind || "transfer", // 'transfer' | 'stake' | 'unstake' | 'claim'
-        // Full on-chain Message struct (sourceContract/destContract/nonce/msgType/payload) --
-        // needed by the relayer cron to actually sign+submit executeMessage on the destination
-        // chain. The client already has this from its transaction receipt; the indexer's
-        // MessageSent backfill path populates it too.
-        message: doc.message || null,
-        status: "pending",
-        updatedAt: new Date(),
-      },
-      $setOnInsert: { createdAt: new Date() },
-    },
+    { $set: { message, sourceVerified: true, verifiedAt: now, updatedAt: now, ...(doc.sourceTxHash ? { sourceTxHash: doc.sourceTxHash } : {}) }, $setOnInsert: insertOnly },
     { upsert: true }
   );
 }
@@ -88,7 +103,7 @@ export async function getTransferStatus(messageHash) {
 export async function getPendingTransfersWithMessage(limit = 50) {
   const { transfers } = await getBridgeCollections();
   return transfers
-    .find({ status: { $in: ["pending", "validating"] }, message: { $ne: null } })
+    .find({ status: { $in: ["pending", "validating"] }, message: { $ne: null } }) // unverified docs are verified against the source chain by the relayer before signing
     .limit(limit)
     .toArray();
 }

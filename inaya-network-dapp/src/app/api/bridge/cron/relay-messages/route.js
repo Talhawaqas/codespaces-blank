@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { CHAINS } from "@/lib/chains";
-import { getPendingTransfersWithMessage, recordValidatorSignature, getSignaturesFor, markTransferStatus } from "@/lib/bridge";
+import { getPendingTransfersWithMessage, recordValidatorSignature, getSignaturesFor, markTransferStatus, recordTransferInitiated, verifyMessageOnSource, hashBridgeMessage } from "@/lib/bridge";
 import { getAdapter } from "@/lib/chain-adapters";
 
 const MESSENGER_ABI = [
@@ -60,6 +60,24 @@ export async function GET(request) {
   for (const doc of pending) {
     try {
       const messageHash = doc._id;
+
+      // SQA-005 (S0): never sign a message the source chain did not emit. A client-registered document is only trusted after the
+      // source transaction is looked up on the source chain and its MessageSent event matches; the chain's message replaces the client's.
+      if (!doc.sourceVerified) {
+        const srcChain = CHAINS[Number(doc.sourceChainId)];
+        const srcProvider = srcChain?.contracts?.messenger ? getAdapter(Number(doc.sourceChainId), { useServerRpc: true }).provider : null;
+        const v = await verifyMessageOnSource({ messageHash, sourceTxHash: doc.sourceTxHash, provider: srcProvider, messengerAddress: srcChain?.contracts?.messenger });
+        if (!v.ok) {
+          results.push({ messageHash, status: "unverified_source", reason: v.reason });
+          continue;
+        }
+        await recordTransferInitiated({ messageHash, sourceChainId: doc.sourceChainId, destChainId: doc.destChainId, amount: doc.amount, userAddress: doc.userAddress, sourceTxHash: doc.sourceTxHash, kind: doc.kind, message: v.message }, { verified: true });
+        doc.message = v.message;
+      }
+      if (hashBridgeMessage(doc.message).toLowerCase() !== String(messageHash).toLowerCase()) {
+        results.push({ messageHash, status: "message_hash_mismatch" });
+        continue;
+      }
 
       // Each configured validator signs the raw messageId -- ethers' signMessage applies the
       // EIP-191 prefix internally, matching MessageHashUtils.toEthSignedMessageHash on-chain.

@@ -69,7 +69,7 @@ export async function GET(request) {
             msgType: message.msgType,
             payload: message.payload,
           },
-        });
+        }, { verified: true }); // read from the chain's own event log, so it is the source of truth
       }
       for (const ev of executedEvents) {
         await markTransferStatus(ev.args.messageId, "completed", { destTxHash: ev.transactionHash });
