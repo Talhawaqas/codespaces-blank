@@ -9,7 +9,9 @@
 
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { recordInteropTransferInitiated } from "@/lib/interopTransfers";
+import { ethers } from "ethers";
+import { recordInteropTransferInitiated, getInteropTransferCollections } from "@/lib/interopTransfers";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request) {
   try {
@@ -22,8 +24,20 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "sourceChain, destChain, userAddress, amount are required" }, { status: 400 });
     }
 
+    // SQA-006 (S3): this route is public and every registration costs the relayer external calls (and gas on completion), so it now
+    // validates its input, is rate limited per IP, and registers a given source transaction only once.
+    if (!/^0x[0-9a-fA-F]{64}$/.test(sourceTxHash)) return NextResponse.json({ success: false, error: "sourceTxHash must be a 32-byte hex transaction hash" }, { status: 400 });
+    if (!ethers.isAddress(userAddress)) return NextResponse.json({ success: false, error: "userAddress is not a valid address" }, { status: 400 });
+    if (typeof sourceChain !== "string" || typeof destChain !== "string" || sourceChain.length > 32 || destChain.length > 32) return NextResponse.json({ success: false, error: "sourceChain and destChain must be short strings" }, { status: 400 });
+    if (!/^\d+(\.\d+)?$/.test(String(amount)) || Number(amount) <= 0) return NextResponse.json({ success: false, error: "amount must be a positive number" }, { status: 400 });
+    try { await checkRateLimit({ action: "interop:wtt-initiate", key: getClientIp(request), max: 30, windowMs: 60 * 60 * 1000 }); }
+    catch (err) { return NextResponse.json({ success: false, error: err.message }, { status: 429 }); }
+    const { transfers } = await getInteropTransferCollections();
+    const existing = await transfers.findOne({ sourceTxHash: sourceTxHash.toLowerCase() }, { projection: { _id: 1 } });
+    if (existing) return NextResponse.json({ success: true, transferId: existing._id, existing: true });
+
     const transferId = randomUUID();
-    await recordInteropTransferInitiated({ transferId, provider: "wormhole", sourceChain, destChain, sourceTxHash, userAddress, amount });
+    await recordInteropTransferInitiated({ transferId, provider: "wormhole", sourceChain, destChain, sourceTxHash: sourceTxHash.toLowerCase(), userAddress, amount });
 
     return NextResponse.json({ success: true, transferId });
   } catch (err) {
