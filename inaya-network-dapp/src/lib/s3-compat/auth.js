@@ -7,7 +7,7 @@
 // so auth here reads the same way every other route's auth check does.
 
 import { resolveS3Credential, checkScope } from "./credentials.js";
-import { verifySigV4Request } from "./sigv4.js";
+import { verifySigV4Request, verifySigV4PresignedRequest, parsePresignedCredential } from "./sigv4.js";
 import { verifyGoogleIdToken } from "../googleAuth.js";
 import { verifySignedUrl } from "./signedUrl.js";
 import { getOrgCollections, normalizeEmail } from "../orgs.js";
@@ -136,6 +136,16 @@ export async function authenticateS3Request(req, bodyBuffer, routeParams) {
       throw new S3AuthError(code, `Signed URL rejected: ${result.reason}.`, 403);
     }
     credential = result.credential;
+    owner = credential.owner;
+    accessKeyId = credential.accessKeyId;
+  } else if (parsePresignedCredential(url)) {
+    // SQA-019: SigV4/GOOG4 presigned URL (`aws s3 presign`, SDK presigners, GCS V4 signed URLs). Resolves the SAME credential a header-signed request
+    // would, verifies expiry + method + path + signature, then falls through to the same scope enforcement below.
+    const found = parsePresignedCredential(url);
+    credential = await resolveS3Credential(found.accessKeyId);
+    if (!credential) throw new S3AuthError("InvalidAccessKeyId", "The access key ID you provided does not exist or has been revoked.", 403);
+    const result = verifySigV4PresignedRequest({ method: req.method, url, headers: req.headers, secretAccessKey: credential.secretAccessKey });
+    if (!result.ok) throw new S3AuthError(result.reason === "SignedUrlExpired" ? "ExpiredToken" : "SignatureDoesNotMatch", result.reason === "SignedUrlExpired" ? "Request has expired." : (result.reason || "The request signature does not match."), 403);
     owner = credential.owner;
     accessKeyId = credential.accessKeyId;
   } else {
