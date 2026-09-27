@@ -920,5 +920,214 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "30",
+      title: "Mainframe & Legacy Data Access Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Phase 0 audit: docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md. Full report: docs/mainframe-legacy-data-access-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/legacyDataAccess/connectorRegistry.js", "Connector interface + registry."],
+            ["src/lib/legacyDataAccess/connectors/relational.js", "The real node:sqlite reference connector."],
+            ["src/lib/legacyDataAccess/dataSources.js, metadata.js, credentials.js", "Data-source registry/health, metadata import with schema versioning, encrypted credential envelopes."],
+            ["src/lib/legacyDataAccess/sqlGateway.js", "Real SQL AST parser, authorization, execution, audit."],
+            ["src/app/api/orgs/data-sources/**", "Session-authenticated admin API."],
+            ["src/app/api/public/v1/data-sources/**", "API-key-authenticated external API (same library code)."],
+            ["src/components/business/DataSourcesView.js, SqlConsoleView.js", "Admin UI."],
+            ["jdbc-driver/ (Java 11, Maven shaded jar)", "Real java.sql.Driver, jdbc:inaya:http://host/<dataSourceId>."],
+            ["odbc-driver/inayaodbc.dll, .def, src/*.c", "Real compiled Win32 ODBC driver: driver.c, http.c (WinHTTP), json.c (hand-written parser)."],
+            ["Test coverage", "test/legacy-data-access.test.mjs (11), jdbc-driver integration (7), odbc-driver/test/direct_test.c (19)."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "31",
+      title: "Sovereign NAS Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Deployment profile, support matrix and recovery runbook: docs/nas-runbook.md. Full report: docs/sovereign-nas-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/nas/appliance/inaya-nas-agent.py", "Appliance-side agent: validated JSON ops, path containment, versioned self-update with rollback."],
+            ["src/lib/nas/* (25 modules)", "Shares, pools, snapshots, WORM, quotas, locking, recycle bin, ransomware detection, backup, replication, identity/permission sync."],
+            ["src/app/api/orgs/nas/** (49 route files)", "Session-authenticated console API."],
+            ["src/components/business/NasManagementView.js", "18-section admin console."],
+            ["scripts/nas-worker.mjs, /api/cron/nas", "Background worker: snapshots, threat scans, replication, backup, quota checks, lock/lockdown expiry."],
+            ["Test coverage", "nas-access, nas-storage, nas-security, nas-protection, nas-realclient (real Windows SMB and Linux NFS clients, real disk-failure injection)."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "32",
+      title: "AI Security Workflow Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Full report: AI_SECURITY_IMPLEMENTATION_REPORT.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/aiSecurity/policyTypes.js", "Shared decision/severity/category vocabulary (DECISIONS, SEVERITIES, EVENT_CATEGORIES, POLICY_VERSION)."],
+            ["src/lib/aiSecurity/{promptInjection,piiDetector,policyEngine,orgPolicy,modelRegistry,events,rateLimiting,gateway,routeGuard}.js", "See architecture table above."],
+            ["src/lib/businessEvents.js (additive)", "AI_SECURITY_CHECK event type, subject resolver, risk classifier, summary."],
+            ["src/lib/orgGates.js/orgs.js (additive)", "canManageAiSecurity/canAccessAiSecurity; 3 new collections (aiSecurityChecks, aiSecurityPolicies, aiModelRegistry) with indexes."],
+            ["src/app/api/orgs/ai-security/{events,policy,explain/[eventId],models}/route.js", "Session-authenticated API."],
+            ["src/components/business/AiSecurityView.js", "Activity / Model Inventory / Policy tabs."],
+            ["Test coverage", "23 of 23 adversarial tests (ai-security-gateway.test.mjs) plus ai-security-wiring.test.mjs (route-level, incl. a coverage guard that fails if a new model-calling route skips the gateway)."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "33",
+      title: "Document & Invoice Automation Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Full report: docs/document-invoice-automation-report.md. Operational runbook: docs/document-automation-runbook.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/documentAutomation/{adapters,calculations,money,templateSchema,renderer,lifecycle,jobs,delivery}.js", "Adapters, exact-money calculation, safe template schema, pdfkit renderer, lifecycle state machine, retry jobs, secure delivery/verification."],
+            ["src/app/api/orgs/documents-automation/**", "Session-authenticated admin/creation API (create, preview, generate, approve, finalize, deliver)."],
+            ["src/app/api/cron/document-automation", "Hourly retry of failed storage/evidence, expiry of stale approvals and lapsed quotations, invoice PAID/CANCELLED sync."],
+            ["next.config.mjs experimental.outputFileTracingIncludes / serverComponentsExternalPackages", "Ships pdfkit and its font data (incl. the standard-fonts chunks/ helper and the Noto Arabic/Sans fonts) to every API route's serverless function (SQA-026 fix)."],
+            ["test/pdf-serverless-config.test.mjs", "Regression guard for the SQA-026 config: pins the tracing includes and checks the installed pdfkit package still matches what they target."],
+            ["Test coverage", "59 checks before the push (unit 20, types 13, lifecycle 13, security 10, e2e 3) plus regression suites; two evidence-exporter tests fail only because of a pinning-provider plan limit, unrelated to this code."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "34",
+      title: "AI Business Operations Manager Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Full report: docs/ai-business-operations-manager-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/workflows/{nodes,data,engine,templates}.js", "Node types, data readers (incl. data.inaya_support_tickets), execution engine, ready-made templates (incl. finance-operations-manager)."],
+            ["src/lib/ai-action-requests.js (reused)", "PENDING_APPROVAL → APPROVED (+36h) → QUEUED → EXECUTED — the existing Controlled Actions engine, not duplicated."],
+            ["src/app/api/orgs/workflows/**", "Session-authenticated CRUD, publish, execute, credentials, evaluations."],
+            ["src/app/api/cron/workflows", "Every 5 minutes on the paid Vercel plan."],
+            ["scripts/gmail-refresh-token.mjs", "Local, one-time Gmail OAuth refresh-token helper — stores nothing, uses a temporary 127.0.0.1 listener."],
+            ["docs/workflow-slack-app-manifest.json", "A pasteable Slack app manifest, replacing manual settings click-through."],
+            ["Test coverage", "workflow-unit (16), workflow-security/features (19+12), workflow-acceptance (7 of 7 reference flow), workflow-routes, finance-workflow."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "35",
+      title: "Customer Portal & Customer Service Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Phase 0 audit: CUSTOMER_PORTAL_CAPABILITY_AUDIT.md. Full report: docs/customer-portal-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/support/*.js (30 files)", "See architecture table."],
+            ["src/lib/help.js (new)", "getSupportDesk, getHelpConfig, createHelpTicket, notifySupportMailbox."],
+            ["src/app/api/orgs/support/**, /upload, /attachments/[id], /export", "Agent console API."],
+            ["src/app/api/portal/[slug]/**", "Customer portal API."],
+            ["src/app/api/public/v1/support/**", "API-key-authenticated external API."],
+            ["src/app/api/support/inbound-email/[slug]", "Resend inbound webhook (Svix-verified) — setup pending."],
+            ["src/app/api/help/{config,ticket}/route.js (new)", "Public config read; authenticated ticket creation, rate-limited 5/hour/user."],
+            ["src/app/api/cron/support (every 5 minutes)", "SLA ticking, escalation, retention."],
+            ["Test coverage", "support-sla, support-unit, support-core, support-integrations, support-routes, support-scanner, support-live-ai, help-support.test.mjs (7 tests for Help & Support)."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "36",
+      title: "Identity Integration Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Phase 0 audit: IDENTITY_INTEGRATION_CAPABILITY_AUDIT.md. Full report: docs/identity-integration-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/identity/{providers,mapping,engine,overrides,grants,revocation,scim,reconcile,msp,credentials,temporary,reviews,orphans,api,outbound}.js", "See architecture table."],
+            ["src/lib/identity/entraGraph.js", "Optional Microsoft Graph directory pull, verified against a real Entra tenant."],
+            ["src/app/api/scim/v2/**", "Standard SCIM 2.0 endpoints."],
+            ["src/app/api/integrations/identity/**, /webhooks/[provider]", "One dispatcher (api.js) plus signed inbound webhooks."],
+            ["custody-sdk/src/identityIntegration.js", "Thin, stateless client for the above (InayaKernel.IdentityIntegration), for Rewst workflows/RMM scripts/small services."],
+            ["src/components/business/identity/** (15-tab console)", "Business Workspace Identity & Access admin UI."],
+            ["content/docs/identity/* (14 pages)", "VERIFIED/PARTIAL/UNVERIFIED/UNSUPPORTED/FUTURE labelling per integration."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "37",
+      title: "AI Bookkeeper Reference (September 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "Phase 0 audit: AI_BOOKKEEPER_CAPABILITY_AUDIT.md. Full report: docs/ai-bookkeeper-report.md.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["src/lib/bookkeeper/{common,db,record,settings,sources,bank,extract,documents,categorize,match,anomaly,policy,reconcile,review,inbound,insights,period,twin,workflow,assistant,api,worker}.js", "Full pipeline; bk_* collections hold proposals/evidence only."],
+            ["src/app/api/orgs/finance/bookkeeper/[[...path]]/route.js", "Session-authenticated dispatcher."],
+            ["src/app/api/finance/bookkeeper/{ingest,whatsapp}/[sourceId]/route.js", "Signed email relay and WhatsApp Business webhook."],
+            ["src/app/api/cron/bookkeeper", "15-minute safety-net retry."],
+            ["src/components/business/{BookkeeperView,bookkeeper/*}.js", "9-tab console."],
+            ["Evidence Graph subjects", "BOOKKEEPING_TRANSACTION, BOOKKEEPING_DOCUMENT."],
+            ["Test coverage", "bookkeeper-unit (11), bookkeeper-security (8), bookkeeper-flow (9, real database, ~5 minutes)."],
+          ],
+        },
+      ],
+    },
+    {
+      number: "38",
+      title: "Whole-Codebase Quality & Security Review Reference (September 2026, in progress)",
+      blocks: [
+        {
+          type: "note",
+          text: "Full defect registry, methodology and open risks: docs/sqa/master-defect-registry.md.",
+        },
+        {
+          type: "table",
+          headers: ["File", "Purpose"],
+          rows: [
+            ["src/lib/bridgeMessage.js", "Pure message-hashing/verification helpers, pinned against the real deployed contract by Test/BridgeMessageHashParity.test.js."],
+            ["src/lib/stripeSettlement.js", "Atomic per-session settlement claim with per-step progress, used by the Stripe webhook."],
+            ["src/lib/s3-compat/{sigv4,multipartCompletion,objectBodyCache,etag}.js", "SigV4 canonical-URI fix and presigned-URL support, idempotent multipart completion, read single-flight, real-S3-shaped ETag."],
+            ["src/lib/pinningProviders/local.js", "Opt-in local pinning provider for development/CI, never active on Vercel."],
+            ["next.config.mjs, test/pdf-serverless-config.test.mjs", "The pdfkit serverless-bundling fix and its regression guard."],
+            ["test/sqa-*.test.mjs (tenant-isolation, anon-sweep, bridge, stripe, faucet, signature-freshness, node-auth, points-auth, s3-store, s3-realclient, s3-presign, local-provider, anon-limits, node-listing, interop-register)", "The regression suite this review added."],
+          ],
+        },
+      ],
+    },
   ],
 };

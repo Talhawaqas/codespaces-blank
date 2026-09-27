@@ -650,5 +650,259 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      number: "25",
+      title: "Mainframe & Legacy Data Access — Real-Time SQL Virtualization (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Inspired by Software AG's CONNX product family: connect an existing relational data source once, publish exactly the tables a company chooses, and query them live with standard SQL — without moving the data or replacing the source system.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "A pluggable connector framework, following the same pattern already proven by Inaya's storage pinning providers — isConfigured/testConnection/discoverMetadata/executeQuery/health/capabilities.",
+            "A real relational reference connector on Node's own node:sqlite: real connection, real metadata discovery, real SQL execution with joins and aggregates.",
+            "A metadata and virtual-schema engine with versioned publishing — a re-import never silently overwrites what was already published.",
+            "A SQL gateway with a real parser, authorization against exactly what has been published, row and timeout limits, and every query audited to the same trail every other Inaya feature uses.",
+            "A real, compiled Java JDBC driver and a real, compiled Windows ODBC driver, so any JDBC- or ODBC-aware tool can connect the same way it would to any other database.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What was genuinely not built.",
+          text: "Adabas, VSAM, IMS, and RMS/OpenVMS connectors — no real vendor environment exists yet to validate them against, so none were built rather than mocked and called compatible. Write-back and federated cross-source joins are deliberately out of scope for this pass, matching the phased rollout every real data-virtualization product follows.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: 11 automated tests for the connector/metadata/gateway layer, 7 JDBC integration tests, and 19 ODBC driver tests, all against a live server and real SQLite fixtures. Full writeup: docs/mainframe-legacy-data-access-report.md.",
+        },
+      ],
+    },
+    {
+      number: "26",
+      title: "Sovereign NAS — an On-Premises File Server Managed by Inaya (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A control plane and appliance agent that turn a Linux machine on a company's own network into managed, audited file storage: Windows, Mac and Linux computers use it like any office file server (SMB and NFS), while Inaya controls access, snapshots it, watches for ransomware, backs it up, and records every action in the tamper-evident audit trail. It keeps working when the internet is down.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "SMB shares and NFSv4 exports, with recycle bin, quotas, and per-share/per-folder permissions tied to the organization's own membership.",
+            "Storage pools on real RAID1 (or single disks) with Btrfs — a failed disk leaves the pool degraded but writable, and a replacement rebuilds it; a deliberately corrupted block is detected and the read fails rather than returning bad bytes.",
+            "Copy-on-write snapshots, including immutable (WORM) snapshots that root-level deletion cannot defeat, with file or whole-share restore.",
+            "Automatic ransomware detection (mass rewrites, ransom notes, mass deletion, repeated failed logons) that takes an immutable snapshot, alerts, and can apply a time-limited lockdown.",
+            "Backup with file-level dedup, read-back verification, and resumable runs; replication between appliances with manifest verification.",
+          ],
+        },
+        {
+          type: "note",
+          label: "The one honest limit.",
+          text: "The supported profile is a Linux VM appliance; it has not been run on physical hardware, so SMART/temperature/UPS data are shown as UNKNOWN rather than invented — the largest remaining gap before selling hardware. Active Directory/LDAP, iSCSI and Kubernetes CSI are not implemented.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: real disk failure injected and recovered, an unclean VM restart with automatic re-attachment, a real Windows SMB client and the Linux kernel NFS client, and a simulated ransomware event with real lockdown and recovery. Full writeup: docs/sovereign-nas-report.md and docs/nas-runbook.md.",
+        },
+      ],
+    },
+    {
+      number: "27",
+      title: "AI Security Workflow — One Checkpoint for Every Text AI Assistant (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A single security gateway now sits in front of Inaya's text AI assistants: it detects prompt injection and personal data, applies a per-organization policy, sends risky actions for human approval, and records every decision — replacing six assistants that each used to call the AI model on their own with zero shared safety checks.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Deterministic detection of five prompt-injection attack families and of personal/sensitive data (email, phone, SSN, Luhn-validated card numbers), with in-place redaction.",
+            "A policy engine with five decisions — allow, warn, redact, block, require human approval — versioned per organization, manager-only to change.",
+            "Coverage of all six text AI routes: the business assistant, wallet assistant, security assistant, Learn assistant, documentation assistant, and OS chat.",
+            "Every decision recorded in the existing tamper-evident audit chain and the Evidence Graph — no second audit system.",
+          ],
+        },
+        {
+          type: "note",
+          label: "The one gap, stated plainly.",
+          text: "The voice assistant is not gateway-covered, because speech goes from the browser straight to the speech model, with no server-side text to inspect; it remains authenticated, rate-limited, and re-checks permissions on every tool call. The documentation assistant streams, so only its input is checked, not its output.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: 23 of 23 adversarial tests, plus a real HTTP round-trip against the running app in which a genuine injection attempt on the business assistant was blocked and normal chat was unaffected. Full writeup: AI_SECURITY_IMPLEMENTATION_REPORT.md.",
+        },
+      ],
+    },
+    {
+      number: "28",
+      title: "Native Document & Invoice Automation Engine (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "One pipeline that turns real Finance, CRM and Procurement records into nine kinds of professional business documents: numbered without gaps, calculated exactly, approved by a second person above a threshold, encrypted and stored, shared through a time-limited or identity-verified link, and independently verifiable by anyone holding the PDF.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Nine document types — invoice (standard and professional), purchase order, quotation, receipt, customer statement, credit note, debit note, delivery note, business report — sharing one engine, not nine bespoke code paths.",
+            "Exact money handling: minor-unit decimal parsing with the correct exponent for each currency, rounding modes, pro-rata discount allocation.",
+            "A hash-linked evidence chain for every material event, sealed into a portable Document Passport proving Data → Calculation → Template → Document → Approval → Storage → Delivery.",
+            "A safe template language — whitelisted fields, controlled conditions, no code execution, no template injection.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Live production defect found and fixed, September 27.",
+          text: "The first real generation on the live site failed: the PDF library's font data was not shipped to the serverless function. Found by this exact live check, diagnosed and fixed the same day, then re-confirmed live in English, Arabic and Urdu, all rendering correctly with proper right-to-left script.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: 59 checks (unit, types, lifecycle, security, end-to-end) against real storage, plus attack scenarios (guessing links, replaying approvals, tampering with stored records, hostile text hidden in an invoice, one organization reaching another's documents). Full writeup: docs/document-invoice-automation-report.md.",
+        },
+      ],
+    },
+    {
+      number: "29",
+      title: "AI Business Operations Manager — Automations (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A visual, node-based workflow builder in the Business Workspace: pick a trigger (a schedule, a webhook, an event), add steps that read real Inaya data, an AI Operations Manager that analyses it, rules that decide what happens, and notifications or approval requests — data, then AI, then a decision, then governance, then action, then evidence.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Triggers: manual, schedule, event, signed webhook, API key, Evidence Graph event, Digital Twin completion, data change.",
+            "Data readers across CRM, overdue invoices, tasks, procurement, inventory, projects, documents, security events, backup status, Trust Health, Business Brief, and — as of this month — Inaya's own support tickets.",
+            "The AI can only call tools it is explicitly given; a tool that changes data can only ever propose, never execute, a change.",
+            "Ready-made templates including Daily Business Health, Invoice Follow-up, Support Escalation, and the new Finance Operations Manager for the AI Bookkeeper.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Verified live, not just in tests.",
+          text: "Slack and Gmail delivery were each verified live on 2026-09-26: a real production workflow run posted through a real Slack incoming webhook and sent through the Gmail API, with repeat runs deduplicated so a retry never sends twice.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: unit 16 of 16, security and failure tests 19 of 19, feature tests 12 of 12, the reference-workflow acceptance test 7 of 7, plus a real Gemini structured-output run. A real helpdesk product is not yet verified — only a local stand-in was tested.",
+        },
+      ],
+    },
+    {
+      number: "30",
+      title: "Customer Portal & Customer Service (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A complete support desk built on the customer and invoice records Inaya already holds: a customer portal, ticketing with business-hours SLAs, a knowledge base, an AI helper, satisfaction ratings, and an open API — plus Help & Support, so Inaya's own users can raise a ticket with Inaya itself.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Ticketing with routing, priority policy, business-hours SLAs that correctly pause and resume, saved replies, and internal notes customers never see.",
+            "A responsive customer portal with one-time-link sign-in (and company single sign-on via OpenID Connect with PKCE).",
+            "An AI helper that answers from the company's own knowledge base with citations and hands off to a person when unsure.",
+            "Help & Support: any signed-in Business Workspace member can raise a ticket with Inaya's own support desk, filed from their verified account, with an email copy sent to the support mailbox.",
+          ],
+        },
+        {
+          type: "note",
+          label: "The one thing not yet proven with a real provider.",
+          text: "Reply-by-email (a customer's reply becoming a ticket message) is built but depends on the inbound email provider, whose setup is still pending — until then, replying to the support-mailbox copy reaches the customer by ordinary email, but does not post back into the ticket.",
+        },
+        {
+          type: "note",
+          text: "Tested for real: cross-tenant and cross-customer isolation, login-enumeration safety and single-use links, AI outage/retry and prompt-injection handling, CSAT, and API-key scopes. Full writeup: docs/customer-portal-report.md.",
+        },
+      ],
+    },
+    {
+      number: "31",
+      title: "Identity Integration — Entra, Active Directory, SCIM, Rewst and MSP (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "When a company hires, changes, or dismisses someone in its own directory, Inaya now follows automatically — access is keyed to the directory's own immutable identity, changes are planned/executed/verified, and a leaver's revocation is checked step by step, not assumed.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Joiner/mover/leaver lifecycle with dry-run, approval, idempotency, and a full evidence trail.",
+            "Standard SCIM 2.0 (Users and Groups) endpoints, plus an optional Microsoft Graph directory pull.",
+            "Six independently verified revocation steps on a leaver — freeze, sessions, credentials, permissions, sharing, break-glass — each with its own PENDING/PARTIAL/COMPLETE/FAILED state and retry.",
+            "Managed-service-provider delegation with two-sided links, four delegated roles, and per-request re-verification.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What is proven, and what is not, stated plainly.",
+          text: "Proven against a REAL Microsoft Entra tenant: the Graph directory pull, and a SCIM connection test, joiner and leaver as sent by Entra's own provisioning service — including a leaver with all six revocation steps independently verified. Not yet verified: group-membership push from Entra, Rewst (a paid product, not available to test — Inaya works with any automation platform through its open API), Active Directory, Okta, and HR/PSA/RMM tools.",
+        },
+        {
+          type: "note",
+          text: "Full writeup: docs/identity-integration-report.md, and 14 published documentation pages, each labelled VERIFIED / PARTIAL / UNVERIFIED / UNSUPPORTED / FUTURE.",
+        },
+      ],
+    },
+    {
+      number: "32",
+      title: "AI Bookkeeper (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The AI reads bank statements, bills and receipts, works out what each is and which payments and invoices they match, and hands anything doubtful or risky to a person — the AI never posts anything by itself.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Duplicate-safe bank statement import (CSV/OFX), document ingestion by upload, signed email relay or WhatsApp, with every extracted figure carrying where it came from.",
+            "Payment-to-bill and receipt-to-invoice matching, including part payments, currency differences, one payment covering several invoices, and three-way purchase-order/goods-received/bill matching.",
+            "Configurable confidence policy (default 99%) across four dimensions, with risk always overriding confidence — a large or unusual payment always needs a manager.",
+            "A review queue with ten actions that learns corrections without rewriting history.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What is not built, stated plainly.",
+          text: "Inaya has no general ledger and none was invented — \"posted\" means a recorded payment or a draft expense. Live bank feeds, a live email provider, and a real WhatsApp Business account are not yet verified against real outside accounts; OCR of scanned images depends on the configured AI model and is never auto-processed.",
+        },
+        {
+          type: "note",
+          text: "Tested for real against the live database: flow, unit and security suites, including organization/department isolation, webhook signature and replay protection, and hostile files. Full writeup: docs/ai-bookkeeper-report.md.",
+        },
+      ],
+    },
+    {
+      number: "33",
+      title: "Whole-Codebase Quality & Security Review (September 2026, in progress)",
+      blocks: [
+        {
+          type: "lead",
+          text: "An independent quality review that deliberately attacks the product rather than re-running existing tests: every API route probed for access-control gaps, the real AWS command line and rclone driven against Inaya storage, and the money, bridge and payment flows tested for abuse. Confirmed defects are fixed and locked in with a regression test; the review is ongoing.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "A critical bridge fix: the relayer now signs only messages the source blockchain actually emitted, verified against the real deployed contract — public registration routes could previously have been used to forge a transfer.",
+            "Card payments now settle on-chain exactly once; a retried payment notification previously risked settling twice.",
+            "Storage fixes proven with the real AWS CLI: object names with spaces or accented characters now authenticate, large uploads complete reliably, presigned links work, and the reported file checksum matches the real S3 convention.",
+            "A live production defect (pdfkit's fonts missing from the serverless function, breaking every PDF export) was found by the first live Document Automation test and fixed the same day.",
+          ],
+        },
+        {
+          type: "note",
+          label: "Two sweeps now guard the whole product.",
+          text: "One proves no organization can reach another organization's data through any of 453 organization-scoped routes; the other proves no route changes anything for an anonymous visitor, across every remaining route, and that every cron endpoint refuses a wrong secret.",
+        },
+        {
+          type: "note",
+          text: "Still to do: Azure, Google Cloud Storage and Terraform verification with their real tools; mobile, desktop and Inaya Drive on real hardware; concurrency and failure injection; smart-contract static analysis; a complete re-run of the full test suite. Full defect registry: docs/sqa/master-defect-registry.md.",
+        },
+      ],
+    },
   ],
 };

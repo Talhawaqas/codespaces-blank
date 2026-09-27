@@ -1609,5 +1609,250 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "47",
+      title: "Mainframe & Legacy Data Access — SQL Virtualization Layer (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A live SQL virtualization layer sitting in front of external relational data sources: connect, publish a virtual schema, query with standard SQL — the data never leaves its source system.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["Connector registry", "Pluggable interface (isConfigured/testConnection/discoverMetadata/executeQuery/health/capabilities); credential envelope encryption per data source."],
+            ["Relational reference connector", "Built on node:sqlite; real connection, metadata discovery via sqlite_master/PRAGMA, real SELECT execution incl. WHERE/JOIN/GROUP BY/aggregates."],
+            ["Metadata & virtual schema engine", "Schema discovery with explicit, versioned publishing — a re-import creates a new version rather than overwriting."],
+            ["SQL gateway", "Real SQL AST parser (node-sql-parser), authorization against published tables only, row/timeout-limited execution, every query (executed/denied/failed) audited via logOrgActivity."],
+            ["REST API", "/api/orgs/data-sources/** (session-auth) and /api/public/v1/data-sources/** (API-key-auth) — both backed by the same library code."],
+            ["JDBC driver", "jdbc-driver/ — a real, compiled java.sql.Driver, Maven-shaded jar."],
+            ["ODBC driver", "odbc-driver/inayaodbc.dll — a real, compiled Win32 DLL exporting 28 standard ODBC entry points, built with MinGW-w64 GCC against the real ODBC SDK."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Known gaps, stated plainly.",
+          text: "Adabas, VSAM, IMS and RMS/OpenVMS connectors are not implemented (no real vendor environment available to validate against). Write-back (INSERT/UPDATE/DELETE) and federated cross-source joins are not built this pass. Driver-Manager registration for Power BI/Excel needs admin rights not available in this environment.",
+        },
+      ],
+    },
+    {
+      number: "48",
+      title: "Sovereign NAS — Appliance and Control Plane (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A control plane in the main app, an appliance agent on the Linux box, and 49 API routes and an 18-section console connecting them — none of it duplicating Inaya's existing identity, audit, Evidence Graph or Digital Twin layers.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["Appliance", "Ubuntu 26.04 (WSL2 VM in the tested profile): Samba 4.23, nfs-kernel-server (NFSv4.2), mdadm RAID1, Btrfs, ext4 quotas, POSIX ACLs, chattr immutability."],
+            ["Appliance agent (src/lib/nas/appliance/inaya-nas-agent.py)", "One validated JSON request per operation, argument-list commands only (no shell strings), path containment, hash-pinned versioned install with rollback."],
+            ["Control plane (src/lib/nas/*, 25 modules)", "49 API route files under /api/orgs/nas, an 18-section console, scripts/nas-worker.mjs / /api/cron/nas."],
+            ["Reuse", "Org identity/permissions (orgGates), the cryptographic audit chain, Evidence Graph, Digital Twin engine, evidence exporter, s3-compat encrypted storage, notifications — none duplicated."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "Physical hardware deployment is not done — the profile is a VM with virtual disks. NAS-to-NAS replication was tested with both appliances on the same host; cross-host transport is not implemented. Active Directory/LDAP, iSCSI, a local S3 gateway and Kubernetes CSI are not implemented. macOS clients are untested.",
+        },
+      ],
+    },
+    {
+      number: "49",
+      title: "AI Security Workflow — Gateway Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Two integration points, not one all-in-one middleware: checkInputSecurity() runs after identity/authorization (already resolved by the caller) and before the model call; validateOutput() runs after the model produces text and before it reaches the user. A route's own retry/timeout/fallback logic is untouched.",
+        },
+        {
+          type: "table",
+          headers: ["Module", "Role"],
+          rows: [
+            ["src/lib/aiSecurity/promptInjection.js", "Regex-pattern detection across 5 attack families (instruction override, system-prompt extraction, role manipulation, authorization spoofing, policy bypass); wrapUntrustedContent() for prompt-shielding retrieved content."],
+            ["piiDetector.js", "Email/phone/SSN/Luhn-validated card detection with in-place redaction."],
+            ["policyEngine.js", "Deterministic SecurityDecision evaluation (input, retrieved-content, output, action)."],
+            ["orgPolicy.js", "Versioned per-org policy, manager-only writes, every version retained."],
+            ["modelRegistry.js", "Component inventory, seeded from what is actually configured; checkModelIntegrity."],
+            ["events.js", "AISecurityEvent recording into the real audit chain and Evidence Graph (new subject type AI_SECURITY_CHECK)."],
+            ["gateway.js / routeGuard.js", "checkInputSecurity()/validateOutput(), the two integration points; guardAiInput/guardAiOutput wired into all 6 text routes."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "Voice (voice-session, voice-tool-relay) is not gateway-covered — speech goes browser to Gemini Live directly, so there is no server-side text to inspect. Org-less surfaces (wallet, security, Learn assistants, docs chat) run the platform default policy and log with orgId: null, since there is no organization to own an audit-chain entry. Supply-chain dependency scanning and model-configuration drift monitoring beyond the static registry check are not addressed this pass.",
+        },
+      ],
+    },
+    {
+      number: "50",
+      title: "Document & Invoice Automation — Pipeline Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "data -> template -> calculation -> document -> validation -> approval -> evidence -> encrypted storage -> secure delivery -> verification. Nothing in the pipeline branches on a document-type name — a registry of adapters, templates, validators and policies serves all nine types.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["Adapters (src/lib/documentAutomation/adapters.js)", "Read-only adapters onto Finance invoices, CRM contacts/deals, Procurement POs and payments — the source of truth for every document."],
+            ["Calculation (money.js, calculations.js)", "Exact currency-exponent decimal parsing, per-line tax/discount/shipping, pro-rata allocation, deterministic across re-renders."],
+            ["Rendering (renderer.js)", "pdfkit, bundled Noto Sans + Noto Sans Arabic (OFL); bounded to 200 pages / 20 seconds."],
+            ["Storage (s3-compat/store.js)", "Server-managed AES-256-GCM, sharded, pinned; per-org bucket generated-documents-<orgId>, Versioning + Object Lock."],
+            ["Lifecycle (lifecycle.js)", "DRAFT → GENERATED → PENDING_APPROVAL → APPROVED → FINALIZED → DELIVERED → VIEWED/PAID; pipelineState tracks GENERATING/STORAGE_FAILED/EVIDENCE_PENDING/COMPLETE separately from business status."],
+            ["Evidence", "New subject type GENERATED_DOCUMENT; documents link SOURCED_FROM / DERIVED_FROM / PROVEN_BY into the existing Evidence Graph and audit chain."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Production defect found by the live check, and fixed (SQA-026).",
+          text: "pdfkit was bundled into the server chunks but loads its built-in fonts through a build-time absolute path and a package `imports` alias the file tracer cannot follow, so the font data was never shipped to the Vercel function — every PDF export failed, including the Business Event Passport. Fixed by keeping pdfkit external and explicitly tracing its font data (including a shared chunks/ helper) for every API route. Verified in a simulated function holding only the shipped files, then confirmed live in English, Arabic and Urdu on 2026-09-27.",
+        },
+      ],
+    },
+    {
+      number: "51",
+      title: "AI Business Operations Manager — Workflow Engine Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A durable, permission-scoped workflow engine reusing the existing cron pattern (no second scheduler), the existing Controlled Actions approval flow (no second approval engine), and the existing notification/audit/Evidence Graph systems.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["Editor & validation", "Visual node canvas; draft/publish/version/rollback; live validation before publish."],
+            ["Triggers", "Vercel cron (paid plan, runs as often as every 5 minutes) for schedule/webhook/API-key/event triggers."],
+            ["Nodes (src/lib/workflows/nodes.js)", "Data readers, transforms (merge/join/filter/map/select/rename/sort/aggregate/group/dedupe/derive — no code step), an AI-agent node, rule conditions, notification and approval nodes."],
+            ["Engine (src/lib/workflows/engine.js)", "Permissions follow the person RUNNING the workflow, not the author; a run resumes safely after a crash; nothing is sent or requested twice on retry."],
+            ["AI Operations Manager", "Gemini, server-side key only, returns a structured urgent/classification/confidence/findings/recommendations assessment; tool names, arguments and permissions are checked server-side, never trusted from the model."],
+            ["Evidence", "Every run recorded in the audit chain and Evidence Graph with an exportable Evidence Passport and a plain-language explanation of each decision."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Real bugs found and fixed this pass.",
+          text: "The Business Brief node used the wrong period names (week instead of weekly); the executions list showed \"0 nodes\"; the passport route revealed that an execution existed to someone with no access to it; the AI step could only read its immediately preceding step, now fixed to read any completed step.",
+        },
+      ],
+    },
+    {
+      number: "52",
+      title: "Customer Portal & Customer Service — Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Ticketing did not exist in Inaya before this work; it is now the core of a support module reusing, not duplicating, existing identity, storage, audit and AI-security infrastructure.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["Domain libraries (src/lib/support/*.js, 30 collections)", "db, settings, access, sla, tickets, messages, queues, customers, attachments, portalAuth, inbound, kb, ideas, csat, ai, analytics, webhooks, apiKeys, incidents, macros, exporter, retention."],
+            ["Dispatchers", "agentApi.js (console/admin), portalApi.js (customers), publicApi.js (API keys)."],
+            ["Agent console", "src/components/business/SupportView.js — queues, assignment, SLAs, macros, internal notes."],
+            ["Customer portal", "src/app/portal/[slug] — responsive, keyboard- and screen-reader-friendly, one-time-link or OpenID Connect sign-in."],
+            ["Help & Support (new)", "src/lib/help.js — Inaya's own users file a ticket into a designated organization's support desk (INAYA_SUPPORT_ORG_ID), from the verified session email, with an optional email copy to a support mailbox (INAYA_SUPPORT_NOTIFY_EMAIL, Reply-To set to the requester)."],
+            ["Reuse", "Customers are crm_contacts; invoices read from invoices (never copied); files use the S3-compatible encrypted store with provider fallback; audit uses logOrgActivity; the Evidence Graph gets a SUPPORT_TICKET subject; AI goes through the AI Security gateway."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "Inbound email (Resend adapter, Svix signature verification) is built but not yet live — its provider setup is pending. Company single sign-on and the malware scanner are implemented but not yet verified against a real identity provider or a real infected file in production.",
+        },
+      ],
+    },
+    {
+      number: "53",
+      title: "Identity Integration — Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Identity is keyed by (provider tenant, immutable object id); email is only a controlled fallback with ambiguity failing closed. One tenant belongs to exactly one organization.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["providers.js, mapping.js", "Identity/tenant mapping, versioned group and attribute mapping — owner never grantable by a directory rule."],
+            ["engine.js", "Joiner/mover: plan → execute → verify, preserving manual, existing and other-source access."],
+            ["overrides.js, grants.js", "Manual override ledger, reason required, labelled INAYA MANUAL OVERRIDE."],
+            ["revocation.js", "Leaver: freeze, sessions, credentials, permissions, sharing, break-glass — each independently verified, PENDING/PARTIAL/COMPLETE/FAILED, retry only unverified steps."],
+            ["scim.js, /api/scim/v2", "Standard SCIM 2.0 Users/Groups, discovery, filters, PATCH; every write is a lifecycle event."],
+            ["api.js, outbound.js", "Automation-platform actions and outbound events (Rewst-compatible); webhook route with HTTPS, signature, timestamp, replay, size, tenant, schema, idempotency, rate limit."],
+            ["reconcile.js", "MATCH/DRIFT/CONFLICT/UNRESOLVED, chunked snapshots, reports plus optional remediation."],
+            ["msp.js, credentials.js", "MSP delegation — two-sided links, four roles, re-verified per request; credential lifecycle (create/scope/rotate/revoke/expire), hashes only."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "Group-membership push from Entra has not been observed. Rewst is built to its open contract but unverified against the real product. Active Directory has no real domain to test against; direct LDAP is unsupported by design. Okta, RMM, PSA and HR adapters are generic and unverified against a real vendor.",
+        },
+      ],
+    },
+    {
+      number: "54",
+      title: "AI Bookkeeper — Architecture (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Bookkeeper tables hold proposals and evidence; invoices, expenses, payments and purchase orders stay authoritative. An AUTO decision is internal state only — an authoritative change always needs a person.",
+        },
+        {
+          type: "table",
+          headers: ["Layer", "What it does"],
+          rows: [
+            ["sources.js, bank.js", "Encrypted source secrets; CSV/OFX/QFX parsing with occurrence-aware fingerprints for duplicate safety; a provider adapter interface with no live provider registered."],
+            ["extract.js", "unpdf text extraction, deterministic field extraction with line/snippet provenance, arithmetic validation, an AI-merge path grounded so the AI cannot invent a value not present in the source text."],
+            ["categorize.js", "Rule > approved mapping > history > AI, versioned and audited rules."],
+            ["match.js, reconcile.js", "Combined/partial/over/fee/currency matching; a three-way match over real PO items and received quantities; idempotent reconciliation runs."],
+            ["policy.js", "Four confidence dimensions (extraction/categorization/match/anomaly), configurable thresholds, risk overrides confidence."],
+            ["review.js", "Ten review actions, permission-gated, audited, feeding back into learned mappings."],
+            ["Posting boundary (reconcile.js)", "A confirmed match records a payment and, for a supplier bill, a DRAFT expense; \"mark paid\" is only ever PROPOSED through the existing Controlled Actions."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Boundaries, stated plainly.",
+          text: "No live bank feed provider is registered (statement import only). Live email and WhatsApp are implemented against a signed relay and a stand-in for Meta's Graph API respectively, not against real accounts. OCR of images and scanned PDFs has no local engine and is never auto-processed.",
+        },
+      ],
+    },
+    {
+      number: "55",
+      title: "Whole-Codebase Quality & Security Review — Method and Findings (September 2026, in progress)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Discover -> baseline -> map -> test -> reproduce -> classify -> fix -> regression test -> cross-repository verify -> secure -> prove -> document. Each confirmed defect gets an id, severity, root cause, fix and a regression test that fails on the old behaviour.",
+        },
+        {
+          type: "table",
+          headers: ["Severity", "Example finding", "Fix"],
+          rows: [
+            ["S0 (critical)", "The bridge relayer would sign any registered message; a forged transfer could have been approved and executed.", "The relayer now verifies the source chain's own MessageSent event before signing; the hash formula is pinned against the real contract."],
+            ["S1", "A retried Stripe webhook could settle a corporate payment on-chain twice.", "Settlement is claimed atomically per session, with per-step progress so a retry resumes rather than repeats."],
+            ["S1", "Object keys with spaces, brackets or non-ASCII characters could not authenticate against Inaya's S3-compatible endpoint.", "The SigV4 canonical-URI encoding bug is fixed; proven with the real AWS CLI against 9 awkward key names."],
+            ["S1", "Every PDF export failed in production (font data not shipped to the serverless function).", "pdfkit kept external, font data traced explicitly for every route; confirmed live in English, Arabic and Urdu."],
+            ["S2", "Parallel faucet requests could exceed the lifetime token cap.", "Atomic reservation before sending, released on failure."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Coverage, stated plainly.",
+          text: "225 non-organization routes and 453 organization routes are swept automatically on every run. The main dApp's contract test suite (175 tests) was fixed and now runs under the standard command. Not yet done: Azure Blob, Google Cloud Storage and Terraform against Inaya storage with their real client tools; physical hardware for mobile/desktop/Inaya Drive; concurrency/failure injection; smart-contract static analysis.",
+        },
+      ],
+    },
   ],
 };
