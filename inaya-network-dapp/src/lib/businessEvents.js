@@ -91,6 +91,19 @@ export const EVENT_TYPES = {
   // AI Bookkeeper SOW -- a bank transaction and a captured financial document are Evidence Graph subjects (see bookkeeper/record.js).
   BOOKKEEPING_TRANSACTION: "BOOKKEEPING_TRANSACTION",
   BOOKKEEPING_DOCUMENT: "BOOKKEEPING_DOCUMENT",
+  // RDS/SageMaker/Document Intelligence Gap Expansion SOW, Workstream C -- an analyzer run (extract/
+  // classify/generate) is an Evidence Graph subject so its provenance (source doc -> analyzer version ->
+  // fields+grounding -> validation -> human review -> downstream business record) appears in the same
+  // timeline/passport views as every other subject (see docIntelligence/record.js).
+  DOC_INTELLIGENCE_RESULT: "DOCUMENT_INTELLIGENCE",
+  // RDS/SageMaker/Document Intelligence Gap Expansion SOW, Workstream A -- a managed database instance
+  // (provider-backed, see rds/providers/*) is an Evidence Graph subject: provisioning, start/stop, snapshots
+  // and PITR restores appear in the same timeline/passport views as every other subject (see rds/record.js).
+  RDS_INSTANCE: "DATABASE_INSTANCE",
+  // Same SOW, Workstream B (governance-only slice) -- a registered model VERSION is an Evidence Graph
+  // subject: its dataset lineage, evaluation runs, and any deployment endpoint appear in the same
+  // timeline/passport views (see mlStudio/record.js).
+  ML_STUDIO_MODEL: "AI_ML_MODEL",
 };
 
 // Subject-type -> collection/department-resolution table. Kept in one
@@ -118,6 +131,10 @@ const SUBJECT_RESOLVERS = {
   IDENTITY_LIFECYCLE: { collectionKey: "identityRuns", hasDepartment: false },
   BOOKKEEPING_TRANSACTION: { collectionKey: "bkTransactions", hasDepartment: true },
   BOOKKEEPING_DOCUMENT: { collectionKey: "bkDocuments", hasDepartment: true },
+  // A doc-intelligence result and a database instance are each org-manager-only (no department of their own).
+  DOC_INTELLIGENCE_RESULT: { collectionKey: "diResults", hasDepartment: true },
+  RDS_INSTANCE: { collectionKey: "rdsInstances", hasDepartment: false },
+  ML_STUDIO_MODEL: { collectionKey: "mlModels", hasDepartment: false },
 };
 
 // Typed relationship vocabulary (SOW §8). Extensible: this is a plain
@@ -270,6 +287,8 @@ function summarizeSubject(subjectType, subject) {
   if (subjectType === "SUPPORT_TICKET") return { ...base, label: subject.number || null, status: subject.status || null, amount: null };
   if (subjectType === "WORKFLOW_EXECUTION") return { ...base, label: `${subject.workflowName || "Workflow"} v${subject.workflowVersion} run`, amount: null };
   if (subjectType === "GENERATED_DOCUMENT") return { ...base, label: `${subject.documentNumber || subject.documentType} v${subject.documentVersion}`, amount: subject.grandTotal ?? null };
+  if (subjectType === "DOC_INTELLIGENCE_RESULT") return { ...base, label: `${subject.analyzerKey || "Analyzer"}: ${subject.filename || ""}`.trim(), status: subject.status || null, amount: null };
+  if (subjectType === "ML_STUDIO_MODEL") return { ...base, label: `${subject.name || "Model"} v${subject.version}`, status: subject.status || null, amount: null };
   return base;
 }
 
@@ -375,6 +394,18 @@ function deriveStatus(subjectType, subject) {
     if (s === "EXECUTED") return "EXECUTED";
     if (["REJECTED", "EXPIRED", "CANCELLED"].includes(s)) return "CLOSED";
     if (["APPROVED", "QUEUED"].includes(s)) return "DECIDED";
+    return "OPEN";
+  }
+  if (subjectType === "DOC_INTELLIGENCE_RESULT") {
+    if (s === "REJECTED") return "CLOSED";
+    if (s === "PROCESSED") return "EXECUTED";
+    if (s === "NEEDS_REVIEW") return "OPEN";
+    return "OPEN";
+  }
+  if (subjectType === "ML_STUDIO_MODEL") {
+    if (["DISABLED", "ARCHIVED"].includes(s)) return "CLOSED";
+    if (s === "ACTIVE") return "EXECUTED";
+    if (["READY", "TESTING"].includes(s)) return "DECIDED";
     return "OPEN";
   }
   return "OPEN";

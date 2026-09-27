@@ -546,6 +546,9 @@ export async function getOrgCollections() {
     // AI Business Operations Manager SOW
     bkTransactions: db.collection("bk_transactions"), // AI Bookkeeper SOW -- Evidence Graph subjects
     bkDocuments: db.collection("bk_documents"),
+    diResults: db.collection("di_results"), // RDS/SageMaker/Document Intelligence Gap Expansion SOW -- Evidence Graph subjects (see docIntelligence/record.js)
+    rdsInstances: db.collection("rds_instances"), // same SOW, Workstream A (see rds/record.js)
+    mlModels: db.collection("ml_model_versions"), // same SOW, Workstream B governance slice (see mlStudio/record.js) -- matches mlStudio/db.js's mlModelVersions collection name exactly
     identityRuns: db.collection("identity_runs"), // Identity Integration SOW -- an identity lifecycle run is an Evidence Graph subject (see identity/evidence.js)
     workflows: db.collection("workflows"),
     workflowVersions: db.collection("workflowVersions"),

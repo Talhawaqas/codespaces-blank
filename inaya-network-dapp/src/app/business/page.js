@@ -80,6 +80,9 @@ import NasManagementView from "../../components/business/NasManagementView";
 import WorkflowsView from "../../components/business/WorkflowsView";
 import SupportView from "../../components/business/SupportView";
 import HelpSupportView from "../../components/business/HelpSupportView";
+import DocIntelligenceView from "../../components/business/DocIntelligenceView";
+import DatabasesView from "../../components/business/DatabasesView";
+import MlStudioView from "../../components/business/MlStudioView";
 import IdentityView from "../../components/business/IdentityView";
 import BookkeeperView from "../../components/business/BookkeeperView";
 import AiSecurityView from "../../components/business/AiSecurityView";
@@ -744,6 +747,9 @@ const NAV_ITEMS = [
   { key: "workflows", label: "Automations", icon: "aiAssistant", group: "operations" },
   { key: "support", label: "Customer Support", icon: "activity", group: "operations" },
   { key: "help", label: "Help & Support", icon: "activity", group: "trust" },
+  { key: "docIntelligence", label: "Document Intelligence", icon: "insights", group: "operations" },
+  { key: "databases", label: "Databases", icon: "activity", manageOnly: true, group: "enterprise" },
+  { key: "mlStudio", label: "AI/ML Studio", icon: "aiAssistant", manageOnly: true, group: "enterprise" },
   { key: "identity", label: "Identity & Access", icon: "lock", manageOnly: true, group: "enterprise" },
   { key: "evidence", label: "Evidence", icon: "lock", group: "trust" },
   { key: "whatIf", label: "What-If Studio", icon: "insights", group: "trust" },
@@ -1196,6 +1202,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
           {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
           {activeView === "help" && <HelpSupportView orgId={orgId} />}
+          {activeView === "docIntelligence" && <DocIntelligenceView orgId={orgId} canManage={canManage} />}
+          {activeView === "databases" && canManage && <DatabasesView orgId={orgId} />}
+          {activeView === "mlStudio" && canManage && <MlStudioView orgId={orgId} />}
           {activeView === "identity" && <IdentityView orgId={orgId} canManage={canManage} />}
           {activeView === "bookkeeper" && <BookkeeperView orgId={orgId} canManage={canManage} canAdmin={canManage} hasFinance={canManage || !!(membership?.financeRole)} />}
           {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}

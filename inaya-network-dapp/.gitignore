@@ -13,3 +13,5 @@ odbc-driver/*.exp
 odbc-driver/*.lib
 odbc-driver/test/*.exe
 odbc-driver/test/*.o
+
+.env*
