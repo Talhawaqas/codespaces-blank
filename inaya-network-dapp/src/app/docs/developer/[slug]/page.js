@@ -12,14 +12,16 @@ export function generateStaticParams() {
     .map((d) => ({ slug: d.slug }));
 }
 
-export function generateMetadata({ params }) {
-  const doc = getDocBySlug(params.slug);
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const doc = getDocBySlug(slug);
   if (!doc) return {};
   return { title: doc.title, description: doc.description };
 }
 
-export default function DeveloperDocPage({ params }) {
-  const doc = getDocBySlug(params.slug);
+export default async function DeveloperDocPage({ params }) {
+  const { slug } = await params;
+  const doc = getDocBySlug(slug);
   if (!doc || doc.product !== "Developer Platform") notFound();
 
   return (

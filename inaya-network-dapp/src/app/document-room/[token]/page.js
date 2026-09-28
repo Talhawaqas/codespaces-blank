@@ -7,10 +7,10 @@
 // confidentiality terms if the sender required them. The session expires,
 // and the sender can revoke it at any time.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 export default function DocumentRoomPage({ params }) {
-  const { token } = params;
+  const { token } = use(params);
   const [state, setState] = useState("verifying");
   const [error, setError] = useState("");
   const [docs, setDocs] = useState([]);

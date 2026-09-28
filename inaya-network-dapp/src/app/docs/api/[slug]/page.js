@@ -7,14 +7,16 @@ export function generateStaticParams() {
   return API_ENDPOINTS.map((ep) => ({ slug: ep.slug }));
 }
 
-export function generateMetadata({ params }) {
-  const ep = API_ENDPOINTS.find((e) => e.slug === params.slug);
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const ep = API_ENDPOINTS.find((e) => e.slug === slug);
   if (!ep) return {};
   return { title: `${ep.method} ${ep.path}`, description: ep.summary };
 }
 
-export default function ApiEndpointPage({ params }) {
-  const ep = API_ENDPOINTS.find((e) => e.slug === params.slug);
+export default async function ApiEndpointPage({ params }) {
+  const { slug } = await params;
+  const ep = API_ENDPOINTS.find((e) => e.slug === slug);
   if (!ep) notFound();
 
   return (

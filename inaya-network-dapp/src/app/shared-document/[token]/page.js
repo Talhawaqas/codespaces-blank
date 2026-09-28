@@ -6,10 +6,10 @@
 // exact approved PDF and verify its fingerprint. Expired, revoked,
 // superseded and voided documents explain themselves and serve nothing.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 export default function SharedDocumentPage({ params }) {
-  const { token } = params;
+  const { token } = use(params);
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(null);

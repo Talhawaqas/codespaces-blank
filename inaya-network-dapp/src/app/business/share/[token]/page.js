@@ -14,7 +14,7 @@
 // FETCH the encrypted content, not that you know how to decrypt it. The
 // document owner needs to give the recipient the passkey separately.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 
 async function decryptData(base64Str, password) {
   const binaryStr = window.atob(base64Str);
@@ -43,7 +43,7 @@ async function fetchShardFromIPFS(cid) {
 }
 
 export default function SharePage({ params }) {
-  const { token } = params;
+  const { token } = use(params);
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState(null);
   const [error, setError] = useState("");

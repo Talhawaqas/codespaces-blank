@@ -7,14 +7,16 @@ export function generateStaticParams() {
   return CLI_TOOLS.map((t) => ({ slug: t.slug }));
 }
 
-export function generateMetadata({ params }) {
-  const tool = CLI_TOOLS.find((t) => t.slug === params.slug);
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const tool = CLI_TOOLS.find((t) => t.slug === slug);
   if (!tool) return {};
   return { title: tool.packageName, description: tool.tagline };
 }
 
-export default function CliToolPage({ params }) {
-  const tool = CLI_TOOLS.find((t) => t.slug === params.slug);
+export default async function CliToolPage({ params }) {
+  const { slug } = await params;
+  const tool = CLI_TOOLS.find((t) => t.slug === slug);
   if (!tool) notFound();
 
   return (

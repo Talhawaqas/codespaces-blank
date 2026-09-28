@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Verifiable Inaya Client SOW: Next.js's default build ID is a random UUID generated
 // fresh on every build -- meaningless for "which exact build is currently deployed."
@@ -46,22 +50,31 @@ const nextConfig = {
   // Document Automation SOW: the bundled Unicode fonts are read from disk at
   // render time, which Next's file tracing cannot see on its own; without
   // this they would be missing from the serverless functions that render.
-  experimental: {
-    // SQA-026 (S1, found by the live production check of Document Automation): pdfkit was BUNDLED into the server chunks, but it loads its built-in
-    // fonts at runtime through a path frozen at build time (/vercel/path0/.../node_modules/pdfkit/js/pdfkit.node.mjs). That folder is not shipped to
-    // the serverless function, so every PDF render failed with "Cannot find module '#standard-fonts/Helvetica'". Keeping it external makes Vercel ship
-    // the real package (package.json, its "imports" map, the font data) next to the function. Affects every route that renders a PDF.
-    serverComponentsExternalPackages: ["pdfkit"],
-    outputFileTracingIncludes: {
-      // pdfkit loads its built-in fonts through a package "imports" alias (#standard-fonts/*) that Next's file tracer cannot follow, so the font data
-      // files must be listed explicitly or they are missing from the function (verified with a trace simulation, SQA-026).
-      "/api/**/*": ["./node_modules/pdfkit/js/standard-fonts/**/*.cjs", "./node_modules/pdfkit/js/data/**/*"], // **: the font files require a shared chunks/ helper
+  // SQA-026 (S1, found by the live production check of Document Automation): pdfkit was BUNDLED into the server chunks, but it loads its built-in
+  // fonts at runtime through a path frozen at build time (/vercel/path0/.../node_modules/pdfkit/js/pdfkit.node.mjs). That folder is not shipped to
+  // the serverless function, so every PDF render failed with "Cannot find module '#standard-fonts/Helvetica'". Keeping it external makes Vercel ship
+  // the real package (package.json, its "imports" map, the font data) next to the function. Affects every route that renders a PDF.
+  // Next.js 15 upgrade (September 2026): experimental.serverComponentsExternalPackages was stabilized and moved to this top-level option.
+  serverExternalPackages: ["pdfkit"],
+  // Next.js 15 upgrade: this repo sits inside a monorepo with sibling packages that carry their own
+  // lockfiles (inaya-migration-agent, custody-sdk, etc.) -- Next's own root-inference picked the OUTER
+  // monorepo folder as the workspace root, which risks every relative path below (and the whole point of
+  // SQA-026's fix) resolving from the wrong directory. Pinned explicitly rather than left to inference.
+  outputFileTracingRoot: __dirname,
+  // Next.js 15 upgrade: experimental.outputFileTracingIncludes was ALSO stabilized and moved to this
+  // top-level option -- confirmed by the build's own "Unrecognized key(s) ... at experimental" warning
+  // when it was left nested (an unrecognized experimental key is silently ignored, not an error, so this
+  // would have silently reintroduced SQA-026's pdfkit-fonts-missing-in-production bug had it gone
+  // unnoticed).
+  outputFileTracingIncludes: {
+    // pdfkit loads its built-in fonts through a package "imports" alias (#standard-fonts/*) that Next's file tracer cannot follow, so the font data
+    // files must be listed explicitly or they are missing from the function (verified with a trace simulation, SQA-026).
+    "/api/**/*": ["./node_modules/pdfkit/js/standard-fonts/**/*.cjs", "./node_modules/pdfkit/js/data/**/*"], // **: the font files require a shared chunks/ helper
 
-      "/api/orgs/documents-automation/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
-      "/api/orgs/finance/invoices/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
-      "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
-      "/api/cron/execute-approved-ai-actions": ["./src/lib/documentAutomation/fonts/**/*"],
-    },
+    "/api/orgs/documents-automation/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
+    "/api/orgs/finance/invoices/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
+    "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
+    "/api/cron/execute-approved-ai-actions": ["./src/lib/documentAutomation/fonts/**/*"],
   },
   async generateBuildId() {
     return buildId;
