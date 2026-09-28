@@ -102,12 +102,12 @@ export function extractIdentityFromDecision(decision) {
  *  is what "cap reached" looks like — see ensureReferralIndexes()'s comment
  *  for why the target document must already exist before this runs;
  *  passing upsert:true here would reintroduce that exact bug). */
-export async function atomicCappedIncrement({ collection, filter, capField, capLimit, incFields }) {
+export async function atomicCappedIncrement({ collection, filter, capField, capLimit, incFields, session }) {
   const incAmount = incFields[capField];
   return collection.findOneAndUpdate(
     { ...filter, [capField]: { $lte: capLimit - incAmount } },
     { $inc: incFields },
-    { returnDocument: "after" }
+    { returnDocument: "after", ...(session ? { session } : {}) }
   );
 }
 

@@ -44,6 +44,7 @@ import {
   WATCHER_MAX_WALLETS,
   WATCHER_POINTS_PER_SESSION,
   WATCHER_MAX_POINTS_PER_WALLET,
+  ENROLLMENT_PROMO_POINTS,
 } from "../src/lib/watcherPioneer.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
 
@@ -189,8 +190,10 @@ test("settleExpiredSession: awards exactly 200 points and flips status", async (
   assert.equal(settled.pointsAwarded, WATCHER_POINTS_PER_SESSION);
   assert.equal(settled.status, "completed");
 
+  // enrollFresh() itself now grants ENROLLMENT_PROMO_POINTS on enrollment
+  // (the active new-enrollment promo) — that's on top of the session award.
   const pioneer = await collections.pioneers.findOne({ walletAddress: address });
-  assert.equal(pioneer.totalPoints, WATCHER_POINTS_PER_SESSION);
+  assert.equal(pioneer.totalPoints, ENROLLMENT_PROMO_POINTS + WATCHER_POINTS_PER_SESSION);
 });
 
 test("settleExpiredSession: concurrent settlement attempts on the same session never double-credit (the fixed race)", async () => {
@@ -210,7 +213,7 @@ test("settleExpiredSession: concurrent settlement attempts on the same session n
   assert.equal(nonNull.length, 1, "exactly one of the concurrent settlement attempts should have claimed the session");
 
   const pioneer = await collections.pioneers.findOne({ walletAddress: address });
-  assert.equal(pioneer.totalPoints, WATCHER_POINTS_PER_SESSION, "points must be credited exactly once, not once per concurrent caller");
+  assert.equal(pioneer.totalPoints, ENROLLMENT_PROMO_POINTS + WATCHER_POINTS_PER_SESSION, "points must be credited exactly once, not once per concurrent caller");
 });
 
 test("settleExpiredSession: truncates the award to remaining headroom at the cap, not a full 200", async () => {
@@ -306,7 +309,7 @@ test("getPioneerStatus: reflects points, active session, and cap state; settles 
 
   const beforeSession = await getPioneerStatus(address);
   assert.equal(beforeSession.enrolled, true);
-  assert.equal(beforeSession.totalPoints, 0);
+  assert.equal(beforeSession.totalPoints, ENROLLMENT_PROMO_POINTS, "a fresh enrollment starts at the active promo bonus, not 0");
   assert.equal(beforeSession.activeSession, null);
 
   await collections.sessions.insertOne({
@@ -316,7 +319,7 @@ test("getPioneerStatus: reflects points, active session, and cap state; settles 
   });
 
   const afterSettle = await getPioneerStatus(address);
-  assert.equal(afterSettle.totalPoints, WATCHER_POINTS_PER_SESSION, "reading status should have lazily settled the expired session");
+  assert.equal(afterSettle.totalPoints, ENROLLMENT_PROMO_POINTS + WATCHER_POINTS_PER_SESSION, "reading status should have lazily settled the expired session, on top of the promo bonus");
   assert.equal(afterSettle.activeSession, null);
-  assert.equal(afterSettle.inayaEquivalent, WATCHER_POINTS_PER_SESSION / 1000);
+  assert.equal(afterSettle.inayaEquivalent, (ENROLLMENT_PROMO_POINTS + WATCHER_POINTS_PER_SESSION) / 1000);
 });

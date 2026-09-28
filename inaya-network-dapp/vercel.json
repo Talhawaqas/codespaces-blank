@@ -5,6 +5,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/watcher-backup",
+      "schedule": "0 */6 * * *"
+    },
+    {
       "path": "/api/security/cron/checkpoint-reputation",
       "schedule": "0 3 * * *"
     },

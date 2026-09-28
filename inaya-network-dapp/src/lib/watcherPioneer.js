@@ -21,6 +21,7 @@
 
 import { ethers } from "ethers";
 import { connectToDatabase } from "./mongodb.js";
+import mongoClientPromise from "./mongodb.js";
 import { atomicCappedIncrement } from "./referrals.js";
 
 // Same literal values already hardcoded in metadata-auth.js/custody.js/
@@ -37,6 +38,17 @@ export const WATCHER_POINTS_PER_INAYA = 1000;
 export const WATCHER_MAX_POINTS_PER_WALLET = 100000; // = 100 INAYA
 export const WATCHER_MAX_PROGRAM_LIABILITY_INAYA = (WATCHER_MAX_WALLETS * WATCHER_MAX_POINTS_PER_WALLET) / WATCHER_POINTS_PER_INAYA; // 250,000
 
+// SQA-037 incident goodwill promo — every wallet that enrolls between now
+// and this cutoff gets an automatic bonus, on top of whatever they earn
+// normally, logged the same audited way as a manual admin compensation
+// grant (see grantCompensationPoints below). Applies to NEW enrollments
+// only (the pre-existing wallets enrolled before this incident were
+// credited separately, one time, via the same mechanism — see
+// test/_scratch-mass-compensate.mjs). Time-boxed on purpose so it stays a
+// stated, limited-time gesture rather than a silent permanent rule.
+export const ENROLLMENT_PROMO_POINTS = 11000;
+export const ENROLLMENT_PROMO_CUTOFF = new Date("2026-10-05T03:59:59.000Z"); // Sunday 2026-10-04, 23:59:59 America/New_York (EDT, UTC-4)
+
 const MAX_SIGNATURE_AGE_MS = 5 * 60 * 1000; // 5 minutes — same window metadata-auth.js uses
 
 export function normalizeWallet(address) {
@@ -52,6 +64,14 @@ export function normalizeWallet(address) {
 //   watcher_pioneers          — one per enrolled wallet
 //   watcher_sessions           — one per 24h session (active + historical)
 //   watcher_program_counters   — single "global" doc for the 2,500-wallet cap
+//   watcher_compensation_log   — append-only record of every manual admin
+//                                point grant (SQA-037, see grantCompensationPoints
+//                                below). Never mutated or deleted, only
+//                                inserted to — the permanent, honest record
+//                                of "this wallet was credited N points by an
+//                                admin, for this stated reason, at this
+//                                time" that a raw database edit would not
+//                                leave behind.
 // ============================================================
 
 export async function getWatcherCollections() {
@@ -61,6 +81,7 @@ export async function getWatcherCollections() {
     pioneers: db.collection("watcher_pioneers"),
     sessions: db.collection("watcher_sessions"),
     programCounters: db.collection("watcher_program_counters"),
+    compensationLog: db.collection("watcher_compensation_log"),
   };
 }
 
@@ -174,7 +195,27 @@ export async function enrollWallet({ walletAddress, followedX, joinedTelegram })
       updatedAt: now,
     };
     const { insertedId } = await pioneers.insertOne(pioneer);
-    return { pioneer: { ...pioneer, _id: insertedId }, alreadyEnrolled: false };
+    let finalPioneer = { ...pioneer, _id: insertedId };
+
+    if (now <= ENROLLMENT_PROMO_CUTOFF) {
+      // Best-effort — a promo-bonus hiccup must never fail the enrollment
+      // itself (the wallet is already validly enrolled at this point).
+      // grantCompensationPoints logs to watcher_compensation_log first,
+      // same as a manual admin grant, so this is fully auditable too.
+      try {
+        const grant = await grantCompensationPoints({
+          walletAddress: wallet,
+          points: ENROLLMENT_PROMO_POINTS,
+          reason: `automatic new-enrollment goodwill bonus (promo through ${ENROLLMENT_PROMO_CUTOFF.toISOString()})`,
+          grantedBy: "system:enrollment-promo",
+        });
+        finalPioneer = { ...finalPioneer, totalPoints: grant.totalPointsAfter };
+      } catch (promoErr) {
+        console.error("watcher enrollment promo bonus failed (enrollment itself still succeeded):", promoErr);
+      }
+    }
+
+    return { pioneer: finalPioneer, alreadyEnrolled: false };
   } catch (err) {
     // Compensate — a failed enrollment must never permanently consume a
     // cap slot (e.g. a genuine race on the walletAddress unique index for
@@ -184,47 +225,86 @@ export async function enrollWallet({ walletAddress, followedX, joinedTelegram })
   }
 }
 
-/** Atomic claim-then-credit — the fix for the settlement race caught during
- *  design review. Awarding points and marking the session complete used to
- *  be two separate writes; two concurrent settlement attempts on the same
- *  expired session (e.g. two status polls landing near the same expiry
- *  moment) would both see status:"active" and both award points, double-
- *  crediting a wallet. Fixed by claiming the session first with a single
- *  findOneAndUpdate filtered on its CURRENT state — exactly
- *  document-workflow.js's transitionDocument() idiom. Only the caller whose
- *  update actually matched proceeds to award points; a concurrent duplicate
- *  finds the session already "completed" and safely no-ops (returns null).
+/** Atomic claim-then-credit, now inside a real MongoDB transaction (SQA-036 —
+ *  reported as users' Watcher earnings "disappearing"). The original fix
+ *  here (still described below) protected against DOUBLE-crediting via two
+ *  separate writes; it did not protect against a crash, thrown error, or
+ *  serverless timeout landing BETWEEN those two writes, which left the
+ *  session permanently stuck at status:"completed", pointsAwarded:null —
+ *  visibly finished, but its 200 points never credited, and nothing ever
+ *  retried it because the first write's own filter (status:"active") could
+ *  never match a "completed" document again. Reproduced directly against
+ *  the real database before this fix: a session forced into that exact
+ *  state stayed at 0 credited points across repeated status reads.
  *
- *  Called lazily from getPioneerStatus() (the codebase has no cron/queue
- *  infra to award points on a schedule) — this is what makes "settle on
- *  read" safe under concurrency, not just convenient. */
+ *  Both writes (claim + credit) now happen inside one transaction — either
+ *  both land or neither does, so that stuck state can no longer occur going
+ *  forward. A second claim path recovers any session already stuck in it
+ *  from before this fix (status:"completed", pointsAwarded:null) the next
+ *  time that wallet's status is read or it starts a new session — no manual
+ *  backfill needed for those, since this function is already called lazily
+ *  on every read.
+ *
+ *  Concurrency-safety is unchanged in spirit from the original design:
+ *  each claim (fresh or recovery) is a findOneAndUpdate filtered on the
+ *  document's CURRENT state — exactly document-workflow.js's
+ *  transitionDocument() idiom — so only the caller whose update actually
+ *  matches proceeds to award points. Two callers racing the same document
+ *  inside overlapping transactions is resolved by the driver's own
+ *  transaction-conflict retry (built into withTransaction), not by this
+ *  code. */
 export async function settleExpiredSession(walletAddress) {
   const wallet = normalizeWallet(walletAddress);
   const { pioneers, sessions } = await getWatcherCollections();
   const now = new Date();
 
-  const claimed = await sessions.findOneAndUpdate(
-    { walletAddress: wallet, status: "active", expiresAt: { $lte: now } },
-    { $set: { status: "completed", settledAt: now } },
-    { returnDocument: "after" }
-  );
-  if (!claimed) return null; // no expired active session for this wallet — nothing to settle
+  const client = await mongoClientPromise;
+  const mongoSession = client.startSession();
+  let result = null;
+  try {
+    await mongoSession.withTransaction(async () => {
+      let claimed = await sessions.findOneAndUpdate(
+        { walletAddress: wallet, status: "active", expiresAt: { $lte: now } },
+        { $set: { status: "completed", settledAt: now } },
+        { returnDocument: "after", session: mongoSession }
+      );
 
-  const pioneer = await pioneers.findOne({ walletAddress: wallet });
-  const pointsToAward = Math.max(0, Math.min(WATCHER_POINTS_PER_SESSION, WATCHER_MAX_POINTS_PER_WALLET - (pioneer?.totalPoints || 0)));
+      if (!claimed) {
+        // Recovery path — a session left stuck by the pre-fix version of
+        // this function (see comment above). Filtering on pointsAwarded:
+        // null is itself the concurrency guard: once a winning transaction
+        // sets it to a real number and commits, this filter stops matching
+        // for any later/losing caller.
+        claimed = await sessions.findOneAndUpdate(
+          { walletAddress: wallet, status: "completed", pointsAwarded: null },
+          { $set: { settledAt: now } },
+          { returnDocument: "after", session: mongoSession }
+        );
+      }
+      if (!claimed) return; // nothing to settle — result stays null
 
-  if (pointsToAward > 0) {
-    await atomicCappedIncrement({
-      collection: pioneers,
-      filter: { walletAddress: wallet },
-      capField: "totalPoints",
-      capLimit: WATCHER_MAX_POINTS_PER_WALLET,
-      incFields: { totalPoints: pointsToAward },
+      const pioneer = await pioneers.findOne({ walletAddress: wallet }, { session: mongoSession });
+      const pointsToAward = Math.max(0, Math.min(WATCHER_POINTS_PER_SESSION, WATCHER_MAX_POINTS_PER_WALLET - (pioneer?.totalPoints || 0)));
+
+      if (pointsToAward > 0) {
+        await atomicCappedIncrement({
+          collection: pioneers,
+          filter: { walletAddress: wallet },
+          capField: "totalPoints",
+          capLimit: WATCHER_MAX_POINTS_PER_WALLET,
+          incFields: { totalPoints: pointsToAward },
+          session: mongoSession,
+        });
+      }
+      await sessions.updateOne({ _id: claimed._id }, { $set: { pointsAwarded: pointsToAward } }, { session: mongoSession });
+
+      result = { ...claimed, pointsAwarded: pointsToAward };
     });
+  } finally {
+    await mongoSession.endSession();
   }
-  await sessions.updateOne({ _id: claimed._id }, { $set: { pointsAwarded: pointsToAward } });
 
-  return { ...claimed, pointsAwarded: pointsToAward };
+  return result;
 }
 
 /** Confirms a submitted upload transaction actually succeeded on-chain and
@@ -334,4 +414,86 @@ export async function getPioneerStatus(walletAddress) {
     activeSession: activeSession ? { startedAt: activeSession.startedAt, expiresAt: activeSession.expiresAt } : null,
     spotsRemaining: Math.max(0, WATCHER_MAX_WALLETS - enrolledWalletCount),
   };
+}
+
+// ============================================================
+// Manual admin compensation (SQA-037)
+//
+// Built for a real incident: pre-existing Watcher point history became
+// unrecoverable (no database backup existed on the plan in use, and an
+// exhaustive search — app code, Vercel logs, the on-chain custody contract,
+// the mobile app's own storage, full git history in both repos — found no
+// surviving copy anywhere). This does not restore the original numbers; it
+// gives an admin an audited way to credit a wallet based on whatever
+// evidence the affected user can provide (a screenshot, their own record),
+// instead of hand-editing the database with no trail at all.
+//
+// Every grant is permanently logged to watcher_compensation_log BEFORE the
+// points are credited (log-then-credit, the safer order if the process dies
+// between the two writes — an unresolved logged grant is a discrepancy an
+// admin can review and finish, wrongly-credited points with no record at
+// all are not recoverable the same way). The credit itself reuses the same
+// capped, atomic increment every session-completion credit uses, so a
+// compensation grant can never push a wallet over the same 100,000-point
+// lifetime cap a normal session would respect.
+// ============================================================
+
+/** wallet must already be an enrolled pioneer — this credits an existing
+ *  account, it does not create one. points must be a positive integer.
+ *  reason and grantedBy (the admin's own identifier — e.g. "talha", not a
+ *  secret) are both required so the log entry is never ambiguous about who
+ *  approved what or why. Returns the log entry actually written, including
+ *  the wallet's resulting totalPoints and how much of the requested amount
+ *  was actually applied (truncated at the cap, same as a normal session). */
+export async function grantCompensationPoints({ walletAddress, points, reason, grantedBy }) {
+  const wallet = normalizeWallet(walletAddress);
+  if (!wallet) throw new Error("walletAddress is required.");
+  if (!Number.isInteger(points) || points <= 0) throw new Error("points must be a positive whole number.");
+  if (!reason || !reason.trim()) throw new Error("A reason is required for every compensation grant.");
+  if (!grantedBy || !grantedBy.trim()) throw new Error("grantedBy (who approved this) is required.");
+
+  const { pioneers, compensationLog } = await getWatcherCollections();
+  const pioneer = await pioneers.findOne({ walletAddress: wallet });
+  if (!pioneer) throw new Error("This wallet isn't an enrolled Watcher Pioneer — nothing to credit.");
+
+  const pointsToGrant = Math.max(0, Math.min(points, WATCHER_MAX_POINTS_PER_WALLET - (pioneer.totalPoints || 0)));
+  const now = new Date();
+
+  // Logged first, deliberately — see the header comment above.
+  const { insertedId } = await compensationLog.insertOne({
+    walletAddress: wallet,
+    requestedPoints: points,
+    grantedPoints: pointsToGrant,
+    reason: reason.trim(),
+    grantedBy: grantedBy.trim(),
+    grantedAt: now,
+    pointsBeforeGrant: pioneer.totalPoints || 0,
+  });
+
+  let updated = pioneer;
+  if (pointsToGrant > 0) {
+    updated = await atomicCappedIncrement({
+      collection: pioneers,
+      filter: { walletAddress: wallet },
+      capField: "totalPoints",
+      capLimit: WATCHER_MAX_POINTS_PER_WALLET,
+      incFields: { totalPoints: pointsToGrant },
+    });
+  }
+
+  return {
+    logId: insertedId,
+    walletAddress: wallet,
+    requestedPoints: points,
+    grantedPoints: pointsToGrant,
+    totalPointsAfter: updated?.totalPoints ?? pioneer.totalPoints,
+    truncatedByCap: pointsToGrant < points,
+  };
+}
+
+/** Full compensation history — every grant, newest first. Nothing is ever
+ *  deleted from this collection, so this is always the complete record. */
+export async function listCompensationGrants() {
+  const { compensationLog } = await getWatcherCollections();
+  return compensationLog.find({}).sort({ grantedAt: -1 }).toArray();
 }
