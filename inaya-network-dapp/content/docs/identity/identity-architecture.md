@@ -4,7 +4,7 @@ title: "Identity Integration Architecture"
 description: "How an identity change travels from your directory, HR system or automation to Inaya access, and where each guarantee is enforced."
 product: Business Workspace
 category: concept
-contentType: Concept
+contentType: Product Guide
 audience: [it-admin, security-admin, developer, auditor]
 status: beta
 version: current

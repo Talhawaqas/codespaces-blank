@@ -25,7 +25,7 @@ export default function ProductGuidePage({ params }) {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 flex gap-10">
       <div className="min-w-0 flex-1">
-        <Breadcrumbs items={[{ label: "Docs", href: "/docs" }, { label: "Product Guides", href: "/docs/products/storage" }, { label: doc.title }]} />
+        <Breadcrumbs items={[{ label: "Docs", href: "/docs" }, { label: "Product Guides", href: "/docs/products" }, { label: doc.title }]} />
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{doc.title}</h1>
           <StatusBadge status={doc.status} />

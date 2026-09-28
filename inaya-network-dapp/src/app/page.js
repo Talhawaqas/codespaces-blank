@@ -3298,6 +3298,7 @@ export default function Home() {
         { text: "Identity Integration — Microsoft Entra directory pull and SCIM joiner/leaver verified against a real Entra tenant with six verified revocation steps; Rewst, Active Directory and Okta are built but not yet verified", done: true },
         { text: "AI Bookkeeper — statement import, document extraction, matching, reconciliation and a human review queue that never posts without a person; live bank feeds, real email and WhatsApp accounts and OCR are not yet verified, and Inaya has no general ledger", done: true },
         { text: "Whole-codebase quality review — critical bridge, payment and storage defects found and fixed with regression tests, plus sweeps proving cross-company and anonymous access control; the review is still in progress (Azure/Google/Terraform tooling, mobile/desktop devices, concurrency and performance remain)", done: false },
+        { text: "Managed Database, Document Intelligence & AI/ML Studio — a real provisioned PostgreSQL database (via Supabase), a document-understanding studio for any document type with confidence and grounding on every field, and an AI/ML workbench (data catalogue, quality checks, model registry, evaluations, and a governed, network-off-by-default sandboxed code runner); 26 real tests passing, including live runs against a real, disposable cloud sandbox", done: true },
       ],
     },
     {

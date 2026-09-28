@@ -12,7 +12,7 @@ export const metadata = {
 export default function DocsHomePage() {
   const docs = loadAllDocs();
   const primaryCards = [
-    { href: "/docs/products/storage", title: "Product Guides", description: "Storage, Business Workspace, Security, and more — organized by product." },
+    { href: "/docs/products", title: "Product Guides", description: "Storage, Business Workspace, Security, and more — organized by product." },
     { href: "/docs/api", title: "API Reference", description: "Every public/v1 endpoint — auth, parameters, responses." },
     { href: "/docs/sdk", title: "SDK Reference", description: `All ${SDK_PACKAGES.length} published npm packages, documented from their real exports.` },
     { href: "/docs/cli", title: "CLI Reference", description: `All ${CLI_TOOLS.length} published CLI tools — every real command.` },

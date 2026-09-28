@@ -639,6 +639,23 @@ export const ROADMAP_STAGES = [
     notes:
       "In progress. Done: main dApp routes, bridge, payments, S3 layer against the AWS CLI and rclone, contract suite, dependency audit. Still to do: Azure, Google Cloud Storage and Terraform against Inaya storage with their real tools; mobile, desktop and Inaya Drive on real devices (needs hardware); concurrency and failure injection; smart-contract static analysis; performance; CI review; and a complete re-run of the 179 test files. Open risks recorded: wallet-address metadata reads are unauthenticated by design, card-customer identity is the payer's email, the main dApp is on a Next.js version whose fix needs a major upgrade, and deleting an object does not yet unpin its provider copy. Provider plan limits (Pinata blocked, Filebase at its 500-pin free limit) need the owner's action.",
   },
+  {
+    number: 27,
+    title: "Managed Database, Document Intelligence & AI/ML Studio",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A real, provisioned PostgreSQL database managed from inside the Business Workspace; a general document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
+    securityStatement: "Provisioning a database and running code are owner/admin-only, rate-limited and fully audited. The sandbox never receives Inaya's own server secrets and has no internet access unless a person explicitly turns it on for one run. Inaya does not train AI models on its own infrastructure — registering a model tracks a real file a team already produced elsewhere.",
+    features: [
+      "Databases: provision, start, stop, list backups, restore to a point in time, and query a real PostgreSQL database through a real external provider (Supabase) — Inaya's own serverless hosting cannot run a database engine itself",
+      "Document Intelligence: built-in readers for invoices, purchase orders, receipts and contracts, plus custom analyzers with a real draft-to-live lifecycle; every extracted field shows its confidence and whether it was actually found in the document's own text",
+      "Human corrections are added to the record, never overwriting the original extraction",
+      "AI/ML Studio: a data and model catalogue verified against real sources, automatic data-quality checks, a model registry with real artifact hashing, and named evaluation metrics reported separately, never as one score",
+      "A single governed way to run one Python or Node.js snippet in a fresh, network-off-by-default sandbox that is destroyed the instant it finishes — deliberately not a persistent notebook",
+    ],
+    notes:
+      "Live. 26 real tests passing across all three workstreams, including live runs against a real, disposable cloud sandbox created and destroyed for each test — not simulated. A real bug (an Evidence Graph collection-name mismatch) was found and fixed by the tests before shipping. Not built: read replicas / failover for the managed database (not yet verified through a real incident), and REGEX-type data-quality rules (the reference SQL connector has no portable REGEXP).",
+  },
 ];
 
 export const VISION = {

@@ -4,7 +4,7 @@ title: "Identity Integration Troubleshooting and FAQ"
 description: "Why an event was refused, ignored or parked, what to check first, and answers to the questions administrators ask most."
 product: Business Workspace
 category: how-to
-contentType: How-To
+contentType: Product Guide
 audience: [it-admin, msp, developer]
 status: beta
 version: current
