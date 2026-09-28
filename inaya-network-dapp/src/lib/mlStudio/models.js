@@ -16,9 +16,14 @@ import { getCatalogEntry } from "./catalog.js";
 import { fail, nowIso, sha256, safeFilename, ANALYZER_STATUSES, ANALYZER_TRANSITIONS } from "../docIntelligence/common.js";
 import { event, link, notify } from "./record.js";
 import { scanBuffer, scanRefusal } from "../support/scanner.js";
+import { checkRateLimit } from "../rateLimit.js";
 
 const BUCKET = "ml-model-artifacts";
 const MAX_ARTIFACT_BYTES = 200 * 1024 * 1024;
+// Security hardening pass (September 2026): each registration is a real, potentially large
+// (up to 200MB) encrypted storage write with real provider cost -- rate-limited the same way
+// every other real-cost write in this codebase is (rds provisioning, feedback uploads, etc.).
+const MAX_REGISTRATIONS_PER_HOUR = 20;
 
 async function storeArtifact({ orgId, key, buffer, contentType, actor }) {
   await ensureOwnerS3Passphrase({ type: "org", orgId: String(orgId) });
@@ -44,6 +49,8 @@ export async function registerModel({ orgId, membership, actorEmail, modelName, 
   if (!version || !/^[0-9A-Za-z_.\-]{1,40}$/.test(version)) return fail("version is required (letters, digits, dots, dashes, max 40 chars).");
   if (!Buffer.isBuffer(artifactBuffer) || !artifactBuffer.length) return fail("An artifact file is required.");
   if (artifactBuffer.length > MAX_ARTIFACT_BYTES) return fail(`Artifacts can be at most ${MAX_ARTIFACT_BYTES / 1024 / 1024} MB.`, 413);
+  try { await checkRateLimit({ action: "ml-studio:register-model", key: actorEmail, max: MAX_REGISTRATIONS_PER_HOUR, windowMs: 60 * 60 * 1000 }); }
+  catch { return fail("Too many model registrations in the last hour. Please wait a while.", 429); }
 
   await ensureMlStudioIndexes();
   const c = await getMlStudioCollections(); const oid = toObjectId(orgId);
@@ -106,6 +113,9 @@ export async function setModelStatus({ orgId, membership, actorEmail, modelId, s
 
 export async function downloadArtifact({ orgId, modelId }) {
   const m = await getModel({ orgId, modelId }); if (!m) return fail("Model version not found.", 404);
-  const buffer = await getS3ObjectBody({ orgId: String(orgId), bucket: m.artifact.bucket, key: m.artifact.key });
-  return { buffer, filename: m.artifact.filename, contentType: m.artifact.contentType };
+  // getS3ObjectBody() returns { doc, buffer }, not the raw bytes directly -- a bug found by this
+  // pass's own real download test (it previously returned the whole wrapper as "buffer").
+  const obj = await getS3ObjectBody({ orgId: String(orgId), bucket: m.artifact.bucket, key: m.artifact.key });
+  if (!obj) return fail("The artifact's stored bytes could not be found.", 404);
+  return { buffer: obj.buffer, filename: m.artifact.filename, contentType: m.artifact.contentType };
 }

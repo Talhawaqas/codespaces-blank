@@ -114,3 +114,24 @@ test("deletion requires typing the exact instance name, and calls the real delet
   const list = await listInstances({ orgId: String(orgId) });
   assert.equal(list.instances.find((i) => i.instanceId === instanceId).status, "deprovisioned");
 });
+
+test("security hardening: provisioning is rate-limited per actor, not just per org", async () => {
+  const actor = `ratelimit-${RUN}@example.com`;
+  const results = [];
+  for (let i = 0; i < 6; i++) {
+    results.push(await provisionInstance({ orgId: String(orgId), membership: ownerMembership, actorEmail: actor, providerName: "supabase", name: `di-rl-${RUN}-${i}`, organizationSlug: "acme-org", dbPassword: "correct horse battery staple" }));
+  }
+  assert.equal(results.slice(0, 5).every((r) => !r.error), true, JSON.stringify(results.slice(0, 5)));
+  assert.equal(results[5].status, 429, JSON.stringify(results[5]));
+});
+
+test("security hardening: at most 10 active instances per organization, even for a real owner/admin call", async () => {
+  const rds = await getRdsCollections();
+  const now = new Date().toISOString();
+  // Seed enough fake "active" instances directly to be certain the org is at/over the cap,
+  // regardless of how many real ones earlier tests in this file left behind.
+  await rds.rdsInstances.insertMany(Array.from({ length: 10 }, (_, i) => ({ orgId, name: `cap-test-${RUN}-${i}`, provider: "supabase", engine: "postgres", providerRef: `proj-cap-${RUN}-${i}`, status: "provisioning", createdAt: now, updatedAt: now, createdBy: "owner@example.com" })));
+  const overCap = await provisionInstance({ orgId: String(orgId), membership: ownerMembership, actorEmail: `cap-${RUN}@example.com`, providerName: "supabase", name: `di-over-cap-${RUN}`, organizationSlug: "acme-org", dbPassword: "correct horse battery staple" });
+  assert.equal(overCap.status, 409, JSON.stringify(overCap));
+  assert.match(overCap.error, /at most 10 active/i);
+});

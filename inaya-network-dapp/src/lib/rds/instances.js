@@ -16,10 +16,19 @@ import { getRdsCollections, ensureRdsIndexes } from "./db.js";
 import { getProvider, listAvailableProviders } from "./providerRegistry.js";
 import { fail, nowIso } from "../docIntelligence/common.js";
 import { audit, event, link, notify } from "./record.js";
+import { checkRateLimit } from "../rateLimit.js";
 
 export const instanceView = (i) => ({ instanceId: String(i._id), name: i.name, provider: i.provider, engine: i.engine, providerRef: i.providerRef, region: i.region || null, status: i.status, highAvailability: !!i.highAvailability, createdAt: i.createdAt, updatedAt: i.updatedAt });
 
 export function listConfiguredProviders() { return listAvailableProviders(); }
+
+// Security hardening pass (September 2026): provisioning calls a real, billable external API with
+// no cost ceiling of its own -- a compromised or malicious org admin session (or a script that
+// simply calls this in a loop) could previously provision unlimited real Supabase projects with
+// nothing on Inaya's side to stop it. Same discipline identity/outbound.js already uses for
+// webhook subscriptions ("at most 10 active"): a hard per-org cap on top of a rate limit, so even
+// a legitimate admin's automation mistake fails safely instead of running up a real bill.
+const MAX_ACTIVE_INSTANCES_PER_ORG = 10;
 
 /**
  * Provisions a real database instance through the named provider. `dbPassword` is used once, sent to the
@@ -31,10 +40,14 @@ export async function provisionInstance({ orgId, membership, actorEmail, provide
   if (!isIntegrationCryptoConfigured()) return fail("INTEGRATION_ENCRYPTION_KEY is not configured on this server -- no database credential can be stored until it is.", 500);
   const mod = getProvider(providerName);
   if (!mod || !mod.isConfigured()) return fail(`Provider "${providerName}" is not configured on this server.`, 400);
+  try { await checkRateLimit({ action: "rds:provision", key: actorEmail, max: 5, windowMs: 60 * 60 * 1000 }); }
+  catch { return fail("Too many provisioning attempts in the last hour. Please wait a while.", 429); }
   await ensureRdsIndexes();
   const c = await getRdsCollections(); const oid = toObjectId(orgId);
   const existing = await c.rdsInstances.findOne({ orgId: oid, name });
   if (existing) return fail("An instance with this name already exists.", 409);
+  const activeCount = await c.rdsInstances.countDocuments({ orgId: oid, status: { $ne: "deprovisioned" } });
+  if (activeCount >= MAX_ACTIVE_INSTANCES_PER_ORG) return fail(`At most ${MAX_ACTIVE_INSTANCES_PER_ORG} active database instances per organization. Delete an unused one first.`, 409);
 
   const engineCheck = await mod.validateEngine({ engine: "postgres" });
   if (!engineCheck.ok) return fail(engineCheck.error, 400);

@@ -138,8 +138,11 @@ export async function getResult({ orgId, resultId }) {
 
 export async function downloadResultDocument({ orgId, resultId }) {
   const doc = await getResult({ orgId, resultId }); if (!doc) return fail("Result not found.", 404);
-  const body = await getS3ObjectBody({ orgId: String(orgId), bucket: doc.storage.bucket, key: doc.storage.key });
-  return { buffer: body, filename: doc.filename, contentType: doc.contentType };
+  // getS3ObjectBody() returns { doc, buffer }, not the raw bytes directly -- a bug found by this
+  // pass's own real download test (it previously returned the whole wrapper as "buffer").
+  const obj = await getS3ObjectBody({ orgId: String(orgId), bucket: doc.storage.bucket, key: doc.storage.key });
+  if (!obj) return fail("The document's stored bytes could not be found.", 404);
+  return { buffer: obj.buffer, filename: doc.filename, contentType: doc.contentType };
 }
 
 /** `departmentIds`: null means no filter (owner/admin, sees everything); an array restricts to a plain

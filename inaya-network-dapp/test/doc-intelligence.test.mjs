@@ -13,6 +13,7 @@ import { PATCH as analyzerPatch } from "../src/app/api/orgs/doc-intelligence/ana
 import { POST as analyzePost } from "../src/app/api/orgs/doc-intelligence/analyze/route.js";
 import { GET as resultsGet } from "../src/app/api/orgs/doc-intelligence/results/route.js";
 import { GET as resultGet } from "../src/app/api/orgs/doc-intelligence/results/[resultId]/route.js";
+import { GET as resultDownloadGet } from "../src/app/api/orgs/doc-intelligence/results/[resultId]/download/route.js";
 import { GET as reviewGet } from "../src/app/api/orgs/doc-intelligence/review/route.js";
 import { POST as reviewAct } from "../src/app/api/orgs/doc-intelligence/review/[itemId]/route.js";
 import { POST as evaluatePost } from "../src/app/api/orgs/doc-intelligence/evaluate/route.js";
@@ -167,6 +168,15 @@ test("evaluation: precision/recall/field accuracy/grounding/correction rate are 
   assert.ok(real.body.metrics.fieldAccuracy > 0 && real.body.metrics.fieldAccuracy < 1, "one correct field, one corrected/mismatched field -- accuracy should be partial, not 0 or 1");
   assert.equal(real.body.metrics.correctionRate, 0.5, "1 of 2 evaluated results had a human correction applied");
   assert.ok(real.body.metrics.groundingRate > 0);
+});
+
+test("security hardening: downloading the original analyzed document returns the exact original bytes as a forced download", async () => {
+  const res = await resultDownloadGet(jreq("GET", `/api/orgs/doc-intelligence/results/${global.__diResultId}/download?orgId=${orgId}`, { token: ownerToken }), { params: params({ resultId: global.__diResultId }) });
+  assert.equal(res.status, 200);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  assert.equal(bytes.toString("utf8"), "Delivery Note\nPO Number: PO-9931\nDelivery Date: 2026-08-01\nCarrier: Fast Freight Co\nItems: 4 pallets", "the downloaded bytes must exactly match the originally uploaded document");
+  assert.match(res.headers.get("content-disposition") || "", /^attachment/, "must always be a forced download, never rendered inline");
+  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
 });
 
 test("cross-org isolation: another organization cannot see this org's analyzer or results", async () => {

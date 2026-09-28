@@ -38,10 +38,18 @@ export async function checkRateLimit({ action, key, max, windowMs = DEFAULT_WIND
   }
 }
 
-/** Best-effort caller IP from standard proxy headers (Vercel sets x-forwarded-for) -- falls back
- *  to a constant so a missing header degrades to "everyone shares one bucket" rather than
- *  throwing or silently skipping the rate limit entirely. */
+/** Best-effort caller IP from standard proxy headers. On a normal Vercel deployment,
+ *  x-forwarded-for is set by Vercel itself and client-supplied values are explicitly rejected
+ *  (per Vercel's own docs: "we ... overwrite the X-Forwarded-For header and do not forward
+ *  external IPs ... to prevent IP spoofing") -- confirmed, not assumed, before relying on it for
+ *  every rate limit in this codebase. x-vercel-forwarded-for is checked first anyway (security
+ *  hardening pass, September 2026): Vercel's docs describe it as "identical to x-forwarded-for
+ *  [unless] you're using a proxy on top of Vercel" -- i.e. it stays authoritative even if this
+ *  project ever enables the paid "Trusted Proxy" feature (which relaxes x-forwarded-for itself),
+ *  so preferring it costs nothing today and removes a footgun for that future config change. */
 export function getClientIp(req) {
+  const vercelForwarded = req.headers.get("x-vercel-forwarded-for");
+  if (vercelForwarded) return vercelForwarded.split(",")[0].trim();
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
   return req.headers.get("x-real-ip") || "unknown";

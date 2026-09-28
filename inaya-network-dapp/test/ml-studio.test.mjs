@@ -14,7 +14,7 @@ import { importAndPublishSchema } from "../src/lib/legacyDataAccess/metadata.js"
 import { getMlStudioCollections } from "../src/lib/mlStudio/db.js";
 import { registerCatalogEntry, listCatalog } from "../src/lib/mlStudio/catalog.js";
 import { createRule, runRule } from "../src/lib/mlStudio/dataQuality.js";
-import { registerModel, setModelStatus, listModels } from "../src/lib/mlStudio/models.js";
+import { registerModel, setModelStatus, listModels, getModel, downloadArtifact } from "../src/lib/mlStudio/models.js";
 import { recordEvaluation } from "../src/lib/mlStudio/evaluations.js";
 import { flushEvidence } from "../src/lib/mlStudio/record.js";
 import { listBusinessEvents } from "../src/lib/businessEvents.js";
@@ -47,7 +47,7 @@ after(async () => {
   try { await (await clientPromise).close(); } catch { /* ignore */ }
 });
 
-let orgId, owner, member, dataSourceId, catalogId;
+let orgId, owner, member, dataSourceId, catalogId, modelId, artifactBytes;
 
 test("setup: an org, a real SQLite data source with a published table", async () => {
   await ensureOrgIndexes(); const c = await getOrgCollections();
@@ -90,12 +90,13 @@ test("data quality: NOT_NULL and UNIQUE rules run against the real table and rep
 });
 
 test("model registry: register, real artifact hash, lifecycle transitions, evaluation with named metrics", async () => {
-  const artifact = randomBytes(256);
+  const artifact = randomBytes(256); artifactBytes = artifact;
   const deniedRegister = await registerModel({ orgId, membership: member, actorEmail: "x@example.com", modelName: "risk-classifier", version: "1.0.0", datasetCatalogIds: [catalogId], artifactBuffer: artifact, artifactFilename: "model.bin", artifactContentType: "application/octet-stream" });
   assert.equal(deniedRegister.status, 403);
 
   const reg = await registerModel({ orgId, membership: owner, actorEmail: "owner@example.com", modelName: "risk-classifier", version: "1.0.0", framework: "scikit-learn", datasetCatalogIds: [catalogId], artifactBuffer: artifact, artifactFilename: "model.bin", artifactContentType: "application/octet-stream" });
   assert.ok(!reg.error, JSON.stringify(reg));
+  modelId = reg.model.modelId;
   assert.equal(reg.model.status, "DRAFT");
   assert.equal(reg.model.artifact.sizeBytes, 256);
   const { createHash } = await import("node:crypto");
@@ -128,4 +129,15 @@ test("evidence graph: the model version is a subject with DERIVED_FROM (dataset)
   const rels = events[0].relationships.map((r) => r.type);
   assert.ok(rels.includes("DERIVED_FROM"), "the model's dataset lineage should be a real relationship");
   assert.ok(rels.includes("CHECKED_BY"), "the evaluation run should be a real relationship");
+});
+
+test("security hardening: downloadArtifact returns the exact original bytes, scoped by org+id together", async () => {
+  const m = await getModel({ orgId, modelId });
+  assert.ok(m, "the model must resolve within its own org");
+  const f = await downloadArtifact({ orgId, modelId });
+  assert.ok(!f.error, JSON.stringify(f));
+  assert.equal(Buffer.compare(f.buffer, artifactBytes), 0, "the downloaded bytes must exactly match what was registered");
+  assert.equal(f.filename, "model.bin");
+  const wrongOrg = await getModel({ orgId: "000000000000000000000000", modelId });
+  assert.equal(wrongOrg, null, "a different orgId must never resolve this model, even with the real modelId");
 });
