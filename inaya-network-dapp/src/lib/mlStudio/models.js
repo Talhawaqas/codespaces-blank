@@ -15,6 +15,7 @@ import { getMlStudioCollections, ensureMlStudioIndexes } from "./db.js";
 import { getCatalogEntry } from "./catalog.js";
 import { fail, nowIso, sha256, safeFilename, ANALYZER_STATUSES, ANALYZER_TRANSITIONS } from "../docIntelligence/common.js";
 import { event, link, notify } from "./record.js";
+import { scanBuffer, scanRefusal } from "../support/scanner.js";
 
 const BUCKET = "ml-model-artifacts";
 const MAX_ARTIFACT_BYTES = 200 * 1024 * 1024;
@@ -55,6 +56,15 @@ export async function registerModel({ orgId, membership, actorEmail, modelName, 
     if (!entry) return fail(`Catalog entry ${id} was not found.`, 404);
     catalogIds.push(entry._id);
   }
+
+  // Security hardening pass (September 2026): every other stored upload in this codebase is
+  // malware-scanned before it is written; this one was not. A model artifact is opaque binary
+  // data by nature, so the scan here is chiefly the archive/zip-bomb and embedded-executable
+  // checks (an artifact is never claimed to be a document type, so the "hidden exe inside a PDF"
+  // heuristic mostly doesn't fire) -- still real defense-in-depth against a hostile upload later
+  // reaching someone who downloads this artifact assuming it was already checked.
+  const scan = await scanBuffer({ filename: artifactFilename, buffer: artifactBuffer, mode: "static" });
+  if (scan.status !== "CLEAN") return fail(scanRefusal(scan), 422);
 
   const hash = sha256(artifactBuffer);
   const key = `${hash.slice(0, 2)}/${hash}/${safeFilename(artifactFilename)}`;

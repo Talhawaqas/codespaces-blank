@@ -38,9 +38,13 @@ export const DEFAULT_SETTINGS = {
 };
 
 const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+// Security hardening pass (September 2026): see bookkeeper/settings.js's identical fix -- `over`
+// is an org-supplied JSON body (updateSettings' `patch`) and a "__proto__" key surviving
+// JSON.parse would otherwise silently swap the returned object's prototype via out[k] = v.
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 function merge(base, over) {
   const out = { ...base };
-  for (const [k, v] of Object.entries(isObj(over) ? over : {})) out[k] = isObj(v) && isObj(base[k]) ? merge(base[k], v) : v;
+  for (const [k, v] of Object.entries(isObj(over) ? over : {})) { if (UNSAFE_KEYS.has(k)) continue; out[k] = isObj(v) && isObj(base[k]) ? merge(base[k], v) : v; }
   return out;
 }
 

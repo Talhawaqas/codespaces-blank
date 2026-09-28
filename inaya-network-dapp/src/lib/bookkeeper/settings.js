@@ -9,11 +9,17 @@ import { DEFAULT_SETTINGS, fail, nowIso, clamp01 } from "./common.js";
 import { audit } from "./record.js";
 
 const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+// Security hardening pass (September 2026): `over` is an org-supplied JSON body (updateSettings'
+// `patch`) reaching this generic recursive merge unfiltered -- a key literally named "__proto__"
+// survives JSON.parse as a normal own property, and assigning it back with `out[k] = v` invokes
+// the real Object.prototype.__proto__ setter, silently swapping the returned object's prototype.
+// Blocked the same way every standard "safe merge" implementation does.
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 /** Deep merge of stored settings over the defaults, so a new default reaches organizations that saved an older shape. */
 function merge(base, over) {
   const out = { ...base };
-  for (const [k, v] of Object.entries(over || {})) out[k] = isObj(v) && isObj(base[k]) ? merge(base[k], v) : v;
+  for (const [k, v] of Object.entries(over || {})) { if (UNSAFE_KEYS.has(k)) continue; out[k] = isObj(v) && isObj(base[k]) ? merge(base[k], v) : v; }
   return out;
 }
 

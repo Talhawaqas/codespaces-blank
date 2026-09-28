@@ -19,14 +19,35 @@
 // not a dependency of this codebase today. An org selecting "SAML" mode is
 // told this plainly rather than being given a connection that silently
 // does nothing.
+//
+// SECURITY (found in the September 2026 hardening pass): every fetch in this file targets a URL
+// that traces back to an org-supplied issuer -- the discovery document itself, then whatever
+// authorization/token/userinfo/revocation endpoints THAT document names. A malicious or
+// compromised org's OIDC configuration could previously point any of those at an internal service
+// or a cloud metadata endpoint and have the response reflected back through this app's own error
+// messages -- a classic SSRF. Every fetch here now goes through ssrfSafeFetch.js (the same
+// private-address/metadata-host/DNS-rebinding guard workflows/http.js already proved out for the
+// same class of "org-supplied URL this server must fetch" problem), and the endpoint URLs the
+// discovery document itself names are validated again before use, since a malicious issuer's own
+// discovery document is exactly as untrusted as the issuer URL was.
+
+import { ssrfSafeFetch, assertPublicHttpsUrl } from "../ssrfSafeFetch.js";
 
 export const requiresOrgConfig = true;
 
 async function discover(issuer) {
   const normalizedIssuer = issuer.replace(/\/$/, "");
-  const res = await fetch(`${normalizedIssuer}/.well-known/openid-configuration`);
+  assertPublicHttpsUrl(normalizedIssuer);
+  const res = await ssrfSafeFetch(`${normalizedIssuer}/.well-known/openid-configuration`);
   if (!res.ok) throw new Error(`Could not reach the OIDC discovery document at ${normalizedIssuer} (HTTP ${res.status}).`);
-  return res.json();
+  const config = await res.json();
+  // The discovery document is itself untrusted (an org could point issuer at a host it fully
+  // controls and hand back any document it likes) -- every endpoint it names is validated the
+  // same way the issuer URL was, not trusted just because it came from a "discovery" response.
+  for (const key of ["authorization_endpoint", "token_endpoint", "userinfo_endpoint", "revocation_endpoint"]) {
+    if (config[key]) assertPublicHttpsUrl(config[key]);
+  }
+  return config;
 }
 
 export function isConfigured({ orgConfig }) {
@@ -57,7 +78,7 @@ export async function exchangeCodeForToken({ code, redirectUri, orgConfig }) {
     redirect_uri: redirectUri,
     grant_type: "authorization_code",
   });
-  const res = await fetch(config.token_endpoint, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params });
+  const res = await ssrfSafeFetch(config.token_endpoint, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString() });
   const data = await res.json();
   if (!res.ok) return { error: data.error_description || data.error || "The identity provider rejected the authorization code." };
   return { accessToken: data.access_token, refreshToken: data.refresh_token, raw: data };
@@ -69,7 +90,7 @@ export async function exchangeCodeForToken({ code, redirectUri, orgConfig }) {
 export async function verifyConnection({ accessToken, orgConfig }) {
   const config = await discover(orgConfig.issuer);
   if (!config.userinfo_endpoint) return { verified: false, error: "This identity provider's discovery document has no userinfo endpoint." };
-  const res = await fetch(config.userinfo_endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const res = await ssrfSafeFetch(config.userinfo_endpoint, { headers: { Authorization: `Bearer ${accessToken}` } });
   const data = await res.json();
   if (!res.ok) return { verified: false, error: data.error_description || data.error || "The identity provider could not verify this token." };
   return { verified: true, externalAccountId: data.sub, externalAccountName: data.email || data.preferred_username || data.name };
@@ -80,7 +101,7 @@ export async function revoke({ accessToken, orgConfig }) {
     const config = await discover(orgConfig.issuer);
     if (!config.revocation_endpoint) return { revoked: false, note: "This identity provider does not advertise a revocation endpoint." };
     const params = new URLSearchParams({ token: accessToken, client_id: orgConfig.clientId, client_secret: orgConfig.clientSecret });
-    const res = await fetch(config.revocation_endpoint, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params });
+    const res = await ssrfSafeFetch(config.revocation_endpoint, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString() });
     return { revoked: res.ok };
   } catch (err) {
     return { revoked: false, error: err.message };

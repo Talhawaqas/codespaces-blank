@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "../../../../../lib/admin-auth.js";
 import { ensureDataroomIndexes, getDataroomCollections, validateDocumentUploadInput, storeDocumentFile } from "../../../../../lib/dataroom.js";
+import { scanBuffer, scanRefusal } from "../../../../../lib/support/scanner.js";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,11 @@ export async function POST(req) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    // These files are distributed to real, external investors/visitors through the data room --
+    // scanned the same as every other stored upload in this codebase before anyone can be handed
+    // one (defense in depth: the admin passphrase gates who can upload, not what gets uploaded).
+    const scan = await scanBuffer({ filename: file.name, buffer, mode: "static" });
+    if (scan.status !== "CLEAN") return NextResponse.json({ error: scanRefusal(scan) }, { status: 422 });
     const fileId = await storeDocumentFile({ buffer, filename: file.name, mimeType: file.type });
 
     await ensureDataroomIndexes();

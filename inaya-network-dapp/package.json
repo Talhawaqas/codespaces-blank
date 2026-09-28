@@ -61,7 +61,7 @@
     "three": "^0.185.1",
     "three-globe": "^2.45.2",
     "unpdf": "^1.8.1",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -73,6 +73,10 @@
     "puppeteer-core": "^25.5.0"
   },
   "overrides": {
-    "protobufjs": "^7.6.6"
+    "protobufjs": "^7.6.6",
+    "uuid": "^14.0.2",
+    "image-size": "^2.0.4",
+    "stream-json": "^3.7.0",
+    "toml": "^5.0.0"
   }
 }

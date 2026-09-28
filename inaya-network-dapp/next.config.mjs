@@ -93,6 +93,19 @@ const nextConfig = {
   // the one CSP directive included here since it only controls who may iframe this app (nothing
   // about what this app itself may load), making it the correctly-scoped, zero-risk piece of that
   // larger set of directives.
+  //
+  // September 2026 hardening pass adds two more, same conservative standard: Permissions-Policy
+  // only names features this app confirmably never uses (checked: no navigator.geolocation,
+  // navigator.usb, or navigator.bluetooth anywhere in src/) -- it deliberately says nothing about
+  // microphone (useVoiceSession.js genuinely needs it), or about accelerometer/gyroscope/
+  // encrypted-media/picture-in-picture/web-share (the YouTube embed on the landing page delegates
+  // exactly those via its own iframe `allow` attribute; a page-wide policy naming them would
+  // silently break that embed even though this app itself never calls those APIs). Cross-Origin-
+  // Opener-Policy uses "same-origin-allow-popups" rather than a stricter value specifically
+  // because it must not break the OAuth (Google/Microsoft/Slack) and WalletConnect popup flows
+  // this app already relies on -- this value still isolates the page from being able to read a
+  // popup's properties across origins, which is the actual protection it buys (against
+  // window-reference-based tabnabbing/reverse-tabnabbing), without touching how those popups work.
   async headers() {
     return [
       {
@@ -103,6 +116,8 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "Permissions-Policy", value: "geolocation=(), camera=(), usb=(), bluetooth=(), midi=(), payment=(), magnetometer=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
     ];
