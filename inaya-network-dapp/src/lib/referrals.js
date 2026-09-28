@@ -19,6 +19,7 @@
 
 import { randomBytes, createHash } from "node:crypto";
 import { connectToDatabase } from "./mongodb.js";
+import { getDiditDecision, DiditSessionNotFoundError } from "./didit.js";
 
 export const REWARD_REFERRER_INAYA = 0.4;
 export const REWARD_REFERRED_INAYA = 0.1;
@@ -109,6 +110,42 @@ export async function atomicCappedIncrement({ collection, filter, capField, capL
     { $inc: incFields },
     { returnDocument: "after", ...(session ? { session } : {}) }
   );
+}
+
+// A session in any of these states will never produce an Approved decision —
+// Didit will not resume it, so handing the user the same URL again is a dead
+// end, not a convenience.
+const DEAD_DIDIT_SESSION_STATUSES = ["Declined", "Expired", "Kyc Expired", "Abandoned"];
+
+/** The actual bug fix behind "stuck on pending forever, reapplying does
+ *  nothing" (reported directly by real users): both /api/referrals/activate
+ *  and /api/referrals/redeem used to reuse an existing "pending" record's
+ *  Didit session URL unconditionally, without ever checking whether that
+ *  session was still alive on Didit's side. A session a user abandoned or
+ *  that expired past Didit's own session lifetime never gets an Approved
+ *  decision and (depending on how the user left it) may never fire any
+ *  webhook at all -- so the record's status genuinely never moves past
+ *  "pending", and every retry just re-served the same dead link forever.
+ *
+ *  Call this before deciding to reuse a pending record's diditSessionId.
+ *  Returns true only when the existing session can still realistically be
+ *  completed; the caller should create a fresh session on false. Fails
+ *  toward "still usable" on a transient Didit API error (network blip,
+ *  5xx) rather than a definitive dead state, so a temporary Didit outage
+ *  doesn't spawn a needless extra session for every retry during it. */
+export async function isDiditSessionStillUsable(sessionId) {
+  if (!sessionId) return false;
+  try {
+    const decision = await getDiditDecision(sessionId);
+    if (typeof decision.status === "string" && DEAD_DIDIT_SESSION_STATUSES.some((s) => s.toLowerCase() === decision.status.toLowerCase())) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    if (err instanceof DiditSessionNotFoundError) return false;
+    console.error("isDiditSessionStillUsable: could not check session, assuming still usable:", err.message);
+    return true;
+  }
 }
 
 /** Top-50 referrers strictly by successfulReferralCount — factored out of the

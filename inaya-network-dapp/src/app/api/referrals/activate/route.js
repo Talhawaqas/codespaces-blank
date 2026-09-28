@@ -15,7 +15,7 @@
 
 import { NextResponse } from "next/server";
 import { createDiditSession } from "../../../../lib/didit.js";
-import { getReferralCollections, ensureReferralIndexes, normalizeEmail, isValidEmail } from "../../../../lib/referrals.js";
+import { getReferralCollections, ensureReferralIndexes, normalizeEmail, isValidEmail, isDiditSessionStillUsable } from "../../../../lib/referrals.js";
 
 export const dynamic = 'force-dynamic';
 export async function POST(req) {
@@ -35,9 +35,15 @@ export async function POST(req) {
     }
 
     // Reuse an existing pending session rather than spawning a new Didit
-    // session on every retry/page-refresh.
+    // session on every retry/page-refresh -- but only if that session can
+    // still actually be completed. Handing back a session that expired or
+    // was abandoned is a dead end, not a convenience (this was the exact
+    // "stuck on pending forever" bug reported by real users).
     if (existing?.status === "pending" && existing.diditSessionUrl) {
-      return NextResponse.json({ status: "pending", url: existing.diditSessionUrl });
+      if (await isDiditSessionStillUsable(existing.diditSessionId)) {
+        return NextResponse.json({ status: "pending", url: existing.diditSessionUrl });
+      }
+      // Fall through and issue a fresh session below.
     }
 
     const now = new Date().toISOString();

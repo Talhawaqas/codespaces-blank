@@ -22,6 +22,7 @@ import {
   MAX_REFERRALS_PER_REFERRER,
   GLOBAL_PROGRAM_CAP_INAYA,
   REWARD_PER_SUCCESSFUL_REFERRAL_INAYA,
+  isDiditSessionStillUsable,
 } from "../../../../lib/referrals.js";
 
 export const dynamic = 'force-dynamic';
@@ -71,7 +72,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "You've already completed a referral with this code." }, { status: 409 });
     }
     if (existingReferral?.status === "pending" && existingReferral.diditSessionUrl) {
-      return NextResponse.json({ status: "pending", url: existingReferral.diditSessionUrl, referralId: existingReferral._id.toString() });
+      if (await isDiditSessionStillUsable(existingReferral.diditSessionId)) {
+        return NextResponse.json({ status: "pending", url: existingReferral.diditSessionUrl, referralId: existingReferral._id.toString() });
+      }
+      // Fall through and issue a fresh session below.
     }
 
     const now = new Date().toISOString();
