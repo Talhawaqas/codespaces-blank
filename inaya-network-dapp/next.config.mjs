@@ -55,7 +55,17 @@ const nextConfig = {
   // the serverless function, so every PDF render failed with "Cannot find module '#standard-fonts/Helvetica'". Keeping it external makes Vercel ship
   // the real package (package.json, its "imports" map, the font data) next to the function. Affects every route that renders a PDF.
   // Next.js 15 upgrade (September 2026): experimental.serverComponentsExternalPackages was stabilized and moved to this top-level option.
-  serverExternalPackages: ["pdfkit"],
+  // Mainframe & Legacy Data Access SOW: ssh2 (the RMS/OpenVMS connector's
+  // SSH client) ships an OPTIONAL compiled native addon
+  // (lib/protocol/crypto/build/Release/sshcrypto.node) for accelerated
+  // crypto -- ssh2 falls back to pure-JS crypto at runtime when it can't
+  // load that binary, but webpack doesn't know that at bundle time and
+  // tries to parse the .node file as JavaScript, which fails and 500s
+  // EVERY API route that imports connectorRegistry.js (not just RMS
+  // routes -- the whole module graph fails to build). Found live: the
+  // ODBC driver's Driver-Manager-mediated health check returned a 500
+  // with an empty body the moment this connector was registered.
+  serverExternalPackages: ["pdfkit", "ssh2"],
   // Next.js 15 upgrade: this repo sits inside a monorepo with sibling packages that carry their own
   // lockfiles (inaya-migration-agent, custody-sdk, etc.) -- Next's own root-inference picked the OUTER
   // monorepo folder as the workspace root, which risks every relative path below (and the whole point of
