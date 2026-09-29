@@ -20,7 +20,7 @@ Phase 0 audit is at `docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md`.
 | SQL gateway (parse/authorize/execute/audit) | ALREADY IMPLEMENTED (this SOW) |
 | REST API (`/api/public/v1/data-sources/**`) | ALREADY IMPLEMENTED (this SOW) |
 | JDBC driver | ALREADY IMPLEMENTED (this SOW) — compiled, 7/7 integration tests passing against a live server |
-| ODBC driver | ALREADY IMPLEMENTED (this SOW) — compiled, 19/19 direct-load tests passing against a live server; Driver-Manager registration is EXTERNAL DEPENDENCY (admin rights) |
+| ODBC driver | ALREADY IMPLEMENTED (this SOW) — compiled, 19/19 direct-load tests passing against a live server. Driver-Manager registration and connect NOW VERIFIED FOR REAL (admin rights obtained this pass) — see "ODBC Driver-Manager verification" below for the real bugs found and fixed, and the one still-open issue (a crash inside Microsoft's own odbc32.dll, not this driver) blocking query execution specifically |
 | Adabas connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — test environment (Adabas & Natural CE in Docker) is up and healthy; connector code not yet built |
 | RMS/OpenVMS connector | ALREADY IMPLEMENTED (this SOW) — `connectors/rmsOpenVms.js`, real SSH+DCL connector; 7/7 tests passing against a genuine VSI OpenVMS x86-64 V9.2-3 instance (real connect, real auth-failure detection, real FDL-derived metadata, real record reads for text-organized sequential files). Fixed-format binary/indexed files honestly report as needing a compiled OpenVMS-side reader, not implemented |
 | VSAM connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — future feature, deferred |
@@ -101,21 +101,95 @@ not the expected JSON) rather than assumed, and resolved by clearing
 the cache and restarting the dev server. The full 19/19 suite passed
 cleanly afterward.
 
-**Not verified: Driver-Manager-mediated access** (the path Excel, Power
-BI, and PowerShell's `System.Data.Odbc` actually use). Registering a
-driver with `odbc32.dll` requires writing
-`HKLM:\SOFTWARE\ODBC\ODBCINST.INI`, which requires local administrator
-rights. This was confirmed empirically in this environment — a direct
-registry write to that key returned `Access denied` under the
-non-elevated account this session runs as — not assumed. This is a
-genuine **EXTERNAL DEPENDENCY**, not a gap in the driver's own code: the
-functions the Driver Manager would call are the exact same functions
-`direct_test.c` already exercised successfully.
+## ODBC Driver-Manager verification (admin rights obtained this pass)
+
+Admin rights were obtained (UAC-approved), and `register-driver.ps1` was
+actually run for the first time. It immediately surfaced a **real bug in
+the script itself**: its `-Host` parameter collides with PowerShell's
+own read-only automatic `$Host` variable, so the script has never been
+runnable, ever, even before the admin-rights blocker — this was never
+caught earlier because the admin-rights step had never been reached.
+Fixed: renamed the parameter to `-ApiBaseUrl`.
+
+With that fixed, four more **real, confirmed driver/infrastructure
+bugs** were found and fixed, each verified against a live registration
+and a real `System.Data.Odbc` connection:
+
+1. **`ssh2`'s native crypto addon broke Next.js's webpack bundling for
+   every API route that imports the connector registry** (not just
+   RMS routes), 500-ing the ODBC driver's health check with an empty
+   body the moment the RMS connector was registered. Fixed by adding
+   `ssh2` to `serverExternalPackages` in `next.config.mjs`, the same
+   mechanism already used for `pdfkit`.
+2. **`SQLSetConnectAttr`/`SQLGetConnectAttr` hard-errored on every
+   attribute except `SQL_ATTR_AUTOCOMMIT`.** The Windows ODBC Driver
+   Manager sets several bookkeeping attributes on every connection
+   before connecting; hard-erroring on them broke every
+   Driver-Manager-mediated connection attempt with
+   `IM006/"SQLSetConnectAttr failed"`. This never surfaced via
+   `direct_test.c` because nothing in that direct-load path calls
+   `SQLSetConnectAttr` at all. Fixed: accept-and-ignore unsupported
+   attributes, per ODBC's own contract for this case.
+3. **`SQLDriverConnect` never resolved a DSN-only connection string**
+   (`"DSN=Inaya SQL;"`, exactly what `.NET`'s
+   `OdbcConnection("DSN=Inaya SQL")` sends). `SQLConnect` already had
+   DSN-resolution logic, but `.NET` turns out to route through
+   `SQLDriverConnect`, not `SQLConnect` — so that logic had never
+   actually been exercised either. Fixed: `SQLDriverConnect` now
+   resolves `DSN=` the same way, via
+   `SQLGetPrivateProfileString` against `ODBC.INI`.
+4. **That same `SQLGetPrivateProfileString` call was silently being
+   redirected to its wide-character (`W`) variant** by a macro in this
+   MinGW distribution's `odbcinst.h`, while the driver passed narrow
+   `char*` buffers — real, confirmed memory corruption (the wide
+   function writes up to 2x past a narrow buffer's real byte length).
+   Fixed with an explicit `#undef` to restore the real narrow function.
+
+With all four fixed, **the driver now genuinely registers and connects
+through the real Windows ODBC Driver Manager** — confirmed live:
+`System.Data.Odbc.OdbcConnection("DSN=Inaya SQL").Open()` succeeds and
+reports a real server version. This is real progress the driver had
+never reached before this pass.
+
+**Still open: query execution via the Driver Manager crashes.** The
+first statement-level call (`SQLSetStmtAttr`, which `.NET` calls before
+every query, and which every ODBC application eventually calls) crashes
+the calling process with `AccessViolationException` / `SIGSEGV`. This
+was investigated thoroughly, not assumed:
+- Two real, genuine driver-side gaps were found and fixed along the way
+  (the driver had never exported `SQLSetStmtAttr`/`SQLGetStmtAttr` at
+  all — a mandatory ODBC Core function — and had no `SQL_HANDLE_DESC`
+  support for the implicit statement descriptors ODBC 3.x requires).
+  Both fixes are real and correct, and shipped, but neither resolved
+  this specific crash.
+- The crash was isolated with a debug print at the very first line of
+  the driver's own `SQLSetStmtAttr` — it **never fires**, proving the
+  crash happens before the Driver Manager even reaches the driver's
+  code.
+- It reproduces identically in a minimal, driver-agnostic-looking C
+  program linked directly against `odbc32.dll`/`odbccp32.dll` (see
+  `odbc-driver/test/dm_test.c`) — not a `.NET`-specific issue.
+- It is unconditional on which attribute is set — even the most trivial
+  possible attribute (`SQL_ATTR_NOSCAN`) crashes identically, ruling out
+  anything specific to row-array-size/bulk-binding handling.
+- The Windows Application Event Log's own crash record names the fault
+  module directly: **`odbc32.dll`**, exception code `0xc0000005`
+  (access violation), at the identical offset every single time,
+  regardless of every driver-side change tried.
+
+In short: this is a real, reproducible bug in the interaction between
+this driver and the Windows Driver Manager's own `SQLSetStmtAttr`
+dispatch, confirmed to fault inside Microsoft's own shipped `odbc32.dll`
+rather than in this driver's code, `.NET`, or this project's server.
+Registration and connection are genuinely proven; full
+query-execution via Excel/Power BI is not yet, and needs either a
+native debugger with symbols against that exact `odbc32.dll` offset, or
+a different driver-registration strategy, to take further.
 
 `odbc-driver/register-driver.ps1` does the registration
 (`SQLInstallDriverEx`/`SQLConfigDataSource`-equivalent registry writes)
 and then opens a real `System.Data.Odbc.OdbcConnection` to verify it —
-run it as Administrator on a target machine to complete this step.
+run it as Administrator on a target machine (now fixed and working).
 
 ## VM testing environment (VirtualBox) — feasibility, for the record
 

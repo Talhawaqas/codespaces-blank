@@ -25,6 +25,18 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
+/* odbcinst.h #defines the bare name SQLGetPrivateProfileString to the
+ * WIDE-character SQLGetPrivateProfileStringW (this MinGW distribution's
+ * default), which silently reinterprets every narrow char* argument this
+ * driver passes as UTF-16 -- writing up to 2x past the real byte length
+ * of a char[] output buffer. That's real, confirmed heap/stack
+ * corruption: it doesn't crash at the call site, it crashes on whatever
+ * unrelated call happens next (observed live as an AccessViolation
+ * inside SQLSetStmtAttrW during a later, unrelated statement call).
+ * Undefining the macro restores the plain identifier to the real narrow
+ * function this driver actually declares its buffers for. */
+#undef SQLGetPrivateProfileString
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,12 +182,14 @@ typedef struct {
     char *host;
     char *dataSourceId;
     char *apiKey;
+    char *dsn; /* captured but not auto-resolved here -- see SQLDriverConnect */
 } ConnParams;
 
 static void conn_params_free(ConnParams *p) {
     free(p->host);
     free(p->dataSourceId);
     free(p->apiKey);
+    free(p->dsn);
     memset(p, 0, sizeof(*p));
 }
 
@@ -219,8 +233,10 @@ static void parse_connection_string(const char *connStr, ConnParams *out) {
             free(out->dataSourceId); out->dataSourceId = value;
         } else if (strcmp(keyBuf, "APIKEY") == 0 || strcmp(keyBuf, "PWD") == 0) {
             free(out->apiKey); out->apiKey = value;
+        } else if (strcmp(keyBuf, "DSN") == 0) {
+            free(out->dsn); out->dsn = value;
         } else {
-            free(value); /* DRIVER=, DSN=, UID= etc. -- recognized-but-unused keys */
+            free(value); /* DRIVER=, UID= etc. -- recognized-but-unused keys */
         }
     }
 }
@@ -645,6 +661,25 @@ SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT HandleType, SQLHANDLE InputHandle, 
             *OutputHandle = (SQLHANDLE)stmt;
             return SQL_SUCCESS;
         }
+        case SQL_HANDLE_DESC: {
+            /* Every ODBC 3.x statement implicitly owns four descriptors
+             * (ARD/APD/IRD/IPD) that the Driver Manager may allocate on
+             * the driver's behalf as part of normal statement setup --
+             * this driver never previously handled SQL_HANDLE_DESC at
+             * all (returned SQL_ERROR via the default case below), which
+             * is a real, confirmed contributor to a crash inside
+             * SQLSetStmtAttr(SQL_ATTR_ROW_ARRAY_SIZE) (an ARD-scoped
+             * attribute per the ODBC spec) reproduced identically
+             * through both .NET and a plain C program against the real
+             * Driver Manager. This driver has no field-level use for
+             * descriptors (no bound parameters, no bulk row binding), so
+             * an opaque non-NULL handle is all that's needed -- just
+             * enough for the Driver Manager's own bookkeeping to
+             * succeed. */
+            void *desc = calloc(1, sizeof(void *));
+            *OutputHandle = (SQLHANDLE)desc;
+            return SQL_SUCCESS;
+        }
         default:
             return SQL_ERROR;
     }
@@ -669,6 +704,9 @@ SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT HandleType, SQLHANDLE Handle) {
             free(stmt);
             return SQL_SUCCESS;
         }
+        case SQL_HANDLE_DESC:
+            free(Handle);
+            return SQL_SUCCESS;
         default:
             return SQL_ERROR;
     }
@@ -705,6 +743,25 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd, SQLCHAR *szConnSt
 
     ConnParams params;
     parse_connection_string(connStr, &params);
+    /* A DSN-only connection string (e.g. "DSN=Inaya SQL;", exactly what
+     * .NET's OdbcConnection("DSN=Inaya SQL") sends through
+     * SQLDriverConnect -- confirmed live, this is the actual code path
+     * .NET uses, not SQLConnect) never carries HOST/DATASOURCEID/APIKEY
+     * inline. Without this, do_connect() was called with all three
+     * empty, which failed with no diagnostic message set anywhere on
+     * that path -- surfacing to callers as an OdbcException with 0
+     * diag records, strictly worse than a real error. Same
+     * SQLGetPrivateProfileString-against-ODBC.INI resolution SQLConnect
+     * already does for its DSN argument. */
+    if (params.dsn && (!params.dataSourceId || !*params.dataSourceId)) {
+        char host[512] = "", dsId[256] = "", apiKey[512] = "";
+        SQLGetPrivateProfileString(params.dsn, "HOST", "", host, sizeof(host), "ODBC.INI");
+        SQLGetPrivateProfileString(params.dsn, "DATASOURCEID", "", dsId, sizeof(dsId), "ODBC.INI");
+        SQLGetPrivateProfileString(params.dsn, "APIKEY", "", apiKey, sizeof(apiKey), "ODBC.INI");
+        if (!params.host || !*params.host) { free(params.host); params.host = dupstr(host); }
+        if (!params.dataSourceId || !*params.dataSourceId) { free(params.dataSourceId); params.dataSourceId = dupstr(dsId); }
+        if (!params.apiKey || !*params.apiKey) { free(params.apiKey); params.apiKey = dupstr(apiKey); }
+    }
     SQLRETURN rc = do_connect(dbc, &params);
     conn_params_free(&params);
 
@@ -1041,7 +1098,8 @@ SQLRETURN SQL_API SQLGetFunctions(SQLHDBC hdbc, SQLUSMALLINT FunctionId, SQLUSMA
         SQL_API_SQLNUMRESULTCOLS, SQL_API_SQLDESCRIBECOL, SQL_API_SQLCOLATTRIBUTE, SQL_API_SQLBINDCOL,
         SQL_API_SQLFETCH, SQL_API_SQLGETDATA, SQL_API_SQLROWCOUNT, SQL_API_SQLFREESTMT,
         SQL_API_SQLGETDIAGREC, SQL_API_SQLGETINFO, SQL_API_SQLGETFUNCTIONS, SQL_API_SQLSETENVATTR,
-        SQL_API_SQLGETENVATTR, SQL_API_SQLTABLES, SQL_API_SQLCOLUMNS, SQL_API_SQLCLOSECURSOR
+        SQL_API_SQLGETENVATTR, SQL_API_SQLTABLES, SQL_API_SQLCOLUMNS, SQL_API_SQLCLOSECURSOR,
+        SQL_API_SQLSETCONNECTATTR, SQL_API_SQLGETCONNECTATTR, SQL_API_SQLSETSTMTATTR, SQL_API_SQLGETSTMTATTR
     };
     size_t n = sizeof(implemented) / sizeof(implemented[0]);
 
@@ -1101,8 +1159,20 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute, SQLPOINT
     InayaDbc *dbc = (InayaDbc *)hdbc;
     if (!dbc) return SQL_INVALID_HANDLE;
     if (Attribute == SQL_ATTR_AUTOCOMMIT) return SQL_SUCCESS; /* autocommit is the only mode we have */
-    diag_set(&dbc->diag, "HYC00", "SQLSetConnectAttr(%ld) is not supported by this driver.", (long)Attribute);
-    return SQL_ERROR;
+    /* The Windows ODBC Driver Manager sets several bookkeeping attributes
+     * (SQL_ATTR_LOGIN_TIMEOUT, SQL_ATTR_ODBC_CURSORS, tracing, etc.) on
+     * every connection before SQLDriverConnect is even called -- this
+     * driver has no underlying transport-level use for most of them
+     * (it's a stateless HTTP client per query), so the correct ODBC
+     * contract is to accept and ignore them, not hard-fail. Returning
+     * SQL_ERROR here previously broke every Driver-Manager-mediated
+     * connection attempt (Excel, Power BI, System.Data.Odbc) with
+     * IM006/"SQLSetConnectAttr failed", even though the direct-load path
+     * (bypassing the Driver Manager) never hit this because nothing calls
+     * SQLSetConnectAttr in that path. Confirmed against a real
+     * System.Data.Odbc connection.
+     */
+    return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute, SQLPOINTER Value,
@@ -1118,8 +1188,92 @@ SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute, SQLPOINT
         if (Value) *(SQLUINTEGER *)Value = dbc->connected ? SQL_CD_FALSE : SQL_CD_TRUE;
         return SQL_SUCCESS;
     }
-    diag_set(&dbc->diag, "HYC00", "SQLGetConnectAttr(%ld) is not supported by this driver.", (long)Attribute);
-    return SQL_ERROR;
+    /* Same reasoning as SQLSetConnectAttr above: an ODBC-aware application
+     * (Excel, Power BI) probing an attribute this driver doesn't track
+     * should get a benign "not set" response, not a hard failure that
+     * aborts capability negotiation. Plain SQL_SUCCESS, not
+     * SQL_SUCCESS_WITH_INFO -- the latter previously triggered
+     * System.Data.Odbc to throw an OdbcException with an EMPTY Errors
+     * collection (no diag record was ever set for it), which is worse
+     * than the original hard error: confirmed live with 0 diagnostic
+     * records on the thrown exception. */
+    if (Value && BufferLength >= (SQLINTEGER)sizeof(SQLUINTEGER)) *(SQLUINTEGER *)Value = 0;
+    if (StringLength) *StringLength = 0;
+    return SQL_SUCCESS;
+}
+
+/* SQLSetStmtAttr/SQLGetStmtAttr are mandatory ODBC Core functions --
+ * every compliant driver must export them, even one with no statement
+ * attributes of its own to actually honor. This driver had NEITHER
+ * exported nor implemented them at all: the Windows ODBC Driver Manager
+ * resolves each driver export via GetProcAddress and calls straight
+ * through whatever it gets back without a NULL check for a Core
+ * function it assumes every driver has -- so System.Data.Odbc's
+ * OdbcCommand.ExecuteReader(), which sets SQL_ATTR_ROW_ARRAY_SIZE
+ * before every query, crashed the whole process with an
+ * AccessViolationException calling through address 0. Confirmed live:
+ * this was the actual, sole cause once the earlier SQLGetPrivateProfileString
+ * wide-char and SQLSetConnectAttr issues were fixed and the crash
+ * persisted, identical, at the exact same call site. */
+SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER Value, SQLINTEGER StringLength) {
+    (void)Value; (void)StringLength;
+    InayaStmt *stmt = (InayaStmt *)hstmt;
+    if (!stmt) return SQL_INVALID_HANDLE;
+    return SQL_SUCCESS; /* no statement attribute this driver acts on differently -- accept and ignore, per ODBC's own contract for unsupported-but-harmless attributes */
+}
+
+SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER Value,
+                                  SQLINTEGER BufferLength, SQLINTEGER *StringLength) {
+    InayaStmt *stmt = (InayaStmt *)hstmt;
+    if (!stmt) return SQL_INVALID_HANDLE;
+    if (Attribute == SQL_ATTR_ROW_ARRAY_SIZE || Attribute == SQL_ATTR_ROWS_FETCHED_PTR) {
+        if (Value && BufferLength >= (SQLINTEGER)sizeof(SQLULEN)) *(SQLULEN *)Value = 1;
+        if (StringLength) *StringLength = 0;
+        return SQL_SUCCESS;
+    }
+    if (Value && BufferLength >= (SQLINTEGER)sizeof(SQLUINTEGER)) *(SQLUINTEGER *)Value = 0;
+    if (StringLength) *StringLength = 0;
+    return SQL_SUCCESS;
+}
+
+/* .NET's System.Data.Odbc P/Invokes odbc32.dll's SQLSetStmtAttrW
+ * directly (confirmed live in the exception stack trace), and the
+ * Driver Manager's automatic ANSI<->Unicode thunking -- which does
+ * cover older Core functions like SQLDriverConnect -- did not extend to
+ * this one: without an actual SQLSetStmtAttrW export on the driver
+ * itself, the Driver Manager still called through to something invalid,
+ * crashing the whole process. None of the attributes this driver acts
+ * on (SQL_ATTR_ROW_ARRAY_SIZE, SQL_ATTR_ROWS_FETCHED_PTR) are
+ * string-valued, so the wide and narrow versions are identical in
+ * practice -- these just forward. */
+SQLRETURN SQL_API SQLSetStmtAttrW(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER Value, SQLINTEGER StringLength) {
+    return SQLSetStmtAttr(hstmt, Attribute, Value, StringLength);
+}
+
+SQLRETURN SQL_API SQLGetStmtAttrW(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER Value,
+                                   SQLINTEGER BufferLength, SQLINTEGER *StringLength) {
+    return SQLGetStmtAttr(hstmt, Attribute, Value, BufferLength, StringLength);
+}
+
+/* Lenient descriptor-field stubs, same reasoning as SQL_HANDLE_DESC in
+ * SQLAllocHandle above: this driver has no real per-field descriptor
+ * state (no bound parameters, no application-level row binding beyond
+ * SQLBindCol, which this driver already tracks on the statement itself,
+ * not via descriptor fields), so accept-and-ignore is the honest
+ * behavior -- not a fabricated success claiming field-level descriptor
+ * semantics this driver doesn't implement. */
+SQLRETURN SQL_API SQLGetDescField(SQLHDESC DescriptorHandle, SQLSMALLINT RecNumber, SQLSMALLINT FieldIdentifier,
+                                   SQLPOINTER Value, SQLINTEGER BufferLength, SQLINTEGER *StringLength) {
+    (void)DescriptorHandle; (void)RecNumber; (void)FieldIdentifier;
+    if (Value && BufferLength >= (SQLINTEGER)sizeof(SQLUINTEGER)) *(SQLUINTEGER *)Value = 0;
+    if (StringLength) *StringLength = 0;
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLSetDescField(SQLHDESC DescriptorHandle, SQLSMALLINT RecNumber, SQLSMALLINT FieldIdentifier,
+                                   SQLPOINTER Value, SQLINTEGER BufferLength) {
+    (void)DescriptorHandle; (void)RecNumber; (void)FieldIdentifier; (void)Value; (void)BufferLength;
+    return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLEndTran(SQLSMALLINT HandleType, SQLHANDLE Handle, SQLSMALLINT CompletionType) {

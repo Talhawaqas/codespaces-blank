@@ -26,5 +26,11 @@ EXPORTS
     SQLColumns
     SQLSetConnectAttr
     SQLGetConnectAttr
+    SQLSetStmtAttr
+    SQLGetStmtAttr
+    SQLSetStmtAttrW
+    SQLGetStmtAttrW
+    SQLGetDescField
+    SQLSetDescField
     SQLEndTran
     SQLBindParameter

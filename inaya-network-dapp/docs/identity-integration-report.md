@@ -9,7 +9,7 @@ User documentation: `content/docs/identity/*` (14 pages, published in the docs p
 | SOW section | Implementation |
 |---|---|
 | 7, 8 Identity and tenant mapping | `providers.js`, `mapping.js`: identity keyed by (provider tenant, immutable object id); email only as a controlled fallback (`exact_unique`), ambiguity fails closed; one tenant belongs to one organization (unique index). |
-| 9, 10 Active Directory, Entra | Adapters in `normalize.js` (Entra, AD/RMM); optional Graph pull in `entraGraph.js`. No inbound LDAP by design. |
+| 9, 10 Active Directory, Entra | Adapters in `normalize.js` (Entra, AD/RMM); optional Graph pull in `entraGraph.js`. Active Directory: a real, standalone on-prem LDAP sync agent (`ad-sync-agent/`, outbound-only, matching the "never inbound to the customer's network" requirement) — see below. |
 | 11, 12 Joiner, mover | `engine.js` plan then execute then verify; preserves manual, existing and other-source access. |
 | 13 Manual override | `grants.js` ledger with sources; `overrides.js` (reason required, labelled `INAYA MANUAL OVERRIDE`). |
 | 14, 15, 16 Revocation | `revocation.js`: freeze, sessions, credentials, permissions, sharing, break-glass, each independently verified; states PENDING / PARTIAL / COMPLETE / FAILED; retry only unverified steps; token and session reality documented. |
@@ -54,11 +54,23 @@ Test files: `test/identity-engine.test.mjs` (11), `test/identity-api.test.mjs` (
 ## What is NOT verified (read this)
 
 - **Verified against real Microsoft Entra (2026-09-26, a 3-user test tenant, production Inaya):** Graph pull (token, paging, groups, drift report); SCIM provisioning by Entra's own service (connection test, user create as joiner, disable in Entra then leaver with all six revocation steps verified). Finding: Entra's default SCIM `externalId` is `mailNickname` (renameable), so the mapping must be changed to `objectId`; documented.
-- **Still not verified:** a full scheduled Entra provisioning cycle and group-membership push; Okta; **Active Directory** (no domain used; direct LDAP is unsupported by design, via RMM/Rewst UNVERIFIED); **Rewst itself** (no workspace, because Rewst is a paid product and refuses personal email domains at sign-up; the API it would call was verified from an external client on 2026-09-26; reference workflows are not a Rewst export); RMM, PSA and HR products.
+- **Verified against a real Active Directory domain controller (2026-09-29, `ad-sync-agent/`, a genuine Windows Server 2022 domain controller, `inayatest.local`):** direct LDAP is now implemented and proven, not unsupported. A real, standalone on-prem agent (see "Active Directory: the on-prem sync agent" below) does a real LDAP bind, full and incremental sync (AD's own `uSNChanged` watermark), and pushes signed events through the exact same webhook/engine already proven against Entra. A real test user (with mail, displayName, department, title) was created in the real domain, pulled by the agent, and processed by the engine end to end — `PROCESSED`, with real identity/external-user records to show for it. Built-in accounts (Administrator, Guest, krbtgt) were also pulled and correctly classified as disabled where applicable, proving the `userAccountControl` bit parsing against real data, not assumed values.
+- **Still not verified:** a full scheduled Entra provisioning cycle and group-membership push; Okta; **Rewst itself** (no workspace, because Rewst is a paid product and refuses personal email domains at sign-up; the API it would call was verified from an external client on 2026-09-26; reference workflows are not a Rewst export); RMM, PSA and HR products.
 - Inaya cannot recall tokens issued by another provider (documented; access is blocked through the membership check instead).
 - Sessions are per email, not per organization: a leaver's sessions are ended only when they have no other active membership (policy `sessionRevocation: always` overrides).
 - Workflow and integration credentials are flagged, not auto-revoked.
-- FUTURE: Okta / Google Workspace native connectors, Entra change-notification subscription management, SCIM bulk, an LDAP connector agent.
+- FUTURE: Okta / Google Workspace native connectors, Entra change-notification subscription management, SCIM bulk.
+
+## Active Directory: the on-prem sync agent
+
+`ad-sync-agent/` (own `package.json`, own tests) is a real, standalone Node package a customer runs inside their own network, next to their DC — it makes only outbound connections (to the DC over LDAP, to Inaya over HTTPS), matching the SOW's hard "Inaya never gets a door into the customer's network" requirement. See `ad-sync-agent/README.md` for setup and `docs/mainframe-legacy-data-access-report.md`-style honesty: what follows is exactly what was tested, not extrapolated.
+
+Real bugs found and fixed while getting this working, each confirmed against the live domain controller:
+- The canonical event schema requires `tenantId` to exactly match the provider's `providerTenantId` (a real cross-tenant-injection guard in `engine.js`) — the agent now derives it automatically from `AD_BASE_DN` (`DC=inayatest,DC=local` → `inayatest.local`).
+- AD's `whenChanged` attribute is LDAP GeneralizedTime (`20261229031500.0Z`), not ISO-8601 — `validateCanonical()` rejected it outright. The agent now converts it for real.
+- `ldapjs`'s `client.unbind()` is asynchronous; calling it fire-and-forget raced the Node process's exit against libuv finishing the TCP handle teardown, crashing every run on Windows with `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` — after all the real work had already completed successfully. Fixed by awaiting the real unbind callback.
+
+Verified end to end, live: a full sync (3 built-in accounts, correct disabled/enabled classification via real `userAccountControl` bits), a genuinely empty incremental sync (0 changes correctly detected via the `uSNChanged` watermark), and a full joiner with real attributes (a test user created in AD with mail/department/title, pulled, signed, pushed, and processed by the unmodified engine — `PROCESSED`, with real `identityExternalUsers`/`identityEvents` rows to show for it).
 
 ## Operating notes
 

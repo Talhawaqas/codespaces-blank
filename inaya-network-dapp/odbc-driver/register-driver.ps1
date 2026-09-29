@@ -21,7 +21,7 @@
   SQLInstallDriverEx/SQLConfigDataSource would, directly against the
   registry, then verify the registration by opening a real connection.
 
-.PARAMETER Host
+.PARAMETER ApiBaseUrl
   Base URL of the Inaya API, e.g. http://localhost:3000 or
   https://app.inaya.network
 
@@ -36,7 +36,11 @@
   The ODBC DSN name to create. Defaults to "Inaya SQL".
 #>
 param(
-    [string]$Host = "http://localhost:3000",
+    # Named ApiBaseUrl, not Host -- $Host is PowerShell's own read-only
+    # automatic variable (the console host); a parameter named -Host
+    # cannot bind and throws VariableNotWritable at the very first line
+    # of the script, before anything else runs.
+    [string]$ApiBaseUrl = "http://localhost:3000",
     [Parameter(Mandatory=$true)][string]$DataSourceId,
     [Parameter(Mandatory=$true)][string]$ApiKey,
     [string]$DsnName = "Inaya SQL"
@@ -69,7 +73,7 @@ Write-Host "Creating System DSN '$DsnName'"
 $dsnKey = "HKLM:\SOFTWARE\ODBC\ODBC.INI\$DsnName"
 New-Item -Path $dsnKey -Force | Out-Null
 Set-ItemProperty -Path $dsnKey -Name "Driver" -Value $dllPath
-Set-ItemProperty -Path $dsnKey -Name "HOST" -Value $Host
+Set-ItemProperty -Path $dsnKey -Name "HOST" -Value $ApiBaseUrl
 Set-ItemProperty -Path $dsnKey -Name "DATASOURCEID" -Value $DataSourceId
 Set-ItemProperty -Path $dsnKey -Name "APIKEY" -Value $ApiKey
 

@@ -1,0 +1,18 @@
+{
+  "name": "@inaya-network/ad-sync-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "On-prem agent that reaches OUT from a customer's own network to a real Active Directory domain controller over LDAP, and pushes signed canonical identity events to Inaya's existing identity webhook. Inaya never gets a door into the customer's network -- this agent only ever makes outbound connections, to the DC and to Inaya.",
+  "type": "module",
+  "main": "src/agent.js",
+  "bin": {
+    "inaya-ad-sync": "src/agent.js"
+  },
+  "scripts": {
+    "start": "node src/agent.js",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ldapjs": "^3.0.7"
+  }
+}

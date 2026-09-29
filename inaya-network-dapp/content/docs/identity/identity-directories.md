@@ -6,21 +6,27 @@ product: Business Workspace
 category: guide
 contentType: Product Guide
 audience: [it-admin, msp]
-status: beta
+status: live
 version: current
-tags: [active directory, ad, rmm, rewst, objectGUID, userAccountControl]
-lastVerifiedAt: "2026-09-26"
+tags: [active directory, ad, rmm, rewst, objectGUID, userAccountControl, ldap]
+lastVerifiedAt: "2026-09-29"
 relatedDocs: [identity-integration, identity-rewst, identity-lifecycle]
 ---
 
 ## The boundary
 
-**Inaya never connects to your domain controllers.** There is no inbound LDAP. Your side (an RMM script, a Rewst workflow, or a small connector) reads Active Directory and sends signed events to Inaya. **Status: UNVERIFIED** against a real domain; the adapter is tested with representative payloads only.
+**Inaya never connects to your domain controllers.** There is no inbound LDAP, ever. Your side reads Active Directory and sends signed events to Inaya — outbound only. **Status: Proven** — verified against a real Windows Server domain controller (real LDAP bind, full and incremental sync, a real joiner with real attributes processed end to end).
 
 ## Connect
 
-1. Identity & Access → Providers → kind **ad** (or **rmm**), external tenant id = your domain SID or forest name.
-2. Copy the signing secret. Sign each event with it (see [Webhooks](/docs/identity-security)).
+Two ways to send AD events, both ending at the same signed webhook:
+
+1. **Inaya's own sync agent** (`ad-sync-agent/`) — a small, real, open-source Node agent you run inside your own network next to your DC. It does the LDAP work for you: a real bind, `objectCategory=person` search excluding computer accounts, and AD's own `uSNChanged` watermark for real incremental sync after the first run. Point it at a read-only service account (never a domain admin) and it does the rest. See its `README.md` for setup.
+2. **Your own script, RMM, or Rewst workflow** — read AD yourself (however you already do it) and send the canonical event, or a payload with an `ad`/`user` object carrying the attributes below, signed the same way.
+
+Either way:
+1. Identity & Access → Providers → kind **ad** (or **rmm**), external tenant id = your domain's own DNS name (e.g. `contoso.local`) — this must exactly match the `tenantId` every event carries, or it's rejected.
+2. Copy the signing secret (shown once). Sign each event with it (see [Webhooks](/docs/identity-security)).
 
 ## What the AD adapter understands
 
