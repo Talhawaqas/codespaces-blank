@@ -9,7 +9,7 @@ export const companyProfile = {
     kicker: "CORPORATE PROFILE",
     title: "Inaya Network",
     subtitle: "Re-establishing absolute client-side data sovereignty — Web3 infrastructure and DePIN, built on BNB Chain.",
-    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · August 2026",
+    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · September 2026",
   },
   docId: "INAYA-PROFILE-2026-V2",
   sections: [

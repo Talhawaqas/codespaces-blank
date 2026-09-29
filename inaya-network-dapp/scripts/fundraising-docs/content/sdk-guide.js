@@ -2,13 +2,20 @@
 // public/documents/inaya-sdk-guide.pdf. Edit this file, then run
 // `node scripts/fundraising-docs/generate.mjs`. See README.md.
 //
-// (Updated 2026-08-24) @inaya-network/custody-sdk is now actually published
+// (Updated 2026-09-29) @inaya-network/custody-sdk is now actually published
 // to the public npm registry (both `beta` and `latest` tags point at
-// 1.0.5-beta) — the "private repo, git install only" installation section
-// below was accurate when this guide was first written but is not anymore,
-// so it's corrected here rather than left stale on a PDF the live dApp
-// links to. Also carries forward the earlier addition of a section on
-// node-daemon, the separate published-npm CLI for node operators.
+// 1.0.10-beta as of this update) — the "private repo, git install only"
+// installation section below was accurate when this guide was first written
+// but is not anymore, so it's corrected here rather than left stale on a PDF
+// the live dApp links to. Also carries forward the earlier addition of a
+// section on node-daemon, the separate published-npm CLI for node operators.
+//
+// This pass (2026-09-29) also added the API Quick Reference rows for eight
+// real, exported, tested modules that five prior releases (1.0.6 through
+// 1.0.10-beta) shipped but this guide never listed: TrustPlatform,
+// IdentityIntegration, Analytics, Backup, AppStore, ComplianceProofs,
+// Intent, Attestation, plus the standalone passkey backup/restore
+// functions. Every one has its own passing test file in custody-sdk/test/.
 
 export const sdkGuide = {
   cover: {
@@ -17,7 +24,7 @@ export const sdkGuide = {
     kicker: "SDK & INTEGRATION GUIDE",
     title: "Inaya Custody SDK",
     subtitle: "Client-side cryptographic sovereignty for distributed applications.",
-    docLine: "@inaya-network/custody-sdk · v1.0.5-beta · BNB Chain Testnet · August 2026",
+    docLine: "@inaya-network/custody-sdk · v1.0.10-beta · BNB Chain Testnet · September 2026",
   },
   docId: "INAYA-SDK-2026-V3",
   sections: [
@@ -43,7 +50,7 @@ export const sdkGuide = {
           items: [
             "Requirements: Node.js 18+, ethers v6 as a peer dependency.",
             "Two modes: browser (via InayaKernel.connectWallet()) or Node.js/server-side (pass a raw ethers.Wallet directly).",
-            "Published on the public npm registry — both the `beta` and `latest` dist-tags currently point at the same 1.0.5-beta release, so a plain install with no tag suffix works.",
+            "Published on the public npm registry — both the `beta` and `latest` dist-tags currently point at the same 1.0.10-beta release, so a plain install with no tag suffix works.",
           ],
         },
       ],
@@ -169,7 +176,9 @@ export const sdkGuide = {
             "login — encrypts a wallet key at rest locally (PBKDF2 + AES-GCM).",
             "register <capacityGB> — registers on InayaNodeRegistry on-chain, plus off-chain capacity bookkeeping.",
             "start — a 5-minute heartbeat loop reporting telemetry.",
+            "status — shows what the coordinator has recorded about this node: heartbeat recency, uptime score, daemon version/restarts, and threat-reporting reputation.",
             "report <indicator> — submits a signed threat observation to the Security Layer.",
+            "service install / service uninstall — installs or removes the daemon as a native background service (Windows Service / systemd / launchd).",
           ],
         },
         {
@@ -198,11 +207,25 @@ export const sdkGuide = {
             ["Payments.*", "No-wallet card checkout client."],
             ["Metadata.*", "Off-chain, signature-authenticated file mutations."],
             ["events / errors.*", "Shared event emitter / typed error classes."],
+            ["createPasskeyBackup / restorePasskeyBackup", "Export/restore a passkey-derived vault as an encrypted, portable backup file."],
+            ["TrustPlatform.{verifyAudit,getEvidence,checkPermission}", "Client for Inaya's public trust/evidence API — verify an org's own hash-linked evidence chain, pull a record's evidence trail, check a capability gate."],
+            ["IdentityIntegration.{signWebhook,sendEvent}", "Client for Inaya's Identity Integration webhook API — sign and send a directory lifecycle event (joiner/mover/leaver) from your own AD/Entra/HR connector."],
+            ["ComplianceProofs.{proveAuthorizedAccess,verifyAuthorizedAccessProof}", "Real Schnorr/Fiat-Shamir zero-knowledge proof that a caller controls a key authorized for a given {policy, action, timestamp} — without revealing the key."],
+            ["Intent.{create,discoverRoutes,simulate,riskCheck,execute}", "Intent-based multi-chain transfer pipeline in front of the bridge SDK — validates, prices, risk-checks and executes a cross-chain transfer as one auditable unit."],
+            ["Attestation.{verify,evaluatePolicy}", "Verifies device/environment attestation evidence against a policy — software-simulated TEE today, honestly labeled non-hardware-backed."],
+            ["Analytics.getWalletStorageStats()", "Real per-wallet storage usage/cost statistics."],
+            ["Backup.{getBackupStatus,getBackupHealth,getRedundancyStatus,requestRecovery}", "Shard redundancy and recovery status for a stored file, plus a client to request recovery."],
+            ["AppStore.{submitListing,getListings,getMyListings}", "Client for the Web3 App Store — list and browse third-party applications built on Inaya."],
           ],
         },
         {
           type: "note",
           text: "Security note — passkeys and derived vault keys should never be transmitted off-device or logged. Store only the salt and resulting CIDs in application state.",
+        },
+        {
+          type: "note",
+          label: "Two more published packages, same monorepo.",
+          text: "@inaya-network/bridge-sdk (cross-chain $INAYA transfer and staking) and @inaya-network/react (InayaUploader / InayaFileBrowser / InayaConnect components) are both real, separately versioned npm packages alongside custody-sdk — out of scope for this guide, which covers custody-sdk specifically; ask your Inaya contact for their own reference material.",
         },
       ],
     },

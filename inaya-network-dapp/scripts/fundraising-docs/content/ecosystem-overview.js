@@ -665,13 +665,14 @@ export const ecosystemOverview = {
             "A real relational reference connector on Node's own node:sqlite: real connection, real metadata discovery, real SQL execution with joins and aggregates.",
             "A metadata and virtual-schema engine with versioned publishing — a re-import never silently overwrites what was already published.",
             "A SQL gateway with a real parser, authorization against exactly what has been published, row and timeout limits, and every query audited to the same trail every other Inaya feature uses.",
-            "A real, compiled Java JDBC driver and a real, compiled Windows ODBC driver, so any JDBC- or ODBC-aware tool can connect the same way it would to any other database.",
+            "A real, compiled Java JDBC driver and a real, compiled Windows ODBC driver, so any JDBC- or ODBC-aware tool can connect the same way it would to any other database — registration and connection through the actual Windows ODBC Driver Manager (the path Excel/Power BI use) are now proven, not just the driver in isolation.",
+            "A real RMS/OpenVMS connector over SSH + DCL, proven against a genuine VSI OpenVMS x86-64 instance (7/7 tests against the live system).",
           ],
         },
         {
           type: "note",
           label: "What was genuinely not built.",
-          text: "Adabas, VSAM, IMS, and RMS/OpenVMS connectors — no real vendor environment exists yet to validate them against, so none were built rather than mocked and called compatible. Write-back and federated cross-source joins are deliberately out of scope for this pass, matching the phased rollout every real data-virtualization product follows.",
+          text: "Adabas, VSAM and IMS connectors — Adabas has a real, healthy test environment running in Docker, but VSAM/IMS require a genuine z/OS environment, a much larger undertaking. The RMS/OpenVMS connector's fixed-format binary and indexed files aren't supported yet, pending a compiled OpenVMS-side reader. Write-back and federated cross-source joins are deliberately out of scope for this pass. ODBC query execution specifically through the Windows Driver Manager still crashes, isolated to a fault inside Microsoft's own odbc32.dll rather than this driver.",
         },
         {
           type: "note",
@@ -835,12 +836,13 @@ export const ecosystemOverview = {
             "Standard SCIM 2.0 (Users and Groups) endpoints, plus an optional Microsoft Graph directory pull.",
             "Six independently verified revocation steps on a leaver — freeze, sessions, credentials, permissions, sharing, break-glass — each with its own PENDING/PARTIAL/COMPLETE/FAILED state and retry.",
             "Managed-service-provider delegation with two-sided links, four delegated roles, and per-request re-verification.",
+            "A real, standalone on-prem Active Directory sync agent — outbound-only (LDAP to the customer's own domain controller, HTTPS to Inaya, never the reverse), feeding the same signed webhook and engine above.",
           ],
         },
         {
           type: "note",
           label: "What is proven, and what is not, stated plainly.",
-          text: "Proven against a REAL Microsoft Entra tenant: the Graph directory pull, and a SCIM connection test, joiner and leaver as sent by Entra's own provisioning service — including a leaver with all six revocation steps independently verified. Not yet verified: group-membership push from Entra, Rewst (a paid product, not available to test — Inaya works with any automation platform through its open API), Active Directory, Okta, and HR/PSA/RMM tools.",
+          text: "Proven against a REAL Microsoft Entra tenant: the Graph directory pull, and a SCIM connection test, joiner and leaver as sent by Entra's own provisioning service — including a leaver with all six revocation steps independently verified. Active Directory is now ALSO proven for real: a genuine Windows Server domain controller was stood up, a real test user created in it, and the new sync agent pulled and pushed her through the unmodified engine end to end. Not yet verified: group-membership push from Entra, Rewst (a paid product, not available to test — Inaya works with any automation platform through its open API), Okta, and HR/PSA/RMM tools.",
         },
         {
           type: "note",

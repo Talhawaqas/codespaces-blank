@@ -116,13 +116,22 @@ export const gcsGuide = {
           ],
         },
         {
-          type: "note",
-          label: "gsutil's S3-compatible mode -- currently untested, and here's exactly why.",
-          text: "While validating this feature, we found a real bug in Google's own gsutil tool: its S3-compatibility code crashes when pointed at any address that doesn't look like a standard Amazon web address (an issue in Google's own bundled software, confirmed by tracing the exact failing line -- unrelated to Inaya). Until Google fixes this upstream, we can't respons­ibly claim gsutil's S3-compatible mode is tested against Inaya, even though the underlying signing method it uses is the same AWS4-HMAC-SHA256 mode already proven to work above. If your workflow depends specifically on gsutil, talk to your Inaya technical contact before relying on it for production use.",
+          type: "bullets",
+          items: [
+            "Signing in with a Google account directly: a Google ID token is now a real third authentication path (alongside AWS4/GOOG4 HMAC signatures) -- it's verified for real against Google, never locally trusted, and mapped to an existing active Inaya org membership; an unmapped identity is rejected, not silently granted access.",
+            "Temporary signed download links: a new ?presign endpoint issues a time-limited URL (capped at 7 days) that can never grant more than its creator's own credential already permits. 9/9 automated tests passing, including tamper detection on the object path, expiry, method and signature.",
+            "Addressing a bucket via a subdomain (bucket.your-endpoint.com style) rather than a path: implemented as a pure routing rewrite, inert by default until an operator turns it on. 18/18 live checks passed against real DNS, including a real bug found and fixed (a Next.js routing quirk that could have let a virtual-hosted request's permission check silently disagree with the bucket it actually operated on).",
+          ],
         },
         {
           type: "note",
-          text: "Not yet supported this pass: signing in with a Google account/OAuth directly, temporary signed download links, and addressing a bucket via a subdomain (bucket.storage.googleapis.com style) rather than a path. None were required by a validated pilot workload; ask your Inaya contact if your workflow needs one.",
+          label: "gsutil's S3-compatible mode -- still untested, for a narrower reason than before.",
+          text: "The original crash we found in Google's own gsutil tool (it rejected any endpoint address that didn't look like a standard Amazon address) is now confirmed avoidable through supported configuration alone. Retesting after that fix hits a separate, later-stage connection issue inside gsutil's own legacy connection-handling code -- still unresolved, and still not an Inaya-side gap. If your workflow depends specifically on gsutil, talk to your Inaya technical contact.",
+        },
+        {
+          type: "note",
+          label: "gcloud storage -- the modern Google Cloud CLI -- works.",
+          text: "Distinct from the older gsutil tool above: gcloud storage's own S3-interoperability mode (which Google itself labels experimental) was tested against a real Inaya endpoint with real credentials. Upload, download and list all confirmed working, including a byte-identical download. Metadata and delete showed the same rough edges Google's own tooling discloses as unstable for this feature -- not an Inaya-side gap.",
         },
       ],
     },

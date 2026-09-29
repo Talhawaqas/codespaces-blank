@@ -33,7 +33,11 @@ const missing = [];
 function src(p) { const full = path.isAbsolute(p) ? p : path.join(APP, p); if (!existsSync(full)) { missing.push(p); return null; } return readFileSync(full, "utf8"); }
 function fromMd(p, opts = {}) { const t = src(p); if (!t) return []; return mdToBlocks(t, opts).blocks; }
 const lead = (what, why) => [{ type: "paragraphs", text: [`WHAT IT IS. ${what}`, `WHY USE IT. ${why}`] }];
-let counter = 47;
+// complete-feature-guide-content.js grew from 47 to 56 sections
+// (2026-09-29, nine real completed SOWs added) -- this counter must track
+// its actual current section count, or this script's own appended
+// sections collide/renumber incorrectly.
+let counter = 56;
 const entries = [];
 const PLACEHOLDERS = [];
 const R = (from, to) => { const token = `@@REF${PLACEHOLDERS.length}@@`; PLACEHOLDERS.push({ token, from, to }); return token; };
