@@ -73,8 +73,8 @@ function makeRealSqliteFixture(label) {
   return filePath;
 }
 
-test("connectorRegistry lists the relational reference connector, and only that connector, this pass", () => {
-  assert.deepEqual(listAllConnectorTypes(), ["relational"]);
+test("connectorRegistry lists the relational and rmsOpenVms connectors, and only those, this pass", () => {
+  assert.deepEqual(listAllConnectorTypes(), ["relational", "rmsOpenVms"]);
 });
 
 test("registerDataSource creates a source, stores its credential, and tests the connection for real", async () => {

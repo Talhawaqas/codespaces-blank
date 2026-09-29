@@ -59,14 +59,14 @@ export function isLegacyCredentialCryptoConfigured() {
 }
 
 // Which connection fields each connector type actually needs -- validated
-// against this, not a generic "credentials: object" blob. Only "relational"
-// (this pass's real, tested node:sqlite reference connector) has an entry;
-// adabas/vsam/ims/rms-openvms are deliberately absent -- adding a
-// PROVIDER_FIELDS entry for one of them is a real implementation claim,
-// not a placeholder to fill in speculatively. See
-// docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md.
+// against this, not a generic "credentials: object" blob. "relational"
+// and "rmsOpenVms" are real, implemented connectors; adabas/vsam/ims are
+// deliberately absent -- adding a PROVIDER_FIELDS entry for one of them
+// is a real implementation claim, not a placeholder to fill in
+// speculatively. See docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md.
 export const PROVIDER_FIELDS = {
   relational: ["filePath"],
+  rmsOpenVms: ["host", "username", "password", "filePath"],
 };
 
 function validateCredentialFields(connectorType, credentials) {

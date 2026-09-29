@@ -1,7 +1,7 @@
 # Mainframe & Legacy Data Access Virtualization — Completion Report
 
-Status: **LIVE** (relational connector, gateway, JDBC and ODBC drivers).
-Last verified: 2026-09-24.
+Status: **LIVE** (relational connector, RMS/OpenVMS connector, gateway, JDBC and ODBC drivers).
+Last verified: 2026-09-29.
 
 This report classifies every capability area from
 `Inaya_Mainframe_Legacy_Data_Access_Virtualization_SOW.md` per the SOW's
@@ -21,8 +21,8 @@ Phase 0 audit is at `docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md`.
 | REST API (`/api/public/v1/data-sources/**`) | ALREADY IMPLEMENTED (this SOW) |
 | JDBC driver | ALREADY IMPLEMENTED (this SOW) — compiled, 7/7 integration tests passing against a live server |
 | ODBC driver | ALREADY IMPLEMENTED (this SOW) — compiled, 19/19 direct-load tests passing against a live server; Driver-Manager registration is EXTERNAL DEPENDENCY (admin rights) |
-| Adabas connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — planned next (free Community Edition path exists) |
-| RMS/OpenVMS connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — planned next (free VSI community license path exists) |
+| Adabas connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — test environment (Adabas & Natural CE in Docker) is up and healthy; connector code not yet built |
+| RMS/OpenVMS connector | ALREADY IMPLEMENTED (this SOW) — `connectors/rmsOpenVms.js`, real SSH+DCL connector; 7/7 tests passing against a genuine VSI OpenVMS x86-64 V9.2-3 instance (real connect, real auth-failure detection, real FDL-derived metadata, real record reads for text-organized sequential files). Fixed-format binary/indexed files honestly report as needing a compiled OpenVMS-side reader, not implemented |
 | VSAM connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — future feature, deferred |
 | IMS connector | HARDWARE / CUSTOMER ENVIRONMENT REQUIRED — future feature, deferred |
 | Write-back (INSERT/UPDATE/DELETE) | NOT APPROPRIATE this pass — explicitly phase-gated by the SOW's own rollout (Section 17) |

@@ -22,18 +22,21 @@
 // -- the SQL gateway checks capabilities() before attempting an
 // operation, rather than assuming every connector supports everything.
 //
-// ONLY "relational" (connectors/relational.js, a real node:sqlite
-// reference implementation) is registered this pass. Adabas/VSAM/IMS/
-// RMS-OpenVMS adapters are NOT implemented -- no real environment exists
-// in this session to validate them against, and this codebase's own
-// discipline (established across every prior SOW this project has
-// shipped) is to never ship a mock as proof of compatibility. See
-// docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md.
+// "relational" (connectors/relational.js, a real node:sqlite reference
+// implementation) and "rmsOpenVms" (connectors/rmsOpenVms.js, a real
+// SSH+DCL connector validated against a genuine VSI OpenVMS x86-64
+// instance -- see docs/mainframe-legacy-data-access-report.md) are
+// registered. Adabas/VSAM/IMS adapters are still NOT implemented -- this
+// codebase's own discipline (established across every prior SOW this
+// project has shipped) is to never ship a mock as proof of compatibility.
+// See docs/MAINFRAME_DATA_ACCESS_CAPABILITY_AUDIT.md.
 
 import * as relational from "./connectors/relational.js";
+import * as rmsOpenVms from "./connectors/rmsOpenVms.js";
 
 export const CONNECTORS = {
   relational,
+  rmsOpenVms,
 };
 
 export function listAvailableConnectorTypes() {
