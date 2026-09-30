@@ -68,7 +68,14 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: "No BRIDGE_VALIDATOR_PRIVATE_KEY_* configured" }, { status: 500 });
   }
 
-  const pending = await getPendingTransfersWithMessage(50);
+  // Same class of bug as getValidatorWallets() above: a transient DB error here (outside the
+  // per-transfer try/catch below) previously crashed the whole cron with an opaque 500.
+  let pending;
+  try {
+    pending = await getPendingTransfersWithMessage(50);
+  } catch (err) {
+    return NextResponse.json({ success: false, error: `getPendingTransfersWithMessage failed: ${err.message}` }, { status: 500 });
+  }
   const results = [];
 
   for (const doc of pending) {
