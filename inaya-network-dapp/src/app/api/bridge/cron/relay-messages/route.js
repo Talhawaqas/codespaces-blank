@@ -18,13 +18,24 @@ const MESSENGER_ABI = [
   "function executeMessage(tuple(uint256 sourceChainId, bytes32 sourceContract, uint256 destChainId, bytes32 destContract, uint256 nonce, uint8 msgType, bytes payload) message, bytes[] signatures) external",
 ];
 
+// A malformed BRIDGE_VALIDATOR_PRIVATE_KEY_N (wrong length, missing 0x,
+// etc.) made `new ethers.Wallet(k)` throw synchronously here, outside
+// every try/catch in this route -- crashing the whole cron with an
+// opaque 500 instead of naming which key was bad. Confirmed live: the
+// route's own per-transfer try/catch never even runs when this throws.
 function getValidatorWallets() {
   const keys = [];
+  const badIndexes = [];
   for (let i = 1; i <= 9; i++) {
     const k = process.env[`BRIDGE_VALIDATOR_PRIVATE_KEY_${i}`];
-    if (k) keys.push(new ethers.Wallet(k));
+    if (!k) continue;
+    try {
+      keys.push(new ethers.Wallet(k));
+    } catch {
+      badIndexes.push(i);
+    }
   }
-  return keys;
+  return { keys, badIndexes };
 }
 
 function toStructArg(message) {
@@ -49,7 +60,10 @@ export async function GET(request) {
   }
 
   const threshold = Number(process.env.BRIDGE_VALIDATOR_THRESHOLD || 2);
-  const validators = getValidatorWallets();
+  const { keys: validators, badIndexes } = getValidatorWallets();
+  if (badIndexes.length > 0) {
+    return NextResponse.json({ success: false, error: `Malformed private key in BRIDGE_VALIDATOR_PRIVATE_KEY_${badIndexes.join(", BRIDGE_VALIDATOR_PRIVATE_KEY_")}` }, { status: 500 });
+  }
   if (validators.length === 0) {
     return NextResponse.json({ success: false, error: "No BRIDGE_VALIDATOR_PRIVATE_KEY_* configured" }, { status: 500 });
   }
