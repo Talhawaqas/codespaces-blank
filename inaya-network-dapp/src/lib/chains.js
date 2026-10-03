@@ -40,8 +40,8 @@ export const CHAINS = {
     hexChainId: "0xaa36a7",
     name: "Ethereum Sepolia",
     nativeCurrency: { name: "Sepolia ETH", symbol: "ETH", decimals: 18 },
-    rpcUrl: process.env.NEXT_PUBLIC_SEPOLIA_RPC || "https://rpc.sepolia.org",
-    serverRpcUrl: process.env.SEPOLIA_RPC || "https://rpc.sepolia.org",
+    rpcUrl: process.env.NEXT_PUBLIC_SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com",
+    serverRpcUrl: process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com",
     blockExplorerUrl: "https://sepolia.etherscan.io",
     contracts: {
       wrappedInaya: process.env.NEXT_PUBLIC_INAYA_BRIDGED_SEPOLIA_ADDRESS,

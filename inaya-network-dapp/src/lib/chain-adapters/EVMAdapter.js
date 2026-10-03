@@ -44,7 +44,10 @@ export class EVMAdapter extends ChainAdapter {
     // because the underlying retry loop was never actually cancelled,
     // only stopped being awaited). We already know the chain ID from the
     // registry, so there's nothing to detect.
-    this.#provider = new ethers.JsonRpcProvider(rpcUrl, numericChainId, { staticNetwork: true });
+    // batchMaxCount: 1 disables ethers' JSON-RPC batching. The indexer fires several eth_getLogs
+    // queries in one Promise.all, which ethers coalesces into a single batch request, and the
+    // public BSC Testnet and Hedera (Hashio) endpoints reject batched eth_getLogs outright.
+    this.#provider = new ethers.JsonRpcProvider(rpcUrl, numericChainId, { staticNetwork: true, batchMaxCount: 1 });
   }
 
   get provider() {
