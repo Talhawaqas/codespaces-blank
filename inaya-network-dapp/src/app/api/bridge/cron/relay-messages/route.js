@@ -136,5 +136,8 @@ export async function GET(request) {
     }
   }
 
+  // Per-transfer failures are caught above and only land in this response body, which Vercel does
+  // not retain -- log them so a transfer that never relays is visible in the function logs.
+  console.log("[relay-messages]", JSON.stringify({ pending: pending.length, threshold, validators: validators.length, results }));
   return NextResponse.json({ success: true, results });
 }
