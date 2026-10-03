@@ -75,7 +75,7 @@ jobs:
         run: find src-tauri/target/release/bundle -type f \( -name "*.AppImage" -o -name "*.deb" -o -name "*.sig" \)
 
       - name: Upload AppImage + .deb as downloadable artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: inaya-desktop-linux
           path: |
