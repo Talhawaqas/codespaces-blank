@@ -13,6 +13,12 @@ import { getChainCursor, setChainCursor, recordTransferInitiated, markTransferSt
 import { getAdapter } from "@/lib/chain-adapters";
 
 const MAX_BLOCKS_PER_RUN = 2000;
+// A chain with no cursor starts at block 0, and at MAX_BLOCKS_PER_RUN per run that is tens of
+// thousands of runs behind a real testnet head (BSC Testnet is past block 134,000,000), so the
+// indexer never reached a single real transfer. If the cursor is further behind than
+// MAX_LAG_BLOCKS, jump to INITIAL_LOOKBACK_BLOCKS behind the head instead.
+const MAX_LAG_BLOCKS = 150_000;
+const INITIAL_LOOKBACK_BLOCKS = 120_000;
 
 const MESSENGER_ABI = [
   "event MessageSent(bytes32 indexed messageId, tuple(uint256 sourceChainId, bytes32 sourceContract, uint256 destChainId, bytes32 destContract, uint256 nonce, uint8 msgType, bytes payload) message)",
@@ -34,8 +40,10 @@ export async function GET(request) {
       const provider = adapter.provider;
       const messenger = new ethers.Contract(chain.contracts.messenger, MESSENGER_ABI, provider);
 
-      const fromBlock = (await getChainCursor(chainId)) + 1;
+      const cursor = await getChainCursor(chainId);
       const latest = await provider.getBlockNumber();
+      const start = latest - cursor > MAX_LAG_BLOCKS ? Math.max(0, latest - INITIAL_LOOKBACK_BLOCKS) : cursor;
+      const fromBlock = start + 1;
       const toBlock = Math.min(latest, fromBlock + MAX_BLOCKS_PER_RUN);
       if (toBlock < fromBlock) {
         results.push({ chainId: Number(chainId), scanned: 0 });
@@ -93,5 +101,8 @@ export async function GET(request) {
     }
   }
 
+  // Per-chain errors are caught above and only land in this response body, which Vercel does not
+  // retain -- log them so a chain that stops indexing is visible in the function logs.
+  console.log("[index-events]", JSON.stringify(results));
   return NextResponse.json({ success: true, results });
 }
