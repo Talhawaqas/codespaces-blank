@@ -135,10 +135,20 @@ they never mutate anything.
 behavior (system-wide sweep) is unchanged; tests pass their fixture `orgId` so they never touch
 another org's genuinely-due request on a shared database.
 
-## Phase 16 (Testnet / Staging Deployment) — not yet done
+## Phase 16 (Testnet / Staging Deployment) — staged proof done, live-UI walkthrough still open
 
-This pass shipped the code and its test coverage. A real end-to-end staging run — a live user
-confirming a real proposal for each of the 9 domains, watching the 36h delay, and inspecting the
-resulting audit-chain entries in the new self-service Audit Trail tab — has not yet been performed
-and should happen before this is called fully done, matching this repo's "every deployed piece gets
-a real proof" convention established by the Backup & Recovery and multichain bridge work.
+`test/ai-actions-all-domains.test.mjs` (11/11, real Atlas, real code, no stubs) drives all nine domains
+(task, expense, document, employee, invoice, leave request, purchase order, purchase request, deal) through
+the whole life of an AI-proposed action: the AI tool proposes it through the same dispatcher
+`/api/ai/business-chat` uses; it waits `PENDING_APPROVAL` and changes nothing in the business record; the
+server-side gate (`resolveCanApprove`) lets an owner approve; approval sets `unlockAt` to 36 hours out
+(asserted as the real code computed it); the execution sweep does nothing before the unlock; after the
+unlock it runs the real `transitionX()`, the record changes, and a second sweep never re-runs it. Every
+step (`AI_ACTION_PROPOSED`, `AI_ACTION_APPROVED`, `AI_ACTION_EXECUTED`) is in the audit chain, attributed to
+the right person, and `verifyChainIntegrity` still passes.
+
+**What is simulated:** the 36 real hours. The test moves `unlockAt` into the past on the approved request,
+which is the exact field the sweep compares to `now`. Nothing else is simulated.
+
+**Still not done:** a human clicking through the Business Workspace UI for each domain and reading the
+Audit Trail tab. The data the tab renders is verified above; the click-through itself has not been run.
