@@ -71,7 +71,7 @@
     "eslint-config-next": "^15.5.26",
     "jest": "^30.5.1",
     "jest-environment-jsdom": "^30.5.1",
-    "puppeteer-core": "^25.5.0"
+    "puppeteer-core": "^25.12.0"
   },
   "overrides": {
     "protobufjs": "^7.6.6",
