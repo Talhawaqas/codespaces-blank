@@ -187,5 +187,7 @@ export async function resolveS3Credential(accessKeyId) {
   if (!cred) return null;
   const secretAccessKey = unwrapPassphrase(cred.wrappedSecretAccessKey);
   const owner = cred.ownerType === "org" ? { type: "org", orgId: cred.ownerId } : { type: "wallet", walletAddress: cred.ownerId };
-  return { owner, accessKeyId, secretAccessKey };
+  // `scope` MUST be returned: every caller enforces the credential's grant via checkScope(credential, ...). Before this,
+  // it was dropped here, so every bucket/prefix/operation/expiry-scoped credential behaved as full owner access.
+  return { owner, accessKeyId, secretAccessKey, scope: cred.scope || null };
 }
