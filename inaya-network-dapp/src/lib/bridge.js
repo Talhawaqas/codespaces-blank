@@ -27,6 +27,7 @@ export async function ensureBridgeIndexes() {
   const { transfers, chainCursors } = await getBridgeCollections();
   await transfers.createIndex({ status: 1, createdAt: -1 });
   await transfers.createIndex({ userAddress: 1, createdAt: -1 });
+  await transfers.createIndex({ recipientAddress: 1, createdAt: -1 });
   await chainCursors.createIndex({ chainId: 1 }, { unique: true });
   indexesEnsured = true;
 }
@@ -49,6 +50,24 @@ export function validateTransferInput({ sourceChainId, destChainId, amount, user
 }
 
 export { hashBridgeMessage, verifyMessageOnSource } from "./bridgeMessage.js";
+
+const MSG_TOKEN_MINT = 0; // contracts/bridge/InayaBridgeTypes.sol -- payload = abi.encode(bytes32 recipient, uint256 amount)
+
+/** For a dest-bound token message (transfer completion, unstake payout, claim payout) returns the
+ *  recipient address and amount encoded in its payload; null for any other message type or a payload
+ *  that doesn't decode. Only call with a message already confirmed to hash to its id. */
+export function decodeTokenPayload(message) {
+  try {
+    if (!message || Number(message.msgType) !== MSG_TOKEN_MINT) return null;
+    const [recipient, amount] = ethers.AbiCoder.defaultAbiCoder().decode(["bytes32", "uint256"], message.payload);
+    const hex = String(recipient);
+    // an EVM recipient is a left-padded 20-byte address; anything else (e.g. a Solana key) isn't an address
+    if (!/^0x0{24}[0-9a-fA-F]{40}$/.test(hex)) return { recipientAddress: null, amount: amount.toString() };
+    return { recipientAddress: "0x" + hex.slice(26).toLowerCase(), amount: amount.toString() };
+  } catch {
+    return null;
+  }
+}
 import { hashBridgeMessage } from "./bridgeMessage.js";
 
 /**
@@ -65,10 +84,14 @@ export async function recordTransferInitiated(doc, { verified = false } = {}) {
   const now = new Date();
   let message = doc.message || null;
   if (message) { try { if (hashBridgeMessage(message).toLowerCase() !== String(doc.messageHash).toLowerCase()) message = null; } catch { message = null; } }
+  // The message is only kept when it hashes to its id, so what its payload says is trustworthy: use it
+  // for the recipient (history by wallet) and, for a backfilled transfer that has no amount, the real amount.
+  const decoded = message ? decodeTokenPayload(message) : null;
   const insert = {
     sourceChainId: doc.sourceChainId,
     destChainId: doc.destChainId,
-    amount: doc.amount,
+    amount: (!doc.amount || doc.amount === "0") && decoded ? decoded.amount : doc.amount,
+    recipientAddress: decoded?.recipientAddress || null,
     userAddress: normalizeAddress(doc.userAddress),
     sourceTxHash: doc.sourceTxHash,
     kind: doc.kind || "transfer", // 'transfer' | 'stake' | 'unstake' | 'claim' | 'backfill'
@@ -108,10 +131,13 @@ export async function getPendingTransfersWithMessage(limit = 50) {
     .toArray();
 }
 
+/** Transfers a wallet sent OR is the recipient of (a transfer picked up from the chain by the indexer
+ *  has no known sender, but its recipient is decoded from the message). */
 export async function getTransfersForUser(userAddress, limit = 50) {
   const { transfers } = await getBridgeCollections();
+  const address = normalizeAddress(userAddress);
   return transfers
-    .find({ userAddress: normalizeAddress(userAddress) })
+    .find({ $or: [{ userAddress: address }, { recipientAddress: address }] })
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();

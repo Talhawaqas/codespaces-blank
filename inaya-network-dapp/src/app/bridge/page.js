@@ -60,6 +60,7 @@ export default function BridgePage() {
   const [messageHash, setMessageHash] = useState(null);
   const [transferStatus, setTransferStatus] = useState(null);
   const [position, setPosition] = useState(null);
+  const [history, setHistory] = useState([]);
 
   // Interop SOW state -- deliberately separate from the native-bridge state above, since it's
   // a different system (src/lib/interopTransfers.js's interop_transfers, not bridge_transfers).
@@ -158,6 +159,39 @@ export default function BridgePage() {
     if (account) refreshPosition(account);
   }, [account, refreshPosition]);
 
+  const refreshHistory = useCallback(async (address) => {
+    if (!address) return;
+    try {
+      const res = await fetch(`/api/bridge/transfers/${address}`);
+      const data = await res.json();
+      if (data.success) setHistory(data.transfers);
+    } catch { /* the list is informational; the next poll retries */ }
+  }, []);
+
+  // Load the wallet's transfers, and keep refreshing while any is still in flight.
+  useEffect(() => {
+    if (!account) return;
+    refreshHistory(account);
+    const interval = setInterval(() => refreshHistory(account), 15000);
+    return () => clearInterval(interval);
+  }, [account, refreshHistory]);
+
+  // Adds the bridged $INAYA token to the wallet on the destination chain -- the tokens arrive as the
+  // wrapped token there, which a wallet doesn't show until the token contract is added.
+  async function addTokenToWallet(chainId) {
+    try {
+      const chain = getChain(chainId);
+      if (!chain?.contracts?.wrappedInaya) throw new Error("No bridged token is configured for that network.");
+      await ensureChain(window.ethereum, chainId);
+      await window.ethereum.request({
+        method: "wallet_watchAsset",
+        params: { type: "ERC20", options: { address: chain.contracts.wrappedInaya, symbol: "INAYA", decimals: 18 } },
+      });
+    } catch (err) {
+      setStatus(`Could not add the token: ${err.message}`);
+    }
+  }
+
   // Poll transfer status once we have a messageHash.
   useEffect(() => {
     if (!messageHash) return;
@@ -195,6 +229,10 @@ export default function BridgePage() {
 
       if (isHome) {
         const token = new ethers.Contract(source.contracts.inayaToken, ERC20_ABI, signer);
+        const balance = await token.balanceOf(account);
+        if (balance < amountWei + TRANSFER_FEE) {
+          throw new Error(`Your balance is ${ethers.formatUnits(balance, 18)} INAYA. Bridging ${amount} needs ${ethers.formatUnits(amountWei + TRANSFER_FEE, 18)} (the amount plus a ${ethers.formatUnits(TRANSFER_FEE, 18)} INAYA transfer fee).`);
+        }
         setStatus("Approving...");
         await (await token.approve(source.contracts.bridge, amountWei + TRANSFER_FEE)).wait();
         const bridge = new ethers.Contract(source.contracts.bridge, BRIDGE_HOME_ABI, signer);
@@ -237,6 +275,7 @@ export default function BridgePage() {
       });
 
       setMessageHash(hash);
+      refreshHistory(account);
       setStatus(`Submitted. Tracking messageHash ${hash.slice(0, 10)}...`);
     } catch (err) {
       setStatus(`Error: ${err.message}`);
@@ -293,9 +332,49 @@ export default function BridgePage() {
             <strong>Status:</strong> {transferStatus.status}
             {transferStatus.destTxHash && <div>Dest tx: {transferStatus.destTxHash}</div>}
             {transferStatus.failureReason && <div>Reason: {transferStatus.failureReason}</div>}
+            {getChain(destChainId)?.contracts?.wrappedInaya && (
+              <div style={{ marginTop: 8 }}>
+                Your $INAYA arrives as a bridged token on {getChain(destChainId).name}, not on {getChain(sourceChainId)?.name}.{" "}
+                <button onClick={() => addTokenToWallet(destChainId)}>Add $INAYA to my wallet on {getChain(destChainId).name}</button>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {account && (
+        <div style={{ marginTop: 24 }}>
+          <h2>Your recent transfers</h2>
+          {history.length === 0 ? (
+            <p style={{ color: "#666" }}>No bridge transfers found for this wallet yet.</p>
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+              {history.map((t) => {
+                const dest = getChain(t.destChainId);
+                const explorer = dest?.blockExplorerUrl;
+                return (
+                  <li key={t.messageHash} style={{ border: "1px solid #ddd", padding: 10, fontSize: 14 }}>
+                    <strong>{ethers.formatUnits(t.amount || "0", 18)} INAYA</strong>{" "}
+                    {getChain(t.sourceChainId)?.name || `Chain ${t.sourceChainId}`} → {dest?.name || `Chain ${t.destChainId}`}{" "}
+                    <span style={{ color: t.status === "completed" ? "#0a7" : t.status === "failed" ? "#c33" : "#a60" }}>
+                      {t.status === "completed" ? "Delivered" : t.status === "failed" ? "Failed" : "In progress"}
+                    </span>
+                    <div style={{ color: "#666", fontSize: 12 }}>{new Date(t.createdAt).toLocaleString()}</div>
+                    {t.status !== "completed" && t.status !== "failed" && (
+                      <div style={{ fontSize: 12 }}>Locked on {getChain(t.sourceChainId)?.name}; delivery to {dest?.name} is automatic and usually takes a few minutes.</div>
+                    )}
+                    {t.destTxHash && explorer && <div style={{ fontSize: 12 }}><a href={`${explorer}/tx/${t.destTxHash}`} target="_blank" rel="noreferrer">View delivery transaction</a></div>}
+                    {t.failureReason && <div style={{ fontSize: 12, color: "#c33" }}>{t.failureReason}</div>}
+                    {t.status === "completed" && dest?.contracts?.wrappedInaya && (
+                      <div style={{ marginTop: 4 }}><button onClick={() => addTokenToWallet(t.destChainId)}>Add $INAYA to my wallet on {dest.name}</button></div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       <SolanaBridgePanel evmRecipientDefault={account} />
 

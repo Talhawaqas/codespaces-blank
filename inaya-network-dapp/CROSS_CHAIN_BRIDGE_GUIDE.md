@@ -66,7 +66,8 @@ chain has to implement to be added.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/api/bridge/supported-chains` | public | Chain config list |
+| GET | `/api/bridge/supported-chains` | public | Chain config list. Only chains whose bridge + messenger contracts are configured in this environment are returned (an unconfigured chain would lock funds, see §8) |
+| GET | `/api/bridge/transfers/[address]` | public | A wallet's 20 most recent transfers (sent by it or addressed to it) with delivery status |
 | GET | `/api/bridge/transfer-status/[id]` | public | `id` = messageHash |
 | GET | `/api/bridge/staking-position/[address]` | public | Live ledger read + origin breakdown |
 | POST | `/api/bridge/initiate-transfer` | public | Register a pending transfer after client-side lock/burn tx |
@@ -76,6 +77,10 @@ chain has to implement to be added.
 | GET | `/api/bridge/cron/relay-messages` | `CRON_SECRET` | Collects validator signatures, submits `executeMessage` |
 
 ## 5. Env Vars
+
+A chain is only offered, indexed and relayed to when its `NEXT_PUBLIC_MESSENGER_<CHAIN>_ADDRESS` and
+`NEXT_PUBLIC_BRIDGE_<CHAIN>_ADDRESS` are set in the environment that is running (Vercel Production for the
+live site). Deploying the contracts is not enough on its own.
 
 Per-EVM-chain (Sepolia/Amoy/Fuji): `NEXT_PUBLIC_<CHAIN>_RPC` / `<CHAIN>_RPC`,
 `NEXT_PUBLIC_BRIDGE_<CHAIN>_ADDRESS`, `NEXT_PUBLIC_INAYA_BRIDGED_<CHAIN>_ADDRESS`,
@@ -114,3 +119,47 @@ Also used by Hardhat deploy scripts (not dApp env): `VALIDATOR_ADDRESS_1..3`, `S
 
 Emergency pause is scoped to cross-chain paths only — local same-chain staking/transfer never
 stops.
+
+## 8. Operations & Troubleshooting
+
+### How a transfer is delivered
+
+1. The user's wallet calls `bridgeOut` on the home chain (tokens locked) and the `MessageSent` event is emitted.
+2. `index-events` (every 5 min) reads `MessageSent` from each configured chain's Messenger and records the transfer
+   with its full message. The web page also registers it directly through `/initiate-transfer`, but **the mobile app
+   does not, so the indexer is what makes mobile transfers visible**. The recipient and real amount are decoded from the
+   message payload, which is how a wallet finds transfers addressed to it.
+3. `relay-messages` (every 5 min) has each configured validator key sign the message hash and, once the threshold is
+   reached, the relayer wallet submits `executeMessage` on the destination chain.
+4. `index-events` later sees `MessageExecuted` on the destination and marks the transfer `completed`.
+
+### Things that must be true in production
+
+- **Validator keys.** `BRIDGE_VALIDATOR_PRIVATE_KEY_1..N` must be the keys of the addresses registered in the on-chain
+  `InayaValidatorSet` (`getValidators()`), at least `threshold` of them. Freshly generated keys are rejected on-chain:
+  the cron still returns 200 and nothing is delivered. Check with `getValidators()` before changing them.
+- **Relayer gas.** `RELAYER_PRIVATE_KEY`'s wallet needs native gas on every destination chain it relays to. On Hedera the
+  account must already exist (it is created by its first inbound transfer, which costs ~660k gas).
+- **Server RPCs.** The public BSC data-seed nodes reject `eth_getLogs`, so set `BSC_TESTNET_RPC` (production uses
+  `https://bsc-testnet-rpc.publicnode.com`). `rpc.sepolia.org` is dead; the default is now publicnode. The shared EVM
+  adapter disables JSON-RPC batching because BSC and Hedera (Hashio) reject batched `eth_getLogs`.
+- **Indexer cursor.** A chain with no cursor, or one more than 150,000 blocks behind, jumps to 120,000 blocks behind the
+  head instead of walking up from block 1. BSC Testnet produces about 115,000 blocks per day, so that is roughly one day
+  of history; a transfer older than that has to be registered through `/initiate-transfer`.
+
+### Reading the cron logs
+
+Both crons log one line per run, readable with `vercel logs --environment production --json` (match the `message` field):
+
+- `[index-events] [{"chainId":97,"scanned":2001,"sent":0,...}]`. An `error` entry names the failing chain and RPC reason.
+- `[relay-messages] {"pending":N,"threshold":2,"validators":3,"results":[...]}`. `pending: 0` while a transfer is stuck means
+  the indexer has not recorded it; a `results` entry with `error` or `no_dest_messenger_configured` says why relay failed.
+
+### Symptom checklist
+
+| Symptom | Likely cause |
+|---|---|
+| App says success but the user's balance is unchanged | The transaction reverted (the app now checks). Most often balance < amount + 0.0001 fee |
+| Tokens left the wallet, never arrive | Destination chain missing from production env, or validator keys not in the on-chain set |
+| `pending: 0` but a transfer exists on chain | Indexer not reaching it: check the `[index-events]` line for that chain |
+| Arrived, but the wallet shows nothing | The tokens are the bridged token on the destination chain. Add its address to the wallet (the web page has a button) |
