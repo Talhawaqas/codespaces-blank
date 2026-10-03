@@ -346,9 +346,16 @@ function Invoices({ call, go }) {
   return (
     <>
       <h1>Invoices</h1>
+      {d?.summary && Object.keys(d.summary.byCurrency).length > 0 && (
+        <div className="pt-card" role="status" aria-label="Balance summary">
+          {Object.entries(d.summary.byCurrency).map(([cur, v]) => (
+            <p key={cur}><strong>{cur} {v.outstanding}</strong> due across {v.openInvoices} open invoice{v.openInvoices === 1 ? "" : "s"}{v.overdue > 0 && <> · <span className="pt-tag bad">{cur} {v.overdue} past due</span></>}</p>
+          ))}
+        </div>
+      )}
       <div className="pt-card">{!d ? <p className="pt-muted">Loading…</p> : !d.invoices.length ? <p className="pt-muted">{d.note || "No invoices found on your account."}</p> : (
-        <div className="pt-table-wrap"><table className="pt-table"><caption className="pt-muted" style={{ textAlign: "left" }}>Read-only. Invoices come from the company's billing records.</caption><thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th><span className="pt-muted">Help</span></th></tr></thead>
-          <tbody>{d.invoices.map((i) => <tr key={i.id}><td>{i.invoiceNumber}</td><td>{new Date(i.issueDate).toLocaleDateString()}</td><td>{new Date(i.dueDate).toLocaleDateString()}</td><td>{i.currency} {i.total}</td><td><span className={`pt-tag ${i.status === "PAID" ? "ok" : i.status === "OVERDUE" ? "bad" : ""}`}>{i.status.toLowerCase()}</span></td><td><button className="pt-link" onClick={() => go("new", { subject: `Question about invoice ${i.invoiceNumber}`, invoice: i.invoiceNumber, description: "" })}>Ask about this invoice</button></td></tr>)}</tbody></table></div>)}</div>
+        <div className="pt-table-wrap"><table className="pt-table"><caption className="pt-muted" style={{ textAlign: "left" }}>Read-only. Invoices come from the company's billing records.</caption><thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th>Amount</th><th>Balance due</th><th>Status</th><th><span className="pt-muted">Help</span></th></tr></thead>
+          <tbody>{d.invoices.map((i) => <tr key={i.id}><td>{i.invoiceNumber}</td><td>{new Date(i.issueDate).toLocaleDateString()}</td><td>{new Date(i.dueDate).toLocaleDateString()}</td><td>{i.currency} {i.total}</td><td>{i.outstanding > 0 ? <>{i.currency} {i.outstanding}{i.daysOverdue > 0 && <span className="pt-tag bad" style={{ marginLeft: 6 }}>{i.daysOverdue}d overdue</span>}</> : <span className="pt-muted">None</span>}</td><td><span className={`pt-tag ${i.status === "PAID" ? "ok" : i.status === "OVERDUE" ? "bad" : ""}`}>{i.status.toLowerCase()}</span></td><td><button className="pt-link" onClick={() => go("new", { subject: `Question about invoice ${i.invoiceNumber}`, invoice: i.invoiceNumber, description: "" })}>Ask about this invoice</button></td></tr>)}</tbody></table></div>)}</div>
     </>
   );
 }

@@ -108,7 +108,7 @@ export async function handlePortal({ method, path, query, body, req, org, ip }) 
 
   if (a === "invoices" && G) {
     if (!user.contactId) return { invoices: [], note: "Your account is not linked to a billing contact." };
-    return { invoices: await C.invoicesForContact(orgId, user.contactId, 50) };
+    { const invoices = await C.invoicesForContact(orgId, user.contactId, 50); return { invoices, summary: C.summarizeInvoices(invoices) }; }
   }
 
   if (a === "ideas" && settings.ideas.enabled) {

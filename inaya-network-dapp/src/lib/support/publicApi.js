@@ -103,7 +103,8 @@ export async function handlePublic({ method, path, query, body, req }) {
   }
   if (a === "invoices" && G) {
     const cu = await customerFor(ctx, query.customerEmail); if (cu.error) return cu;
-    return { invoices: cu.contact ? await C.invoicesForContact(orgId, cu.contact._id, Math.min(100, Number(query.limit) || 25)) : [] };
+    const invoices = cu.contact ? await C.invoicesForContact(orgId, cu.contact._id, Math.min(100, Number(query.limit) || 25)) : [];
+    return { invoices, summary: C.summarizeInvoices(invoices) };
   }
   if (a === "customers" && b === "me" && G) {
     if (!ctx.customerEmail) return fail("customers/me needs a customer-bound key.", 400);

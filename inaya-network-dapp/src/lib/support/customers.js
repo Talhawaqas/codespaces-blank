@@ -78,6 +78,37 @@ export async function invoicesForContact(orgId, contactId, limit = 25) {
   return rows.map(invoiceView);
 }
 
-export function invoiceView(i) {
-  return { id: String(i._id), invoiceNumber: i.invoiceNumber, issueDate: i.issueDate, dueDate: i.dueDate, status: i.status, currency: i.currency, total: i.total, subtotal: i.subtotal };
+const DAY_MS = 86_400_000;
+
+/** Finance records an invoice as settled or not as a whole (there is no partial-payment ledger), so an
+ *  invoice is either fully outstanding (sent or overdue) or owes nothing (paid, cancelled, draft). */
+export function outstandingOf(i) {
+  return i.status === "SENT" || i.status === "OVERDUE" ? Math.max(0, Number(i.total) || 0) : 0;
+}
+
+export function daysOverdue(i, now = Date.now()) {
+  if (outstandingOf(i) <= 0 || !i.dueDate) return 0;
+  const due = new Date(i.dueDate).getTime();
+  return Number.isFinite(due) && now > due ? Math.floor((now - due) / DAY_MS) : 0;
+}
+
+export function invoiceView(i, now = Date.now()) {
+  return {
+    id: String(i._id), invoiceNumber: i.invoiceNumber, issueDate: i.issueDate, dueDate: i.dueDate, status: i.status, currency: i.currency, total: i.total, subtotal: i.subtotal,
+    outstanding: outstandingOf(i), daysOverdue: daysOverdue(i, now),
+  };
+}
+
+/** Per-currency totals for a customer's invoice list: what is owed now, and how much of it is past due. */
+export function summarizeInvoices(views) {
+  const byCurrency = {};
+  for (const v of views) {
+    if (v.outstanding <= 0) continue;
+    const c = (byCurrency[v.currency || "?"] ||= { outstanding: 0, overdue: 0, openInvoices: 0 });
+    c.outstanding += v.outstanding;
+    c.openInvoices += 1;
+    if (v.daysOverdue > 0 || v.status === "OVERDUE") c.overdue += v.outstanding;
+  }
+  for (const c of Object.values(byCurrency)) { c.outstanding = Math.round(c.outstanding * 100) / 100; c.overdue = Math.round(c.overdue * 100) / 100; }
+  return { byCurrency };
 }
