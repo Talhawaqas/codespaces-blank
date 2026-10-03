@@ -10,9 +10,10 @@
 import { NextResponse } from "next/server";
 import { markOverdueInvoices } from "../../../../lib/invoice-workflow.js";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 

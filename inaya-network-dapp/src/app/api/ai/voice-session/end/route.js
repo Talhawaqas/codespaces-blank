@@ -40,7 +40,7 @@ export async function POST(req) {
       endReason: endReason || "user_stopped",
     });
 
-    trackConcurrentSession(`${orgId}:${auth.session.email}`, sessionId, "close");
+    await trackConcurrentSession(`${orgId}:${auth.session.email}`, sessionId, "close");
 
     return NextResponse.json({ ended: true });
   } catch (err) {

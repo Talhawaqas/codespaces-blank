@@ -12,6 +12,7 @@ import { CHAINS } from "@/lib/chains";
 import { getChainCursor, setChainCursor, recordTransferInitiated, markTransferStatus } from "@/lib/bridge";
 import { getAdapter } from "@/lib/chain-adapters";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 const MAX_BLOCKS_PER_RUN = 2000;
 // A chain with no cursor starts at block 0, and at MAX_BLOCKS_PER_RUN per run that is tens of
 // thousands of runs behind a real testnet head (BSC Testnet is past block 134,000,000), so the
@@ -28,7 +29,7 @@ const MESSENGER_ABI = [
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 

@@ -33,7 +33,7 @@ export async function POST(req) {
     }
 
     const rateLimitKey = `${orgId}:${auth.session.email}`;
-    const rateLimit = checkRateLimit(rateLimitKey, "session_start");
+    const rateLimit = await checkRateLimit(rateLimitKey, "session_start");
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: "Too many voice sessions started recently -- please wait a moment and try again." }, { status: 429 });
     }
@@ -47,7 +47,7 @@ export async function POST(req) {
     const recordId = await logVoiceSessionStart({ orgId, email: auth.session.email, model: result.model });
     const sessionId = recordId.toString();
 
-    const concurrency = trackConcurrentSession(rateLimitKey, sessionId, "open");
+    const concurrency = await trackConcurrentSession(rateLimitKey, sessionId, "open");
     if (!concurrency.allowed) {
       // A real token was minted and a session row started before we knew
       // the concurrency cap was already hit -- close it out immediately

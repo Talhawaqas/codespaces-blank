@@ -31,6 +31,7 @@ import {
   groqCompleteStream,
   isGroqConfigured,
 } from '@/lib/groqFallback';
+import { slidingWindowCheck } from '@/lib/rateLimit';
 
 // ============================================================
 // RAG grounding instructions
@@ -41,12 +42,11 @@ const DOCS_BASE_INSTRUCTION = `You are the official docs assistant for Inaya Net
 If the retrieved material doesn't contain enough information to answer, say plainly that this isn't in Inaya's indexed documentation yet — do not guess, and do not fall back on general knowledge about blockchain/crypto projects to fill the gap. For a genuinely unanswerable question, route the person onward: general product questions → support@inayanetwork.com; bugs/technical issues → support@inayanetwork.com; partnerships → partners@inayanetwork.com; investor/fundraising questions → investors@inayanetwork.com. Live/real-time on-chain figures (exact current balance, today's live APY) should point the user to the relevant dApp tab rather than guessing a number, even if a nearby figure appears in the retrieved material.`;
 
 // ============================================================
-// Rate limiter — in-memory sliding window, per IP
+// Rate limiter — shared Mongo-backed sliding window, per IP
 // ============================================================
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 12;
-const requestLog = new Map();
 
 // ============================================================
 // Fraud & Abuse Protection Layer
@@ -91,25 +91,11 @@ function rateLimitForAction(action) {
   return RATE_LIMIT_MAX_REQUESTS;
 }
 
-function isRateLimited(ip, maxRequests) {
-  const now = Date.now();
-
-  const timestamps = (requestLog.get(ip) || []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
-  );
-
-  timestamps.push(now);
-  requestLog.set(ip, timestamps);
-
-  if (requestLog.size > 5000) {
-    for (const [key, times] of requestLog.entries()) {
-      if (times.every((t) => now - t > RATE_LIMIT_WINDOW_MS)) {
-        requestLog.delete(key);
-      }
-    }
-  }
-
-  return timestamps.length > maxRequests;
+async function isRateLimited(ip, maxRequests) {
+  // Shared Mongo-backed window (rate_limit_hits) so the limit holds across serverless instances.
+  // Rejected attempts still count, same as the earlier in-memory limiter.
+  const result = await slidingWindowCheck({ action: "docs-bot", key: ip, max: maxRequests, windowMs: RATE_LIMIT_WINDOW_MS, countRejected: true });
+  return !result.allowed;
 }
 
 function getClientIp(req) {
@@ -337,7 +323,7 @@ export async function POST(req) {
       );
     }
 
-    if (isRateLimited(clientIp, effectiveLimit)) {
+    if (await isRateLimited(clientIp, effectiveLimit)) {
       return Response.json(
         {
           error:

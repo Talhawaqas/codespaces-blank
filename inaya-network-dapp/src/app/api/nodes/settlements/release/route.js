@@ -22,6 +22,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 const NODE_REGISTRY_ADDRESS =
   process.env.NEXT_PUBLIC_NODE_REGISTRY_ADDRESS || "0xd12a38e8564d19797B19cF8F80b54DB09B3FD881";
 const RPC_URL = process.env.BSC_TESTNET_RPC || "https://data-seed-prebsc-1-s1.binance.org:8545";
@@ -39,7 +40,7 @@ const REGISTRY_ABI = [
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.RELAYER_PRIVATE_KEY) {

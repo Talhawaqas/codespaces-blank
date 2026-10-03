@@ -14,6 +14,7 @@ import { CHAINS } from "@/lib/chains";
 import { getPendingTransfersWithMessage, recordValidatorSignature, getSignaturesFor, markTransferStatus, recordTransferInitiated, verifyMessageOnSource, hashBridgeMessage } from "@/lib/bridge";
 import { getAdapter } from "@/lib/chain-adapters";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 const MESSENGER_ABI = [
   "function executeMessage(tuple(uint256 sourceChainId, bytes32 sourceContract, uint256 destChainId, bytes32 destContract, uint256 nonce, uint8 msgType, bytes payload) message, bytes[] signatures) external",
 ];
@@ -52,7 +53,7 @@ function toStructArg(message) {
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.RELAYER_PRIVATE_KEY) {

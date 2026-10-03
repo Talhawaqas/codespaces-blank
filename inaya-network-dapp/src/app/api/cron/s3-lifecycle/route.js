@@ -12,16 +12,20 @@
 
 import { NextResponse } from "next/server";
 import { runLifecycleEnforcement } from "../../../../lib/s3-compat/store.js";
+import { sweepPendingPurges } from "../../../../lib/s3-compat/purge.js";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const result = await runLifecycleEnforcement({});
-    return NextResponse.json({ success: true, ...result });
+    // Retry any provider cleanup that failed when an object was deleted (see s3-compat/purge.js).
+    const purges = await sweepPendingPurges({});
+    return NextResponse.json({ success: true, ...result, purges });
   } catch (err) {
     console.error("cron/s3-lifecycle failed:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

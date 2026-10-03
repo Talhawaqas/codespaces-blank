@@ -30,7 +30,7 @@ export async function POST(req) {
     const org = await orgs.findOne({ _id: toObjectId(orgId) });
     if (!org) return NextResponse.json({ error: "Company not found." }, { status: 404 });
 
-    const rateLimit = checkRateLimit(`${orgId}:${auth.session.email}`, "tool_call");
+    const rateLimit = await checkRateLimit(`${orgId}:${auth.session.email}`, "tool_call");
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: "Too many voice requests right now -- please slow down." }, { status: 429 });
     }

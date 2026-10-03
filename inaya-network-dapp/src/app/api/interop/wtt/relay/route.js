@@ -24,6 +24,7 @@ import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getPendingInteropTransfers, markInteropTransferStatus, INTEROP_TRANSFER_STATUS } from "@/lib/interopTransfers";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 async function fetchVaaByTxHash(txHash) {
   const res = await fetch(`https://api.testnet.wormholescan.io/api/v1/operations?txHash=${txHash}`);
   if (!res.ok) throw new Error(`Wormholescan API error: ${res.status}`);
@@ -56,7 +57,7 @@ const PROVEN_ROUTES = {
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.RELAYER_PRIVATE_KEY) {

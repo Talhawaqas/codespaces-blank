@@ -38,6 +38,30 @@ export async function checkRateLimit({ action, key, max, windowMs = DEFAULT_WIND
   }
 }
 
+/** Non-throwing sliding-window check for callers that need to shape their own response (a 429
+ *  with Retry-After, a soft block, etc.). Inserts this attempt first and counts afterwards, so two
+ *  concurrent requests can't both slip under the limit. By default a rejected attempt is removed
+ *  again (it doesn't extend the caller's lockout); pass countRejected: true to keep it, matching
+ *  checkRateLimit()'s "a rejected attempt still counts" behaviour. */
+export async function slidingWindowCheck({ action, key, max, windowMs = DEFAULT_WINDOW_MS, countRejected = false }) {
+  const { db } = await connectToDatabase();
+  const collection = db.collection("rate_limit_hits");
+  const now = Date.now();
+  const since = new Date(now - windowMs);
+
+  const { insertedId } = await collection.insertOne({ action, key, createdAt: new Date(now) });
+  // Rank this attempt among the window's attempts by insertion order (ObjectIds ascend), instead
+  // of counting everything: in a concurrent burst each request then sees a distinct rank, so
+  // exactly `max` are admitted rather than all of them (or none) seeing the same total.
+  const count = await collection.countDocuments({ action, key, createdAt: { $gte: since }, _id: { $lte: insertedId } });
+  if (count <= max) return { allowed: true, count };
+
+  const oldest = await collection.find({ action, key, createdAt: { $gte: since } }).sort({ createdAt: 1 }).limit(1).next();
+  if (!countRejected) await collection.deleteOne({ _id: insertedId });
+  const retryAfterMs = oldest ? Math.max(1, oldest.createdAt.getTime() + windowMs - now) : windowMs;
+  return { allowed: false, count, retryAfterMs };
+}
+
 /** Best-effort caller IP from standard proxy headers. On a normal Vercel deployment,
  *  x-forwarded-for is set by Vercel itself and client-supplied values are explicitly rejected
  *  (per Vercel's own docs: "we ... overwrite the X-Forwarded-For header and do not forward

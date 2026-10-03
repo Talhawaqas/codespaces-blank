@@ -11,12 +11,13 @@ import { NextResponse } from "next/server";
 import { ensureOrgIndexes } from "../../../../lib/orgs.js";
 import { runNasWorker } from "../../../../lib/nas/runner.js";
 
+import { isAuthorizedCron } from "@/lib/cronAuth";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(authHeader)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   try {
