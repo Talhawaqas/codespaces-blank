@@ -11,6 +11,10 @@ function esc(s) {
 
 const AZURE_ERROR_STATUS = {
   AuthenticationFailed: 403,
+  AuthorizationFailure: 403,
+  AuthorizationPermissionMismatch: 403,
+  AuthorizationResourceTypeMismatch: 403,
+  AuthorizationServiceMismatch: 403,
   ContainerNotFound: 404,
   BlobNotFound: 404,
   ContainerAlreadyExists: 409,

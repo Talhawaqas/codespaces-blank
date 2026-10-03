@@ -34,6 +34,8 @@ import { logOrgActivity } from "../org-activity-log.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
 
+import { purgeObjectStorage } from "./purge.js";
+import { emitObjectEvent } from "./notifications.js";
 function getOrgS3Passphrase(orgId) {
   return getOwnerS3Passphrase({ type: "org", orgId });
 }
@@ -270,7 +272,7 @@ function bufferToFile(buffer, { key, contentType }) {
 /** Real encrypt -> shard -> pin -> register pipeline. Returns the inserted
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
-export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride }) {
+export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride, notifyEventName = "s3:ObjectCreated:Put" }) {
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
   const { orgDocuments } = await getOrgCollections();
@@ -355,11 +357,13 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // behavior is used instead: the prior object is genuinely replaced
   // (soft-deleted here, matching this layer's existing, disclosed
   // soft-delete convention for DELETE).
+  let replacedDoc = null; // unversioned overwrite: the old bytes are unreachable now, purged below
   if (existing) {
     if (versioningEnabled) {
       await orgDocuments.updateOne({ _id: existing._id }, { $set: { isLatest: false } });
     } else {
       await orgDocuments.updateOne({ _id: existing._id }, { $set: { deletedAt: now } });
+      replacedDoc = existing;
     }
   }
 
@@ -418,6 +422,8 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     ),
   ]);
 
+  if (replacedDoc) await purgeObjectStorage(replacedDoc);
+
   await logOrgActivity({
     orgId,
     recordType: "s3_object",
@@ -429,6 +435,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     metadata: { bucket, key, versionId: doc.versionId },
   });
 
+  await emitObjectEvent({ orgId, bucket, key, eventName: notifyEventName, eventKey: String(documentId), size: doc.sizeBytes, etag: doc.etag, versionId: doc.versionId, actorEmail });
   return doc;
 }
 
@@ -497,6 +504,7 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
       orgId, recordType: "s3_object", recordId: current._id, actorEmail: actorEmail || "s3-compat", action: "DELETE_MARKER_CREATED",
       previousState: { bucket, key }, newState: null, metadata: { bucket, key, versionId: current.versionId },
     });
+    await emitObjectEvent({ orgId, bucket, key, eventName: "s3:ObjectRemoved:DeleteMarkerCreated", eventKey: String(current._id), versionId: current.versionId, actorEmail });
     return { deleted: true, deleteMarker: true };
   }
 
@@ -514,6 +522,10 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
     newState: null,
     metadata: { bucket, key, versionId: doc.versionId },
   });
+  // Reaching here means the version itself is gone for good (unversioned bucket, or an explicit
+  // versionId) -- the versioned plain-DELETE delete-marker case returned above.
+  await purgeObjectStorage(doc);
+  await emitObjectEvent({ orgId, bucket, key, eventName: "s3:ObjectRemoved:Delete", eventKey: String(doc._id), versionId: doc.versionId, actorEmail });
   return { deleted: true };
 }
 
@@ -966,6 +978,8 @@ export async function runLifecycleEnforcement({ limit = 500 } = {}) {
         orgId: policy.orgId.toString(), recordType: "s3_object", recordId: doc._id, actorEmail: "s3-lifecycle-policy", action: "LIFECYCLE_EXPIRED",
         previousState: { bucket: policy.bucket, key: doc.filename }, newState: null, metadata: { bucket: policy.bucket, key: doc.filename, versionId: doc.versionId },
       });
+      if (bucketDoc.versioningStatus !== "Enabled") await purgeObjectStorage(doc);
+      await emitObjectEvent({ orgId: policy.orgId.toString(), bucket: policy.bucket, key: doc.filename, eventName: "s3:LifecycleExpiration:Delete", eventKey: String(doc._id), versionId: doc.versionId, actorEmail: "s3-lifecycle-policy" });
       expired += 1;
     }
   }
@@ -1052,7 +1066,7 @@ async function completeMultipartUploadOnce({ db, orgId, uploadId, upload, actorE
   if (parts.length === 0) throw new Error("Cannot complete a multipart upload with zero parts.");
 
   const fullBuffer = Buffer.concat(parts.map((p) => Buffer.from(p.dataBase64, "base64")));
-  const doc = await putS3Object({ orgId, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType, actorEmail, etagOverride: multipartEtag(parts.map((p) => p.etag)) });
+  const doc = await putS3Object({ orgId, bucket: upload.bucket, key: upload.key, bodyBuffer: fullBuffer, contentType: upload.contentType, actorEmail, etagOverride: multipartEtag(parts.map((p) => p.etag)), notifyEventName: "s3:ObjectCreated:CompleteMultipartUpload" });
 
   await db.collection("s3_multipart_parts").deleteMany({ uploadId });
   return doc; // the upload record itself stays (marked completed) so a retried Complete request gets the same answer
@@ -1097,7 +1111,7 @@ export async function commitAzureBlockList({ orgId, bucket, key, blockIds, conte
   // staging order -- this is the real Azure semantic (Put Block List's
   // order is authoritative for the committed blob's byte layout).
   const fullBuffer = Buffer.concat(blockIds.map((id) => Buffer.from(byId.get(id).dataBase64, "base64")));
-  const doc = await putS3Object({ orgId, bucket, key, bodyBuffer: fullBuffer, contentType, actorEmail });
+  const doc = await putS3Object({ orgId, bucket, key, bodyBuffer: fullBuffer, contentType, actorEmail, notifyEventName: "s3:ObjectCreated:CompleteMultipartUpload" });
   await db.collection("s3_azure_blocks").deleteMany({ orgId: toObjectId(orgId), bucket, key });
   return doc;
 }

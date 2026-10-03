@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import ConfirmButton from "./ConfirmButton";
+import S3ManagementPanels from "./S3ManagementPanels";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -207,6 +208,7 @@ export default function S3CompatView({ orgId }) {
       </div>
 
       <BucketsPanel orgId={orgId} />
+      <S3ManagementPanels orgId={orgId} />
     </div>
   );
 }

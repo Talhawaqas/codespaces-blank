@@ -13,7 +13,7 @@ import { authenticateS3Request, S3AuthError } from "../../../../../lib/s3-compat
 import * as orgStore from "../../../../../lib/s3-compat/store.js";
 import * as walletStore from "../../../../../lib/s3-compat/walletStore.js";
 import { s3Error, xmlResponse, initiateMultipartUploadXml, completeMultipartUploadXml, parseCompleteMultipartBody } from "../../../../../lib/s3-compat/xml.js";
-import { createSignedUrl } from "../../../../../lib/s3-compat/signedUrl.js";
+import { createSignedUrl, clientFacingPresignedUrl } from "../../../../../lib/s3-compat/signedUrl.js";
 import { resolveS3Credential } from "../../../../../lib/s3-compat/credentials.js";
 import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
 
@@ -215,7 +215,7 @@ export async function GET(req, { params }) {
       }
       const expiresInSeconds = Number(url.searchParams.get("expiresIn")) || 3600;
       const qs = createSignedUrl({ accessKeyId, secretAccessKey: credential.secretAccessKey, method: "GET", bucket: params.bucket, key, expiresInSeconds });
-      const signedUrl = `${url.origin}${url.pathname}?${qs}`;
+      const signedUrl = clientFacingPresignedUrl({ headers: req.headers, url, bucket: params.bucket, key, queryString: qs });
       if (owner.type === "org") {
         const bucketDoc = await store.getS3Bucket({ orgId: owner.orgId, bucket: params.bucket });
         if (bucketDoc) {

@@ -276,6 +276,53 @@ export async function replicateShard({ fileHash, shardId, content, primaryProvid
   return { fileHash, shardId, replicas: results, healthState };
 }
 
+/** Removes an asset's bytes from every provider that holds a replica (primary pin included, via
+ *  `extraRefs`) and then forgets its replica/state records. Safe to call for an S3-compat object
+ *  because its fileHash is salted with the document's own _id, so no other document shares these
+ *  provider refs. Records are only deleted when every unpin succeeded: if a provider is down the
+ *  records stay so a later sweep (see s3-compat/purge.js) can retry instead of leaking the bytes. */
+export async function purgeAssetReplicas(fileHash, { extraRefs = [] } = {}) {
+  const { replicas, state } = await getCollections();
+  const docs = await replicas.find({ fileHash }).toArray();
+  const targets = new Map();
+  for (const d of docs) if (d.provider && d.providerRef) targets.set(`${d.provider}:${d.providerRef}`, { provider: d.provider, providerRef: d.providerRef });
+  for (const r of extraRefs) if (r?.provider && r?.providerRef) targets.set(`${r.provider}:${r.providerRef}`, r);
+
+  let unpinned = 0;
+  let failed = 0;
+  for (const t of targets.values()) {
+    try {
+      await getProvider(t.provider).unpin(t.providerRef);
+      unpinned += 1;
+    } catch (err) {
+      failed += 1;
+      console.error(`backupEngine.purgeAssetReplicas: unpin failed for ${t.provider}/${t.providerRef}:`, err.message);
+    }
+  }
+  if (failed === 0) {
+    await replicas.deleteMany({ fileHash });
+    await state.deleteOne({ fileHash });
+  }
+  return { unpinned, failed };
+}
+
+/** File hashes of wallet-flow uploads (0x-prefixed bytes32, the form InayaCustody and the proof registry
+ *  use) that have replicas. S3-compat objects are keyed by a bare hex hash and never have a registered
+ *  Merkle root, so they are excluded. */
+export async function listWalletStyleFileHashes() {
+  const { replicas } = await getCollections();
+  return replicas.distinct("fileHash", { fileHash: { $regex: /^0x[0-9a-fA-F]{64}$/ } });
+}
+
+/** Provider references of every retrievable replica of each shard, healthiest first. Read-only; used
+ *  by the proof-of-storage spot-checker to fetch the shards of an asset it is auditing. */
+export async function getShardReplicaRefs(fileHash) {
+  const [alpha, beta] = await Promise.all([loadShardReplicaDocs(fileHash, "alpha"), loadShardReplicaDocs(fileHash, "beta")]);
+  const refs = (docs) =>
+    docs.filter(isReplicaRetrievable).sort((a, b) => (a.consecutiveFailures || 0) - (b.consecutiveFailures || 0)).map((d) => ({ provider: d.provider, providerRef: d.providerRef }));
+  return { alpha: refs(alpha), beta: refs(beta) };
+}
+
 /** Full status detail for one asset -- backs getBackupStatus/getRedundancyStatus. */
 export async function getBackupStatus(fileHash) {
   const { state } = await getCollections();

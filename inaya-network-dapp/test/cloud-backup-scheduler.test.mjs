@@ -63,6 +63,8 @@ before(async () => {
 });
 
 after(async () => {
+  // SQA R-6: free the provider storage this test org still holds before its rows are removed.
+  { const { purgeOrgObjects } = await import("../src/lib/s3-compat/purge.js"); for (const id of cleanup.orgIds) await purgeOrgObjects(id).catch(() => {}); }
   await Promise.all([
     collections.orgs.deleteMany({ _id: { $in: cleanup.orgIds } }),
     collections.orgDocuments.deleteMany({ orgId: { $in: cleanup.orgIds } }),

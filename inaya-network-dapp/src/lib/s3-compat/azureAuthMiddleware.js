@@ -11,6 +11,8 @@
 
 import { resolveS3Credential, checkScope } from "./credentials.js";
 import { verifySharedKeyRequest } from "./azureAuth.js";
+import { hasSas, sasAccountHint, verifySas, authorizeSasRequest, SAS_ACCOUNT_PARAM } from "./azureSas.js";
+import { getClientIp } from "../rateLimit.js";
 import { verifyConnection as verifyMicrosoftConnection } from "../integrationProviders/microsoft.js";
 import { getOrgCollections, normalizeEmail } from "../orgs.js";
 
@@ -74,9 +76,38 @@ function deriveRequestTarget(url) {
   return { container, blob };
 }
 
+/** Shared Access Signature auth (AzCopy, SDK clients holding only a SAS URL). The signature is verified with the
+ *  credential named by the inaya-account parameter, the request is checked against the SAS's own permissions, and
+ *  then against that credential's stored scope exactly like a Shared Key request -- a SAS can only ever be as
+ *  powerful as the credential that signed it. */
+async function authenticateViaSas(req, url) {
+  const account = sasAccountHint(url);
+  if (!account) {
+    throw new AzureAuthError("AuthenticationFailed", `A SAS URL for this endpoint must include ${SAS_ACCOUNT_PARAM}=<access key id> so the server knows which key signed it.`, 403);
+  }
+  const credential = await resolveS3Credential(account);
+  if (!credential) throw new AzureAuthError("AuthenticationFailed", "The specified account name does not exist or its credential has been revoked.", 403);
+
+  const proto = (req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0].trim();
+  const verified = verifySas({ url, accountName: credential.accessKeyId, accountKeyBase64: toValidBase64Key(credential.secretAccessKey), clientIp: getClientIp(req), isHttps: proto === "https" });
+  if (!verified.ok) throw new AzureAuthError(verified.code, verified.reason, 403);
+  const allowed = authorizeSasRequest({ sas: verified, method: req.method, url });
+  if (!allowed.ok) throw new AzureAuthError(allowed.code, allowed.reason, 403);
+
+  const { container, blob } = deriveRequestTarget(url);
+  const operation = OPERATION_BY_METHOD[req.method] || "READ";
+  const scopeCheck = checkScope(credential, { bucket: container, key: blob, operation });
+  if (!scopeCheck.allowed) throw new AzureAuthError("AuthenticationFailed", `Denied by credential scope: ${scopeCheck.reason}.`, 403);
+  return { owner: credential.owner, accessKeyId: credential.accessKeyId };
+}
+
 export async function authenticateAzureRequest(req, bodyBuffer) {
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) throw new AzureAuthError("AuthenticationFailed", "Missing Authorization header.", 403);
+  if (!authHeader) {
+    const sasUrl = new URL(req.url);
+    if (hasSas(sasUrl)) return authenticateViaSas(req, sasUrl);
+    throw new AzureAuthError("AuthenticationFailed", "Missing Authorization header.", 403);
+  }
 
   let credential, owner, accessKeyId;
   if (authHeader.startsWith("Bearer ")) {

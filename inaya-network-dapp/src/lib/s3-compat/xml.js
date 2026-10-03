@@ -65,7 +65,7 @@ export function listAllMyBucketsXml(buckets) {
  *  bucket). Single-page only (no KeyMarker/VersionIdMarker pagination
  *  yet) -- a genuine, disclosed limitation, not silently claimed complete;
  *  see the Enterprise Adoption SOW report. */
-export function listObjectVersionsXml({ bucket, entries, isTruncated = false }) {
+export function listObjectVersionsXml({ bucket, entries, isTruncated = false, prefix = "", keyMarker = "", versionIdMarker = "", maxKeys = 1000, nextKeyMarker = null, nextVersionIdMarker = null }) {
   const items = entries
     .map((v) =>
       v.deleteMarker
@@ -73,7 +73,8 @@ export function listObjectVersionsXml({ bucket, entries, isTruncated = false }) 
         : `<Version><Key>${esc(v.key)}</Key><VersionId>${esc(v.versionId)}</VersionId><IsLatest>${v.isLatest}</IsLatest><LastModified>${esc(v.lastModified)}</LastModified><ETag>&quot;${esc(v.etag || "")}&quot;</ETag><Size>${v.sizeBytes || 0}</Size><StorageClass>STANDARD</StorageClass></Version>`
     )
     .join("");
-  return `<ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>${esc(bucket)}</Name><IsTruncated>${isTruncated}</IsTruncated>${items}</ListVersionsResult>`;
+  const next = isTruncated ? `<NextKeyMarker>${esc(nextKeyMarker)}</NextKeyMarker><NextVersionIdMarker>${esc(nextVersionIdMarker)}</NextVersionIdMarker>` : "";
+  return `<ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>${esc(bucket)}</Name><Prefix>${esc(prefix)}</Prefix><KeyMarker>${esc(keyMarker)}</KeyMarker><VersionIdMarker>${esc(versionIdMarker)}</VersionIdMarker><MaxKeys>${maxKeys}</MaxKeys><IsTruncated>${isTruncated}</IsTruncated>${next}${items}</ListVersionsResult>`;
 }
 
 export function listObjectsV2Xml({ bucket, prefix, delimiter, contents, commonPrefixes, isTruncated }) {

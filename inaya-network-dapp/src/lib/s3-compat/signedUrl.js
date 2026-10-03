@@ -87,3 +87,18 @@ export async function verifySignedUrl(url, { method, bucket, key }) {
 
   return { ok: true, credential };
 }
+
+/** The URL a client should actually use for a presigned link. A virtual-hosted request
+ *  (<bucket>.<S3_COMPAT_VIRTUAL_HOST_BASE>) is rewritten by middleware to the internal path-style URL, so
+ *  `req.url` no longer says what the caller typed: answer in the form the caller used, on the origin the caller
+ *  used, taken from the forwarded host/protocol headers rather than the internal URL. */
+export function clientFacingPresignedUrl({ headers, url, bucket, key, queryString, virtualHostBase = process.env.S3_COMPAT_VIRTUAL_HOST_BASE || "" }) {
+  const host = (headers.get("x-forwarded-host") || headers.get("host") || url.host).split(",")[0].trim();
+  const proto = (headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0].trim();
+  const hostNoPort = host.toLowerCase().split(":")[0];
+  const base = virtualHostBase.toLowerCase().split(":")[0];
+  if (base && hostNoPort === `${bucket.toLowerCase()}.${base}`) {
+    return `${proto}://${host}/${key.split("/").map(encodeURIComponent).join("/")}?${queryString}`;
+  }
+  return `${proto}://${host}${url.pathname}?${queryString}`;
+}

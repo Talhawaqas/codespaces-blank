@@ -77,6 +77,7 @@ export async function cookieFor(email) { return (await createSession(email)).ses
 
 export async function cleanup() {
   const ids = created.orgIds;
+  try { const { purgeOrgObjects } = await import("../src/lib/s3-compat/purge.js"); for (const id of ids) await purgeOrgObjects(id); } catch { /* best effort: free provider storage the test org still holds */ }
   if (ids.length) {
     for (const name of Object.keys(sc || {})) { if (name === "db") continue; try { await sc[name].deleteMany({ orgId: { $in: ids } }); } catch { /* collection without orgId */ } }
     for (const k of ["orgMembers", "departments", "crmContacts", "invoices", "apiKeys", "orgActivity", "auditChainEntries", "auditChainHeads", "businessEvents", "orgDocuments", "projects", "orgs"]) { try { await c[k].deleteMany(k === "orgs" ? { _id: { $in: ids } } : { orgId: { $in: ids } }); } catch { /* ignore */ }

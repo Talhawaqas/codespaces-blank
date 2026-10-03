@@ -6,6 +6,7 @@ import * as orgStore from "../../../../lib/s3-compat/store.js";
 import * as walletStore from "../../../../lib/s3-compat/walletStore.js";
 import { s3Error, xmlResponse, listObjectsV2Xml, listObjectVersionsXml } from "../../../../lib/s3-compat/xml.js";
 
+import { pageVersions } from "../../../../lib/s3-compat/versionsPaging.js";
 function storeFor(owner) {
   return owner.type === "org" ? orgStore : walletStore;
 }
@@ -118,27 +119,19 @@ export async function GET(req, { params }) {
     const delimiter = url.searchParams.get("delimiter") || "";
 
     if (url.searchParams.has("versions")) {
-      const key = url.searchParams.get("prefix");
-      if (key) {
-        // Single-key JSON shape -- Business Workspace's and the dApp's
-        // own existing consumers (not a real S3 client, so a convenient
-        // Inaya-specific JSON response rather than XML has always been
-        // fine here). Unchanged, zero regression.
-        const versions = await store.listObjectVersions({ ...ownerArgs(owner), bucket: params.bucket, key });
+      // Inaya's own single-key JSON shape is now opt-in (format=json). A real S3 client's ?versions&prefix=... must get S3 XML.
+      if (url.searchParams.get("format") === "json" && prefix) {
+        const versions = await store.listObjectVersions({ ...ownerArgs(owner), bucket: params.bucket, key: prefix });
         if (!versions) return s3Error("NoSuchBucket", "The specified bucket does not exist.");
-        return Response.json({ bucket: params.bucket, key, versions });
+        return Response.json({ bucket: params.bucket, key: prefix, versions });
       }
-      // No prefix -- a genuine S3 SDK client (e.g. Terraform's
-      // aws_s3_bucket force_destroy, which must enumerate every version
-      // of every object before deleting the bucket). Real S3 XML shape,
-      // bucket-wide, single-page (Enterprise Adoption SOW, Workstream B --
-      // see store.js's listAllObjectVersions for the disclosed pagination
-      // limitation). A real prefix-FILTERED (not exact-key) call from a
-      // third-party client is not yet distinguished from this bucket-wide
-      // case -- a known, narrow remaining limitation, not claimed solved.
-      const entries = await store.listAllObjectVersions({ ...ownerArgs(owner), bucket: params.bucket });
+      // Real ListObjectVersions: prefix filter, key-marker / version-id-marker and max-keys paging (see versionsPaging.js).
+      const entries = await store.listAllObjectVersions({ ...ownerArgs(owner), bucket: params.bucket, prefix });
       if (!entries) return s3Error("NoSuchBucket", "The specified bucket does not exist.");
-      return xmlResponse(listObjectVersionsXml({ bucket: params.bucket, entries }));
+      const keyMarker = url.searchParams.get("key-marker") || "";
+      const versionIdMarker = url.searchParams.get("version-id-marker") || "";
+      const page = pageVersions(entries, { keyMarker, versionIdMarker, maxKeys: url.searchParams.get("max-keys") });
+      return xmlResponse(listObjectVersionsXml({ bucket: params.bucket, ...page, prefix, keyMarker, versionIdMarker }));
     }
 
     const result = await store.listS3Objects({
