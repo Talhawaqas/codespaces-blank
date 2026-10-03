@@ -1,0 +1,36 @@
+name: Supply-chain audit
+
+# Fails on any critical advisory and on any rise in the high-advisory count over
+# scripts/supply-chain-baseline.json (see scripts/supply-chain-check.mjs). Also runs weekly so a
+# newly published advisory against an unchanged lockfile still shows up.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "scripts/supply-chain-*"
+      - ".github/workflows/supply-chain.yml"
+  pull_request:
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "scripts/supply-chain-*"
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit production dependencies of every npm package
+        run: node scripts/supply-chain-check.mjs

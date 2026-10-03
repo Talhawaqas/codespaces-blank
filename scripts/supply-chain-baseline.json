@@ -1,0 +1,26 @@
+{
+  "inaya-network-dapp": {
+    "high": 41
+  },
+  "inaya-network-dapp/custody-sdk": {
+    "high": 0
+  },
+  "inaya-network-dapp/ad-sync-agent": {
+    "high": 0
+  },
+  "inaya-migration-agent": {
+    "high": 0
+  },
+  "inaya-mobile": {
+    "high": 31
+  },
+  "inaya-desktop": {
+    "high": 0
+  },
+  "inaya-dapp-desktop": {
+    "high": 0
+  },
+  "solana": {
+    "high": 0
+  }
+}

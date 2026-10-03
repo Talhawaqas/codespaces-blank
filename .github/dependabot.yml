@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/inaya-network-dapp"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: "/inaya-network-dapp/custody-sdk"
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: "/inaya-network-dapp/ad-sync-agent"
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: "/inaya-migration-agent"
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: "/inaya-mobile"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: cargo
+    directory: "/inaya-desktop/src-tauri"
+    schedule: { interval: weekly }
+  - package-ecosystem: cargo
+    directory: "/inaya-dapp-desktop/src-tauri"
+    schedule: { interval: weekly }
+  - package-ecosystem: cargo
+    directory: "/inaya-drive-helper"
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }

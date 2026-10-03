@@ -85,6 +85,18 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/ai-security-anomalies",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/proof-spotcheck",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/s3-notifications",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/identity",
       "schedule": "*/5 * * * *"
     },
