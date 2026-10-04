@@ -22,6 +22,35 @@ export const DEFAULT_AI_POLICY = Object.freeze({
   retentionDays: 30,
 });
 
+/** Providers an org may allow. Mirrors the model registry; an unknown name is rejected rather than silently stored. */
+export const KNOWN_PROVIDERS = ["google", "groq"];
+export const POLICY_LIMITS = Object.freeze({ maxTokenBudget: [1000, 2_000_000], retentionDays: [1, 3650] });
+const POLICY_BOOLEANS = ["allowExternalModels", "allowSensitiveData", "requireHumanApprovalForHighRisk"];
+
+/** Whitelist + type/range check for a policy patch. Returns { error } or { patch } containing only known, well-typed fields. */
+export function validatePolicyPatch(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { error: "policy must be an object." };
+  const patch = {};
+  const known = new Set([...POLICY_BOOLEANS, "maxTokenBudget", "retentionDays", "allowedProviders"]);
+  const unknown = Object.keys(input).filter((k) => !known.has(k));
+  if (unknown.length) return { error: `Unknown policy setting: ${unknown.join(", ")}.` };
+  for (const k of POLICY_BOOLEANS) if (k in input) { if (typeof input[k] !== "boolean") return { error: `${k} must be true or false.` }; patch[k] = input[k]; }
+  for (const k of ["maxTokenBudget", "retentionDays"]) if (k in input) {
+    const [lo, hi] = POLICY_LIMITS[k];
+    if (!Number.isInteger(input[k]) || input[k] < lo || input[k] > hi) return { error: `${k} must be a whole number between ${lo} and ${hi}.` };
+    patch[k] = input[k];
+  }
+  if ("allowedProviders" in input) {
+    const p = input.allowedProviders;
+    if (!Array.isArray(p) || p.length === 0 || !p.every((x) => typeof x === "string")) return { error: "allowedProviders must list at least one provider." };
+    const bad = p.filter((x) => !KNOWN_PROVIDERS.includes(x));
+    if (bad.length) return { error: `Unknown provider: ${bad.join(", ")}. Known providers: ${KNOWN_PROVIDERS.join(", ")}.` };
+    patch.allowedProviders = [...new Set(p)];
+  }
+  if (!Object.keys(patch).length) return { error: "No policy settings were provided." };
+  return { patch };
+}
+
 export async function getOrgAiPolicy(orgId) {
   // Public / wallet-scoped surfaces have no organization: platform default policy.
   if (!orgId) return { ...DEFAULT_AI_POLICY, policyId: "default", version: 0 };
@@ -34,12 +63,15 @@ export async function getOrgAiPolicy(orgId) {
 export async function setOrgAiPolicy({ orgId, policy, membership, actorEmail }) {
   if (!canManageOrg(membership)) return { error: "Only an org owner or admin can change the AI security policy.", status: 403 };
 
+  const checked = validatePolicyPatch(policy);
+  if (checked.error) return { error: checked.error, status: 400 };
+
   const { aiSecurityPolicies } = await getOrgCollections();
   const current = await aiSecurityPolicies.findOne({ orgId: toObjectId(orgId), active: true });
   const nextVersion = (current?.version || 0) + 1;
   const now = new Date().toISOString();
 
-  const merged = { ...DEFAULT_AI_POLICY, ...(current?.policy || {}), ...policy };
+  const merged = { ...DEFAULT_AI_POLICY, ...(current?.policy || {}), ...checked.patch };
 
   if (current) {
     await aiSecurityPolicies.updateOne({ _id: current._id }, { $set: { active: false, deactivatedAt: now } });

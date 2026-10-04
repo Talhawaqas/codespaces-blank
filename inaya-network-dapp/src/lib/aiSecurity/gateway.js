@@ -49,7 +49,7 @@ import { recordAiSecurityEvent } from "./events.js";
  * @param {string} [params.modelId] - defaults to the gateway's own default if omitted
  * @param {string} [params.requestedActionRisk] - "LOW"|"MEDIUM"|"HIGH" if this request also proposes an action
  */
-export async function checkInputSecurity({ orgId, actorEmail, surface, vertical, sessionId, userInput, modelId = "gemini-3.5-flash-lite", requestedActionRisk }) {
+export async function checkInputSecurity({ orgId, actorEmail, surface, vertical, sessionId, userInput, modelId = "gemini-3.5-flash-lite", provider = "google", requestedActionRisk }) {
   const requestId = randomUUID();
 
   // Rate limit first -- cheapest check, and the one most likely to be
@@ -65,8 +65,23 @@ export async function checkInputSecurity({ orgId, actorEmail, surface, vertical,
 
   const [orgPolicy, modelCheck] = await Promise.all([
     getOrgAiPolicy(orgId).catch(() => null),
-    checkModelIntegrity({ provider: "google", modelId }),
+    checkModelIntegrity({ provider, modelId }),
   ]);
+
+  // The org's own model rules (orgPolicy.js). Only evaluated when the org has a policy to read; the platform default
+  // (google, APPROVED model) passes every rule here, so default behaviour is unchanged.
+  if (modelCheck.ok && orgPolicy) {
+    const reasons = [];
+    if (Array.isArray(orgPolicy.allowedProviders) && !orgPolicy.allowedProviders.includes(modelCheck.provider || provider)) reasons.push(`This organization's AI policy does not allow the "${modelCheck.provider || provider}" provider.`);
+    if (orgPolicy.allowExternalModels === false && modelCheck.status && modelCheck.status !== "APPROVED") reasons.push("This organization's AI policy only allows approved models.");
+    const budget = Number(orgPolicy.maxTokenBudget);
+    if (Number.isFinite(budget) && Math.ceil(String(userInput || "").length / 4) > budget) reasons.push(`The request is larger than this organization's AI token budget (${budget} tokens).`);
+    if (reasons.length) {
+      const decisionResult = { decision: "BLOCK", severity: "MEDIUM", reasons, controlsTriggered: ["AI-POLICY-001"], policyVersion: String(orgPolicy.version ?? "n/a") };
+      recordAiSecurityEvent({ orgId, requestId, actorEmail, sessionId, surface, vertical, category: "POLICY", decisionResult, modelId, rawInput: userInput }).catch(() => {});
+      return { requestId, allowed: false, decision: "BLOCK", reason: reasons[0], event: decisionResult };
+    }
+  }
 
   if (!modelCheck.ok) {
     const decisionResult = { decision: "BLOCK", severity: "CRITICAL", reasons: [modelCheck.reason], controlsTriggered: ["AI-MODEL-001"], policyVersion: "n/a" };

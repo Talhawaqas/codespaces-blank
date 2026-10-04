@@ -93,7 +93,7 @@ export async function checkModelIntegrity({ provider, modelId }) {
     return { ok: false, reason: `Model "${provider}:${modelId}" is registered but BLOCKED.` };
   }
   if (component.status === "REVIEW") {
-    return { ok: true, warning: `Model "${provider}:${modelId}" is registered as REVIEW, not yet APPROVED.` };
+    return { ok: true, status: "REVIEW", provider: component.provider, warning: `Model "${provider}:${modelId}" is registered as REVIEW, not yet APPROVED.` };
   }
-  return { ok: true };
+  return { ok: true, status: component.status, provider: component.provider };
 }

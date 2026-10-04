@@ -168,15 +168,41 @@ function ModelsTab({ orgId }) {
   );
 }
 
+const POLICY_TOGGLES = [
+  ["allowExternalModels", "Allow models that are not yet approved", "Off: only models marked APPROVED in the Model Inventory can be used."],
+  ["allowSensitiveData", "Allow high-sensitivity data in AI requests", "Off: requests containing SSN- or card-shaped values are blocked."],
+  ["requireHumanApprovalForHighRisk", "Require human approval for high-risk AI actions", "On: the AI can only propose these; a person approves."],
+];
+const POLICY_FIELD_LABELS = { allowExternalModels: "unapproved models", allowSensitiveData: "sensitive data", requireHumanApprovalForHighRisk: "human approval", maxTokenBudget: "token budget", allowedProviders: "providers", retentionDays: "retention" };
+
+function policyDiff(prev, next) {
+  if (!prev) return "Initial policy";
+  const changes = Object.keys(POLICY_FIELD_LABELS).filter((k) => JSON.stringify(prev[k]) !== JSON.stringify(next[k]))
+    .map((k) => (typeof next[k] === "boolean" ? `${POLICY_FIELD_LABELS[k]} ${next[k] ? "on" : "off"}` : `${POLICY_FIELD_LABELS[k]}: ${Array.isArray(next[k]) ? next[k].join(", ") : next[k]}`));
+  return changes.length ? changes.join(" · ") : "No change";
+}
+
 function PolicyTab({ orgId }) {
   const [policy, setPolicy] = useState(null);
+  const [options, setOptions] = useState({ providers: ["google"], limits: { maxTokenBudget: [1000, 2000000], retentionDays: [1, 3650] } });
+  const [budget, setBudget] = useState("");
+  const [retention, setRetention] = useState("");
+  const [providers, setProviders] = useState([]);
+  const [history, setHistory] = useState(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const result = await api(`/api/orgs/ai-security/policy?orgId=${orgId}`);
       setPolicy(result.policy);
+      if (result.options) setOptions(result.options);
+      setBudget(String(result.policy.maxTokenBudget));
+      setRetention(String(result.policy.retentionDays));
+      setProviders(result.policy.allowedProviders || []);
+      // History is manager-only; a plain member simply doesn't see it.
+      api(`/api/orgs/ai-security/policy?orgId=${orgId}&view=history`).then((h) => setHistory(h.versions)).catch(() => setHistory(null));
     } catch (err) {
       setError(err.message);
     }
@@ -184,15 +210,13 @@ function PolicyTab({ orgId }) {
 
   useEffect(() => { load(); }, [load]);
 
-  async function toggle(field) {
-    if (!policy) return;
-    setBusy(true);
-    setError("");
+  async function save(patch, okMessage) {
+    setBusy(true); setError(""); setNotice("");
     try {
-      // The API itself enforces manager-only writes (canManageAiSecurity)
-      // -- a non-manager gets a clear 403 here rather than the UI
-      // silently disabling the control based on a guessed client-side role.
-      await api("/api/orgs/ai-security/policy", { method: "PUT", body: JSON.stringify({ orgId, policy: { [field]: !policy[field] } }) });
+      // The API itself enforces manager-only writes and validates every value, so a bad number or an unknown provider
+      // comes back as a plain message here rather than being stored.
+      await api("/api/orgs/ai-security/policy", { method: "PUT", body: JSON.stringify({ orgId, policy: patch }) });
+      setNotice(okMessage || "Policy saved as a new version.");
       await load();
     } catch (err) {
       setError(err.message);
@@ -201,28 +225,71 @@ function PolicyTab({ orgId }) {
     }
   }
 
-  if (policy === null) return <div className="text-sm text-[var(--inaya-text-muted)]">Loading…</div>;
+  if (policy === null) return <div className="text-sm text-[var(--inaya-text-muted)]">{error ? <span className="text-red-400">{error}</span> : "Loading…"}</div>;
+
+  const [bLo, bHi] = options.limits.maxTokenBudget;
+  const [rLo, rHi] = options.limits.retentionDays;
+  const budgetNum = Number(budget); const retentionNum = Number(retention);
+  const budgetOk = Number.isInteger(budgetNum) && budgetNum >= bLo && budgetNum <= bHi;
+  const retentionOk = Number.isInteger(retentionNum) && retentionNum >= rLo && retentionNum <= rHi;
+  const field = "bg-black/30 border border-white/10 rounded px-2 py-1 text-sm w-32";
+  const smallBtn = "rounded border border-white/10 px-3 py-1 text-xs disabled:opacity-50";
 
   return (
     <div className="space-y-3">
       {error && <div className="text-sm text-red-400">{error}</div>}
-      <div className="text-xs text-[var(--inaya-text-muted)]">Version {policy.version} {policy.version === 0 ? "(default, not yet customized)" : ""}</div>
-      {[
-        ["allowExternalModels", "Allow external (non-approved) models"],
-        ["allowSensitiveData", "Allow high-sensitivity data (SSN/card-shaped values) in AI requests"],
-        ["requireHumanApprovalForHighRisk", "Require human approval for high-risk AI actions"],
-      ].map(([field, label]) => (
-        <div key={field} className="flex items-center justify-between rounded border border-white/10 p-3">
-          <div className="text-sm">{label}</div>
-          <button
-            disabled={busy}
-            onClick={() => toggle(field)}
-            className={`rounded-full border px-3 py-1 text-xs disabled:opacity-50 ${policy[field] ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "border-white/10"}`}
-          >
-            {policy[field] ? "ON" : "OFF"}
+      {notice && <div className="text-sm text-emerald-400">{notice}</div>}
+      <div className="text-xs text-[var(--inaya-text-muted)]">Version {policy.version} {policy.version === 0 ? "(default, not yet customized)" : ""}. Every change is saved as a new version; earlier versions are kept.</div>
+
+      {POLICY_TOGGLES.map(([key, label, help]) => (
+        <div key={key} className="flex items-center justify-between gap-3 rounded border border-white/10 p-3">
+          <div><div className="text-sm">{label}</div><div className="text-xs text-[var(--inaya-text-muted)]">{help}</div></div>
+          <button disabled={busy} onClick={() => save({ [key]: !policy[key] })}
+            className={`rounded-full border px-3 py-1 text-xs disabled:opacity-50 ${policy[key] ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "border-white/10"}`}>
+            {policy[key] ? "ON" : "OFF"}
           </button>
         </div>
       ))}
+
+      <div className="rounded border border-white/10 p-3 space-y-2">
+        <div className="text-sm">Allowed model providers</div>
+        <div className="flex gap-4 flex-wrap">
+          {options.providers.map((p) => (
+            <label key={p} htmlFor={`prov-${p}`} className="flex items-center gap-1.5 text-sm">
+              <input id={`prov-${p}`} type="checkbox" checked={providers.includes(p)} onChange={(e) => setProviders((cur) => (e.target.checked ? [...cur, p] : cur.filter((x) => x !== p)))} /> {p}
+            </label>
+          ))}
+          <button disabled={busy || providers.length === 0 || JSON.stringify([...providers].sort()) === JSON.stringify([...(policy.allowedProviders || [])].sort())} onClick={() => save({ allowedProviders: providers })} className={smallBtn}>Save providers</button>
+        </div>
+        {providers.length === 0 && <div className="text-xs text-amber-400">Pick at least one provider.</div>}
+      </div>
+
+      <div className="rounded border border-white/10 p-3 flex items-center gap-3 flex-wrap">
+        <label htmlFor="policy-budget" className="text-sm">Largest request, in tokens</label>
+        <input id="policy-budget" type="number" min={bLo} max={bHi} value={budget} onChange={(e) => setBudget(e.target.value)} className={field} />
+        <button disabled={busy || !budgetOk || budgetNum === policy.maxTokenBudget} onClick={() => save({ maxTokenBudget: budgetNum })} className={smallBtn}>Save</button>
+        <span className={`text-xs ${budgetOk ? "text-[var(--inaya-text-muted)]" : "text-amber-400"}`}>Between {bLo.toLocaleString()} and {bHi.toLocaleString()}. Larger requests are blocked before reaching a model.</span>
+      </div>
+
+      <div className="rounded border border-white/10 p-3 flex items-center gap-3 flex-wrap">
+        <label htmlFor="policy-retention" className="text-sm">Keep AI activity records (days)</label>
+        <input id="policy-retention" type="number" min={rLo} max={rHi} value={retention} onChange={(e) => setRetention(e.target.value)} className={field} />
+        <button disabled={busy || !retentionOk || retentionNum === policy.retentionDays} onClick={() => save({ retentionDays: retentionNum })} className={smallBtn}>Save</button>
+        <span className="text-xs text-[var(--inaya-text-muted)]">Recorded in your policy for audit. Records are not deleted automatically yet.</span>
+      </div>
+
+      {history && history.length > 0 && (
+        <div className="rounded border border-white/10 p-3 space-y-1.5">
+          <div className="text-sm">Version history</div>
+          {history.map((v, i) => (
+            <div key={v.version} className="text-xs flex gap-2 flex-wrap">
+              <span className="font-mono">v{v.version}{v.active ? " (active)" : ""}</span>
+              <span className="text-[var(--inaya-text-muted)]">{new Date(v.createdAt).toLocaleString()} · {v.createdBy}</span>
+              <span>{policyDiff(history[i + 1]?.policy, v.policy)}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <p className="text-xs text-[var(--inaya-text-muted)]">Only an org owner or admin can change these settings.</p>
     </div>
   );
