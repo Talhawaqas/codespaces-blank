@@ -303,3 +303,55 @@ fn extract_sibling_u64(xml: &str, anchor_tag: &str, anchor_value: &str, sibling_
     let end = after[start..].find(&close)? + start;
     after[start..end].parse::<u64>().ok()
 }
+
+/// Why an S3Client call failed, recovered from the error text it returned. The client's object calls report failures as plain
+/// strings ("PUT failed: 403 Forbidden", a reqwest transport error, ...); changing those signatures would break every crate that
+/// links this one, so the cause is parsed here instead. Platform helpers (the WinFSP drive maps it to an NTSTATUS) use this to
+/// report a specific cause rather than one generic "device failure".
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ErrorCause {
+    /// The server answered with this HTTP status.
+    Http(u16),
+    /// The request did not finish in time.
+    Timeout,
+    /// The server could not be reached (DNS, refused, reset, offline).
+    Network,
+    /// Anything else (a local I/O problem, an unexpected response shape).
+    Other,
+}
+
+pub fn classify_error(msg: &str) -> ErrorCause {
+    // "<what> failed: 403 Forbidden"  /  "UploadPart 2 failed: 503 Service Unavailable"
+    if let Some(rest) = msg.split(" failed: ").nth(1) {
+        if let Some(code) = rest.split_whitespace().next().and_then(|t| t.parse::<u16>().ok()) {
+            if (100..600).contains(&code) { return ErrorCause::Http(code); }
+        }
+    }
+    if msg.starts_with("NoSuchUpload") { return ErrorCause::Http(404); }
+    let lower = msg.to_lowercase();
+    if lower.contains("timed out") || lower.contains("timeout") { return ErrorCause::Timeout; }
+    if lower.contains("error sending request") || lower.contains("connection") || lower.contains("dns error") || lower.contains("tcp connect") {
+        return ErrorCause::Network;
+    }
+    ErrorCause::Other
+}
+
+#[cfg(test)]
+mod cause_tests {
+    use super::*;
+
+    #[test]
+    fn classifies_http_status_timeout_and_network_failures() {
+        assert_eq!(classify_error("PUT failed: 403 Forbidden"), ErrorCause::Http(403));
+        assert_eq!(classify_error("GET failed: 404 Not Found"), ErrorCause::Http(404));
+        assert_eq!(classify_error("UploadPart 2 failed: 503 Service Unavailable"), ErrorCause::Http(503));
+        assert_eq!(classify_error("DELETE failed: 413 Payload Too Large"), ErrorCause::Http(413));
+        assert_eq!(classify_error("NoSuchUpload: the multipart upload is gone on the server."), ErrorCause::Http(404));
+        assert_eq!(classify_error("error sending request for url (http://x/y): operation timed out"), ErrorCause::Timeout);
+        assert_eq!(classify_error("error sending request for url (http://localhost:3000/api/s3/b/k)"), ErrorCause::Network);
+        assert_eq!(classify_error("tcp connect error: Connection refused (os error 10061)"), ErrorCause::Network);
+        assert_eq!(classify_error("the file is locked by another process"), ErrorCause::Other);
+        assert_eq!(classify_error("PUT failed: banana"), ErrorCause::Other, "a non-numeric status is not misread");
+        assert_eq!(classify_error("x failed: 99999 weird"), ErrorCause::Other);
+    }
+}

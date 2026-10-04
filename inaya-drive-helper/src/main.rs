@@ -46,13 +46,37 @@ struct Args {
     drive: String,
 }
 
+/// The closest specific NTSTATUS for an HTTP status the Inaya endpoint returned, so Explorer shows the real reason
+/// ("Access denied", "Not enough space", "Device busy") instead of one generic failure for everything.
+fn status_for_http(code: u16) -> windows::Win32::Foundation::NTSTATUS {
+    use windows::Win32::Foundation as F;
+    match code {
+        400 => F::STATUS_INVALID_PARAMETER,
+        401 | 403 => F::STATUS_ACCESS_DENIED,
+        404 => F::STATUS_OBJECT_NAME_NOT_FOUND,
+        409 => F::STATUS_OBJECT_NAME_COLLISION,
+        413 | 507 => F::STATUS_DISK_FULL,
+        429 | 503 => F::STATUS_DEVICE_BUSY,
+        408 | 504 => F::STATUS_IO_TIMEOUT,
+        500..=599 => F::STATUS_UNEXPECTED_IO_ERROR,
+        _ => F::STATUS_UNSUCCESSFUL,
+    }
+}
+
+fn status_for_cause(cause: inaya_drive_core::s3client::ErrorCause) -> windows::Win32::Foundation::NTSTATUS {
+    use inaya_drive_core::s3client::ErrorCause;
+    use windows::Win32::Foundation as F;
+    match cause {
+        ErrorCause::Http(code) => status_for_http(code),
+        ErrorCause::Timeout => F::STATUS_IO_TIMEOUT,
+        ErrorCause::Network => F::STATUS_NETWORK_UNREACHABLE,
+        ErrorCause::Other => F::STATUS_UNSUCCESSFUL,
+    }
+}
+
 fn status_from_str(msg: &str) -> FspError {
     eprintln!("inaya-drive-helper error: {msg}");
-    // A generic, real NTSTATUS mapping -- STATUS_UNSUCCESSFUL. Distinguishing
-    // every possible S3 failure into its own NTSTATUS is real future work;
-    // this MVP surfaces every backend failure uniformly rather than
-    // guessing a misleading specific code.
-    FspError::NTSTATUS(windows::Win32::Foundation::STATUS_UNSUCCESSFUL.0)
+    FspError::NTSTATUS(status_for_cause(inaya_drive_core::s3client::classify_error(msg)).0)
 }
 
 enum EntryKind {
@@ -162,12 +186,8 @@ impl InayaFs {
 
 fn folder_error_to_fsp(e: s3client::FolderOpError) -> FspError {
     eprintln!("inaya-drive-helper: folder operation failed: {e}");
-    let status = match e.status {
-        400 => windows::Win32::Foundation::STATUS_INVALID_PARAMETER,
-        404 => windows::Win32::Foundation::STATUS_OBJECT_NAME_NOT_FOUND,
-        409 => windows::Win32::Foundation::STATUS_OBJECT_NAME_COLLISION,
-        _ => windows::Win32::Foundation::STATUS_UNSUCCESSFUL,
-    };
+    // status 0 means the request never got an HTTP answer (the folder calls carry the transport error text in `message`).
+    let status = if e.status == 0 { status_for_cause(inaya_drive_core::s3client::classify_error(&e.message)) } else { status_for_http(e.status) };
     FspError::NTSTATUS(status.0)
 }
 
@@ -494,5 +514,47 @@ fn main() {
     // unmounts if this loop is ever exited).
     loop {
         std::thread::sleep(std::time::Duration::from_secs(3600));
+    }
+}
+
+#[cfg(test)]
+mod status_tests {
+    use super::*;
+    use windows::Win32::Foundation as F;
+    use inaya_drive_core::s3client::ErrorCause;
+
+    #[test]
+    fn http_statuses_map_to_specific_ntstatus_codes() {
+        assert_eq!(status_for_http(400), F::STATUS_INVALID_PARAMETER);
+        assert_eq!(status_for_http(401), F::STATUS_ACCESS_DENIED);
+        assert_eq!(status_for_http(403), F::STATUS_ACCESS_DENIED);
+        assert_eq!(status_for_http(404), F::STATUS_OBJECT_NAME_NOT_FOUND);
+        assert_eq!(status_for_http(409), F::STATUS_OBJECT_NAME_COLLISION);
+        assert_eq!(status_for_http(413), F::STATUS_DISK_FULL);
+        assert_eq!(status_for_http(507), F::STATUS_DISK_FULL);
+        assert_eq!(status_for_http(429), F::STATUS_DEVICE_BUSY);
+        assert_eq!(status_for_http(503), F::STATUS_DEVICE_BUSY);
+        assert_eq!(status_for_http(504), F::STATUS_IO_TIMEOUT);
+        assert_eq!(status_for_http(500), F::STATUS_UNEXPECTED_IO_ERROR);
+        assert_eq!(status_for_http(418), F::STATUS_UNSUCCESSFUL, "an unmapped status stays generic rather than guessing");
+    }
+
+    #[test]
+    fn error_text_maps_through_the_classifier() {
+        let code = |m: &str| match status_from_str(m) { FspError::NTSTATUS(c) => c, _ => panic!("expected an NTSTATUS") };
+        assert_eq!(code("PUT failed: 403 Forbidden"), F::STATUS_ACCESS_DENIED.0);
+        assert_eq!(code("GET failed: 404 Not Found"), F::STATUS_OBJECT_NAME_NOT_FOUND.0);
+        assert_eq!(code("error sending request for url (http://x): operation timed out"), F::STATUS_IO_TIMEOUT.0);
+        assert_eq!(code("error sending request for url (http://localhost:3000/api/s3)"), F::STATUS_NETWORK_UNREACHABLE.0);
+        assert_eq!(code("something odd"), F::STATUS_UNSUCCESSFUL.0);
+        assert_eq!(status_for_cause(ErrorCause::Timeout), F::STATUS_IO_TIMEOUT);
+    }
+
+    #[test]
+    fn folder_errors_without_an_http_answer_use_the_transport_cause() {
+        let e = s3client::FolderOpError { status: 0, message: "error sending request for url (http://x): operation timed out".to_string() };
+        assert!(matches!(folder_error_to_fsp(e), FspError::NTSTATUS(c) if c == F::STATUS_IO_TIMEOUT.0));
+        let e = s3client::FolderOpError { status: 409, message: "exists".to_string() };
+        assert!(matches!(folder_error_to_fsp(e), FspError::NTSTATUS(c) if c == F::STATUS_OBJECT_NAME_COLLISION.0));
     }
 }
