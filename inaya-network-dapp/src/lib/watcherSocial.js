@@ -16,8 +16,9 @@
 
 import { OAuth2Client } from "google-auth-library";
 import { getWatcherCollections, normalizeWallet, enrollWallet, startSession, getPioneerStatus, verifyWatcherAuth } from "./watcherPioneer.js";
+import { verifySession as verifyTelegramSession, isGroupMember, groupCheckEnabled } from "./watcherTelegram.js";
 
-export const SOCIAL_PROVIDERS = ["google"];
+export const SOCIAL_PROVIDERS = ["google", "telegram"];
 
 // ------------------------------------------------------------------------------------------------ verifying a login
 const client = new OAuth2Client();
@@ -31,6 +32,10 @@ export async function verifySocialLogin({ provider = "google", idToken }) {
   if (!SOCIAL_PROVIDERS.includes(provider)) throw new Error(`Unsupported login provider "${provider}".`);
   if (!idToken || typeof idToken !== "string") throw new Error("Missing login token.");
   if (verifierOverride) return verifierOverride({ provider, idToken });
+  if (provider === "telegram") { // our own signed session (see watcherTelegram.js); throws if invalid or expired
+    const s = verifyTelegramSession(idToken);
+    return { provider: "telegram", subject: s.subject, email: null, name: s.name };
+  }
   const audience = [process.env.GOOGLE_CLIENT_ID].filter(Boolean);
   if (!audience.length) throw new Error("Google sign-in isn't configured on this server.");
   const ticket = await client.verifyIdToken({ idToken, audience });
@@ -93,6 +98,11 @@ export async function enrollSocial({ login, followedX, joinedTelegram }) {
     return { pioneer: existing.pioneer, alreadyEnrolled: true, participantKey: existing.participantKey };
   }
   const participantKey = socialKey(login.provider, login.subject);
+  // Telegram: when the bot can see the group, "joined Telegram" is checked, not just attested. Not a member -> a clear message and nothing is created.
+  if (login.provider === "telegram" && groupCheckEnabled()) {
+    if ((await isGroupMember(login.subject)) !== true) throw fail("Join the Inaya Telegram group first, then try again.");
+    joinedTelegram = true;
+  }
   // Same enrollment as a wallet: self-attested X + Telegram, the shared 2,500 cap, the same promo. Idempotent, so a retry after a failure
   // between these two writes finds the participant that was already created.
   const { pioneer, alreadyEnrolled } = await enrollWallet({ walletAddress: participantKey, followedX, joinedTelegram, extraFields: { loginProvider: login.provider } });

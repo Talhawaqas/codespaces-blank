@@ -43,7 +43,7 @@ New collections: `watcher_identities` and `watcher_wallet_links`. Both are inclu
 
 ## Known limits
 
-- Google only for now. Adding another provider is a new verifier in `watcherSocial.js` (`SOCIAL_PROVIDERS`) plus a sign-in button.
+- Google and Telegram. X is not built (see "Adding X" below). Another provider is a new verifier in `watcherSocial.js` (`SOCIAL_PROVIDERS`) plus a sign-in button.
 - Google's ID token lasts about an hour and is held in memory only. When it expires the app asks the person to sign in again; points and sessions
   are unaffected (they live on the server).
 - Not run on a real phone or against real Google here: the server logic and routes are tested with a stand-in for Google's token check, and the
@@ -53,3 +53,34 @@ New collections: `watcher_identities` and `watcher_wallet_links`. Both are inclu
 
 `test/watcher-social.test.mjs` (12 tests, including "existing data is untouched": a legacy-format wallet participant with points, a completed
 and an active session is identical, byte for byte, after every social flow, and no index changes).
+
+## Telegram sign-in
+
+Uses the program's own bot (Telegram has no ID token to verify). The app asks for a one-time link, the person opens it in Telegram and presses
+Start, the bot asks "Sign in to the Inaya Watcher Pioneer Program? Yes / No", and only that same Telegram user can answer. The app polls and
+receives a signed session token (valid 30 days) exactly once. The identity is the Telegram user id. Code: `src/lib/watcherTelegram.js`;
+routes `/api/watcher/telegram/{start,poll,webhook}`; the token is then used like Google's on the existing routes (`provider: "telegram"`).
+
+**It stays off until you set it up** (the app hides the button; the routes return 503):
+
+1. In Telegram, message **@BotFather**, send `/newbot` (or reuse a bot) and copy the **token** and the bot's **username**.
+2. Add to the server environment (Vercel > Settings > Environment Variables, Production), then redeploy:
+   - `TELEGRAM_BOT_TOKEN`: the token (a secret; never commit it)
+   - `TELEGRAM_BOT_USERNAME`: e.g. `InayaWatcherBot`
+   - `TELEGRAM_GROUP_CHAT` (optional): e.g. `@inayanetwork`. Add the bot to that group **as an administrator** and "joined the Telegram group" is
+     VERIFIED with Telegram instead of self-attested. A person who is not a member is told to join first.
+3. Once, from `inaya-network-dapp`: `TELEGRAM_BOT_TOKEN=<token> node scripts/telegram-setup.mjs https://www.inayanetwork.com`
+   (points the bot at the webhook and sets the secret Telegram must send back; safe to re-run).
+
+Security notes: the webhook only accepts Telegram's secret header; session and webhook secrets are derived from the bot token, so no extra secret is
+needed; a login code is single-use and expires in 10 minutes. A login link can be forwarded to someone who then confirms it, which signs the sender
+in as them; the confirm message says to ignore it if they did not start it, and the stake is Watcher points.
+
+Tested (`test/watcher-telegram.test.mjs`, 8 tests) against a stand-in for Telegram; a real bot and a real sign-in on a device are the remaining check.
+
+## Adding X
+
+X needs an X developer app with OAuth 2.0 (PKCE): register the callback URL (a redirect page that bounces into the app, like Google's), put the
+client id and secret on the server, and add a server-side code exchange that reads the user's X id. That proves who the account is. Verifying that
+someone follows, likes or retweets needs X's paid API tiers (check X's developer portal for current access and pricing); without them the X task
+stays self-attested.
