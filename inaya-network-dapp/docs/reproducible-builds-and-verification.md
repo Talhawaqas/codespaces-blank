@@ -214,6 +214,27 @@ npm tarball is provably and exactly the tagged git source.*
 - Multi-provider (Pinata + Filebase) redundancy for pinning official SDK releases — a
   deliberate, documented scope decision (see "Content-addressed delivery" above), not an
   oversight.
-- A signed-build-manifest mechanism that would let a client verify server honesty without
-  trusting the server — named above as a real gap in what build-ID traceability can prove,
-  not attempted in this pass.
+- ~~A signed-build-manifest mechanism~~ — the tooling now exists (see "Signed build manifests" below); the
+  release key and the publishing step are not set up yet.
+
+## Signed build manifests
+
+`src/lib/buildManifest.js` and `scripts/build-manifest.mjs` let a release be described and signed so that a client
+can check it against a key it holds, instead of trusting whatever a server says it is running. A manifest lists the
+product, version, git commit and the SHA-256 (and size) of every released file; it is signed with an Ed25519 key
+(Node's built-in crypto, no new dependency). Tests: `test/build-manifest.test.mjs` (tamper, wrong key, key pinning, CLI).
+
+```bash
+node scripts/build-manifest.mjs keygen ./keys                      # once, on a trusted machine; keep release-signing.key secret
+node scripts/build-manifest.mjs generate --product dapp-desktop --version 1.0.11 --checksums public/downloads/CHECKSUMS.txt --dir public/downloads
+node scripts/build-manifest.mjs sign --manifest manifest.json --key ./keys/release-signing.key
+node scripts/build-manifest.mjs verify --manifest manifest.json --sig manifest.json.sig --pub release-signing.pub --pin <fingerprint> --file ./Inaya.AppImage
+```
+
+What this proves: the manifest was signed by the holder of the private key, and a downloaded file is (or is not) one of the
+files in the signed release. What it does not prove: that the build is reproducible, that the key has not been stolen, or
+anything about web content a desktop shell loads at runtime. It only protects clients that have the public key from a
+source other than the server being checked (the repo, this doc, a pinned fingerprint in the client).
+
+Not done, and needs a person: generating the production release key, storing the private half as a CI secret, publishing the
+public key and fingerprint, and having the release workflow call `generate` and `sign`. Until then no release is signed.
