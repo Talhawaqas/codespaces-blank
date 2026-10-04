@@ -165,6 +165,21 @@ export const NODE_TYPES = {
     category: "action", label: "Run AI Bookkeeper pass (internal, non-authoritative)", ports: ["out"], risk: "low", scope: "finance",
     validate: (c, e) => { limitNum(c, "limit", 1, 1000, e); if (c.useAi !== undefined && typeof c.useAi !== "boolean") e.push("useAi must be true or false."); },
   },
+  // Native Customer Support write node: opens a ticket or adds an INTERNAL note. Never replies to a customer, changes a status or touches billing.
+  "action.support_ticket": {
+    category: "action", label: "Create support ticket / internal note (Inaya)", ports: ["out"], risk: "low", scope: "support",
+    validate: (c, e) => {
+      if (!["create", "note"].includes(c.operation)) { e.push("operation must be create or note."); return; }
+      if (c.operation === "create") {
+        for (const f of ["requesterEmail", "subject", "description"]) if (!c[f]) e.push(`${f} is required.`);
+        if (c.priority !== undefined && !["low", "normal", "high", "urgent"].includes(String(c.priority).toLowerCase())) e.push("priority must be low, normal, high or urgent.");
+        if (c.tags !== undefined && !(Array.isArray(c.tags) && c.tags.length <= 10 && c.tags.every((t) => typeof t === "string"))) e.push("tags must be a list of up to 10 labels.");
+      } else {
+        if (!c.ticketNumber && !c.ticketId) e.push("ticketNumber (or ticketId) is required.");
+        if (!c.body) e.push("body is required.");
+      }
+    },
+  },
   "action.report": {
     category: "action", label: "Generate report", ports: ["out"], risk: "read",
     validate: (c, e) => { if (c.reportType && !REPORT_TYPES.includes(c.reportType)) e.push(`reportType must be one of ${REPORT_TYPES.join(", ")}.`); },

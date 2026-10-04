@@ -256,6 +256,27 @@ async function executeNode(node, env) {
     return { output: r, meta: { actionClass: "low" } };
   }
 
+  if (type === "action.support_ticket") {
+    const cfg = {};
+    for (const [k, v] of Object.entries(cfgRaw)) cfg[k] = typeof v === "string" ? renderTemplate(v, scope) : v;
+    if (mode !== "production") return { output: { simulated: true, wouldDo: { operation: cfg.operation, subject: cfg.subject || null, ticket: cfg.ticketNumber || cfg.ticketId || null }, note: `In ${mode} mode no ticket or note was written.` }, meta: { actionClass: "low", simulated: true } };
+    const key = effectKey("support_ticket", exec._id, node.key);
+    const { runSupportTicketAction } = await import("../support/workflowAction.js");
+    const claim = await claimEffect({ orgId: exec.orgId, key, kind: "action.support_ticket", executionId: exec._id, nodeKey: node.key, meta: { operation: cfg.operation } });
+    if (!claim.claimed) {
+      if (claim.effect?.result) return { output: { ...claim.effect.result, reused: true }, meta: { actionClass: "low" } };
+      throw Object.assign(new Error("A previous attempt started this support action but did not record the result; refusing to repeat it."), { retryable: false, code: "EFFECT_UNCERTAIN" });
+    }
+    try {
+      const r = await runSupportTicketAction({ orgId: exec.orgId, membership: dataCtx.membership, email: exec.runAs, cfg, idempotencyKey: `workflow:${key}` });
+      await completeEffect({ orgId: exec.orgId, key, state: "DONE", result: r });
+      return { output: r, meta: { actionClass: "low" } };
+    } catch (err) {
+      await completeEffect({ orgId: exec.orgId, key, state: "FAILED", result: { error: err.message } });
+      throw err;
+    }
+  }
+
   if (type === "action.report") {
     const outputs = Object.fromEntries(Object.entries(results).filter(([, r]) => r.status === "COMPLETED").map(([k, r]) => [k, { type: r.type, output: r.output }]));
     const { orgs } = await getOrgCollections();
@@ -571,6 +592,7 @@ async function recordNodeEvidence(node, r, env, output) {
   if (t === "ai.agent") return env.rec({ ...base, action: "AI_ANALYSIS", data: { ...common, model: output?.model, result: output?.result, deterministic: output?.deterministic, explainability: output?.explainability } });
   if (t === "condition.if") return env.rec({ ...base, action: "DECISION_MADE", data: { ...common, expression: output?.expression, rules: output?.rules, result: output?.result, branch: output?.branch } });
   if (t.startsWith("notify.") && !output?.simulated) return env.rec({ ...base, action: "NOTIFICATION_SENT", data: { ...common, channel: output?.channel, delivered: output?.delivered, deliveries: output?.deliveries, dedupeKey: output?.dedupeKey } });
+  if (t === "action.support_ticket" && !output?.simulated) return env.rec({ ...base, action: "SUPPORT_TICKET_ACTION", data: { ...common, operation: output?.operation, ticketNumber: output?.number, ticketId: output?.ticketId } });
   if (t === "action.report") return env.rec({ ...base, action: "REPORT_GENERATED", data: { ...common, reportType: output?.report?.reportType, reportHash: canonicalHash(output ?? null) } });
   if (t === "action.propose" || t === "simulation.twin") return; // already recorded with richer data (APPROVAL_REQUESTED / SIMULATION_LINKED)
   return env.rec({ ...base, action: "NODE_EXECUTED", graph: false, data: common });

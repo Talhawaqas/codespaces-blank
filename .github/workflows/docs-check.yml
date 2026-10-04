@@ -1,0 +1,37 @@
+name: API docs drift
+
+# Fails when the documented public API no longer matches the code: public/openapi.json out of date with
+# src/lib/docsApiReference.js, or a documented endpoint with no route file / missing HTTP method export.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "inaya-network-dapp/src/lib/docsApiReference.js"
+      - "inaya-network-dapp/public/openapi.json"
+      - "inaya-network-dapp/scripts/docs/**"
+      - "inaya-network-dapp/src/app/api/**"
+      - ".github/workflows/docs-check.yml"
+  pull_request:
+    paths:
+      - "inaya-network-dapp/src/lib/docsApiReference.js"
+      - "inaya-network-dapp/public/openapi.json"
+      - "inaya-network-dapp/scripts/docs/**"
+      - "inaya-network-dapp/src/app/api/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  openapi-drift:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: inaya-network-dapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run docs:check
