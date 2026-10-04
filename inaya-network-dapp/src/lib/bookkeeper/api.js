@@ -8,6 +8,7 @@
 //   * responses never contain a secret.
 
 import { toObjectId, getOrgCollections, canAccessFinance, canManageFinance, canManageOrg, canAccessDepartment } from "../orgs.js";
+import { toXlsx, toPdf } from "./exportFormats.js";
 import { getBookkeeperCollections } from "./db.js";
 import { fail, DOCUMENT_TYPES } from "./common.js";
 import * as S from "./settings.js";
@@ -127,6 +128,9 @@ export async function handleBookkeeper({ method, path, query = {}, body = {}, or
       const r = await INS.buildReport({ orgId, orgName: org?.name, type: query.type || "transactions", departmentIds: deptIds, from: query.from || null, to: query.to || null, filters: { type: query.type }, actorEmail: email });
       if (r.error) return r;
       await audit({ orgId, action: "BOOKKEEPER_REPORT_GENERATED", actorEmail: email, metadata: { type: query.type || "transactions", rows: r.rows.length, format: query.format || "json" } });
+      const stamp = `bookkeeper-${query.type || "transactions"}-${new Date().toISOString().slice(0, 10)}`;
+      if (query.format === "xlsx") return { raw: { contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", body: toXlsx(r), filename: `${stamp}.xlsx` } };
+      if (query.format === "pdf") return { raw: { contentType: "application/pdf", body: await toPdf(r), filename: `${stamp}.pdf` } };
       if (query.format === "csv") return { raw: { contentType: "text/csv; charset=utf-8", body: Buffer.from(INS.toCsv(r), "utf8"), filename: `bookkeeper-${query.type || "transactions"}-${new Date().toISOString().slice(0, 10)}.csv` } };
       return r;
     }

@@ -151,10 +151,10 @@ export function ReportsPanel({ orgId }) {
     <div className="space-y-4">
       <Card title="Finance reports">
         <div className="grid gap-3 md:grid-cols-4"><Select label="Report" value={type} onChange={setType} options={["transactions", "invoices", "bills", "receipts", "reconciliation", "unmatched", "exceptions", "duplicates", "supplier_spend", "customer_receipts", "aging", "category_spend", "cash_movement", "processing_accuracy"]} /><Input label="From (YYYY-MM-DD)" value={from} onChange={setFrom} /><Input label="To (YYYY-MM-DD)" value={to} onChange={setTo} /></div>
-        <div className="flex gap-2"><Btn busy={rep.busy} onClick={() => rep.run(() => get(orgId, "reports", extra))}>Preview</Btn><Btn busy={dl.busy} onClick={() => dl.run(() => download(orgId, "reports", `${extra}&format=csv`, `bookkeeper-${type}.csv`))}>Download CSV</Btn></div>
+        <div className="flex gap-2"><Btn busy={rep.busy} onClick={() => rep.run(() => get(orgId, "reports", extra))}>Preview</Btn><Btn busy={dl.busy} onClick={() => dl.run(() => download(orgId, "reports", `${extra}&format=csv`, `bookkeeper-${type}.csv`))}>Download CSV</Btn><Btn busy={dl.busy} onClick={() => dl.run(() => download(orgId, "reports", `${extra}&format=xlsx`, `bookkeeper-${type}.xlsx`))}>Download Excel</Btn><Btn busy={dl.busy} onClick={() => dl.run(() => download(orgId, "reports", `${extra}&format=pdf`, `bookkeeper-${type}.pdf`))}>Download PDF</Btn></div>
         <Err error={rep.error || dl.error} />
         {rep.result && <div className="space-y-2"><Table rows={rep.result.rows.slice(0, 100)} columns={rep.result.columns.map((c) => ({ label: c, key: c }))} empty="No rows." /><Note>{rep.result.meta.status}. Generated {rep.result.meta.generatedAt}; scope: {rep.result.meta.sourceScope}; period {rep.result.meta.period}.</Note></div>}
-        <Note>CSV only. Excel and PDF exports are not offered.</Note>
+        <Note>CSV, Excel (.xlsx) and PDF. The PDF prints Latin text only; other scripts show as ?, so use CSV or Excel for those.</Note>
       </Card>
       <Card title="What-if (Digital Twin, read-only)">
         <div className="grid gap-3 md:grid-cols-4">
