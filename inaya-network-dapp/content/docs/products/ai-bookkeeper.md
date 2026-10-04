@@ -42,7 +42,7 @@ Sources (bank statements, uploads, email relay, WhatsApp)
 | WhatsApp Business (Meta Cloud API webhook) | Implemented and tested against a stand-in for Meta. **UNVERIFIED against a live WhatsApp Business account.** |
 | Live bank feeds (Plaid, open banking) | **Not available.** The adapter interface exists; no provider is registered. Import statements instead. |
 | General ledger, journal entries, statutory month-end close | **Not built.** Inaya has no ledger. "Posted" means a recorded payment or a draft expense. |
-| Excel and PDF report export | Not offered (CSV only). |
+| Excel and PDF report export | Offered (October 2026): every report downloads as CSV, Excel (.xlsx) or PDF, with the same permissions, department scope and audit entry as CSV. The PDF prints Latin text only; use CSV or Excel for other scripts. |
 
 ## How decisions are made
 

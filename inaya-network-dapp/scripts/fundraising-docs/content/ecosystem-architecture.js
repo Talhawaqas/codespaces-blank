@@ -473,7 +473,8 @@ export const ecosystemArchitecture = {
             ["Signed-message wallet auth", "Sovereign Vault sign-up, Security Layer node reports, Watcher Pioneer", "ethers.verifyMessage over a reconstructed message string, 5-minute freshness window — reimplemented locally per-feature rather than shared, by established convention in this codebase."],
             ["Cookie session (magic-link / Google)", "Business Workspace (web)", "orgs.js — generateToken/hashToken, TTL-indexed magic_links collection, consumeLoginToken."],
             ["Bearer token session", "Business Workspace (mobile)", "Same session concept as web, token-based instead of cookie-based since mobile has no cookie jar shared with a browser."],
-            ["Anonymous device/visitor ID", "Referrals, Watcher Pioneer, activity pings, Security destination checker, Learn progress (no wallet)", "Client-generated UUID cached in localStorage/AsyncStorage, upgraded to wallet address once one connects — same trust model reused across every feature that needs to work pre-wallet."],
+            ["Social login (Google or Telegram)", "Watcher Pioneer Program (added October 2026)", "Google: the ID token's signature and audience are verified server-side. Telegram: a one-time link opens the program's bot, the same Telegram user confirms Yes, and the server issues a signed 30-day session token exactly once. The identity is the provider's stable account id (never the email); a wallet can be linked later, or a login attached to an existing wallet account, and two accounts are never merged. Telegram stays off until its bot is configured."],
+            ["Anonymous device/visitor ID", "Referrals, activity pings, Security destination checker, Learn progress (no wallet)", "Client-generated UUID cached in localStorage/AsyncStorage, upgraded to wallet address once one connects — same trust model reused across every feature that needs to work pre-wallet."],
             ["Investor Data Room session", "Data Room only", "Its own magic-link + session-cookie pair, deliberately separate from Business Workspace's — different visitor identity model (name+email+NDA, not org membership)."],
           ],
         },
@@ -1370,7 +1371,7 @@ export const ecosystemArchitecture = {
           headers: ["Component", "Detail"],
           rows: [
             ["S3 REST surface", "src/app/api/s3/**/route.js — ListBuckets, bucket CRUD, ListObjectsV2, PutObject, GetObject (byte-range aware), HeadObject, DeleteObject, multipart upload, plus real sub-resources (?versioning, ?object-lock, ?versions, ?legal-hold, ?retention, ?versionId=)."],
-            ["Azure REST surface", "src/app/api/azure/**/route.js — List Containers, container CRUD, List Blobs, Put/Get/Delete Blob (Range-aware), Put Block / Put Block List. Dual auth: Shared Key or real Microsoft Entra ID Bearer tokens, verified live against Microsoft Graph."],
+            ["Azure REST surface", "src/app/api/azure/**/route.js — List Containers, container CRUD, List Blobs, Put/Get/Delete Blob (Range-aware), Put Block / Put Block List. Three ways to authenticate: Shared Key, time-limited SAS share links (added October 2026), or real Microsoft Entra ID Bearer tokens (verified live against Microsoft Graph)."],
             ["Business Workspace console", "src/app/api/orgs/s3-compat/manage/route.js + S3CompatView.js — bucket/version/lock/health visibility and controls, session-authenticated, separate from the SigV4-signed protocol surface."],
             ["Test coverage", "19 new tests (test/s3-compat-capabilities.test.mjs) plus the pre-existing 9 (sigv4) + 9 (store) — all passing, zero regressions."],
           ],
@@ -1412,7 +1413,7 @@ export const ecosystemArchitecture = {
             },
             {
               heading: "Backup-tool and infrastructure-tool compatibility, proven against real, unmodified clients.",
-              body: "rclone and Terraform (the standard hashicorp/aws provider, pointed at Inaya's endpoint) both verified fully working end to end — real upload/download/sync for rclone, a real init → apply → plan → destroy lifecycle for Terraform, including force_destroy actually emptying a bucket. AzCopy is honestly classified unsupported: it requires SAS-token or Microsoft Entra ID authentication for Azure Blob, which this layer's Shared-Key-only implementation doesn't yet provide — a real, disclosed gap, not glossed over.",
+              body: "rclone and Terraform (the standard hashicorp/aws provider, pointed at Inaya's endpoint) both verified fully working end to end — real upload/download/sync for rclone, a real init → apply → plan → destroy lifecycle for Terraform, including force_destroy actually emptying a bucket. AzCopy was classified unsupported when this was first written, because it needs SAS-token authentication for Azure Blob. That gap was closed in October 2026: Azure share links (SAS) are now supported and were verified with the real AzCopy 10.32 (upload of a folder tree including a multi-block blob, list, download, remove, plus refusal of a read-only link used to write and of a tampered link). AzCopy treats the first part of a web address as the container, so listing and syncing folders needs a dedicated Azure hostname; that routing is built and off by default until an operator chooses a hostname and sets up its DNS and certificate (docs/azure-host-addressing.md). Running the real tools also found and fixed two genuine faults: concurrent first uploads into a new bucket could create duplicate buckets, and reading a just-replaced file could return the old copy (which made Terraform wait indefinitely).",
             },
             {
               heading: "A Compliance Evidence Exporter, read-only by construction.",
@@ -1478,7 +1479,7 @@ export const ecosystemArchitecture = {
         },
         {
           type: "note",
-          text: "Explicitly deferred, not silently skipped: event notifications/webhooks (this codebase has zero outbound-webhook infrastructure anywhere — only inbound receivers for Stripe/referrals/KYC exist — building real signed delivery, retry, and dead-letter handling is a separate-scope undertaking); MFA/step-up authentication (Object Lock and Legal Hold already provide real, server-enforced protection against permanent deletion, the highest-risk case a step-up mechanism would otherwise protect); Block Public Access (confirmed not applicable — no code path anywhere in the S3-compat auth layer permits an unauthenticated read, so there is nothing to block). Full writeup: docs/aws-s3-feature-expansion-report.md.",
+          text: "Explicitly deferred, not silently skipped: event notifications/webhooks (deferred at the time, then built in October 2026: signed AWS-format webhook delivery for uploads, deletes and lifecycle expiry, with retry and backoff, a dead-letter list and manual redelivery, set up by an owner or admin in the S3 management screen); MFA/step-up authentication (Object Lock and Legal Hold already provide real, server-enforced protection against permanent deletion, the highest-risk case a step-up mechanism would otherwise protect); Block Public Access (confirmed not applicable — no code path anywhere in the S3-compat auth layer permits an unauthenticated read, so there is nothing to block). Full writeup: docs/aws-s3-feature-expansion-report.md.",
         },
       ],
     },
@@ -1542,7 +1543,7 @@ export const ecosystemArchitecture = {
         },
         {
           type: "note",
-          text: "Deliberately not built in this pass: DirectSync's \"Create Secure Link\" context-menu action (the reusable primitive, s3-compat/signedUrl.js's createSignedUrl/verifySignedUrl, was confirmed during the audit but wiring it in was deprioritized behind a fully tested core sync engine), a real-action handoff from a What-If simulation into the existing PENDING_APPROVAL flow (no concrete use case has proposed one yet), and DirectSync running independent of the desktop app being open at all (it runs as a background task inside inaya-desktop's existing process, not a fifth standalone native service — a deliberate reuse of real tray/background infrastructure over building a new OS-level service installer). Full writeup: docs/directsync-report.md, docs/cloud-backup-scheduler-report.md, and docs/MODULAR_ADOPTION_CAPABILITY_AUDIT.md.",
+          text: "Built later (October 2026): DirectSync Share, a time-limited download link for any synced file, signed on the machine as a standard presigned URL and verified by the server. Deliberately not built in this pass: a real-action handoff from a What-If simulation into the existing PENDING_APPROVAL flow (no concrete use case has proposed one yet), and DirectSync running independent of the desktop app being open at all (it runs as a background task inside inaya-desktop's existing process, not a fifth standalone native service — a deliberate reuse of real tray/background infrastructure over building a new OS-level service installer). Full writeup: docs/directsync-report.md, docs/cloud-backup-scheduler-report.md, and docs/MODULAR_ADOPTION_CAPABILITY_AUDIT.md.",
         },
       ],
     },

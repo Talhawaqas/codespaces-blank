@@ -135,6 +135,8 @@ section("Verified Client Commands: AWS CLI and rclone Against Inaya Storage", [
   { type: "note", label: "Verification status.", text: "AWS CLI and rclone were verified end to end against a live Inaya server on 26 to 27 September 2026 (upload, download, listing, ranged reads, presigned links, multipart, special-character names, integrity checks, wrong-secret rejection). AzCopy, gsutil and Terraform were verified in earlier work and are covered in the pilot guides above; they were not re-run in this review. One known oddity: after editing a single file, rclone sync re-copied every file in a test run; this is being investigated (Inaya may not preserve user metadata such as modification time)." },
 ]);
 section("DirectSync — Automatic Folder Backup from the Desktop App", fromMd("docs/directsync-report.md"));
+section("Azure Endpoint Addressing for AzCopy", fromMd("docs/azure-host-addressing.md"));
+section("Watcher Pioneer Program — Sign In with Google or Telegram", fromMd("docs/watcher-social-login.md"));
 section("Smart Cloud Backup and Health Scheduler", fromMd("docs/cloud-backup-scheduler-report.md"));
 section("Verifying Downloads and Reproducible Builds", [...fromMd("docs/reproducible-builds-and-verification.md"), { type: "subsection", heading: "Verifying the SDK release" }, ...fromMd("custody-sdk/docs/VERIFYING_RELEASES.md")]);
 

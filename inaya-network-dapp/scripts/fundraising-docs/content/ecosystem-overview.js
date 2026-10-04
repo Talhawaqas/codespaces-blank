@@ -564,7 +564,7 @@ export const ecosystemOverview = {
         },
         {
           type: "note",
-          text: "Deliberately not built yet: storage event notifications/webhooks (no existing outbound-webhook infrastructure to build on), and connecting two different companies' Digital Twins to each other privately (would require heavyweight cryptography not yet justified by a real customer need — researched and documented, ready for when it is). Full writeup: docs/aws-s3-feature-expansion-report.md, docs/evidence-graph-business-event-layer-report.md, and docs/digital-twin-simulation-layer-report.md.",
+          text: "Added in October 2026: storage event notifications, which send a signed message to a customer's own endpoint when files are uploaded, deleted or expire. Deliberately not built yet: connecting two different companies' Digital Twins to each other privately (would require heavyweight cryptography not yet justified by a real customer need — researched and documented, ready for when it is). Full writeup: docs/aws-s3-feature-expansion-report.md, docs/evidence-graph-business-event-layer-report.md, and docs/digital-twin-simulation-layer-report.md.",
         },
       ],
     },

@@ -101,6 +101,11 @@ export const multicloudGuide = {
           label: "Signing in with your company Microsoft account instead.",
           text: "Inaya also accepts a real Microsoft Entra ID (Azure AD) access token in place of the account-key credential above — useful if you'd rather authenticate as a specific signed-in user than manage a shared key. Ask your Inaya administrator to confirm this is enabled for your organization.",
         },
+        {
+          type: "note",
+          label: "Share links (SAS) and AzCopy.",
+          text: "Owners and admins can create time-limited Azure share links (SAS) for a container or a single file in the Business Workspace storage screen, with read, write, delete or list permission and an expiry. A link can be given to someone who has no Inaya account, and it carries only the permissions it was created with: a read-only link used to write, or a link that has been altered, is refused. Microsoft AzCopy works with these links. AzCopy treats the first part of a web address as the container, so for listing and syncing folders your Inaya administrator needs to set up a dedicated Azure hostname for your deployment (it is switched off by default); uploading and downloading single files works without it. Because the address is not a Microsoft one, add --from-to to each AzCopy command (and --location to list).",
+        },
       ],
     },
     {
