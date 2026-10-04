@@ -35,6 +35,7 @@ import { getOwnerS3Passphrase } from "./credentials.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
 
 import { purgeObjectStorage } from "./purge.js";
+import { claimId, releaseClaim } from "./namespaceClaim.js";
 import { emitObjectEvent } from "./notifications.js";
 function getOrgS3Passphrase(orgId) {
   return getOwnerS3Passphrase({ type: "org", orgId });
@@ -59,10 +60,11 @@ async function ensureS3SystemDepartment(orgId) {
   const orgObjectId = toObjectId(orgId);
   const existing = await departments.findOne({ orgId: orgObjectId, name: S3_SYSTEM_DEPARTMENT_NAME });
   if (existing) return existing._id;
-  const now = new Date().toISOString();
-  const doc = { _id: new ObjectId(), orgId: orgObjectId, name: S3_SYSTEM_DEPARTMENT_NAME, isSystem: true, createdAt: now };
-  await departments.insertOne(doc);
-  return doc._id;
+  // Concurrent first writes must all land in the SAME department (see namespaceClaim.js): claim one id atomically, then create-by-_id.
+  const { db } = await getOrgCollections();
+  const id = await claimId({ db, scope: String(orgId), kind: "s3-system-department", name: S3_SYSTEM_DEPARTMENT_NAME, make: () => new ObjectId() });
+  await departments.updateOne({ _id: id }, { $setOnInsert: { orgId: orgObjectId, name: S3_SYSTEM_DEPARTMENT_NAME, isSystem: true, createdAt: new Date().toISOString() } }, { upsert: true });
+  return id;
 }
 
 export async function listS3Buckets(orgId) {
@@ -85,10 +87,11 @@ export async function ensureS3Bucket({ orgId, bucket, actorEmail }) {
   const orgObjectId = toObjectId(orgId);
   const existing = await projects.findOne({ orgId: orgObjectId, departmentId, name: bucket });
   if (existing) return existing;
-  const now = new Date().toISOString();
-  const doc = { _id: new ObjectId(), orgId: orgObjectId, departmentId, name: bucket, createdAt: now, createdByEmail: actorEmail || "s3-compat" };
-  await projects.insertOne(doc);
-  return doc;
+  // Several clients writing their first objects at once must all get the SAME bucket (see namespaceClaim.js).
+  const { db } = await getOrgCollections();
+  const id = await claimId({ db, scope: String(orgId), kind: "s3-bucket", parent: departmentId, name: bucket, make: () => new ObjectId() });
+  await projects.updateOne({ _id: id }, { $setOnInsert: { orgId: orgObjectId, departmentId, name: bucket, createdAt: new Date().toISOString(), createdByEmail: actorEmail || "s3-compat" } }, { upsert: true });
+  return projects.findOne({ _id: id });
 }
 
 export async function deleteS3Bucket({ orgId, bucket }) {
@@ -98,6 +101,8 @@ export async function deleteS3Bucket({ orgId, bucket }) {
   const objectCount = await orgDocuments.countDocuments({ orgId: toObjectId(orgId), projectId: bucketDoc._id, deletedAt: null });
   if (objectCount > 0) return { deleted: false, reason: "BucketNotEmpty" };
   await projects.deleteOne({ _id: bucketDoc._id });
+  const { db } = await getOrgCollections();
+  await releaseClaim({ db, scope: String(orgId), kind: "s3-bucket", parent: bucketDoc.departmentId, name: bucket });
   return { deleted: true };
 }
 
@@ -451,6 +456,12 @@ export async function headS3Object({ orgId, bucket, key, versionId }) {
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return null;
   const { orgDocuments } = await getOrgCollections();
+  if (versionId === "null") {
+    // "null" is the displayed id of EVERY write to an unversioned bucket, so an overwritten key has several rows with it: the live one and the
+    // soft-deleted, storage-purged ones it replaced. Resolve to the live row only (Terraform's aws provider reads ?versionId=null after every
+    // update; before this it could get the replaced copy: stale bytes, or a 500 once the old storage was purged).
+    return orgDocuments.findOne({ orgId: toObjectId(orgId), projectId: bucketDoc._id, filename: key, versionId: "null", deletedAt: null }, { sort: { createdAt: -1 } });
+  }
   if (versionId) {
     // An explicit version is retrievable even if it's not the latest AND
     // even if the key's current latest version has since been deleted --

@@ -30,6 +30,7 @@ import { completeOnce } from "./multipartCompletion.js";
 import { etagOf, md5Hex, multipartEtag } from "./etag.js";
 import { cachedObjectBody } from "./objectBodyCache.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
+import { claimId, releaseClaim } from "./namespaceClaim.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
 
 export class ObjectProtectedError extends Error {
@@ -82,9 +83,11 @@ export async function ensureS3Bucket({ walletAddress, bucket }) {
   if (existing) return existing;
   const { db } = await connectToDatabase();
   const now = new Date().toISOString();
-  const doc = { folderId: randomUUID(), owner: walletAddress.toLowerCase(), name: bucket, parentFolderId: null, createdAt: now, updatedAt: now, deletedAt: null };
-  await db.collection("metadata_folders").insertOne(doc);
-  return doc;
+  const owner = walletAddress.toLowerCase();
+  // Several clients writing their first objects at once must all get the SAME bucket (see namespaceClaim.js).
+  const folderId = await claimId({ db, scope: owner, kind: "s3-bucket", name: bucket, make: () => randomUUID() });
+  await db.collection("metadata_folders").updateOne({ folderId }, { $setOnInsert: { owner, name: bucket, parentFolderId: null, createdAt: now, updatedAt: now, deletedAt: null } }, { upsert: true });
+  return db.collection("metadata_folders").findOne({ folderId });
 }
 
 export async function deleteS3Bucket({ walletAddress, bucket }) {
@@ -94,6 +97,7 @@ export async function deleteS3Bucket({ walletAddress, bucket }) {
   const count = await db.collection("metadata_files").countDocuments({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, deletedAt: null });
   if (count > 0) return { deleted: false, reason: "BucketNotEmpty" };
   await db.collection("metadata_folders").updateOne({ folderId: bucketDoc.folderId }, { $set: { deletedAt: new Date().toISOString() } });
+  await releaseClaim({ db, scope: walletAddress.toLowerCase(), kind: "s3-bucket", name: bucket });
   return { deleted: true };
 }
 
@@ -313,6 +317,10 @@ export async function headS3Object({ walletAddress, bucket, key, versionId }) {
   const bucketDoc = await getS3Bucket({ walletAddress, bucket });
   if (!bucketDoc) return null;
   const { db } = await connectToDatabase();
+  if (versionId === "null") {
+    // "null" is the displayed id of every write to an unversioned bucket; resolve to the live row, not a soft-deleted replaced copy (see store.js).
+    return db.collection("metadata_files").findOne({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, versionId: "null", deletedAt: null }, { sort: { createdAt: -1 } });
+  }
   if (versionId) {
     return db.collection("metadata_files").findOne({ owner: walletAddress.toLowerCase(), folderId: bucketDoc.folderId, filename: key, versionId });
   }

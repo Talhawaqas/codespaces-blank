@@ -32,7 +32,27 @@ const BASE_HOST = process.env.S3_COMPAT_VIRTUAL_HOST_BASE || "";
 // than feed an attacker-controlled Host header substring into routing.
 const VALID_BUCKET_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
+// AzCopy (found by running the real tool against this endpoint) treats everything after the host as one container name and sends it as a
+// percent-encoded blob name: "/api/azure%2F<container>%2F<blob>" (it reads "api" as the container). Without this, every AzCopy request to /api/azure/... is a 404.
+// Only that exact leading shape is rewritten, back to the normal path; the Azure routes and SAS verification are untouched.
+const AZCOPY_ENCODED_BASE = /^\/api(\/|%2F)azure%2F/i;
+
 export function middleware(req) {
+  const rawPath = new URL(req.url).pathname;
+  if (AZCOPY_ENCODED_BASE.test(rawPath)) {
+    const url = req.nextUrl.clone();
+    url.pathname = rawPath.replace(/%2F/gi, "/");
+    return NextResponse.rewrite(url);
+  }
+  // Host-based Azure addressing (what AzCopy and the Azure SDKs expect: https://<host>/<container>/<blob>). On the one dedicated host named by
+  // AZURE_COMPAT_HOST_BASE every path is an Azure path, rewritten to the existing /api/azure routes. Inert unless the operator sets it and
+  // points DNS/TLS at this deployment; the same-origin app routes on every other host are untouched.
+  const azureBase = (process.env.AZURE_COMPAT_HOST_BASE || "").toLowerCase().split(":")[0];
+  if (azureBase && (req.headers.get("host") || "").toLowerCase().split(":")[0] === azureBase && !rawPath.startsWith("/api/") && !rawPath.startsWith("/_next/")) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/api/azure${rawPath === "/" ? "" : rawPath}`;
+    return NextResponse.rewrite(url);
+  }
   if (!BASE_HOST) return NextResponse.next();
 
   // Host header includes the port (e.g. "bucket.example.com:3000") for any

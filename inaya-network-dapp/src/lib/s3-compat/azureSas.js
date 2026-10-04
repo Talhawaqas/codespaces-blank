@@ -42,9 +42,17 @@ export function sasAccountHint(url) {
   return url.searchParams.get(SAS_ACCOUNT_PARAM);
 }
 
+/** AzCopy sends /api/azure%2F<container>%2F<blob> (the middleware rewrites it for routing); this gives the normal /api/azure/<container>/<blob> form. */
+export function azurePathname(url) {
+  // Host-based addressing (AZURE_COMPAT_HOST_BASE, see middleware.js): https://<that host>/<container>/<blob> is /api/azure/<container>/<blob>.
+  const azureBase = (process.env.AZURE_COMPAT_HOST_BASE || "").toLowerCase().split(":")[0];
+  if (azureBase && url.hostname.toLowerCase() === azureBase && !url.pathname.startsWith("/api/")) return `/api/azure${url.pathname === "/" ? "" : url.pathname}`;
+  return /^\/api(\/|%2F)azure%2F/i.test(url.pathname) ? url.pathname.replace(/%2F/gi, "/") : url.pathname;
+}
+
 /** The container and blob a request addresses, from /api/azure/<container>/<blob...>. */
 export function azureTargetOf(url) {
-  const segments = url.pathname.replace(/^\/api\/azure\/?/, "").split("/").filter(Boolean).map((s) => decodeURIComponent(s));
+  const segments = azurePathname(url).replace(/^\/api\/azure\/?/, "").split("/").filter(Boolean).map((s) => decodeURIComponent(s));
   return { container: segments[0] || null, blob: segments.length > 1 ? segments.slice(1).join("/") : null };
 }
 

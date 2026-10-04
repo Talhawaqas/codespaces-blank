@@ -11,7 +11,7 @@
 
 import { resolveS3Credential, checkScope } from "./credentials.js";
 import { verifySharedKeyRequest } from "./azureAuth.js";
-import { hasSas, sasAccountHint, verifySas, authorizeSasRequest, SAS_ACCOUNT_PARAM } from "./azureSas.js";
+import { hasSas, sasAccountHint, verifySas, authorizeSasRequest, azurePathname, SAS_ACCOUNT_PARAM } from "./azureSas.js";
 import { getClientIp } from "../rateLimit.js";
 import { verifyConnection as verifyMicrosoftConnection } from "../integrationProviders/microsoft.js";
 import { getOrgCollections, normalizeEmail } from "../orgs.js";
@@ -70,7 +70,7 @@ const OPERATION_BY_METHOD = { GET: "READ", HEAD: "READ", PUT: "WRITE", POST: "WR
  *  /api/azure/[container]/[...blob] instead of /api/s3/[bucket]/[...key] --
  *  container plays the same "bucket" role a granular grant scopes against. */
 function deriveRequestTarget(url) {
-  const segments = url.pathname.replace(/^\/api\/azure\/?/, "").split("/").filter(Boolean);
+  const segments = azurePathname(url).replace(/^\/api\/azure\/?/, "").split("/").filter(Boolean);
   const container = segments[0] || null;
   const blob = segments.length > 1 ? segments.slice(1).join("/") : null;
   return { container, blob };
