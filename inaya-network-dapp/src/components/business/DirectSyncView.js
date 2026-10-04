@@ -101,8 +101,46 @@ function CredentialPanel({ configured, onChanged }) {
   );
 }
 
+const LINK_DURATIONS = [["1 hour", 3600], ["1 day", 86400], ["7 days", 604800]];
+
+// "Create Secure Link": a time-limited, download-only link for one file that has finished syncing.
+function SecureLink({ folderId, localPath }) {
+  const [seconds, setSeconds] = useState(86400);
+  const [link, setLink] = useState("");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const fileId = `link-${folderId}-${localPath}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  async function create() {
+    setError(""); setCopied(false);
+    try { setLink(await invoke("directsync_create_secure_link", { folderId, localPath, expiresSeconds: seconds })); }
+    catch (err) { setError(String(err)); }
+  }
+  async function copy() {
+    try { await navigator.clipboard.writeText(link); setCopied(true); } catch { setError("Could not copy. Select the link and copy it manually."); }
+  }
+
+  return (
+    <div className="basis-full flex items-center gap-2 flex-wrap text-[10px] font-sans">
+      <label htmlFor={fileId} className="text-[var(--inaya-text-muted)]">Link valid for</label>
+      <select id={fileId} value={seconds} onChange={(e) => { setSeconds(Number(e.target.value)); setLink(""); }} className="bg-black/40 border border-white/10 rounded px-1.5 py-0.5">
+        {LINK_DURATIONS.map(([label, s]) => <option key={s} value={s}>{label}</option>)}
+      </select>
+      <button onClick={create} className="font-bold uppercase text-[#00f2fe]">Create secure link</button>
+      {link && (
+        <>
+          <input readOnly value={link} onFocus={(e) => e.target.select()} aria-label="Secure link" className="flex-1 min-w-[12rem] bg-black/40 border border-white/10 rounded px-1.5 py-0.5 font-mono" />
+          <button onClick={copy} className="font-bold uppercase text-emerald-400">{copied ? "Copied" : "Copy"}</button>
+        </>
+      )}
+      {error && <span className="text-red-400">{error}</span>}
+    </div>
+  );
+}
+
 function FolderRow({ folder, onChanged }) {
   const [queue, setQueue] = useState(null);
+  const [linkFor, setLinkFor] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -192,10 +230,12 @@ function FolderRow({ folder, onChanged }) {
             <p className="text-[var(--inaya-text-muted)] text-[11px]">No files tracked yet.</p>
           ) : (
             queue.slice(0, 50).map((q) => (
-              <div key={q.id} className="bg-black/30 border border-white/10 rounded-md p-2 text-[11px] font-mono flex items-center justify-between gap-2">
+              <div key={q.id} className="bg-black/30 border border-white/10 rounded-md p-2 text-[11px] font-mono flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[var(--inaya-text-muted)] truncate">{q.local_path.split(/[\\/]/).pop()}</span>
                 {q.state === "FAILED" && q.last_error && <span className="text-red-400 truncate flex-1 text-[10px]">{q.last_error}</span>}
                 <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${STATE_STYLES[q.state] || "border-white/10 text-[var(--inaya-text-muted)]"}`}>{q.state}</span>
+                {q.state === "DONE" && <button onClick={() => setLinkFor(linkFor === q.id ? null : q.id)} className="text-[10px] font-bold uppercase text-[#00f2fe] shrink-0 font-sans">{linkFor === q.id ? "Close" : "Share"}</button>}
+                {linkFor === q.id && <SecureLink folderId={folder.id} localPath={q.local_path} />}
               </div>
             ))
           )}

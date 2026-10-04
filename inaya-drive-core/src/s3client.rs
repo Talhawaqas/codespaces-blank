@@ -144,6 +144,69 @@ impl S3Client {
         Ok(())
     }
 
+    /// A time-limited, shareable download link for one object ("Create Secure Link"). Pure signing, no network call: the server
+    /// verifies it exactly like any SigV4 presigned URL. `expires_secs` is capped at the 7 days S3 allows.
+    pub fn presigned_get_url(&self, bucket: &str, key: &str, expires_secs: u32) -> Result<String, String> {
+        if bucket.is_empty() || key.is_empty() { return Err("A bucket and an object key are required.".to_string()); }
+        if expires_secs == 0 || expires_secs > 7 * 24 * 3600 { return Err("A link must expire between 1 second and 7 days from now.".to_string()); }
+        let path = format!("/api/s3/{}/{}", bucket, key);
+        let query = sigv4::presign_query("GET", &self.host, &path, expires_secs, &self.access_key_id, &self.secret_access_key);
+        let base = self.endpoint.trim_end_matches('/');
+        let encoded_path = format!("/{}/{}", bucket, key).split('/').map(urlencode_path).collect::<Vec<_>>().join("/");
+        Ok(format!("{}{}?{}", base, encoded_path, sigv4::encode_query(&query)))
+    }
+
+    // ------------------------------------------------------------------ multipart (resumable uploads)
+
+    /// Starts a multipart upload; returns the uploadId. Parts are uploaded one at a time with upload_part() and the upload is
+    /// finished with complete_multipart(). A caller that remembers the uploadId and the finished part ETags can resume after a crash.
+    pub fn create_multipart(&self, bucket: &str, key: &str) -> Result<String, String> {
+        let path = format!("/api/s3/{}/{}", bucket, key);
+        let query = vec![("uploads".to_string(), "".to_string())];
+        let headers = self.signed_headers("POST", &path, &query, b"");
+        let resp = self.client.post(self.url_for(&format!("/{}/{}", bucket, key), &query)).headers(headers).send().map_err(|e| e.to_string())?;
+        if !resp.status().is_success() { return Err(format!("CreateMultipartUpload failed: {}", resp.status())); }
+        let text = resp.text().map_err(|e| e.to_string())?;
+        extract_all(&text, "UploadId").into_iter().next().ok_or_else(|| "The server did not return an UploadId.".to_string())
+    }
+
+    /// Uploads one part (1-based) and returns its ETag. A 404 means the upload no longer exists on the server (aborted or
+    /// expired): the error text starts with "NoSuchUpload" so the caller knows to start over.
+    pub fn upload_part(&self, bucket: &str, key: &str, upload_id: &str, part_number: u32, body: &[u8]) -> Result<String, String> {
+        let path = format!("/api/s3/{}/{}", bucket, key);
+        let query = vec![("partNumber".to_string(), part_number.to_string()), ("uploadId".to_string(), upload_id.to_string())];
+        let headers = self.signed_headers("PUT", &path, &query, body);
+        let resp = self.client.put(self.url_for(&format!("/{}/{}", bucket, key), &query)).headers(headers).body(body.to_vec()).timeout(Duration::from_secs(180)).send().map_err(|e| e.to_string())?;
+        let status = resp.status();
+        if status == 404 { return Err("NoSuchUpload: the multipart upload is gone on the server.".to_string()); }
+        if !status.is_success() { return Err(format!("UploadPart {} failed: {}", part_number, status)); }
+        Ok(resp.headers().get("etag").and_then(|v| v.to_str().ok()).unwrap_or("").trim_matches('"').to_string())
+    }
+
+    /// Completing is where the server does the heavy work for the whole object (assemble, encrypt, shard, store), so it gets a much
+    /// longer timeout than the client-wide 30 s default; a part upload gets a moderate one.
+    pub fn complete_multipart(&self, bucket: &str, key: &str, upload_id: &str, parts: &[(u32, String)]) -> Result<(), String> {
+        let path = format!("/api/s3/{}/{}", bucket, key);
+        let query = vec![("uploadId".to_string(), upload_id.to_string())];
+        let mut xml = String::from("<CompleteMultipartUpload>");
+        for (n, etag) in parts { xml.push_str(&format!("<Part><PartNumber>{}</PartNumber><ETag>\"{}\"</ETag></Part>", n, etag)); }
+        xml.push_str("</CompleteMultipartUpload>");
+        let headers = self.signed_headers("POST", &path, &query, xml.as_bytes());
+        let resp = self.client.post(self.url_for(&format!("/{}/{}", bucket, key), &query)).headers(headers).body(xml).timeout(Duration::from_secs(600)).send().map_err(|e| e.to_string())?;
+        let status = resp.status();
+        if status == 404 { return Err("NoSuchUpload: the multipart upload is gone on the server.".to_string()); }
+        if !status.is_success() { return Err(format!("CompleteMultipartUpload failed: {}", status)); }
+        Ok(())
+    }
+
+    pub fn abort_multipart(&self, bucket: &str, key: &str, upload_id: &str) -> Result<(), String> {
+        let path = format!("/api/s3/{}/{}", bucket, key);
+        let query = vec![("uploadId".to_string(), upload_id.to_string())];
+        let headers = self.signed_headers("DELETE", &path, &query, b"");
+        let resp = self.client.delete(self.url_for(&format!("/{}/{}", bucket, key), &query)).headers(headers).send().map_err(|e| e.to_string())?;
+        if resp.status().is_success() || resp.status() == 404 { Ok(()) } else { Err(format!("AbortMultipartUpload failed: {}", resp.status())) }
+    }
+
     pub fn delete_object(&self, bucket: &str, key: &str) -> Result<(), String> {
         let path = format!("/api/s3/{}/{}", bucket, key);
         let headers = self.signed_headers("DELETE", &path, &[], b"");
@@ -192,6 +255,16 @@ fn folder_result(resp: reqwest::blocking::Response, ok_statuses: &[u16]) -> Resu
     }
     let message = resp.text().unwrap_or_default();
     Err(FolderOpError { status, message })
+}
+
+/// Percent-encodes one path segment the way SigV4 canonicalises it (so the URL path and the signed path agree).
+fn urlencode_path(seg: &str) -> String {
+    let mut out = String::new();
+    for byte in seg.bytes() {
+        let c = byte as char;
+        if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '~') { out.push(c); } else { out.push_str(&format!("%{:02X}", byte)); }
+    }
+    out
 }
 
 fn urlencode(s: &str) -> String {

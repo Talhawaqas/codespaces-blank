@@ -661,6 +661,16 @@ fn directsync_list_queue(window: tauri::WebviewWindow, state: State<DirectSyncSt
     state.db.list_queue(folder_id.as_deref())
 }
 
+/// "Create Secure Link": a time-limited download link for one synced file (see directsync::SyncEngine::create_secure_link).
+#[tauri::command]
+fn directsync_create_secure_link(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String, local_path: String, expires_seconds: u32) -> Result<String, String> {
+    verify_trusted_origin(&window)?;
+    let folder = state.db.list_folders()?.into_iter().find(|f| f.id == folder_id).ok_or("Folder not found.")?;
+    let client = state.build_client()?;
+    let engine = SyncEngine { db: state.db.clone(), client };
+    engine.create_secure_link(&folder, std::path::Path::new(&local_path), expires_seconds)
+}
+
 #[tauri::command]
 fn directsync_retry_failed(window: tauri::WebviewWindow, state: State<DirectSyncState>, folder_id: String) -> Result<usize, String> {
     verify_trusted_origin(&window)?;
@@ -705,7 +715,8 @@ pub fn run() {
             directsync_resume_folder,
             directsync_list_folders,
             directsync_list_queue,
-            directsync_retry_failed
+            directsync_retry_failed,
+            directsync_create_secure_link
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

@@ -27,14 +27,14 @@
 // but nothing is ever removed from Inaya as a side effect of watching a
 // folder.
 //
-// INTERRUPTED-UPLOAD SEMANTICS, STATED PLAINLY: uploads are whole-file (one
-// PUT), not resumable byte-range uploads. A row is only ever marked DONE
-// after a real 2xx response for the complete file; a connection drop mid-
-// upload leaves the row QUEUED/FAILED, and retrying re-uploads the whole
-// file cleanly rather than attempting a byte-range resume. This keeps the
-// stored object byte-correct (the SOW's own explicit requirement) without
-// building a second, resumable-multipart protocol on top of the existing
-// single-PUT S3-compat write path.
+// INTERRUPTED-UPLOAD SEMANTICS, STATED PLAINLY: a file up to one part (4 MiB) is a
+// single PUT. A larger file is uploaded as an S3 multipart upload through the same
+// /api/s3 endpoint (no new protocol), and every acknowledged part is recorded in the
+// local SQLite state, so an interrupted upload resumes with the parts the server
+// already holds instead of starting over. A row is only ever marked DONE after the
+// complete object exists and its size is verified; if the file changes between
+// attempts (different content hash) the recorded upload is aborted and a fresh one
+// starts, so stale parts are never stitched into a newer file.
 
 use inaya_drive_core::s3client::S3Client;
 use notify_debouncer_full::{
@@ -46,6 +46,7 @@ use rusqlite::Connection;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Sender};
 use std::sync::{Arc, Mutex};
@@ -53,6 +54,40 @@ use std::thread;
 use std::time::Duration;
 
 const DEBOUNCE_WINDOW: Duration = Duration::from_secs(2);
+
+/// Size of one multipart part. 4 MiB keeps every request under the ~4.5 MB body limit of Inaya's hosted
+/// serverless endpoint (a single PUT of a larger file would be rejected there), and bounds memory use per part.
+pub const PART_SIZE: u64 = 4 * 1024 * 1024;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MultipartState {
+    pub content_hash: String,
+    pub destination_key: String,
+    pub upload_id: String,
+    pub part_size: u64,
+    pub parts: Vec<(u32, String)>, // (part number, etag) for every part the server has acknowledged
+}
+
+pub fn encode_parts(parts: &[(u32, String)]) -> String {
+    let mut sorted = parts.to_vec();
+    sorted.sort();
+    sorted.iter().map(|(n, e)| format!("{}:{}", n, e)).collect::<Vec<_>>().join(",")
+}
+
+pub fn decode_parts(s: &str) -> Vec<(u32, String)> {
+    s.split(',')
+        .filter_map(|p| {
+            let (n, e) = p.split_once(':')?;
+            Some((n.parse::<u32>().ok()?, e.to_string()))
+        })
+        .collect()
+}
+
+/// How many parts a file of `size` bytes needs (an empty file still needs none: it is uploaded with a single PUT).
+pub fn part_count(size: u64, part_size: u64) -> u32 {
+    if size == 0 { 0 } else { ((size + part_size - 1) / part_size) as u32 }
+}
+
 
 // ---------------------------------------------------------------------
 // Pure, unit-testable logic (no filesystem watching, no network) -- kept
@@ -149,6 +184,16 @@ impl SyncStateDb {
                 last_error TEXT,
                 last_synced_at TEXT,
                 UNIQUE(folder_id, local_path)
+            );
+            CREATE TABLE IF NOT EXISTS multipart_uploads (
+                folder_id TEXT NOT NULL,
+                local_path TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                destination_key TEXT NOT NULL,
+                upload_id TEXT NOT NULL,
+                part_size INTEGER NOT NULL,
+                parts TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (folder_id, local_path)
             );",
         )
         .map_err(|e| e.to_string())?;
@@ -304,6 +349,68 @@ impl SyncStateDb {
         rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
     }
 
+    // ---- resumable multipart upload state (survives an app restart or a dropped connection)
+
+    fn get_multipart(&self, folder_id: &str, local_path: &str) -> Result<Option<MultipartState>, String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare("SELECT content_hash, destination_key, upload_id, part_size, parts FROM multipart_uploads WHERE folder_id = ?1 AND local_path = ?2")
+            .map_err(|e| e.to_string())?;
+        let mut rows = stmt.query(rusqlite::params![folder_id, local_path]).map_err(|e| e.to_string())?;
+        match rows.next().map_err(|e| e.to_string())? {
+            Some(r) => Ok(Some(MultipartState {
+                content_hash: r.get(0).map_err(|e| e.to_string())?,
+                destination_key: r.get(1).map_err(|e| e.to_string())?,
+                upload_id: r.get(2).map_err(|e| e.to_string())?,
+                part_size: r.get::<_, i64>(3).map_err(|e| e.to_string())? as u64,
+                parts: decode_parts(&r.get::<_, String>(4).map_err(|e| e.to_string())?),
+            })),
+            None => Ok(None),
+        }
+    }
+
+    fn start_multipart(&self, folder_id: &str, local_path: &str, hash: &str, dest_key: &str, upload_id: &str, part_size: u64) -> Result<(), String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        conn.execute(
+            "INSERT OR REPLACE INTO multipart_uploads (folder_id, local_path, content_hash, destination_key, upload_id, part_size, parts) VALUES (?1, ?2, ?3, ?4, ?5, ?6, '')",
+            rusqlite::params![folder_id, local_path, hash, dest_key, upload_id, part_size as i64],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    fn add_multipart_part(&self, folder_id: &str, local_path: &str, part_no: u32, etag: &str) -> Result<(), String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        let current: String = conn
+            .query_row("SELECT parts FROM multipart_uploads WHERE folder_id = ?1 AND local_path = ?2", rusqlite::params![folder_id, local_path], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        let mut parts = decode_parts(&current);
+        parts.retain(|(n, _)| *n != part_no);
+        parts.push((part_no, etag.to_string()));
+        conn.execute(
+            "UPDATE multipart_uploads SET parts = ?3 WHERE folder_id = ?1 AND local_path = ?2",
+            rusqlite::params![folder_id, local_path, encode_parts(&parts)],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    fn clear_multipart(&self, folder_id: &str, local_path: &str) -> Result<(), String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM multipart_uploads WHERE folder_id = ?1 AND local_path = ?2", rusqlite::params![folder_id, local_path]).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    /// The remote key of a file whose upload finished (state DONE); None for anything else.
+    fn get_done_destination_key(&self, folder_id: &str, local_path: &str) -> Result<Option<String>, String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare("SELECT destination_key FROM sync_state WHERE folder_id = ?1 AND local_path = ?2 AND state = 'DONE'")
+            .map_err(|e| e.to_string())?;
+        let mut rows = stmt.query(rusqlite::params![folder_id, local_path]).map_err(|e| e.to_string())?;
+        Ok(rows.next().map_err(|e| e.to_string())?.map(|r| r.get(0)).transpose().map_err(|e: rusqlite::Error| e.to_string())?)
+    }
+
     pub fn requeue_failed(&self, folder_id: &str) -> Result<usize, String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         conn.execute("UPDATE sync_state SET state = 'QUEUED' WHERE folder_id = ?1 AND state = 'FAILED'", [folder_id]).map_err(|e| e.to_string())
@@ -322,6 +429,71 @@ pub struct SyncEngine {
 }
 
 impl SyncEngine {
+    /// Uploads one file's bytes. Files up to one part are a single PUT; anything larger goes through a multipart upload whose
+    /// progress is recorded after every part, so an interrupted upload (dropped connection, app closed, machine restarted) resumes
+    /// with the parts the server already has instead of starting over. The caller still verifies the final size.
+    fn upload_file(&self, folder: &FolderConfig, file_path: &Path, local_path: &str, dest_key: &str, size: u64, hash: &str) -> Result<(), String> {
+        if size <= PART_SIZE {
+            let body = fs::read(file_path).map_err(|e| e.to_string())?;
+            return self.client.put_object(&folder.bucket, dest_key, &body);
+        }
+        for attempt in 0..2 {
+            // Reuse a recorded upload only if it is for these exact bytes and this exact destination; otherwise discard it.
+            let mut state = match self.db.get_multipart(&folder.id, local_path)? {
+                Some(s) if s.content_hash == hash && s.destination_key == dest_key && s.part_size == PART_SIZE => s,
+                stale => {
+                    if let Some(old) = stale {
+                        let _ = self.client.abort_multipart(&folder.bucket, &old.destination_key, &old.upload_id);
+                        self.db.clear_multipart(&folder.id, local_path)?;
+                    }
+                    let upload_id = self.client.create_multipart(&folder.bucket, dest_key)?;
+                    self.db.start_multipart(&folder.id, local_path, hash, dest_key, &upload_id, PART_SIZE)?;
+                    MultipartState { content_hash: hash.to_string(), destination_key: dest_key.to_string(), upload_id, part_size: PART_SIZE, parts: vec![] }
+                }
+            };
+            let total = part_count(size, PART_SIZE);
+            let mut file = fs::File::open(file_path).map_err(|e| e.to_string())?;
+            let mut restart = false;
+            for n in 1..=total {
+                if state.parts.iter().any(|(p, _)| *p == n) { continue; } // the server already has this part
+                let offset = (n as u64 - 1) * PART_SIZE;
+                let len = std::cmp::min(PART_SIZE, size - offset) as usize;
+                let mut buf = vec![0u8; len];
+                file.seek(SeekFrom::Start(offset)).map_err(|e| e.to_string())?;
+                file.read_exact(&mut buf).map_err(|e| e.to_string())?;
+                match self.client.upload_part(&folder.bucket, dest_key, &state.upload_id, n, &buf) {
+                    Ok(etag) => {
+                        self.db.add_multipart_part(&folder.id, local_path, n, &etag)?;
+                        state.parts.push((n, etag));
+                    }
+                    Err(e) if e.starts_with("NoSuchUpload") && attempt == 0 => {
+                        self.db.clear_multipart(&folder.id, local_path)?;
+                        restart = true; // the server dropped our upload: start a fresh one once
+                        break;
+                    }
+                    Err(e) => return Err(e), // recorded parts are kept: the next retry resumes from here
+                }
+            }
+            if restart { continue; }
+            state.parts.sort();
+            match self.client.complete_multipart(&folder.bucket, dest_key, &state.upload_id, &state.parts) {
+                Ok(()) => { self.db.clear_multipart(&folder.id, local_path)?; return Ok(()); }
+                Err(e) if e.starts_with("NoSuchUpload") && attempt == 0 => { self.db.clear_multipart(&folder.id, local_path)?; continue; }
+                Err(e) => return Err(e),
+            }
+        }
+        Err("Could not complete the multipart upload.".to_string())
+    }
+
+    /// "Create Secure Link": a time-limited download link for a file that has finished syncing. Anyone holding the link can
+    /// download that one file until it expires; it cannot be used to list, change or delete anything.
+    pub fn create_secure_link(&self, folder: &FolderConfig, file_path: &Path, expires_secs: u32) -> Result<String, String> {
+        let local = file_path.to_string_lossy().to_string();
+        let key = self.db.get_done_destination_key(&folder.id, &local)?
+            .ok_or("This file has not finished syncing yet, so there is nothing to share.")?;
+        self.client.presigned_get_url(&folder.bucket, &key, expires_secs)
+    }
+
     /// Processes one local file: hash it, compare against the last known
     /// DONE state for this exact path, skip if unchanged, otherwise queue
     /// and upload it, verifying via head_object afterward (byte-size
@@ -350,8 +522,7 @@ impl SyncEngine {
 
         self.db.upsert_queued(&folder.id, &local_path_str, size, mtime, &hash, &dest_key)?;
 
-        let body = fs::read(file_path).map_err(|e| e.to_string())?;
-        match self.client.put_object(&folder.bucket, &dest_key, &body) {
+        match self.upload_file(folder, file_path, &local_path_str, &dest_key, size, &hash) {
             Ok(()) => match self.client.head_object(&folder.bucket, &dest_key) {
                 Ok(Some(remote_size)) if remote_size == size => {
                     self.db.mark_done(&folder.id, &local_path_str)?;
@@ -576,6 +747,59 @@ mod tests {
     use std::io::Write;
 
     #[test]
+    fn part_helpers_round_trip_and_count_correctly() {
+        let parts = vec![(3, "c".to_string()), (1, "a".to_string()), (2, "b".to_string())];
+        assert_eq!(encode_parts(&parts), "1:a,2:b,3:c", "stored in part order");
+        assert_eq!(decode_parts(&encode_parts(&parts)), vec![(1, "a".to_string()), (2, "b".to_string()), (3, "c".to_string())]);
+        assert!(decode_parts("").is_empty());
+        assert_eq!(decode_parts("1:a,garbage,x:y,2:b").len(), 2, "malformed entries are skipped, never a panic");
+        assert_eq!(part_count(0, PART_SIZE), 0);
+        assert_eq!(part_count(1, PART_SIZE), 1);
+        assert_eq!(part_count(PART_SIZE, PART_SIZE), 1);
+        assert_eq!(part_count(PART_SIZE + 1, PART_SIZE), 2);
+        assert_eq!(part_count(10 * 1024 * 1024, PART_SIZE), 3);
+    }
+
+    #[test]
+    fn multipart_state_persists_parts_and_clears() {
+        let dir = std::env::temp_dir().join(format!("ds-mp-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let db = SyncStateDb::open(&dir.join("s.sqlite")).unwrap();
+        assert!(db.get_multipart("f", "/a").unwrap().is_none());
+        db.start_multipart("f", "/a", "hash1", "k", "upl-1", PART_SIZE).unwrap();
+        db.add_multipart_part("f", "/a", 2, "e2").unwrap();
+        db.add_multipart_part("f", "/a", 1, "e1").unwrap();
+        db.add_multipart_part("f", "/a", 1, "e1-again").unwrap(); // re-upload of a part replaces it, never duplicates it
+        let st = db.get_multipart("f", "/a").unwrap().unwrap();
+        assert_eq!(st.upload_id, "upl-1");
+        assert_eq!(st.parts, vec![(1, "e1-again".to_string()), (2, "e2".to_string())]);
+        assert!(db.get_multipart("f", "/other").unwrap().is_none(), "state is per file");
+        db.clear_multipart("f", "/a").unwrap();
+        assert!(db.get_multipart("f", "/a").unwrap().is_none());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn secure_link_requires_a_finished_sync() {
+        let dir = std::env::temp_dir().join(format!("ds-sl-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let db = Arc::new(SyncStateDb::open(&dir.join("s.sqlite")).unwrap());
+        let client = Arc::new(S3Client::new("http://localhost:3000/api/s3".to_string(), "AKID".to_string(), "SECRET".to_string()));
+        let engine = SyncEngine { db: db.clone(), client };
+        let folder = FolderConfig { id: "f".to_string(), local_path: "/root".to_string(), bucket: "bkt".to_string(), prefix: "".to_string(), enabled: true };
+        let p = Path::new("/root/report one.pdf");
+        assert!(engine.create_secure_link(&folder, p, 600).is_err(), "an unknown file has nothing to share");
+        db.upsert_queued("f", &p.to_string_lossy(), 3, 0, "h", "report one.pdf").unwrap();
+        assert!(engine.create_secure_link(&folder, p, 600).is_err(), "a queued (not finished) file has nothing to share");
+        db.mark_done("f", &p.to_string_lossy()).unwrap();
+        let url = engine.create_secure_link(&folder, p, 600).unwrap();
+        assert!(url.starts_with("http://localhost:3000/api/s3/bkt/report%20one.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256"), "{}", url);
+        assert!(url.contains("X-Amz-Expires=600") && url.contains("X-Amz-Signature="));
+        assert!(engine.create_secure_link(&folder, p, 0).is_err() && engine.create_secure_link(&folder, p, 8 * 24 * 3600).is_err(), "expiry is bounded to 1s..7d");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn relative_key_joins_prefix_and_normalizes_windows_separators() {
         let root = Path::new(r"C:\Users\me\Documents");
         let file = Path::new(r"C:\Users\me\Documents\reports\q3.pdf");
@@ -755,5 +979,97 @@ mod tests {
 
         fs::remove_dir_all(&test_dir).ok();
         println!("Real end-to-end DirectSync test (watch -> upload -> verify -> duplicate-safe -> rename -> local-delete-preserves-remote): PASSED");
+    }
+
+    /// Real multipart + resume + secure link against a running dev server. Driven by test/directsync-rust-e2e.test.mjs,
+    /// which creates a disposable org credential and passes it in through the environment.
+    #[test]
+    #[ignore]
+    fn real_dev_server_resumable_multipart_and_secure_link() {
+        let endpoint = std::env::var("DIRECTSYNC_TEST_ENDPOINT").expect("set DIRECTSYNC_TEST_ENDPOINT");
+        let access_key_id = std::env::var("DIRECTSYNC_TEST_ACCESS_KEY_ID").expect("set DIRECTSYNC_TEST_ACCESS_KEY_ID");
+        let secret_access_key = std::env::var("DIRECTSYNC_TEST_SECRET_ACCESS_KEY").expect("set DIRECTSYNC_TEST_SECRET_ACCESS_KEY");
+        let bucket = std::env::var("DIRECTSYNC_TEST_BUCKET").unwrap_or_else(|_| format!("ds-mp-{}", std::process::id()));
+
+        let test_dir = std::env::temp_dir().join(format!("directsync-mp-{}", std::process::id()));
+        fs::create_dir_all(&test_dir).unwrap();
+        let watched = test_dir.join("watched");
+        fs::create_dir_all(&watched).unwrap();
+        let db = Arc::new(SyncStateDb::open(&test_dir.join("state.sqlite")).unwrap());
+        let client = Arc::new(S3Client::new(endpoint.clone(), access_key_id, secret_access_key));
+        let engine = SyncEngine { db: db.clone(), client: client.clone() };
+        let folder = FolderConfig { id: "mp".into(), local_path: watched.to_string_lossy().to_string(), bucket: bucket.clone(), prefix: "".into(), enabled: true };
+        db.add_folder(&folder).unwrap();
+
+        // Deterministic content that differs part to part, so a mis-ordered or re-sent part is detectable.
+        let make = |len: usize| -> Vec<u8> { (0..len).map(|i| ((i / 1000 + i) % 251) as u8).collect() };
+        let http = reqwest::blocking::Client::new();
+        let download = |url: &str| http.get(url).send().unwrap();
+
+        // 1. A multi-part file (9 MiB + 12345 bytes = 3 parts) uploads, verifies, and downloads byte-for-byte through a secure link.
+        let big = make(9 * 1024 * 1024 + 12345);
+        let file_big = watched.join("big file.bin");
+        fs::write(&file_big, &big).unwrap();
+        engine.sync_one_file(&folder, &file_big).unwrap();
+        assert!(db.get_multipart("mp", &file_big.to_string_lossy()).unwrap().is_none(), "the upload record is cleared once complete");
+        assert_eq!(client.head_object(&bucket, "big file.bin").unwrap(), Some(big.len() as u64));
+        let link = engine.create_secure_link(&folder, &file_big, 600).unwrap();
+        let resp = download(&link);
+        assert_eq!(resp.status().as_u16(), 200, "the secure link downloads");
+        assert_eq!(sha256_hex_bytes(&resp.bytes().unwrap()), sha256_hex_bytes(&big), "the downloaded bytes are the uploaded bytes");
+
+        // 2. A tampered link, or the same link pointed at another key, is refused.
+        assert_eq!(download(&link.replace("X-Amz-Expires=600", "X-Amz-Expires=601")).status().as_u16(), 403, "expiry is signed");
+        assert_eq!(download(&link.replace("big%20file.bin", "other.bin")).status().as_u16(), 403, "a link cannot be re-aimed at another key");
+
+        // 3. Resume. An earlier attempt got part 1 to the server and was then interrupted. We stand in for that attempt by
+        // uploading a part 1 filled with a marker byte and recording it exactly as the engine would. The resumed sync must NOT
+        // re-send part 1 (the object then starts with the marker) and must send parts 2 and 3 (the rest matches the real file).
+        let resumed = make(9 * 1024 * 1024 + 777);
+        let file_res = watched.join("resumed.bin");
+        fs::write(&file_res, &resumed).unwrap();
+        let hash = compute_file_hash(&file_res).unwrap();
+        let upload_id = client.create_multipart(&bucket, "resumed.bin").unwrap();
+        let marker = vec![0xABu8; PART_SIZE as usize];
+        let etag = client.upload_part(&bucket, "resumed.bin", &upload_id, 1, &marker).unwrap();
+        db.start_multipart("mp", &file_res.to_string_lossy(), &hash, "resumed.bin", &upload_id, PART_SIZE).unwrap();
+        db.add_multipart_part("mp", &file_res.to_string_lossy(), 1, &etag).unwrap();
+        engine.sync_one_file(&folder, &file_res).unwrap();
+        assert!(db.get_multipart("mp", &file_res.to_string_lossy()).unwrap().is_none());
+        assert_eq!(client.head_object(&bucket, "resumed.bin").unwrap(), Some(resumed.len() as u64));
+        let got = download(&engine.create_secure_link(&folder, &file_res, 600).unwrap()).bytes().unwrap();
+        assert_eq!(&got[..PART_SIZE as usize], &marker[..], "part 1 was kept from the interrupted attempt, not re-uploaded");
+        assert_eq!(&got[PART_SIZE as usize..], &resumed[PART_SIZE as usize..], "parts 2 and 3 were uploaded from the real file");
+
+        // 4. A recorded upload for DIFFERENT bytes is discarded, never stitched into the new content.
+        let changed = make(5 * 1024 * 1024 + 9);
+        let file_chg = watched.join("changed.bin");
+        fs::write(&file_chg, &changed).unwrap();
+        let stale_id = client.create_multipart(&bucket, "changed.bin").unwrap();
+        let stale_etag = client.upload_part(&bucket, "changed.bin", &stale_id, 1, &marker).unwrap();
+        db.start_multipart("mp", &file_chg.to_string_lossy(), "hash-of-some-older-version", "changed.bin", &stale_id, PART_SIZE).unwrap();
+        db.add_multipart_part("mp", &file_chg.to_string_lossy(), 1, &stale_etag).unwrap();
+        engine.sync_one_file(&folder, &file_chg).unwrap();
+        let got = download(&engine.create_secure_link(&folder, &file_chg, 600).unwrap()).bytes().unwrap();
+        assert_eq!(sha256_hex_bytes(&got), sha256_hex_bytes(&changed), "stale parts from another version of the file are not used");
+
+        // 5. If the server has dropped the recorded upload (aborted/expired), the engine starts over once and still succeeds.
+        let file_gone = watched.join("gone.bin");
+        let gone = make(5 * 1024 * 1024 + 3);
+        fs::write(&file_gone, &gone).unwrap();
+        let gone_hash = compute_file_hash(&file_gone).unwrap();
+        db.start_multipart("mp", &file_gone.to_string_lossy(), &gone_hash, "gone.bin", "upload-id-the-server-never-had", PART_SIZE).unwrap();
+        engine.sync_one_file(&folder, &file_gone).unwrap();
+        let got = download(&engine.create_secure_link(&folder, &file_gone, 600).unwrap()).bytes().unwrap();
+        assert_eq!(sha256_hex_bytes(&got), sha256_hex_bytes(&gone));
+
+        fs::remove_dir_all(&test_dir).ok();
+        println!("Real DirectSync multipart/resume/secure-link end-to-end test: PASSED");
+    }
+
+    fn sha256_hex_bytes(b: &[u8]) -> String {
+        let mut h = Sha256::new();
+        h.update(b);
+        hex::encode(h.finalize())
     }
 }
