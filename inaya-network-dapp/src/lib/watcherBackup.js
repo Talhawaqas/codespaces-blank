@@ -27,13 +27,15 @@ const BACKUP_PREFIX = "watcher-backups/";
  *  JSON file. Returns the blob's URL and a few counts so the caller (the
  *  cron route, or a manual invocation) has something concrete to log. */
 export async function runWatcherBackup() {
-  const { pioneers, sessions, programCounters, compensationLog } = await getWatcherCollections();
+  const { pioneers, sessions, programCounters, compensationLog, identities, walletLinks } = await getWatcherCollections();
 
-  const [pioneerDocs, sessionDocs, counterDoc, compensationDocs] = await Promise.all([
+  const [pioneerDocs, sessionDocs, counterDoc, compensationDocs, identityDocs, walletLinkDocs] = await Promise.all([
     pioneers.find({}).toArray(),
     sessions.find({}).toArray(),
     programCounters.findOne({ _id: "global" }),
     compensationLog.find({}).toArray(),
+    identities.find({}).toArray(),   // social-login additions: new keys only, the snapshot's existing keys are unchanged
+    walletLinks.find({}).toArray(),
   ]);
 
   const snapshot = {
@@ -42,11 +44,15 @@ export async function runWatcherBackup() {
       pioneers: pioneerDocs.length,
       sessions: sessionDocs.length,
       compensationGrants: compensationDocs.length,
+      socialIdentities: identityDocs.length,
+      walletLinks: walletLinkDocs.length,
     },
     programCounters: counterDoc,
     pioneers: pioneerDocs,
     sessions: sessionDocs,
     compensationLog: compensationDocs,
+    identities: identityDocs,
+    walletLinks: walletLinkDocs,
   };
 
   const filename = `${BACKUP_PREFIX}${snapshot.takenAt.replace(/[:.]/g, "-")}.json`;

@@ -82,6 +82,9 @@ export async function getWatcherCollections() {
     sessions: db.collection("watcher_sessions"),
     programCounters: db.collection("watcher_program_counters"),
     compensationLog: db.collection("watcher_compensation_log"),
+    // Social-login additions (see watcherSocial.js). New collections only: nothing above is changed.
+    identities: db.collection("watcher_identities"),
+    walletLinks: db.collection("watcher_wallet_links"),
   };
 }
 
@@ -160,7 +163,7 @@ export function verifyWatcherAuth({ action, extra, address, message, signature, 
 
 /** Idempotent — a repeat call for an already-enrolled wallet returns its
  *  existing record and consumes no cap slot. */
-export async function enrollWallet({ walletAddress, followedX, joinedTelegram }) {
+export async function enrollWallet({ walletAddress, followedX, joinedTelegram, extraFields = {} }) {
   const wallet = normalizeWallet(walletAddress);
   const { pioneers, programCounters } = await getWatcherCollections();
 
@@ -187,6 +190,7 @@ export async function enrollWallet({ walletAddress, followedX, joinedTelegram })
   const now = new Date();
   try {
     const pioneer = {
+      ...extraFields, // social participants carry their login provider here; can never override the fields below
       walletAddress: wallet,
       enrolledAt: now,
       followedX: true,
@@ -327,7 +331,7 @@ async function verifyUploadTxSucceeded(txHash, walletAddress) {
 /** Starts a new 24h Watcher session. Throws with a descriptive message on
  *  any rejection (not enrolled, already capped, tx verification failure,
  *  session already active) — routes translate these into HTTP responses. */
-export async function startSession({ walletAddress, qualifyingMethod, qualifyingRef }) {
+export async function startSession({ walletAddress, qualifyingMethod, qualifyingRef, txWallet = null }) {
   const wallet = normalizeWallet(walletAddress);
   const { pioneers, sessions } = await getWatcherCollections();
 
@@ -343,7 +347,8 @@ export async function startSession({ walletAddress, qualifyingMethod, qualifying
 
   if (qualifyingMethod === "upload") {
     if (!qualifyingRef) throw new Error("Missing transaction hash for the upload qualifying action.");
-    await verifyUploadTxSucceeded(qualifyingRef, wallet);
+    // A social participant has no wallet of their own key; their LINKED wallet must have sent the upload transaction.
+    await verifyUploadTxSucceeded(qualifyingRef, txWallet ? normalizeWallet(txWallet) : wallet);
   } else if (qualifyingMethod !== "social") {
     throw new Error(`Unknown qualifying method "${qualifyingMethod}".`);
   }

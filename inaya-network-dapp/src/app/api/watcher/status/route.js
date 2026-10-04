@@ -9,12 +9,25 @@
 
 import { NextResponse } from "next/server";
 import { ensureWatcherIndexes, getPioneerStatus, normalizeWallet } from "../../../../lib/watcherPioneer.js";
+import { verifySocialLogin, getSocialStatus } from "../../../../lib/watcherSocial.js";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
+
+    // Social login: the caller's own provider token in the Authorization header (a login's status includes its email, so unlike the wallet
+    // read it is not public). A request with a walletAddress and no token takes the unchanged wallet path.
+    const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    if (bearer && !searchParams.get("walletAddress")) {
+      let login;
+      try { login = await verifySocialLogin({ provider: searchParams.get("provider") || "google", idToken: bearer }); }
+      catch (authErr) { return NextResponse.json({ error: authErr.message }, { status: 401 }); }
+      await ensureWatcherIndexes();
+      return NextResponse.json(await getSocialStatus({ login }));
+    }
+
     const wallet = normalizeWallet(searchParams.get("walletAddress") || "");
     if (!wallet) {
       return NextResponse.json({ error: "walletAddress is required." }, { status: 400 });

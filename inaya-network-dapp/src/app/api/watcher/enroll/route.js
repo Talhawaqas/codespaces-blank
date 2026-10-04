@@ -16,13 +16,33 @@ import {
   enrollWallet,
   normalizeWallet,
 } from "../../../../lib/watcherPioneer.js";
+import { verifySocialLogin, enrollSocial, assertWalletNotLinked, socialKey } from "../../../../lib/watcherSocial.js";
 import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    const { walletAddress, followedX, joinedTelegram, message, signature, timestamp } = await req.json();
+    const body = await req.json();
+    const { walletAddress, followedX, joinedTelegram, message, signature, timestamp } = body;
+
+    // Social login (a provider token instead of a wallet signature). Only taken when a token is sent WITHOUT a signature, so every existing
+    // wallet client, including older app builds, goes through the unchanged wallet path below.
+    if (body.idToken && !signature) {
+      let login;
+      try { login = await verifySocialLogin({ provider: body.provider, idToken: body.idToken }); }
+      catch (authErr) { return NextResponse.json({ error: authErr.message }, { status: 401 }); }
+      const risk = await enforceRiskGate({ req, identityId: socialKey(login.provider, login.subject), surface: "watcher" });
+      if (!risk.allowed) return NextResponse.json({ error: RISK_GATE_REJECTION.error }, { status: RISK_GATE_REJECTION.status });
+      await ensureWatcherIndexes();
+      try {
+        const { pioneer, alreadyEnrolled } = await enrollSocial({ login, followedX, joinedTelegram });
+        return NextResponse.json({ alreadyEnrolled, totalPoints: pioneer.totalPoints, enrolledAt: pioneer.enrolledAt });
+      } catch (programErr) {
+        return NextResponse.json({ error: programErr.message }, { status: programErr.status || 409 });
+      }
+    }
+
     const wallet = normalizeWallet(walletAddress);
     if (!wallet) {
       return NextResponse.json({ error: "walletAddress is required." }, { status: 400 });
@@ -53,6 +73,7 @@ export async function POST(req) {
     await ensureWatcherIndexes();
 
     try {
+      await assertWalletNotLinked(wallet); // a wallet linked to a social account must not become a second participant
       const { pioneer, alreadyEnrolled } = await enrollWallet({ walletAddress: wallet, followedX, joinedTelegram });
       return NextResponse.json({
         alreadyEnrolled,
@@ -60,7 +81,7 @@ export async function POST(req) {
         enrolledAt: pioneer.enrolledAt,
       });
     } catch (programErr) {
-      return NextResponse.json({ error: programErr.message }, { status: 409 });
+      return NextResponse.json({ error: programErr.message }, { status: programErr.status || 409 });
     }
   } catch (err) {
     console.error("watcher/enroll failed:", err);

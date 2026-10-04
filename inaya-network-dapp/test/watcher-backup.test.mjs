@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { ethers } from "ethers";
 import { del } from "@vercel/blob";
 import {
-  getWatcherCollections, ensureWatcherIndexes, enrollWallet,
+  getWatcherCollections, ensureWatcherIndexes, enrollWallet, ENROLLMENT_PROMO_POINTS, ENROLLMENT_PROMO_CUTOFF,
 } from "../src/lib/watcherPioneer.js";
 import { runWatcherBackup, listWatcherBackups, readWatcherBackup } from "../src/lib/watcherBackup.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
@@ -50,9 +50,13 @@ test("runWatcherBackup: uploads a real snapshot to Blob containing the current d
   assert.ok(Array.isArray(snapshot.pioneers));
   const mine = snapshot.pioneers.find((p) => p.walletAddress === address);
   assert.ok(mine, "the freshly-enrolled wallet must appear in the actual uploaded snapshot");
-  assert.equal(mine.totalPoints, 0);
+  // a new enrollment gets the SQA-037 promo while it is running (the original expectation of 0 predates the promo)
+  assert.equal(mine.totalPoints, new Date() <= ENROLLMENT_PROMO_CUTOFF ? ENROLLMENT_PROMO_POINTS : 0);
   assert.ok(snapshot.programCounters, "should include the program counter doc");
   assert.ok(Array.isArray(snapshot.compensationLog));
+  // social-login additions are backed up too (new keys; the existing ones are unchanged)
+  assert.ok(Array.isArray(snapshot.identities) && Array.isArray(snapshot.walletLinks));
+  assert.equal(typeof result.socialIdentities, "number");
 });
 
 test("listWatcherBackups: the snapshot just taken shows up in the listing", async () => {
