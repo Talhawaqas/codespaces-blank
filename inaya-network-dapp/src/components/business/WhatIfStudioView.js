@@ -132,6 +132,16 @@ export default function WhatIfStudioView({ orgId }) {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState(null);
+  const [verification, setVerification] = useState(null);
+
+  // Re-open a past run exactly as it was returned, with its integrity re-checked against the audit chain.
+  async function openPast(simulationId) {
+    setError(""); setBusy(true);
+    try {
+      const r = await api(`/api/orgs/digital-twin/simulate?orgId=${orgId}&simulationId=${encodeURIComponent(simulationId)}`);
+      setResult(r.simulation); setVerification(r.verification);
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
 
   const loadHistory = useCallback(async () => {
     try {
@@ -176,7 +186,7 @@ export default function WhatIfStudioView({ orgId }) {
     try {
       const params = scenarioType === "PROJECT_DELAYED" ? { delayDays: Number(delayDays) } : {};
       const { simulation } = await api("/api/orgs/digital-twin/simulate", { method: "POST", body: JSON.stringify({ orgId, scenarioType, entityId, params }) });
-      setResult(simulation);
+      setResult(simulation); setVerification(null);
       loadHistory();
     } catch (err) {
       setError(err.message);
@@ -239,6 +249,13 @@ export default function WhatIfStudioView({ orgId }) {
           </div>
         </div>
 
+        {result && verification && (
+          <p role="status" className={`text-[12px] rounded-lg border p-2.5 ${verification.verified ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400" : "border-red-400/30 bg-red-400/10 text-red-400"}`}>
+            {verification.verified
+              ? `Saved result from ${new Date(result.runAt).toLocaleString()}. Integrity verified: it matches the hash recorded in the audit chain.`
+              : `Saved result from ${new Date(result.runAt).toLocaleString()}. Integrity check FAILED: ${!verification.auditEntryFound ? "the audit entry is missing" : !verification.storedMatchesResult ? "the stored result no longer matches its own hash" : "the audit entry's hash differs"}. Do not rely on this copy.`}
+          </p>
+        )}
         {result && <ResultPanel simulation={result} />}
       </div>
 
@@ -256,6 +273,7 @@ export default function WhatIfStudioView({ orgId }) {
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${STATUS_STYLES[h.resultStatus] || ""}`}>{h.resultStatus}</span>
                   <span className="text-[11px] font-mono text-[var(--inaya-text-muted)]">{new Date(h.runAt).toLocaleString()}</span>
+                  <button type="button" disabled={busy} onClick={() => openPast(h.simulationId)} className="text-[10px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">Open</button>
                 </div>
               </div>
             ))}

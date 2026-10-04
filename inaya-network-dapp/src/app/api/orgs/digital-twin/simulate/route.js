@@ -1,6 +1,7 @@
 // app/api/orgs/digital-twin/simulate/route.js
 //
 // GET  /api/orgs/digital-twin/simulate?orgId=&limit=  -> scenario history
+// GET  /api/orgs/digital-twin/simulate?orgId=&simulationId=  -> re-open one past simulation, with its integrity re-verified
 // POST /api/orgs/digital-twin/simulate
 // Body: { orgId, scenarioType, entityId, params? }
 //   scenarioType: SUPPLIER_UNAVAILABLE | EMPLOYEE_ACCESS_REMOVED | PROJECT_DELAYED | WAREHOUSE_UNAVAILABLE
@@ -14,7 +15,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
-import { simulateDigitalTwinScenario, listDigitalTwinSimulations, SCENARIO_TYPES } from "../../../../../lib/digitalTwinSimulate.js";
+import { simulateDigitalTwinScenario, listDigitalTwinSimulations, getDigitalTwinSimulation, SCENARIO_TYPES } from "../../../../../lib/digitalTwinSimulate.js";
 
 export async function GET(req) {
   try {
@@ -25,6 +26,13 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const simulationId = searchParams.get("simulationId");
+    if (simulationId) {
+      const one = await getDigitalTwinSimulation({ orgId, simulationId, membership: auth.membership, email: auth.session.email });
+      if (one.error) return NextResponse.json({ error: one.error }, { status: one.status });
+      return NextResponse.json(one);
+    }
 
     const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
     const history = await listDigitalTwinSimulations({ orgId, limit });

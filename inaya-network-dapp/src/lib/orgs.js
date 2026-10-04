@@ -527,6 +527,8 @@ export async function getOrgCollections() {
     // AI Security Workflow 2026 SOW
     aiSecurityChecks: db.collection("aiSecurityChecks"),
     aiSecurityPolicies: db.collection("aiSecurityPolicies"),
+    // Digital Twin: the full result of every simulation, kept so a past run can be re-opened and its integrity re-checked
+    digitalTwinSnapshots: db.collection("digitalTwinSnapshots"),
     aiModelRegistry: db.collection("aiModelRegistry"),
     // Native Document & Invoice Automation Engine SOW
     generatedDocuments: db.collection("generatedDocuments"),
@@ -611,7 +613,7 @@ export async function ensureOrgIndexes() {
     legacyDataSources, legacySourceCredentials, legacyVirtualSchemas, legacyVirtualTables, legacyQueryLog,
     nasAppliances, nasShares, nasUsers, nasBackupRuns, nasRecoveryDrills,
     nasGroups, nasPools, nasSnapshots, nasSnapshotPolicies, nasBackupPolicies, nasBackupIndex, nasReplicationPolicies, nasCloudTargets, nasThreatEvents, nasTieringProposals, nasJobs, nasEvidence, nasUpdates, nasStateCommitments, nasAcls, nasRequests, nasApplianceState,
-    aiSecurityChecks, aiSecurityPolicies, aiModelRegistry,
+    aiSecurityChecks, aiSecurityPolicies, aiModelRegistry, digitalTwinSnapshots,
     generatedDocuments,
     documentTemplates, documentNumberLedger, documentAutomationSettings, documentDeliveries, documentAccessEvents, documentJobs, documentMetrics,
     workflows, workflowVersions, workflowExecutions, workflowEffects, workflowMemory, workflowCredentials, workflowEvidence, workflowEvaluations, workflowRequests, workflowWebhookHits,
@@ -921,6 +923,7 @@ export async function ensureOrgIndexes() {
     aiSecurityChecks.createIndex({ orgId: 1, decision: 1, createdAt: -1 }),
     aiSecurityChecks.createIndex({ requestId: 1 }),
     aiSecurityPolicies.createIndex({ orgId: 1, active: 1 }),
+    digitalTwinSnapshots.createIndex({ orgId: 1, simulationId: 1 }, { unique: true }),
     aiModelRegistry.createIndex({ id: 1 }, { unique: true }),
     // Native Document & Invoice Automation Engine SOW
     generatedDocuments.createIndex({ orgId: 1, sourceRecordType: 1, sourceRecordId: 1, createdAt: -1 }),

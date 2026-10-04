@@ -264,6 +264,12 @@ export async function simulateDigitalTwinScenario({ orgId, scenarioType, entityI
     metadata: { scenarioType, entityId: String(entityId), resultStatus: result.resultStatus, integrityHash, ...provenance },
   });
 
+  // Keep the full result so the run can be re-opened later and its hash re-checked. Non-fatal: the audit entry above is the record of truth.
+  try {
+    const { digitalTwinSnapshots } = await getOrgCollections();
+    await digitalTwinSnapshots.insertOne({ orgId: toObjectId(orgId), simulationId: event.eventId, runByEmail: actorEmail, scenarioType, entityId: String(entityId), result, ...provenance, integrityHash, createdAt: new Date().toISOString() });
+  } catch (err) { console.error("digital twin snapshot failed (non-fatal):", err.message); }
+
   // AI Business Operations Manager SOW: a completed simulation can start a workflow (never one started by a workflow itself).
   if (params?.source !== "workflow") {
     import("./workflows/queue.js").then((m) => m.emitWorkflowEvent({ orgId, type: "twin_complete", key: scenarioType, eventId: event.eventId, payload: { scenarioType, simulationId: event.eventId, resultStatus: result.resultStatus, integrityHash } }))
@@ -271,6 +277,30 @@ export async function simulateDigitalTwinScenario({ orgId, scenarioType, entityI
   }
 
   return { simulation: { ...result, simulationId: event.eventId, ...provenance, integrityHash, runAt: event.timestamp, runByEmail: actorEmail } };
+}
+
+/** The integrity hash for a result: the same function the original run used, so a stored result can be re-checked. */
+export function hashSimulationResult(result, provenance) {
+  return createHash("sha256")
+    .update(canonicalizeForExport({ scenario: result.scenario, directImpact: result.directImpact, indirectImpact: result.indirectImpact || null, unknowns: result.unknowns, ...provenance }))
+    .digest("hex");
+}
+
+/** Re-opens a past simulation exactly as it was returned when it ran, and re-verifies it: the stored result is re-hashed and compared with BOTH the
+ *  hash saved beside it and the hash recorded in the tamper-evident audit entry (so editing the stored copy is detected). Only the person who ran it
+ *  or an owner/admin can re-open it: the result was scoped to what the runner was allowed to see. */
+export async function getDigitalTwinSimulation({ orgId, simulationId, membership, email }) {
+  const { digitalTwinSnapshots, orgActivity } = await getOrgCollections();
+  const snap = await digitalTwinSnapshots.findOne({ orgId: toObjectId(orgId), simulationId: String(simulationId) });
+  if (!snap) return { error: "No saved copy of this simulation exists (it may pre-date saved results).", status: 404 };
+  const { canManageOrg } = await import("./orgs.js");
+  if (snap.runByEmail !== email && !canManageOrg(membership)) return { error: "Only the person who ran this simulation or an owner/admin can open it.", status: 403 };
+  const provenance = { modelVersion: snap.modelVersion, rulesVersion: snap.rulesVersion };
+  const recomputed = hashSimulationResult(snap.result, provenance);
+  const audit = await orgActivity.findOne({ orgId: toObjectId(orgId), recordType: "DIGITAL_TWIN_SIMULATION", action: "SIMULATION_RUN", eventId: snap.simulationId });
+  const auditHash = audit?.metadata?.integrityHash || null;
+  const verified = recomputed === snap.integrityHash && auditHash === snap.integrityHash;
+  return { simulation: { ...snap.result, simulationId: snap.simulationId, ...provenance, integrityHash: snap.integrityHash, runAt: snap.createdAt, runByEmail: snap.runByEmail }, verification: { verified, storedMatchesResult: recomputed === snap.integrityHash, auditEntryFound: !!audit, auditMatches: auditHash === snap.integrityHash } };
 }
 
 /** Scenario history (SOW's "scenario history" UI requirement) -- reads
