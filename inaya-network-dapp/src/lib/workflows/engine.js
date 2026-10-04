@@ -58,6 +58,7 @@ export function orgIsActive(org) { return !!org && !org.disabledAt && org.status
 /** Re-checks who is allowed to run this, from live records. Returns { membership } or throws a fatal error. */
 async function authorizeRun({ exec, definition, workflow, org }) {
   if (!orgIsActive(org)) throw Object.assign(new Error("The organization is disabled or no longer exists."), { code: "ORG_INACTIVE", fatal: true });
+  if (exec.mode === "production" && org.automationsOffAt) throw Object.assign(new Error("Workflow Automations are switched off for this organization."), { code: "AUTOMATIONS_OFF", fatal: true });
   if (exec.mode === "production" && (!workflow || workflow.deletedAt || workflow.status !== "ACTIVE")) throw Object.assign(new Error("The workflow is disabled or no longer active."), { code: "WORKFLOW_INACTIVE", fatal: true, cancel: true });
   const membership = await getMembership(exec.orgId, exec.runAs);
   if (!membership) throw Object.assign(new Error(`The run identity (${exec.runAs}) is no longer an active member of this organization.`), { code: "PERMISSION_REVOKED", fatal: true });

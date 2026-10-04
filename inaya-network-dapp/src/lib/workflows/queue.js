@@ -20,6 +20,7 @@ import { getOrgCollections, toObjectId, getMembership } from "../orgs.js";
 import { nextRun } from "./schedule.js";
 import { normalizeSettings } from "./nodes.js";
 import { runExecution, resolveApprovalWaits, orgIsActive, LeaseLost } from "./engine.js";
+import { automationsOff } from "./orgSwitch.js";
 import { recordWorkflowEvidence } from "./evidence.js";
 import { runDataNode } from "./data.js";
 import { buildDataContext } from "./data.js";
@@ -42,6 +43,9 @@ export async function enqueueExecution({ orgId, workflow, version, definition = 
   if (payloadBytes > MAX_PAYLOAD_BYTES) return fail("The trigger payload or test data is too large.", 413);
 
   if (mode === "production") {
+    // The organization's own off switch (orgSwitch.js): nothing consequential is created while automations are off.
+    const { orgs } = await getOrgCollections();
+    if (automationsOff(await orgs.findOne({ _id: oid }, { projection: { automationsOffAt: 1 } }))) return fail("Workflow Automations are switched off for this organization.", 403, { reasonCode: "AUTOMATIONS_OFF" });
     const hourAgo = new Date(Date.now() - 3600_000).toISOString(); const dayAgo = new Date(Date.now() - 86400_000).toISOString();
     const [h, d, active] = await Promise.all([
       workflowExecutions.countDocuments({ orgId: oid, workflowId: wid, mode: "production", createdAt: { $gte: hourAgo } }),

@@ -23,6 +23,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { computeBusinessInsights } from "./business-insights.js";
 import { documentAutomationBullets } from "./documentAutomation/briefIntegration.js";
+import { evidenceGraphBullets } from "./evidenceBriefIntegration.js";
 
 export const BRIEF_PERIODS = { daily: 1, weekly: 7, monthly: 30, yearly: 365 };
 const PERIOD_LABELS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
@@ -107,6 +108,8 @@ export async function generateBusinessBrief({ orgId, membership, email, period, 
   // across documents this reader may see; never allowed to fail the brief.
   const sinceIso = new Date(Date.now() - BRIEF_PERIODS[period] * 86400000).toISOString();
   highlights.push(...(await documentAutomationBullets({ orgId, membership, email, sinceIso }).catch(() => [])));
+  // Evidence Graph SOW follow-up: business events opened in the period and those still awaiting a decision (permission-filtered).
+  highlights.push(...(await evidenceGraphBullets({ orgId, membership, sinceIso }).catch(() => [])));
 
   const summary = includeNarrative
     ? await generateNarrative({ periodLabel, orgName: orgName || "your company", highlights, alerts: insights.alerts })

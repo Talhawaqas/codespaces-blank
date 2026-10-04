@@ -24,6 +24,10 @@ export default function WorkflowsView({ orgId, canManage }) {
   const [name, setName] = useState("");
   const create = useAction(async (r) => { setName(""); await list.reload(); if (r?.workflow) setEditing(r.workflow); });
   const del = useAction(list.reload);
+  // The organization-wide off switch (owner/admin). Visible to everyone so nobody wonders why runs are being refused.
+  const sw = useLoad(`/api/orgs/workflows/automations?${q}`);
+  const toggleSw = useAction(sw.reload);
+  const switchedOff = sw.data && sw.data.enabled === false;
 
   if (editing) {
     return <Editor orgId={orgId} workflow={editing} catalog={catalog.data} onSaved={list.reload} onClose={() => { setEditing(null); list.reload(); }} />;
@@ -35,6 +39,12 @@ export default function WorkflowsView({ orgId, canManage }) {
         <h2 className="text-lg font-semibold">Automations</h2>
         <p className="text-sm text-[var(--inaya-text-muted)]">Build, schedule and audit business workflows that combine your data, an AI Operations Manager, rules and notifications. Anything that changes a business record goes through human approval first.</p>
       </header>
+      {switchedOff && (
+        <div role="status" className="rounded border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-400">
+          Automations are switched off for this organization{sw.data.offSince ? ` since ${new Date(sw.data.offSince).toLocaleString()}` : ""}{sw.data.offBy ? ` by ${sw.data.offBy}` : ""}. Scheduled and triggered runs are being refused; you can still edit, test and dry-run workflows.
+          {sw.data.reason && <span className="block text-[var(--inaya-text-muted)]">Reason: {sw.data.reason}</span>}
+        </div>
+      )}
       <nav aria-label="Automation sections" className="flex flex-wrap gap-1">
         {TABS.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setTab(id)} aria-current={tab === id ? "page" : undefined}
@@ -44,6 +54,18 @@ export default function WorkflowsView({ orgId, canManage }) {
 
       {tab === "workflows" && (
         <div className="space-y-4">
+          {canManage && sw.data && (
+            <Card title="Organization switch">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-[var(--inaya-text-muted)] flex-1 min-w-[16rem]">{switchedOff ? "Automations are off. Turn them back on to let schedules and triggers run again." : "Automations are on. Turning them off stops every scheduled and triggered run for the whole organization until you turn them on again."}</p>
+                <Btn busy={toggleSw.busy} onClick={() => {
+                  if (!switchedOff && !window.confirm("Turn off all automations for this organization?")) return;
+                  toggleSw.run(() => api("/api/orgs/workflows/automations", { method: "PUT", body: JSON.stringify({ orgId, enabled: !!switchedOff }) }));
+                }}>{switchedOff ? "Turn automations on" : "Turn automations off"}</Btn>
+              </div>
+              <Err error={toggleSw.error} />
+            </Card>
+          )}
           <Card title="New workflow">
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-[16rem] flex-1"><Input id="wf-new-name" label="Name" value={name} onChange={setName} placeholder="Daily Operations" /></div>
