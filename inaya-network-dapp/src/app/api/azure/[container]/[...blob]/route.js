@@ -46,6 +46,7 @@ export async function PUT(req, { params }) {
         const doc = await store.commitAzureBlockList({ ...ownerArgs(owner), bucket: params.container, key: blob, blockIds, contentType, actorEmail: accessKeyId });
         return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${etagOf(doc)}"` } });
       } catch (err) {
+        if (err?.reason === "FileLocked") return azureError("LeaseIdMissing", err.message);
         if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
         return azureError("InvalidBlockList", err.message);
       }
@@ -62,6 +63,7 @@ export async function PUT(req, { params }) {
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, bodyBuffer, contentType, actorEmail: accessKeyId });
     return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${etagOf(doc)}"` } });
   } catch (err) {
+    if (err?.reason === "FileLocked") return azureError("LeaseIdMissing", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
     console.error("PUT /api/azure/[container]/[...blob] failed:", err);

@@ -66,3 +66,13 @@ New: `file_share_access_events` (TTL 400 d), `drm_sessions` (TTL on `expiresAt`)
 
 Server side verified by tests against the real database (`test/sharing-policy.test.mjs`, `sharing-shares.test.mjs`,
 `sharing-routes.test.mjs`). Share manager UI, the recipient viewer page, file requests and file locks: see the implementation ledger.
+
+## File requests (inbound upload links)
+
+An owner creates a request in Business Workspace, File Requests. The browser generates an ECDH P-256 key pair; the private key is wrapped with the owner's passphrase (PBKDF2, 310,000 iterations) and stored wrapped. A visitor opens `/request/<token>` (no account), and their browser seals each file to the request's public key (ECDH + HKDF-SHA256 + AES-256-GCM, request id as AAD) and uploads ciphertext in 1.5 MiB parts. The server stores only ciphertext; the original filename and type are inside the ciphertext, so the owner's list shows "Encrypted file, size" until the passphrase unlocks it.
+
+Limits enforced server-side: allowed extensions, risky-type refusal, per-file size, maximum file count (atomic slot at completion), per-IP rate limit, expiry and close. Honest limits: Inaya cannot scan encrypted uploads for malware or classify them (the page and the owner UI say so); a forgotten passphrase cannot be recovered; a visitor who keeps the page open can see only their own receipts.
+
+## File locks
+
+An owner or editor takes a lease (default 15 minutes, maximum 8 hours) on a document. The lease lives on the document row and is set by one atomic conditional write. It is enforced at the storage chokepoint used by the S3 and Azure compatible endpoints (put, delete, lifecycle: S3 `OperationAborted` 409, Azure `LeaseIdMissing` 412) and by the new-version route (HTTP 423). The holder renews or releases; someone with Manage access or an organization admin can break it; stale leases are swept. Locks do not stop anyone from reading, and DirectSync status mapping is not wired yet.

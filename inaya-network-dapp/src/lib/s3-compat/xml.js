@@ -20,6 +20,8 @@ const ERROR_STATUS = {
   NoSuchKey: 404,
   BucketAlreadyOwnedByYou: 409,
   BucketNotEmpty: 409,
+  // A locked file (Sharing 2.0 file lock): S3's own "a conflicting operation is in progress" code, status 409.
+  OperationAborted: 409,
   InvalidRequest: 400,
   NoSuchUpload: 404,
   InternalError: 500,

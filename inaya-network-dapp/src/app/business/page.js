@@ -75,6 +75,11 @@ import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
+import SharesView from "../../components/business/shares/SharesView";
+import FileRequestsView from "../../components/business/shares/FileRequestsView";
+import LockControl from "../../components/business/shares/LockControl";
+import AdvancedShareForm from "../../components/business/shares/AdvancedShareForm";
+import BetaFeaturesPanel from "../../components/business/BetaFeaturesPanel";
 import StorageControlPlaneView from "../../components/business/StorageControlPlaneView";
 import DataSourcesView from "../../components/business/DataSourcesView";
 import NasManagementView from "../../components/business/NasManagementView";
@@ -721,6 +726,8 @@ const NAV_ITEMS = [
   { key: "brief", label: "Brief", icon: "insights", group: "core" },
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
+  { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
+  { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
   { key: "projects", label: "Projects", icon: "projects", group: "operations" },
   { key: "documents", label: "Documents", icon: "documents", group: "operations" },
@@ -1038,6 +1045,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     insights: { title: "Business Insights", description: "KPIs, trends, and alerts for this company." },
     brief: { title: "Business Brief", description: "A periodic recap of what happened and what needs attention." },
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
+    fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
+    shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
     security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
     browse: { title: BROWSE_SECTION_LABELS[browseSection], description: "Company → Department → Project → Document." },
@@ -1179,6 +1188,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             />
           )}
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
+          {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
+          {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
           {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
@@ -1238,6 +1249,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "settings" && canManage && (
             <div className="space-y-6">
               <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
+              <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
               <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
               <TeamView orgId={orgId} email={email} />
             </div>
@@ -2166,6 +2178,13 @@ function SharePanel({ documentId, orgId }) {
   const [preset, setPreset] = useState("24h");
   const [maxUses, setMaxUses] = useState("");
   const [newShareUrl, setNewShareUrl] = useState("");
+  const [advancedOn, setAdvancedOn] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  useEffect(() => {
+    let off = false;
+    fetch(`/api/orgs/features?orgId=${orgId}`, { credentials: "include" }).then((r) => r.json()).then((d) => { if (!off) setAdvancedOn(!!d.features?.find((f) => f.name === "FEATURE_ADVANCED_SHARING")?.enabled); }).catch(() => {});
+    return () => { off = true; };
+  }, [orgId]);
 
   const load = useCallback(async () => {
     try {
@@ -2222,6 +2241,14 @@ function SharePanel({ documentId, orgId }) {
           {creating ? "…" : "Create link"}
         </button>
       </form>
+
+      {advancedOn && (
+        <div className="mt-2">
+          <button type="button" onClick={() => setShowAdvanced((v) => !v)} className="text-[11px] font-bold uppercase text-[#00f2fe] underline" aria-expanded={showAdvanced}>{showAdvanced ? "Hide advanced link options" : "Advanced link options (password, limits, one-time…)"}</button>
+          {showAdvanced && <AdvancedShareForm orgId={orgId} documentId={documentId} onCreated={() => load()} />}
+          <LockControl orgId={orgId} documentId={documentId} />
+        </div>
+      )}
 
       {newShareUrl && (
         <div className="mt-2 bg-black/20 border border-[var(--inaya-overlay-10)] rounded-lg p-2">

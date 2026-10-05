@@ -571,168 +571,243 @@
       "title": "Password-protected links",
       "priority": "P1",
       "sow": "B1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/sharing/shares.js",
+        "src/components/business/shares/AdvancedShareForm.js",
+        "src/components/shares/V2Viewer.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Browser-verified 2026-10-04 on a production build: create link with password, wrong password refused, correct password opens v2 viewer. scrypt + lockout."
     },
     {
       "id": "SHARE-002",
       "title": "Share kinds: private, group, public, expiring, one-time",
       "priority": "P1",
       "sow": "B1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/sharing/policy.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/net/cidr.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/sharing-policy.test.mjs",
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Server logic tested against the real DB; max-openings counted in browser. Flag-gated (FEATURE_ADVANCED_SHARING, default off). Honest limit: view-only is a viewer mode, revocation cannot recall downloaded bytes."
     },
     {
       "id": "SHARE-003",
       "title": "Permission levels: view-only, upload-only, read/write, manage",
       "priority": "P1",
       "sow": "B1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/sharing/policy.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/net/cidr.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/sharing-policy.test.mjs",
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Server logic tested against the real DB; max-openings counted in browser. Flag-gated (FEATURE_ADVANCED_SHARING, default off). Honest limit: view-only is a viewer mode, revocation cannot recall downloaded bytes."
     },
     {
       "id": "SHARE-004",
       "title": "Max downloads, max expiry, IP / domain / device restriction",
       "priority": "P1",
       "sow": "B1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/sharing/policy.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/net/cidr.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/sharing-policy.test.mjs",
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Server logic tested against the real DB; max-openings counted in browser. Flag-gated (FEATURE_ADVANCED_SHARING, default off). Honest limit: view-only is a viewer mode, revocation cannot recall downloaded bytes."
     },
     {
       "id": "SHARE-005",
       "title": "Notify-on-access, watermark option, revoke any time",
       "priority": "P1",
       "sow": "B1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/sharing/policy.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/net/cidr.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/sharing-policy.test.mjs",
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Server logic tested against the real DB; max-openings counted in browser. Flag-gated (FEATURE_ADVANCED_SHARING, default off). Honest limit: view-only is a viewer mode, revocation cannot recall downloaded bytes."
     },
     {
       "id": "SHARE-006",
       "title": "Share manager (by me / with me / active / expired / revoked / pending) + delegate",
       "priority": "P1",
       "sow": "B2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/components/business/shares/SharesView.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "By-me list, create, status badge verified in browser; with-me / whole-org tabs and access-log dialog not clicked through."
     },
     {
       "id": "SHARE-007",
       "title": "Share access events + audit",
       "priority": "P1",
       "sow": "B2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/sharing/policy.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/net/cidr.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/sharing-policy.test.mjs",
+        "test/sharing-shares.test.mjs",
+        "test/sharing-routes.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Server logic tested against the real DB; max-openings counted in browser. Flag-gated (FEATURE_ADVANCED_SHARING, default off). Honest limit: view-only is a viewer mode, revocation cannot recall downloaded bytes."
     },
     {
       "id": "REQ-001",
       "title": "File request (secure upload link) create/revoke/expire",
       "priority": "P2",
       "sow": "B3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/filerequests/requests.js",
+        "src/lib/filerequests/clientCrypto.js",
+        "src/components/business/shares/FileRequestsView.js",
+        "src/app/request/[token]/page.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/file-requests.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Browser-verified 2026-10-04: owner creates request (passphrase), visitor uploads from public page, owner unlocks and saves; 2050 bytes round-tripped exactly. Sealed-box ECDH P-256 + HKDF + AES-256-GCM in browser."
     },
     {
       "id": "REQ-002",
       "title": "File request public upload: limits, scan, classification hook, notify, audit",
       "priority": "P2",
       "sow": "B3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/filerequests/requests.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/file-requests.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Extension/risky-type/size/count/rate limits enforced and tested. Antivirus scan and classification hooks are NOT possible on end-to-end encrypted uploads; documented on the page and in the UI."
     },
     {
       "id": "REQ-003",
       "title": "File request status + owner view",
       "priority": "P2",
       "sow": "B3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/components/business/shares/FileRequestsView.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/file-requests.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Owner view shows count/expiry/uploader; filename hidden until passphrase unlock (verified in browser)."
     },
     {
       "id": "LOCK-001",
       "title": "File lock/unlock/lease/force release/stale cleanup",
       "priority": "P1",
       "sow": "B4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/filelocks.js",
+        "src/app/api/orgs/file-locks/route.js",
+        "src/components/business/shares/LockControl.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/file-locks.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Browser: lock shown in document Share panel as mine with Renew/Unlock; atomic acquire, lease expiry, force-break, stale sweep covered by 9 tests."
     },
     {
       "id": "LOCK-002",
       "title": "Lock enforced in documents, S3/Azure, DirectSync",
       "priority": "P1",
       "sow": "B4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/s3-compat/store.js",
+        "src/app/api/orgs/documents/[documentId]/versions/route.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/file-locks.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Enforced at S3/Azure store chokepoint (put/delete/lifecycle) and new-version route (423). DirectSync status mapping not yet wired."
     },
     {
       "id": "GOV-001",

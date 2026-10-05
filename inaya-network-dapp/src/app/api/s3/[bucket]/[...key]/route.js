@@ -137,6 +137,7 @@ export async function PUT(req, { params }) {
       headers: { ETag: `"${etagOf(doc)}"`, ...checksumHeaders(doc), ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) },
     });
   } catch (err) {
+    if (err?.reason === "FileLocked") return s3Error("OperationAborted", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
     const folderResp = folderAwareError(err);
@@ -372,6 +373,7 @@ export async function DELETE(req, { params }) {
     const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
     return new Response(null, { status: 204, headers: result?.deleteMarker ? { "x-amz-delete-marker": "true" } : {} });
   } catch (err) {
+    if (err?.reason === "FileLocked") return s3Error("OperationAborted", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") {
       return s3Error("AccessDenied", err.message);
     }

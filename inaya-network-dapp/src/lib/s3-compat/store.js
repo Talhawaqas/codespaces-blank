@@ -168,8 +168,24 @@ function assertNotProtected(doc, actionLabel) {
 export class ObjectProtectedError extends Error {
   constructor(message, reason) {
     super(message);
-    this.reason = reason; // "LegalHold" | "ObjectLocked"
+    this.reason = reason; // "LegalHold" | "ObjectLocked" | "FileLocked"
   }
+}
+
+/** File lock (Sharing 2.0, src/lib/filelocks.js): a person's edit lease on an object. Throws unless the lease has ended or the writer IS the
+ *  holder. API writers arrive as an access key id; the holder's own credentials count as the holder (resolved here, so no route needs to change).
+ *  Applies even when versioning is on: a lock is about who may change the file now, not about destroying bytes. */
+async function assertNotLocked(doc, actor, actionLabel) {
+  const l = doc?.lock;
+  if (!l || !l.expiresAt || new Date(l.expiresAt).getTime() <= Date.now()) return;
+  let who = String(actor || "").trim().toLowerCase();
+  if (who && !who.includes("@")) {
+    const { db } = await getOrgCollections();
+    const cred = await db.collection("s3_credentials").findOne({ accessKeyId: String(actor) }, { projection: { createdByEmail: 1 } });
+    who = String(cred?.createdByEmail || "").toLowerCase();
+  }
+  if (who && who === String(l.byEmail || "").toLowerCase()) return;
+  throw new ObjectProtectedError(`Cannot ${actionLabel}: the file is locked by ${l.byEmail} until ${l.expiresAt}.`, "FileLocked");
 }
 
 export async function putObjectRetention({ orgId, bucket, key, versionId, retentionMode, retentionUntil, actorEmail }) {
@@ -289,6 +305,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // brand-new version and never touches the old one's bytes), but a real
   // overwrite-in-place when it's not (SOW §4: "protected overwrite").
   if (!versioningEnabled) assertNotProtected(existing, "overwrite this object");
+  await assertNotLocked(existing, actorEmail, "overwrite this object");
 
   const salt = InayaKernel.generateSecureSalt();
   const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: passphrase, salt });
@@ -510,6 +527,7 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
   if (!versionId && bucketDoc.versioningStatus === "Enabled") {
     const current = await orgDocuments.findOne({ orgId: toObjectId(orgId), projectId: bucketDoc._id, filename: key, isLatest: IS_LATEST, deletedAt: null });
     if (!current) return { deleted: true };
+    await assertNotLocked(current, actorEmail, "delete this object");
     await orgDocuments.updateOne({ _id: current._id }, { $set: { deletedAt: now } }); // delete marker: hides from GET/LIST, bytes untouched
     await logOrgActivity({
       orgId, recordType: "s3_object", recordId: current._id, actorEmail: actorEmail || "s3-compat", action: "DELETE_MARKER_CREATED",
@@ -522,6 +540,7 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
   const doc = await headS3Object({ orgId, bucket, key, versionId });
   if (!doc) return { deleted: true }; // S3 DELETE is idempotent -- deleting a nonexistent key/version is not an error
   assertNotProtected(doc, "delete this object");
+  await assertNotLocked(doc, actorEmail, "delete this object");
   await orgDocuments.updateOne({ _id: doc._id }, { $set: { deletedAt: now } });
   await logOrgActivity({
     orgId,
@@ -979,6 +998,7 @@ export async function runLifecycleEnforcement({ limit = 500 } = {}) {
       if (!scheduledAt || new Date(scheduledAt).getTime() > Date.now()) continue;
       try {
         assertNotProtected(doc, "expire this object via lifecycle policy");
+        await assertNotLocked(doc, "s3-lifecycle-policy", "expire this object via lifecycle policy");
       } catch (err) {
         skippedLocked += 1;
         continue;

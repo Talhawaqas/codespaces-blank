@@ -18,6 +18,7 @@ import { ethers } from "ethers";
 import { ObjectId } from "mongodb";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
 import { getDocumentAccessLevel, meetsLevel } from "../../../../../../lib/document-permissions.js";
+import { lockedByOther } from "../../../../../../lib/filelocks.js";
 import { logDocumentActivity } from "../../../../../../lib/document-workflow.js";
 import { supersedeActiveSigningRequests } from "../../../../../../lib/signing-workflow.js";
 import { getOrgPlan, getOrgUsage } from "../../../../../../lib/orgPlans.js";
@@ -66,6 +67,10 @@ export async function POST(req, { params }) {
     if (!meetsLevel(accessLevel, "EDIT")) {
       return NextResponse.json({ error: "You don't have permission to upload a new version of this document." }, { status: 403 });
     }
+
+    // File lock (Sharing 2.0): someone else's edit lease protects the file from a competing new version.
+    const lockHeld = lockedByOther(previousDoc, auth.session.email);
+    if (lockHeld) return NextResponse.json({ error: `This file is locked by ${lockHeld.byEmail} until ${lockHeld.expiresAt}.`, lockedBy: lockHeld.byEmail, expiresAt: lockHeld.expiresAt }, { status: 423 });
 
     const existing = await orgDocuments.findOne({ fileHash });
     if (existing) return NextResponse.json({ error: "This exact file has already been registered." }, { status: 409 });

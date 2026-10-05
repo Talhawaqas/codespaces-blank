@@ -21,6 +21,8 @@ const AZURE_ERROR_STATUS = {
   ContainerBeingDeleted: 409,
   ContainerNotEmpty: 409,
   InvalidBlockList: 400,
+  // A locked file (Sharing 2.0 file lock): Azure's lease semantics, status 412.
+  LeaseIdMissing: 412,
   InvalidInput: 400,
   InternalError: 500,
 };

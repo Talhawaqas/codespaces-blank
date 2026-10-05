@@ -15,6 +15,7 @@
 // document owner needs to give the recipient the passkey separately.
 
 import { useState, useEffect, use } from "react";
+import V2Viewer from "../../../../components/shares/V2Viewer";
 
 async function decryptData(base64Str, password) {
   const binaryStr = window.atob(base64Str);
@@ -94,6 +95,9 @@ export default function SharePage({ params }) {
             <p className="text-red-400 text-sm">{error}</p>
             <p className="text-[#8a96ab] text-xs mt-2">Ask whoever shared this with you for a new link.</p>
           </div>
+        ) : info?.v2 ? (
+          // Secure Sharing 2.0 link: the rules (password, email code, limits) are handled by the viewer; no storage pointer is ever shown.
+          <V2Viewer token={token} peek={info} />
         ) : (
           <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6">
             <p className="text-xs text-[#8a96ab] uppercase tracking-wider mb-1">Document</p>
