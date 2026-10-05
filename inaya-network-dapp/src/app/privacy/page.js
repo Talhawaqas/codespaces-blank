@@ -52,7 +52,7 @@ const sections = [
   },
   {
     title: "6. Your rights",
-    body: "You can request a copy of the personal data we hold about you, request its deletion (where it doesn't conflict with an immutable on-chain record or an active legal/financial obligation), and withdraw consent for optional features like KYC or Google Sign-In at any time. Contact us using the details below to exercise any of these.",
+    body: "You can request a copy of the personal data we hold about you, request its deletion (where it doesn't conflict with an immutable on-chain record or an active legal/financial obligation), and withdraw consent for optional features like KYC or Google Sign-In at any time. To request deletion of your account and data, follow the steps on the account deletion page (/account-deletion) or contact us using the details below.",
   },
   {
     title: "7. Testnet status",
