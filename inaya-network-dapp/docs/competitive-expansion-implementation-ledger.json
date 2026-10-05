@@ -473,98 +473,131 @@
       "title": "Note types: text, rich, markdown, checklist, code",
       "priority": "P1",
       "sow": "C1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/components/business/notes/NotesView.js",
+        "src/lib/notes/client/NotesClient.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Browser-verified 2026-10-04: Markdown (live preview), checklist, rich text (paste and markup sanitized), plain text; code type covered by tests only."
     },
     {
       "id": "NOTE-002",
       "title": "Note lifecycle: create/edit/rename/trash/restore/archive/delete",
       "priority": "P1",
       "sow": "C2",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/notes/notes.js"
+      ],
+      "routes": [
+        "GET/POST /api/orgs/notes",
+        "GET/POST/DELETE /api/orgs/notes/[noteId]"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Create, edit, autosave, trash/restore/permanent delete, retention purge (cron /api/cron/notes-purge), history list and restore verified (restore recovered a tampered latest version in the browser). Archive/pin/favorite logic tested; pin/archive buttons not clicked in the browser."
     },
     {
       "id": "NOTE-003",
       "title": "Note history + restore version",
       "priority": "P1",
       "sow": "C2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/notes/notes.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Append-only history, restore as new version, revision bound to position by AAD (swap detected), newest 200 kept."
     },
     {
       "id": "NOTE-004",
       "title": "Pin, favorite, tags (create/rename/delete)",
       "priority": "P2",
       "sow": "C2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/notes/client/NotesClient.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Pin/favorite/archive/tags live in the encrypted per-user index with compare-and-set across devices. Browser: tag create/assign verified; pin, favorite, archive logic covered by tests."
     },
     {
       "id": "NOTE-005",
       "title": "Client-side encryption of private notes",
       "priority": "P1",
       "sow": "C3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/notes/client/crypto.js",
+        "docs/architecture/secure-notes.md"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Server holds ciphertext only (verified in the DB and in the API response from the browser). Passphrase vault, per-note key sealed per participant, AAD-bound revisions. Not independently audited."
     },
     {
       "id": "NOTE-006",
       "title": "Note sharing, participants, read/write permission, conflict handling",
       "priority": "P1",
       "sow": "C4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/notes/notes.js",
+        "src/components/business/notes/NotesView.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/notes.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Share (read/edit), key rotation on removal, leave, explicit conflict panel, fingerprint pinning. Browser: share and remove (key v2) verified; the recipient side was verified by tests, not in a second browser session."
     },
     {
       "id": "NOTE-007",
       "title": "Note reference in chat",
       "priority": "P2",
       "sow": "C4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/components/business/chat/ChatView.js",
+        "src/lib/chat/client/attachments.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Verified by hand in the browser only (attach from composer, encrypted send, Open link, deep link); no automated test yet."
     },
     {
       "id": "SHARE-001",

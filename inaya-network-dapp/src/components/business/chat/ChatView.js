@@ -10,6 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useChat } from "./useChat";
 import EmptyState from "../../EmptyState";
+import { NotePicker } from "../notes/NotesView";
+import { inayaNoteRef } from "../../../lib/chat/client/attachments";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -50,6 +52,7 @@ function AttachmentView({ client, convId, att }) {
     try { const b = await client.downloadAttachment(convId, att); const u = URL.createObjectURL(new Blob([b], { type: att.type })); const a = document.createElement("a"); a.href = u; a.download = att.name; a.click(); setTimeout(() => URL.revokeObjectURL(u), 5000); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
+  if (att.kind === "inaya-note") { const ok = /^[0-9a-f]{24}$/.test(String(att.noteId)); return <div className={`${card} px-3 py-2 text-[12px]`}>Secure note: <b>{String(att.title || "Untitled").slice(0, 120)}</b> {ok && <a className="underline text-[#00f2fe]" href={`/business?view=notes&note=${att.noteId}`}>Open</a>} <span className={muted}>You need access to the note and your notes passphrase.</span></div>; }
   if (att.kind === "inaya-doc") return <div className={`${card} px-3 py-2 text-[12px]`}>Inaya document: <b>{att.name}</b> <span className={muted}>({sizeOf(att.size)}). Open it from Files; your normal access rules apply.</span></div>;
   return (
     <div className={`${card} px-3 py-2 text-[12px] max-w-xs`}>
@@ -116,7 +119,7 @@ export default function ChatView({ orgId, email, canManage }) {
   const chat = useChat({ orgId, email });
   const { status, error, conversations, titles, last, peers, tick } = chat;
   const [sel, setSel] = useState(null); const [detail, setDetail] = useState(null); const [msgs, setMsgs] = useState([]);
-  const [text, setText] = useState(""); const [files, setFiles] = useState([]); const [sendErr, setSendErr] = useState(""); const [sending, setSending] = useState(false);
+  const [text, setText] = useState(""); const [files, setFiles] = useState([]); const [noteRef, setNoteRef] = useState(null); const [pickNote, setPickNote] = useState(false); const [sendErr, setSendErr] = useState(""); const [sending, setSending] = useState(false);
   const [search, setSearch] = useState(""); const [hits, setHits] = useState([]); const [showNew, setShowNew] = useState(false); const [showContacts, setShowContacts] = useState(false);
   const [typing, setTyping] = useState([]); const [online, setOnline] = useState({}); const [receipts, setReceipts] = useState([]); const [prefs, setPrefs] = useState({ appearOffline: false });
   const [showInfo, setShowInfo] = useState(false); const [orgSettings, setOrgSettings] = useState(null); const [addEmail, setAddEmail] = useState(""); const [renaming, setRenaming] = useState(""); const endRef = useRef(null); const lastTyping = useRef(0);
@@ -171,15 +174,16 @@ export default function ChatView({ orgId, email, canManage }) {
   useEffect(() => { if (!client || search.trim().length < 2) { setHits([]); return; } client.search(search.trim()).then(setHits); }, [client, search, tick]);
 
   async function send() {
-    if ((!text.trim() && !files.length) || !sel || sending) return;
+    if ((!text.trim() && !files.length && !noteRef) || !sel || sending) return;
     setSending(true); setSendErr("");
     try {
       await chat.run(async (c) => {
         const attachments = [];
         for (const f of files) attachments.push(await c.attachFile(sel, { bytes: new Uint8Array(await f.arrayBuffer()), name: f.name, type: f.type }));
+        if (noteRef) attachments.push(inayaNoteRef(noteRef));
         await c.send(sel, { text: text.trim(), attachments });
       });
-      setText(""); setFiles([]); setMsgs(await client.messages(sel));
+      setText(""); setFiles([]); setNoteRef(null); setMsgs(await client.messages(sel));
       client.api.setTyping({ conversationId: sel, typing: false }).catch(() => {});
     } catch (e) { setSendErr(e.queued ? "You appear to be offline. The message is saved and will send automatically when you are back online." : e.message); }
     finally { setSending(false); }
@@ -245,11 +249,13 @@ export default function ChatView({ orgId, email, canManage }) {
           </div>
           <div className="px-4 pb-1 h-5 text-[11px]" aria-live="polite">{typing.length > 0 && <span className={muted}>{typing.map((e) => e.split("@")[0]).join(", ")} {typing.length > 1 ? "are" : "is"} typing…</span>}</div>
           {sendErr && <p className="text-amber-300 text-xs px-4 pb-1" role="alert">{sendErr}</p>}
+          {noteRef && <div className="px-4 pb-1"><span className="text-xs bg-[var(--inaya-overlay-10)] rounded px-2 py-1">Note: {noteRef.title} <button aria-label="Remove note" onClick={() => setNoteRef(null)}>×</button></span></div>}
           {files.length > 0 && <div className="px-4 pb-1 flex flex-wrap gap-1">{files.map((f, i) => <span key={i} className="text-xs bg-[var(--inaya-overlay-10)] rounded px-2 py-1">{f.name} ({sizeOf(f.size)}) <button aria-label={`Remove ${f.name}`} onClick={() => setFiles((x) => x.filter((_, j) => j !== i))}>×</button></span>)}</div>}
           <div className="p-3 border-t border-[var(--inaya-overlay-10)] flex gap-2 items-end">
+            <button className={btn} type="button" title="Attach a reference to one of your Secure Notes" onClick={() => setPickNote(true)}>Note</button>
             <label className={`${btn} cursor-pointer`} title="Attach a file (encrypted on this device, up to 25 MB)">Attach<input type="file" multiple className="hidden" onChange={(e) => { const picked = Array.from(e.target.files || []); setFiles((x) => [...x, ...picked].slice(0, 5)); e.target.value = ""; }} /></label>
             <textarea value={text} onChange={(e) => onType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={1} placeholder="Write an encrypted message" aria-label="Message" className="flex-1 resize-none bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg px-3 py-2 text-sm max-h-32" />
-            <button className={accentBtn} onClick={send} disabled={sending || (!text.trim() && !files.length)}>{sending ? "Sending…" : "Send"}</button>
+            <button className={accentBtn} onClick={send} disabled={sending || (!text.trim() && !files.length && !noteRef)}>{sending ? "Sending…" : "Send"}</button>
           </div></>)}
       </div>
 
@@ -285,6 +291,7 @@ export default function ChatView({ orgId, email, canManage }) {
           {chat.securityEvents.length > 0 && <div className="mt-3 text-[10px] text-amber-300">{chat.securityEvents.slice(-3).map((e, i) => <p key={i}>Security notice: {e.type.replace(/_/g, " ").toLowerCase()}</p>)}</div>}
         </div>)}
 
+      {pickNote && <NotePicker orgId={orgId} email={email} onClose={() => setPickNote(false)} onPick={(n) => { setNoteRef(n); setPickNote(false); }} />}
       {showNew && <NewChat client={client} me={email} onClose={() => setShowNew(false)} onCreate={async ({ kind, emails, name }) => { const r = await chat.run(async (c) => { const x = await c.createConversation({ kind, emails }); if (name && kind === "group") await c.rename(x.conversationId, name); return x; }); setSel(r.conversationId); }} />}
       {showContacts && <ContactsPanel client={client} onClose={() => setShowContacts(false)} />}
     </div>

@@ -53,13 +53,14 @@ export function isValidPublicKeyJwk(jwk) {
   return !!jwk && jwk.kty === "EC" && jwk.crv === "P-256" && typeof jwk.x === "string" && typeof jwk.y === "string" && /^[A-Za-z0-9_-]{43}$/.test(jwk.x) && /^[A-Za-z0-9_-]{43}$/.test(jwk.y);
 }
 
-async function sealKey(publicKeyJwk, fileKey, aad) {
+/** Sealed box: encrypt `fileKey` bytes to a P-256 public key (ephemeral ECDH + HKDF-SHA256 + AES-256-GCM). `info` separates uses (file requests, notes). */
+export async function sealBytes(publicKeyJwk, fileKey, aad, info = INFO) {
   if (!isValidPublicKeyJwk(publicKeyJwk)) throw new Error("This request's key is not valid.");
   const recipient = await subtle().importKey("jwk", { ...publicKeyJwk, ext: true }, { name: "ECDH", namedCurve: "P-256" }, false, []);
   const eph = await subtle().generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
   const shared = await subtle().deriveBits({ name: "ECDH", public: recipient }, eph.privateKey, 256);
   const hk = await subtle().importKey("raw", shared, "HKDF", false, ["deriveKey"]);
-  const wrapKey = await subtle().deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: INFO }, hk, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+  const wrapKey = await subtle().deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info }, hk, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
   const iv = rnd(12);
   const sealed = new Uint8Array(await subtle().encrypt({ name: "AES-GCM", iv, additionalData: aad }, wrapKey, fileKey));
   const epk = await subtle().exportKey("jwk", eph.publicKey);
@@ -75,7 +76,7 @@ export async function encryptForRequest(publicKeyJwk, bytes, meta, aad) {
   new DataView(plain.buffer).setUint32(0, header.length); plain.set(header, 4); plain.set(bytes, 4 + header.length);
   const key = await subtle().importKey("raw", fileKey, "AES-GCM", false, ["encrypt"]);
   const ciphertext = new Uint8Array(await subtle().encrypt({ name: "AES-GCM", iv, additionalData: aadBytes }, key, plain));
-  const env = await sealKey(publicKeyJwk, fileKey, aadBytes);
+  const env = await sealBytes(publicKeyJwk, fileKey, aadBytes);
   fileKey.fill(0);
   return { ciphertext, keyEnvelope: JSON.stringify({ ...env, fileIv: b64(iv) }) };
 }
@@ -95,4 +96,15 @@ export async function decryptFromRequest(privateKey, keyEnvelope, ciphertext, aa
   if (hl > 4096 || 4 + hl > plain.length) throw new Error("The upload is damaged.");
   const meta = JSON.parse(td.decode(plain.subarray(4, 4 + hl)));
   return { meta, bytes: plain.slice(4 + hl) };
+}
+
+/** Open a sealed box made by sealBytes. Returns the raw bytes. Throws if the key, aad or info differ or anything was altered. */
+export async function openSealedBytes(privateKey, env, aad, info = INFO) {
+  const aadBytes = typeof aad === "string" ? te.encode(aad) : aad;
+  if (!env || env.v !== 1) throw new Error("Unsupported sealed key format.");
+  const eph = await subtle().importKey("jwk", { ...env.epk, ext: true }, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const shared = await subtle().deriveBits({ name: "ECDH", public: eph }, privateKey, 256);
+  const hk = await subtle().importKey("raw", shared, "HKDF", false, ["deriveKey"]);
+  const wrapKey = await subtle().deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info }, hk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  return new Uint8Array(await subtle().decrypt({ name: "AES-GCM", iv: unb64(env.iv), additionalData: aadBytes }, wrapKey, unb64(env.sealed)));
 }

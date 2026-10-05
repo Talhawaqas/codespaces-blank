@@ -21,6 +21,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/notes-purge",
+      "schedule": "30 5 * * *"
+    },
+    {
       "path": "/api/cron/execute-approved-ai-actions",
       "schedule": "0 6 * * *"
     },

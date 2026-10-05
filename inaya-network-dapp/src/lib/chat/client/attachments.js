@@ -33,4 +33,6 @@ export async function downloadDecrypted({ api, conversationId, descriptor }) {
 }
 
 /** A reference to a file that already exists in Inaya. No bytes and no key are placed in the chat. */
+/** A reference to a Secure Note (SOW C4). Only the id and title travel in the (already end-to-end encrypted) message; opening it needs note access and the notes passphrase. */
+export const inayaNoteRef = ({ noteId, title }) => ({ kind: "inaya-note", noteId: String(noteId), title: String(title || "").slice(0, 120) });
 export const inayaDocRef = ({ documentId, name, size }) => ({ kind: "inaya-doc", documentId: String(documentId), name: String(name || "").slice(0, 200), size: Number(size) || 0 });

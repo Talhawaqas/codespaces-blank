@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 // Add an entry here only when the capability is built and verified enough to offer.
 const OFFERED = {
   FEATURE_SECURE_CHAT: { title: "Secure Chat (beta)", text: "End-to-end encrypted conversations and files inside the workspace. Inaya cannot read messages. A new device sees only new messages." },
+  FEATURE_SECURE_NOTES: { title: "Secure Notes (beta)", text: "Encrypted notes (text, rich text, Markdown, checklists, code) with history, private tags and sharing with colleagues. Each person sets a notes passphrase that Inaya cannot recover; search happens in the browser." },
   FEATURE_ADVANCED_SHARING: { title: "Advanced sharing", text: "Secure links with passwords, expiry, download and network limits, one-time use, delegated managers and an access log; file requests (people outside the company send you files, encrypted so only you can open them); and file locks. Recipients still need the document passkey from you." },
 };
 

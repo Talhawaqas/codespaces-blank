@@ -76,6 +76,7 @@ import CloudBackupSchedulerView from "../../components/business/CloudBackupSched
 import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
 import SharesView from "../../components/business/shares/SharesView";
+import NotesView from "../../components/business/notes/NotesView";
 import FileRequestsView from "../../components/business/shares/FileRequestsView";
 import LockControl from "../../components/business/shares/LockControl";
 import AdvancedShareForm from "../../components/business/shares/AdvancedShareForm";
@@ -726,6 +727,7 @@ const NAV_ITEMS = [
   { key: "brief", label: "Brief", icon: "insights", group: "core" },
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
+  { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
@@ -1046,6 +1048,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     brief: { title: "Business Brief", description: "A periodic recap of what happened and what needs attention." },
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
     fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
+    notes: { title: "Secure Notes", description: "Encrypted notes in your browser: text, rich text, Markdown, checklists and code, with history, tags and sharing." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
     security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
@@ -1188,6 +1191,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             />
           )}
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
+          {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
           {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
           {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
           {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
