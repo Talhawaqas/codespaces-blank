@@ -90,6 +90,10 @@ function resolveLevel({ doc, isOrgManager, email, explicitLevel, isProjMember, m
 
 /** Standalone check, for route-level gates (e.g. "can this caller list this
  *  project's documents at all") separate from full document resolution. */
+/** A grant with no expiresAt (every grant made before Sharing 2.0) never expires; a grant made through a time-limited share stops
+ *  counting the moment its expiresAt passes. Used wherever explicit document grants are read, so an expired share cannot linger. */
+const grantNotExpired = () => ({ $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: new Date().toISOString() } }] });
+
 export async function isProjectMember({ orgId, projectId, email }) {
   const { projectMembers } = await getOrgCollections();
   const row = await projectMembers.findOne({ orgId: toObjectId(orgId), projectId: toObjectId(projectId), email });
@@ -107,7 +111,7 @@ export async function getDocumentAccessLevel({ orgId, doc, membership, email }) 
   const { documentPermissions, projectMembers } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const [grant, projMembership] = await Promise.all([
-    documentPermissions.findOne({ orgId: orgObjectId, documentId: doc._id, email }),
+    documentPermissions.findOne({ orgId: orgObjectId, documentId: doc._id, email, ...grantNotExpired() }),
     doc.accessLevel === "PROJECT" ? projectMembers.findOne({ orgId: orgObjectId, projectId: doc.projectId, email }) : Promise.resolve(null),
   ]);
 
@@ -134,7 +138,7 @@ export async function getBulkDocumentAccess({ orgId, email, membership, docs }) 
   const { documentPermissions, projectMembers } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const [grants, projMemberships] = await Promise.all([
-    documentPermissions.find({ orgId: orgObjectId, email }).toArray(),
+    documentPermissions.find({ orgId: orgObjectId, email, ...grantNotExpired() }).toArray(),
     projectMembers.find({ orgId: orgObjectId, email }).toArray(),
   ]);
   const grantByDoc = new Map(grants.map((g) => [g.documentId.toString(), g.level]));
@@ -463,13 +467,16 @@ export async function consumeDocumentShare(token) {
   // these conditions atomically; that's the actual enforcement.
   const existing = await documentShares.findOne({ tokenHash });
   if (!existing) return { error: "This link is invalid.", status: 404 };
+  // Sharing 2.0 links (v: 2) carry policies -- password, IP range, device, download limits -- that this legacy path knows nothing about
+  // and it hands out storage pointers. They must only ever be opened through lib/sharing/shares.js, so refuse here, hard.
+  if (existing.v === 2) return { error: "This link must be opened through the secure viewer.", status: 409, v2: true };
   if (existing.revokedAt) return { error: "This link has been revoked.", status: 410 };
   if (new Date(existing.expiresAt).getTime() < Date.now()) return { error: "This link has expired.", status: 410 };
   if (existing.maxUses !== null && existing.useCount >= existing.maxUses) {
     return { error: "This link has reached its maximum number of uses.", status: 410 };
   }
 
-  const filter = { tokenHash, revokedAt: null, expiresAt: { $gt: now } };
+  const filter = { tokenHash, revokedAt: null, expiresAt: { $gt: now }, v: { $ne: 2 } };
   if (existing.maxUses !== null) filter.useCount = { $lt: existing.maxUses };
 
   const updated = await documentShares.findOneAndUpdate(filter, { $inc: { useCount: 1 } }, { returnDocument: "after" });

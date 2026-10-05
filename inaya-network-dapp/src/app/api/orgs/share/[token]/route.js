@@ -20,11 +20,17 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes } from "../../../../../lib/orgs.js";
 import { resolveShareAccess } from "../../../../../lib/document-permissions.js";
+import { peekShare } from "../../../../../lib/sharing/shares.js";
 
 export async function GET(req, { params }) {
   try {
-    const { token } = params;
+    const { token } = await params;
     await ensureOrgIndexes();
+
+    // Sharing 2.0 links answer with what the visitor must provide (never a storage pointer, never consuming a use) and are opened
+    // through POST .../access; everything else is the original flow below, unchanged.
+    const peek = await peekShare(token);
+    if (peek) return NextResponse.json(peek);
 
     const result = await resolveShareAccess(token);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
