@@ -64,7 +64,7 @@ export async function PUT(req, { params }) {
     const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, bodyBuffer, contentType, actorEmail: accessKeyId, governance: { ip: getClientIp(req), role: "api" } });
     return new Response(null, { status: 201, headers: { "x-ms-version": "2021-08-06", ETag: `"${etagOf(doc)}"` } });
   } catch (err) {
-    if (err?.reason === "Governance") return azureError("AuthorizationPermissionMismatch", err.message);
+    if (err?.reason === "Governance" || err?.reason === "Contained") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err?.reason === "FileLocked") return azureError("LeaseIdMissing", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
@@ -119,7 +119,7 @@ export async function GET(req, { params }) {
       },
     });
   } catch (err) {
-    if (err?.reason === "Governance") return azureError("AuthorizationPermissionMismatch", err.message);
+    if (err?.reason === "Governance" || err?.reason === "Contained") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
     console.error("GET /api/azure/[container]/[...blob] failed:", err);
     return azureError("InternalError", err.message || "An internal error occurred.");

@@ -1030,6 +1030,12 @@ export async function requireMembership(req, orgId, { requireManage = false } = 
   if (requireManage && !canManageOrg(membership)) {
     return { error: "Only the owner or an admin can do that.", status: 403 };
   }
+  // Device control (Competitive Expansion SOW G3): a session bound to a blocked, revoked or (by policy) untrusted device is refused.
+  if (session.deviceId) {
+    const { deviceGate } = await import("./devices/devices.js");
+    const verdict = await deviceGate({ orgId, session });
+    if (verdict) return { error: verdict.error, status: verdict.status, code: verdict.code };
+  }
 
   return { session, membership };
 }

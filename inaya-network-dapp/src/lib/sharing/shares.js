@@ -95,6 +95,7 @@ export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt
   const r = await documentShares.insertOne(doc);
   await logDocumentActivity({ organizationId: orgId, documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_CREATED", previousState: null, newState: null,
     metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, oneTime: o.oneTime } });
+  import("../ransomware/cloud.js").then((m) => m.noteActivity({ orgId, actorKey: actorEmail, kind: "share_create" })).catch(() => {});
   emitFileEvent(orgId, "shared", { documentId: String(documentId), shareId: String(r.insertedId), permission: o.permission, passwordProtected: !!o.password, expiresAt });
   return { shareId: String(r.insertedId), token, share: publicShareView({ ...doc, _id: r.insertedId }) };
 }

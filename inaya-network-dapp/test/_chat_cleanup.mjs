@@ -15,7 +15,7 @@ created.emails.push(...emails);
 await chatDb();
 // Collections added by later phases (notes, sharing, file requests, governance) that key on orgId, as ObjectId or string.
 const ids = orgs.map((o) => o._id); const strs = ids.map(String);
-for (const n of ["governance_policies", "dlp_events", "dlp_approvals", "classification_history", "metadata_fields", "metadata_sets", "file_requests", "org_documents", "document_shares"]) await c.db.collection(n).deleteMany({ orgId: { $in: ids } }).catch(() => {});
+for (const n of ["governance_policies", "dlp_events", "dlp_approvals", "classification_history", "metadata_fields", "metadata_sets", "file_requests", "org_documents", "document_shares", "org_devices", "cloud_file_activity", "security_signals", "ransomware_containments", "ransomware_policy", "endpoint_backup_profiles", "endpoint_backup_runs", "endpoint_restore_jobs", "data_room_questions", "data_room_views"]) await c.db.collection(n).deleteMany({ orgId: { $in: ids } }).catch(() => {});
 for (const n of ["notes", "note_vaults"]) await c.db.collection(n).deleteMany({ orgId: { $in: strs } }).catch(() => {});
 await teardown();
 console.log("removed", orgs.length, "organizations and", emails.length, "member rows");

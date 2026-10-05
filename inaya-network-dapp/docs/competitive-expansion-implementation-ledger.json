@@ -1166,70 +1166,101 @@
       "title": "Cloud-file ransomware signals + containment + rollback",
       "priority": "P2",
       "sow": "F",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/ransomware/cloud.js",
+        "src/lib/s3-compat/store.js",
+        "src/components/business/endpoint/RansomwareView.js"
+      ],
+      "routes": [
+        "C:/Program Files/Git/api/orgs/security/ransomware"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/devices-ransomware-backup.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Signals, scoring with rule and confidence, tripwire, containment (writes refused through putS3Object), admin alert, evidence via the audit chain, resolve/lift and rollback planning verified. Rollback execution tested with a fake store only; no impossible-travel (no geolocation); suspect flag is per credential, not per user session; the existing resilience canary assets are not correlated."
     },
     {
       "id": "ENDPOINT-001",
       "title": "Endpoint backup profiles, schedules, bandwidth, include/exclude",
       "priority": "P2",
       "sow": "G1",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/endpoint/backup.js",
+        "src/components/business/endpoint/EndpointBackupView.js"
+      ],
+      "routes": [
+        "/api/orgs/endpoint-backup/*"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/devices-ransomware-backup.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Profiles (folders, include/exclude, schedule, bandwidth, version retention, mirror needs confirmation), pause/resume and client config verified in the browser and tests. The desktop app does not read these profiles or report runs yet."
     },
     {
       "id": "ENDPOINT-002",
       "title": "Backup health, integrity verify, restore (original/alternate), recovery report",
       "priority": "P2",
       "sow": "G1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/endpoint/backup.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/devices-ransomware-backup.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Health states, integrity verification against stored objects, point-in-time restore plans, ransomware-safe approval flow and recovery report are tested (storage replaced by an in-memory fake). Restores are executed by the desktop client, which is not built; no real restore was run."
     },
     {
       "id": "DEVICE-001",
       "title": "Device inventory",
       "priority": "P2",
       "sow": "G2",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/devices/devices.js",
+        "src/components/business/endpoint/DevicesView.js"
+      ],
+      "routes": [
+        "C:/Program Files/Git/api/orgs/devices"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/devices-ransomware-backup.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Browser: this browser checked itself in, inventory and admin summary shown. Masked IP retention purge and device ownership tested. Desktop and mobile clients do not call the check-in yet."
     },
     {
       "id": "DEVICE-002",
       "title": "Device policies + remote actions (revoke/block/re-auth/cache wipe/force sign-out)",
       "priority": "P2",
       "sow": "G3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/devices/devices.js",
+        "src/lib/orgs.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/devices-ransomware-backup.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Browser: app-data wipe executed at check-in (marker cleared, device id kept); block ended the session at once. Trust policy and the central requireMembership gate tested. Wipe is application data only. Desktop/mobile clients do not obey commands yet."
     },
     {
       "id": "SEARCH-001",

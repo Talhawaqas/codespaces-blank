@@ -39,10 +39,13 @@ import { claimId, releaseClaim } from "./namespaceClaim.js";
 import { emitObjectEvent } from "./notifications.js";
 import { assertUpload } from "../governance/uploads.js";
 import { assertDlp } from "../governance/dlp.js";
+import { assertNotContained, noteActivity, entropyOf } from "../ransomware/cloud.js";
 
 /** Runs the org's governance (upload rules, antivirus, DLP) for API-driven reads and writes. Only callers that pass `governance` are checked:
  *  internal generators (bookkeeper, document intelligence...) are not user uploads. A refusal is reported as an ObjectProtectedError with
  *  reason "Governance" so the S3 and Azure routes answer AccessDenied. */
+/** Writes and deletes from a credential that ransomware signals have contained are refused (reads stay allowed). */
+async function assertContained(orgId, actorKey) { if (actorKey) await assertNotContained({ orgId, actorKey: String(actorKey) }); }
 async function governed(fn) {
   try { return await fn(); } catch (e) {
     if (e?.name === "UploadBlocked" || e?.name === "DlpBlocked") throw new ObjectProtectedError(e.message, "Governance");
@@ -306,6 +309,7 @@ function bufferToFile(buffer, { key, contentType }) {
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
 export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride, notifyEventName = "s3:ObjectCreated:Put", governance }) {
+  await assertContained(orgId, actorEmail);
   if (governance) await governed(() => assertUpload({ orgId, actorEmail, source: "s3", filename: key, bytes: bodyBuffer, contentType, path: `${bucket}/${key}`, ip: governance.ip, role: governance.role }));
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
@@ -431,6 +435,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     retentionMode: null,
     retentionUntil: null,
     legalHold: false,
+    entropy: entropyOf(bodyBuffer),
     tags: tags ? normalizeTags(tags) : {},
     createdAt: now,
     deletedAt: null,
@@ -471,6 +476,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   });
 
   await emitObjectEvent({ orgId, bucket, key, eventName: notifyEventName, eventKey: String(documentId), size: doc.sizeBytes, etag: doc.etag, versionId: doc.versionId, actorEmail });
+  await noteActivity({ orgId, actorKey: actorEmail, kind: existing ? "overwrite" : "write", bucket, key, versionId: doc.versionId || null, entropy: doc.entropy ?? null, prevEntropy: existing?.entropy ?? null });
   return doc;
 }
 
@@ -512,6 +518,7 @@ export async function headS3Object({ orgId, bucket, key, versionId }) {
 export async function getS3ObjectBody({ orgId, bucket, key, versionId, governance }) {
   const doc = await headS3Object({ orgId, bucket, key, versionId }); // authorization/existence/retention are checked fresh on EVERY request, before the cache
   if (!doc) return null;
+  if (governance?.actor) await noteActivity({ orgId, actorKey: governance.actor, kind: "download", bucket, key });
   if (governance) await governed(() => assertDlp({ orgId, ctx: { email: governance.actor, role: governance.role, ip: governance.ip, action: "download", resourceType: "object", resourceId: String(doc._id), path: `${bucket}/${key}`, filename: key, size: doc.sizeBytes, classification: doc.classification || null, legalHold: !!doc.legalHold, source: "s3" } }));
   // SQA-020: concurrent and repeated reads of this immutable version share one fetch-and-decrypt (see objectBodyCache.js)
   const { buffer } = await cachedObjectBody(`org:${orgId}:${doc._id}`, async () => {
@@ -533,6 +540,8 @@ export async function getS3ObjectBody({ orgId, bucket, key, versionId, governanc
  *  blocked by Object Lock/Legal Hold (SOW §4/§5's "protected deletion").
  *  A delete marker itself is never lock-checked -- it destroys nothing. */
 export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail }) {
+  await assertContained(orgId, actorEmail);
+  await noteActivity({ orgId, actorKey: actorEmail, kind: "delete", bucket, key, versionId: versionId || null });
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return { deleted: true };
   const { orgDocuments } = await getOrgCollections();

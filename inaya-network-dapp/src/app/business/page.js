@@ -78,6 +78,9 @@ import ChatView from "../../components/business/chat/ChatView";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
 import GovernanceView from "../../components/business/governance/GovernanceView";
+import DevicesView, { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
+import EndpointBackupView from "../../components/business/endpoint/EndpointBackupView";
+import RansomwareView from "../../components/business/endpoint/RansomwareView";
 import DocGovernancePanel from "../../components/business/governance/DocGovernancePanel";
 import SecureViewer from "../../components/viewer/SecureViewer";
 import { dataUrlToFile } from "../../components/viewer/decrypt";
@@ -734,6 +737,9 @@ const NAV_ITEMS = [
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
   { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
   { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, group: "trust" },
+  { key: "devices", label: "Devices", icon: "enterpriseHardening", group: "trust" },
+  { key: "endpointBackup", label: "Endpoint Backup", icon: "enterpriseHardening", group: "trust" },
+  { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
@@ -1055,6 +1061,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
     fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
     notes: { title: "Secure Notes", description: "Encrypted notes in your browser: text, rich text, Markdown, checklists and code, with history, tags and sharing." },
+    devices: { title: "Devices", description: "The devices signed in to your account, and what administrators can do about them." },
+    endpointBackup: { title: "Endpoint Backup", description: "Backup profiles, health, integrity checks and restores for your computers." },
+    ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
     governance: { title: "Governance", description: "Versioned policies, data protection rules, classification and metadata for your files." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
@@ -1200,6 +1209,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
           {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
           {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage} />}
+          {activeView === "devices" && <DevicesView orgId={orgId} canManage={canManage} />}
+          {activeView === "endpointBackup" && <EndpointBackupView orgId={orgId} canManage={canManage} />}
+          {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage} />}
+          <DeviceCheckIn orgId={orgId} />
           {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
           {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
           {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
