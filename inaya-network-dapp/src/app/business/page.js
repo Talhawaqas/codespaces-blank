@@ -82,6 +82,10 @@ import { hasAdminRole } from "../../lib/orgGates";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
 import WebhooksView from "../../components/business/admin/WebhooksView";
+import GatewayView from "../../components/business/gateway/GatewayView";
+import ReplicationPanel from "../../components/business/admin/ReplicationPanel";
+import PortalRequestsView from "../../components/business/support/PortalRequestsView";
+import OfficeIntegrationView from "../../components/business/admin/OfficeIntegrationView";
 import BrandingPanel from "../../components/business/admin/BrandingPanel";
 import NotificationPrefsPanel from "../../components/business/admin/NotificationPrefsPanel";
 import GovernanceView from "../../components/business/governance/GovernanceView";
@@ -746,11 +750,14 @@ const NAV_ITEMS = [
   { key: "adminDashboard", label: "Admin Dashboard", icon: "insights", manageOnly: true, adminRole: ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], group: "trust" },
   { key: "webhooks", label: "Webhooks", icon: "integrations", manageOnly: true, adminRole: "integrationAdmin", group: "enterprise" },
   { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, adminRole: ["dataGovernanceAdmin", "securityAdmin"], group: "trust" },
+  { key: "gateway", label: "Sovereign Gateway", icon: "enterpriseHardening", group: "trust" },
   { key: "devices", label: "Devices", icon: "enterpriseHardening", group: "trust" },
   { key: "endpointBackup", label: "Endpoint Backup", icon: "enterpriseHardening", group: "trust" },
   { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, adminRole: "securityAdmin", group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
+  { key: "office", label: "Microsoft 365 and Outlook", icon: "integrations", group: "collaboration" },
+  { key: "portalRequests", label: "Customer Requests", icon: "documents", manageOnly: true, adminRole: "helpdeskAdmin", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
   { key: "projects", label: "Projects", icon: "projects", group: "operations" },
   { key: "documents", label: "Documents", icon: "documents", group: "operations" },
@@ -1070,6 +1077,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
     fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
     notes: { title: "Secure Notes", description: "Encrypted notes in your browser: text, rich text, Markdown, checklists and code, with history, tags and sharing." },
+    gateway: { title: "Sovereign Gateway", description: "Network folders on your own servers, read through a gateway that connects out from your network. Your system's permissions decide who sees what." },
+    portalRequests: { title: "Customer Requests", description: "Ask a customer for files, a form or an agreement in the portal, and follow their progress." },
+    office: { title: "Microsoft 365 and Outlook", description: "Edit in Word, Excel and PowerPoint and send secure links from Outlook, without sending your files to Microsoft." },
     devices: { title: "Devices", description: "The devices signed in to your account, and what administrators can do about them." },
     endpointBackup: { title: "Endpoint Backup", description: "Backup profiles, health, integrity checks and restores for your computers." },
     ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
@@ -1222,6 +1232,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
           {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
           {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
+          {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
+          {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
+          {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
           {activeView === "devices" && <DevicesView orgId={orgId} canManage={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })} />}
           {activeView === "endpointBackup" && <EndpointBackupView orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin", { read: true })} />}
           {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage || hasAdminRole(membership, "securityAdmin", { read: true })} />}
@@ -1291,6 +1304,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <AdminRolesPanel orgId={orgId} canManage={canManage} />
               <BrandingPanel orgId={orgId} canManage={canManage} />
               <NotificationPrefsPanel orgId={orgId} />
+              {(canManage || hasAdminRole(membership, ["storageAdmin", "securityAdmin"], { read: true })) && <ReplicationPanel orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin")} />}
               <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
               <TeamView orgId={orgId} email={email} />
             </div>

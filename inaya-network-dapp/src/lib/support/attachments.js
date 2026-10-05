@@ -28,6 +28,9 @@ export const BUCKET = "support-attachments";
 const ALLOWED = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", txt: "text/plain", csv: "text/csv", log: "text/plain", json: "application/json", md: "text/plain",
   doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", zip: "application/zip", mp4: "video/mp4", mov: "video/quicktime", eml: "message/rfc822" };
 
+/** The allowed file types (extension -> content type), shared with portal requests. */
+export const FILE_TYPES = ALLOWED;
+
 /**
  * Stores bytes in the organization's support bucket through the existing encrypted, sharded storage layer.
  * Same resilience as the document engine: if the preferred pinning provider refuses the write (outage, exhausted

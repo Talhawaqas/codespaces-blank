@@ -1321,42 +1321,65 @@
       "title": "Microsoft 365/Graph adapter + secure open/edit flow",
       "priority": "P3",
       "sow": "J",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/integrations/office.js",
+        "src/components/business/admin/OfficeIntegrationView.js",
+        "docs/architecture/office-outlook-integration.md"
+      ],
+      "routes": [
+        "GET /api/orgs/office/status",
+        "POST /api/orgs/office/sessions"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/office.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Provider-adapter description with an honest status read from the existing Microsoft connection, edit sessions with a short-lived token, lock, base-version check and version verification, Office launch URIs. Sovereign by default: no file content goes to Microsoft and Office on the web is not offered. The desktop client that decrypts, launches Office and re-encrypts has not been updated to use sessions, and nothing was run against a live Microsoft 365 tenant."
     },
     {
       "id": "INTEGRATION-002",
       "title": "Outlook secure-link insertion + share inspection",
       "priority": "P3",
       "sow": "J2",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "public/outlook/manifest.xml",
+        "public/outlook/taskpane.html",
+        "public/outlook/taskpane.js",
+        "src/lib/integrations/office.js"
+      ],
+      "routes": [
+        "POST /api/orgs/office/outlook/links",
+        "POST /api/orgs/office/outlook/inspect"
+      ],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/office.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "securityReviewed": true,
+      "notes": "Add-in manifest and task pane, secure-link insertion through the sharing engine (policy enforced, Manage access required), an e-mail block with expiry and reminders that never carries the password, link list, revoke and inspect (never reveals the token). Attachment-to-link conversion is NOT automatic. The add-in was never loaded in a real Outlook client; the manifest and files are checked for consistency only."
     },
     {
       "id": "INTEGRATION-003",
       "title": "Office lock/versioning integration",
       "priority": "P3",
       "sow": "J3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/integrations/office.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/office.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Edit sessions use the existing file locks and the existing versions route; finishing is accepted only for a real new version directly after the base. Control plane tested; end-to-end Office editing needs the desktop client and was not run."
     },
     {
       "id": "VDR-001",
@@ -1421,98 +1444,167 @@
       "title": "Customer portal: files, forms, NDA, status, history",
       "priority": "P2",
       "sow": "L",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/support/portalRequests.js",
+        "src/components/portal/PortalTodo.js",
+        "src/components/business/support/PortalRequestsView.js",
+        "docs/architecture/customer-portal-requests.md"
+      ],
+      "routes": [
+        "GET/POST /api/orgs/portal-requests",
+        "GET /api/portal/[slug]/requests"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/portal-requests.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Upload, download, secure form (answers encrypted at rest, reads audited) and hashed agreement items for one customer; status, notes, history and notifications; strict per-customer and per-organization isolation; real encrypted storage and real HTTP handlers tested; customer To-do flow checked in the browser. Uploads are single-request up to 4 MB. Customer SSO and real antivirus are as in the Customer Portal documentation (not verified live)."
     },
     {
       "id": "GATEWAY-001",
       "title": "Sovereign Gateway agent: outbound-first, tenant-bound, signed upgrades",
       "priority": "P2",
       "sow": "M1",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "inaya-gateway-agent/src/agent.js",
+        "inaya-gateway-agent/src/client.js",
+        "inaya-gateway-agent/src/sign.js",
+        "inaya-gateway-agent/src/config.js",
+        "inaya-gateway-agent/src/upgrade.js",
+        "src/lib/gateway/gateway.js",
+        "src/app/api/gateway/v1/[...path]/route.js",
+        "docs/architecture/sovereign-gateway.md",
+        "docs/runbooks/gateway-deployment.md"
+      ],
+      "routes": [
+        "POST /api/gateway/v1/enroll",
+        "POST /api/gateway/v1/heartbeat"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/gateway.test.mjs",
+        "inaya-gateway-agent/test/agent.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Outbound-only agent: Ed25519 key made on the customer machine (private key stays there, encrypted with a passphrase), one-time enrollment token with proof of possession, every request signed with nonce and clock window, organization taken from the gateway record, revocation refused at the next request. The real agent ran over real HTTP against the real handlers and was seen ONLINE in the browser. Signed upgrade packages and rollback are implemented and unit tested; no release key or release pipeline exists yet, so no real upgrade has been delivered."
     },
     {
       "id": "GATEWAY-002",
       "title": "Connectors: filesystem, SMB, NFS; local scanner/index",
       "priority": "P2",
       "sow": "M1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "inaya-gateway-agent/src/connectors.js",
+        "inaya-gateway-agent/src/transfer.js",
+        "inaya-gateway-agent/src/queue.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/gateway.test.mjs",
+        "inaya-gateway-agent/test/agent.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Filesystem connector with path-escape and symlink protection, metadata listing, bandwidth throttle, offline queue, resumable end-to-end encrypted transfer (restored byte for byte). The smb and nfs types use paths the operating system exposes (UNC path, CIFS or NFS mount); the agent does not speak those protocols. The local classifier applies simple extension and name rules and there is no local content index beyond the listing."
     },
     {
       "id": "GATEWAY-003",
       "title": "Deployment modes 1-3 explicit; mode 4 recorded only",
       "priority": "P2",
       "sow": "M2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/gateway/modes.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/gateway.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Modes 1 (cloud managed) and 3 (customer gateway) are real with computed readiness. Mode 2 is reported PARTIAL/NOT_CONFIGURED honestly: customer storage can receive backups but workspace documents still use Inaya-managed storage. Mode 4 (air-gapped) is recorded only, needs an explicit acknowledgement, and carries no claim."
     },
     {
       "id": "GATEWAY-004",
       "title": "Gateway health, queue, resume, revoke, audit, tenant isolation test",
       "priority": "P2",
       "sow": "49",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/gateway/gateway.js",
+        "src/lib/gateway/health.js",
+        "src/app/api/cron/ha-gateway/route.js",
+        "src/components/business/gateway/GatewayView.js"
+      ],
+      "routes": [
+        "GET /api/orgs/gateway/gateways",
+        "GET /api/cron/ha-gateway"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/gateway.test.mjs",
+        "test/gateway-health.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Health (status, queue, lag, read failures), forwarded hash-chained audit with server-side verification and anchoring in the organization audit trail, queued commands, revocation, an offline alert once a day, a dashboard tile, and cross-tenant isolation tests (connectors, transfers, ACLs, administration). The hourly alert cron is configured in vercel.json and was not observed running on the deployment."
     },
     {
       "id": "NETFOLDER-001",
       "title": "Network folders + NTFS/AD permission bridge + mapping health",
       "priority": "P3",
       "sow": "N",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/gateway/acl.js",
+        "inaya-gateway-agent/src/acl.js",
+        "inaya-gateway-agent/src/directory.js"
+      ],
+      "routes": [
+        "GET /api/orgs/gateway/folders",
+        "GET /api/orgs/gateway/mapping-health"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/gateway.test.mjs",
+        "inaya-gateway-agent/test/agent.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Real NTFS ACL reading through icacls (exercised on this Windows machine), NTFS ordering with deny preserved, group membership, exact-match identity mapping with confirm-first suggestions, enforcement that gives owners no back door, mapping health, conflict and stale diagnostics, change monitoring. Not done: a live LDAP/Active Directory source (not tested against a domain controller), per-file permissions (evaluated per approved folder), and visibility of access made directly on the customer network."
     },
     {
       "id": "HA-001",
       "title": "Site replication profile, lag, failover readiness, RTO/RPO evidence",
       "priority": "P3",
       "sow": "O",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/ha/replication.js",
+        "src/app/api/orgs/replication/[[...path]]/route.js",
+        "src/components/business/admin/ReplicationPanel.js",
+        "docs/architecture/site-replication.md"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/replication/profile",
+        "GET /api/orgs/replication/state",
+        "POST /api/orgs/replication/tests"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/ha-replication.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Active-passive replication profile; state, lag, backlog, RPO exposure, staleness, conflict and corruption measured from the backup engine's real replica records; recovery tests that read a sample back and verify its hash (sample-only timing, never extrapolated); named failover blockers; alerts; evidence package with hash. Recovery tests were exercised with in-memory provider stand-ins, not against the live storage providers. Failover is a manual operator procedure; no active-active behaviour is provided or claimed."
     },
     {
       "id": "COMPLIANCE-001",

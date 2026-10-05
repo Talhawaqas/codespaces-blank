@@ -24,6 +24,7 @@ import { submitTicket, customerSolve } from "./flows.js";
 import { listIncidents } from "./incidents.js";
 import { getSupportCollections } from "./db.js";
 import { track } from "./record.js";
+import * as PR from "./portalRequests.js";
 
 export const MUTATING = (m) => m !== "GET" && m !== "HEAD" && m !== "OPTIONS";
 
@@ -46,7 +47,7 @@ const notifView = (n) => ({ id: String(n._id), type: n.type, title: n.title, bod
  */
 export async function handlePortal({ method, path, query, body, req, org, ip }) {
   const orgId = String(org.orgId); const settings = org.settings; settings.portalSlug = org.portalSlug;
-  const [a, b, c] = path;
+  const [a, b, c, d, e] = path;
   const G = method === "GET"; const P = method === "POST"; const U = method === "PUT" || method === "PATCH"; const D = method === "DELETE";
   const csrf = csrfCheck(req); if (csrf) return csrf;
 
@@ -122,6 +123,15 @@ export async function handlePortal({ method, path, query, body, req, org, ip }) 
     if (!b && P) return A.chat({ orgId, settings, user, sessionId: body.sessionId || null, message: body.message });
     if (b && G) return A.getChatSession({ orgId, user, sessionId: b });
     if (b && c === "handoff" && P) return A.handoffChat({ orgId, settings, user, sessionId: b, subject: body.subject || null, extra: body.extra || "" });
+  }
+
+  if (a === "requests") {
+    // Requests addressed to this customer (upload, download, secure form, agreement). The request id is checked against the signed-in customer's own address on every call.
+    if (!b && G) return PR.listForCustomer({ orgId, user });
+    if (b && !c && G) return PR.getForCustomer({ orgId, user, requestId: b });
+    if (b && c === "comments" && P) { const lim = await limited(`support:preq:comment:${orgId}`, user, 30); if (lim) return lim; return PR.customerComment({ orgId, user, requestId: b, text: body.text }); }
+    if (b && c === "items" && d && e === "form" && P) { const lim = await limited(`support:preq:form:${orgId}`, user, 30); if (lim) return lim; return PR.customerForm({ orgId, user, requestId: b, itemId: d, values: body.values }); }
+    if (b && c === "items" && d && e === "accept" && P) { const lim = await limited(`support:preq:ack:${orgId}`, user, 30); if (lim) return lim; return PR.customerAccept({ orgId, user, requestId: b, itemId: d, name: body.name, textHash: body.textHash, ip }); }
   }
 
   if (a === "notifications") {

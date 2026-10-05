@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/ha-gateway",
+      "schedule": "5 * * * *"
+    },
+    {
       "path": "/api/nodes/settlements/release",
       "schedule": "0 0 * * *"
     },

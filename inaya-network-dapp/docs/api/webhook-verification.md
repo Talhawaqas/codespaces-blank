@@ -59,4 +59,4 @@ function verify(rawBody, header, secret, now = Date.now()) {
 
 Events carry identifiers and states, never file contents, content keys, passwords or share tokens. Chat events are metadata only (no message text, no participants' keys) and must be switched on per endpoint. Email, push and webhook channels for notifications carry generic text only.
 
-Event types: `file.uploaded`, `file.updated`, `file.deleted`, `file.lifecycle_expired`, `share.created`, `share.revoked`, `file_request.received`, `dlp.decision`, `backup.event`, `ransomware.signal`, `device.revoked`, `workflow.event`, `resilience.event`, `chat.metadata`.
+Event types: `file.uploaded`, `file.updated`, `file.deleted`, `file.lifecycle_expired`, `share.created`, `share.revoked`, `file_request.received`, `gateway.event`, `dlp.decision`, `backup.event`, `ransomware.signal`, `device.revoked`, `workflow.event`, `resilience.event`, `chat.metadata`.

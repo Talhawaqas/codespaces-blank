@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inaya Secure Link</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    :root { --ink:#1f2328; --muted:#57606a; --line:#d0d7de; --accent:#0b6bcb; --bg:#fff; --bad:#b42318; --ok:#1a7f37; }
+    @media (prefers-color-scheme: dark) { :root { --ink:#e6edf3; --muted:#9da7b3; --line:#30363d; --accent:#58a6ff; --bg:#0d1117; --bad:#ff7b72; --ok:#3fb950; } }
+    body { margin:0; padding:12px; font:14px/1.45 "Segoe UI",system-ui,sans-serif; color:var(--ink); background:var(--bg); }
+    h1 { font-size:16px; margin:0 0 8px; } h2 { font-size:13px; margin:14px 0 6px; }
+    label { display:block; margin:8px 0 2px; color:var(--muted); font-size:12px; }
+    input, select, textarea { width:100%; box-sizing:border-box; padding:6px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--ink); font:inherit; }
+    button { margin-top:8px; padding:6px 12px; border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:6px; cursor:pointer; font:inherit; }
+    button.sec { background:transparent; color:var(--accent); } button:disabled { opacity:.5; cursor:default; }
+    ul { list-style:none; padding:0; margin:6px 0; } li { padding:6px 0; border-top:1px solid var(--line); }
+    .muted { color:var(--muted); font-size:12px; } .err { color:var(--bad); } .ok { color:var(--ok); }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <h1>Inaya secure link</h1>
+  <p class="muted">Insert an expiring link instead of attaching the file. The file stays encrypted in Inaya and is never sent through Outlook.</p>
+  <p id="msg" role="status" class="muted"></p>
+  <div id="signin" hidden><p>You need to be signed in to Inaya.</p><p><a id="signinLink" target="_blank" rel="noopener">Open Inaya and sign in</a>, then <button class="sec" id="reload" type="button">Check again</button></p></div>
+  <div id="app" hidden>
+    <label for="org">Organization</label><select id="org"></select>
+    <label for="q">Find a file</label><input id="q" placeholder="Start typing a file name" autocomplete="off" />
+    <ul id="results"></ul>
+    <div id="chosen" hidden>
+      <h2 id="chosenName"></h2>
+      <label for="exp">Link expires</label>
+      <select id="exp"><option value="24h">in 24 hours</option><option value="7d" selected>in 7 days</option><option value="30d">in 30 days</option></select>
+      <label for="pw">Password (optional, share it separately)</label><input id="pw" type="password" autocomplete="new-password" />
+      <label for="dom">Only people at these domains (optional, comma separated)</label><input id="dom" placeholder="example.com" />
+      <label for="note">Message in the e-mail block (optional)</label><textarea id="note" rows="2"></textarea>
+      <button id="insert" type="button">Insert secure link</button>
+    </div>
+    <h2>Links you inserted</h2><ul id="mine"></ul>
+    <h2>Check a link</h2><input id="inspectUrl" placeholder="Paste an Inaya secure link" /><button class="sec" id="inspect" type="button">Check</button><p id="inspectOut" class="muted"></p>
+    <p class="muted">Attachments are not converted automatically. Upload the file to Inaya first, then pick it above.</p>
+  </div>
+  <script src="taskpane.js"></script>
+</body>
+</html>

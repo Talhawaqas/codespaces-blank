@@ -36,6 +36,7 @@ export const EVENTS = {
   "workflow.approval": { label: "A workflow needs my approval", defaults: { inApp: true, email: true }, severity: "info", generic: "A workflow is waiting for your approval.", webhook: "workflow.event" },
   "vdr.invitation": { label: "I was invited to a data room", defaults: { email: true }, severity: "info", generic: "You were invited to a secure data room." },
   "customer.upload": { category: "external_share", label: "A customer uploaded a file", defaults: { inApp: true, email: true }, severity: "info", generic: "Someone uploaded a file to your request.", webhook: "file_request.received" },
+  "gateway.offline": { label: "A gateway went offline", defaults: { inApp: true, email: true }, severity: "warning", generic: "A gateway in your network has stopped reporting.", webhook: "gateway.event" },
   "device.revoked": { label: "A device was removed or blocked", defaults: { inApp: true, email: true }, severity: "warning", generic: "A device on your account was removed or blocked.", webhook: "device.revoked" },
   "security.incident": { label: "A security incident was detected", defaults: { inApp: true, email: true, push: true, desktop: true }, severity: "critical", generic: "Unusual activity was detected. Review it in Inaya.", webhook: "ransomware.signal" },
 };

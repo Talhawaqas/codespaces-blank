@@ -22,7 +22,7 @@ export const portalUrl = (settings, path = "") => `${APP_URL()}/portal/${setting
 /** Category of a customer notification, for the preference check. "security" can never be turned off. */
 export const CUSTOMER_NOTIFICATION_CATEGORY = {
   ticket_created: "ticketUpdates", ticket_reply: "ticketUpdates", ticket_status: "ticketUpdates", ticket_reply_requested: "ticketUpdates", ticket_solved: "ticketUpdates", ticket_closed: "ticketUpdates",
-  sla_update: "ticketUpdates", invoice_link: "ticketUpdates", idea_status: "ideaUpdates", kb_update: "kbSubscriptions", announcement: "productAnnouncements", security: "security", login: "security",
+  portal_request: "ticketUpdates", sla_update: "ticketUpdates", invoice_link: "ticketUpdates", idea_status: "ideaUpdates", kb_update: "kbSubscriptions", announcement: "productAnnouncements", security: "security", login: "security",
 };
 export const DEFAULT_PREFS = { ticketUpdates: true, productAnnouncements: false, ideaUpdates: true, kbSubscriptions: false, security: true };
 

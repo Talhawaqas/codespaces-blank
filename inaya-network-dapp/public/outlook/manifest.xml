@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Inaya Secure Link for Outlook (Competitive Expansion SOW J2).
+  Sideload for testing, or deploy centrally from the Microsoft 365 admin center (Integrated apps > Upload custom apps).
+  If your Inaya runs on a different address, replace every https://www.inayanetwork.com below with it.
+  NOT yet exercised against a real Outlook client; see docs/architecture/office-outlook-integration.md.
+-->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
+           xsi:type="MailApp">
+  <Id>5f0c6c0e-7a1d-4b3f-9d2e-1a6f8c2b7e41</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Inaya Network</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Inaya Secure Link"/>
+  <Description DefaultValue="Insert an expiring, policy-enforced secure link to an Inaya file instead of attaching it."/>
+  <IconUrl DefaultValue="https://www.inayanetwork.com/outlook/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://www.inayanetwork.com/outlook/icon-128.png"/>
+  <SupportUrl DefaultValue="https://www.inayanetwork.com/docs"/>
+  <AppDomains><AppDomain>https://www.inayanetwork.com</AppDomain></AppDomains>
+  <Hosts><Host Name="Mailbox"/></Hosts>
+  <Requirements><Sets><Set Name="Mailbox" MinVersion="1.1"/></Sets></Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemEdit"><DesktopSettings><SourceLocation DefaultValue="https://www.inayanetwork.com/outlook/taskpane.html"/></DesktopSettings></Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or"><Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/></Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements><bt:Sets DefaultMinVersion="1.3"><bt:Set Name="Mailbox"/></bt:Sets></Requirements>
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="inayaGroup">
+                <Label resid="GroupLabel"/>
+                <Control xsi:type="Button" id="inayaOpen">
+                  <Label resid="ButtonLabel"/>
+                  <Supertip><Title resid="ButtonLabel"/><Description resid="ButtonTip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="Icon16"/><bt:Image size="32" resid="Icon32"/><bt:Image size="80" resid="Icon80"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><SourceLocation resid="Taskpane"/></Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon16" DefaultValue="https://www.inayanetwork.com/outlook/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="https://www.inayanetwork.com/outlook/icon-32.png"/>
+        <bt:Image id="Icon80" DefaultValue="https://www.inayanetwork.com/outlook/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls><bt:Url id="Taskpane" DefaultValue="https://www.inayanetwork.com/outlook/taskpane.html"/></bt:Urls>
+      <bt:ShortStrings><bt:String id="GroupLabel" DefaultValue="Inaya"/><bt:String id="ButtonLabel" DefaultValue="Secure link"/></bt:ShortStrings>
+      <bt:LongStrings><bt:String id="ButtonTip" DefaultValue="Insert a secure, expiring link to an Inaya file."/></bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

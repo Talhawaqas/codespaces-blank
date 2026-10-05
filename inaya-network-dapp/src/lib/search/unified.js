@@ -21,9 +21,9 @@ import { activeLock } from "../filelocks.js";
 
 const PAGES = [
   { view: "chat", label: "Secure Chat", words: "chat messages conversations contacts" }, { view: "notes", label: "Secure Notes", words: "notes checklist markdown" },
-  { view: "shares", label: "Shares", words: "share links secure links access" }, { view: "fileRequests", label: "File Requests", words: "upload request send files" },
+  { view: "shares", label: "Shares", words: "share links secure links access" }, { view: "portalRequests", label: "Customer Requests", words: "customer portal request nda form upload download agreement", admin: "helpdeskAdmin" }, { view: "office", label: "Microsoft 365 and Outlook", words: "outlook office word excel powerpoint microsoft add-in secure link edit" }, { view: "fileRequests", label: "File Requests", words: "upload request send files" },
   { view: "documents", label: "Documents", words: "files folders upload" }, { view: "dataRooms", label: "Data Rooms", words: "vdr data room investors diligence", admin: true },
-  { view: "devices", label: "Devices", words: "devices wipe block trust" }, { view: "endpointBackup", label: "Endpoint Backup", words: "backup restore desktop profiles" },
+  { view: "gateway", label: "Sovereign Gateway", words: "gateway network folders smb nfs ntfs permissions on-premises" }, { view: "devices", label: "Devices", words: "devices wipe block trust" }, { view: "endpointBackup", label: "Endpoint Backup", words: "backup restore desktop profiles" },
   { view: "governance", label: "Governance", words: "policy dlp classification metadata retention", admin: ["dataGovernanceAdmin", "securityAdmin"] }, { view: "ransomware", label: "Ransomware Signals", words: "ransomware security signals rollback", admin: "securityAdmin" },
   { view: "adminDashboard", label: "Admin Dashboard", words: "dashboard overview analytics health", admin: true }, { view: "webhooks", label: "Webhooks", words: "webhooks events integrations", admin: "integrationAdmin" },
   { view: "settings", label: "Settings", words: "settings beta features branding notifications roles", admin: true },

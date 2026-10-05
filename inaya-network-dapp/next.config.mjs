@@ -152,6 +152,14 @@ const nextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
+      {
+        // The Outlook add-in task pane (public/outlook) is shown by Outlook inside an iframe, so it may be framed by Microsoft's own Office hosts and nobody else.
+        source: "/outlook/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "ALLOWALL" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://*.office.com https://*.office365.com https://*.outlook.com https://outlook.live.com https://*.microsoft.com;" },
+        ],
+      },
     ];
   },
 };

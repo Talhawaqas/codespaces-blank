@@ -25,7 +25,7 @@ import { encryptIntegrationSecret, decryptIntegrationSecret, isIntegrationCrypto
 export class WebhookError extends Error { constructor(status, message, extra = {}) { super(message); this.status = status; Object.assign(this, extra); } }
 const fail = (status, message, extra) => { throw new WebhookError(status, message, extra); };
 const nowIso = () => new Date().toISOString();
-export const EVENT_TYPES = ["file.uploaded", "file.updated", "file.deleted", "file.lifecycle_expired", "share.created", "share.revoked", "dlp.decision", "chat.metadata", "workflow.event", "backup.event", "resilience.event", "identity.event", "ransomware.signal", "device.revoked", "file_request.received", "webhook.test"];
+export const EVENT_TYPES = ["file.uploaded", "file.updated", "file.deleted", "file.lifecycle_expired", "share.created", "share.revoked", "dlp.decision", "chat.metadata", "workflow.event", "backup.event", "resilience.event", "identity.event", "ransomware.signal", "device.revoked", "file_request.received", "gateway.event", "webhook.test"];
 const OPT_IN = new Set(["chat.metadata"]);
 export const MAX_ATTEMPTS = 6; const BACKOFF_MIN = [1, 5, 15, 60, 240, 720]; export const AUTO_PAUSE_AFTER = 20; const ROTATION_GRACE_MS = 24 * 3600_000;
 const CONTENT_KEYS = /^(text|body|plaintext|content|message|passkey|password|secret|token|ciphertext|payload|attachment|attachments|title)$/i;

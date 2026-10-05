@@ -1,0 +1,16 @@
+{
+  "name": "@inaya-network/gateway-agent",
+  "version": "0.1.0",
+  "description": "Inaya Sovereign Gateway agent -- runs inside a customer's network, connects OUT to Inaya (no inbound port), keeps its private key local, lists approved folders, reads their access control lists, forwards a tamper-evident audit trail and transfers approved files end-to-end encrypted with a key Inaya never holds.",
+  "type": "module",
+  "bin": {
+    "inaya-gateway": "bin/inaya-gateway.mjs"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=120000 test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

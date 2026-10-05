@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { uploadFile } from "../support/chunkedUpload";
+import PortalTodo from "./PortalTodo";
 
 const CSS = `
 .pt{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--mut:#5b6472;--line:#dfe3ea;--acc:#1f4fd8;--acc-ink:#fff;--ok:#12703a;--warn:#8a5a00;--bad:#a4262c;--soft:#eef2fb;
@@ -100,7 +101,7 @@ export default function PortalApp({ slug }) {
   if (booting) return <div className="pt"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="pt-wrap"><p role="status" className="pt-muted" style={{ paddingTop: 40 }}>Loading…</p></div></div>;
   if (cfgErr) return <div className="pt"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="pt-wrap"><h1>Support portal</h1><p className="pt-err" role="alert">{cfgErr}</p></div></div>;
 
-  const nav = [["home", "Home"], ["tickets", "My requests"], ["new", "New request"], ...(cfg.features.kb ? [["kb", "Help articles"]] : []), ...(cfg.features.chat ? [["chat", "Ask the assistant"]] : []), ...(cfg.features.ideas ? [["ideas", "Ideas"]] : []), ["invoices", "Invoices"], ["notifications", `Notifications${unread ? ` (${unread})` : ""}`], ["account", "Account"]];
+  const nav = [["home", "Home"], ["todo", "To do"], ["tickets", "My requests"], ["new", "New request"], ...(cfg.features.kb ? [["kb", "Help articles"]] : []), ...(cfg.features.chat ? [["chat", "Ask the assistant"]] : []), ...(cfg.features.ideas ? [["ideas", "Ideas"]] : []), ["invoices", "Invoices"], ["notifications", `Notifications${unread ? ` (${unread})` : ""}`], ["account", "Account"]];
   return (
     <div className="pt">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -115,6 +116,7 @@ export default function PortalApp({ slug }) {
         {!user && view !== "kb" && cfg.features.kb && <p className="pt-muted" style={{ textAlign: "center" }}>Looking for an answer first? <button type="button" className="pt-link" onClick={() => go("kb")}>Browse the help articles</button> (no sign-in needed).</p>}
         {!user && view === "kb" && <Kb call={call} user={null} onSignIn={() => go("home")} />}
         {user && view === "home" && <Home call={call} cfg={cfg} user={user} go={go} />}
+        {user && view === "todo" && <PortalTodo call={call} slug={slug} />}
         {user && view === "tickets" && <Tickets call={call} go={go} />}
         {user && view === "ticket" && <Ticket call={call} upload={upload} id={ticketId} cfg={cfg} go={go} />}
         {user && view === "new" && <NewRequest call={call} upload={upload} cfg={cfg} prefill={prefill} go={go} />}
