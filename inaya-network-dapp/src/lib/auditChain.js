@@ -68,7 +68,9 @@ export async function appendAuditEntry({ orgId, recordType, recordId, actorEmail
     // very first entry). Either branch modifying/creating exactly one
     // document means we own this seq number; zero means someone else beat
     // us to it and we retry against the new head.
-    const filter = head ? { orgId: orgObjectId, lastSeq } : { orgId: orgObjectId };
+    // First entry: only a head that has no lastSeq yet may be claimed, so a second concurrent writer's upsert collides on the
+    // unique {orgId} index (caught below) instead of silently re-claiming seq 1 and producing a duplicate entry.
+    const filter = head ? { orgId: orgObjectId, lastSeq } : { orgId: orgObjectId, lastSeq: { $exists: false } };
     let claimed;
     try {
       claimed = await auditChainHeads.findOneAndUpdate(

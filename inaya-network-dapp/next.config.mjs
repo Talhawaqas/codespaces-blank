@@ -86,6 +86,15 @@ const nextConfig = {
     "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
     "/api/cron/execute-approved-ai-actions": ["./src/lib/documentAutomation/fonts/**/*"],
   },
+  // Secure Chat (Competitive Expansion SOW): ts-mls lazily imports optional crypto suites (ChaCha20, X448, ML-KEM, X-Wing, ML-DSA,
+  // P-curves). Inaya uses ONLY MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519, which runs on WebCrypto, so those packages are not
+  // installed; webpack cannot know they are unreachable and would report "Module not found" for each. Stubbing them keeps the
+  // build clean and the bundle small. A browser without WebCrypto Ed25519/X25519 is detected up front and shown as unsupported.
+  webpack(config) {
+    const unused = ["@hpke/chacha20poly1305", "@hpke/dhkem-x448", "@hpke/ml-kem", "@hpke/hybridkem-x-wing", "@noble/post-quantum/ml-dsa.js", "@noble/curves/ed25519.js", "@noble/curves/ed448.js", "@noble/curves/nist.js"];
+    config.resolve.alias = { ...config.resolve.alias, ...Object.fromEntries(unused.map((m) => [m, false])) };
+    return config;
+  },
   async generateBuildId() {
     return buildId;
   },

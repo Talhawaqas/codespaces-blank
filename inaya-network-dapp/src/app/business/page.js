@@ -74,6 +74,7 @@ import BusinessEventsView from "../../components/business/BusinessEventsView";
 import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import DirectSyncView from "../../components/business/DirectSyncView";
+import ChatView from "../../components/business/chat/ChatView";
 import StorageControlPlaneView from "../../components/business/StorageControlPlaneView";
 import DataSourcesView from "../../components/business/DataSourcesView";
 import NasManagementView from "../../components/business/NasManagementView";
@@ -719,6 +720,7 @@ const NAV_ITEMS = [
   { key: "insights", label: "Insights", icon: "insights", group: "core" },
   { key: "brief", label: "Brief", icon: "insights", group: "core" },
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
+  { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
   { key: "projects", label: "Projects", icon: "projects", group: "operations" },
   { key: "documents", label: "Documents", icon: "documents", group: "operations" },
@@ -777,6 +779,7 @@ const NAV_ITEMS = [
 
 const GROUP_LABELS = {
   core: "Core",
+  collaboration: "Collaboration",
   operations: "Operations",
   industry: "Industry",
   trust: "Trust & Security",
@@ -1035,6 +1038,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     insights: { title: "Business Insights", description: "KPIs, trends, and alerts for this company." },
     brief: { title: "Business Brief", description: "A periodic recap of what happened and what needs attention." },
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
+    chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
     security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
     browse: { title: BROWSE_SECTION_LABELS[browseSection], description: "Company → Department → Project → Document." },
     tasks: { title: "Tasks", description: "Track and assign work across departments and projects." },
@@ -1174,6 +1178,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               initialProjectId={browseTarget?.projectId || null}
             />
           )}
+          {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
           {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
           {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
