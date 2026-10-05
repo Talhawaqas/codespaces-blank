@@ -16,6 +16,7 @@ import { s3Error, xmlResponse, initiateMultipartUploadXml, completeMultipartUplo
 import { createSignedUrl, clientFacingPresignedUrl } from "../../../../../lib/s3-compat/signedUrl.js";
 import { resolveS3Credential } from "../../../../../lib/s3-compat/credentials.js";
 import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
+import { getClientIp } from "../../../../../lib/rateLimit.js";
 
 function storeFor(owner) {
   return owner.type === "org" ? orgStore : walletStore;
@@ -131,12 +132,13 @@ export async function PUT(req, { params }) {
 
     const contentType = req.headers.get("content-type") || "application/octet-stream";
     const tags = parseTaggingHeader(req.headers.get("x-amz-tagging"));
-    const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId, tags });
+    const doc = await store.putS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, bodyBuffer, contentType, actorEmail: accessKeyId, tags, governance: { ip: getClientIp(req), role: "api" } });
     return new Response(null, {
       status: 200,
       headers: { ETag: `"${etagOf(doc)}"`, ...checksumHeaders(doc), ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}) },
     });
   } catch (err) {
+    if (err?.reason === "Governance") return s3Error("AccessDenied", err.message);
     if (err?.reason === "FileLocked") return s3Error("OperationAborted", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
@@ -270,7 +272,7 @@ export async function GET(req, { params }) {
       return xmlResponse(taggingXml(doc.tags || {}));
     }
 
-    const result = await store.getS3ObjectBody({ ...ownerArgs(owner), bucket: params.bucket, key, versionId });
+    const result = await store.getS3ObjectBody({ ...ownerArgs(owner), bucket: params.bucket, key, versionId, governance: { ip: getClientIp(req), actor: accessKeyId, role: "api" } });
     if (!result) return s3Error("NoSuchKey", "The specified key does not exist.");
 
     const { doc, buffer } = result;
@@ -313,6 +315,7 @@ export async function GET(req, { params }) {
       },
     });
   } catch (err) {
+    if (err?.reason === "Governance") return s3Error("AccessDenied", err.message);
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
     console.error("GET /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
@@ -373,6 +376,7 @@ export async function DELETE(req, { params }) {
     const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
     return new Response(null, { status: 204, headers: result?.deleteMarker ? { "x-amz-delete-marker": "true" } : {} });
   } catch (err) {
+    if (err?.reason === "Governance") return s3Error("AccessDenied", err.message);
     if (err?.reason === "FileLocked") return s3Error("OperationAborted", err.message);
     if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") {
       return s3Error("AccessDenied", err.message);

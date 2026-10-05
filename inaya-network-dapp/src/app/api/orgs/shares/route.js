@@ -7,6 +7,7 @@
 import { shareRoute } from "./_lib.js";
 import { requireDocumentAccess, resolveExpiresAt, SHARE_EXPIRATION_PRESETS } from "../../../../lib/document-permissions.js";
 import { createLinkShare, listShares, ShareError } from "../../../../lib/sharing/shares.js";
+import { getClientIp } from "../../../../lib/rateLimit.js";
 export const dynamic = "force-dynamic";
 
 export async function POST(req, ctx) {
@@ -16,7 +17,7 @@ export async function POST(req, ctx) {
     if (access.error) throw new ShareError(access.status, access.error);
     const expiresAt = resolveExpiresAt({ preset: body.expirationPreset, customExpiresAt: body.customExpiresAt });
     if (!expiresAt) throw new ShareError(400, `expirationPreset must be one of ${Object.keys(SHARE_EXPIRATION_PRESETS).join(", ")}, or customExpiresAt must be a valid future date within one year.`);
-    const made = await createLinkShare({ orgId, documentId: body.documentId, actorEmail: email, expiresAt, options: body });
+    const made = await createLinkShare({ orgId, documentId: body.documentId, actorEmail: email, expiresAt, options: body, role: membership.role, ip: getClientIp(r) });
     return { ...made.share, shareUrl: `${new URL(r.url).origin}/business/share/${made.token}` };
   });
 }

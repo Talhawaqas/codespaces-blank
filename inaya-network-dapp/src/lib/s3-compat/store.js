@@ -37,6 +37,18 @@ import { replicateShard, getBackupStatus } from "../backupEngine.js";
 import { purgeObjectStorage } from "./purge.js";
 import { claimId, releaseClaim } from "./namespaceClaim.js";
 import { emitObjectEvent } from "./notifications.js";
+import { assertUpload } from "../governance/uploads.js";
+import { assertDlp } from "../governance/dlp.js";
+
+/** Runs the org's governance (upload rules, antivirus, DLP) for API-driven reads and writes. Only callers that pass `governance` are checked:
+ *  internal generators (bookkeeper, document intelligence...) are not user uploads. A refusal is reported as an ObjectProtectedError with
+ *  reason "Governance" so the S3 and Azure routes answer AccessDenied. */
+async function governed(fn) {
+  try { return await fn(); } catch (e) {
+    if (e?.name === "UploadBlocked" || e?.name === "DlpBlocked") throw new ObjectProtectedError(e.message, "Governance");
+    throw e;
+  }
+}
 function getOrgS3Passphrase(orgId) {
   return getOwnerS3Passphrase({ type: "org", orgId });
 }
@@ -293,7 +305,8 @@ function bufferToFile(buffer, { key, contentType }) {
 /** Real encrypt -> shard -> pin -> register pipeline. Returns the inserted
  *  org_documents row shape (etag == fileHash, matching S3's own convention
  *  of ETag being a content hash). */
-export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride, notifyEventName = "s3:ObjectCreated:Put" }) {
+export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType, actorEmail, tags, providerName, etagOverride, notifyEventName = "s3:ObjectCreated:Put", governance }) {
+  if (governance) await governed(() => assertUpload({ orgId, actorEmail, source: "s3", filename: key, bytes: bodyBuffer, contentType, path: `${bucket}/${key}`, ip: governance.ip, role: governance.role }));
   const bucketDoc = await ensureS3Bucket({ orgId, bucket, actorEmail });
   const passphrase = await getOrgS3Passphrase(orgId);
   const { orgDocuments } = await getOrgCollections();
@@ -496,9 +509,10 @@ export async function headS3Object({ orgId, bucket, key, versionId }) {
  *  slice" -- AES-GCM's auth tag covers the whole ciphertext as one unit, so
  *  there is no partial-decrypt path). Returns the full plaintext Buffer;
  *  callers slice the requested range. */
-export async function getS3ObjectBody({ orgId, bucket, key, versionId }) {
+export async function getS3ObjectBody({ orgId, bucket, key, versionId, governance }) {
   const doc = await headS3Object({ orgId, bucket, key, versionId }); // authorization/existence/retention are checked fresh on EVERY request, before the cache
   if (!doc) return null;
+  if (governance) await governed(() => assertDlp({ orgId, ctx: { email: governance.actor, role: governance.role, ip: governance.ip, action: "download", resourceType: "object", resourceId: String(doc._id), path: `${bucket}/${key}`, filename: key, size: doc.sizeBytes, classification: doc.classification || null, legalHold: !!doc.legalHold, source: "s3" } }));
   // SQA-020: concurrent and repeated reads of this immutable version share one fetch-and-decrypt (see objectBodyCache.js)
   const { buffer } = await cachedObjectBody(`org:${orgId}:${doc._id}`, async () => {
     const passphrase = await getOrgS3Passphrase(orgId);

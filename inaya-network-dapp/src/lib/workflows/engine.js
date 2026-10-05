@@ -278,6 +278,27 @@ async function executeNode(node, env) {
     }
   }
 
+  if (type === "action.file_governance") {
+    const cfg = {};
+    for (const [k, v] of Object.entries(cfgRaw)) cfg[k] = typeof v === "string" ? renderTemplate(v, scope) : v;
+    if (mode !== "production") return { output: { simulated: true, wouldDo: { operation: cfg.operation, documentId: cfg.documentId || null }, note: `In ${mode} mode no file was changed.` }, meta: { actionClass: "low", simulated: true } };
+    const key = effectKey("file_governance", exec._id, node.key);
+    const { runFileGovernanceAction } = await import("../governance/workflowAction.js");
+    const claim = await claimEffect({ orgId: exec.orgId, key, kind: "action.file_governance", executionId: exec._id, nodeKey: node.key, meta: { operation: cfg.operation } });
+    if (!claim.claimed) {
+      if (claim.effect?.result) return { output: { ...claim.effect.result, reused: true }, meta: { actionClass: "low" } };
+      throw Object.assign(new Error("A previous attempt started this file action but did not record the result; refusing to repeat it."), { retryable: false, code: "EFFECT_UNCERTAIN" });
+    }
+    try {
+      const r = await runFileGovernanceAction({ orgId: exec.orgId, membership: dataCtx.membership, email: exec.runAs, cfg });
+      await completeEffect({ orgId: exec.orgId, key, state: "DONE", result: r });
+      return { output: r, meta: { actionClass: "low" } };
+    } catch (err) {
+      await completeEffect({ orgId: exec.orgId, key, state: "FAILED", result: { error: err.message } });
+      throw err;
+    }
+  }
+
   if (type === "action.report") {
     const outputs = Object.fromEntries(Object.entries(results).filter(([, r]) => r.status === "COMPLETED").map(([k, r]) => [k, { type: r.type, output: r.output }]));
     const { orgs } = await getOrgCollections();

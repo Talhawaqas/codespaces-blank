@@ -16,6 +16,8 @@
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 
+import RoomV2Panel from "./RoomV2Panel";
+import { useOrgFeatureFlags } from "./BetaFeaturesPanel";
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
   const data = await res.json().catch(() => ({}));
@@ -167,6 +169,7 @@ export default function DataRoomsView({ orgId, email }) {
 }
 
 function RoomRow({ room, orgId, actorEmail, expanded, onToggle, onChanged }) {
+  const flags = useOrgFeatureFlags(orgId);
   const [detail, setDetail] = useState(null);
   const [documentId, setDocumentId] = useState("");
   const [section, setSection] = useState("");
@@ -255,6 +258,7 @@ function RoomRow({ room, orgId, actorEmail, expanded, onToggle, onChanged }) {
               {inviteResult && <p className="text-[10px] font-mono text-emerald-400 break-all">Send this link to the invitee (expires in 30 min, single-use): {inviteResult}</p>}
             </>
           )}
+          {flags.FEATURE_DATA_ROOM_V2 && <RoomV2Panel orgId={orgId} roomId={room.id} closed={!!room.closedAt} />}
           {detail && (
             <>
               <p className="text-[10px] font-bold uppercase text-[var(--inaya-text-muted)] mt-1">Access log</p>

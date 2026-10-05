@@ -14,6 +14,17 @@ import { logDocumentActivity } from "../document-workflow.js";
 import { generateShareToken, hashShareToken } from "../document-permissions.js";
 import { sendEmail } from "../email.js";
 import { LIMITS, evaluateShareAccess, hashPassword, publicShareView, shareStatus, validateLinkOptions, verifyPassword, watermarkText, MEMBER_PERMISSIONS } from "./policy.js";
+import { enforceShareCreation, dlpForShareAccess } from "../governance/enforce.js";
+import { GovError } from "../governance/policies.js";
+import { emitFileEvent } from "../governance/events.js";
+
+/** Turn a governance refusal into the share error the routes already render. */
+async function governed(fn) {
+  try { return await fn(); } catch (e) {
+    if (e instanceof GovError || e?.name === "DlpBlocked") throw new ShareError(e.status || 403, e.message, { policy: true, code: e.code });
+    throw e;
+  }
+}
 
 export class ShareError extends Error {
   constructor(status, message, extra = {}) { super(message); this.status = status; Object.assign(this, extra); }
@@ -64,10 +75,12 @@ async function logEvent({ orgId, share, type, reason = null, ip = null, email = 
 
 // ------------------------------------------------------------------------------------------------ creation
 
-export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt, options }) {
+export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt, options, role = null, ip = null }) {
   const parsed = validateLinkOptions(options || {});
   if (parsed.errors) fail(400, parsed.errors.join(" "));
   const o = parsed.value;
+  const target = await (await cols()).orgDocuments.findOne({ _id: toObjectId(documentId), orgId: toObjectId(orgId) }, { projection: { classification: 1 } });
+  await governed(() => enforceShareCreation({ orgId, actorEmail, role, documentId, expiresAt, options: o, classification: target?.classification || null, ip }));
   const { documentShares } = await cols();
   const token = generateShareToken();
   const doc = {
@@ -82,6 +95,7 @@ export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt
   const r = await documentShares.insertOne(doc);
   await logDocumentActivity({ organizationId: orgId, documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_CREATED", previousState: null, newState: null,
     metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, oneTime: o.oneTime } });
+  emitFileEvent(orgId, "shared", { documentId: String(documentId), shareId: String(r.insertedId), permission: o.permission, passwordProtected: !!o.password, expiresAt });
   return { shareId: String(r.insertedId), token, share: publicShareView({ ...doc, _id: r.insertedId }) };
 }
 
@@ -275,6 +289,7 @@ export async function openShare({ token, password, email, code, ip, deviceId, us
     fail(verdict.status, verdict.error, { needs: verdict.needs });
   }
 
+  await governed(async () => { const d = await c.orgDocuments.findOne({ _id: share.documentId }, { projection: { classification: 1 } }); await dlpForShareAccess({ orgId: share.orgId, share, action: "share_open", ip, email: em, classification: d?.classification || null }); });
   // Take one use atomically; the guards re-check revocation, expiry, the use limit and the device binding in the same write.
   const nowI = nowIso();
   const filter = {
@@ -297,6 +312,7 @@ export async function openShare({ token, password, email, code, ip, deviceId, us
   const wm = taken.watermark ? watermarkText({ email: em, ip: maskIp(ip) || ip, label: taken.label }) : null;
   const ins = await c.sessions.insertOne({ tokenHash: sha(sessionToken), shareId: String(share._id), orgId: String(share.orgId), documentId: String(share.documentId), mode: taken.permission, watermark: wm, deviceId: deviceId || null, ipMasked: maskIp(ip), email: em, createdAt: new Date(), expiresAt, downloadCounted: false });
   await logEvent({ orgId: share.orgId, share, type: "OPENED", ip, email: em, sessionId: String(ins.insertedId) });
+  emitFileEvent(share.orgId, "share_opened", { documentId: String(share.documentId), shareId: String(share._id) });
   await logDocumentActivity({ organizationId: share.orgId, documentId: share.documentId, actorId: "external", action: "DOCUMENT_SHARE_ACCESSED", metadata: { shareId: String(share._id), v: 2 } });
   if (taken.notifyOnAccess) {
     try { await createNotification({ scope: "org", orgId: share.orgId, targetEmail: share.createdByEmail, category: "external_share", type: "share.accessed", title: "Your secure link was opened", body: `${doc.filename} was opened${em ? ` by ${em}` : ""}.`, sourceModule: "sharing", sourceId: String(share._id), actionUrl: "/business?view=shares", metadata: {}, dedupeKey: `share:open:${ins.insertedId}` }); } catch { /* best effort */ }
@@ -315,12 +331,24 @@ let shardFetcher = async (cid) => {
 };
 /** Tests replace the fetcher; production reads the encrypted shard from an IPFS gateway on the recipient's behalf. */
 export function setShardFetcher(fn) { shardFetcher = fn; }
+/** Fetch one encrypted shard on a visitor's behalf (also used by Data Room 2.0). Honours a test fetcher. */
+export function fetchShard(cid) { return shardFetcher(cid); }
 
 /**
  * Serves one CIPHERTEXT shard of the shared document to a holder of a valid access session. Everything is re-checked on every fetch:
  * revocation, expiry, IP range, session validity, and (for download links) the download limit, which is reserved atomically on the
  * session's first fetch.
  */
+/** Viewer signals from a share session (download click, print or screenshot-key attempt, focus loss). Signals, not proof. Logged to the access log, rate limited. */
+export async function recordShareSignal({ token, sessionToken, type, ip }) {
+  const allowed = ["DOWNLOAD_CLICKED", "PRINT_ATTEMPT", "SCREENSHOT_KEY", "WINDOW_BLURRED", "COPY_BLOCKED"]; if (!allowed.includes(type)) fail(400, "Unknown event.");
+  const share = await shareByToken(token); if (!share || share.v !== 2) fail(404, "This link is invalid.");
+  const c = await cols(); const session = sessionToken ? await c.sessions.findOne({ tokenHash: sha(sessionToken), shareId: String(share._id) }) : null;
+  if (!session || session.revokedAt || session.expiresAt <= new Date()) fail(401, "Your access has expired.");
+  const rl = await slidingWindowCheck({ action: "share:signal", key: String(session._id), max: 30, windowMs: 60_000 }); if (!rl.allowed) return { ok: true, dropped: true };
+  await logEvent({ orgId: share.orgId, share, type: "VIEWER_SIGNAL", reason: type, ip, email: session.email, sessionId: String(session._id) }); return { ok: true };
+}
+
 export async function readShareContent({ token, sessionToken, part, ip }) {
   if (part !== "alpha" && part !== "beta") fail(400, "part must be alpha or beta.");
   const share = await shareByToken(token);
@@ -334,6 +362,7 @@ export async function readShareContent({ token, sessionToken, part, ip }) {
   if (!verdict.allow) fail(verdict.status, verdict.error);
   if (share.revokedAt) { fail(410, "This link has been revoked."); }
   if (share.permission === "download" && !session.downloadCounted) {
+    await governed(async () => { const d = await c.orgDocuments.findOne({ _id: share.documentId }, { projection: { classification: 1 } }); await dlpForShareAccess({ orgId: share.orgId, share, action: "share_download", ip, email: session.email, classification: d?.classification || null }); });
     const reserved = await c.documentShares.findOneAndUpdate(
       { _id: share._id, revokedAt: null, $expr: { $or: [{ $eq: ["$maxDownloads", null] }, { $lt: [{ $ifNull: ["$downloadCount", 0] }, "$maxDownloads"] }] } },
       { $inc: { downloadCount: 1 } }, { returnDocument: "after" });

@@ -180,6 +180,15 @@ export const NODE_TYPES = {
       }
     },
   },
+  // Competitive Expansion SOW (file workflow actions): classify, set metadata, or revoke share links of one document, as the workflow owner.
+  "action.file_governance": {
+    category: "action", label: "File governance (classify, metadata, revoke shares)", ports: ["out"], risk: "low", scope: "documents",
+    validate: (c, e) => {
+      if (!["classify", "set_metadata", "revoke_shares"].includes(c.operation)) { e.push("operation must be classify, set_metadata or revoke_shares."); return; }
+      if (!c.documentId) e.push("documentId is required (it may use a {{ }} template such as {{trigger.payload.file.documentId}}).");
+      if (c.operation === "set_metadata" && !isObj(c.values)) e.push("values must map metadata field keys to values.");
+    },
+  },
   "action.report": {
     category: "action", label: "Generate report", ports: ["out"], risk: "read",
     validate: (c, e) => { if (c.reportType && !REPORT_TYPES.includes(c.reportType)) e.push(`reportType must be one of ${REPORT_TYPES.join(", ")}.`); },

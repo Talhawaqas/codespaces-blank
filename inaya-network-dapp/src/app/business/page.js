@@ -77,9 +77,14 @@ import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
+import GovernanceView from "../../components/business/governance/GovernanceView";
+import DocGovernancePanel from "../../components/business/governance/DocGovernancePanel";
+import SecureViewer from "../../components/viewer/SecureViewer";
+import { dataUrlToFile } from "../../components/viewer/decrypt";
 import FileRequestsView from "../../components/business/shares/FileRequestsView";
 import LockControl from "../../components/business/shares/LockControl";
 import AdvancedShareForm from "../../components/business/shares/AdvancedShareForm";
+import { useOrgFeatureFlags } from "../../components/business/BetaFeaturesPanel";
 import BetaFeaturesPanel from "../../components/business/BetaFeaturesPanel";
 import StorageControlPlaneView from "../../components/business/StorageControlPlaneView";
 import DataSourcesView from "../../components/business/DataSourcesView";
@@ -728,6 +733,7 @@ const NAV_ITEMS = [
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
   { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
+  { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
@@ -1049,6 +1055,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
     fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
     notes: { title: "Secure Notes", description: "Encrypted notes in your browser: text, rich text, Markdown, checklists and code, with history, tags and sharing." },
+    governance: { title: "Governance", description: "Versioned policies, data protection rules, classification and metadata for your files." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
     security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
@@ -1192,6 +1199,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           )}
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
           {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
+          {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage} />}
           {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
           {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
           {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
@@ -1918,6 +1926,13 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
   const [downloading, setDownloading] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showGov, setShowGov] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewPasskey, setPreviewPasskey] = useState("");
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const govFlags = useOrgFeatureFlags(orgId);
+  const govOn = !!(govFlags.FEATURE_FILE_GOVERNANCE || govFlags.FEATURE_SMART_CLASSIFICATION);
 
   const availableActions = (ACTIONS_BY_STATUS[doc.status] || []).filter(([, , who]) => who === "member" || canManage);
   const canManageThisDoc = canManage || doc.yourAccessLevel === "MANAGE";
@@ -1958,6 +1973,18 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
     }
     setShowActivity(true);
     loadActivity();
+  }
+
+  async function handlePreview(e) {
+    e.preventDefault();
+    if (!previewPasskey) return;
+    setPreviewBusy(true); setError("");
+    try {
+      const info = await api(`/api/orgs/documents/${doc.id}/retrieve?orgId=${orgId}`);
+      const [shardA, shardB] = await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
+      const dataUrl = await decryptData(shardA + shardB, previewPasskey);
+      setPreviewFile({ ...dataUrlToFile(dataUrl), name: info.filename }); setPreviewPasskey("");
+    } catch (err) { setError(err.message || "Could not decrypt — check the passkey."); } finally { setPreviewBusy(false); }
   }
 
   async function handleDownload() {
@@ -2026,6 +2053,8 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
             <button onClick={() => setShowPermissions((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
               Permissions
             </button>
+            {govFlags.FEATURE_DRM_VIEWER && <button onClick={() => { setShowPreview((v) => !v); setPreviewFile(null); }} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">Preview</button>}
+            {govOn && <button onClick={() => setShowGov((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">Details</button>}
             <button onClick={() => setShowShare((v) => !v)} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
               Share
             </button>
@@ -2055,6 +2084,20 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
 
       {showPermissions && <PermissionsPanel documentId={doc.id} orgId={orgId} ownerEmail={doc.uploadedByEmail} />}
       {showShare && <SharePanel documentId={doc.id} orgId={orgId} />}
+      {showGov && govOn && <DocGovernancePanel orgId={orgId} documentId={doc.id} flags={govFlags} />}
+      {showPreview && govFlags.FEATURE_DRM_VIEWER && (
+        <div className="mt-3 border-t border-[var(--inaya-overlay-10)] pt-3">
+          {!previewFile ? (
+            <form onSubmit={handlePreview} className="flex flex-wrap gap-2 items-center">
+              <input type="password" autoComplete="off" value={previewPasskey} onChange={(e) => setPreviewPasskey(e.target.value)} placeholder="Document passkey" aria-label="Document passkey" className="flex-1 min-w-[160px] bg-black/45 border border-[var(--inaya-overlay-15)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--inaya-text-primary)]" />
+              <button disabled={previewBusy || !previewPasskey} className="text-[11px] font-bold uppercase px-3 py-1.5 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">{previewBusy ? "Decrypting…" : "Preview"}</button>
+              <span className="text-[11px] text-[var(--inaya-text-muted)] w-full">Decrypted in this browser. Nothing readable is sent to Inaya.</span>
+            </form>
+          ) : (
+            <div className="space-y-2"><button onClick={() => { setPreviewFile(null); }} className="text-[11px] font-bold uppercase underline">Close preview</button>
+              <SecureViewer file={previewFile} mode="normal" canDownload={false} /></div>
+          )}
+        </div>)}
 
       {showActivity && (
         <div className="mt-2 border-t border-[var(--inaya-overlay-5)] pt-2 space-y-1">

@@ -15,6 +15,8 @@ import { slidingWindowCheck } from "../rateLimit.js";
 import { createNotification } from "../notifications.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { isValidPublicKeyJwk } from "./clientCrypto.js";
+import { governUpload } from "../governance/uploads.js";
+import { emitFileEvent } from "../governance/events.js";
 
 export class RequestError extends Error { constructor(status, message, extra = {}) { super(message); this.status = status; Object.assign(this, extra); } }
 const fail = (status, message, extra) => { throw new RequestError(status, message, extra); };
@@ -169,6 +171,9 @@ export async function beginUpload({ token, uploader = {}, ext, size, partCount, 
   const r = await byToken(token);
   if (!r) fail(404, "This link is invalid.");
   if (statusOf(r) !== "open") fail(410, "This request is no longer accepting files.");
+  // The file is encrypted before it reaches us, so only metadata can be governed (the result says contentInspected: false).
+  const gov = await governUpload({ orgId: r.orgId, actorEmail: String(uploader.email || "anonymous@external"), role: "external", source: "file_request", filename: `upload.${String(ext || "bin")}`, size, ip, path: `file-requests/${r._id}` });
+  if (!gov.allowed) fail(403, gov.message || "This upload is not allowed by the organization's policy.");
   const hr = await slidingWindowCheck({ action: "freq:hour", key: `${r._id}:${ip || "?"}`, max: LIMITS.uploadsPerHourPerIp, windowMs: 3600_000 });
   const day = await slidingWindowCheck({ action: "freq:day", key: `${ip || "?"}`, max: LIMITS.uploadsPerDayPerIp, windowMs: 86400_000 });
   if (!hr.allowed || !day.allowed) fail(429, "Too many uploads from this network. Try again later.");
@@ -236,6 +241,7 @@ export async function completeUpload({ token, uploadId, uploadKey }) {
   if (r.notifyOwner) {
     try { await createNotification({ scope: "org", orgId: r.orgId, targetEmail: r.createdByEmail, category: "external_share", type: "file_request.received", title: "A file was received", body: `${u.uploaderName || u.uploaderEmail || "Someone"} sent a file to "${r.title}" (${slot.received} of ${slot.maxFiles}).`, sourceModule: "file-requests", sourceId: String(r._id), actionUrl: "/business?view=fileRequests", metadata: {}, dedupeKey: `freq:${u._id}` }); } catch { /* best effort */ }
   }
+  emitFileEvent(r.orgId, "uploaded", { source: "file_request", requestId: String(r._id), uploadId: String(u._id), size: u.size ?? null });
   return { receiptId: String(u._id), receivedAt };
 }
 

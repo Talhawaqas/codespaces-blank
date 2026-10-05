@@ -847,238 +847,319 @@
       "title": "Content metadata framework (typed fields)",
       "priority": "P2",
       "sow": "D1",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/governance/metadata.js",
+        "src/components/business/governance/DocGovernancePanel.js"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/governance/documents/[id]/metadata"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance-classification.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Typed fields, built-ins, sets, manager-only visibility, read-only system fields; saved from the document panel in the browser. Never exposed through share links."
     },
     {
       "id": "GOV-002",
       "title": "Governance policy model: versioned, immutable after publish",
       "priority": "P2",
       "sow": "D4",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/governance/policies.js",
+        "src/components/business/governance/GovernanceView.js"
+      ],
+      "routes": [
+        "C:/Program Files/Git/api/orgs/governance/policies"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/governance.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Versioned, immutable once published, second-admin approval, scope/precedence/dates, audit trail. Created and published from the UI in the browser."
     },
     {
       "id": "GOV-003",
       "title": "Retention + archival + legal hold unified across file paths",
       "priority": "P2",
       "sow": "D4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "docs/architecture/content-governance-model.md"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Retention, archival, deletion and legal-hold policies are stored and versioned but not yet enforced from this model; legal hold and retention locks remain enforced at the storage layer as before."
     },
     {
       "id": "GOV-004",
       "title": "Legal hold cannot be bypassed via S3/Azure/DirectSync",
       "priority": "P1",
       "sow": "D4",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/s3-compat/store.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Legal hold is enforced at the S3/Azure store chokepoint (and DirectSync uses that API). The Business Workspace document delete route has not been re-verified against holds in this phase."
     },
     {
       "id": "CLASS-001",
       "title": "Classification engine: rules, patterns, PII, confidence, explanation",
       "priority": "P2",
       "sow": "D2",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/governance/classifyRules.js",
+        "src/lib/governance/classification.js"
+      ],
+      "routes": [
+        "POST /api/orgs/governance/documents/[id]/classification"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance-classification.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Metadata, content, PII and term rules; highest sensitivity wins; explanation, confidence and rule versions recorded. Browser: rule suggested CONFIDENTIAL, accepted."
     },
     {
       "id": "CLASS-002",
       "title": "Classification history, manual override with reason",
       "priority": "P2",
       "sow": "D2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/governance/classification.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance-classification.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "History, suggestions, accept/reject, manual override with mandatory reason that blocks automation, explicit reclassification: all tested. Browser exercised history and accept; the override form was not clicked."
     },
     {
       "id": "CLASS-003",
       "title": "Client-side / customer scanner path for E2EE content",
       "priority": "P2",
       "sow": "D2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/classifyRules.js",
+        "src/lib/governance/classification.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance-classification.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Client verdict API validates rule ids and records source client; the evaluator is shared pure code. There is no browser or scanner UI that runs it yet, and no customer scanner agent."
     },
     {
       "id": "CLASS-004",
       "title": "AI-assisted classification through AI Security Gateway",
       "priority": "P2",
       "sow": "D2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/classification.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance-classification.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Goes through the existing docIntelligence classifyWithAi (AI Security Gateway), suggestion-only, confidence capped. Tested with an injected classifier; live model call not exercised."
     },
     {
       "id": "DLP-001",
       "title": "DLP evaluator extension (IP, device, path, type, share type, counts)",
       "priority": "P2",
       "sow": "D3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/governance/dlp.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Every context field the SOW lists is matched by a pure evaluator. Browser: simulator and a live refused share open."
     },
     {
       "id": "DLP-002",
       "title": "DLP actions incl. stronger auth, log-only, quarantine",
       "priority": "P2",
       "sow": "D3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/dlp.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "ALLOW, DENY, REQUIRE_APPROVAL (admin approval, one use), LOG_ONLY, QUARANTINE implemented. REQUIRE_STRONGER_AUTH is enforced as a refusal because the platform has no step-up authentication primitive yet."
     },
     {
       "id": "DLP-003",
       "title": "DLP wired to shares, downloads, uploads, S3/Azure",
       "priority": "P2",
       "sow": "D3",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/governance/enforce.js",
+        "src/lib/sharing/shares.js",
+        "src/lib/s3-compat/store.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance-wiring.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Enforced on share creation/open/download (browser-verified live) and S3/Azure uploads and downloads (store level tested; the SigV4 routes were not exercised through a real S3 client)."
     },
     {
       "id": "DLP-004",
       "title": "DLP events + structured decisions",
       "priority": "P2",
       "sow": "D3",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/governance/dlp.js"
+      ],
+      "routes": [
+        "GET /api/orgs/governance/dlp/events"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/governance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Structured events with rule, policy version, masked IP; listed via the API in the browser."
     },
     {
       "id": "UPLOAD-001",
       "title": "Upload governance: ext/MIME/size/count, archives, bombs, hash lists",
       "priority": "P2",
       "sow": "Y",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/governance/uploads.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance.test.mjs",
+        "test/governance-wiring.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Extension, MIME sniffing, size, volume, hash block list, zip bomb/nesting/entries/encrypted/unsafe path checks, all tested with real archives."
     },
     {
       "id": "UPLOAD-002",
       "title": "Antivirus adapter on all upload paths + quarantine",
       "priority": "P2",
       "sow": "Y",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/uploads.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Existing scanner (static checks, EICAR, optional ClamAV/Cloudmersive) runs on S3/Azure writes with quarantine-style refusal. End-to-end encrypted uploads can only get metadata checks. No external AV engine is configured in this environment."
     },
     {
       "id": "DRM-001",
       "title": "Secure viewer modes + dynamic watermark",
       "priority": "P2",
       "sow": "E1",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/components/viewer/SecureViewer.js",
+        "src/components/viewer/decrypt.js",
+        "src/app/room/[token]/page.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/vdr2.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Browser: restricted view with dynamic watermark (visitor, org, UTC time), context menu and copy blocked, blur hides content, watermark restored after removal. View-only mode shares the same code path; the share-link viewer (V2Viewer) was rewired to it but not re-run in a browser."
     },
     {
       "id": "DRM-002",
       "title": "Session expiry, revocation, version pin, access log",
       "priority": "P2",
       "sow": "E1",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/dataroom/vdr2.js"
+      ],
+      "routes": [
+        "/api/data-room-access/v2/*"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/vdr2.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Short per-open views that expire, session expiry, immediate revoke, pinned document rows with explicit replacement, access log incl. viewer signals (seen in the browser log). The on-screen expiry wipe was tested by code path, not waited out."
     },
     {
       "id": "DRM-003",
       "title": "Honest guarantee text; no plaintext derivative on server",
       "priority": "P2",
       "sow": "E2",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "docs/architecture/drm-viewer-security.md"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "The guarantee text is on screen in the viewer and in the doc; no server-side plaintext derivative exists (decrypt happens in the browser)."
     },
     {
       "id": "RANSOM-001",
@@ -1169,28 +1250,33 @@
       "title": "Preview PDF/Office/text/markdown/image/CSV (client-side for protected)",
       "priority": "P2",
       "sow": "I",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/components/viewer/SecureViewer.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Browser-verified on real encrypted files: PDF, XLSX, CSV, DOCX, PNG. Markdown renders through the component verified in Notes but its live room test hit a gateway miss; plain text/code, the workspace Preview button and legacy .doc/.xls were not verified."
     },
     {
       "id": "PREVIEW-002",
       "title": "DICOM viewer for Health (client-side)",
       "priority": "P3",
       "sow": "I",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/components/viewer/SecureViewer.js",
+        "test/_viewer_fixtures.mjs"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Browser: a real uncompressed 16-bit DICOM rendered with window/level sliders, patient name hidden by default. Compressed transfer syntaxes are refused honestly. Not a clinically validated viewer."
     },
     {
       "id": "INTEGRATION-001",
@@ -1239,42 +1325,58 @@
       "title": "Data Room 2.0: templates, NDA, per-section permissions, expiry, bulk",
       "priority": "P2",
       "sow": "K",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/dataroom/vdr2.js",
+        "src/components/business/RoomV2Panel.js"
+      ],
+      "routes": [
+        "/api/orgs/data-rooms/[roomId]/v2"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/vdr2.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Settings, sections, NDA gate (browser), per-section visitor scope, access expiry capped by the room, bulk add/update/remove, batch and group invites. Templates are the existing feature."
     },
     {
       "id": "VDR-002",
       "title": "Data Room watermark, view-only, doc lock, final-version pin",
       "priority": "P2",
       "sow": "K",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/dataroom/vdr2.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/vdr2.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Watermark and view-only/download per document verified in the browser; lock, final-version pin and refused removal verified in the browser and tests."
     },
     {
       "id": "VDR-003",
       "title": "Data Room visitor log, timeline, health, evidence package",
       "priority": "P2",
       "sow": "K",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/dataroom/vdr2.js",
+        "src/lib/dataRoomEvidence.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/vdr2.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Visitor log (with viewer signals) and room health with warnings seen in the browser. Timeline, questions and the evidence package are tested server-side only; their UI tabs were not clicked."
     },
     {
       "id": "PORTAL-001",
@@ -1617,28 +1719,34 @@
       "title": "File triggers (upload, classification, share, expiry, hold, DLP, VDR, backup failure)",
       "priority": "P2",
       "sow": "32",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/events.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Emits file.uploaded (file requests), upload_blocked, classified, classification_suggested, dlp_blocked, shared, share_opened as workflow events. Expiry, hold, VDR and backup-failure triggers are not emitted yet; a live workflow run on these events was not exercised."
     },
     {
       "id": "WORKFLOW-002",
       "title": "File actions (tag, approval, lock, retention, move, evidence, ticket, resilience test)",
       "priority": "P2",
       "sow": "32",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/governance/workflowAction.js",
+        "src/lib/workflows/engine.js",
+        "src/lib/workflows/nodes.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "action.file_governance: classify, set_metadata, revoke_shares. Tag-as-approval, lock, retention, move, ticket and resilience-test actions are not built; existing nodes already cover ticket and approval."
     },
     {
       "id": "UX-001",

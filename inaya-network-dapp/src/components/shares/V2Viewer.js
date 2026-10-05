@@ -10,16 +10,8 @@
 // protection against someone who has the passkey (the page says so).
 
 import { useEffect, useRef, useState } from "react";
-
-async function decryptData(base64Str, password) {
-  const binaryStr = window.atob(base64Str);
-  const combined = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) combined[i] = binaryStr.charCodeAt(i);
-  const salt = combined.slice(0, 16); const iv = combined.slice(16, 28); const encrypted = combined.slice(28);
-  const keyMaterial = await window.crypto.subtle.importKey("raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-  const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-  return new TextDecoder().decode(await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted));
-}
+import SecureViewer from "../viewer/SecureViewer";
+import { dataUrlToFile, decryptData } from "../viewer/decrypt";
 
 const post = async (url, body) => {
   const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -72,8 +64,7 @@ export default function V2Viewer({ token, peek }) {
       const get = async (part) => { const r = await fetch(`/api/orgs/share/${token}/content?part=${part}`, { headers: { "x-share-session": session.sessionToken } }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Could not fetch the document."); return JSON.parse(d.content).shard; };
       const [a, b] = await Promise.all([get("alpha"), get("beta")]);
       let dataUrl; try { dataUrl = await decryptData(a + b, passkey); } catch { throw new Error("Could not decrypt this document. Check the passkey and try again."); }
-      const mime = /^data:([^;,]+)/.exec(dataUrl)?.[1] || "application/octet-stream";
-      if (session.permission === "download") { const el = document.createElement("a"); el.href = dataUrl; el.download = session.filename; el.click(); setFile(null); } else setFile({ dataUrl, mime });
+      setFile({ ...dataUrlToFile(dataUrl), name: session.filename });
     } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   }
 
@@ -106,15 +97,10 @@ export default function V2Viewer({ token, peek }) {
         </div>)}
       {err && <p className="text-red-400 text-xs text-center" role="alert">{err}</p>}
       {file && (
-        <div className="relative bg-white rounded-xl overflow-hidden share-viewer" style={{ minHeight: 320 }}>
-          <style>{`@media print { .share-viewer { display: none !important; } }`}</style>
-          {file.mime.startsWith("image/") ? <img src={file.dataUrl} alt="" className="max-w-full mx-auto" draggable={false} />
-            : file.mime === "application/pdf" || file.mime.startsWith("text/") ? <iframe title="Shared document" src={file.dataUrl} className="w-full" style={{ height: "70vh", border: 0 }} />
-            : <p className="p-6 text-sm text-slate-700">This file type cannot be previewed here.</p>}
-          {session?.watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden select-none" style={{ opacity: 0.18 }}>
-            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="whitespace-nowrap text-slate-900 font-bold" style={{ position: "absolute", top: `${i * 14}%`, left: "-10%", transform: "rotate(-24deg)", fontSize: 18 }}>{Array(4).fill(session.watermark).join("     ")}</div>)}
-          </div>}
-        </div>)}
+        <SecureViewer file={file} mode={session.permission === "download" ? "normal" : "view_only"} watermark={session.watermark ? { lines: [session.watermark] } : null} expiresAt={session.expiresAt}
+          canDownload={session.permission === "download"} onDownload={() => { const u = URL.createObjectURL(new Blob([file.bytes], { type: file.mime })); const el = document.createElement("a"); el.href = u; el.download = file.name; el.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }}
+          onSignal={(type) => { fetch(`/api/orgs/share/${token}/signal`, { method: "POST", headers: { "Content-Type": "application/json", "x-share-session": session.sessionToken }, body: JSON.stringify({ type }) }).catch(() => {}); }}
+          onExpire={() => { setFile(null); setPasskey(""); }} />)}
     </div>
   );
 }

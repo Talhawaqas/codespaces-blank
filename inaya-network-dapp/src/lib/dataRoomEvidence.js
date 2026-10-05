@@ -46,6 +46,7 @@ export async function exportDataRoomEvidence({ orgId, roomId, actorEmail, member
     closedAt: room.closedAt,
     lifecycleEvents: activity.map((a) => ({ action: a.action, actorEmail: a.actorEmail, timestamp: a.timestamp, metadata: a.metadata })),
     accessEvents: accessLog.map((a) => ({ externalEmail: a.externalEmail, action: a.action, documentId: a.documentId ? a.documentId.toString() : null, accessedAt: a.accessedAt })),
+    ...(room.v2 ? { dataRoom2: await (await import("./dataroom/vdr2.js")).v2EvidenceSection({ orgId, room }) } : {}),
     generatedAt,
     generatedByEmail: actorEmail,
     disclosure: "This package documents evidence that already exists in Inaya's own records for this data room. It is not a legal or regulatory compliance certification.",

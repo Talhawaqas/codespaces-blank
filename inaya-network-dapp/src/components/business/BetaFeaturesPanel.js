@@ -7,10 +7,32 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+const flagCache = new Map();
+/** { FEATURE_X: boolean } for the current organization, fetched once per page load and shared by every component that asks. */
+export function useOrgFeatureFlags(orgId) {
+  const [flags, setFlags] = useState(() => flagCache.get(orgId)?.value || {});
+  useEffect(() => {
+    if (!orgId) return; let live = true;
+    let entry = flagCache.get(orgId);
+    if (!entry || Date.now() - entry.at > 60_000) {
+      entry = { at: Date.now(), promise: fetch(`/api/orgs/features?orgId=${orgId}`, { credentials: "include" }).then((r) => (r.ok ? r.json() : { features: [] })).then((d) => Object.fromEntries((d.features || []).map((f) => [f.name, !!f.enabled]))).catch(() => ({})) };
+      flagCache.set(orgId, entry); entry.promise.then((v) => { entry.value = v; });
+    }
+    entry.promise.then((v) => { if (live) setFlags(v); });
+    return () => { live = false; };
+  }, [orgId]);
+  return flags;
+}
+
 // Add an entry here only when the capability is built and verified enough to offer.
 const OFFERED = {
   FEATURE_SECURE_CHAT: { title: "Secure Chat (beta)", text: "End-to-end encrypted conversations and files inside the workspace. Inaya cannot read messages. A new device sees only new messages." },
   FEATURE_SECURE_NOTES: { title: "Secure Notes (beta)", text: "Encrypted notes (text, rich text, Markdown, checklists, code) with history, private tags and sharing with colleagues. Each person sets a notes passphrase that Inaya cannot recover; search happens in the browser." },
+  FEATURE_DATA_ROOM_V2: { title: "Data Room 2.0", text: "Per-section visitor access, view-only or download per document, watermark, locked and final-version documents, network restriction, questions and answers, room health and a timeline. Visitors read documents in a secure viewer; view-only is a viewer mode, not a guarantee against someone who holds the passkey." },
+  FEATURE_DRM_VIEWER: { title: "Secure viewer and preview", text: "A viewer for PDFs, images, text, Markdown, CSV, Word, Excel and DICOM that runs in your browser, with preview in the workspace, watermark, view-only and restricted modes. It cannot stop photographs, operating-system screenshots or someone who holds the decryption passkey." },
+  FEATURE_FILE_GOVERNANCE: { title: "File governance", text: "Versioned governance policies (sharing limits, upload restrictions, retention and more) and metadata fields on files. Policies only ever restrict what permissions already allow." },
+  FEATURE_DLP: { title: "Data loss prevention", text: "Rules that allow, block, log or require approval for actions on files (who, where from, which file, where it is going), with a log of every decision. Rules never grant access." },
+  FEATURE_SMART_CLASSIFICATION: { title: "Smart classification", text: "Rule-based classification (file name, type, metadata, and content where Inaya is allowed to read it) with suggestions, history and manual override. Encrypted files are classified in your browser or scanner, never decrypted by Inaya." },
   FEATURE_ADVANCED_SHARING: { title: "Advanced sharing", text: "Secure links with passwords, expiry, download and network limits, one-time use, delegated managers and an access log; file requests (people outside the company send you files, encrypted so only you can open them); and file locks. Recipients still need the document passkey from you." },
 };
 

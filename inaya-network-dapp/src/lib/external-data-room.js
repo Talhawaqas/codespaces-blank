@@ -185,6 +185,8 @@ export async function exchangeRoomMagicLink(rawToken) {
     revokedAt: null,
     expiresAt: new Date(Date.now() + (link.sessionTtlMs || DEFAULT_SESSION_TTL_MS)).toISOString(),
     createdAt: now,
+    // Data Room 2.0 (additive): the scope the invitation carried. Absent on v1 links, so v1 behaviour is unchanged.
+    ...(link.allowedSections !== undefined ? { allowedSections: link.allowedSections } : {}), ...(link.role ? { role: link.role } : {}), ...(link.ipAllow ? { ipAllow: link.ipAllow } : {}),
   });
 
   return { sessionToken, orgId: link.orgId.toString(), roomId: link.roomId.toString() };

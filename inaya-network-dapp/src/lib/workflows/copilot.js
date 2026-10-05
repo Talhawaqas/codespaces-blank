@@ -24,6 +24,7 @@ transform.merge {}; transform.filter {input:"nodeKey",expression}; transform.sor
 ai.agent {systemInstructions,thresholds:[{name,expression,op,value}],tools:[names],inputFrom:[nodeKeys],memory:{enabled:true}}
 condition.if {expression}  (ports "true" and "false")
 notify.inaya {title,body,severity:"info"|"warning"|"critical",audience:"managers"|"all",alertType}; notify.email {title,body,recipients:[emails],severity}
+action.file_governance {operation:"classify"|"set_metadata"|"revoke_shares",documentId,values?}  (acts on one document as the workflow owner; trigger it with trigger.event eventType file.classified, file.uploaded, file.dlp_blocked, file.upload_blocked, file.shared, file.share_opened, file.classification_suggested; payload.file carries ids and decisions, never content)
 action.support_ticket {operation:"create",requesterEmail,subject,description,priority:"low"|"normal"|"high"|"urgent",tags:[]} or {operation:"note",ticketNumber,body}  (opens a ticket / adds an INTERNAL note in Inaya Customer Support; never replies to a customer)
 action.report {reportType:"daily_operations"|"weekly_operations"|"urgent_alert"|"executive_summary"|"finance_exception"|"support"|"inventory"|"trust_security"|"simulation_impact"}
 action.propose {tool:"propose_invoice_decision"|"propose_task_status_change"|..., args:{...}}  (waits for human approval)
