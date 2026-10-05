@@ -19,6 +19,7 @@
 
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { canManageCompliance } from "./orgGates.js";
+import { FRAMEWORK as NIST_800_53_R5 } from "./compliance/nist80053.js";
 
 export const REFERENCE_DISCLAIMER =
   "These framework and requirement mappings are design references for organizing controls and " +
@@ -27,6 +28,8 @@ export const REFERENCE_DISCLAIMER =
   "professionals for your specific organization and jurisdiction.";
 
 export const FRAMEWORKS = {
+  // Competitive Expansion SOW P2: the NIST SP 800-53 Rev. 5 internal curated base-control catalog (see compliance/nist80053.js for exactly what it is and is not).
+  NIST_800_53_R5,
   NIST_CSF_2: {
     id: "NIST_CSF_2",
     name: "NIST Cybersecurity Framework 2.0",

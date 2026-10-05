@@ -2301,6 +2301,821 @@
           }
         }
       }
+    },
+    "/api/public/v1/shares": {
+      "get": {
+        "summary": "List shares, or create a link share (or a share with a member). Needs the Advanced Sharing feature enabled for the organization.",
+        "operationId": "get_shares-list-create",
+        "tags": [
+          "/api/public/v1/shares"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "active, expired, revoked or exhausted."
+          },
+          {
+            "name": "documentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only shares of this document."
+          },
+          {
+            "name": "limit, before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (max 100) and a cursor."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { shares[], next }. POST: 201 with the share; the link token is returned once and never listed again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List shares, or create a link share (or a share with a member). Needs the Advanced Sharing feature enabled for the organization.",
+        "operationId": "post_shares-list-create",
+        "tags": [
+          "/api/public/v1/shares"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { shares[], next }. POST: 201 with the share; the link token is returned once and never listed again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "description": "A link share. With memberEmail and permission it is a share with a member instead."
+                  },
+                  "expiresAt or expirationPreset": {
+                    "description": "A link share. With memberEmail and permission it is a share with a member instead."
+                  },
+                  "options": {
+                    "description": "A link share. With memberEmail and permission it is a share with a member instead."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/shares/{shareId}": {
+      "get": {
+        "summary": "Read the access events of one share, or revoke it.",
+        "operationId": "get_shares-item",
+        "tags": [
+          "/api/public/v1/shares"
+        ],
+        "parameters": [
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The shareId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { events[] } with masked addresses. DELETE: the revoked share.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Read the access events of one share, or revoke it.",
+        "operationId": "delete_shares-item",
+        "tags": [
+          "/api/public/v1/shares"
+        ],
+        "parameters": [
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The shareId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { events[] } with masked addresses. DELETE: the revoked share.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/file-requests": {
+      "get": {
+        "summary": "List file requests (metadata only). Creating a request needs a browser, because its key pair must never exist on a server.",
+        "operationId": "get_file-requests-list",
+        "tags": [
+          "/api/public/v1/file-requests"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ requests[] } without keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/file-requests/{requestId}": {
+      "get": {
+        "summary": "Inspect one request and its uploads, or revoke it.",
+        "operationId": "get_file-requests-item",
+        "tags": [
+          "/api/public/v1/file-requests"
+        ],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The requestId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: the request and its uploads list (no keys, no content). DELETE: the revoked request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Inspect one request and its uploads, or revoke it.",
+        "operationId": "delete_file-requests-item",
+        "tags": [
+          "/api/public/v1/file-requests"
+        ],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The requestId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: the request and its uploads list (no keys, no content). DELETE: the revoked request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/governance/policies": {
+      "get": {
+        "summary": "Read governance, DLP or classification policies. Changes stay in the app, behind approvals.",
+        "operationId": "get_governance-policies",
+        "tags": [
+          "/api/public/v1/governance"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "governance, dlp or classification."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Policy status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ policies[] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/governance/dlp-events": {
+      "get": {
+        "summary": "Read data-loss decisions with masked addresses.",
+        "operationId": "get_governance-dlp-events",
+        "tags": [
+          "/api/public/v1/governance"
+        ],
+        "parameters": [
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by decision."
+          },
+          {
+            "name": "limit, before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (max 200) and a cursor."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ events[] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/classification/{documentId}": {
+      "get": {
+        "summary": "Classification history for a document, or evaluate the rules for it (a dry run unless dryRun is false).",
+        "operationId": "get_classification-document",
+        "tags": [
+          "/api/public/v1/classification"
+        ],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The documentId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { history[] }. POST: the evaluation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Classification history for a document, or evaluate the rules for it (a dry run unless dryRun is false).",
+        "operationId": "post_classification-document",
+        "tags": [
+          "/api/public/v1/classification"
+        ],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The documentId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { history[] }. POST: the evaluation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dryRun": {
+                    "description": "Defaults to true."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/devices": {
+      "get": {
+        "summary": "Device inventory for the organization. Needs the Device Control feature.",
+        "operationId": "get_devices-list",
+        "tags": [
+          "/api/public/v1/devices"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ devices[] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/devices/{deviceId}": {
+      "get": {
+        "summary": "Read one device, or apply an action (trust, block, revoke, sign out, wipe app data, and so on).",
+        "operationId": "get_devices-item",
+        "tags": [
+          "/api/public/v1/devices"
+        ],
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The deviceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device after the action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Read one device, or apply an action (trust, block, revoke, sign out, wipe app data, and so on).",
+        "operationId": "post_devices-item",
+        "tags": [
+          "/api/public/v1/devices"
+        ],
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The deviceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device after the action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "description": "One of the supported device actions."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/endpoint-backup/health": {
+      "get": {
+        "summary": "Endpoint backup health overview. Needs the Endpoint Backup feature.",
+        "operationId": "get_endpoint-backup-health",
+        "tags": [
+          "/api/public/v1/endpoint-backup"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ profiles[], summary }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/compliance/summary": {
+      "get": {
+        "summary": "Readiness overview by control family. Readiness only: never a certification. Needs the Compliance Readiness feature.",
+        "operationId": "get_compliance-summary",
+        "tags": [
+          "/api/public/v1/compliance"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ catalog, totals, families[], disclaimer }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/compliance/controls": {
+      "get": {
+        "summary": "Control status with computed evidence state. Read-only.",
+        "operationId": "get_compliance-controls",
+        "tags": [
+          "/api/public/v1/compliance"
+        ],
+        "parameters": [
+          {
+            "name": "family, implementation, evidence, responsibility, owner, q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ controls[] } with implementation, responsibility, owner, evidence state and exceptions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   }
 }

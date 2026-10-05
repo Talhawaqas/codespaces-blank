@@ -111,6 +111,7 @@ const connectorView = (k) => ({ connectorId: String(k._id), name: k.name, type: 
 const cfgHash = (list) => sha(JSON.stringify(list)).slice(0, 16);
 
 export async function heartbeat({ gateway, report = {} }) {
+  import("../metrics/metrics.js").then((m) => m.metric("gateway.heartbeat", { orgId: gateway.orgId })).catch(() => {});
   const c = await gwCols(); const n = (v, max = 1e9) => Math.max(0, Math.min(max, Number(v) || 0));
   const conns = Array.isArray(report.connectors) ? report.connectors.slice(0, 50).map((x) => ({ connectorId: String(x.connectorId || "").slice(0, 24), status: ["ok", "degraded", "error", "disabled"].includes(x.status) ? x.status : "error", lastError: x.lastError ? String(x.lastError).slice(0, 200) : null, lastScanAt: x.lastScanAt || null })) : [];
   const health = { connectors: conns, queueDepth: n(report.queueDepth), lagSeconds: n(report.lagSeconds, 86400 * 365), aclFailures: n(report.aclFailures), uptimeSeconds: n(report.uptimeSeconds, 86400 * 3650), bandwidthKbps: report.bandwidthKbps == null ? null : n(report.bandwidthKbps), at: nowIso() };

@@ -15,6 +15,8 @@ Authenticate with `Authorization: Bearer inaya_...` (an organization API key fro
 | `GET/POST /api/public/v1/classification/{documentId}` | Smart classification | History; evaluate rules (dry run unless `dryRun: false`) |
 | `GET /api/public/v1/devices`, `GET/POST /api/public/v1/devices/{id}` | Device control | Inventory; trust, block, remove, sign out, wipe app data |
 | `GET /api/public/v1/endpoint-backup/health` | Endpoint backup | Health overview |
+| `GET /api/public/v1/compliance/summary` | Compliance readiness | Readiness overview by control family. Readiness only, never a certification |
+| `GET /api/public/v1/compliance/controls` | Compliance readiness | Control status with computed evidence state. Filters: `family`, `implementation`, `evidence`, `responsibility`, `owner`, `q` |
 | `GET /api/public/v1/evidence` | none | Tamper-evident trail for one record (existing) |
 
 ## What is deliberately not here

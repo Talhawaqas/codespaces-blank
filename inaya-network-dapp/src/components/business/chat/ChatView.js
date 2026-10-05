@@ -12,6 +12,7 @@ import { useChat } from "./useChat";
 import EmptyState from "../../EmptyState";
 import { NotePicker } from "../notes/NotesView";
 import { inayaNoteRef } from "../../../lib/chat/client/attachments";
+import { reportMetric } from "./reportMetric.js";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -181,7 +182,8 @@ export default function ChatView({ orgId, email, canManage }) {
         const attachments = [];
         for (const f of files) attachments.push(await c.attachFile(sel, { bytes: new Uint8Array(await f.arrayBuffer()), name: f.name, type: f.type }));
         if (noteRef) attachments.push(inayaNoteRef(noteRef));
-        await c.send(sel, { text: text.trim(), attachments });
+        const t0 = performance.now(); await c.send(sel, { text: text.trim(), attachments });
+        if (!attachments.length) reportMetric(orgId, "chat.delivery_latency_ms", performance.now() - t0);
       });
       setText(""); setFiles([]); setNoteRef(null); setMsgs(await client.messages(sel));
       client.api.setTyping({ conversationId: sel, typing: false }).catch(() => {});

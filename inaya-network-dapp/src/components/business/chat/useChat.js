@@ -7,6 +7,7 @@
 // The server only ever sees ciphertext and metadata. See docs/architecture/e2ee-chat-key-management.md.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { reportMetric } from "./reportMetric.js";
 
 const supported = async () => {
   if (typeof window === "undefined" || !window.crypto?.subtle || !window.indexedDB) return false;
@@ -43,7 +44,7 @@ export function useChat({ orgId, email }) {
   const [securityEvents, setSecurityEvents] = useState([]);
   const clientRef = useRef(null);
   const onEvent = useRef(null);
-  onEvent.current = (e) => setSecurityEvents((x) => [...x.slice(-19), { ...e, at: new Date().toISOString() }]);
+  onEvent.current = (e) => { if (e?.type === "DECRYPT_FAILED") reportMetric(orgId, "chat.decrypt_failure"); setSecurityEvents((x) => [...x.slice(-19), { ...e, at: new Date().toISOString() }]); };
   const alive = useRef(true);
 
   const refresh = useCallback(async (res) => {
@@ -85,7 +86,7 @@ export function useChat({ orgId, email }) {
             if (res.fresh?.length) setTick((n) => n + 1);
           } catch (err) {
             if (err.code === "DEVICE_REVOKED") { setStatus("error"); setError("This browser was signed out of Secure Chat (device revoked)."); await client.wipeLocal(); return; }
-            await new Promise((r) => setTimeout(r, backoff)); backoff = Math.min(backoff * 2, 30000);
+            reportMetric(orgId, "chat.reconnect"); await new Promise((r) => setTimeout(r, backoff)); backoff = Math.min(backoff * 2, 30000);
           }
           await new Promise((r) => setTimeout(r, 400));
         }

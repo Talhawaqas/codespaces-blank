@@ -86,6 +86,7 @@ import GatewayView from "../../components/business/gateway/GatewayView";
 import ReplicationPanel from "../../components/business/admin/ReplicationPanel";
 import PortalRequestsView from "../../components/business/support/PortalRequestsView";
 import OfficeIntegrationView from "../../components/business/admin/OfficeIntegrationView";
+import ComplianceReadinessView from "../../components/business/admin/ComplianceReadinessView";
 import BrandingPanel from "../../components/business/admin/BrandingPanel";
 import NotificationPrefsPanel from "../../components/business/admin/NotificationPrefsPanel";
 import GovernanceView from "../../components/business/governance/GovernanceView";
@@ -750,6 +751,7 @@ const NAV_ITEMS = [
   { key: "adminDashboard", label: "Admin Dashboard", icon: "insights", manageOnly: true, adminRole: ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], group: "trust" },
   { key: "webhooks", label: "Webhooks", icon: "integrations", manageOnly: true, adminRole: "integrationAdmin", group: "enterprise" },
   { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, adminRole: ["dataGovernanceAdmin", "securityAdmin"], group: "trust" },
+  { key: "complianceReadiness", label: "Compliance Readiness", icon: "enterpriseHardening", manageOnly: true, adminRole: ["complianceAdmin", "securityAdmin"], group: "trust" },
   { key: "gateway", label: "Sovereign Gateway", icon: "enterpriseHardening", group: "trust" },
   { key: "devices", label: "Devices", icon: "enterpriseHardening", group: "trust" },
   { key: "endpointBackup", label: "Endpoint Backup", icon: "enterpriseHardening", group: "trust" },
@@ -1077,6 +1079,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
     fileRequests: { title: "File Requests", description: "Ask someone outside the company to send you files securely, without an account." },
     notes: { title: "Secure Notes", description: "Encrypted notes in your browser: text, rich text, Markdown, checklists and code, with history, tags and sharing." },
+    complianceReadiness: { title: "Compliance Readiness", description: "Control status, evidence, the government profile, cryptography and encryption keys. Readiness only: never a certification." },
     gateway: { title: "Sovereign Gateway", description: "Network folders on your own servers, read through a gateway that connects out from your network. Your system's permissions decide who sees what." },
     portalRequests: { title: "Customer Requests", description: "Ask a customer for files, a form or an agreement in the portal, and follow their progress." },
     office: { title: "Microsoft 365 and Outlook", description: "Edit in Word, Excel and PowerPoint and send secure links from Outlook, without sending your files to Microsoft." },
@@ -1232,6 +1235,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
           {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
           {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
+          {activeView === "complianceReadiness" && <ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} />}
           {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
           {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
           {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}

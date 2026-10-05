@@ -91,6 +91,7 @@ export async function completeTransfer({ gateway, transferId, chainHash }) {
   const stored = parts.reduce((n, p) => n + bytesOf(p.data).length, 0); if (stored !== t.cipherSize) fail(422, "The stored size does not match the announced size.", { code: "SIZE_MISMATCH" });
   await c.transfers.updateOne({ _id: t._id }, { $set: { status: "complete", completedAt: nowIso(), chainHash } });
   await logOrgActivity({ orgId: gateway.orgId, recordType: "GATEWAY", recordId: t._id, actorEmail: "gateway:" + String(gateway._id), action: "TRANSFER_COMPLETED", previousState: null, newState: null, metadata: { size: t.size, parts: t.partCount } }).catch(() => {});
+  import("../metrics/metrics.js").then((m) => m.metric("gateway.transfer_completed", { orgId: gateway.orgId })).catch(() => {});
   emit(gateway.orgId, { gatewayId: String(gateway._id), event: "transfer.completed", transferId: String(t._id), size: t.size }); return { complete: true };
 }
 export async function getPart({ gateway, transferId, index }) {

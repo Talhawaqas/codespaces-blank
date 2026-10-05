@@ -334,4 +334,137 @@ export const API_ENDPOINTS = [
     response: "GET: { mappings[] }. POST: 201 { mapping }.",
     status: "beta",
   },
+  {
+    slug: "shares-list-create",
+    method: "GET, POST",
+    path: "/api/public/v1/shares",
+    summary: "List shares, or create a link share (or a share with a member). Needs the Advanced Sharing feature enabled for the organization.",
+    params: [
+      { name: "status", in: "query", required: false, description: "active, expired, revoked or exhausted." },
+      { name: "documentId", in: "query", required: false, description: "Only shares of this document." },
+      { name: "limit, before", in: "query", required: false, description: "Page size (max 100) and a cursor." },
+      { name: "documentId, expiresAt or expirationPreset, options", in: "body (POST)", required: true, description: "A link share. With memberEmail and permission it is a share with a member instead." }
+    ],
+    response: "GET: { shares[], next }. POST: 201 with the share; the link token is returned once and never listed again.",
+    status: "beta",
+  },
+  {
+    slug: "shares-item",
+    method: "GET, DELETE",
+    path: "/api/public/v1/shares/{shareId}",
+    summary: "Read the access events of one share, or revoke it.",
+    params: [
+      { name: "shareId", in: "path", required: true, description: "The share id." }
+    ],
+    response: "GET: { events[] } with masked addresses. DELETE: the revoked share.",
+    status: "beta",
+  },
+  {
+    slug: "file-requests-list",
+    method: "GET",
+    path: "/api/public/v1/file-requests",
+    summary: "List file requests (metadata only). Creating a request needs a browser, because its key pair must never exist on a server.",
+    params: [
+      { name: "status", in: "query", required: false, description: "Filter by status." }
+    ],
+    response: "{ requests[] } without keys.",
+    status: "beta",
+  },
+  {
+    slug: "file-requests-item",
+    method: "GET, DELETE",
+    path: "/api/public/v1/file-requests/{requestId}",
+    summary: "Inspect one request and its uploads, or revoke it.",
+    params: [
+      { name: "requestId", in: "path", required: true, description: "The request id." }
+    ],
+    response: "GET: the request and its uploads list (no keys, no content). DELETE: the revoked request.",
+    status: "beta",
+  },
+  {
+    slug: "governance-policies",
+    method: "GET",
+    path: "/api/public/v1/governance/policies",
+    summary: "Read governance, DLP or classification policies. Changes stay in the app, behind approvals.",
+    params: [
+      { name: "type", in: "query", required: false, description: "governance, dlp or classification." },
+      { name: "status", in: "query", required: false, description: "Policy status." }
+    ],
+    response: "{ policies[] }.",
+    status: "beta",
+  },
+  {
+    slug: "governance-dlp-events",
+    method: "GET",
+    path: "/api/public/v1/governance/dlp-events",
+    summary: "Read data-loss decisions with masked addresses.",
+    params: [
+      { name: "decision", in: "query", required: false, description: "Filter by decision." },
+      { name: "limit, before", in: "query", required: false, description: "Page size (max 200) and a cursor." }
+    ],
+    response: "{ events[] }.",
+    status: "beta",
+  },
+  {
+    slug: "classification-document",
+    method: "GET, POST",
+    path: "/api/public/v1/classification/{documentId}",
+    summary: "Classification history for a document, or evaluate the rules for it (a dry run unless dryRun is false).",
+    params: [
+      { name: "documentId", in: "path", required: true, description: "The document id." },
+      { name: "dryRun", in: "body (POST)", required: false, description: "Defaults to true." }
+    ],
+    response: "GET: { history[] }. POST: the evaluation result.",
+    status: "beta",
+  },
+  {
+    slug: "devices-list",
+    method: "GET",
+    path: "/api/public/v1/devices",
+    summary: "Device inventory for the organization. Needs the Device Control feature.",
+    params: [],
+    response: "{ devices[] }.",
+    status: "beta",
+  },
+  {
+    slug: "devices-item",
+    method: "GET, POST",
+    path: "/api/public/v1/devices/{deviceId}",
+    summary: "Read one device, or apply an action (trust, block, revoke, sign out, wipe app data, and so on).",
+    params: [
+      { name: "deviceId", in: "path", required: true, description: "The device id." },
+      { name: "action", in: "body (POST)", required: true, description: "One of the supported device actions." }
+    ],
+    response: "The device after the action.",
+    status: "beta",
+  },
+  {
+    slug: "endpoint-backup-health",
+    method: "GET",
+    path: "/api/public/v1/endpoint-backup/health",
+    summary: "Endpoint backup health overview. Needs the Endpoint Backup feature.",
+    params: [],
+    response: "{ profiles[], summary }.",
+    status: "beta",
+  },
+  {
+    slug: "compliance-summary",
+    method: "GET",
+    path: "/api/public/v1/compliance/summary",
+    summary: "Readiness overview by control family. Readiness only: never a certification. Needs the Compliance Readiness feature.",
+    params: [],
+    response: "{ catalog, totals, families[], disclaimer }.",
+    status: "beta",
+  },
+  {
+    slug: "compliance-controls",
+    method: "GET",
+    path: "/api/public/v1/compliance/controls",
+    summary: "Control status with computed evidence state. Read-only.",
+    params: [
+      { name: "family, implementation, evidence, responsibility, owner, q", in: "query", required: false, description: "Filters." }
+    ],
+    response: "{ controls[] } with implementation, responsibility, owner, evidence state and exceptions.",
+    status: "beta",
+  },
 ];

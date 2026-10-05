@@ -1611,98 +1611,149 @@
       "title": "Government profile states (no certification implied)",
       "priority": "P3",
       "sow": "P1",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/compliance/governmentProfile.js",
+        "docs/architecture/government-security-profile.md"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/compliance/government"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Four states, a technical-readiness profile only: live technical checks (met, not met, unknown), customer-specific authorization recorded by the customer and explicitly not verified, labels checked by a test not to imply certification. Choosing a state does not turn failing checks green."
     },
     {
       "id": "COMPLIANCE-002",
       "title": "NIST SP 800-53 control catalog + responsibility states",
       "priority": "P3",
       "sow": "P2",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/compliance/nist80053.js",
+        "src/lib/compliance/implementation.js",
+        "src/lib/compliance/collectors.js",
+        "src/lib/compliance-frameworks.js",
+        "docs/compliance/readiness-and-evidence.md"
+      ],
+      "routes": [
+        "GET /api/orgs/compliance/controls",
+        "PATCH /api/orgs/compliance/controls/{id}"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "251 base controls across the 19 families as an internal curated catalog (not the NIST publication: no enhancements, no FedRAMP parameters) registered with the existing framework engine; implementation, responsibility, owner, evidence (vault, snapshot, link) and exceptions with mandatory expiry; evidence state is computed; live collectors never invent a pass; curated defaults labelled as defaults."
     },
     {
       "id": "COMPLIANCE-003",
       "title": "OSCAL-shaped evidence export",
       "priority": "P3",
       "sow": "P3",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/compliance/oscal.js"
+      ],
+      "routes": [
+        "GET /api/orgs/compliance/package"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "OSCAL-shaped SSP plus every section the SOW lists, stable identifiers, linked evidence resources, SHA-256 and a structural self-check. NOT validated against the official OSCAL schema; vulnerability status is reported as not collected."
     },
     {
       "id": "COMPLIANCE-004",
       "title": "FIPS-ready crypto provider abstraction + inventory",
       "priority": "P3",
       "sow": "P4",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/crypto/policy.js"
+      ],
+      "routes": [
+        "GET /api/orgs/compliance/crypto"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Provider registry, NIST-approved algorithm policy with a refusing fips_ready mode, known-answer vectors checked against two independent implementations, pairwise tests, usage and dependency inventories, FIPS status that never claims validation. Application code does not yet route its cryptography through the policy (it is a declared, tested abstraction and inventory), and no validated module exists."
     },
     {
       "id": "COMPLIANCE-005",
       "title": "Government audit profile + data labels",
       "priority": "P3",
       "sow": "P5-6",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/compliance/governmentProfile.js",
+        "src/app/api/orgs/documents/[documentId]/retrieve/route.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Enhanced access records (user, role, department, object, action, time, device, masked address by policy, result, policy decision, authorization basis) written into the audit chain for every document read under a government profile, through the real retrieve route; government label set with neutral names for the customer-defined classes. Only the retrieve path is enhanced; other read paths keep their existing records."
     },
     {
       "id": "COMPLIANCE-006",
       "title": "Compliance readiness dashboard",
       "priority": "P3",
       "sow": "50",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/components/business/admin/ComplianceReadinessView.js"
+      ],
+      "routes": [
+        "GET /api/orgs/compliance/summary",
+        "GET /api/orgs/compliance/facts"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/compliance.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Readiness overview by family, evidence gaps, expired exceptions, live facts, government checks, cryptography and key status, all labelled readiness only. Not wired into the Admin Dashboard tiles."
     },
     {
       "id": "KEY-001",
       "title": "Customer-managed key provider interface + local + KMS adapter + rotation",
       "priority": "P2",
       "sow": "Q",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/keys/providers.js",
+        "src/lib/keys/service.js",
+        "src/lib/s3-compat/credentials.js",
+        "docs/architecture/customer-managed-keys.md"
+      ],
+      "routes": [
+        "POST /api/orgs/compliance/keys/configure"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/keys.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Provider interface with platform, local and AWS KMS providers; envelope re-wrap of the server-managed layer's data key (platform copy removed); tenant, purpose and environment binding; rotation with versions and retired state; disable switch; operation audit and failure telemetry with no key material. KMS was tested against a stand-in implementing the AWS protocol (real AWS SDK client, authenticated EncryptionContext), NOT a live AWS account. Applies to server-managed storage only; client-side encrypted content is outside it by design."
     },
     {
       "id": "BRAND-001",
@@ -1732,14 +1783,18 @@
       "title": "Tenant isolation hardening + automated scanner tests per new route group",
       "priority": "P0",
       "sow": "S",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "test/tenant-isolation-scan.test.mjs"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/tenant-isolation-scan.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "securityReviewed": true,
+      "notes": "Static scanner over every route group added by the SOW (session or key auth before data access, org id from the session/record, never the body) plus the per-feature cross-tenant tests. Heuristic: it checks structure, it is not a proof; found no gaps."
     },
     {
       "id": "ADMIN-001",
@@ -2028,98 +2083,136 @@
       "title": "Performance targets: chat ack, pagination, bounded dashboards",
       "priority": "P2",
       "sow": "41,51",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "test/performance.test.mjs",
+        "src/lib/chat/conversations.js",
+        "src/lib/admin/dashboard.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/performance.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Chat send path cut from about 17 to about 8 sequential database round trips (acknowledgment itself about 5); measured p95 1.7 s for the whole path at a 200 ms database round trip (3.4 s before); every list endpoint caps page size; dashboard tiles over event data use grouped counts (6000 rows, exact). Not measured: chat history paging and local search in the client, any production-scale load."
     },
     {
       "id": "RELIAB-001",
       "title": "Background jobs: idempotent, retry, stale-run, tenant scoped",
       "priority": "P1",
       "sow": "42",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/jobs/run.js",
+        "src/app/api/cron/ha-gateway/route.js",
+        "src/app/api/cron/org-webhooks/route.js",
+        "src/app/api/cron/share-expiry/route.js",
+        "src/app/api/cron/notes-purge/route.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/job-reliability.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "securityReviewed": true,
+      "notes": "withJobRun: atomic lease (partial unique index), stale takeover, bounded backoff retries, redacted failures, minimum interval, tenant scoping; the four crons added by this SOW run through it. Crons that existed before the SOW were not rewired. 8/8 against the real database."
     },
     {
       "id": "OBS-001",
       "title": "Privacy-safe metrics for chat/storage/gateway/compliance",
       "priority": "P2",
       "sow": "43",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/metrics/metrics.js",
+        "src/app/api/orgs/metrics/[[...path]]/route.js",
+        "src/app/api/metrics/route.js",
+        "src/components/business/chat/reportMetric.js"
+      ],
+      "routes": [
+        "GET /api/orgs/metrics",
+        "POST /api/orgs/metrics/client",
+        "GET /api/metrics"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/metrics.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Fixed-catalog counters (free text can never become a label), live gauges, org endpoint for admins/auditors, token-gated platform Prometheus export with no org id or e-mail, client reporter. Browser-verified: a message sent from the chat UI produced a delivery-latency bucket, a key rotation and message counters. No dashboard panel for the org metrics yet; reconnect and decrypt-failure reporting not exercised in a browser."
     },
     {
       "id": "DOC-001",
       "title": "All SOW documentation set + docs site/API/SDK/CLI reference updates",
       "priority": "P2",
       "sow": "44",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "docs/architecture/observability-and-performance.md",
+        "docs/runbooks/competitive-rollback.md"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Every document the SOW names now exists. docs site pages under content/docs were not extended for the later phases."
     },
     {
       "id": "TEST-001",
       "title": "Unit + real-DB + security + integration + browser verification",
       "priority": "P0",
       "sow": "45",
-      "status": "PLANNED",
+      "status": "PARTIAL",
       "files": [],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/metrics.test.mjs",
+        "test/performance.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Final run 2026-10-05: 20 suites / 189 tests against the real database (chat x3, devices, gateway x2, governance x3, sharing x3, notes, keys, compliance, metrics, phase8, jobs, tenant scan, performance): 184 passed, 5 chat-routes failures traced to my own browser-check cleanup deleting live test orgs mid-run; chat-routes re-run alone 8/8. Not every item has a browser pass; see per-item rows."
     },
     {
       "id": "MIGRATE-001",
       "title": "Additive migrations, dry-run, flags, rollback plan",
       "priority": "P1",
       "sow": "55",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "scripts/competitive-migrate.mjs",
+        "docs/runbooks/competitive-rollback.md"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/performance.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Dry run and --apply run against the dev database: 82 collections referenced, all additive; index setup is lazy per module and --apply warms five modules (others create theirs on first use); every flag unset by default. Rollback is a flag switch, documented; nothing is dropped by the script."
     },
     {
       "id": "FINAL-001",
       "title": "Final verification report + honesty checklist",
       "priority": "P0",
       "sow": "58-59",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "docs/competitive-expansion-final-verification.md"
+      ],
       "routes": [],
       "collections": [],
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Report written with the 20 required parts and the section 59 checklist. It states that mobile and desktop surfaces are not delivered, which is why the SOW as a whole is not complete."
     }
   ]
 }

@@ -43,6 +43,7 @@ async function writeHistory({ orgId, doc, from, to, source, status, confidence, 
   const { h } = await hist();
   const e = { _id: new ObjectId(), orgId: toObjectId(orgId), documentId: doc._id, at: nowIso(), from: from ?? null, to, source, status, confidence: confidence ?? null, explanation: explanation ? String(explanation).slice(0, 1000) : null, matches: (matches || []).slice(0, 20).map((m) => ({ ruleId: m.ruleId, policyKey: m.policyKey, policyVersion: m.policyVersion, level: m.level, confidence: m.confidence, explanation: m.explanation })), ruleVersions: [...new Set((matches || []).map((m) => `${m.policyKey}@${m.policyVersion}`))], reason: reason || null, by };
   await h.insertOne(e);
+  if (status === "applied" || status === "suggested") import("../metrics/metrics.js").then((m) => m.metric("storage.classification_job", { orgId, label: status })).catch(() => {});
   emitFileEvent(orgId, status === "applied" ? "classified" : "classification_suggested", { documentId: String(doc._id), level: to, source, confidence: confidence ?? null });
   await logOrgActivity({ orgId, recordType: "CLASSIFICATION", recordId: doc._id, actorEmail: by, action: status === "applied" ? "CLASSIFIED" : status === "suggested" ? "CLASSIFICATION_SUGGESTED" : "CLASSIFICATION_REJECTED", previousState: from ? { classification: from } : null, newState: { classification: to }, metadata: { source, confidence: confidence ?? null, ruleVersions: e.ruleVersions, reason: reason || null } }).catch(() => {});
   return e;

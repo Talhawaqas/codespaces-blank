@@ -34,4 +34,9 @@ if (cmd === "set") {
   const l = load(); let bad = 0;
   for (const i of l.items) if (i.status === "VERIFIED" && !(i.tests || []).length) { console.error(i.id + ": VERIFIED without tests"); bad++; }
   process.exit(bad ? 1 : 0);
-} else { console.error("usage: set | summary | check"); process.exit(1); }
+} else if (cmd === "report") {
+  // Markdown table of every item, for docs/competitive-expansion-final-verification.md. Written from the ledger so the report cannot drift from it.
+  const l = load(); const yn = (v) => (v ? "yes" : "no"); const rows = ["| ID | Status | Automated tests | Browser | Security reviewed | Note |", "|---|---|---|---|---|---|"];
+  for (const i of l.items) rows.push(`| ${i.id} | ${i.status} | ${(i.tests || []).length ? (i.tests || []).join(", ") : "none"} | ${yn(i.browserVerified)} | ${yn(i.securityReviewed)} | ${String(i.notes || "").replace(/\|/g, "/").replace(/\s+/g, " ").slice(0, 260)} |`);
+  console.log(rows.join("\n"));
+} else { console.error("usage: set | summary | check | report"); process.exit(1); }

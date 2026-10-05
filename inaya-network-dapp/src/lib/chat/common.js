@@ -124,6 +124,7 @@ export async function recordSecurityEvent({ orgId, email, deviceId = null, conve
   try {
     const { securityEvents } = await chatDb();
     await securityEvents.insertOne({ orgId: String(orgId), email: normEmail(email), deviceId, conversationId, type, detail: detail ? String(detail).slice(0, 200) : null, createdAt: new Date() });
+    import("../metrics/metrics.js").then((m) => m.metric("chat.security_event", { orgId, label: m.CATALOG["chat.security_event"].labels.includes(type) ? type : "OTHER" })).catch(() => {});
   } catch { /* best effort: never block the caller */ }
 }
 

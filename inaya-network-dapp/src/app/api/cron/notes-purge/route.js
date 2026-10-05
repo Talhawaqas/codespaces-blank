@@ -6,11 +6,12 @@
 import { NextResponse } from "next/server";
 import { isAuthorizedCron } from "@/lib/cronAuth";
 import { purgeTrashedNotes } from "../../../../lib/notes/notes.js";
+import { withJobRun } from "../../../../lib/jobs/run.js";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   if (!isAuthorizedCron(request.headers.get("authorization"))) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  try { return NextResponse.json({ success: true, ...(await purgeTrashedNotes()) }); }
+  try { const r = await withJobRun({ name: "notes-purge", staleSeconds: 3600, minIntervalSeconds: 3600, fn: () => purgeTrashedNotes() }); return NextResponse.json({ success: r.status !== "failed", job: r.status, ...(r.result || {}) }, { status: r.status === "failed" ? 500 : 200 }); }
   catch (err) { console.error("cron/notes-purge failed:", err); return NextResponse.json({ success: false, error: "Purge failed." }, { status: 500 }); }
 }

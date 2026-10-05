@@ -58,13 +58,16 @@ export async function ensureOwnerS3Passphrase(owner) {
   const existing = await col.findOne(query);
   if (existing) return;
   const passphrase = generatePassphrase();
-  await col.insertOne({ ...query, wrappedPassphrase: wrapPassphrase(passphrase), createdAt: new Date().toISOString() });
+  // Customer-managed keys (KEY-001): an organization that chose a customer key provider gets its data key wrapped by THAT provider; everyone else keeps the platform wrap.
+  const envelope = owner.type === "org" ? await (await import("../keys/service.js")).wrapForOrg(owner.orgId, passphrase) : null;
+  await col.insertOne({ ...query, ...(envelope ? { keyEnvelope: envelope } : { wrappedPassphrase: wrapPassphrase(passphrase) }), createdAt: new Date().toISOString() });
 }
 
 export async function getOwnerS3Passphrase(owner) {
   const { db } = await getOrgCollections();
   const doc = await db.collection("s3_owner_keys").findOne({ ownerType: owner.type, ownerId: ownerId(owner) });
   if (!doc) throw new Error("This account has no S3-compatibility passphrase yet -- issue a credential first.");
+  if (doc.keyEnvelope) return (await import("../keys/service.js")).unwrapForOrg(owner.orgId, doc.keyEnvelope);
   return unwrapPassphrase(doc.wrappedPassphrase);
 }
 

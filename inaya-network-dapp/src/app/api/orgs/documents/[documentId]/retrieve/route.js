@@ -50,6 +50,9 @@ export async function GET(req, { params }) {
         .catch((err) => console.error("government document read audit failed (non-fatal):", err.message));
     }
 
+    // Government security profile (Competitive Expansion SOW P5): when the organization chose a government profile, every read gets the enhanced access record. Non-blocking.
+    import("../../../../../../lib/compliance/governmentProfile.js").then((g) => g.recordAccess({ orgId, actorEmail: auth.session.email, membership: auth.membership, documentId, filename: access.doc.filename, departmentId: access.doc.departmentId, action: "READ", policyDecision: "permission " + access.accessLevel, ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null })).catch(() => {});
+
     return NextResponse.json({
       filename: access.doc.filename,
       sizeBytes: access.doc.sizeBytes,

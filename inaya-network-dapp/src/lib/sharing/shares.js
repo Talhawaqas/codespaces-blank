@@ -93,6 +93,7 @@ export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt
     notifyOnAccess: o.notifyOnAccess, watermark: o.watermark, label: o.label, note: o.note, managerEmails: o.managerEmails, lastAccessAt: null,
   };
   const r = await documentShares.insertOne(doc);
+  import("../metrics/metrics.js").then((m) => m.metric("storage.share_created", { orgId, label: "link" })).catch(() => {});
   await logDocumentActivity({ organizationId: orgId, documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_CREATED", previousState: null, newState: null,
     metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, oneTime: o.oneTime } });
   import("../ransomware/cloud.js").then((m) => m.noteActivity({ orgId, actorKey: actorEmail, kind: "share_create" })).catch(() => {});

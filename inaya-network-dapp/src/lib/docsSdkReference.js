@@ -9,7 +9,7 @@ export const SDK_PACKAGES = [
   {
     slug: "custody-sdk",
     name: "@inaya-network/custody-sdk",
-    tagline: "The core client SDK -- crypto, on-chain, payments, metadata, analytics, and backup, in six independently-usable layers.",
+    tagline: "The core client SDK -- crypto, on-chain, payments, metadata, analytics, and backup, in seven independently-usable layers.",
     install: "npm install @inaya-network/custody-sdk ethers",
     layers: [
       { name: "Crypto", file: "crypto.js", detail: "Client-side AES-256-GCM encryption, PBKDF2 key derivation, and binary sharding -- disperseAndSlice()/reconstructAndDecrypt()." },
@@ -18,6 +18,7 @@ export const SDK_PACKAGES = [
       { name: "Metadata", file: "metadata.js", detail: "File/folder metadata operations -- the client for the ~17 routes under src/app/api/metadata/." },
       { name: "Analytics", file: "analytics.js", detail: "Usage/storage analytics." },
       { name: "Backup", file: "backup.js", detail: "Dual-provider shard replication and recovery." },
+      { name: "Organization API", file: "competitive.js", detail: "Shares, FileRequests, Governance, Devices and Compliance clients over the organization API (API key only), plus Webhooks.verify for signed webhook deliveries. There is deliberately no Chat, Contacts or Notes client: those are end-to-end encrypted and a key-less SDK cannot read them." },
     ],
     status: "live",
     docsUrl: "/build",

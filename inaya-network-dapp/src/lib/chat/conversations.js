@@ -27,6 +27,13 @@ const KINDS = ["direct", "group", "org"];
 const SUBS = ["msg", "edit", "delete", "rename", "meta"];
 const oid = (id) => new ObjectId(id);
 
+/** Runs `fn` after the HTTP response when called inside a request (Next's after()); otherwise runs it now. Never throws. */
+async function afterAck(fn) {
+  const safe = async () => { try { await fn(); } catch { /* best effort */ } };
+  try { const { after } = await import("next/server"); after(safe); return; } catch { /* not inside a request scope */ }
+  await safe();
+}
+
 /** Run fn inside a Mongo transaction (needed so seq allocation and the insert it belongs to are atomic and ordered). */
 export async function withTxn(fn) {
   const { client } = await connectToDatabase();
@@ -45,8 +52,8 @@ export async function withTxn(fn) {
 export async function assertAccess({ orgId, email, conversationId, statuses = ["active", "pending"] }) {
   if (!isId(conversationId)) fail(404, "Conversation not found.");
   const { conversations, participants } = await chatDb();
-  const conv = await conversations.findOne({ _id: conversationId });
-  const participant = conv ? await participants.findOne({ conversationId, email: normEmail(email), status: { $in: statuses } }) : null;
+  // Both reads are independent (the conversation id is already known), so they go out together: one round trip, not two.
+  const [conv, participant] = await Promise.all([conversations.findOne({ _id: conversationId }), participants.findOne({ conversationId, email: normEmail(email), status: { $in: statuses } })]);
   if (!conv || !participant) fail(404, "Conversation not found.");
   if (conv.orgId !== String(orgId) && !participant.external) fail(404, "Conversation not found.");
   return { conv, participant };
@@ -64,9 +71,9 @@ function publicParticipant(p, devicesByEmail) {
   };
 }
 
-export async function conversationPlan(conv) {
+export async function conversationPlan(conv, prefetchedParts = null) {
   const { participants, devices } = await chatDb();
-  const parts = await participants.find({ conversationId: conv._id, status: { $in: ["active", "pending"] } }).toArray();
+  const parts = prefetchedParts || await participants.find({ conversationId: conv._id, status: { $in: ["active", "pending"] } }).toArray();
   const emails = parts.map((p) => p.email);
   const leafIds = conv.leaves.filter(Boolean);
   const [expectedDevices, leafDevices] = await Promise.all([
@@ -369,6 +376,7 @@ export async function submitCommit({ orgId, email, deviceId, conversationId, bas
   });
   if (!result) fail(409, "The conversation moved on. Sync and try again.", "STALE_EPOCH");
   await touchDevice(deviceId);
+  import("../metrics/metrics.js").then((m) => m.metric("chat.key_rotation", { orgId: conv.orgId })).catch(() => {});
   await logOrgActivity({ orgId: conv.orgId, recordType: "CHAT_CONVERSATION", recordId: conversationId, actorEmail: em, action: "EPOCH_ADVANCED", previousState: { epoch: conv.epoch }, newState: { epoch: newEpoch }, metadata: { adds: addDeviceIds.length, removes: info.removes.length } });
   return { ...result, adds: addDeviceIds.length, removes: info.removes.length };
 }
@@ -398,17 +406,30 @@ export async function submitMessage({ orgId, membership = null, email, deviceId,
   const em = normEmail(email);
   if (!SUBS.includes(sub)) fail(400, "Unknown message kind.");
   if (typeof clientMsgId !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(clientMsgId)) fail(400, "clientMsgId is required (8-64 URL-safe characters).");
-  const rl = await slidingWindowCheck({ action: "chat:send", key: `${orgId}:${em}`, max: LIMITS.messagesPerMinute, windowMs: 60_000 });
-  if (!rl.allowed) fail(429, "You are sending messages too quickly.", "RATE_LIMITED");
-  const { conv, participant } = await assertAccess({ orgId, email: em, conversationId, statuses: ["active"] });
+  // The checks below do not depend on each other's results, so their reads run together and the outcomes are then judged in the
+  // original order (rate limit, access, device, duplicate): same errors, same precedence, a fraction of the round trips.
+  const { messages: m0, participants: partsCol } = await chatDb();
+  const settle = (p) => Promise.resolve(p).then((value) => ({ ok: true, value }), (reason) => ({ ok: false, reason }));
+  const rlP = settle(slidingWindowCheck({ action: "chat:send", key: `${orgId}:${em}`, max: LIMITS.messagesPerMinute, windowMs: 60_000 })); // the slowest of them (insert, then rank)
+  const [accR, devR, dupR, partsR] = await Promise.all([
+    settle(assertAccess({ orgId, email: em, conversationId, statuses: ["active"] })),
+    settle(getActiveDevice({ orgId, email: em, deviceId })),
+    settle(m0.findOne({ conversationId, senderEmail: em, clientMsgId })),
+    settle(partsCol.find({ conversationId, status: { $in: ["active", "pending"] } }).toArray()),
+  ]);
+  // The device-plan reads only need what has just arrived, so they start now instead of waiting for the rate-limit rank. Their result is used only if every check below passes.
+  const planP = accR.ok && partsR.ok ? settle(conversationPlan(accR.value.conv, partsR.value)) : null;
+  const rlR = await rlP;
+  if (!rlR.ok) throw rlR.reason;
+  if (!rlR.value.allowed) fail(429, "You are sending messages too quickly.", "RATE_LIMITED");
+  if (!accR.ok) throw accR.reason;
+  const { conv, participant } = accR.value;
   if (conv.status !== "active") fail(404, "Conversation not found.");
-  const dev = await getActiveDevice({ orgId, email: em, deviceId });
-  if (!dev) fail(403, "Unknown or revoked device.", "DEVICE_REVOKED");
-  { // A retry of a message the server already stored returns the stored result, even if the epoch has moved on since.
-    const { messages: m0 } = await chatDb();
-    const dup = await m0.findOne({ conversationId, senderEmail: em, clientMsgId });
-    if (dup) return { seq: dup.seq, id: String(dup._id), duplicate: true, epoch: dup.epoch };
-  }
+  if (!devR.ok) throw devR.reason;
+  if (!devR.value) fail(403, "Unknown or revoked device.", "DEVICE_REVOKED");
+  // A retry of a message the server already stored returns the stored result, even if the epoch has moved on since.
+  if (!dupR.ok) throw dupR.reason;
+  if (dupR.value) return { seq: dupR.value.seq, id: String(dupR.value._id), duplicate: true, epoch: dupR.value.epoch };
   if (!conv.leaves.includes(deviceId)) fail(409, "This device is not in the conversation's encrypted group yet. Sync first.", "NOT_IN_GROUP");
   const bytes = b64.dec(ciphertext);
   if (bytes.length > LIMITS.maxCiphertextBytes) fail(413, "Message too large.", "TOO_LARGE");
@@ -417,10 +438,12 @@ export async function submitMessage({ orgId, membership = null, email, deviceId,
   if (hdr.contentType !== "application") fail(400, "Only application messages can be sent here.", "NOT_APPLICATION");
   if (hdr.epoch !== conv.epoch) fail(409, "The conversation moved on. Sync and re-send.", "STALE_EPOCH");
 
-  const plan = await conversationPlan(conv);
+  const needsSettings = sub === "edit" || sub === "delete";
+  const planR = planP ? await planP : null;
+  if (planR && !planR.ok) throw planR.reason;
+  const [plan, settings] = await Promise.all([planR ? planR.value : conversationPlan(conv), needsSettings ? getChatSettings(conv.orgId) : null]);
   if (plan.removes.length) fail(409, "A member or device is being removed. Sync, apply the removal, then send.", "RECONCILE_REQUIRED");
 
-  const settings = await getChatSettings(conv.orgId);
   const { messages, conversations } = await chatDb();
   let target = null;
   if (sub === "edit" || sub === "delete") {
@@ -450,9 +473,11 @@ export async function submitMessage({ orgId, membership = null, email, deviceId,
     throw err;
   }
   if (!out) fail(409, "The conversation moved on. Sync and re-send.", "STALE_EPOCH");
-  await touchDevice(deviceId);
-  if (sub === "msg") await notifyNewMessage({ conv, fromEmail: em, seq: out.seq });
+  // Nothing below changes the acknowledgment the sender is waiting for, so it runs after the response where the runtime allows it
+  // (Next's after(), which keeps the work alive on serverless), and before returning everywhere else (tests, scripts).
+  await afterAck(async () => { await Promise.all([touchDevice(deviceId), sub === "msg" ? notifyNewMessage({ conv, fromEmail: em, seq: out.seq }) : null]); });
   // Metadata only, and only to endpoints that explicitly opted in: who sent, which conversation, when. Never the ciphertext, never a title.
+  if (sub === "msg" && !out.duplicate) import("../metrics/metrics.js").then((m) => m.metric("chat.message_sent", { orgId })).catch(() => {});
   if (sub === "msg" && !out.duplicate) import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "chat.metadata", eventId: `chat:${conversationId}:${out.seq}`, data: { conversationId: String(conversationId), seq: out.seq, sender: em } })).catch(() => {});
   return out;
 }
@@ -580,10 +605,12 @@ async function notifyNewMessage({ conv, fromEmail, seq }) {
     const people = await participants.find({ conversationId: conv._id, status: "active", email: { $ne: fromEmail }, muted: { $ne: true } }).limit(LIMITS.maxParticipants).toArray();
     const reads = await readStates.find({ conversationId: conv._id, email: { $in: people.map((p) => p.email) } }).toArray();
     const readBy = new Map(reads.map((r) => [r.email, r.readSeq]));
-    for (const p of people) {
+    await Promise.all(people.map(async (p) => {
       const marker = readBy.get(p.email) || 0;
-      await deliveries.insertOne({ orgId: conv.orgId, email: p.email, conversationId: conv._id, seq, channel: "in-app", createdAt: new Date() });
-      await notifyChat({ conv, toEmail: p.email, type: "chat.message", title: "New secure message", dedupe: `chat:msg:${conv._id}:${p.email}:${marker}` });
-    }
+      await Promise.all([
+        deliveries.insertOne({ orgId: conv.orgId, email: p.email, conversationId: conv._id, seq, channel: "in-app", createdAt: new Date() }),
+        notifyChat({ conv, toEmail: p.email, type: "chat.message", title: "New secure message", dedupe: `chat:msg:${conv._id}:${p.email}:${marker}` }),
+      ]);
+    }));
   } catch { /* best effort */ }
 }
