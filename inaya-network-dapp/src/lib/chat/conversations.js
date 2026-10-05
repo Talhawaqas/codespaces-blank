@@ -452,6 +452,8 @@ export async function submitMessage({ orgId, membership = null, email, deviceId,
   if (!out) fail(409, "The conversation moved on. Sync and re-send.", "STALE_EPOCH");
   await touchDevice(deviceId);
   if (sub === "msg") await notifyNewMessage({ conv, fromEmail: em, seq: out.seq });
+  // Metadata only, and only to endpoints that explicitly opted in: who sent, which conversation, when. Never the ciphertext, never a title.
+  if (sub === "msg" && !out.duplicate) import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "chat.metadata", eventId: `chat:${conversationId}:${out.seq}`, data: { conversationId: String(conversationId), seq: out.seq, sender: em } })).catch(() => {});
   return out;
 }
 

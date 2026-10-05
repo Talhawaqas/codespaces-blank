@@ -1267,14 +1267,21 @@
       "title": "Unified search tiers A/B/C with scope enforcement",
       "priority": "P2",
       "sow": "H",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/search/unified.js",
+        "src/app/api/orgs/search/route.js"
+      ],
+      "routes": [
+        "GET /api/orgs/search"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Tier B (permissioned enterprise content): names, paths, metadata, classification, your own tags, your shares and requests, data rooms for managers, and role-filtered pages; nothing the caller cannot open is returned. Tier A (E2EE notes and chat) is reported as local-only and is not implemented in the command palette; tier C (customer gateway index) is NOT_CONFIGURED. Document text is not indexed."
     },
     {
       "id": "PREVIEW-001",
@@ -1610,14 +1617,23 @@
       "title": "Org branding, legal text, domains, email templates (sanitized)",
       "priority": "P2",
       "sow": "R",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/branding/branding.js",
+        "src/app/api/orgs/branding/route.js",
+        "src/components/BrandHeader.js",
+        "src/components/business/admin/BrandingPanel.js"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/branding"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Logo, favicon, background, title, accent, support URL, terms/privacy text and email header/footer are validated (real image magic bytes, size caps, https URL, plain text only) and shown on share, file-request and data-room pages (share and request pages checked in the browser). Branded email builder escapes everything. Custom domain: TXT ownership challenge is real and verified with an injected resolver; routing the domain to Inaya is NOT configured and is reported as NOT_CONFIGURED."
     },
     {
       "id": "TENANT-001",
@@ -1638,112 +1654,179 @@
       "title": "Role gates: security/storage/compliance/helpdesk/VDR/device admin",
       "priority": "P2",
       "sow": "T",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/orgGates.js",
+        "src/app/api/orgs/admin-roles/route.js",
+        "src/components/business/AdminRolesPanel.js"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/admin-roles"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Additive adminRoles on org_members; owner/admin hold every scope, auditor reads only. Applied to governance, DLP, devices, ransomware, backup, webhooks, data rooms and dashboard. In the browser a deviceAdmin read devices (200), was refused DLP (403) and could not grant themselves roles (403)."
     },
     {
       "id": "DASH-001",
       "title": "Admin dashboard with honest NO DATA states",
       "priority": "P2",
       "sow": "U",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/admin/dashboard.js",
+        "src/app/api/orgs/admin-dashboard/route.js",
+        "src/components/business/admin/AdminDashboardView.js"
+      ],
+      "routes": [
+        "GET /api/orgs/admin-dashboard"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "19 tiles computed from real records; OK, ATTENTION, NO_DATA, NOT_ENABLED and UNKNOWN states each explained. S3/Azure request usage is UNKNOWN because request counts are not collected; DirectSync run status is not reported to Inaya."
     },
     {
       "id": "NOTIFY-001",
       "title": "Smart notifications: events x channels, privacy-safe bodies",
       "priority": "P2",
       "sow": "V",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/lib/notify/router.js",
+        "src/lib/notify/jobs.js",
+        "src/app/api/orgs/notify/prefs/route.js",
+        "src/app/api/cron/share-expiry/route.js",
+        "src/components/business/admin/NotificationPrefsPanel.js"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/notify/prefs",
+        "GET /api/cron/share-expiry"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/phase8.test.mjs",
+        "test/file-requests.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "16 events x in-app/email/push/desktop/webhook with per-person preferences; email, push and webhook carry generic text only, the in-app feed keeps detail; share-expiry job notifies once. Fixed a real bug found by the tests: event names contain dots, which Mongo read as nested paths, so a saved preference was never applied. Push is NOT_CONFIGURED (no push credentials); the desktop channel is the same feed the desktop app already reads; email was tested with a stub sender, not a live mailbox in this pass."
     },
     {
       "id": "API-001",
       "title": "Public/API-key route families (shares, file-requests, governance, devices, classification, compliance, evidence)",
       "priority": "P2",
       "sow": "W",
-      "status": "PLANNED",
-      "files": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/app/api/public/v1/_lib.js",
+        "src/app/api/public/v1/shares/route.js",
+        "src/app/api/public/v1/file-requests/route.js",
+        "src/app/api/public/v1/governance/policies/route.js",
+        "src/app/api/public/v1/classification/[documentId]/route.js",
+        "src/app/api/public/v1/devices/route.js",
+        "src/app/api/public/v1/endpoint-backup/health/route.js",
+        "docs/api/public-api-v1-administration.md"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "securityReviewed": true,
+      "notes": "Shares, file requests, governance, DLP events, classification, devices and endpoint backup health, org bound to the key, feature flags honoured, same document-access and expiry checks as the app (tests found and fixed a missing check in the first version). Tested by calling the route handlers with a real key against MongoDB; not exercised over HTTP. File request creation, chat, contacts and notes are intentionally not offered."
     },
     {
       "id": "SDK-001",
       "title": "SDK namespaces Chat/Contacts/Notes/Shares/FileRequests/Governance/Devices/Compliance",
       "priority": "P2",
       "sow": "W",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "custody-sdk/src/competitive.js",
+        "custody-sdk/src/index.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "custody-sdk/test/competitive.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Shares, FileRequests, Governance, Devices, Compliance and Webhooks.verify added. Chat, Contacts and Notes wrappers are intentionally not provided: those are end-to-end encrypted in the client and cannot be a Bearer-key REST wrapper. Not yet released as a new SDK version."
     },
     {
       "id": "CLI-001",
       "title": "CLI commands chat/shares/file-request/device/governance/backup",
       "priority": "P2",
       "sow": "W",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "custody-sdk/packages/cli/src/commands/org.js",
+        "custody-sdk/packages/cli/src/commands/orgBackup.js",
+        "custody-sdk/packages/cli/bin/inaya.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "custody-sdk/packages/cli/test/org.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "shares, file-requests, devices, governance and backup command groups using an API key only. No chat, notes or contacts commands (E2EE) and no file-request creation; never reads a wallet key. Tested in-process through commander against a stand-in server; the packaged CLI was not run end to end."
     },
     {
       "id": "WEBHOOK-001",
       "title": "General signed webhook registry: rotate, pause, replay protection, DLQ, redeliver",
       "priority": "P2",
       "sow": "X",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/webhooks/registry.js",
+        "src/app/api/orgs/webhooks/route.js",
+        "src/app/api/cron/org-webhooks/route.js",
+        "src/components/business/admin/WebhooksView.js",
+        "docs/api/webhook-verification.md"
+      ],
+      "routes": [
+        "GET/POST /api/orgs/webhooks",
+        "GET /api/cron/org-webhooks"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "tests": [
+        "test/webhooks.test.mjs",
+        "custody-sdk/test/competitive.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Signed (HMAC-SHA256 over t.body), SSRF-refused, retries 1/5/15/60/240/720 min then dead letter, auto-pause after 20 failures, 24h secret rotation grace, content stripped, chat metadata opt-in; real HTTP round trip tested; UI create/rotate checked in the browser. Emitters cover object, share, file request, DLP, backup, ransomware, device, workflow, resilience and chat-metadata events; identity events are not emitted. The every-minute delivery cron is configured in vercel.json and was not observed running on the deployment."
     },
     {
       "id": "AI-001",
       "title": "Read-only AI governance helpers via guarded execution",
       "priority": "P2",
       "sow": "Z",
-      "status": "PLANNED",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/lib/ai-governance-tools.js",
+        "src/lib/ai-os-router.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": ""
+      "securityReviewed": true,
+      "notes": "Seven read-only tools (policies, DLP summary and explanation, classification counts, ransomware status, device summary, backup health) registered with the OS router; role re-checked per tool; requests to change anything or to certify compliance are refused; no file content is returned. Exercised by tests calling the tools and checking the router wiring; not run against a live model in this pass."
     },
     {
       "id": "WORKFLOW-001",
@@ -1784,28 +1867,41 @@
       "title": "File management UX: list/grid, favorites, pins, tags, recent, shared, locked, hold, classification",
       "priority": "P2",
       "sow": "38",
-      "status": "PLANNED",
-      "files": [],
-      "routes": [],
+      "status": "VERIFIED",
+      "files": [
+        "src/lib/filePrefs.js",
+        "src/app/api/orgs/file-prefs/route.js",
+        "src/components/business/DocUx.js"
+      ],
+      "routes": [
+        "GET/PUT /api/orgs/file-prefs"
+      ],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "List and grid, filters (all, favorites, pinned, recent, shared with me, locked, legal hold, classification, tag), favorites, pins, personal tags and recents, classification/lock/hold badges; checked in the browser against seeded documents."
     },
     {
       "id": "UX-002",
       "title": "Business Workspace navigation grouping + command palette entries",
       "priority": "P2",
       "sow": "36",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "src/components/CommandPalette.js",
+        "src/app/business/page.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
-      "browserVerified": false,
+      "tests": [
+        "test/phase8.test.mjs"
+      ],
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Admin Dashboard and Webhooks added to the navigation by role; the command palette now finds documents, shares, requests and pages and navigates to them (checked in the browser). Notes and chat are not searched from the palette (end-to-end encrypted)."
     },
     {
       "id": "MOBILE-001",

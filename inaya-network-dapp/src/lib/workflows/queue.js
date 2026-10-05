@@ -249,6 +249,7 @@ export async function processSchedules({ now = new Date(), limit = 100 } = {}) {
  * `type` is "event" | "evidence_event" | "twin_complete"; `key` is the event type or subject type.
  */
 export async function emitWorkflowEvent({ orgId, type, key = null, eventId, payload = {} }) {
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "workflow.event", eventId: `wf:${eventId}`, data: { eventType: type, key, eventId: String(eventId) } })).catch(() => {});
   const { workflows } = await getOrgCollections();
   const q = { orgId: toObjectId(orgId), status: "ACTIVE", deletedAt: null, "triggerEvents.type": type };
   const candidates = await workflows.find(q).limit(50).toArray();

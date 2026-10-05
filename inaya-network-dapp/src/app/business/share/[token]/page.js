@@ -43,6 +43,7 @@ async function fetchShardFromIPFS(cid) {
   }
 }
 
+import BrandHeader from "../../../../components/BrandHeader";
 export default function SharePage({ params }) {
   const { token } = use(params);
   const [loading, setLoading] = useState(true);
@@ -85,8 +86,7 @@ export default function SharePage({ params }) {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans flex items-center justify-center px-4">
       <div className="max-w-sm w-full">
-        <h1 className="text-lg font-extrabold text-white text-center mb-1">INAYA <span className="text-[#00f2fe]">NETWORK</span></h1>
-        <p className="text-[#8a96ab] text-xs text-center mb-8">Shared document</p>
+        <BrandHeader branding={info?.branding} subtitle="Shared document" />
 
         {loading ? (
           <p className="text-[#8a96ab] text-sm text-center">Loading…</p>

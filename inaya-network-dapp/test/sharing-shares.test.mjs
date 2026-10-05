@@ -246,7 +246,7 @@ test("the legacy endpoint can never be used to bypass a v2 link's rules (no stor
   const consumed = await consumeDocumentShare(token); assert.equal(consumed.status, 409); assert.equal(consumed.share, undefined);
   assert.equal((await cols.documentShares.findOne({ _id: new ObjectId(shareId) })).useCount, 0, "the legacy path took no use");
   const peek = await S.peekShare(token);
-  assert.deepEqual(peek, { v2: true, status: "active", requires: { password: true, email: false }, permission: "download", label: null });
+  assert.deepEqual(peek, { branding: null, v2: true, status: "active", requires: { password: true, email: false }, permission: "download", label: null });
   assert.equal(JSON.stringify(peek).includes("plan.pdf"), false, "the preview says nothing about the document");
   assert.equal(await S.peekShare("not-a-token"), null);
   const legacy = await createDocumentShare({ orgId: org.oid, documentId: String(doc._id), createdByEmail: org.alice.email, expiresAt: FUT() });

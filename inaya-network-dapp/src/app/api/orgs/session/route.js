@@ -31,6 +31,7 @@ export async function GET(req) {
         orgId: m.orgId.toString(),
         orgName: org?.name || "Unknown",
         role: m.role,
+        adminRoles: m.adminRoles || [],
         departmentIds: (m.departmentIds || []).map((id) => id.toString()),
         // Frontend gate (business/page.js's PlanSelectionGate) shows a
         // "pick a plan" screen instead of the Dashboard when both are

@@ -16,7 +16,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { hasAdminRole } from "../orgGates.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { createNotification } from "../notifications.js";
 
@@ -72,7 +72,7 @@ async function cols() {
 }
 export async function getPolicy(orgId) { const { policy } = await cols(); const p = await policy.findOne({ orgId: toObjectId(orgId) }); return { ...DEFAULT_POLICY, ...(p || {}), thresholds: { ...DEFAULT_THRESHOLDS, ...(p?.thresholds || {}) } }; }
 export async function setPolicy({ orgId, membership, actorEmail, enabled = true, autoContainLevel = "CRITICAL", containMinutes = 60, thresholds = {} }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can change the ransomware policy."); const { policy } = await cols();
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can change the ransomware policy."); const { policy } = await cols();
   if (!["NONE", "HIGH", "CRITICAL"].includes(autoContainLevel)) fail(400, "autoContainLevel must be NONE, HIGH or CRITICAL."); if (!(containMinutes >= 5 && containMinutes <= 1440)) fail(400, "containMinutes must be 5 to 1440.");
   const clean = {}; for (const k of Object.keys(DEFAULT_THRESHOLDS)) if (thresholds[k] != null) { const n = Number(thresholds[k]); if (!(n >= 1 && n <= 100000)) fail(400, `${k} must be 1 to 100000.`); clean[k] = n; }
   await policy.updateOne({ orgId: toObjectId(orgId) }, { $set: { enabled: !!enabled, autoContainLevel, containMinutes, thresholds: { ...DEFAULT_THRESHOLDS, ...clean }, updatedBy: actorEmail, updatedAt: nowIso() } }, { upsert: true });
@@ -90,7 +90,7 @@ async function containActor({ orgId, actorKey, level, signalId, minutes }) {
   await contain.updateOne({ orgId: toObjectId(orgId), actorKey, liftedAt: null }, { $set: { level, signalId: String(signalId), until, at: nowIso() }, $setOnInsert: { _id: new ObjectId(), liftedAt: null } }, { upsert: true }); return until;
 }
 export async function liftContainment({ orgId, membership, actorEmail, actorKey }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can lift a containment."); const { contain } = await cols();
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can lift a containment."); const { contain } = await cols();
   const r = await contain.updateMany({ orgId: toObjectId(orgId), actorKey, liftedAt: null }, { $set: { liftedAt: nowIso(), liftedBy: actorEmail } }); if (!r.modifiedCount) fail(404, "That actor is not contained.");
   await logOrgActivity({ orgId, recordType: "RANSOMWARE_SIGNAL", recordId: new ObjectId(), actorEmail, action: "CONTAINMENT_LIFTED", previousState: null, newState: null, metadata: { actorKey } }).catch(() => {}); return { ok: true };
 }
@@ -126,26 +126,27 @@ export async function evaluateActor({ orgId, actorKey, onlyIf = "always", now = 
   if (shouldContain) { doc.containedUntil = await containActor({ orgId, actorKey: String(actorKey), level: verdict.level, signalId: doc._id, minutes: pol.containMinutes }); doc.contained = true; }
   if (open) await signals.replaceOne({ _id: open._id }, doc); else await signals.insertOne(doc);
   await logOrgActivity({ orgId, recordType: "RANSOMWARE_SIGNAL", recordId: doc._id, actorEmail: "system", action: open ? "SIGNAL_ESCALATED" : "SIGNAL_RAISED", previousState: null, newState: { level: doc.level }, metadata: { actorKey: doc.actorKey, level: doc.level, score: doc.score, rules: doc.rules, contained: doc.contained, counts: s } }).catch(() => {});
-  try { await createNotification({ scope: "org", orgId: String(orgId), targetEmail: null, category: "security", type: "ransomware.signal", title: `Unusual file activity (${doc.level})`, body: `${doc.reasons[0]}${doc.contained ? ". Writes from this credential were paused." : ". Review it in Security."}`, sourceModule: "ransomware", sourceId: String(doc._id), actionUrl: "/business?view=ransomware", metadata: {}, dedupeKey: `ransom:${doc._id}:${doc.level}` }); } catch { /* best effort */ }
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "ransomware.signal", eventId: `${doc._id}:${doc.level}`, data: { signalId: String(doc._id), level: doc.level, score: doc.score, rules: doc.rules, contained: doc.contained, actorKey: doc.actorKey } })).catch(() => {});
+  import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "security.incident", audience: "admins", title: `Unusual file activity (${doc.level})`, body: `${doc.reasons[0]}${doc.contained ? ". Writes from this credential were paused." : ". Review it in Security."}`, link: "/business?view=ransomware", sourceId: String(doc._id), dedupeKey: `ransom:${doc._id}:${doc.level}`, protectedContent: false })).catch(() => {});
   return { level: doc.level, raised: true, contained: doc.contained, counts: s, signalId: String(doc._id) };
 }
 
 // ------------------------------------------------------------------------------------------------------- admin surface
 const view = (e) => ({ signalId: String(e._id), at: e.at, actorKey: e.actorKey, level: e.level, score: e.score, confidence: e.confidence, rules: e.rules, reasons: e.reasons, counts: e.counts, state: e.state, contained: !!e.contained, containedUntil: e.containedUntil || null, source: e.source, sample: e.sample || [], resolution: e.resolution || null });
 export async function listSignals({ orgId, membership, state = null, limit = 50 }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can see security signals."); const { signals, contain } = await cols(); const q = { orgId: toObjectId(orgId) }; if (state) q.state = state;
+  if (!hasAdminRole(membership, "securityAdmin", { read: true })) fail(403, "Only a security administrator or auditor can see security signals."); const { signals, contain } = await cols(); const q = { orgId: toObjectId(orgId) }; if (state) q.state = state;
   const [rows, cons] = await Promise.all([signals.find(q).sort({ at: -1 }).limit(Math.min(limit, 200)).toArray(), contain.find({ orgId: toObjectId(orgId), liftedAt: null, until: { $gt: nowIso() } }).toArray()]);
   return { signals: rows.map(view), containments: cons.map((c) => ({ actorKey: c.actorKey, level: c.level, until: c.until, since: c.at })), policy: await getPolicy(orgId) };
 }
 export async function resolveSignal({ orgId, membership, actorEmail, signalId, resolution, note }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can resolve a signal."); if (!["false_positive", "confirmed", "acknowledged"].includes(resolution)) fail(400, "resolution must be false_positive, confirmed or acknowledged.");
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can resolve a signal."); if (!["false_positive", "confirmed", "acknowledged"].includes(resolution)) fail(400, "resolution must be false_positive, confirmed or acknowledged.");
   const { signals } = await cols(); const r = await signals.findOneAndUpdate({ _id: new ObjectId(signalId), orgId: toObjectId(orgId) }, { $set: { state: resolution === "acknowledged" ? "acknowledged" : "resolved", resolution: { kind: resolution, note: String(note || "").slice(0, 500), by: actorEmail, at: nowIso() } } }, { returnDocument: "after" });
   const e = r?.value ?? r; if (!e) fail(404, "Signal not found."); await logOrgActivity({ orgId, recordType: "RANSOMWARE_SIGNAL", recordId: e._id, actorEmail, action: "SIGNAL_" + resolution.toUpperCase(), previousState: null, newState: null, metadata: { actorKey: e.actorKey } }).catch(() => {}); return view(e);
 }
 
 /** What this actor changed in the window, with the previous version available to restore (versioned buckets). Read-only. */
 export async function rollbackPreview({ orgId, membership, actorKey, sinceIso, store }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can plan a rollback."); const { activity } = await cols(); const s = store || (await import("../s3-compat/store.js"));
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can plan a rollback."); const { activity } = await cols(); const s = store || (await import("../s3-compat/store.js"));
   const rows = await activity.find({ orgId: toObjectId(orgId), actorKey, kind: { $in: ["overwrite", "delete", "write"] }, at: { $gte: new Date(sinceIso) }, key: { $ne: null }, bucket: { $ne: null } }).sort({ at: 1 }).limit(2000).toArray();
   const seen = new Map(); for (const r of rows) { const id = `${r.bucket}/${r.key}`; if (!seen.has(id)) seen.set(id, r); }
   const out = [];
@@ -157,18 +158,18 @@ export async function rollbackPreview({ orgId, membership, actorKey, sinceIso, s
   return { actorKey, since: sinceIso, objects: out, restorable: out.filter((o) => o.restorableVersionId).length };
 }
 export async function rollbackExecute({ orgId, membership, actorEmail, items, store }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can roll back files."); const s = store || (await import("../s3-compat/store.js")); const done = []; const failed = [];
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can roll back files."); const s = store || (await import("../s3-compat/store.js")); const done = []; const failed = [];
   for (const it of (items || []).slice(0, 500)) { try { await s.restoreObjectVersion({ orgId, bucket: it.bucket, key: it.key, versionId: it.versionId, actorEmail }); done.push(`${it.bucket}/${it.key}`); } catch (e) { failed.push({ key: `${it.bucket}/${it.key}`, error: String(e.message).slice(0, 120) }); } }
   await logOrgActivity({ orgId, recordType: "RANSOMWARE_SIGNAL", recordId: new ObjectId(), actorEmail, action: "ROLLBACK_EXECUTED", previousState: null, newState: null, metadata: { restored: done.length, failed: failed.length } }).catch(() => {}); return { restored: done.length, failed };
 }
 /** Place a tripwire object in a bucket. Any write or delete of it by a client is a CRITICAL signal. */
 export async function placeCanary({ orgId, membership, actorEmail, bucket, store }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can place a tripwire."); const s = store || (await import("../s3-compat/store.js"));
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can place a tripwire."); const s = store || (await import("../s3-compat/store.js"));
   const key = `${CANARY_PREFIX}do-not-touch-${new ObjectId().toHexString().slice(-8)}.txt`;
   await s.putS3Object({ orgId, bucket, key, bodyBuffer: Buffer.from("Inaya tripwire file. Nothing should read, change or delete this file. If you did, tell your administrator."), contentType: "text/plain", actorEmail: "system:tripwire" }); return { bucket, key };
 }
 export async function incidentReport({ orgId, membership, signalId }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can export an incident."); const { signals, activity, contain } = await cols(); const e = await signals.findOne({ _id: new ObjectId(signalId), orgId: toObjectId(orgId) }); if (!e) fail(404, "Signal not found.");
+  if (!hasAdminRole(membership, "securityAdmin", { read: true })) fail(403, "Only a security administrator or auditor can export an incident."); const { signals, activity, contain } = await cols(); const e = await signals.findOne({ _id: new ObjectId(signalId), orgId: toObjectId(orgId) }); if (!e) fail(404, "Signal not found.");
   const rows = await activity.find({ orgId: toObjectId(orgId), actorKey: e.actorKey, at: { $gte: new Date(new Date(e.at).getTime() - e.windowMinutes * 60_000 * 2) } }).sort({ at: 1 }).limit(2000).toArray();
   return { schemaVersion: "1.0", generatedAt: nowIso(), signal: view(e), timeline: rows.map((r) => ({ at: r.at, kind: r.kind, bucket: r.bucket, key: r.key, flags: Object.entries(r.flags || {}).filter(([, v]) => v).map(([k]) => k) })), containment: (await contain.find({ orgId: toObjectId(orgId), actorKey: e.actorKey }).toArray()).map((c) => ({ level: c.level, since: c.at, until: c.until, liftedAt: c.liftedAt })), disclosure: "Signals are heuristics measured from file activity, with a recorded rule and confidence. They are not proof of an attack and this report is not a forensic certification." };
 }

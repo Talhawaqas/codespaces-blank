@@ -11,7 +11,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { canManageOrg, hasAdminRole } from "../orgGates.js";
 import { requireDocumentAccess } from "../document-permissions.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { getOrgClassificationLevels } from "../classification.js";
@@ -43,7 +43,7 @@ async function cols() {
   if (!indexed) { await Promise.all([fields.createIndex({ orgId: 1, key: 1 }, { unique: true }), sets.createIndex({ orgId: 1, key: 1 }, { unique: true })]); indexed = true; }
   return { c, fields, sets };
 }
-const mustManage = (m) => { if (!canManageOrg(m)) fail(403, "Only an owner or admin can define metadata fields."); };
+const mustManage = (m) => { if (!hasAdminRole(m, "dataGovernanceAdmin")) fail(403, "Only an owner or admin can define metadata fields."); };
 
 /** Pure: validate one value against a field definition. Returns the normalized value or throws GovError(400). */
 export function coerceValue(def, value) {
@@ -65,7 +65,7 @@ export async function listFields({ orgId, membership, includeArchived = false })
   const { fields } = await cols(); const levels = [...(await getOrgClassificationLevels(orgId))].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((l) => l.key);
   const custom = await fields.find({ orgId: toObjectId(orgId), ...(includeArchived ? {} : { archived: { $ne: true } }) }).sort({ key: 1 }).toArray();
   const all = [...BUILTIN_FIELDS.map((f) => (f.key === "sensitivity" ? { ...f, options: levels } : f)), ...custom.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options || null, required: !!f.required, visibility: f.visibility, editableBy: f.editableBy, archived: !!f.archived, builtin: false }))];
-  return all.filter((f) => canManageOrg(membership) || f.visibility !== "managers");
+  return all.filter((f) => hasAdminRole(membership, "dataGovernanceAdmin") || f.visibility !== "managers");
 }
 export async function defineField({ orgId, actorEmail, membership, key, label, type, options = null, required = false, visibility = "members", editableBy = "edit" }) {
   mustManage(membership); const { fields } = await cols();
@@ -103,18 +103,18 @@ export function setApplies(set, doc) {
 /** Visible metadata for one document, filtered to the fields the caller may see, plus the sets that apply. */
 export async function getDocumentMetadata({ orgId, documentId, membership, email }) {
   const access = await requireDocumentAccess({ orgId, documentId, membership, email, minLevel: "VIEW" }); if (access.error) fail(access.status, access.error);
-  const defs = await listFields({ orgId, membership: { ...membership, role: "owner" } }); const doc = access.doc; const canManage = canManageOrg(membership) || access.accessLevel === "MANAGE";
+  const defs = await listFields({ orgId, membership: { ...membership, role: "owner" } }); const doc = access.doc; const canManage = hasAdminRole(membership, "dataGovernanceAdmin") || access.accessLevel === "MANAGE";
   const visible = defs.filter((d) => canManage || d.visibility !== "managers"); const values = {}; for (const d of visible) if (doc.metadata?.[d.key] !== undefined) values[d.key] = doc.metadata[d.key];
   const synthetic = { legal_hold: !!doc.legalHold, classification_source: doc.classificationSource || null, classification_confidence: doc.classificationConfidence ?? null, sensitivity: doc.classification || null };
   for (const [k, v] of Object.entries(synthetic)) if (v !== null && visible.some((d) => d.key === k)) values[k] = v;
   const sets = (await listSets({ orgId })).filter((s) => setApplies(s, doc));
-  return { fields: visible, values, sets, canEdit: ["EDIT", "MANAGE"].includes(access.accessLevel) || canManageOrg(membership), canManage };
+  return { fields: visible, values, sets, canEdit: ["EDIT", "MANAGE"].includes(access.accessLevel) || hasAdminRole(membership, "dataGovernanceAdmin"), canManage };
 }
 
 export async function setDocumentMetadata({ orgId, documentId, membership, email, values, strict = false }) {
   const access = await requireDocumentAccess({ orgId, documentId, membership, email, minLevel: "EDIT" }); if (access.error) fail(access.status, access.error);
   const { c } = await cols(); const defs = Object.fromEntries((await listFields({ orgId, membership: { ...membership, role: "owner" } })).map((d) => [d.key, d]));
-  const canManage = canManageOrg(membership) || access.accessLevel === "MANAGE"; const set = {}; const unset = {}; const changed = [];
+  const canManage = hasAdminRole(membership, "dataGovernanceAdmin") || access.accessLevel === "MANAGE"; const set = {}; const unset = {}; const changed = [];
   for (const [k, raw] of Object.entries(values || {})) {
     const def = defs[k]; if (!def) fail(400, `Unknown field "${k}".`);
     if (def.readOnly) fail(403, `${def.label} is managed by the system and cannot be edited here.`);

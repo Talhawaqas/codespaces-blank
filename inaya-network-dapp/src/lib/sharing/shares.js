@@ -96,6 +96,7 @@ export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt
   await logDocumentActivity({ organizationId: orgId, documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_CREATED", previousState: null, newState: null,
     metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, oneTime: o.oneTime } });
   import("../ransomware/cloud.js").then((m) => m.noteActivity({ orgId, actorKey: actorEmail, kind: "share_create" })).catch(() => {});
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId: orgId, type: "share.created", data: { shareId: String(r.insertedId), documentId: String(documentId), permission: o.permission, passwordProtected: !!o.password, expiresAt, createdBy: normEmail(actorEmail) } })).catch(() => {});
   emitFileEvent(orgId, "shared", { documentId: String(documentId), shareId: String(r.insertedId), permission: o.permission, passwordProtected: !!o.password, expiresAt });
   return { shareId: String(r.insertedId), token, share: publicShareView({ ...doc, _id: r.insertedId }) };
 }
@@ -177,6 +178,7 @@ export async function revokeShare({ orgId, shareId, actorEmail, membership }) {
     await c.sessions.updateMany({ shareId: String(share._id), revokedAt: { $exists: false } }, { $set: { revokedAt: new Date() } });
     await logDocumentActivity({ organizationId: orgId, documentId: share.documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_REVOKED", previousState: null, newState: null, metadata: { shareId: String(share._id) } });
     await logEvent({ orgId, share, type: "REVOKED", email: actorEmail });
+    import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId: orgId, type: "share.revoked", data: { shareId: String(share._id), documentId: String(share.documentId), revokedBy: normEmail(actorEmail) } })).catch(() => {});
   }
   return { revoked: true, alreadyRevoked: !r };
 }
@@ -385,5 +387,5 @@ export async function peekShare(token) {
   if (!share || share.v !== 2) return null;
   const st = shareStatus(share);
   if (st !== "active") return { v2: true, status: st, error: st === "revoked" ? "This link has been revoked." : st === "expired" ? "This link has expired." : "This link has reached its limit." };
-  return { v2: true, status: "active", requires: { password: !!share.passwordHash, email: !!share.domainAllow?.length }, permission: share.permission, label: share.label || null };
+  return { v2: true, status: "active", requires: { password: !!share.passwordHash, email: !!share.domainAllow?.length }, permission: share.permission, label: share.label || null, branding: await (await import("../branding/branding.js")).publicBranding(share.orgId) };
 }

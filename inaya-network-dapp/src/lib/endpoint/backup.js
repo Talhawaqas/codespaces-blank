@@ -15,7 +15,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { hasAdminRole } from "../orgGates.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { createNotification } from "../notifications.js";
 
@@ -70,7 +70,7 @@ export async function createProfile({ orgId, email, membership, input }) {
 }
 async function ownedProfile({ orgId, email, membership, profileId, adminOk = true }) {
   const { profiles } = await cols(); const p = await profiles.findOne({ _id: oid(profileId), orgId: toObjectId(orgId) }); if (!p) fail(404, "Profile not found.");
-  if (p.email !== lower(email) && !(adminOk && canManageOrg(membership))) fail(404, "Profile not found."); return { p, profiles };
+  if (p.email !== lower(email) && !(adminOk && hasAdminRole(membership, "storageAdmin"))) fail(404, "Profile not found."); return { p, profiles };
 }
 export async function updateProfile({ orgId, email, membership, profileId, patch }) {
   const { p, profiles } = await ownedProfile({ orgId, email, membership, profileId }); const set = {};
@@ -83,7 +83,7 @@ export async function deleteProfile({ orgId, email, membership, profileId }) {
   const { p, profiles } = await ownedProfile({ orgId, email, membership, profileId }); await profiles.deleteOne({ _id: p._id }); await audit(orgId, p._id, email, "PROFILE_DELETED", { name: p.name, note: "Backed-up files are kept." }); return { ok: true, note: "The profile was removed. Files already backed up are kept." };
 }
 export async function listProfiles({ orgId, email, membership, scope = "mine" }) {
-  const { profiles } = await cols(); const q = { orgId: toObjectId(orgId) }; if (scope !== "org" || !canManageOrg(membership)) q.email = lower(email);
+  const { profiles } = await cols(); const q = { orgId: toObjectId(orgId) }; if (scope !== "org" || !hasAdminRole(membership, "storageAdmin")) q.email = lower(email);
   return { profiles: (await profiles.find(q).sort({ createdAt: -1 }).limit(200).toArray()).map(view) };
 }
 /** What a client needs to run: its profiles, with mode and limits. A paused profile is returned as paused so the client stops. */
@@ -104,7 +104,7 @@ export function profileHealth(p, now = Date.now()) {
   return { state: reasons.length ? "AMBER" : "GREEN", reasons };
 }
 export async function healthOverview({ orgId, membership }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can see backup health for everyone."); const { profiles } = await cols(); const rows = await profiles.find({ orgId: toObjectId(orgId) }).toArray(); const by = {}; const worst = [];
+  if (!hasAdminRole(membership, "storageAdmin", { read: true })) fail(403, "Only a storage administrator or auditor can see backup health for everyone."); const { profiles } = await cols(); const rows = await profiles.find({ orgId: toObjectId(orgId) }).toArray(); const by = {}; const worst = [];
   for (const p of rows) { const h = profileHealth(p); by[h.state] = (by[h.state] || 0) + 1; if (h.state === "RED" || h.state === "AMBER") worst.push({ profileId: String(p._id), name: p.name, person: p.email, state: h.state, reasons: h.reasons }); }
   return { total: rows.length, byState: by, attention: worst.slice(0, 50) };
 }
@@ -121,7 +121,8 @@ export async function reportRun({ orgId, email, report }) {
   const set = { lastRunAt: at.toISOString(), lastRunStatus: report.status, changedFiles: doc.files.changed, retryQueue: doc.retryQueue };
   if (report.status === "failed") { set.lastFailureAt = at.toISOString(); set.lastFailure = errs[0]?.error || "The run failed."; } else { set.lastSuccessAt = at.toISOString(); }
   await profiles.updateOne({ _id: p._id }, { $set: set });
-  if (report.status === "failed") { try { await createNotification({ scope: "org", orgId: String(orgId), targetEmail: p.email, category: "backup", type: "endpoint_backup.failed", title: "A backup run failed", body: `“${p.name}” failed: ${set.lastFailure}`, sourceModule: "endpoint-backup", sourceId: String(p._id), actionUrl: "/business?view=endpointBackup", metadata: {}, dedupeKey: `epb:${p._id}:${at.toISOString().slice(0, 13)}` }); } catch { /* best effort */ } }
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "backup.event", eventId: String(doc._id), data: { kind: "endpoint_backup_run", profileId: String(p._id), status: report.status, changed: doc.files.changed, failed: doc.files.failed } })).catch(() => {});
+  if (report.status === "failed") import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "backup.failed", targetEmail: p.email, title: "A backup run failed", body: `“${p.name}” failed: ${set.lastFailure}`, link: "/business?view=endpointBackup", sourceId: String(p._id), dedupeKey: `epb:${p._id}:${at.toISOString().slice(0, 13)}`, protectedContent: false })).catch(() => {});
   return { runId: String(doc._id), health: profileHealth({ ...p, ...set }) };
 }
 export async function listRuns({ orgId, email, membership, profileId, limit = 30 }) {
@@ -167,11 +168,11 @@ export async function createRestoreJob({ orgId, email, membership, profileId, se
 }
 const jobView = (j) => ({ jobId: String(j._id), profileId: String(j.profileId), requestedBy: j.requestedBy, createdAt: j.createdAt, target: j.target, alternatePath: j.alternatePath, conflict: j.conflict, pointInTime: j.pointInTime, status: j.status, flags: j.flags, files: j.plan.files.length, bytes: j.plan.bytes, truncated: j.plan.truncated, approvedBy: j.approvedBy || null, result: j.result });
 export async function listRestoreJobs({ orgId, email, membership, status = null }) {
-  const { jobs } = await cols(); const q = { orgId: toObjectId(orgId) }; if (status) q.status = status; if (!canManageOrg(membership)) q.requestedBy = lower(email);
+  const { jobs } = await cols(); const q = { orgId: toObjectId(orgId) }; if (status) q.status = status; if (!hasAdminRole(membership, "storageAdmin")) q.requestedBy = lower(email);
   return { jobs: (await jobs.find(q).sort({ createdAt: -1 }).limit(100).toArray()).map(jobView) };
 }
 export async function decideRestore({ orgId, membership, actorEmail, jobId, approve }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can approve a restore."); const { jobs } = await cols(); const j = await jobs.findOne({ _id: oid(jobId), orgId: toObjectId(orgId), status: "pending_approval" }); if (!j) fail(409, "That restore is not waiting for approval.");
+  if (!hasAdminRole(membership, "storageAdmin")) fail(403, "Only an owner or admin can approve a restore."); const { jobs } = await cols(); const j = await jobs.findOne({ _id: oid(jobId), orgId: toObjectId(orgId), status: "pending_approval" }); if (!j) fail(409, "That restore is not waiting for approval.");
   if (j.requestedBy === lower(actorEmail)) fail(403, "A different administrator must approve this restore.");
   await jobs.updateOne({ _id: j._id, status: "pending_approval" }, { $set: { status: approve ? "ready" : "rejected", approvedBy: lower(actorEmail), decidedAt: nowIso() } }); await audit(orgId, j._id, actorEmail, approve ? "RESTORE_APPROVED" : "RESTORE_REJECTED"); return { ok: true };
 }
@@ -189,7 +190,7 @@ export async function reportRestore({ orgId, email, jobId, report }) {
   await jobs.updateOne({ _id: j._id }, { $set: { status: result.failed && !result.restored ? "failed" : result.failed ? "partial" : "completed", result } }); await audit(orgId, j._id, email, "RESTORE_FINISHED", { restored: result.restored, failed: result.failed }); return { ok: true };
 }
 export async function recoveryReport({ orgId, email, membership, jobId }) {
-  const { jobs, profiles } = await cols(); const j = await jobs.findOne({ _id: oid(jobId), orgId: toObjectId(orgId) }); if (!j) fail(404, "Restore not found."); if (j.requestedBy !== lower(email) && !canManageOrg(membership)) fail(404, "Restore not found.");
+  const { jobs, profiles } = await cols(); const j = await jobs.findOne({ _id: oid(jobId), orgId: toObjectId(orgId) }); if (!j) fail(404, "Restore not found."); if (j.requestedBy !== lower(email) && !hasAdminRole(membership, "storageAdmin")) fail(404, "Restore not found.");
   const p = await profiles.findOne({ _id: j.profileId });
   const report = { schemaVersion: "1.0", generatedAt: nowIso(), job: jobView(j), profile: p ? { name: p.name, bucket: p.bucket, mode: p.mode } : null, plan: { files: j.plan.files.length, bytes: j.plan.bytes, truncated: j.plan.truncated, sample: j.plan.files.slice(0, 25) }, ransomwareSafe: { signalConsidered: j.ransomwareSignalId, approvedBy: j.approvedBy || null }, result: j.result, disclosure: "This report describes a restore requested through Inaya. It records what was planned and what the client reported; it is not an integrity attestation of the restored files." };
   const md = [`# Recovery report`, ``, `Requested by ${j.requestedBy} on ${j.createdAt}. Status: **${j.status}**.`, `Target: ${j.target}${j.alternatePath ? ` (${j.alternatePath})` : ""}; conflicts: ${j.conflict}. Point in time: ${j.pointInTime || "latest"}.`, `Plan: ${j.plan.files.length} files, ${j.plan.bytes} bytes.`, ...(j.flags || []).map((f) => `- ${f}`), j.result ? `Result: ${j.result.restored} restored, ${j.result.failed} failed.` : "Result: not reported yet.", "", report.disclosure].join("\n");

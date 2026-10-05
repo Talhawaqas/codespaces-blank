@@ -77,6 +77,13 @@ import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
+import AdminRolesPanel from "../../components/business/AdminRolesPanel";
+import { hasAdminRole } from "../../lib/orgGates";
+import DocumentList, { touchDocument } from "../../components/business/DocUx";
+import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
+import WebhooksView from "../../components/business/admin/WebhooksView";
+import BrandingPanel from "../../components/business/admin/BrandingPanel";
+import NotificationPrefsPanel from "../../components/business/admin/NotificationPrefsPanel";
 import GovernanceView from "../../components/business/governance/GovernanceView";
 import DevicesView, { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
 import EndpointBackupView from "../../components/business/endpoint/EndpointBackupView";
@@ -736,10 +743,12 @@ const NAV_ITEMS = [
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
   { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
-  { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, group: "trust" },
+  { key: "adminDashboard", label: "Admin Dashboard", icon: "insights", manageOnly: true, adminRole: ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], group: "trust" },
+  { key: "webhooks", label: "Webhooks", icon: "integrations", manageOnly: true, adminRole: "integrationAdmin", group: "enterprise" },
+  { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, adminRole: ["dataGovernanceAdmin", "securityAdmin"], group: "trust" },
   { key: "devices", label: "Devices", icon: "enterpriseHardening", group: "trust" },
   { key: "endpointBackup", label: "Endpoint Backup", icon: "enterpriseHardening", group: "trust" },
-  { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, group: "trust" },
+  { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, adminRole: "securityAdmin", group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
   { key: "departments", label: "Departments", icon: "departments", group: "operations" },
@@ -931,7 +940,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {(() => {
-            const visible = NAV_ITEMS.filter((item) => (!item.manageOnly || canManage) && (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)));
+            const visible = NAV_ITEMS.filter((item) => (!item.manageOnly || canManage || (item.adminRole && hasAdminRole(membership, item.adminRole, { read: true }))) && (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)));
             let lastGroup = null;
             return visible.map((item) => {
               const showHeading = item.group !== lastGroup;
@@ -1064,6 +1073,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     devices: { title: "Devices", description: "The devices signed in to your account, and what administrators can do about them." },
     endpointBackup: { title: "Endpoint Backup", description: "Backup profiles, health, integrity checks and restores for your computers." },
     ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
+    adminDashboard: { title: "Admin Dashboard", description: "What is happening across storage, sharing, devices, backups and security, with honest NO DATA states." },
+    webhooks: { title: "Webhooks", description: "Signed events to your own systems, with retries, a dead-letter list and secret rotation." },
     governance: { title: "Governance", description: "Versioned policies, data protection rules, classification and metadata for your files." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
@@ -1208,10 +1219,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           )}
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
           {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
-          {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage} />}
-          {activeView === "devices" && <DevicesView orgId={orgId} canManage={canManage} />}
-          {activeView === "endpointBackup" && <EndpointBackupView orgId={orgId} canManage={canManage} />}
-          {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage} />}
+          {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
+          {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
+          {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
+          {activeView === "devices" && <DevicesView orgId={orgId} canManage={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })} />}
+          {activeView === "endpointBackup" && <EndpointBackupView orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin", { read: true })} />}
+          {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage || hasAdminRole(membership, "securityAdmin", { read: true })} />}
           <DeviceCheckIn orgId={orgId} />
           {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
           {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
@@ -1275,6 +1288,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             <div className="space-y-6">
               <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
               <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
+              <AdminRolesPanel orgId={orgId} canManage={canManage} />
+              <BrandingPanel orgId={orgId} canManage={canManage} />
+              <NotificationPrefsPanel orgId={orgId} />
               <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
               <TeamView orgId={orgId} email={email} />
             </div>
@@ -1918,11 +1934,7 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
       {documents.length === 0 ? (
         <EmptyState compact icon="🔐" description="No documents yet — use the upload form above." />
       ) : (
-        <div className="space-y-2">
-          {documents.map((d) => (
-            <DocumentCard key={d.id} doc={d} orgId={orgId} canManage={canManage} onChanged={onUploaded} />
-          ))}
-        </div>
+        <DocumentList documents={documents} orgId={orgId} renderCard={(d) => <DocumentCard key={d.id} doc={d} orgId={orgId} canManage={canManage} onChanged={onUploaded} />} />
       )}
     </Column>
   );
@@ -1989,7 +2001,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
   }
 
   async function handlePreview(e) {
-    e.preventDefault();
+    e.preventDefault(); touchDocument(orgId, doc.id);
     if (!previewPasskey) return;
     setPreviewBusy(true); setError("");
     try {
@@ -2001,7 +2013,7 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
   }
 
   async function handleDownload() {
-    if (!downloadPasskey) return;
+    if (!downloadPasskey) return; touchDocument(orgId, doc.id);
     setDownloading(true);
     setError("");
     try {

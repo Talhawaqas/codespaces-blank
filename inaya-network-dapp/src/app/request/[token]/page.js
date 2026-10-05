@@ -21,6 +21,7 @@ const post = async (url, body) => {
 const sizeOf = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const extOf = (name) => (String(name).includes(".") ? String(name).split(".").pop().toLowerCase() : "");
 
+import BrandHeader from "../../../components/BrandHeader";
 export default function RequestPage({ params }) {
   const { token } = use(params);
   const [info, setInfo] = useState(null); const [error, setError] = useState("");
@@ -72,8 +73,7 @@ export default function RequestPage({ params }) {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
-        <h1 className="text-lg font-extrabold text-white text-center mb-1">INAYA <span className="text-[#00f2fe]">NETWORK</span></h1>
-        <p className="text-[#8a96ab] text-xs text-center mb-6">Secure file upload</p>
+        <BrandHeader branding={info?.branding} subtitle="Secure file upload" />
         {!info && !error && <p className="text-[#8a96ab] text-sm text-center">Loading…</p>}
         {error && !info && <div className="bg-red-400/10 border border-red-400/20 rounded-2xl p-6 text-center"><p className="text-red-400 text-sm">{error}</p><p className="text-[#8a96ab] text-xs mt-2">Ask whoever sent you this link for a new one.</p></div>}
         {info && info.status !== "open" && <div className="bg-red-400/10 border border-red-400/20 rounded-2xl p-6 text-center"><p className="text-red-400 text-sm">{info.error}</p></div>}

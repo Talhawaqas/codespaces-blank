@@ -8,7 +8,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { canManageOrg, hasAdminRole } from "../orgGates.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { isValidCidr } from "../net/cidr.js";
 import { safePattern } from "./classifyRules.js";
@@ -98,7 +98,7 @@ function clean(input, type) {
     effectiveAt: eff ? eff.toISOString() : null, expiresAt: exp ? exp.toISOString() : null, approvalRequired: !!input.approvalRequired, config,
   };
 }
-const mustManage = (m) => { if (!canManageOrg(m)) fail(403, "Only an owner or admin can manage governance policies."); };
+const mustManage = (m) => { if (!hasAdminRole(m, "dataGovernanceAdmin")) fail(403, "Only an owner or admin can manage governance policies."); };
 const id = (v) => { if (!/^[0-9a-f]{24}$/.test(String(v))) fail(404, "Policy not found."); return new ObjectId(v); };
 
 export async function createPolicy({ orgId, actorEmail, membership, ...input }) {

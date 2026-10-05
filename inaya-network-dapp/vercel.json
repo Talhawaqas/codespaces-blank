@@ -21,6 +21,14 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/share-expiry",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/org-webhooks",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/notes-purge",
       "schedule": "30 5 * * *"
     },

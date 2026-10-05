@@ -15,7 +15,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { canManageOrg, hasAdminRole } from "../orgGates.js";
 import { ipMatchesAny, normalizeIp } from "../net/cidr.js";
 import { getOrgClassificationLevels, DEFAULT_CLASSIFICATION_LEVELS } from "../classification.js";
 import { effectivePolicies, GovError } from "./policies.js";
@@ -125,6 +125,7 @@ async function record({ orgId, ctx, result, enforced, extra = {} }) {
   const { events } = await cols();
   const doc = { _id: new ObjectId(), orgId: toObjectId(orgId), at: nowIso(), kind: ctx.kind || "dlp", actorEmail: lower(ctx.email), action: ctx.action, resourceType: ctx.resourceType || null, resourceId: ctx.resourceId ? String(ctx.resourceId) : null, path: ctx.path ? String(ctx.path).slice(0, 300) : null, decision: result.decision, ruleId: result.ruleId, ruleName: result.ruleName || null, policyKey: result.policyKey, policyVersion: result.policyVersion, reason: String(result.reason || "").slice(0, 300), matchedOn: result.matchedOn || [], enforced, context: { ip: maskIp(ctx.ip), classification: ctx.classification || null, destinationType: ctx.destinationType || null, destinationDomain: ctx.destinationDomain || null, shareType: ctx.shareType || null, fileType: extOf(ctx.filename ?? ctx.path ?? "") || null, size: ctx.size ?? null, source: ctx.source || null }, ...extra };
   await events.insertOne(doc);
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "dlp.decision", eventId: String(doc._id), data: { decision: result.decision, action: ctx.action, ruleId: result.ruleId, policyKey: result.policyKey, policyVersion: result.policyVersion, enforced, resourceId: doc.resourceId, actor: doc.actorEmail } })).catch(() => {});
   if (enforced) emitFileEvent(orgId, "dlp_blocked", { action: ctx.action, decision: result.decision, ruleId: result.ruleId, resourceId: doc.resourceId, eventId: String(doc._id) });
   return doc;
 }
@@ -158,17 +159,17 @@ export async function assertDlp(args) { const r = await enforceDlp(args); if (!r
 // ------------------------------------------------------------------------------------------------ admin: events, approvals
 const evView = (e) => ({ eventId: String(e._id), at: e.at, kind: e.kind, actor: e.actorEmail, action: e.action, resourceType: e.resourceType, resourceId: e.resourceId, path: e.path, decision: e.decision, ruleId: e.ruleId, ruleName: e.ruleName, policyKey: e.policyKey, policyVersion: e.policyVersion, reason: e.reason, matchedOn: e.matchedOn, enforced: e.enforced, context: e.context, approvalId: e.approvalId || null });
 export async function listDlpEvents({ orgId, membership, decision = null, action = null, limit = 50, before = null }) {
-  if (!canManageOrg(membership)) throw new GovError(403, "Only an owner or admin can read DLP events.");
+  if (!hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })) throw new GovError(403, "Only an administrator with a security or governance role, or an auditor, can read DLP events.");
   const { events } = await cols(); const q = { orgId: toObjectId(orgId) }; if (decision) q.decision = decision; if (action) q.action = action; if (before) q.at = { $lt: before };
   const rows = await events.find(q).sort({ at: -1 }).limit(Math.min(Number(limit) || 50, 200)).toArray(); return { events: rows.map(evView), nextBefore: rows.length === Math.min(Number(limit) || 50, 200) ? rows[rows.length - 1].at : null };
 }
 export async function listApprovals({ orgId, membership, status = "pending" }) {
-  if (!canManageOrg(membership)) throw new GovError(403, "Only an owner or admin can see approvals.");
+  if (!hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })) throw new GovError(403, "Only an administrator can see approvals.");
   const { approvals } = await cols(); const rows = await approvals.find({ orgId: toObjectId(orgId), ...(status ? { status } : {}) }).sort({ createdAt: -1 }).limit(100).toArray();
   return { approvals: rows.map((a) => ({ approvalId: String(a._id), actor: a.actorEmail, action: a.action, resourceId: a.resourceId, filename: a.filename, reason: a.reason, status: a.status, createdAt: a.createdAt, decidedBy: a.decidedBy || null })) };
 }
 export async function decideDlpApproval({ orgId, approvalId, membership, approverEmail, approve }) {
-  if (!canManageOrg(membership)) throw new GovError(403, "Only an owner or admin can decide approvals.");
+  if (!hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"])) throw new GovError(403, "Only an administrator can decide approvals.");
   if (!/^[0-9a-f]{24}$/.test(String(approvalId))) throw new GovError(404, "Approval not found.");
   const { approvals } = await cols(); const a = await approvals.findOne({ _id: new ObjectId(approvalId), orgId: toObjectId(orgId), status: "pending" });
   if (!a) throw new GovError(404, "No pending approval with that id.");

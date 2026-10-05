@@ -17,7 +17,7 @@
 import { ObjectId } from "mongodb";
 import { randomBytes } from "node:crypto";
 import { getOrgCollections, toObjectId, hashToken, generateToken } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { canManageOrg, hasAdminRole } from "../orgGates.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { ipMatchesAny, normalizeIp, isValidCidr } from "../net/cidr.js";
 import { getRoomSession, recordRoomAccess } from "../external-data-room.js";
@@ -48,7 +48,7 @@ async function managedRoom({ orgId, roomId, membership }) {
   // Reuse the room type's own manage gate (audit/finance rooms keep their narrower owners); fall back to owner/admin.
   const { canManageFinancialEntities, canManageAudit } = await import("../orgGates.js");
   const ok = room.roomType === "audit" ? canManageAudit(membership) : room.roomType === "investor" || room.roomType === "diligence" ? canManageFinancialEntities(membership) : canManageOrg(membership);
-  if (!ok) fail(403, "You don't have permission to manage this room.");
+  if (!ok && !hasAdminRole(membership, "vdrAdmin")) fail(403, "You don't have permission to manage this room.");
   return { c, room };
 }
 const audit = (orgId, room, actor, action, metadata = {}) => logOrgActivity({ orgId, recordType: "DATA_ROOM", recordId: room._id, actorEmail: actor, action, previousState: null, newState: null, metadata }).catch(() => {});
@@ -173,11 +173,12 @@ function networkOk(room, session, ip) {
 export async function listVisitorDocuments({ token, ip }) {
   const { session, room, c } = await visitorRoom(token);
   if (!networkOk(room, session, ip)) fail(403, "This room cannot be opened from your network.");
-  if (room.ndaRequired && !session.ndaAcceptedAt) return { ndaRequired: true, ndaText: room.ndaText || null, documents: [], room: { name: room.name } };
+  const branding = await (await import("../branding/branding.js")).publicBranding(session.orgId);
+  if (room.ndaRequired && !session.ndaAcceptedAt) return { ndaRequired: true, ndaText: room.ndaText || null, documents: [], room: { name: room.name }, branding };
   const entries = visibleDocs(room, session); const rows = await c.orgDocuments.find({ _id: { $in: entries.map((d) => d.documentId) }, orgId: session.orgId }).project({ filename: 1, sizeBytes: 1, createdAt: 1 }).toArray(); const byId = new Map(rows.map((r) => [String(r._id), r]));
   await recordRoomAccess({ session, action: "LIST_DOCUMENTS" });
   const role = session.role || "viewer";
-  return { room: { name: room.name, sections: room.sections || [], watermark: room.settings.watermark, ndaRequired: !!room.ndaRequired }, role, documents: entries.filter((e) => byId.has(String(e.documentId))).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((e) => { const r = byId.get(String(e.documentId)); return { id: String(e.documentId), filename: r.filename, size: r.sizeBytes ?? null, uploadedAt: r.createdAt || null, section: e.section, final: !!e.final, locked: !!e.locked, canDownload: e.permission === "download" && role === "downloader" }; }) };
+  return { branding, room: { name: room.name, sections: room.sections || [], watermark: room.settings.watermark, ndaRequired: !!room.ndaRequired }, role, documents: entries.filter((e) => byId.has(String(e.documentId))).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((e) => { const r = byId.get(String(e.documentId)); return { id: String(e.documentId), filename: r.filename, size: r.sizeBytes ?? null, uploadedAt: r.createdAt || null, section: e.section, final: !!e.final, locked: !!e.locked, canDownload: e.permission === "download" && role === "downloader" }; }) };
 }
 
 /** Open one document: runs every check, records it, and returns a short-lived view id used to fetch the ciphertext parts. */

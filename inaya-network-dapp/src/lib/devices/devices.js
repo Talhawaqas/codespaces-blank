@@ -15,7 +15,7 @@
 
 import { ObjectId } from "mongodb";
 import { getOrgCollections, toObjectId, hashToken } from "../orgs.js";
-import { canManageOrg } from "../orgGates.js";
+import { hasAdminRole } from "../orgGates.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { createNotification } from "../notifications.js";
 import { effectivePolicies } from "../governance/policies.js";
@@ -65,7 +65,7 @@ export async function heartbeat({ orgId, email, sessionToken, ip, report = {}, a
 
 async function managedDevice({ orgId, membership, actorEmail, deviceId, allowSelf = false }) {
   const { devices } = await col(); const d = await devices.findOne({ orgId: toObjectId(orgId), deviceId: String(deviceId) }); if (!d) fail(404, "Device not found.");
-  const admin = canManageOrg(membership); const self = lower(actorEmail) === d.email;
+  const admin = hasAdminRole(membership, "deviceAdmin"); const self = lower(actorEmail) === d.email;
   if (!admin && !(allowSelf && self)) fail(403, "Only an owner or admin can do that.");
   return { d, devices, admin };
 }
@@ -73,7 +73,7 @@ const audit = (orgId, d, actor, action, metadata = {}) => logOrgActivity({ orgId
 async function killSessions(c, d) { const r = await c.sessions.deleteMany({ deviceId: d.deviceId, email: d.email }); return r.deletedCount; }
 
 export async function listDevices({ orgId, membership, email, scope = "mine", limit = 200 }) {
-  const { devices } = await col(); const admin = canManageOrg(membership); const q = { orgId: toObjectId(orgId) };
+  const { devices } = await col(); const admin = hasAdminRole(membership, "deviceAdmin", { read: true }); const q = { orgId: toObjectId(orgId) };
   if (scope !== "org" || !admin) q.email = lower(email);
   const rows = await devices.find(q).sort({ lastSeenAt: -1 }).limit(Math.min(limit, 500)).toArray();
   return { devices: rows.map(deviceView), scope: q.email ? "mine" : "org" };
@@ -99,8 +99,9 @@ export async function deviceAction({ orgId, membership, actorEmail, deviceId, ac
     default: fail(400, `action must be one of trust, untrust, block, unblock, revoke, signout, reauth, wipe_cache, disable_sync, enable_sync.`);
   }
   clearDeviceGateCache();
+  if (action === "revoke" || action === "block") import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "device.revoked", data: { deviceId: d.deviceId, action, person: d.email } })).catch(() => {});
   await audit(orgId, d, actorEmail, action.toUpperCase(), result.sessionsEnded != null ? { sessionsEnded: result.sessionsEnded } : {});
-  if (d.email !== lower(actorEmail)) { try { await createNotification({ scope: "org", orgId: String(orgId), targetEmail: d.email, category: "security", type: `device.${action}`, title: "A device on your account was changed", body: `An administrator applied “${action.replace("_", " ")}” to ${d.name}.`, sourceModule: "devices", sourceId: d.deviceId, actionUrl: "/business?view=devices", metadata: {}, dedupeKey: `dev:${d.deviceId}:${action}:${now.slice(0, 16)}` }); } catch { /* best effort */ } }
+  if (d.email !== lower(actorEmail) && (action === "revoke" || action === "block")) import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "device.revoked", targetEmail: d.email, title: "A device on your account was changed", body: `An administrator applied “${action.replace("_", " ")}” to ${d.name}.`, link: "/business?view=devices", sourceId: d.deviceId, dedupeKey: `dev:${d.deviceId}:${action}:${now.slice(0, 16)}`, protectedContent: false })).catch(() => {});
   return { ok: true, ...result };
 }
 
@@ -110,7 +111,7 @@ export async function purgeOldDeviceIps({ now = Date.now() } = {}) {
   const r = await devices.updateMany({ lastIpAt: { $lt: cutoff }, lastIpMasked: { $ne: null } }, { $set: { lastIpMasked: null } }); return { cleared: r.modifiedCount };
 }
 export async function deviceSummary({ orgId, membership }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can see the device summary."); const { devices } = await col(); const rows = await devices.find({ orgId: toObjectId(orgId) }).project({ platform: 1, trust: 1, blockedAt: 1, revokedAt: 1, lastSeenAt: 1, appVersion: 1, "encryption.secureStorage": 1 }).toArray();
+  if (!hasAdminRole(membership, "deviceAdmin", { read: true })) fail(403, "Only a device administrator or auditor can see the device summary."); const { devices } = await col(); const rows = await devices.find({ orgId: toObjectId(orgId) }).project({ platform: 1, trust: 1, blockedAt: 1, revokedAt: 1, lastSeenAt: 1, appVersion: 1, "encryption.secureStorage": 1 }).toArray();
   const stale = new Date(Date.now() - 30 * 86400_000).toISOString(); const by = {}; for (const r of rows) by[r.platform] = (by[r.platform] || 0) + 1;
   return { total: rows.length, byPlatform: by, trusted: rows.filter((r) => r.trust === "trusted").length, blocked: rows.filter((r) => r.blockedAt).length, revoked: rows.filter((r) => r.revokedAt).length, notSeen30Days: rows.filter((r) => r.lastSeenAt < stale && !r.revokedAt).length, withoutSecureStorage: rows.filter((r) => !r.encryption?.secureStorage && !r.revokedAt).length };
 }

@@ -280,3 +280,30 @@ export function canManageAttestations(membership) {
 export function canAccessAttestations(membership) {
   return canManageAttestations(membership) || membership?.attestationRole === "staff";
 }
+
+// ============================================================
+// Role-based administration (Competitive Expansion SOW workstream T). Like financeRole/hrRole, these are OPTIONAL, additive fields on the same
+// org_members document, so the three-value role field and every existing gate stay untouched. Owner and admin ("super admin") hold every scope;
+// a member can additionally hold any of the scoped roles below. There is no role proliferation: each exists because a real scope split does
+// (a device administrator need not read DLP events; an auditor reads but changes nothing).
+// ============================================================
+export const ADMIN_ROLES = {
+  securityAdmin: "Security: ransomware signals, DLP decisions, device blocking",
+  storageAdmin: "Storage: backup health and restores, storage settings",
+  complianceAdmin: "Compliance: readiness, controls, evidence exports",
+  dataGovernanceAdmin: "Data governance: policies, metadata, classification",
+  helpdeskAdmin: "Helpdesk: support tickets and portal",
+  departmentAdmin: "Department administration",
+  vdrAdmin: "Data rooms: rooms, visitors, evidence",
+  auditor: "Read-only access to security, device, backup and governance records",
+  deviceAdmin: "Devices: trust, block, remove, wipe app data",
+  aiSecurityAdmin: "AI security: gateway policy and events",
+  integrationAdmin: "Integrations: API keys, webhooks, connectors",
+};
+/** Does this member hold the scope? Owner/admin always do. `role` may be one name or a list (any). `read: true` also admits auditors. */
+export function hasAdminRole(membership, role, { read = false } = {}) {
+  if (canManageOrg(membership)) return true;
+  const mine = Array.isArray(membership?.adminRoles) ? membership.adminRoles : [];
+  if (read && mine.includes("auditor")) return true;
+  return (Array.isArray(role) ? role : [role]).some((r) => mine.includes(r));
+}

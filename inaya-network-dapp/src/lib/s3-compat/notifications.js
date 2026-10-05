@@ -145,6 +145,9 @@ export async function redeliverNotification({ orgId, deliveryId }) {
 
 /** Queues a delivery for every matching active config. Never throws: a notification problem must not break the write. */
 export async function emitObjectEvent({ orgId, bucket, key, eventName, eventKey, size = null, etag = null, versionId = null, actorEmail = null }) {
+  // Organization-level webhook registry (Competitive Expansion SOW X): the same event, in the registry's vocabulary, without content.
+  { const t = /ObjectCreated/.test(eventName) ? (versionId && versionId !== "null" ? "file.updated" : "file.uploaded") : /LifecycleExpiration/.test(eventName) ? "file.lifecycle_expired" : /ObjectRemoved/.test(eventName) ? "file.deleted" : null;
+    if (t) import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: t, eventId: `${eventName}:${eventKey}`, data: { bucket, key, size, etag, versionId, actor: actorEmail } })).catch(() => {}); }
   try {
     const { configs, deliveries } = await collections();
     const subs = await configs.find({ orgId: toObjectId(orgId), bucket, active: true }).toArray();

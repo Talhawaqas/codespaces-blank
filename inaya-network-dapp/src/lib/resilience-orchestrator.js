@@ -184,6 +184,7 @@ export async function runResilienceTest({ orgId, policyId, membership, actorEmai
     }).catch((err) => console.error("resilience-orchestrator: notification failed (non-fatal):", err.message));
   }
 
+  import("./webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "resilience.event", eventId: testRunId, data: { policyId: policyId.toString(), testRunId, overallResult, actualRTOMinutes, actualRPOMinutes } })).catch(() => {});
   return { testRun: serializeTestRun(updated) };
 }
 

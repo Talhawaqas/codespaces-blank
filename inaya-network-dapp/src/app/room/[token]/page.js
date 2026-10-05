@@ -23,6 +23,7 @@ const api = async (path, opts = {}) => {
 const device = () => { try { let id = localStorage.getItem("inaya-room-device"); if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("inaya-room-device", id); } return id; } catch { return undefined; } };
 const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round((n || 0) / 1024))} KB`);
 
+import BrandHeader from "../../../components/BrandHeader";
 export default function RoomPage({ params }) {
   const { token } = use(params);
   const [state, setState] = useState("verifying"); const [error, setError] = useState(""); const [data, setData] = useState(null);
@@ -63,7 +64,7 @@ export default function RoomPage({ params }) {
   return (
     <main className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-8">
       <div className="max-w-2xl mx-auto space-y-5">
-        <h1 className="text-center text-lg font-extrabold text-white">INAYA <span className="text-[#00f2fe]">NETWORK</span></h1>
+        <BrandHeader branding={data?.branding} />
         {state === "verifying" && <p className="text-center text-sm text-[#8a96ab]">Verifying your link…</p>}
         {state === "error" && <div role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 p-5 text-sm text-red-200">{error} Ask the sender for a new link.</div>}
         {state === "ready" && data && (<>

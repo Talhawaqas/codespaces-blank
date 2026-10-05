@@ -161,7 +161,7 @@ export async function publicInfo(token) {
   if (st !== "open") return { status: st, error: st === "revoked" ? "This request has been closed." : st === "expired" ? "This request has expired." : "This request has received all the files it asked for." };
   const { orgs } = await cols();
   const org = await orgs.findOne({ _id: r.orgId }, { projection: { name: 1 } });
-  return { status: "open", title: r.title, instructions: r.instructions, organization: org?.name || null, expiresAt: r.expiresAt, remaining: r.maxFiles - (r.received || 0), maxFileBytes: r.maxFileBytes, partBytes: LIMITS.partBytes,
+  return { branding: await (await import("../branding/branding.js")).publicBranding(r.orgId), status: "open", title: r.title, instructions: r.instructions, organization: org?.name || null, expiresAt: r.expiresAt, remaining: r.maxFiles - (r.received || 0), maxFileBytes: r.maxFileBytes, partBytes: LIMITS.partBytes,
     allowedExtensions: r.allowedExtensions, requireIdentity: r.requireIdentity, publicKeyJwk: r.publicKeyJwk, requestId: String(r._id) };
 }
 
@@ -239,8 +239,9 @@ export async function completeUpload({ token, uploadId, uploadKey }) {
   await uploads.updateOne({ _id: u._id }, { $set: { status: "received", receivedAt } }); // the key hash stays: it makes a repeated complete harmless
   await logOrgActivity({ orgId: r.orgId, recordType: "FILE_REQUEST", recordId: r._id, actorEmail: u.uploaderEmail || "external", action: "FILE_RECEIVED", previousState: null, newState: null, metadata: { uploadId: String(u._id), size: u.size, ext: u.ext } });
   if (r.notifyOwner) {
-    try { await createNotification({ scope: "org", orgId: r.orgId, targetEmail: r.createdByEmail, category: "external_share", type: "file_request.received", title: "A file was received", body: `${u.uploaderName || u.uploaderEmail || "Someone"} sent a file to "${r.title}" (${slot.received} of ${slot.maxFiles}).`, sourceModule: "file-requests", sourceId: String(r._id), actionUrl: "/business?view=fileRequests", metadata: {}, dedupeKey: `freq:${u._id}` }); } catch { /* best effort */ }
+    try { const m = await import("../notify/router.js"); await m.notifyEvent({ orgId: r.orgId, event: "customer.upload", targetEmail: r.createdByEmail, title: "A file was received", body: `${u.uploaderName || u.uploaderEmail || "Someone"} sent a file to "${r.title}" (${slot.received} of ${slot.maxFiles}).`, link: "/business?view=fileRequests", sourceId: String(r._id), dedupeKey: `freq:${u._id}`, protectedContent: true }); } catch { /* the upload is recorded either way */ }
   }
+  import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId: r.orgId, type: "file_request.received", eventId: String(u._id), data: { requestId: String(r._id), uploadId: String(u._id) } })).catch(() => {});
   emitFileEvent(r.orgId, "uploaded", { source: "file_request", requestId: String(r._id), uploadId: String(u._id), size: u.size ?? null });
   return { receiptId: String(u._id), receivedAt };
 }

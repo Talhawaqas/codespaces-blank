@@ -214,6 +214,9 @@ export async function GET(req) {
     // explicit grant or ownership). One bulk resolution, not one query per doc.
     const accessByDoc = await getBulkDocumentAccess({ orgId, email: auth.session.email, membership: auth.membership, docs: list });
     const visible = list.filter((d) => accessByDoc.get(d._id.toString()));
+    // File management UX: personal prefs (favorite/pin/tags/recent), lock and hold state ride along with the list.
+    const { prefsForDocs } = await import("../../../../lib/filePrefs.js"); const { activeLock } = await import("../../../../lib/filelocks.js");
+    const prefs = await prefsForDocs({ orgId, email: auth.session.email, documentIds: visible.map((d) => d._id.toString()) }).catch(() => new Map());
 
     return NextResponse.json({
       documents: visible.map((d) => ({
@@ -226,6 +229,11 @@ export async function GET(req) {
         accessLevel: d.accessLevel || "DEPARTMENT",
         yourAccessLevel: accessByDoc.get(d._id.toString()),
         createdAt: d.createdAt,
+        classification: d.classification || null,
+        legalHold: !!d.legalHold,
+        locked: !!activeLock(d), lockedBy: activeLock(d)?.byEmail || null,
+        mine: String(d.uploadedByEmail || "").toLowerCase() === String(auth.session.email).toLowerCase(),
+        prefs: prefs.get(d._id.toString()) || null,
       })),
     });
   } catch (err) {

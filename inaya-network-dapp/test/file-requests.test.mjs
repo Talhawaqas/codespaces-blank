@@ -215,7 +215,7 @@ test("who can see what: the requester and admins only; other members and other o
 test("notification and audit: generic, escaped, no file content; abandoned uploads are swept", T, async () => {
   const { token, requestId } = await mk({ title: "Invoices <b>2026</b>" });
   const up = await send(token, requestId, new Uint8Array(300), { uploader: { name: "Eve <script>", email: "eve@example.org" } }); await up.complete();
-  const n = await db.collection("notifications").findOne({ orgId: org.orgId, type: "file_request.received", targetEmail: org.alice.email });
+  const n = await db.collection("notifications").findOne({ orgId: org.orgId, type: "customer.upload", targetEmail: org.alice.email });
   assert.ok(n); assert.equal(n.body.includes("<"), false, "markup is stripped from names and titles"); assert.match(n.body, /1 of 5/);
   const log = await cols.orgActivity.find({ orgId: org.orgId, recordType: "FILE_REQUEST" }).toArray();
   assert.ok(log.some((e) => e.action === "CREATED") && log.some((e) => e.action === "FILE_RECEIVED"));

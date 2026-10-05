@@ -232,7 +232,7 @@ export async function shareNote({ orgId, email, noteId, targetEmail, perm = "rea
     await keys.insertMany(docs, { session });
   });
   await audit(orgId, n._id, me, "SHARED", { target, perm });
-  try { await createNotification({ scope: "org", orgId, targetEmail: target, category: "collaboration", type: "note.shared", title: "A note was shared with you", body: `${me} shared a secure note with you.`, sourceModule: "notes", sourceId: String(noteId), actionUrl: `/business?view=notes&note=${noteId}`, metadata: {}, dedupeKey: `note-share:${noteId}:${target}` }); } catch { /* best effort */ }
+  import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "note.shared", targetEmail: target, title: "A note was shared with you", body: `${me} shared a secure note with you.`, link: `/business?view=notes&note=${noteId}`, sourceId: String(noteId), dedupeKey: `note-share:${noteId}:${target}`, protectedContent: true })).catch(() => {});
   return { ok: true };
 }
 
