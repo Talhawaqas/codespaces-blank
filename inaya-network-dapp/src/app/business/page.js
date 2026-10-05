@@ -76,7 +76,7 @@ import CloudBackupSchedulerView from "../../components/business/CloudBackupSched
 import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
 import OfflineBanner from "../../components/business/OfflineBanner";
-import { applyChatSignOutPolicy } from "../../components/business/chat/signOut";
+import { applyChatSignOutPolicy, searchLiveChat } from "../../components/business/chat/signOut";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
 import AdminRolesPanel from "../../components/business/AdminRolesPanel";
@@ -1176,7 +1176,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} />
+            <CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} localSearch={searchLiveChat} />
             <NotificationsBell scope="org" orgId={membership.orgId} email={email} />
             <ThemeSwitcher />
             <a

@@ -19,7 +19,7 @@ async function api(path) {
   return data;
 }
 
-export default function CommandPalette({ searchUrl, onSelect }) {
+export default function CommandPalette({ searchUrl, onSelect, localSearch }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -56,12 +56,15 @@ export default function CommandPalette({ searchUrl, onSelect }) {
         return;
       }
       setLoading(true);
-      api(`${searchUrl}${searchUrl.includes("?") ? "&" : "?"}q=${encodeURIComponent(q)}`)
-        .then((data) => setResults(data.results || []))
-        .catch(() => setResults([]))
+      // `localSearch` (optional) adds results found on this device only, e.g. end-to-end encrypted chat the server cannot search.
+      Promise.all([
+        api(`${searchUrl}${searchUrl.includes("?") ? "&" : "?"}q=${encodeURIComponent(q)}`).then((data) => data.results || []).catch(() => []),
+        localSearch ? Promise.resolve(localSearch(q)).catch(() => []) : [],
+      ])
+        .then(([server, local]) => setResults([...(local || []), ...server]))
         .finally(() => setLoading(false));
     },
-    [searchUrl]
+    [searchUrl, localSearch]
   );
 
   function handleChange(e) {

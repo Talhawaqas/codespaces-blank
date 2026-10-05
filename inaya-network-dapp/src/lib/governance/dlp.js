@@ -150,9 +150,13 @@ export async function enforceDlp({ orgId, ctx }) {
     const ev = await record({ orgId, ctx, result, enforced: true, extra: { approvalId: String(ap._id) } });
     return { allowed: false, ...result, code: "APPROVAL_REQUIRED", status: 403, message: "An administrator must approve this action first. A request has been sent.", approvalId: String(ap._id), eventId: String(ev._id) };
   }
-  if (result.decision === "REQUIRE_STRONGER_AUTH" && ctx.strongAuth === true) return { allowed: true, ...result };
+  if (result.decision === "REQUIRE_STRONGER_AUTH") {
+    // Allowed while the person has confirmed a fresh authenticator code (src/lib/stepup.js), or when the caller already established strong authentication.
+    const stepped = ctx.strongAuth === true || (ctx.email ? await (await import("../stepup.js")).hasStepUp(ctx.email) : false);
+    if (stepped) { const ev = await record({ orgId, ctx, result: { ...result, reason: "Stronger authentication was confirmed." }, enforced: false }); return { allowed: true, ...result, eventId: String(ev._id) }; }
+  }
   const ev = await record({ orgId, ctx, result, enforced: true });
-  const msg = result.userMessage || (result.decision === "REQUIRE_STRONGER_AUTH" ? "This action needs stronger authentication than this session has." : result.decision === "QUARANTINE" ? "This file was held back by your organization's data protection policy." : "Your organization's data protection policy does not allow this.");
+  const msg = result.userMessage || (result.decision === "REQUIRE_STRONGER_AUTH" ? "This action needs stronger authentication. Confirm a code from your authenticator app (POST /api/orgs/step-up), then try again." : result.decision === "QUARANTINE" ? "This file was held back by your organization's data protection policy." : "Your organization's data protection policy does not allow this.");
   const code = { DENY: "DLP_DENIED", QUARANTINE: "DLP_QUARANTINE", REQUIRE_STRONGER_AUTH: "STRONGER_AUTH_REQUIRED" }[result.decision];
   return { allowed: false, ...result, code, status: 403, message: msg, eventId: String(ev._id) };
 }

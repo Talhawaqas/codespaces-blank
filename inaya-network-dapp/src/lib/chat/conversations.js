@@ -24,7 +24,7 @@ import { claimKeyPackagesForDevices, getActiveDevice, touchDevice } from "./devi
 import { isBlockedEitherWay } from "./contacts.js";
 
 const KINDS = ["direct", "group", "org"];
-const SUBS = ["msg", "edit", "delete", "rename", "meta"];
+const SUBS = ["msg", "edit", "delete", "rename", "meta", "embed"];
 const oid = (id) => new ObjectId(id);
 
 /** Runs `fn` after the HTTP response when called inside a request (Next's after()); otherwise runs it now. Never throws. */
@@ -451,7 +451,13 @@ export async function submitMessage({ orgId, membership = null, email, deviceId,
 
   const { messages, conversations } = await chatDb();
   let target = null;
-  if (sub === "edit" || sub === "delete") {
+  if (sub === "embed") {
+    // Embed control (CHAT-015): the author turns image previews of their own message on or off. An encrypted control message like an edit, but it
+    // changes no content, so it ignores the editing policy and the edit window.
+    if (!ObjectId.isValid(targetMessageId)) fail(400, "targetMessageId is required.");
+    target = await messages.findOne({ _id: oid(targetMessageId), conversationId, kind: "app", sub: "msg" });
+    if (!target || target.senderEmail !== em) fail(403, "You can only change your own messages.", "NOT_YOUR_MESSAGE");
+  } else if (sub === "edit" || sub === "delete") {
     if (sub === "edit" && !settings.allowEditing) fail(403, "Editing messages is disabled by your organization.", "POLICY");
     if (sub === "delete" && !settings.allowDeleting) fail(403, "Deleting messages is disabled by your organization.", "POLICY");
     if (!ObjectId.isValid(targetMessageId)) fail(400, "targetMessageId is required.");
@@ -599,6 +605,13 @@ const SAFE_BODY = "Open Secure Chat to read it.";
 
 async function notifyChat({ conv, toEmail, type, title, dedupe }) {
   try {
+    // New-message alerts go through the notification router so each person's channel choices apply (in-app by default; e-mail and webhook only if they opt in).
+    // protectedContent keeps every channel generic: no sender, no title, no text.
+    if (type === "chat.message") {
+      const { notifyEvent } = await import("../notify/router.js");
+      await notifyEvent({ orgId: conv.orgId, event: "chat.message", targetEmail: toEmail, title, body: SAFE_BODY, link: "/business?view=chat", sourceId: String(conv._id), dedupeKey: dedupe, protectedContent: true });
+      return;
+    }
     await createNotification({ scope: "org", orgId: conv.orgId, targetEmail: toEmail, category: "business", type, title, body: SAFE_BODY, sourceModule: "chat", sourceId: conv._id, actionUrl: "/business?view=chat", metadata: {}, dedupeKey: dedupe });
   } catch { /* notifications never block chat */ }
 }

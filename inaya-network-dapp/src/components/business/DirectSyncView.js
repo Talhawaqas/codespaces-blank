@@ -30,6 +30,7 @@ const STATE_STYLES = {
   QUEUED: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   UPLOADING: "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30",
   FAILED: "bg-red-400/10 text-red-400 border-red-400/30",
+  BLOCKED: "bg-amber-400/10 text-amber-300 border-amber-400/30",
   LOCALLY_DELETED: "border-white/10 text-[var(--inaya-text-muted)]",
 };
 
@@ -196,7 +197,7 @@ function FolderRow({ folder, onChanged }) {
     }
   }
 
-  const failedCount = queue ? queue.filter((q) => q.state === "FAILED").length : 0;
+  const failedCount = queue ? queue.filter((q) => q.state === "FAILED" || q.state === "BLOCKED").length : 0;
 
   return (
     <div className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-2">
@@ -232,6 +233,7 @@ function FolderRow({ folder, onChanged }) {
             queue.slice(0, 50).map((q) => (
               <div key={q.id} className="bg-black/30 border border-white/10 rounded-md p-2 text-[11px] font-mono flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[var(--inaya-text-muted)] truncate">{q.local_path.split(/[\\/]/).pop()}</span>
+                {q.state === "BLOCKED" && q.last_error && <span className="text-amber-300 truncate flex-1 text-[10px]" title="The server is protecting this file (lock, legal hold or retention). Your local copy is untouched; retry once it is released.">{q.last_error}</span>}
                 {q.state === "FAILED" && q.last_error && <span className="text-red-400 truncate flex-1 text-[10px]">{q.last_error}</span>}
                 <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${STATE_STYLES[q.state] || "border-white/10 text-[var(--inaya-text-muted)]"}`}>{q.state}</span>
                 {q.state === "DONE" && <button onClick={() => setLinkFor(linkFor === q.id ? null : q.id)} className="text-[10px] font-bold uppercase text-[#00f2fe] shrink-0 font-sans">{linkFor === q.id ? "Close" : "Share"}</button>}

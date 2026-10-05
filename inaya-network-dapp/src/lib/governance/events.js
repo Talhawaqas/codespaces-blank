@@ -4,11 +4,12 @@
 // existing `trigger.event` node with eventType "file.classified" (etc.) starts a workflow. Events carry identifiers and decisions, never
 // content, and emission is best effort: a missing workflow engine never blocks the file operation.
 //
-// Event types: file.uploaded, file.upload_blocked, file.classified, file.classification_suggested, file.dlp_blocked, file.shared, file.share_opened
+// Event types: file.uploaded, file.upload_blocked, file.classified, file.classification_suggested, file.dlp_blocked, file.shared, file.share_opened,
+//              file.share_expiring, file.legal_hold_changed, file.vdr_accessed, file.backup_failed
 
 import { randomUUID } from "node:crypto";
 
-export const FILE_EVENTS = ["file.uploaded", "file.upload_blocked", "file.classified", "file.classification_suggested", "file.dlp_blocked", "file.shared", "file.share_opened"];
+export const FILE_EVENTS = ["file.uploaded", "file.upload_blocked", "file.classified", "file.classification_suggested", "file.dlp_blocked", "file.shared", "file.share_opened", "file.share_expiring", "file.legal_hold_changed", "file.vdr_accessed", "file.backup_failed"];
 
 export function emitFileEvent(orgId, name, payload = {}) {
   const key = `file.${name}`; if (!FILE_EVENTS.includes(key)) return;

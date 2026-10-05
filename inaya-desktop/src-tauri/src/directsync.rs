@@ -140,7 +140,7 @@ pub struct QueueEntry {
     pub mtime: i64,
     pub content_hash: String,
     pub destination_key: String,
-    pub state: String, // QUEUED | UPLOADING | DONE | FAILED | LOCALLY_DELETED
+    pub state: String, // QUEUED | UPLOADING | DONE | FAILED | BLOCKED | LOCALLY_DELETED
     pub retry_count: i64,
     pub last_error: Option<String>,
     pub last_synced_at: Option<String>,
@@ -288,6 +288,18 @@ impl SyncStateDb {
         Ok(())
     }
 
+    /// The server refused the write on purpose (the file is locked by someone, under legal hold, or inside a retention period). Unlike FAILED this is not a
+    /// fault to retry blindly: it is shown as BLOCKED with the server's own explanation, and the local file is never discarded.
+    fn mark_blocked(&self, folder_id: &str, local_path: &str, reason: &str) -> Result<(), String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        conn.execute(
+            "UPDATE sync_state SET state = 'BLOCKED', last_error = ?3 WHERE folder_id = ?1 AND local_path = ?2",
+            rusqlite::params![folder_id, local_path, reason],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     fn mark_failed(&self, folder_id: &str, local_path: &str, error: &str) -> Result<(), String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         conn.execute(
@@ -413,8 +425,15 @@ impl SyncStateDb {
 
     pub fn requeue_failed(&self, folder_id: &str) -> Result<usize, String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
-        conn.execute("UPDATE sync_state SET state = 'QUEUED' WHERE folder_id = ?1 AND state = 'FAILED'", [folder_id]).map_err(|e| e.to_string())
+        conn.execute("UPDATE sync_state SET state = 'QUEUED' WHERE folder_id = ?1 AND state IN ('FAILED', 'BLOCKED')", [folder_id]).map_err(|e| e.to_string())
     }
+}
+
+/// True when an upload error is the server deliberately protecting the object (file lock, legal hold, retention lock or a retention / legal-hold policy), as
+/// opposed to a network or server fault. Matches the wording of the server's own refusals (src/lib/s3-compat/store.js, src/lib/governance/retention.js).
+pub fn is_protection_error(message: &str) -> bool {
+    let m = message.to_lowercase();
+    ["is locked by", "under legal hold", "retention-locked", "retention policy", "legal-hold policy", "permanent retention"].iter().any(|k| m.contains(k))
 }
 
 // ---------------------------------------------------------------------
@@ -539,7 +558,11 @@ impl SyncEngine {
                 }
             },
             Err(e) => {
-                self.db.mark_failed(&folder.id, &local_path_str, &e)?;
+                if is_protection_error(&e) {
+                    self.db.mark_blocked(&folder.id, &local_path_str, &e)?;
+                } else {
+                    self.db.mark_failed(&folder.id, &local_path_str, &e)?;
+                }
                 Err(e)
             }
         }
@@ -841,6 +864,34 @@ mod tests {
         assert_ne!(hash1, hash3);
 
         fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn protection_errors_are_recognised_and_ordinary_faults_are_not() {
+        assert!(is_protection_error("Cannot overwrite this object: the file is locked by ann@example.com until 2026-10-05T10:00:00Z."));
+        assert!(is_protection_error("Cannot overwrite this object: object is under legal hold."));
+        assert!(is_protection_error("Cannot delete this object: a retention policy (keep) keeps it until 2027-01-01."));
+        assert!(is_protection_error("Cannot overwrite this object: a legal-hold policy (hold) blocks deletion."));
+        assert!(!is_protection_error("network error"));
+        assert!(!is_protection_error("Upload verification failed: destination size does not match the local file."));
+    }
+
+    #[test]
+    fn a_protected_file_is_marked_blocked_not_failed_and_is_requeued_with_the_failed_ones() {
+        let dir = std::env::temp_dir().join(format!("directsync-blocked-test-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let db = SyncStateDb::open(&dir.join("state.sqlite")).unwrap();
+        let folder = FolderConfig { id: "f9".into(), local_path: "C:/watched".into(), bucket: "b".into(), prefix: "".into(), enabled: true };
+        db.add_folder(&folder).unwrap();
+        db.upsert_queued("f9", "C:/watched/locked.docx", 5, 1, "h", "locked.docx").unwrap();
+        db.mark_blocked("f9", "C:/watched/locked.docx","Cannot overwrite this object: the file is locked by ann@example.com.").unwrap();
+        let q = db.list_queue(Some("f9")).unwrap();
+        assert_eq!(q[0].state, "BLOCKED");
+        assert_eq!(q[0].retry_count, 0, "a deliberate refusal is not counted as a failed attempt");
+        assert!(q[0].last_error.as_deref().unwrap().contains("locked by"));
+        assert_eq!(db.requeue_failed("f9").unwrap(), 1, "retrying brings it back once the lock is released");
+        assert_eq!(db.list_queue(Some("f9")).unwrap()[0].state, "QUEUED");
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

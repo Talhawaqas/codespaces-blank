@@ -77,16 +77,17 @@
       "title": "External/guest conversation behind invitation policy",
       "priority": "P1",
       "sow": "A1",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [],
       "routes": [],
       "collections": [],
       "tests": [
-        "test/chat-features.test.mjs"
+        "test/chat-features.test.mjs",
+        "test/desktop-chat.test.mjs"
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Policy gate (allowExternal), contact requirement and blocking tested; no full external-guest end-to-end flow yet."
+      "notes": "External guests, end to end against the real database: refused while the organization policy is off, a stated purpose is mandatory, the guest must accept, then a guest in another organization joins the encrypted group and messages flow both ways. Not run through a browser."
     },
     {
       "id": "CHAT-005",
@@ -184,17 +185,18 @@
       "title": "Send/edit/delete/draft/retry/idempotency",
       "priority": "P1",
       "sow": "A4",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [],
       "routes": [],
       "collections": [],
       "tests": [
         "test/chat-protocol.test.mjs",
-        "test/chat-features.test.mjs"
+        "test/chat-features.test.mjs",
+        "test/desktop-chat.test.mjs"
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Send/edit/delete/idempotency/offline outbox/retry tested. Local message DRAFT persistence is not built."
+      "notes": "Send/edit/delete/idempotency/offline outbox/retry tested; local drafts now kept per conversation in the sealed device store (never sent to the server, erased with history). Draft restore not clicked through in a browser."
     },
     {
       "id": "CHAT-011",
@@ -233,8 +235,10 @@
       "title": "Attach existing Inaya file",
       "priority": "P1",
       "sow": "A5",
-      "status": "PARTIAL",
-      "files": [],
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/components/business/chat/DocPicker.js"
+      ],
       "routes": [],
       "collections": [],
       "tests": [
@@ -242,7 +246,7 @@
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Document REFERENCE in a message works; there is no document picker in the UI yet."
+      "notes": "A Document button opens a picker that searches only documents the person can already open (existing unified search) and attaches a reference (id, name); recipients still need their own access. Built and bundled; not clicked in a browser."
     },
     {
       "id": "CHAT-014",
@@ -269,30 +273,33 @@
       "title": "Image preview/embed + embed control",
       "priority": "P1",
       "sow": "A5",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/desktop-chat.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Image preview code exists (client-side decrypt); not tested; no per-message embed control yet."
+      "notes": "Image previews decrypt on the device; the author can hide or show previews of their own message for everyone through an encrypted control message (tested: author only, no content change, ignores edit policy). UI button not clicked in a browser; image preview itself still needs a browser check."
     },
     {
       "id": "CHAT-016",
       "title": "Chat notifications (generic payload, mute-aware)",
       "priority": "P1",
       "sow": "A6",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [],
       "routes": [],
       "collections": [],
       "tests": [
-        "test/chat-features.test.mjs"
+        "test/chat-features.test.mjs",
+        "test/desktop-chat.test.mjs"
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "In-app generic, mute-aware notifications tested. No email/desktop/mobile push."
+      "notes": "New-message alerts go through the notification router: in-app by default, e-mail and webhook only if the person opts in, always generic (tested: no sender/title/text). Desktop alerts built. Mobile push is part of the deferred mobile work."
     },
     {
       "id": "CHAT-017",
@@ -334,18 +341,19 @@
       "title": "Chat adversarial + security tests",
       "priority": "P0",
       "sow": "A11",
-      "status": "PARTIAL",
+      "status": "VERIFIED",
       "files": [],
       "routes": [],
       "collections": [],
       "tests": [
         "test/chat-protocol.test.mjs",
         "test/chat-features.test.mjs",
-        "test/chat-routes.test.mjs"
+        "test/chat-routes.test.mjs",
+        "test/chat-adversarial-2.test.mjs"
       ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": "Covered: substitution, replay, rogue add/remove, stale epoch, cross-tenant, attachments, malformed/oversized, log/notification leakage. Not yet: forged read events, removed-participant replay of old ciphertext."
+      "securityReviewed": true,
+      "notes": "Adversarial coverage now complete: substitution, replay, rogue add/remove, stale epoch, cross-tenant, attachments, malformed/oversized, leakage, forged read events (clamped, per caller, outsiders refused) and replay by a removed participant (nothing served past the removal point, sends refused, later messages never decrypt)."
     },
     {
       "id": "CHAT-020",
@@ -837,19 +845,22 @@
       "title": "Lock enforced in documents, S3/Azure, DirectSync",
       "priority": "P1",
       "sow": "B4",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [
         "src/lib/s3-compat/store.js",
-        "src/app/api/orgs/documents/[documentId]/versions/route.js"
+        "src/app/api/orgs/documents/[documentId]/versions/route.js",
+        "../inaya-desktop/src-tauri/src/directsync.rs",
+        "src/components/business/DirectSyncView.js"
       ],
       "routes": [],
       "collections": [],
       "tests": [
-        "test/file-locks.test.mjs"
+        "test/file-locks.test.mjs",
+        "test/workflow-file-actions.test.mjs"
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Enforced at S3/Azure store chokepoint (put/delete/lifecycle) and new-version route (423). DirectSync status mapping not yet wired."
+      "notes": "Enforced at the S3/Azure store chokepoint (put/delete/lifecycle) and the new-version route (423). DirectSync now maps a server refusal for a locked, held or retention-protected file to a distinct BLOCKED state with the server's explanation (cargo tests 2/2), shown amber in the DirectSync view and retried with the failed files; the local file is never discarded. Not run against a real locked file from the installed desktop app."
     },
     {
       "id": "GOV-001",
@@ -900,30 +911,35 @@
       "sow": "D4",
       "status": "PARTIAL",
       "files": [
-        "docs/architecture/content-governance-model.md"
+        "docs/architecture/content-governance-model.md",
+        "inaya-network-dapp/src/lib/governance/retention.js"
       ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/governance-retention.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": "Retention, archival, deletion and legal-hold policies are stored and versioned but not yet enforced from this model; legal hold and retention locks remain enforced at the storage layer as before."
+      "securityReviewed": true,
+      "notes": "Published retention policies (object kept until it is N days old, within scope) and legal-hold policies with blockDeletion, plus the permanent retention class, are now enforced on delete, in-place overwrite and lifecycle expiry, on top of the existing per-object hold and lock; retiring a policy lifts it (real object store, 3/3). Not built: the automatic afterAction (archive/delete/review when the period ends), the archival-inactivity policy and the deletion-approval requirement."
     },
     {
       "id": "GOV-004",
       "title": "Legal hold cannot be bypassed via S3/Azure/DirectSync",
       "priority": "P1",
       "sow": "D4",
-      "status": "PARTIAL",
+      "status": "VERIFIED",
       "files": [
         "src/lib/s3-compat/store.js"
       ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/chat-adversarial-2.test.mjs"
+      ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": "Legal hold is enforced at the S3/Azure store chokepoint (and DirectSync uses that API). The Business Workspace document delete route has not been re-verified against holds in this phase."
+      "securityReviewed": true,
+      "notes": "The Business Workspace API has no destructive document route (the only DELETE removes a permission grant; the only removal is a reversible archive transition that touches no bytes), asserted by a scan test. S3/Azure store enforces holds at its chokepoint."
     },
     {
       "id": "CLASS-001",
@@ -1024,18 +1040,23 @@
       "title": "DLP actions incl. stronger auth, log-only, quarantine",
       "priority": "P2",
       "sow": "D3",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [
-        "src/lib/governance/dlp.js"
+        "src/lib/governance/dlp.js",
+        "src/lib/stepup.js",
+        "src/app/api/orgs/step-up/route.js"
       ],
-      "routes": [],
+      "routes": [
+        "POST /api/orgs/step-up"
+      ],
       "collections": [],
       "tests": [
-        "test/governance.test.mjs"
+        "test/governance.test.mjs",
+        "test/stepup.test.mjs"
       ],
       "browserVerified": false,
-      "securityReviewed": false,
-      "notes": "ALLOW, DENY, REQUIRE_APPROVAL (admin approval, one use), LOG_ONLY, QUARANTINE implemented. REQUIRE_STRONGER_AUTH is enforced as a refusal because the platform has no step-up authentication primitive yet."
+      "securityReviewed": true,
+      "notes": "ALLOW, DENY, REQUIRE_APPROVAL, LOG_ONLY, QUARANTINE and now REQUIRE_STRONGER_AUTH are real: a person with an authenticator app confirms a fresh code (POST /api/orgs/step-up), which opens a 10-minute window; wrong codes are limited and lock out, a used code cannot be replayed, and someone without an authenticator is refused. There is no on-screen prompt yet: an app that hits the rule gets STRONGER_AUTH_REQUIRED and must call the route."
     },
     {
       "id": "DLP-003",
@@ -1989,16 +2010,18 @@
       "title": "File triggers (upload, classification, share, expiry, hold, DLP, VDR, backup failure)",
       "priority": "P2",
       "sow": "32",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [
         "src/lib/governance/events.js"
       ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/workflow-file-actions.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Emits file.uploaded (file requests), upload_blocked, classified, classification_suggested, dlp_blocked, shared, share_opened as workflow events. Expiry, hold, VDR and backup-failure triggers are not emitted yet; a live workflow run on these events was not exercised."
+      "notes": "Emits file.uploaded, upload_blocked, classified, classification_suggested, dlp_blocked, shared, share_opened plus (new) share_expiring, legal_hold_changed, vdr_accessed and backup_failed at their real emission points. The new four are covered by a constants test only; a live workflow run on them was not exercised."
     },
     {
       "id": "WORKFLOW-002",
@@ -2013,10 +2036,12 @@
       ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/workflow-file-actions.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "action.file_governance: classify, set_metadata, revoke_shares. Tag-as-approval, lock, retention, move, ticket and resilience-test actions are not built; existing nodes already cover ticket and approval."
+      "notes": "action.file_governance now does classify, set_metadata, revoke_shares, set_retention, lock and unlock (tested, permission checked, no delete). Ticket and approval already exist as nodes. Not built: tag (the metadata framework has no org-level tag field) and move."
     },
     {
       "id": "UX-001",
@@ -2045,10 +2070,11 @@
       "title": "Business Workspace navigation grouping + command palette entries",
       "priority": "P2",
       "sow": "36",
-      "status": "PARTIAL",
+      "status": "IMPLEMENTED_NOT_LIVE",
       "files": [
         "src/components/CommandPalette.js",
-        "src/app/business/page.js"
+        "src/app/business/page.js",
+        "src/components/business/chat/signOut.js"
       ],
       "routes": [],
       "collections": [],
@@ -2057,7 +2083,7 @@
       ],
       "browserVerified": true,
       "securityReviewed": false,
-      "notes": "Admin Dashboard and Webhooks added to the navigation by role; the command palette now finds documents, shares, requests and pages and navigates to them (checked in the browser). Notes and chat are not searched from the palette (end-to-end encrypted)."
+      "notes": "Admin Dashboard and Webhooks in the navigation by role; the palette finds documents, shares, requests and pages and now also searches the chat history this device holds (local only, shown as 'Secure Chat · this device'). Notes are not searched from the palette: they are end-to-end encrypted and locked until opened. Palette change checked by build only, not clicked in a browser."
     },
     {
       "id": "MOBILE-001",
@@ -2157,24 +2183,27 @@
       ],
       "browserVerified": true,
       "securityReviewed": true,
-      "notes": "Fixed-catalog counters (free text can never become a label), live gauges, org endpoint for admins/auditors, token-gated platform Prometheus export with no org id or e-mail, client reporter. Browser-verified: a message sent from the chat UI produced a delivery-latency bucket, a key rotation and message counters. No dashboard panel for the org metrics yet; reconnect and decrypt-failure reporting not exercised in a browser."
+      "notes": "Fixed-catalog counters (free text can never become a label), live gauges, org endpoint for admins/auditors, a Usage panel on the Admin Dashboard, token-gated platform Prometheus export with no org id or e-mail, client reporter. Browser-verified: a chat message produced latency, rotation and message counters. The dashboard panel is built and bundled but not clicked in a browser."
     },
     {
       "id": "DOC-001",
       "title": "All SOW documentation set + docs site/API/SDK/CLI reference updates",
       "priority": "P2",
       "sow": "44",
-      "status": "PARTIAL",
+      "status": "VERIFIED",
       "files": [
         "docs/architecture/observability-and-performance.md",
         "docs/runbooks/competitive-rollback.md"
       ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/docs-content.test.mjs",
+        "test/docs-openapi.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Every document the SOW names now exists. docs site pages under content/docs were not extended for the later phases."
+      "notes": "Every document the SOW names exists; docs-site API (12 new endpoints, regenerated OpenAPI), SDK and CLI references and a Secure Collaboration product page were added; docs tests 10/10."
     },
     {
       "id": "TEST-001",

@@ -185,7 +185,7 @@ export class ChatClient {
     return this.reconcile(convId);
   }
   async leave(convId) { await this.api.leaveConversation({ conversationId: convId }); await this.forget(convId); }
-  async forget(convId) { for (const k of [`g:${convId}`, `cur:${convId}`, `msgs:${convId}`, `meta:${convId}`, `roster:${convId}`, `outbox:${convId}`]) await this.store.delete(k); }
+  async forget(convId) { for (const k of [`g:${convId}`, `cur:${convId}`, `msgs:${convId}`, `meta:${convId}`, `roster:${convId}`, `outbox:${convId}`, `draft:${convId}`]) await this.store.delete(k); }
 
   // ------------------------------------------------------------------------------------------- sync / receive
 
@@ -319,6 +319,11 @@ export class ChatClient {
       if (payload.t === "edit") { target.text = String(payload.text ?? ""); target.editedAt = ev.createdAt; return { type: "edit", serverId: target.serverId, text: target.text, from: ev.senderEmail, seq: ev.seq }; }
       target.text = ""; target.attachments = []; target.deleted = true; return { type: "del", serverId: target.serverId, from: ev.senderEmail, seq: ev.seq };
     }
+    if (payload.t === "embed") {
+      const target = msgs.find((m) => m.serverId === payload.target);
+      if (!target || target.from !== ev.senderEmail) return null; // only the author controls how their message embeds
+      target.embedDisabled = !!payload.disabled; return { type: "embed", serverId: target.serverId, disabled: target.embedDisabled, from: ev.senderEmail, seq: ev.seq };
+    }
     if (payload.t === "rename" || payload.t === "meta") {
       const p = roster.find((r) => r.email === ev.senderEmail);
       if (!p || (p.role !== "owner" && p.role !== "admin" && roster.length > 2)) return null;
@@ -331,6 +336,8 @@ export class ChatClient {
 
   async send(convId, { text, attachments = [] }) { return this._withLock(convId, () => this._sendLocked(convId, { sub: "msg", payload: { v: 1, t: "msg", id: clientMsgId(), text: String(text ?? ""), attachments } })); }
   async editMessage(convId, serverId, text) { return this._withLock(convId, () => this._sendLocked(convId, { sub: "edit", target: serverId, payload: { v: 1, t: "edit", target: serverId, text: String(text ?? "") } })); }
+  /** The author turns image previews of their own message off (or back on) for everyone in the conversation. */
+  async setEmbed(convId, serverId, disabled) { return this._withLock(convId, () => this._sendLocked(convId, { sub: "embed", target: serverId, payload: { v: 1, t: "embed", target: serverId, disabled: !!disabled } })); }
   async deleteMessage(convId, serverId) { return this._withLock(convId, () => this._sendLocked(convId, { sub: "delete", target: serverId, payload: { v: 1, t: "del", target: serverId } })); }
   async rename(convId, title) { const meta = await this._meta(convId); meta.title = String(title).slice(0, 120); await this._saveMeta(convId, meta); return this._withLock(convId, () => this._sendLocked(convId, { sub: "rename", payload: { v: 1, t: "rename", title: meta.title } })); }
 
@@ -348,6 +355,8 @@ export class ChatClient {
           const msgs = await this._msgs(convId);
           msgs.push({ seq: r.seq, serverId: r.id, at: new Date(this.now()).toISOString(), from: this.email, text: payload.text, attachments: payload.attachments || [], clientMsgId: id, status: "sent" });
           await this._saveMsgs(convId, msgs);
+        } else if (sub === "embed") {
+          const msgs = await this._msgs(convId); const t = msgs.find((m) => m.serverId === target); if (t) { t.embedDisabled = !!payload.disabled; await this._saveMsgs(convId, msgs); }
         } else if (sub === "edit" || sub === "delete") {
           const msgs = await this._msgs(convId); const t = msgs.find((m) => m.serverId === target);
           if (t) { if (sub === "edit") { t.text = payload.text; t.editedAt = new Date(this.now()).toISOString(); } else { t.text = ""; t.attachments = []; t.deleted = true; } await this._saveMsgs(convId, msgs); }
@@ -416,9 +425,13 @@ export class ChatClient {
     return p.fingerprints.map((f) => f.fingerprint).filter(Boolean).sort().join("|").slice(0, 120);
   }
 
+  /** Unsent text per conversation, kept in this device's sealed store only (never sent to the server) and erased with the history. */
+  async getDraft(convId) { return (await this.store.get(`draft:${convId}`)) || ""; }
+  async setDraft(convId, text) { const t = String(text || ""); if (t.trim()) await this.store.set(`draft:${convId}`, t.slice(0, 20000)); else await this.store.delete(`draft:${convId}`); }
+
   /** Erases the readable history on this device (decrypted messages and unsent drafts) but keeps the device identity and group state, so it stays a working member.
    *  Erased history cannot be fetched again: old messages cannot be decrypted a second time. */
-  async clearCache() { let n = 0; for (const p of ["msgs:", "outbox:"]) for (const k of await this.store.keys(p)) { await this.store.delete(k); n++; } return { erased: n }; }
+  async clearCache() { let n = 0; for (const p of ["msgs:", "outbox:", "draft:"]) for (const k of await this.store.keys(p)) { await this.store.delete(k); n++; } return { erased: n }; }
 
   /** Sign-out / revoked device: delete every secret and cache from this device. */
   async wipeLocal() { await this.store.clear(); this.device = null; this.kps = {}; this.pins = {}; this.rosters = {}; }

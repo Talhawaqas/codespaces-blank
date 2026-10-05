@@ -180,6 +180,14 @@ function assertNotProtected(doc, actionLabel) {
   }
 }
 
+/** Published governance policies (retention, legal hold) on top of the per-object protections above. */
+async function assertGovernanceAllows(orgId, doc, actionLabel) {
+  if (!doc) return;
+  const { retentionBlock } = await import("../governance/retention.js");
+  const b = await retentionBlock({ orgId, doc });
+  if (b) throw new ObjectProtectedError(`Cannot ${actionLabel}: ${b.message}.`, b.reason === "PolicyRetention" || b.reason === "PermanentRetention" ? "ObjectLocked" : "LegalHold");
+}
+
 export class ObjectProtectedError extends Error {
   constructor(message, reason) {
     super(message);
@@ -234,6 +242,7 @@ export async function putObjectLegalHold({ orgId, bucket, key, versionId, legalH
   const doc = await orgDocuments.findOne(query);
   if (!doc) throw new Error("Object/version not found.");
   await orgDocuments.updateOne({ _id: doc._id }, { $set: { legalHold: !!legalHold } });
+  import("../governance/events.js").then((m) => m.emitFileEvent(orgId, "legal_hold_changed", { documentId: String(doc._id), legalHold: !!legalHold })).catch(() => {});
   await logOrgActivity({
     orgId, recordType: "s3_object", recordId: doc._id, actorEmail: actorEmail || "s3-compat",
     action: legalHold ? "LEGAL_HOLD_PLACED" : "LEGAL_HOLD_RELEASED",
@@ -321,7 +330,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // destroyed -- irrelevant when versioning is enabled (a new PUT creates a
   // brand-new version and never touches the old one's bytes), but a real
   // overwrite-in-place when it's not (SOW §4: "protected overwrite").
-  if (!versioningEnabled) assertNotProtected(existing, "overwrite this object");
+  if (!versioningEnabled) { assertNotProtected(existing, "overwrite this object"); await assertGovernanceAllows(orgId, existing, "overwrite this object"); }
   await assertNotLocked(existing, actorEmail, "overwrite this object");
 
   const salt = InayaKernel.generateSecureSalt();
@@ -563,6 +572,7 @@ export async function deleteS3Object({ orgId, bucket, key, versionId, actorEmail
   const doc = await headS3Object({ orgId, bucket, key, versionId });
   if (!doc) return { deleted: true }; // S3 DELETE is idempotent -- deleting a nonexistent key/version is not an error
   assertNotProtected(doc, "delete this object");
+  await assertGovernanceAllows(orgId, doc, "delete this object");
   await assertNotLocked(doc, actorEmail, "delete this object");
   await orgDocuments.updateOne({ _id: doc._id }, { $set: { deletedAt: now } });
   await logOrgActivity({
@@ -1021,6 +1031,7 @@ export async function runLifecycleEnforcement({ limit = 500 } = {}) {
       if (!scheduledAt || new Date(scheduledAt).getTime() > Date.now()) continue;
       try {
         assertNotProtected(doc, "expire this object via lifecycle policy");
+        await assertGovernanceAllows(doc.orgId, doc, "expire this object via lifecycle policy");
         await assertNotLocked(doc, "s3-lifecycle-policy", "expire this object via lifecycle policy");
       } catch (err) {
         skippedLocked += 1;

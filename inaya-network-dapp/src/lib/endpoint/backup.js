@@ -118,6 +118,7 @@ export async function reportRun({ orgId, email, report }) {
   const manifest = (Array.isArray(report.manifest) ? report.manifest : []).slice(0, LIMITS.manifest).filter((m) => m && m.key).map((m) => ({ key: String(m.key).slice(0, 500), size: num(m.size), sha256: m.sha256 ? String(m.sha256).slice(0, 64) : null, etag: m.etag ? String(m.etag).slice(0, 80) : null }));
   const at = new Date(); const doc = { _id: new ObjectId(), orgId: toObjectId(orgId), profileId: p._id, email: p.email, deviceId: report.deviceId || p.deviceId || null, at, startedAt: report.startedAt || null, finishedAt: report.finishedAt || at.toISOString(), status: report.status, files: { scanned: num(f.scanned), changed: num(f.changed), uploaded: num(f.uploaded), failed: num(f.failed), bytes: num(f.bytes) }, errors: errs, manifest, retryQueue: num(report.retryQueue), verification: null };
   await runs.insertOne(doc);
+  if (report.status === "failed") import("../governance/events.js").then((m) => m.emitFileEvent(orgId, "backup_failed", { profileId: String(p._id), runId: String(doc._id) })).catch(() => {});
   const set = { lastRunAt: at.toISOString(), lastRunStatus: report.status, changedFiles: doc.files.changed, retryQueue: doc.retryQueue };
   if (report.status === "failed") { set.lastFailureAt = at.toISOString(); set.lastFailure = errs[0]?.error || "The run failed."; } else { set.lastSuccessAt = at.toISOString(); }
   await profiles.updateOne({ _id: p._id }, { $set: set });

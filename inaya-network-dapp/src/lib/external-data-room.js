@@ -267,6 +267,7 @@ export async function recordRoomAccess({ session, action, documentId }) {
     action, documentId: documentId ? toObjectId(documentId) : null,
     accessedAt: new Date().toISOString(),
   });
+  import("./governance/events.js").then((m) => m.emitFileEvent(session.orgId, "vdr_accessed", { roomId: String(session.roomId), action, documentId: documentId ? String(documentId) : null })).catch(() => {});
 }
 
 export async function getRoomAccessLog(orgId, roomId) {

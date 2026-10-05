@@ -11,7 +11,8 @@ import { createPortal } from "react-dom";
 import { useChat } from "./useChat";
 import EmptyState from "../../EmptyState";
 import { NotePicker } from "../notes/NotesView";
-import { inayaNoteRef } from "../../../lib/chat/client/attachments";
+import { inayaNoteRef, inayaDocRef } from "../../../lib/chat/client/attachments";
+import DocPicker from "./DocPicker";
 import { reportMetric } from "./reportMetric.js";
 import { isDesktopApp, popOutChat } from "./desktop.js";
 
@@ -41,9 +42,9 @@ function Avatar({ email, online }) {
   );
 }
 
-function AttachmentView({ client, convId, att }) {
+function AttachmentView({ client, convId, att, embedDisabled = false }) {
   const [url, setUrl] = useState(null); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
-  const isImage = att.kind === "blob" && /^image\/(png|jpe?g|gif|webp)$/.test(att.type || "") && att.plainSize <= 6 * 1048576;
+  const isImage = !embedDisabled && att.kind === "blob" && /^image\/(png|jpe?g|gif|webp)$/.test(att.type || "") && att.plainSize <= 6 * 1048576;
   useEffect(() => {
     let revoke; let off = false;
     if (isImage) (async () => { try { const b = await client.downloadAttachment(convId, att); if (off) return; revoke = URL.createObjectURL(new Blob([b], { type: att.type })); setUrl(revoke); } catch (e) { setErr(e.message); } })();
@@ -55,7 +56,7 @@ function AttachmentView({ client, convId, att }) {
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   if (att.kind === "inaya-note") { const ok = /^[0-9a-f]{24}$/.test(String(att.noteId)); return <div className={`${card} px-3 py-2 text-[12px]`}>Secure note: <b>{String(att.title || "Untitled").slice(0, 120)}</b> {ok && <a className="underline text-[#00f2fe]" href={`/business?view=notes&note=${att.noteId}`}>Open</a>} <span className={muted}>You need access to the note and your notes passphrase.</span></div>; }
-  if (att.kind === "inaya-doc") return <div className={`${card} px-3 py-2 text-[12px]`}>Inaya document: <b>{att.name}</b> <span className={muted}>({sizeOf(att.size)}). Open it from Files; your normal access rules apply.</span></div>;
+  if (att.kind === "inaya-doc") return <div className={`${card} px-3 py-2 text-[12px]`}>Inaya document: <b>{att.name}</b> <span className={muted}>{att.size > 0 ? `(${sizeOf(att.size)})` : ""}. Open it from Files; your normal access rules apply.</span></div>;
   return (
     <div className={`${card} px-3 py-2 text-[12px] max-w-xs`}>
       {url && <img src={url} alt={att.name} className="rounded mb-2 max-h-56" />}
@@ -121,7 +122,7 @@ export default function ChatView({ orgId, email, canManage }) {
   const chat = useChat({ orgId, email });
   const { status, error, takeOver, conversations, titles, last, peers, tick } = chat;
   const [sel, setSel] = useState(null); const [detail, setDetail] = useState(null); const [msgs, setMsgs] = useState([]);
-  const [text, setText] = useState(""); const [files, setFiles] = useState([]); const [noteRef, setNoteRef] = useState(null); const [pickNote, setPickNote] = useState(false); const [sendErr, setSendErr] = useState(""); const [sending, setSending] = useState(false);
+  const [text, setText] = useState(""); const [files, setFiles] = useState([]); const [noteRef, setNoteRef] = useState(null); const [pickNote, setPickNote] = useState(false); const [docRefs, setDocRefs] = useState([]); const [pickDoc, setPickDoc] = useState(false); const [sendErr, setSendErr] = useState(""); const [sending, setSending] = useState(false);
   const [search, setSearch] = useState(""); const [hits, setHits] = useState([]); const [showNew, setShowNew] = useState(false); const [showContacts, setShowContacts] = useState(false);
   const [typing, setTyping] = useState([]); const [online, setOnline] = useState({}); const [receipts, setReceipts] = useState([]); const [prefs, setPrefs] = useState({ appearOffline: false });
   const [netOnline, setNetOnline] = useState(true); const [usage, setUsage] = useState(null);
@@ -183,21 +184,25 @@ export default function ChatView({ orgId, email, canManage }) {
   useEffect(() => { if (!client || search.trim().length < 2) { setHits([]); return; } client.search(search.trim()).then(setHits); }, [client, search, tick]);
 
   async function send() {
-    if ((!text.trim() && !files.length && !noteRef) || !sel || sending) return;
+    if ((!text.trim() && !files.length && !noteRef && !docRefs.length) || !sel || sending) return;
     setSending(true); setSendErr("");
     try {
       await chat.run(async (c) => {
         const attachments = [];
         for (const f of files) attachments.push(await c.attachFile(sel, { bytes: new Uint8Array(await f.arrayBuffer()), name: f.name, type: f.type }));
         if (noteRef) attachments.push(inayaNoteRef(noteRef));
+        for (const d of docRefs) attachments.push(inayaDocRef(d));
         const t0 = performance.now(); await c.send(sel, { text: text.trim(), attachments });
         if (!attachments.length) reportMetric(orgId, "chat.delivery_latency_ms", performance.now() - t0);
       });
-      setText(""); setFiles([]); setNoteRef(null); setMsgs(await client.messages(sel));
+      setText(""); setFiles([]); setNoteRef(null); setDocRefs([]); setMsgs(await client.messages(sel));
       client.api.setTyping({ conversationId: sel, typing: false }).catch(() => {});
     } catch (e) { setSendErr(e.queued ? "You appear to be offline. The message is saved and will send automatically when you are back online." : e.message); }
     finally { setSending(false); }
   }
+  // Local drafts: restored when a conversation opens, saved shortly after typing stops, cleared on send. Stored in the sealed device store only.
+  useEffect(() => { if (!client || !sel) { setText(""); return; } let off = false; client.getDraft(sel).then((d) => { if (!off) setText(d); }).catch(() => {}); return () => { off = true; }; }, [client, sel]);
+  useEffect(() => { if (!client || !sel) return; const t = setTimeout(() => { client.setDraft(sel, text).catch(() => {}); }, 600); return () => clearTimeout(t); }, [client, sel, text]);
   function onType(v) { setText(v); const n = Date.now(); if (sel && n - lastTyping.current > 3000 && v) { lastTyping.current = n; client?.api.setTyping({ conversationId: sel, typing: true }).catch(() => {}); } }
 
   if (status === "unsupported") return <EmptyState title="This browser cannot run Secure Chat" description="Secure Chat needs a modern browser with WebCrypto and IndexedDB. Use the desktop app or a current browser." />;
@@ -258,21 +263,24 @@ export default function ChatView({ orgId, email, canManage }) {
                     {!mine && <p className={`text-[10px] ${muted} mb-0.5`}>{m.from}</p>}
                     {m.deleted ? <i className={muted}>Message deleted</i> : <>
                       {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
-                      <div className="space-y-2 mt-1">{(m.attachments || []).map((a, j) => <AttachmentView key={j} client={client} convId={sel} att={a} />)}</div></>}
+                      <div className="space-y-2 mt-1">{(m.attachments || []).map((a, j) => <AttachmentView key={j} client={client} convId={sel} att={a} embedDisabled={!!m.embedDisabled} />)}</div></>}
                     <p className={`text-[10px] ${muted} mt-1 text-right`}>{timeOf(m.at)}{m.editedAt ? " · edited" : ""}{mine ? ` · ${receipts.filter((r) => r.email !== email && r.readSeq >= m.seq).length ? "seen" : "sent"}` : ""}
+                      {mine && !m.deleted && (m.attachments || []).some((a) => a.kind === "blob" && /^image\//.test(a.type || "")) && <> · <button className="underline" onClick={async () => { try { await chat.run((c) => c.setEmbed(sel, m.serverId, !m.embedDisabled)); setMsgs(await client.messages(sel)); } catch (e) { setSendErr(e.message); } }}>{m.embedDisabled ? "show previews" : "hide previews"}</button></>}
                       {mine && !m.deleted && <> · <button className="underline" onClick={async () => { const t = window.prompt("Edit message", m.text); if (t != null && t !== m.text) { try { await chat.run((c) => c.editMessage(sel, m.serverId, t)); setMsgs(await client.messages(sel)); } catch (e) { setSendErr(e.message); } } }}>edit</button> · <button className="underline" onClick={async () => { if (window.confirm("Delete this message for everyone?")) { try { await chat.run((c) => c.deleteMessage(sel, m.serverId)); setMsgs(await client.messages(sel)); } catch (e) { setSendErr(e.message); } } }}>delete</button></>}</p>
                   </div></div></div>); })}
             <div ref={endRef} />
           </div>
           <div className="px-4 pb-1 h-5 text-[11px]" aria-live="polite">{typing.length > 0 && <span className={muted}>{typing.map((e) => e.split("@")[0]).join(", ")} {typing.length > 1 ? "are" : "is"} typing…</span>}</div>
           {sendErr && <p className="text-amber-300 text-xs px-4 pb-1" role="alert">{sendErr}</p>}
+          {docRefs.length > 0 && <div className="px-4 pb-1 flex flex-wrap gap-1">{docRefs.map((d, i) => <span key={d.documentId} className="text-xs bg-[var(--inaya-overlay-10)] rounded px-2 py-1">Document: {d.name} <button aria-label={`Remove ${d.name}`} onClick={() => setDocRefs((x) => x.filter((_, j) => j !== i))}>×</button></span>)}</div>}
           {noteRef && <div className="px-4 pb-1"><span className="text-xs bg-[var(--inaya-overlay-10)] rounded px-2 py-1">Note: {noteRef.title} <button aria-label="Remove note" onClick={() => setNoteRef(null)}>×</button></span></div>}
           {files.length > 0 && <div className="px-4 pb-1 flex flex-wrap gap-1">{files.map((f, i) => <span key={i} className="text-xs bg-[var(--inaya-overlay-10)] rounded px-2 py-1">{f.name} ({sizeOf(f.size)}) <button aria-label={`Remove ${f.name}`} onClick={() => setFiles((x) => x.filter((_, j) => j !== i))}>×</button></span>)}</div>}
           <div className="p-3 border-t border-[var(--inaya-overlay-10)] flex gap-2 items-end">
             <button className={btn} type="button" title="Attach a reference to one of your Secure Notes" onClick={() => setPickNote(true)}>Note</button>
+            <button className={btn} type="button" title="Attach a reference to one of your Inaya documents" onClick={() => setPickDoc(true)}>Document</button>
             <label className={`${btn} cursor-pointer`} title="Attach a file (encrypted on this device, up to 25 MB)">Attach<input type="file" multiple className="hidden" onChange={(e) => { const picked = Array.from(e.target.files || []); setFiles((x) => [...x, ...picked].slice(0, 5)); e.target.value = ""; }} /></label>
             <textarea value={text} onChange={(e) => onType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={1} placeholder="Write an encrypted message" aria-label="Message" className="flex-1 resize-none bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg px-3 py-2 text-sm max-h-32" />
-            <button className={accentBtn} onClick={send} disabled={sending || (!text.trim() && !files.length && !noteRef)}>{sending ? "Sending…" : "Send"}</button>
+            <button className={accentBtn} onClick={send} disabled={sending || (!text.trim() && !files.length && !noteRef && !docRefs.length)}>{sending ? "Sending…" : "Send"}</button>
           </div></>)}
       </div>
 
@@ -318,6 +326,7 @@ export default function ChatView({ orgId, email, canManage }) {
           {chat.securityEvents.length > 0 && <div className="mt-3 text-[10px] text-amber-300">{chat.securityEvents.slice(-3).map((e, i) => <p key={i}>Security notice: {e.type.replace(/_/g, " ").toLowerCase()}</p>)}</div>}
         </div>)}
 
+      {pickDoc && <DocPicker orgId={orgId} onClose={() => setPickDoc(false)} onPick={(d) => { setDocRefs((x) => (x.some((y) => y.documentId === d.documentId) ? x : [...x, d].slice(0, 5))); setPickDoc(false); }} />}
       {pickNote && <NotePicker orgId={orgId} email={email} onClose={() => setPickNote(false)} onPick={(n) => { setNoteRef(n); setPickNote(false); }} />}
       {showNew && <NewChat client={client} me={email} onClose={() => setShowNew(false)} onCreate={async ({ kind, emails, name }) => { const r = await chat.run(async (c) => { const x = await c.createConversation({ kind, emails }); if (name && kind === "group") await c.rename(x.conversationId, name); return x; }); setSel(r.conversationId); }} />}
       {showContacts && <ContactsPanel client={client} onClose={() => setShowContacts(false)} />}

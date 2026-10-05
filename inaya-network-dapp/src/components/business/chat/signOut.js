@@ -12,6 +12,12 @@ let live = null; // { client } while Secure Chat is running in this window
 
 export const registerLiveChat = (client) => { live = client ? { client } : null; };
 
+/** Search the readable chat history that THIS device already holds (nothing leaves the device). Empty when Secure Chat is not running in this window. */
+export async function searchLiveChat(query, limit = 5) {
+  if (!live?.client) return [];
+  try { return (await live.client.search(query, { limit })).map((h) => ({ entityType: "chat-local", id: `${h.conversationId}:${h.seq}`, title: String(h.text || "").slice(0, 90), subtitle: "Secure Chat · this device", view: "chat" })); } catch { return []; }
+}
+
 async function openRaw(orgId, email) {
   const [{ HttpChatApi }, { openBrowserStore }] = await Promise.all([import("../../../lib/chat/client/httpApi.js"), import("../../../lib/chat/client/stores.js")]);
   return { api: new HttpChatApi({ orgId }), openBrowserStore, key: `${orgId}:${email}` };
