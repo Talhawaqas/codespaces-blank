@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reportMetric } from "./reportMetric.js";
+import { isDesktopApp, devicePlatform, deviceLabel, native } from "./desktop.js";
+import { registerLiveChat } from "./signOut.js";
 
 const supported = async () => {
   if (typeof window === "undefined" || !window.crypto?.subtle || !window.indexedDB) return false;
@@ -25,7 +27,7 @@ async function startClient(orgId, email, onSecurityEvent) {
         import("../../../lib/chat/client/ChatClient.js"), import("../../../lib/chat/client/httpApi.js"), import("../../../lib/chat/client/stores.js"),
       ]);
       const store = await openBrowserStore(key);
-      const client = new ChatClient({ api: new HttpChatApi({ orgId }), store, orgId, email, label: "Web browser", platform: "web", jitterMs: 250, onSecurityEvent: (e) => onSecurityEvent.current?.(e) });
+      const client = new ChatClient({ api: new HttpChatApi({ orgId }), store, orgId, email, label: deviceLabel(), platform: devicePlatform(), jitterMs: 250, onSecurityEvent: (e) => onSecurityEvent.current?.(e) });
       await client.init();
       return client;
     })().catch((err) => { starting.delete(key); throw err; }));
@@ -33,8 +35,17 @@ async function startClient(orgId, email, onSecurityEvent) {
   return starting.get(key);
 }
 
+// Only one window of this browser profile (or desktop app) may run Secure Chat at a time: two would each hold their own copy of the same
+// encrypted conversation state and the same device. A Web Lock names the owner; another window asks the owner to hand over (BroadcastChannel) and
+// waits for the lock, so the owner always finishes its current sync before the new one starts.
+const lockName = (orgId, email) => `inaya-chat:${orgId}:${email}`;
+const heldHere = new Set(); // lock names this window currently holds
+const hasLocks = () => typeof navigator !== "undefined" && !!navigator.locks && typeof BroadcastChannel !== "undefined";
+
 export function useChat({ orgId, email }) {
-  const [status, setStatus] = useState("starting"); // starting | ready | unsupported | off | error
+  const [status, setStatus] = useState("starting"); // starting | ready | unsupported | off | error | elsewhere
+  const [attempt, setAttempt] = useState(0);
+  const takeOverRef = useRef(false);
   const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
   const [titles, setTitles] = useState({});
@@ -69,33 +80,66 @@ export function useChat({ orgId, email }) {
 
   useEffect(() => {
     alive.current = true;
-    let stop = false;
+    let stop = false; let release = null; let chan = null;
+    const claim = (wait, signal) => new Promise((resolve, reject) => {
+      navigator.locks.request(lockName(orgId, email), wait ? { signal } : { ifAvailable: true }, (lock) => {
+        if (!lock) { resolve(false); return undefined; }
+        resolve(true); return new Promise((r) => { release = r; });
+      }).catch((e) => { if (e?.name === "AbortError") resolve(false); else reject(e); });
+    });
     (async () => {
       if (!(await supported())) { setStatus("unsupported"); return; }
+      if (hasLocks()) {
+        chan = new BroadcastChannel(`inaya-chat-handoff:${lockName(orgId, email)}`);
+        let got = false;
+        if (takeOverRef.current) {
+          takeOverRef.current = false; setStatus("switching"); chan.postMessage({ type: "handoff" });
+          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 45000); got = await claim(true, ctl.signal); clearTimeout(t);
+        } else if (heldHere.has(lockName(orgId, email))) {
+          // This same window is still winding down a previous mount (a view switch or a dev re-mount): wait for it instead of treating it as another window.
+          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000); got = await claim(true, ctl.signal); clearTimeout(t);
+        } else got = await claim(false);
+        if (stop) { release?.(); return; }
+        if (!got) { setStatus("elsewhere"); return; }
+        heldHere.add(lockName(orgId, email));
+        chan.onmessage = (ev) => { if (ev.data?.type === "handoff") stop = true; };
+      }
       try {
         const client = await startClient(orgId, email, onEvent);
         if (stop) return;
-        clientRef.current = client;
+        clientRef.current = client; registerLiveChat(client);
         setStatus("ready");
-        let backoff = 1000; let first = true;
+        let backoff = 1000; let first = true; let lastUnread = 0;
         while (!stop) {
-          if (document.hidden) { await new Promise((r) => setTimeout(r, 1500)); continue; }
+          // A hidden browser tab pauses; the desktop app keeps syncing while it sits in the tray, so a message can still raise a native notification.
+          if (document.hidden && !isDesktopApp()) { await new Promise((r) => setTimeout(r, 1500)); continue; }
           try {
             const res = await client.sync({ wait: first ? 0 : 15000 }); first = false;
+            if (stop) break;
             await refresh(res); backoff = 1000;
             if (res.fresh?.length) setTick((n) => n + 1);
+            if (isDesktopApp()) {
+              // Native alerts carry a count only, never a name or text. Raised when the unread total grows while the window is hidden or not focused.
+              const unread = (res.conversations || []).reduce((n, c) => n + (c.unread || 0), 0);
+              if (unread > lastUnread && (document.hidden || !document.hasFocus())) native("notify_chat_message", { count: unread });
+              if (unread !== lastUnread) native("set_chat_unread", { count: unread });
+              lastUnread = unread;
+            }
           } catch (err) {
-            if (err.code === "DEVICE_REVOKED") { setStatus("error"); setError("This browser was signed out of Secure Chat (device revoked)."); await client.wipeLocal(); return; }
+            if (err.code === "DEVICE_REVOKED") { setStatus("error"); setError("This device was signed out of Secure Chat (device revoked)."); await client.wipeLocal(); return; }
             reportMetric(orgId, "chat.reconnect"); await new Promise((r) => setTimeout(r, backoff)); backoff = Math.min(backoff * 2, 30000);
           }
           await new Promise((r) => setTimeout(r, 400));
         }
+        if (clientRef.current === client) { clientRef.current = null; registerLiveChat(null); starting.delete(orgId + ":" + email); if (alive.current) setStatus("elsewhere"); }
       } catch (err) {
         if (err.status === 404) setStatus("off"); else { setStatus("error"); setError(err.message || "Could not start Secure Chat."); }
-      }
+      } finally { heldHere.delete(lockName(orgId, email)); release?.(); chan?.close(); }
     })();
     return () => { stop = true; alive.current = false; };
-  }, [orgId, email, refresh]);
+  }, [orgId, email, refresh, attempt]);
+
+  const takeOver = useCallback(() => { takeOverRef.current = true; alive.current = true; setStatus("starting"); setAttempt((n) => n + 1); }, []);
 
   const run = useCallback(async (fn) => {
     const c = clientRef.current; if (!c) throw new Error("Secure Chat is not ready yet.");
@@ -105,5 +149,5 @@ export function useChat({ orgId, email }) {
     return out;
   }, [refresh]);
 
-  return { status, error, conversations, titles, last, peers, tick, securityEvents, client: () => clientRef.current, run, refresh };
+  return { status, error, takeOver, conversations, titles, last, peers, tick, securityEvents, client: () => clientRef.current, run, refresh };
 }

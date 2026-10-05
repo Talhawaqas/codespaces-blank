@@ -75,6 +75,8 @@ import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
+import OfflineBanner from "../../components/business/OfflineBanner";
+import { applyChatSignOutPolicy } from "../../components/business/chat/signOut";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
 import AdminRolesPanel from "../../components/business/AdminRolesPanel";
@@ -251,6 +253,8 @@ export default function BusinessPage() {
   }, [session, selectedOrgId]);
 
   async function handleLogout() {
+    // Secure Chat: apply the organization's sign-out policy to this device's local chat data while the session still exists.
+    await Promise.all((session?.orgs || []).map((o) => applyChatSignOutPolicy({ orgId: o.orgId, email: session.email })));
     await api("/api/orgs/logout", { method: "POST" });
     setSession(null);
     setSelectedOrgId(null);
@@ -1215,6 +1219,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         </header>
 
         <main className="p-5 md:p-8 max-w-6xl">
+          <OfflineBanner />
           {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}

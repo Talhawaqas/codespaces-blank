@@ -19,13 +19,12 @@ Scope: the "Filen / FileCloud competitive expansion" statement of work (SOW), im
 | Status | Items |
 |---|---|
 | VERIFIED | 42 |
-| PARTIAL | 39 |
-| IMPLEMENTED_NOT_LIVE | 28 |
-| PLANNED | 4 |
-| NOT_CONFIGURED | 1 |
+| PARTIAL | 40 |
+| IMPLEMENTED_NOT_LIVE | 29 |
+| PLANNED | 3 |
 | **Total** | **114** |
 
-The SOW is **not complete**: the mobile and desktop surfaces (CHAT-021, CHAT-022, MOBILE-001, DESKTOP-001) are not built, mobile push (CHAT-023) needs credentials, and many items are PARTIAL or IMPLEMENTED_NOT_LIVE for the reasons in section 21.
+The SOW is **not complete**: the mobile surfaces (CHAT-021, CHAT-023, MOBILE-001) are not built (deferred by the owner for now), and many items are PARTIAL or IMPLEMENTED_NOT_LIVE for the reasons in section 21.
 
 ## 2. What is implemented
 
@@ -52,7 +51,7 @@ See the PARTIAL rows in section 21; each says what is missing. The ones a reader
 
 ## 5. Not-configured integrations
 
-Push credentials for mobile notifications (CHAT-023); a live Active Directory lab for the NTFS bridge (exercised only through `icacls` on a Windows machine and unit tests); a Microsoft 365 tenant for the Office add-in (control plane tested, the add-in itself not loaded into Outlook); live AWS KMS (tested against a local AWS-protocol stub with the real SDK); custom-domain routing for branding; Resend inbound e-mail for customer-portal replies.
+A live Active Directory lab for the NTFS bridge (exercised only through `icacls` on a Windows machine and unit tests); a Microsoft 365 tenant for the Office add-in (control plane tested, the add-in itself not loaded into Outlook); live AWS KMS (tested against a local AWS-protocol stub with the real SDK); custom-domain routing for branding; Resend inbound e-mail for customer-portal replies.
 
 ## 6. Files, routes, collections
 
@@ -64,11 +63,13 @@ Per-item file, route and collection lists are in `docs/competitive-expansion-imp
 
 ## 8. Desktop
 
-No desktop-specific code was written for this SOW. The two desktop apps (`inaya-desktop`, `inaya-dapp-desktop`) load the hosted web application in their main window, so every web surface above (chat, notes, shares, governance views) is available inside them once the site is deployed and the organization has the flag on. **Not built**: a standalone chat window, tray notifications, native local-cache controls, native smart-sync indicators (DESKTOP-001, CHAT-022 stay PLANNED). A known hazard for any future pop-out: two windows of one browser profile share one device store, and the chat client does not coordinate between windows; this was not tested.
+Built in `inaya-desktop` (the Business Workspace app; the wallet dApp wrapper is not a chat surface) and the web code it hosts: a standalone chat window, a one-owner-window guard with handoff, native chat alerts and a tray unread tooltip that carry a number only, a "Desktop app" device identity, erase-history and remove-device controls, an organization sign-out policy (keep, clear, revoke) applied at sign-out, and offline indicators. DirectSync, Drive, secure links and the tray already existed. Details and limits: `docs/architecture/desktop-secure-chat.md`.
+
+Verified: server tests (`test/desktop-chat.test.mjs`, 4/4), `cargo test chat_alert_tests` (2/2), `cargo check`, and a real-browser pass with a stand-in native bridge (handoff between two tabs, pop-out call, offline banner, alert and tooltip calls, sign-out `clear` and `revoke` effects on the local store and on the server). **Not yet run inside the real desktop window**: that needs the web release deployed and a new desktop build. Not built: smart-sync placeholder files and sync-state overlays.
 
 ## 9. Mobile
 
-No mobile code was written. `inaya-mobile` is a separate React Native repository whose existing Business Workspace screens are native; the chat client depends on browser WebCrypto Ed25519/X25519 and IndexedDB, which would need a different key and storage layer on device, with secure-store key custody and a biometric gate. That work could not be verified without a device or emulator here, and the mobile repository is published by its owner over the air, so nothing was pushed to it. CHAT-021, MOBILE-001 and CHAT-023 are open.
+No mobile code was written. `inaya-mobile` is a separate React Native repository whose existing Business Workspace screens are native; the chat client depends on browser WebCrypto Ed25519/X25519 and IndexedDB, which would need a different key and storage layer on device, with secure-store key custody and a biometric gate. That work could not be verified without a device or emulator here, and the mobile repository is published by its owner over the air, so nothing was pushed to it. CHAT-021, MOBILE-001 and CHAT-023 (mobile chat notifications) are open; the owner has deferred the mobile work for now.
 
 ## 10. Database migrations
 
@@ -120,7 +121,7 @@ Measured by `test/performance.test.mjs`, against a database 200 ms away from the
 2. **MLS library maturity.** Real MLS through an unaudited library; an external review is advisable before relying on it for the most sensitive conversations.
 3. **Legacy delete route.** The Business Workspace document delete route was not re-verified against legal hold (GOV-004).
 4. **Pre-existing background jobs** were not rewired through the reliability wrapper; only the four added by the SOW were.
-5. **Two windows, one device store** in the same browser profile (see section 8); untested.
+5. **Window handoff** takes a few seconds (up to one 15 s update) and relies on the Web Locks API; where it is missing the one-owner guard is skipped.
 6. **Metrics catalog** is fixed by design; new metrics need a code change. Client-reported figures exist only when clients report.
 7. **No production-scale load or soak test** was run.
 
@@ -133,7 +134,7 @@ Measured by `test/performance.test.mjs`, against a database 200 ms away from the
 - No claim of active-active replication or of a measured RTO beyond the sample-only recovery test.
 - No claim of parity with any competitor product; the competitive analyses compare capabilities, not quality.
 - No claim that a single SDK or CLI can read chat or notes.
-- The mobile and desktop surfaces described in the SOW are not delivered (sections 8 and 9).
+- The mobile surfaces described in the SOW are not delivered (section 9), and the desktop surface is delivered with the limits in section 8.
 
 ## 18. Honesty and security checklist (SOW section 59)
 
@@ -203,8 +204,8 @@ Run the suites serially (shared database) and read the log after the run; do not
 | CHAT-019 | PARTIAL | test/chat-protocol.test.mjs, test/chat-features.test.mjs, test/chat-routes.test.mjs | no | no | Covered: substitution, replay, rogue add/remove, stale epoch, cross-tenant, attachments, malformed/oversized, log/notification leakage. Not yet: forged read events, removed-participant replay of old ciphertext. |
 | CHAT-020 | PARTIAL | none | yes | no | 3-column UI works in a real browser (create, send, receive, reload restore). Group, attachments, contacts panel, mobile width still to verify. |
 | CHAT-021 | PLANNED | none | no | no | Mobile screens not started. |
-| CHAT-022 | PLANNED | none | no | no |  |
-| CHAT-023 | NOT_CONFIGURED | none | no | no | Needs push credentials; adapter not written yet. |
+| CHAT-022 | IMPLEMENTED_NOT_LIVE | test/desktop-chat.test.mjs | yes | yes | Desktop (inaya-desktop, the Business Workspace app; the wallet dApp app is not a chat surface). Built: standalone chat window button, one-owner-window guard with handoff, native alert + tray tooltip (count only), desktop device identity (Desktop app / windows/ |
+| CHAT-023 | PLANNED | none | no | no | Mobile push notifications for chat. Part of the mobile work, which the owner deferred for now; nothing built. |
 | CONTACT-001 | IMPLEMENTED_NOT_LIVE | test/chat-features.test.mjs, test/chat-routes.test.mjs | no | no | Request/accept/deny/cancel tested; contacts panel not browser verified. |
 | CONTACT-002 | IMPLEMENTED_NOT_LIVE | test/chat-features.test.mjs | no | no | Remove/block/unblock tested. |
 | CONTACT-003 | IMPLEMENTED_NOT_LIVE | test/chat-features.test.mjs | no | no | Presence privacy and appear-offline tested. |
@@ -288,7 +289,7 @@ Run the suites serially (shared database) and read the log after the run; do not
 | UX-001 | VERIFIED | test/phase8.test.mjs | yes | no | List and grid, filters (all, favorites, pinned, recent, shared with me, locked, legal hold, classification, tag), favorites, pins, personal tags and recents, classification/lock/hold badges; checked in the browser against seeded documents. |
 | UX-002 | PARTIAL | test/phase8.test.mjs | yes | no | Admin Dashboard and Webhooks added to the navigation by role; the command palette now finds documents, shares, requests and pages and navigates to them (checked in the browser). Notes and chat are not searched from the palette (end-to-end encrypted). |
 | MOBILE-001 | PLANNED | none | no | no |  |
-| DESKTOP-001 | PLANNED | none | no | no |  |
+| DESKTOP-001 | PARTIAL | test/desktop-chat.test.mjs | no | no | Chat, notes, locks, endpoint backup, device inventory, gateway views and the secure viewer already run inside the desktop window because it hosts the web app; DirectSync, Drive mount, secure link creation and tray already existed natively. Added this pass: cha |
 | PERF-001 | PARTIAL | test/performance.test.mjs | no | no | Chat send path cut from about 17 to about 8 sequential database round trips (acknowledgment itself about 5); measured p95 1.7 s for the whole path at a 200 ms database round trip (3.4 s before); every list endpoint caps page size; dashboard tiles over event da |
 | RELIAB-001 | VERIFIED | test/job-reliability.test.mjs | no | yes | withJobRun: atomic lease (partial unique index), stale takeover, bounded backoff retries, redacted failures, minimum interval, tenant scoping; the four crons added by this SOW run through it. Crons that existed before the SOW were not rewired. 8/8 against the  |
 | OBS-001 | PARTIAL | test/metrics.test.mjs | yes | yes | Fixed-catalog counters (free text can never become a label), live gauges, org endpoint for admins/auditors, token-gated platform Prometheus export with no org id or e-mail, client reporter. Browser-verified: a message sent from the chat UI produced a delivery- |
@@ -296,4 +297,3 @@ Run the suites serially (shared database) and read the log after the run; do not
 | TEST-001 | PARTIAL | test/metrics.test.mjs, test/performance.test.mjs | no | no | Final run 2026-10-05: 20 suites / 189 tests against the real database (chat x3, devices, gateway x2, governance x3, sharing x3, notes, keys, compliance, metrics, phase8, jobs, tenant scan, performance): 184 passed, 5 chat-routes failures traced to my own brows |
 | MIGRATE-001 | VERIFIED | test/performance.test.mjs | no | no | Dry run and --apply run against the dev database: 82 collections referenced, all additive; index setup is lazy per module and --apply warms five modules (others create theirs on first use); every flag unset by default. Rollback is a flag switch, documented; no |
 | FINAL-001 | PARTIAL | none | no | no | Report written with the 20 required parts and the section 59 checklist. It states that mobile and desktop surfaces are not delivered, which is why the SOW as a whole is not complete. |
-

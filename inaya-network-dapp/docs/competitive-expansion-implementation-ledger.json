@@ -380,6 +380,29 @@
       "title": "Chat desktop surface",
       "priority": "P2",
       "sow": "A9",
+      "status": "IMPLEMENTED_NOT_LIVE",
+      "files": [
+        "src/components/business/chat/desktop.js",
+        "src/components/business/chat/signOut.js",
+        "src/components/business/chat/useChat.js",
+        "src/components/business/chat/ChatView.js",
+        "src/components/business/OfflineBanner.js",
+        "../inaya-desktop/src-tauri/src/lib.rs"
+      ],
+      "routes": [],
+      "collections": [],
+      "tests": [
+        "test/desktop-chat.test.mjs"
+      ],
+      "browserVerified": true,
+      "securityReviewed": true,
+      "notes": "Desktop (inaya-desktop, the Business Workspace app; the wallet dApp app is not a chat surface). Built: standalone chat window button, one-owner-window guard with handoff, native alert + tray tooltip (count only), desktop device identity (Desktop app / windows|macos|linux), erase-history and remove-device buttons, org sign-out policy (keep/clear/revoke) applied at sign-out, offline indicator. Verified in a real browser with a stubbed native bridge (calls observed: open_module_window, notify_chat_message, set_chat_unread) and cargo test for the alert text. NOT run inside the real desktop app window yet: needs the web release deployed and a new desktop build."
+    },
+    {
+      "id": "CHAT-023",
+      "title": "Mobile push without plaintext (adapter)",
+      "priority": "P1",
+      "sow": "A6",
       "status": "PLANNED",
       "files": [],
       "routes": [],
@@ -387,21 +410,7 @@
       "tests": [],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
-    },
-    {
-      "id": "CHAT-023",
-      "title": "Mobile push without plaintext (adapter)",
-      "priority": "P1",
-      "sow": "A6",
-      "status": "NOT_CONFIGURED",
-      "files": [],
-      "routes": [],
-      "collections": [],
-      "tests": [],
-      "browserVerified": false,
-      "securityReviewed": false,
-      "notes": "Needs push credentials; adapter not written yet."
+      "notes": "Mobile push notifications for chat. Part of the mobile work, which the owner deferred for now; nothing built."
     },
     {
       "id": "CONTACT-001",
@@ -2069,14 +2078,19 @@
       "title": "Desktop: chat, notes, locking, endpoint backup, device inventory, smart-sync indicators",
       "priority": "P2",
       "sow": "40",
-      "status": "PLANNED",
-      "files": [],
+      "status": "PARTIAL",
+      "files": [
+        "../inaya-desktop/src-tauri/src/lib.rs",
+        "src/components/business/chat/desktop.js"
+      ],
       "routes": [],
       "collections": [],
-      "tests": [],
+      "tests": [
+        "test/desktop-chat.test.mjs"
+      ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": ""
+      "notes": "Chat, notes, locks, endpoint backup, device inventory, gateway views and the secure viewer already run inside the desktop window because it hosts the web app; DirectSync, Drive mount, secure link creation and tray already existed natively. Added this pass: chat window, chat alerts, unread tooltip, cache and device controls, sign-out policy, offline indicators. NOT built: smart-sync placeholder files/indicators, a native local-cache size manager beyond the chat buttons."
     },
     {
       "id": "PERF-001",

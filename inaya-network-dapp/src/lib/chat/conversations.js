@@ -132,14 +132,19 @@ async function orgAllowsExternal(orgId) {
 export async function getChatSettings(orgId) {
   const { orgs } = await getOrgCollections();
   const o = await orgs.findOne({ _id: new ObjectId(orgId) }, { projection: { chatSettings: 1 } });
-  return { allowExternal: !!o?.chatSettings?.allowExternal, allowEditing: o?.chatSettings?.allowEditing !== false, allowDeleting: o?.chatSettings?.allowDeleting !== false };
+  const sp = o?.chatSettings?.signOutPolicy;
+  return { allowExternal: !!o?.chatSettings?.allowExternal, allowEditing: o?.chatSettings?.allowEditing !== false, allowDeleting: o?.chatSettings?.allowDeleting !== false, signOutPolicy: SIGN_OUT_POLICIES.includes(sp) ? sp : "keep" };
 }
+
+/** What signing out of the app does to this device's local chat data: keep it, erase the local copy, or erase it and revoke the device. */
+export const SIGN_OUT_POLICIES = ["keep", "clear", "revoke"];
 
 export async function setChatSettings({ orgId, membership, actorEmail, patch }) {
   if (!canManageOrg(membership)) fail(403, "Only the owner or an admin can change chat settings.");
   const { orgs } = await getOrgCollections();
   const set = {};
   for (const k of ["allowExternal", "allowEditing", "allowDeleting"]) if (typeof patch?.[k] === "boolean") set[`chatSettings.${k}`] = patch[k];
+  if (patch?.signOutPolicy !== undefined) { if (!SIGN_OUT_POLICIES.includes(patch.signOutPolicy)) fail(400, "signOutPolicy must be keep, clear or revoke."); set["chatSettings.signOutPolicy"] = patch.signOutPolicy; }
   if (!Object.keys(set).length) fail(400, "Nothing to change.");
   await orgs.updateOne({ _id: new ObjectId(orgId) }, { $set: set });
   await logOrgActivity({ orgId, recordType: "CHAT_SETTINGS", recordId: orgId, actorEmail, action: "UPDATED", previousState: null, newState: set, metadata: {} });

@@ -13,6 +13,7 @@ import EmptyState from "../../EmptyState";
 import { NotePicker } from "../notes/NotesView";
 import { inayaNoteRef } from "../../../lib/chat/client/attachments";
 import { reportMetric } from "./reportMetric.js";
+import { isDesktopApp, popOutChat } from "./desktop.js";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -118,11 +119,18 @@ function ContactsPanel({ client, onClose }) {
 
 export default function ChatView({ orgId, email, canManage }) {
   const chat = useChat({ orgId, email });
-  const { status, error, conversations, titles, last, peers, tick } = chat;
+  const { status, error, takeOver, conversations, titles, last, peers, tick } = chat;
   const [sel, setSel] = useState(null); const [detail, setDetail] = useState(null); const [msgs, setMsgs] = useState([]);
   const [text, setText] = useState(""); const [files, setFiles] = useState([]); const [noteRef, setNoteRef] = useState(null); const [pickNote, setPickNote] = useState(false); const [sendErr, setSendErr] = useState(""); const [sending, setSending] = useState(false);
   const [search, setSearch] = useState(""); const [hits, setHits] = useState([]); const [showNew, setShowNew] = useState(false); const [showContacts, setShowContacts] = useState(false);
   const [typing, setTyping] = useState([]); const [online, setOnline] = useState({}); const [receipts, setReceipts] = useState([]); const [prefs, setPrefs] = useState({ appearOffline: false });
+  const [netOnline, setNetOnline] = useState(true); const [usage, setUsage] = useState(null);
+  useEffect(() => {
+    const sync = () => setNetOnline(navigator.onLine !== false); sync();
+    window.addEventListener("online", sync); window.addEventListener("offline", sync);
+    return () => { window.removeEventListener("online", sync); window.removeEventListener("offline", sync); };
+  }, []);
+  useEffect(() => { navigator.storage?.estimate?.().then((e) => setUsage(e?.usage ?? null)).catch(() => {}); }, [status, tick]);
   const [showInfo, setShowInfo] = useState(false); const [orgSettings, setOrgSettings] = useState(null); const [addEmail, setAddEmail] = useState(""); const [renaming, setRenaming] = useState(""); const endRef = useRef(null); const lastTyping = useRef(0);
   const client = chat.client();
 
@@ -195,6 +203,8 @@ export default function ChatView({ orgId, email, canManage }) {
   if (status === "unsupported") return <EmptyState title="This browser cannot run Secure Chat" description="Secure Chat needs a modern browser with WebCrypto and IndexedDB. Use the desktop app or a current browser." />;
   if (status === "off") return <EmptyState title="Secure Chat is not enabled" description={canManage ? "Ask your platform contact to enable FEATURE_SECURE_CHAT for this organization, or enable it from Settings." : "Your organization has not turned on Secure Chat yet."} />;
   if (status === "error") return <EmptyState title="Secure Chat could not start" description={error} />;
+  if (status === "elsewhere") return <EmptyState title="Secure Chat is open in another window" description="Only one window can run Secure Chat at a time, so its encrypted conversations stay consistent. Use it here and the other window will stop." ctaLabel="Use Secure Chat in this window" onCta={takeOver} />;
+  if (status === "switching") return <p className={`text-sm ${muted}`}>Switching Secure Chat to this window… the other window finishes its current update first, which can take a few seconds.</p>;
   if (status === "starting" || !client) return <p className={`text-sm ${muted}`}>Setting up end-to-end encryption on this device…</p>;
 
   const visible = conversations.filter((c) => !c.archived && (c.status === "active" || c.status === "pending"));
@@ -202,6 +212,11 @@ export default function ChatView({ orgId, email, canManage }) {
   const unreadTotal = visible.reduce((n, c) => n + (c.unread || 0), 0);
 
   return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap text-[11px]" aria-label="Connection and window">
+        <span data-testid="chat-online" className={`px-2 py-0.5 rounded-full border ${netOnline ? "border-emerald-500/40 text-emerald-300" : "border-amber-500/50 text-amber-300"}`}>{netOnline ? "Online" : "Offline: messages are saved on this device and send when you reconnect"}</span>
+        {isDesktopApp() && <button className={btn} onClick={() => popOutChat()}>Open Secure Chat in its own window</button>}
+      </div>
     <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_280px] gap-3 min-h-[70vh]">
       {/* left */}
       <div className={`${card} p-3 flex flex-col`}>
@@ -219,7 +234,7 @@ export default function ChatView({ orgId, email, canManage }) {
               {c.unread > 0 && <span aria-label={`${c.unread} unread`} className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#00f2fe] text-black text-[10px] font-bold flex items-center justify-center">{c.unread}</span>}
             </button>))}
         </div>
-        <p className={`text-[10px] ${muted} mt-2`}>{unreadTotal ? `${unreadTotal} unread · ` : ""}This browser is one device. Chats on other devices are separate and new devices see only new messages.</p>
+        <p className={`text-[10px] ${muted} mt-2`}>{unreadTotal ? `${unreadTotal} unread · ` : ""}{isDesktopApp() ? "This app is one device." : "This browser is one device."} Chats on other devices are separate and new devices see only new messages.</p>
       </div>
 
       {/* center */}
@@ -284,9 +299,19 @@ export default function ChatView({ orgId, email, canManage }) {
             <>
               <h4 className="text-xs font-bold uppercase mt-5 mb-2">Organization chat policy</h4>
               {!orgSettings && <button className={btn} onClick={async () => { try { setOrgSettings(await client.api.chatSettings()); } catch (e) { setSendErr(e.message); } }}>Show settings</button>}
+              {orgSettings && <label className="text-xs block mb-2">When someone signs out of the app
+                <select aria-label="Sign-out policy" value={orgSettings.signOutPolicy || "keep"} onChange={async (e) => { try { setOrgSettings(await client.api.setChatSettings({ signOutPolicy: e.target.value })); } catch (er) { setSendErr(er.message); } }} className="block w-full mt-1 bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg px-2 py-1">
+                  <option value="keep">Keep chat data on the device</option><option value="clear">Erase message history on the device</option><option value="revoke">Revoke the device and erase everything</option>
+                </select></label>}
               {orgSettings && [["allowExternal", "Allow people outside the organization"], ["allowEditing", "Allow editing messages"], ["allowDeleting", "Allow deleting messages"]].map(([k, label]) => (
                 <label key={k} className="text-xs flex items-center gap-2 mb-1"><input type="checkbox" checked={!!orgSettings[k]} onChange={async (e) => { try { setOrgSettings(await client.api.setChatSettings({ [k]: e.target.checked })); } catch (er) { setSendErr(er.message); } }} />{label}</label>))}
             </>)}
+          <h4 className="text-xs font-bold uppercase mt-5 mb-2">This device</h4>
+          <p className={`text-[11px] ${muted} mb-2`}>Local storage used by Inaya here{usage != null ? `: about ${(usage / 1048576).toFixed(1)} MB (everything Inaya stores on this device, not only chat)` : ""}.</p>
+          <div className="flex flex-col gap-2 mb-2">
+            <button className={btn} onClick={async () => { if (window.confirm("Erase the message history stored on this device? Messages sent to you earlier cannot be fetched again. The device stays signed in to Secure Chat.")) { const r = await client.clearCache(); setSendErr(""); setSel(null); window.alert(`Erased ${r.erased} stored item(s). New messages will appear as they arrive.`); window.location.reload(); } }}>Erase message history on this device</button>
+            <button className={btn} onClick={async () => { if (window.confirm("Remove this device from Secure Chat? Its keys and all chat data here are erased and it can no longer read anything. Opening Secure Chat again sets up a new device that sees only new messages.")) { try { await client.api.revokeDevice(client.device.deviceId); } catch { /* already revoked */ } await client.wipeLocal(); window.location.reload(); } }}>Remove this device from Secure Chat</button>
+          </div>
           <h4 className="text-xs font-bold uppercase mt-5 mb-2">Privacy</h4>
           <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={!!prefs.appearOffline} onChange={async (e) => setPrefs(await client.api.setPrefs({ appearOffline: e.target.checked }))} />Appear offline</label>
           <p className={`text-[10px] ${muted} mt-4`}>The server stores only encrypted messages and who/when. Notifications never include message text. Device: {client.device.deviceId.slice(0, 8)}…</p>
@@ -296,6 +321,7 @@ export default function ChatView({ orgId, email, canManage }) {
       {pickNote && <NotePicker orgId={orgId} email={email} onClose={() => setPickNote(false)} onPick={(n) => { setNoteRef(n); setPickNote(false); }} />}
       {showNew && <NewChat client={client} me={email} onClose={() => setShowNew(false)} onCreate={async ({ kind, emails, name }) => { const r = await chat.run(async (c) => { const x = await c.createConversation({ kind, emails }); if (name && kind === "group") await c.rename(x.conversationId, name); return x; }); setSel(r.conversationId); }} />}
       {showContacts && <ContactsPanel client={client} onClose={() => setShowContacts(false)} />}
+    </div>
     </div>
   );
 }

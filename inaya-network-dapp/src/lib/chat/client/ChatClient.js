@@ -416,6 +416,10 @@ export class ChatClient {
     return p.fingerprints.map((f) => f.fingerprint).filter(Boolean).sort().join("|").slice(0, 120);
   }
 
+  /** Erases the readable history on this device (decrypted messages and unsent drafts) but keeps the device identity and group state, so it stays a working member.
+   *  Erased history cannot be fetched again: old messages cannot be decrypted a second time. */
+  async clearCache() { let n = 0; for (const p of ["msgs:", "outbox:"]) for (const k of await this.store.keys(p)) { await this.store.delete(k); n++; } return { erased: n }; }
+
   /** Sign-out / revoked device: delete every secret and cache from this device. */
   async wipeLocal() { await this.store.clear(); this.device = null; this.kps = {}; this.pins = {}; this.rosters = {}; }
 }

@@ -248,6 +248,42 @@ fn notify_pending_approvals(app: tauri::AppHandle, count: u32, filename: String,
         .map_err(|e| e.to_string())
 }
 
+// Secure Chat alerts (Competitive Expansion SOW A9). The web app decrypts messages inside this window, so the only thing that ever reaches the
+// native side is a number. The alert text is generic on purpose: no sender, no conversation title, no message text -- a notification can be read
+// by anyone standing near the screen and is kept by the operating system's notification history.
+fn chat_notification_text(count: u32) -> (String, String) {
+    let body = match count {
+        0 => "You have no unread secure messages.".to_string(),
+        1 => "You have 1 unread secure message.".to_string(),
+        n => format!("You have {} unread secure messages.", n),
+    };
+    ("Inaya Secure Chat".to_string(), body)
+}
+
+fn chat_tray_tooltip(count: u32) -> String {
+    if count == 0 { "Inaya Business Workspace".to_string() } else { format!("Inaya Business Workspace ({} unread secure messages)", count) }
+}
+
+#[tauri::command]
+fn notify_chat_message(app: tauri::AppHandle, window: tauri::WebviewWindow, count: u32) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    if count == 0 {
+        return Ok(());
+    }
+    let (title, body) = chat_notification_text(count);
+    app.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
+}
+
+// Keeps the tray icon's tooltip in step with the unread total, so a hidden window still shows that something is waiting.
+#[tauri::command]
+fn set_chat_unread(app: tauri::AppHandle, window: tauri::WebviewWindow, count: u32) -> Result<(), String> {
+    verify_trusted_origin(&window)?;
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        tray.set_tooltip(Some(chat_tray_tooltip(count))).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn notify_security_event(app: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
     app.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
@@ -697,6 +733,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             notify_pending_approvals,
             notify_security_event,
+            notify_chat_message,
+            set_chat_unread,
             block_ip,
             unblock_ip,
             store_passkey_secure,
@@ -795,7 +833,7 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
-            TrayIconBuilder::new()
+            TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&tray_menu)
                 .show_menu_on_left_click(false)
@@ -898,6 +936,28 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod chat_alert_tests {
+    use super::*;
+
+    #[test]
+    fn alert_text_is_generic_and_counts_correctly() {
+        assert_eq!(chat_notification_text(1).1, "You have 1 unread secure message.");
+        assert_eq!(chat_notification_text(7).1, "You have 7 unread secure messages.");
+        assert_eq!(chat_notification_text(0).1, "You have no unread secure messages.");
+        // The alert can only ever contain what this function builds from a number.
+        let (title, body) = chat_notification_text(3);
+        assert_eq!(title, "Inaya Secure Chat");
+        assert!(!body.contains('@') && !body.contains(':'));
+    }
+
+    #[test]
+    fn tray_tooltip_reflects_the_unread_total() {
+        assert_eq!(chat_tray_tooltip(0), "Inaya Business Workspace");
+        assert_eq!(chat_tray_tooltip(4), "Inaya Business Workspace (4 unread secure messages)");
+    }
 }
 
 #[cfg(test)]
