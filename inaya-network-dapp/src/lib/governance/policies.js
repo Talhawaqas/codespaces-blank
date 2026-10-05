@@ -178,5 +178,5 @@ export function scopeMatches(scope, ctx) {
 export async function effectivePolicies({ orgId, type, ctx = {}, now = new Date() }) {
   const policies = await col(); const iso = now.toISOString();
   const rows = await policies.find({ orgId: toObjectId(orgId), type, status: "published", $and: [{ $or: [{ effectiveAt: null }, { effectiveAt: { $lte: iso } }] }, { $or: [{ expiresAt: null }, { expiresAt: { $gt: iso } }] }] }).sort({ precedence: 1, priority: 1, createdAt: 1 }).toArray();
-  return rows.filter((p) => scopeMatches(p.scope, ctx));
+  return ctx === null ? rows : rows.filter((p) => scopeMatches(p.scope, ctx)); // ctx === null: every published policy of the type (the caller applies each policy's scope itself)
 }

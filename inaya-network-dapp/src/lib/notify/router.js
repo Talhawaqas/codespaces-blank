@@ -29,6 +29,7 @@ export const EVENTS = {
   "share.revoked": { label: "A share link was revoked", defaults: { inApp: true }, severity: "info", generic: "A share link was revoked.", webhook: "share.revoked" },
   "dlp.blocked": { label: "An action was blocked by data protection", defaults: { inApp: true, email: true }, severity: "warning", generic: "A data protection rule blocked an action.", webhook: "dlp.decision" },
   "classification.changed": { label: "A file's classification changed", defaults: { inApp: true }, severity: "info", generic: "A file's classification changed." },
+  "governance.review": { label: "Documents need a retention review", defaults: { inApp: true, email: true }, severity: "info", generic: "Some documents reached the end of their retention period." },
   "backup.failed": { label: "A backup failed", defaults: { inApp: true, email: true, desktop: true }, severity: "warning", generic: "A backup run failed.", webhook: "backup.event" },
   "resilience.failed": { label: "A resilience test failed", defaults: { inApp: true, email: true }, severity: "critical", generic: "A resilience test failed.", webhook: "resilience.event" },
   "chat.message": { label: "New chat message", defaults: { inApp: true, push: true, desktop: true }, severity: "info", generic: "You have a new message." },

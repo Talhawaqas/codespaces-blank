@@ -29,6 +29,10 @@
       "schedule": "15 * * * *"
     },
     {
+      "path": "/api/cron/governance-lifecycle",
+      "schedule": "30 3 * * *"
+    },
+    {
       "path": "/api/cron/org-webhooks",
       "schedule": "* * * * *"
     },

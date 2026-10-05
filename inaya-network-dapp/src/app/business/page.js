@@ -76,6 +76,7 @@ import CloudBackupSchedulerView from "../../components/business/CloudBackupSched
 import DirectSyncView from "../../components/business/DirectSyncView";
 import ChatView from "../../components/business/chat/ChatView";
 import OfflineBanner from "../../components/business/OfflineBanner";
+import StepUpPrompt, { fetchWithStepUp } from "../../components/StepUpPrompt";
 import { applyChatSignOutPolicy, searchLiveChat } from "../../components/business/chat/signOut";
 import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
@@ -163,7 +164,7 @@ async function fetchShardFromIPFS(cid) {
 
 // ============================================================
 async function api(path, options) {
-  const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
+  const res = await fetchWithStepUp(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
   return data;
@@ -1220,6 +1221,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
 
         <main className="p-5 md:p-8 max-w-6xl">
           <OfflineBanner />
+          <StepUpPrompt />
           {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}

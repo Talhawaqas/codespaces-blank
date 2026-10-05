@@ -185,7 +185,7 @@
       "title": "Send/edit/delete/draft/retry/idempotency",
       "priority": "P1",
       "sow": "A4",
-      "status": "IMPLEMENTED_NOT_LIVE",
+      "status": "VERIFIED",
       "files": [],
       "routes": [],
       "collections": [],
@@ -194,9 +194,9 @@
         "test/chat-features.test.mjs",
         "test/desktop-chat.test.mjs"
       ],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": "Send/edit/delete/idempotency/offline outbox/retry tested; local drafts now kept per conversation in the sealed device store (never sent to the server, erased with history). Draft restore not clicked through in a browser."
+      "notes": "Send/edit/delete/idempotency/offline outbox/retry tested; local drafts verified in a real browser: restored after a reload, cleared on send, stored in the sealed device store only."
     },
     {
       "id": "CHAT-011",
@@ -244,9 +244,9 @@
       "tests": [
         "test/chat-features.test.mjs"
       ],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": false,
-      "notes": "A Document button opens a picker that searches only documents the person can already open (existing unified search) and attaches a reference (id, name); recipients still need their own access. Built and bundled; not clicked in a browser."
+      "notes": "A Document button opens a picker (verified in a real browser) that searches only documents the person can already open and attaches a reference; recipients still need their own access. Attaching and sending a reference was not clicked through."
     },
     {
       "id": "CHAT-014",
@@ -909,19 +909,24 @@
       "title": "Retention + archival + legal hold unified across file paths",
       "priority": "P2",
       "sow": "D4",
-      "status": "PARTIAL",
+      "status": "VERIFIED",
       "files": [
         "docs/architecture/content-governance-model.md",
-        "inaya-network-dapp/src/lib/governance/retention.js"
+        "inaya-network-dapp/src/lib/governance/retention.js",
+        "src/lib/governance/lifecycle.js",
+        "src/app/api/cron/governance-lifecycle/route.js"
       ],
-      "routes": [],
+      "routes": [
+        "GET /api/cron/governance-lifecycle"
+      ],
       "collections": [],
       "tests": [
-        "test/governance-retention.test.mjs"
+        "test/governance-retention.test.mjs",
+        "test/governance-lifecycle.test.mjs"
       ],
       "browserVerified": false,
       "securityReviewed": true,
-      "notes": "Published retention policies (object kept until it is N days old, within scope) and legal-hold policies with blockDeletion, plus the permanent retention class, are now enforced on delete, in-place overwrite and lifecycle expiry, on top of the existing per-object hold and lock; retiring a policy lifts it (real object store, 3/3). Not built: the automatic afterAction (archive/delete/review when the period ends), the archival-inactivity policy and the deletion-approval requirement."
+      "notes": "Published retention and legal-hold policies and the permanent class are enforced on delete, overwrite and lifecycle expiry; the daily governance-lifecycle job applies the period-end action (review: flag + tell administrators; archive; delete = hide like an S3 delete) for retention policies and archives inactive documents for archival policies, within each policy's scope, never touching held, locked or retention-locked objects, once per object per policy, through withJobRun. Not built: the deletion-approval requirement. Real database, 9/9 with retention tests."
     },
     {
       "id": "GOV-004",
@@ -1040,11 +1045,12 @@
       "title": "DLP actions incl. stronger auth, log-only, quarantine",
       "priority": "P2",
       "sow": "D3",
-      "status": "IMPLEMENTED_NOT_LIVE",
+      "status": "VERIFIED",
       "files": [
         "src/lib/governance/dlp.js",
         "src/lib/stepup.js",
-        "src/app/api/orgs/step-up/route.js"
+        "src/app/api/orgs/step-up/route.js",
+        "src/components/StepUpPrompt.js"
       ],
       "routes": [
         "POST /api/orgs/step-up"
@@ -1054,9 +1060,9 @@
         "test/governance.test.mjs",
         "test/stepup.test.mjs"
       ],
-      "browserVerified": false,
+      "browserVerified": true,
       "securityReviewed": true,
-      "notes": "ALLOW, DENY, REQUIRE_APPROVAL, LOG_ONLY, QUARANTINE and now REQUIRE_STRONGER_AUTH are real: a person with an authenticator app confirms a fresh code (POST /api/orgs/step-up), which opens a 10-minute window; wrong codes are limited and lock out, a used code cannot be replayed, and someone without an authenticator is refused. There is no on-screen prompt yet: an app that hits the rule gets STRONGER_AUTH_REQUIRED and must call the route."
+      "notes": "All six DLP actions are real. REQUIRE_STRONGER_AUTH: a person with an authenticator app confirms a fresh code (POST /api/orgs/step-up), opening a 10-minute window; wrong codes are limited and lock out, a used code cannot be replayed, someone without an authenticator is refused. The Business Workspace now shows an on-screen 'Confirm it is you' dialog when a request is refused for stronger authentication and retries once (browser-verified, including the no-authenticator message). Other parts of the app that call the server directly (not through the workspace helper) still show the plain error."
     },
     {
       "id": "DLP-003",
@@ -2070,7 +2076,7 @@
       "title": "Business Workspace navigation grouping + command palette entries",
       "priority": "P2",
       "sow": "36",
-      "status": "IMPLEMENTED_NOT_LIVE",
+      "status": "VERIFIED",
       "files": [
         "src/components/CommandPalette.js",
         "src/app/business/page.js",
@@ -2083,7 +2089,7 @@
       ],
       "browserVerified": true,
       "securityReviewed": false,
-      "notes": "Admin Dashboard and Webhooks in the navigation by role; the palette finds documents, shares, requests and pages and now also searches the chat history this device holds (local only, shown as 'Secure Chat · this device'). Notes are not searched from the palette: they are end-to-end encrypted and locked until opened. Palette change checked by build only, not clicked in a browser."
+      "notes": "Admin Dashboard and Webhooks in the navigation by role; the command palette finds documents, shares, requests and pages and the chat history this device holds (browser-verified: a sent message was found, shown as 'Secure Chat - this device'). Notes are not searched from the palette: they are end-to-end encrypted and locked until opened."
     },
     {
       "id": "MOBILE-001",
@@ -2183,7 +2189,7 @@
       ],
       "browserVerified": true,
       "securityReviewed": true,
-      "notes": "Fixed-catalog counters (free text can never become a label), live gauges, org endpoint for admins/auditors, a Usage panel on the Admin Dashboard, token-gated platform Prometheus export with no org id or e-mail, client reporter. Browser-verified: a chat message produced latency, rotation and message counters. The dashboard panel is built and bundled but not clicked in a browser."
+      "notes": "Fixed-catalog counters, live gauges, org endpoint, platform Prometheus export, client reporter, and a Usage panel on the Admin Dashboard (browser-verified: counters and the privacy line show)."
     },
     {
       "id": "DOC-001",
