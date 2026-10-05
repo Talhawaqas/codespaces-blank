@@ -404,7 +404,7 @@
       ],
       "browserVerified": true,
       "securityReviewed": true,
-      "notes": "Desktop (inaya-desktop, the Business Workspace app; the wallet dApp app is not a chat surface). Built: standalone chat window button, one-owner-window guard with handoff, native alert + tray tooltip (count only), desktop device identity (Desktop app / windows|macos|linux), erase-history and remove-device buttons, org sign-out policy (keep/clear/revoke) applied at sign-out, offline indicator. Verified in a real browser with a stubbed native bridge (calls observed: open_module_window, notify_chat_message, set_chat_unread) and cargo test for the alert text. NOT run inside the real desktop app window yet: needs the web release deployed and a new desktop build."
+      "notes": "Desktop (inaya-desktop). Built and now RUN in the real desktop app against the live site (isolated profile): the native bridge works, chat opens, the 'Online' pill and 'This app is one device' show, the pop-out button opens a second chat window, and notify_chat_message / set_chat_unread return ok. Real-run bugs found and fixed: the site could not call ANY native command (no window.__TAURI__, every call refused by the access rules) and open_module_window hung (it was a blocking command). Needs a new desktop build/release to reach installed copies. Not observed: the toast on screen, the tray tooltip text, and the one-owner guard between two desktop windows."
     },
     {
       "id": "CHAT-023",
@@ -2116,7 +2116,7 @@
       ],
       "browserVerified": false,
       "securityReviewed": false,
-      "notes": "Chat, notes, locks, endpoint backup, device inventory, gateway views and the secure viewer already run inside the desktop window because it hosts the web app; DirectSync, Drive mount, secure link creation and tray already existed natively. Added this pass: chat window, chat alerts, unread tooltip, cache and device controls, sign-out policy, offline indicators. NOT built: smart-sync placeholder files/indicators, a native local-cache size manager beyond the chat buttons."
+      "notes": "Chat, notes, locks, endpoint backup, device inventory, gateway views and the secure viewer run inside the desktop window because it hosts the web app; DirectSync, Drive mount, secure links and tray existed. Added: chat window, chat alerts, unread tooltip, cache and device controls, sign-out policy, offline indicators, DirectSync BLOCKED state. A real run in the desktop app found and fixed a pre-existing blocker (the site could not call any native command) so these features can work once a new build is released. NOT built: smart-sync placeholder files."
     },
     {
       "id": "PERF-001",

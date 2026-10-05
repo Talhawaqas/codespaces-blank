@@ -391,7 +391,7 @@ fn unblock_ip(window: tauri::WebviewWindow, ip: String, label: String) -> Result
 // verify_trusted_origin guard every other sensitive command here already
 // applies.
 #[tauri::command]
-fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow, label: String, path: String) -> Result<(), String> {
+async fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow, label: String, path: String) -> Result<(), String> {
     verify_trusted_origin(&window)?;
 
     // label becomes the actual Tauri window label (and its OS-level window

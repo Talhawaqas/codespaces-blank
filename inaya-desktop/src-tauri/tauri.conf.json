@@ -10,11 +10,16 @@
     "windows": [],
     "security": {
       "csp": null
-    }
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "appimage", "deb"],
+    "targets": [
+      "nsis",
+      "appimage",
+      "deb"
+    ],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
