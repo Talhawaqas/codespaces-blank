@@ -74,6 +74,7 @@ import BusinessEventsView from "../../components/business/BusinessEventsView";
 import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
 import DirectSyncView from "../../components/business/DirectSyncView";
+import CleanerView from "../../components/business/CleanerView";
 import ChatView from "../../components/business/chat/ChatView";
 import OfflineBanner from "../../components/business/OfflineBanner";
 import StepUpPrompt, { fetchWithStepUp } from "../../components/StepUpPrompt";
@@ -806,6 +807,7 @@ const NAV_ITEMS = [
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "directSync", label: "DirectSync", icon: "documents", group: "enterprise" },
+  { key: "cleaner", label: "Cleaner", icon: "health", group: "enterprise" },
   { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
   { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "nas", label: "Sovereign NAS", icon: "integrations", manageOnly: true, group: "enterprise" },
@@ -1118,6 +1120,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
     directSync: { title: "DirectSync", description: "Automatic local-folder backup into Inaya from the desktop app." },
+    cleaner: { title: "Cleaner", description: "Local-first scan for temporary and duplicate files on this computer." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
     nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage with RAID pools, snapshots and immutable protection, quotas, ACLs, backup and verified recovery, replication, ransomware response, evidence and What-If simulation." },
@@ -1272,6 +1275,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
           {activeView === "directSync" && <DirectSyncView />}
+          {activeView === "cleaner" && <CleanerView />}
           {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
           {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
           {activeView === "nas" && <NasManagementView orgId={orgId} />}
