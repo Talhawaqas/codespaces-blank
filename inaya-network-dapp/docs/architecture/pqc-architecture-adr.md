@@ -25,19 +25,30 @@ the content-encryption primitive for files, exactly as today.
 
 ## 2. Hybrid construction
 
-```
-sharedSecretClassical = X25519(ephemeralPriv, recipientX25519Pub)
-sharedSecretPQC, kemCiphertext = MLKEM768.encapsulate(recipientMlKemPub)
-wrappingKey = HKDF-SHA256(
-  ikm = sharedSecretClassical || sharedSecretPQC,
-  salt = envelope.salt,
-  info = "inaya-pqc-hybrid-v1" || recipientDeviceId || envelope.aad,
-)
+`@noble/post-quantum` ships a pre-built, documented hybrid KEM combiner — `KitchenSink_ml_kem768_x25519` (`hybrid.js`) — rather than
+leaving callers to hand-roll the combination. Per its own documentation, this preset's HKDF extract step takes
+`IKM = hybrid_prk || ss0 || ss1 || ct0 || pk0 || ct1 || pk1 || label` (zero salt) and its expand step fixes
+`info = len || 'shared_secret' || ''`, producing a fixed 32-byte output. We use this preset directly rather than reimplementing the
+combination ourselves:
+
+```js
+import { KitchenSink_ml_kem768_x25519 } from "@noble/post-quantum/hybrid.js";
+
+const { secretKey, publicKey } = KitchenSink_ml_kem768_x25519.keygen();           // per-device key pair
+const { cipherText, sharedSecret } = KitchenSink_ml_kem768_x25519.encapsulate(recipientPublicKey);
+const recovered = KitchenSink_ml_kem768_x25519.decapsulate(cipherText, secretKey);
 ```
 
-Both shared secrets contribute to the derived key (SOW §4.12); concatenation alone (`SHA256(a+b)`) is explicitly rejected by the SOW and
-not used here — the HKDF `info` parameter provides domain separation so this derivation can never collide with any other HKDF use
-elsewhere in the codebase (chat key derivation, sharing envelopes), even if the same raw secrets were ever reused.
+Smoke-verified in this repo (2026-10-07): `publicKey` 1216 bytes, `secretKey` 32 bytes, `cipherText` 1120 bytes, `sharedSecret` 32 bytes;
+encapsulate/decapsulate round-trips correctly; a corrupted ciphertext deterministically produces a *different* shared secret rather than
+silently succeeding (ML-KEM's implicit-rejection property, carried through the hybrid combiner).
+
+Both the classical (X25519) and PQC (ML-KEM-768) shared secrets contribute to the final output, and the construction is bound to the
+public keys and ciphertexts of both components, not a naive concatenation of the two raw secrets alone — satisfying SOW §4.12's
+domain-separation requirement using a library-maintained, documented combiner rather than an application-level `SHA256(a+b)`, which the
+SOW explicitly rejects. The resulting 32-byte `sharedSecret` is then used directly as the AES-256-GCM key-wrapping key for the file/content
+key being protected — no further application-level KDF step is needed, since the combiner's own HKDF expand already produces a
+uniformly-distributed, fixed-length key.
 
 A classical-only recipient (no ML-KEM public key registered) can still be served a `LEGACY_CLASSICAL` envelope (X25519 alone, today's
 existing scheme, byte-for-byte unchanged) when org policy allows it. `PQC_REQUIRED` policy rejects issuing a `LEGACY_CLASSICAL` envelope
@@ -45,15 +56,16 @@ outright rather than silently downgrading (§4.17).
 
 ## 3. Envelope format
 
+The hybrid preset's single `cipherText` output (1120 bytes) already internally packs both the ML-KEM-768 ciphertext (1088 bytes) and the
+X25519 ephemeral public key (32 bytes) per the combiner's own encoding — there is no separate classical-ephemeral-key field to carry:
+
 ```json
 {
   "version": 1,
-  "algorithm": "HYBRID-X25519-MLKEM768",
-  "kemCiphertext": "<base64>",
-  "classicalEphemeralPublicKey": "<base64>",
-  "salt": "<base64>",
+  "algorithm": "HYBRID-MLKEM768-X25519-KITCHENSINK",
+  "kemCiphertext": "<base64, 1120 bytes>",
   "nonce": "<base64>",
-  "wrappedKey": "<base64>",
+  "wrappedKey": "<base64, AES-256-GCM(sharedSecret, contentKey)>",
   "aad": "<base64>"
 }
 ```
