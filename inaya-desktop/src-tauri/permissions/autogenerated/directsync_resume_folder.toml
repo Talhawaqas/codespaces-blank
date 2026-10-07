@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-directsync-resume-folder"
+description = "Enables the directsync_resume_folder command without any pre-configured scope."
+commands.allow = ["directsync_resume_folder"]
+
+[[permission]]
+identifier = "deny-directsync-resume-folder"
+description = "Denies the directsync_resume_folder command without any pre-configured scope."
+commands.deny = ["directsync_resume_folder"]

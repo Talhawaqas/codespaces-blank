@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-unblock-ip"
+description = "Enables the unblock_ip command without any pre-configured scope."
+commands.allow = ["unblock_ip"]
+
+[[permission]]
+identifier = "deny-unblock-ip"
+description = "Denies the unblock_ip command without any pre-configured scope."
+commands.deny = ["unblock_ip"]

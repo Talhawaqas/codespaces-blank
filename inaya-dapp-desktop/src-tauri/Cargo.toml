@@ -1,6 +1,6 @@
 [package]
 name = "inaya-dapp-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Inaya Network -- installable desktop wrapper around the existing dApp (faucet, node registry, staking, KYC, referrals, watcher pioneer). No new features: same dApp, rendered from the same URL, with native OS integration (tray, menu, auto-update) around it. Wallet connection uses WalletConnect (no browser extension needed inside a native webview) -- MetaMask/Trust/Coinbase remain browser-only."
 authors = ["Inaya Network"]
 license = ""

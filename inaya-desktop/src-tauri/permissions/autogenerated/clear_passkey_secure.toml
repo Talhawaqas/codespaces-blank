@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-passkey-secure"
+description = "Enables the clear_passkey_secure command without any pre-configured scope."
+commands.allow = ["clear_passkey_secure"]
+
+[[permission]]
+identifier = "deny-clear-passkey-secure"
+description = "Denies the clear_passkey_secure command without any pre-configured scope."
+commands.deny = ["clear_passkey_secure"]

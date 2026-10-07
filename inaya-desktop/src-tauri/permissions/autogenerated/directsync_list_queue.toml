@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-directsync-list-queue"
+description = "Enables the directsync_list_queue command without any pre-configured scope."
+commands.allow = ["directsync_list_queue"]
+
+[[permission]]
+identifier = "deny-directsync-list-queue"
+description = "Denies the directsync_list_queue command without any pre-configured scope."
+commands.deny = ["directsync_list_queue"]

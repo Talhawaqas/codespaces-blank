@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-directsync-list-folders"
+description = "Enables the directsync_list_folders command without any pre-configured scope."
+commands.allow = ["directsync_list_folders"]
+
+[[permission]]
+identifier = "deny-directsync-list-folders"
+description = "Denies the directsync_list_folders command without any pre-configured scope."
+commands.deny = ["directsync_list_folders"]

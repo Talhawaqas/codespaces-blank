@@ -16,6 +16,10 @@
     "dialog:default",
     "dialog:allow-message",
     "dialog:allow-ask",
-    "dialog:allow-confirm"
+    "dialog:allow-confirm",
+    "allow-store-passkey-secure",
+    "allow-retrieve-passkey-secure",
+    "allow-clear-passkey-secure",
+    "allow-open-module-window"
   ]
 }

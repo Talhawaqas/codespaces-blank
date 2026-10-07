@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-notify-security-event"
+description = "Enables the notify_security_event command without any pre-configured scope."
+commands.allow = ["notify_security_event"]
+
+[[permission]]
+identifier = "deny-notify-security-event"
+description = "Denies the notify_security_event command without any pre-configured scope."
+commands.deny = ["notify_security_event"]

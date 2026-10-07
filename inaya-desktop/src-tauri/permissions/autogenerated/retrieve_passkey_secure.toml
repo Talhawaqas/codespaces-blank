@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-retrieve-passkey-secure"
+description = "Enables the retrieve_passkey_secure command without any pre-configured scope."
+commands.allow = ["retrieve_passkey_secure"]
+
+[[permission]]
+identifier = "deny-retrieve-passkey-secure"
+description = "Denies the retrieve_passkey_secure command without any pre-configured scope."
+commands.deny = ["retrieve_passkey_secure"]

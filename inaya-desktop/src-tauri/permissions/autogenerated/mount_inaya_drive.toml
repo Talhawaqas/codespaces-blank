@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mount-inaya-drive"
+description = "Enables the mount_inaya_drive command without any pre-configured scope."
+commands.allow = ["mount_inaya_drive"]
+
+[[permission]]
+identifier = "deny-mount-inaya-drive"
+description = "Denies the mount_inaya_drive command without any pre-configured scope."
+commands.deny = ["mount_inaya_drive"]

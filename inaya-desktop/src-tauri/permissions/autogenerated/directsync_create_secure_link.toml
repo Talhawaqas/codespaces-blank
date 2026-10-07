@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-directsync-create-secure-link"
+description = "Enables the directsync_create_secure_link command without any pre-configured scope."
+commands.allow = ["directsync_create_secure_link"]
+
+[[permission]]
+identifier = "deny-directsync-create-secure-link"
+description = "Denies the directsync_create_secure_link command without any pre-configured scope."
+commands.deny = ["directsync_create_secure_link"]
