@@ -899,6 +899,10 @@ export const completeFeatureGuide = {
             { heading: "Use it as a full superset.", body: "Every core web dApp feature is available, plus Business Workspace, Learn, and Security Layer — the mobile app is not a stripped-down companion, it's a complete client against the same backend as the web app." },
           ],
         },
+        {
+          type: "note",
+          text: "Android: Inaya Network is on the Google Play Store, published under a personal developer account while company registration is pending. As of October 2026 it's live in internal testing and verified working; closed testing (12 testers for 14 days) is the next step before a public production release. Business Workspace stays hidden in the Play edition — it's an emergency-access tool, not a daily-use mobile feature — while staking, the Watcher Pioneer Program, and file upload/download remain. Google Play Billing for pay-as-you-go storage purchases is deferred until mainnet; corporate storage reserves can still be purchased from the website.",
+        },
       ],
     },
     {
@@ -912,6 +916,10 @@ export const completeFeatureGuide = {
             { heading: "Install the main dApp desktop app.", body: "Download the separate desktop app for the main wallet/vault/staking dApp, for the same reason — a native, always-available window instead of a browser tab." },
             { heading: "Mount Inaya Drive from the desktop app.", body: "The Business Workspace desktop app can start and stop your Inaya Drive mount (Section 36) directly from its own interface, without a separate command-line step." },
           ],
+        },
+        {
+          type: "note",
+          text: "October 2026: found and fixed a real bug in both desktop apps where the website could not actually call most of the app's native features (chat notifications, the tray unread count, pop-out module windows, Inaya Drive mount, DirectSync) because Tauri's security allowlist was never wired to grant them permission — the apps looked installed and open but much of the native integration silently did nothing. Fixed, rebuilt, and re-signed for both apps, Windows and Linux; every installed copy needs the new release to pick up the fix, since that allowlist is compiled into the app rather than loaded from the website. The apps' auto-update signing key was also rotated after the original key's password turned out to be unrecoverable, and a second bug was found and fixed where the Business Workspace app's auto-updater had been silently checking the dApp's release instead of its own.",
         },
       ],
     },
@@ -975,6 +983,33 @@ export const completeFeatureGuide = {
     // =====================================================================
     {
       number: "54",
+      title: "Secure Collaboration — Chat, Notes, Sharing, and Enterprise Governance",
+      blocks: [
+        {
+          type: "lead",
+          text: "A competitive-expansion layer added to Business Workspace in October 2026, inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration, and the controls a large organization needs to run safely. Every feature below is off by default; an owner or administrator turns each one on from the beta-features panel.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Turn on Secure Chat.", body: "From Business Workspace Settings → Beta Features, enable Secure Chat. Messages are end-to-end encrypted on the MLS group-messaging standard (RFC 9420) — the server only ever stores and relays ciphertext, so even Inaya staff cannot read a conversation. Supports 1:1 and group chats, organization-wide chats, mute, archive, unread counts, and encrypted attachments." },
+            { heading: "Manage Contacts.", body: "Request, accept, and block contacts. People outside your organization can only be added if the owner allows it." },
+            { heading: "Use Secure Notes.", body: "Encrypted notes with version history, tags, and sharing — lighter weight than a full document, with the same client-side encryption as chat." },
+            { heading: "Share files with real controls.", body: "Share links can expire, limit how many times they're opened, require a password, restrict by network or email domain, carry a watermark, and be revoked at any time. File Requests let an outsider upload to you securely without seeing anything else." },
+            { heading: "Set governance policies.", body: "From Governance, configure classification labels, data-loss-prevention rules, and retention/legal-hold policies. Retention now runs on its own daily schedule and always respects legal holds and file locks." },
+            { heading: "Use the secure document viewer.", body: "Data Room 2.0 includes a secure viewer that shows a protected document without handing over a copy. It's honest about its limit: it cannot stop someone photographing their screen." },
+            { heading: "Manage devices.", body: "The device list lets an administrator trust, block, sign out, or revoke any device, with ransomware-style behavior signals and endpoint backup restore jobs." },
+            { heading: "Check compliance readiness.", body: "A readiness view against the NIST 800-53 control catalogue — reported honestly, with no certification or government authorization claimed." },
+          ],
+        },
+        {
+          type: "note",
+          text: "Honest ledger of 114 tracked deliverables for this expansion: 49 finished and independently checked against the real database and a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built (mobile chat and push notifications — left for later by deliberate choice). The Sovereign Gateway (an on-premises connector agent for a company's own file servers), the NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant. The chat protocol's open-source library implementation has not had an independent security audit.",
+        },
+      ],
+    },
+    {
+      number: "55",
       title: "Building on Inaya — SDK, CLI, and Node Operators",
       blocks: [
         {
@@ -990,7 +1025,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "55",
+      number: "56",
       title: "The Official Documentation Platform",
       blocks: [
         {
@@ -1011,7 +1046,7 @@ export const completeFeatureGuide = {
       ],
     },
     {
-      number: "56",
+      number: "57",
       title: "Network Stats, Status, and Getting Help",
       blocks: [
         {

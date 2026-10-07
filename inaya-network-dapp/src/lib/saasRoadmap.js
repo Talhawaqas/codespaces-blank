@@ -230,7 +230,7 @@ export const ROADMAP_STAGES = [
       "Combined download page for Windows & Linux",
     ],
     notes:
-      "Same Business Workspace, same permissions and encryption, running in its own window instead of a browser tab. macOS is not available yet.",
+      "Same Business Workspace, same permissions and encryption, running in its own window instead of a browser tab. macOS is not available yet. October 2026: found and fixed a real bug where the desktop app's security allowlist never actually granted the website permission to call most of its native features (chat notifications, tray unread count, pop-out module windows, DirectSync, Inaya Drive mount) — every installed copy needed a new signed build to pick up the fix, since that allowlist is compiled into the app, not loaded from the website. Also rotated the auto-update signing key after the original key's password turned out to be unrecoverable, and fixed the updater checking the wrong app's release.",
   },
   {
     number: 6,
@@ -657,6 +657,55 @@ export const ROADMAP_STAGES = [
     ],
     notes:
       "Live. 26 real tests passing across all three workstreams, including live runs against a real, disposable cloud sandbox created and destroyed for each test — not simulated. A real bug (an Evidence Graph collection-name mismatch) was found and fixed by the tests before shipping. Not built: read replicas / failover for the managed database (not yet verified through a real incident), and REGEX-type data-quality rules (the reference SQL connector has no portable REGEXP).",
+  },
+  {
+    number: 28,
+    title: "Secure Collaboration & Enterprise Governance — Competitive Expansion",
+    status: ROADMAP_STATUS.IN_PROGRESS,
+    description:
+      "A competitive-expansion layer inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration (chat, notes, sharing), and the controls a large organization needs (governance, classification, device management, compliance readiness) — built inside Inaya's existing encrypted storage and permission model rather than as a separate product. Every capability here is off by default; an organization turns it on for itself.",
+    securityStatement:
+      "Chat and notes are end-to-end encrypted on the device; an administrator cannot read them. Nothing here is claimed as a government certification or an independently audited cryptographic protocol unless it actually is one.",
+    groups: [
+      {
+        title: "Secure Chat & Notes",
+        items: [
+          "End-to-end encrypted chat on the MLS group-messaging standard (RFC 9420)",
+          "Contacts, groups, organization-wide chats, mute, archive, unread counts",
+          "Encrypted attachments, device-local drafts and search",
+          "Encrypted notes with history, tags and sharing",
+        ],
+      },
+      {
+        title: "Sharing & Governance",
+        items: [
+          "Expiring, password-protected, watermarked and revocable share links",
+          "Secure external file requests and file locks",
+          "Classification, data-loss rules, retention and legal hold",
+          "Data Room 2.0 and a secure document viewer",
+        ],
+      },
+      {
+        title: "Devices & Infrastructure",
+        items: [
+          "Device inventory, trust/block/revoke, ransomware behavior signals",
+          "Endpoint backup with restore jobs",
+          "Sovereign Gateway — an on-premises connector agent for a company's own file servers",
+          "Site replication, Microsoft 365/Outlook integration, customer portal file requests",
+        ],
+      },
+      {
+        title: "Compliance & Developer Tools",
+        items: [
+          "Readiness against the NIST 800-53 control catalogue (no certification claimed)",
+          "Customer-managed encryption keys",
+          "Webhooks, admin dashboard, branding, unified search",
+          "Public API, SDK, and CLI coverage for all of the above",
+        ],
+      },
+    ],
+    notes:
+      "Built across 26 workstreams and deployed to the live website behind off-by-default feature flags, 3–5 October 2026. Honest ledger of 114 tracked deliverables: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built (mobile chat and push notifications — left for later by deliberate choice, not an oversight). The Sovereign Gateway, NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant. The chat protocol's open-source library implementation has not had an independent security audit. The project's own final verification report states plainly that the SOW is not yet complete — this stage stays IN_PROGRESS until it is.",
   },
 ];
 
