@@ -45,7 +45,7 @@ test("registerDeviceKey: succeeds for the device's own owner, after the device h
   assert.equal(k.deviceId, deviceId);
   assert.equal(k.email, alice.email);
   assert.equal(k.status, "active");
-  assert.equal(k.algorithm, "HYBRID-MLKEM768-X25519-KITCHENSINK");
+  assert.equal(k.algorithm, "HYBRID-MLKEM768-X25519-HKDF-SHA256");
   assert.ok(k.keyId);
   assert.equal(k.publicKey, pub);
 });
