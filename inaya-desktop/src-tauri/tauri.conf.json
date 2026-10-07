@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Inaya Business Workspace",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "identifier": "com.inayanetwork.desktop",
   "build": {
     "frontendDist": "../dist"
@@ -32,9 +32,9 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/Talhawaqas/codespaces-blank/releases/latest/download/latest.json"
+        "https://github.com/Talhawaqas/codespaces-blank/releases/download/desktop-latest/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcwRjcwNTMyQTkwMjc2NEQKUldSTmRnS3BNZ1gzY043UGJIWUdLT3U5V21LRUNmUXY4QkxDQnNQYmdwb3Y5bjU5aVU4cXlONTUK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4OTY1NjQyQTVCQkU1MjEKUldRaDVidWxRbGFXK0RQaWJDK2o0ZUdqYm5SUWExVkZUV1h3ZENqL2VBdkErQ0FvUFF6b1RkYm8K"
     }
   }
 }

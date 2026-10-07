@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Inaya Network",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.inayanetwork.dapp",
   "build": {
     "frontendDist": "../dist"
@@ -30,7 +30,7 @@
       "endpoints": [
         "https://github.com/Talhawaqas/codespaces-blank/releases/download/dapp-desktop-latest/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJDQjRFN0Y3OEVDQjA3OEQKUldTTkI4dU85K2UwdkJsVVd5RnVKbEZVbWxIR1RGYkxmbEFvWGpUeEZOalJNcE5rUGRQdHVwMm8K"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVBOEQxRDFEN0VDOUFBRDMKUldUVHFzbCtIUjJONnZLSkxTM25Ob2ljUzNkYk84L2Q5VzhXdEJocC85dE5tbThlbFIvcWRIRjEK"
     }
   }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "inaya-desktop"
-version = "0.1.2"
+version = "0.1.3"
 description = "Inaya Business Workspace -- installable desktop wrapper around the existing web app. No new features: same Business Workspace (orgs, departments, projects, documents, workflow, permissions, sharing, AI Assistant), rendered from the same URL, with native OS integration (tray, notifications, menu, auto-update) around it."
 authors = ["Inaya Network"]
 license = ""
