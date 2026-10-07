@@ -26,6 +26,8 @@ const COMMANDS: &[&str] = &[
     "directsync_list_queue",
     "directsync_retry_failed",
     "directsync_create_secure_link",
+    "cleaner_scan",
+    "cleaner_cleanup",
 ];
 
 fn main() {

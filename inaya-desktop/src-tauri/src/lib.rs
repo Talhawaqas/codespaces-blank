@@ -20,6 +20,8 @@ use tauri_plugin_updater::UpdaterExt;
 
 mod directsync;
 use directsync::{DirectSyncCredential, DirectSyncState, FolderConfig, QueueEntry, SyncEngine};
+mod cleaner;
+use cleaner::{CleanupResult, ScanReport};
 
 const APP_URL: &str = "https://www.inayanetwork.com/business";
 const TRUSTED_ORIGIN: &str = "https://www.inayanetwork.com";
@@ -723,6 +725,35 @@ fn directsync_retry_failed(window: tauri::WebviewWindow, state: State<DirectSync
     Ok(requeued)
 }
 
+/// Inaya Cleaner (Internxt-inspired SOW, Workstream B): local-first scan for temporary and
+/// duplicate files. `extra_roots` (e.g. a user-chosen Downloads folder) is optional -- with none
+/// given, only the standard OS temp directories are scanned. The DirectSync SQLite state file and
+/// this app's own app-data directory are always protected, on top of cleaner.rs's own OS-level
+/// denylist (home root, Windows/Program Files, or /etc /usr /bin /sbin /boot /var/lib on Unix).
+#[tauri::command]
+fn cleaner_scan(window: tauri::WebviewWindow, app: tauri::AppHandle, extra_roots: Vec<String>) -> Result<ScanReport, String> {
+    verify_trusted_origin(&window)?;
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let mut extra_protected = vec![app_data_dir.join("directsync.sqlite"), app_data_dir.clone()];
+    extra_protected.dedup();
+    let protected = cleaner::protected_paths(Some(&app_data_dir), &extra_protected);
+    let temp_dirs = cleaner::default_temp_directories(&[]);
+    let duplicate_roots: Vec<std::path::PathBuf> = extra_roots.into_iter().map(std::path::PathBuf::from).collect();
+    Ok(cleaner::run_scan(&temp_dirs, &duplicate_roots, &protected))
+}
+
+/// Moves the user-selected, previously-scanned paths to the OS trash/recycle bin -- never a
+/// permanent delete (docs/architecture/cleaner-safety-adr.md §5). The protected-path check runs
+/// again here, independent of what the scan or the review UI showed (threat model T4/T5).
+#[tauri::command]
+fn cleaner_cleanup(window: tauri::WebviewWindow, app: tauri::AppHandle, paths: Vec<String>) -> Result<CleanupResult, String> {
+    verify_trusted_origin(&window)?;
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let extra_protected = vec![app_data_dir.join("directsync.sqlite"), app_data_dir.clone()];
+    let protected = cleaner::protected_paths(Some(&app_data_dir), &extra_protected);
+    Ok(cleaner::cleanup_selected(&paths, &protected))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -754,7 +785,9 @@ pub fn run() {
             directsync_list_folders,
             directsync_list_queue,
             directsync_retry_failed,
-            directsync_create_secure_link
+            directsync_create_secure_link,
+            cleaner_scan,
+            cleaner_cleanup
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

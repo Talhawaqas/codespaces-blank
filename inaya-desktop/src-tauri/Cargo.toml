@@ -37,6 +37,9 @@ notify-debouncer-full = "0.3"
 sha2 = "0.10"
 hex = "0.4"
 walkdir = "2"
+# Inaya Cleaner (Internxt-inspired SOW, Workstream B) -- cross-platform OS trash/recycle-bin
+# moves, so a cleanup is never a permanent delete by default (docs/architecture/cleaner-safety-adr.md).
+trash = "5"
 
 [dev-dependencies]
 # Used only by the ignored real-server end-to-end test (the same crate inaya-drive-core already compiles).

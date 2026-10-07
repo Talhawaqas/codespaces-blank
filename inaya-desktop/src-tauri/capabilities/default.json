@@ -38,6 +38,8 @@
     "allow-directsync-list-folders",
     "allow-directsync-list-queue",
     "allow-directsync-retry-failed",
-    "allow-directsync-create-secure-link"
+    "allow-directsync-create-secure-link",
+    "allow-cleaner-scan",
+    "allow-cleaner-cleanup"
   ]
 }
