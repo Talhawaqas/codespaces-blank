@@ -25,30 +25,46 @@ the content-encryption primitive for files, exactly as today.
 
 ## 2. Hybrid construction
 
-`@noble/post-quantum` ships a pre-built, documented hybrid KEM combiner — `KitchenSink_ml_kem768_x25519` (`hybrid.js`) — rather than
-leaving callers to hand-roll the combination. Per its own documentation, this preset's HKDF extract step takes
-`IKM = hybrid_prk || ss0 || ss1 || ct0 || pk0 || ct1 || pk1 || label` (zero salt) and its expand step fixes
-`info = len || 'shared_secret' || ''`, producing a fixed 32-byte output. We use this preset directly rather than reimplementing the
-combination ourselves:
+**Revision note (2026-10-07):** this section originally specified `@noble/post-quantum`'s own bundled hybrid combiner
+(`KitchenSink_ml_kem768_x25519`, in `hybrid.js`) to avoid hand-rolling the combination. That module turned out to hard-require
+`@noble/curves` 2.x (confirmed: it imports `afunction` from `@noble/curves/utils.js`, an export that does not exist in 1.x). This SDK's
+existing `@noble/curves` dependency — and every wallet/signing code path elsewhere in the dApp built on it — is pinned to 1.9.7;
+`npm run build` caught a real runtime failure (`"curve" expected object, got type=undefined`) in an unrelated AI-wallet route once both
+curve versions coexisted in the same bundle and webpack collapsed them into one. Upgrading the whole app's `@noble/curves` major version
+for this one feature was judged far riskier than the alternative below, which the SOW's own §4.12 explicitly anticipates and permits.
+
+The hybrid combination is performed by this codebase's own code, using only the two underlying primitives directly — never a second,
+competing implementation of either:
+
+* **ML-KEM-768** — `ml_kem768` from `@noble/post-quantum/ml-kem.js`. This module depends on `@noble/hashes` only (confirmed via its own
+  `package.json`), not `@noble/curves` — it has no version conflict with anything else in this app.
+* **X25519** — the exact same `x25519` import `custody-sdk/src/crypto.js` already uses for the existing sharing primitive
+  (`@noble/curves/ed25519`, pinned at 1.9.7) — no second copy, no version drift.
+* **Combiner** — `HKDF-SHA256`, with the info parameter binding a fixed domain-separation label together with both ciphertexts and both
+  public keys, so the derivation can never collide with any other HKDF use elsewhere in this codebase, and so tampering with either
+  component's ciphertext/public-key material changes the derived key, not just leaves it unauthenticated:
 
 ```js
-import { KitchenSink_ml_kem768_x25519 } from "@noble/post-quantum/hybrid.js";
-
-const { secretKey, publicKey } = KitchenSink_ml_kem768_x25519.keygen();           // per-device key pair
-const { cipherText, sharedSecret } = KitchenSink_ml_kem768_x25519.encapsulate(recipientPublicKey);
-const recovered = KitchenSink_ml_kem768_x25519.decapsulate(cipherText, secretKey);
+sharedSecret = HKDF-SHA256(
+  ikm   = x25519SharedSecret || mlKemSharedSecret,
+  salt  = undefined,
+  info  = "inaya-pqc-hybrid-v1" || mlKemCipherText || x25519EphemeralPublicKey || mlKemPublicKey || x25519PublicKey,
+  length = 32,
+)
 ```
 
-Smoke-verified in this repo (2026-10-07): `publicKey` 1216 bytes, `secretKey` 32 bytes, `cipherText` 1120 bytes, `sharedSecret` 32 bytes;
-encapsulate/decapsulate round-trips correctly; a corrupted ciphertext deterministically produces a *different* shared secret rather than
-silently succeeding (ML-KEM's implicit-rejection property, carried through the hybrid combiner).
+This is not a naive `SHA256(a+b)` — the SOW's one explicitly rejected construction (§4.12): it uses a defined KDF (HKDF, not a bare
+hash), real domain separation (a fixed label plus every public component bound into the derivation), and both shared secrets
+genuinely contribute to the output. `capabilityInfo()`/`generateKeyPair()`/`encapsulate()`/`decapsulate()` in `provider.js` are the only
+functions that touch either underlying primitive directly; nothing else in the codebase imports `ml_kem768` or constructs this
+combination independently.
 
-Both the classical (X25519) and PQC (ML-KEM-768) shared secrets contribute to the final output, and the construction is bound to the
-public keys and ciphertexts of both components, not a naive concatenation of the two raw secrets alone — satisfying SOW §4.12's
-domain-separation requirement using a library-maintained, documented combiner rather than an application-level `SHA256(a+b)`, which the
-SOW explicitly rejects. The resulting 32-byte `sharedSecret` is then used directly as the AES-256-GCM key-wrapping key for the file/content
-key being protected — no further application-level KDF step is needed, since the combiner's own HKDF expand already produces a
-uniformly-distributed, fixed-length key.
+Smoke-verified in this repo (2026-10-07, against the dependency tree exactly as it resolves in the dApp): combined `publicKey` 1216
+bytes, `secretKey` 2432 bytes, `cipherText` 1120 bytes, `sharedSecret` 32 bytes; encapsulate/decapsulate round-trips correctly; a wrong
+recipient's secret key and a corrupted ciphertext each deterministically yield a *different* shared secret rather than silently
+succeeding (ML-KEM's implicit-rejection property, carried through this combiner). The resulting 32-byte `sharedSecret` is used directly
+as the AES-256-GCM key-wrapping key for the file/content key being protected — no further application-level KDF step is needed, since
+the HKDF expand step above already produces a uniformly-distributed, fixed-length key.
 
 A classical-only recipient (no ML-KEM public key registered) can still be served a `LEGACY_CLASSICAL` envelope (X25519 alone, today's
 existing scheme, byte-for-byte unchanged) when org policy allows it. `PQC_REQUIRED` policy rejects issuing a `LEGACY_CLASSICAL` envelope
@@ -56,13 +72,13 @@ outright rather than silently downgrading (§4.17).
 
 ## 3. Envelope format
 
-The hybrid preset's single `cipherText` output (1120 bytes) already internally packs both the ML-KEM-768 ciphertext (1088 bytes) and the
-X25519 ephemeral public key (32 bytes) per the combiner's own encoding — there is no separate classical-ephemeral-key field to carry:
+`encapsulate()`'s single `cipherText` output (1120 bytes) already internally concatenates both the ML-KEM-768 ciphertext (1088 bytes) and
+the X25519 ephemeral public key (32 bytes) — there is no separate classical-ephemeral-key field to carry:
 
 ```json
 {
   "version": 1,
-  "algorithm": "HYBRID-MLKEM768-X25519-KITCHENSINK",
+  "algorithm": "HYBRID-MLKEM768-X25519-HKDF-SHA256",
   "kemCiphertext": "<base64, 1120 bytes>",
   "nonce": "<base64>",
   "wrappedKey": "<base64, AES-256-GCM(sharedSecret, contentKey)>",

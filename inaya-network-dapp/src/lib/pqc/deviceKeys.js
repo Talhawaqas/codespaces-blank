@@ -25,7 +25,7 @@ import { logOrgActivity } from "../org-activity-log.js";
 // the PUBLISHED @inaya-network/custody-sdk package everywhere else -- see clientCrypto.js -- and
 // a relative source import here would be the one place that silently broke that boundary). The
 // SDK's own test suite (custody-sdk/test/pqc.test.mjs) is this value's actual source of truth.
-export const ALGORITHM_ID = "HYBRID-MLKEM768-X25519-KITCHENSINK";
+export const ALGORITHM_ID = "HYBRID-MLKEM768-X25519-HKDF-SHA256";
 
 export class PqcDeviceKeyError extends Error {
   constructor(status, message, extra = {}) {
