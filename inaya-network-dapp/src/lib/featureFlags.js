@@ -30,6 +30,7 @@ export const FEATURES = [
   "FEATURE_COMPLIANCE_READINESS",
   "FEATURE_CUSTOMER_MANAGED_KEYS",
   "FEATURE_FILE_WORKFLOW_AUTOMATION",
+  "FEATURE_PQC",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);
