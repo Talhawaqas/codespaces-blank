@@ -154,6 +154,18 @@ test("cross-org isolation: a device key never resolves for a different organizat
   }
 });
 
+test("device revocation cascades to PQC key revocation (Internxt-inspired SOW §8.3/§4.19)", T, async () => {
+  const deviceId = await checkedInDevice(alice.email);
+  await K.registerDeviceKey({ orgId: org.oid, email: alice.email, deviceId, publicKey: fakePublicKey() });
+  assert.ok(await K.activeKeyForDevice({ orgId: org.oid, deviceId }), "sanity: the key is active before revocation");
+  await D.deviceAction({ orgId: org.oid, membership: owner.membership, actorEmail: owner.email, deviceId, action: "revoke" });
+  // devices.js kicks this off best-effort (fire-and-forget), same pattern as its webhook/notify
+  // calls -- poll briefly rather than assuming it has already landed by the time deviceAction resolves.
+  const deadline = Date.now() + 2000; let active = await K.activeKeyForDevice({ orgId: org.oid, deviceId });
+  while (active && Date.now() < deadline) { await new Promise((r) => setTimeout(r, 100)); active = await K.activeKeyForDevice({ orgId: org.oid, deviceId }); }
+  assert.equal(active, null, "revoking the device also revokes its PQC key, not a parallel mechanism left stale");
+});
+
 test("audit trail: registering and revoking a PQC key writes to the org activity log", T, async () => {
   const deviceId = await checkedInDevice(alice.email);
   const k = await K.registerDeviceKey({ orgId: org.oid, email: alice.email, deviceId, publicKey: fakePublicKey() });

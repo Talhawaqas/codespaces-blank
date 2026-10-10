@@ -18,8 +18,31 @@
 // genuinely encrypted in transit by WebRTC's own DTLS-SRTP, this is about the additional PQC layer.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Pqc } from "@inaya-network/custody-sdk";
 import EmptyState from "../../EmptyState";
 import { localDeviceId } from "../endpoint/DevicesView";
+import { isDesktopApp, popOutMeet } from "../chat/desktop.js";
+
+// Real client-side PQC key resolution for Meet admission (closes the gap noted in
+// docs/internxt-implementation-ledger.md, MEET-002). The room secret is generated once, locally,
+// by the host's browser -- it never reaches the server in plaintext. Admitting a participant wraps
+// that same secret to their device's registered public key (src/lib/pqc/deviceKeys.js,
+// PQC-A03/A04) using the exact same algorithm-agile primitive the sharing feature uses
+// (Pqc.wrapForRecipient, PQC-A05) -- never a second envelope scheme. pqc_device_keys stores one
+// combined key per device (ML-KEM-768 public key || X25519 public key, concatenated, confirmed by
+// Pqc.capabilityInfo().mlKemPublicKeyLength); wrapForRecipient's HYBRID_PQC/PQC_REQUIRED paths take
+// that combined key as-is (Pqc.encapsulate splits it internally), while its LEGACY_CLASSICAL
+// fallback needs just the X25519 half, sliced out here.
+const bytesToB64 = (u8) => (typeof Buffer !== "undefined" ? Buffer.from(u8).toString("base64") : btoa(String.fromCharCode(...u8)));
+const b64ToBytes = (s) => (typeof Buffer !== "undefined" ? new Uint8Array(Buffer.from(s, "base64")) : Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+async function fetchActivePqcKey(orgId, deviceId) {
+  if (!deviceId) return null;
+  try {
+    const r = await j(`/api/orgs/pqc/devices/${deviceId}/active-key?orgId=${orgId}`);
+    return r.key ? b64ToBytes(r.key.publicKey) : null;
+  } catch { return null; } // FEATURE_PQC off, or no key registered -- a real, expected case, not an error
+}
+function newRoomSecret() { return bytesToB64(crypto.getRandomValues(new Uint8Array(32))); }
 
 const j = async (path, opts = {}) => { const r = await fetch(path, { credentials: "include", headers: { "Content-Type": "application/json" }, ...opts }); let d = {}; try { d = await r.json(); } catch { /* empty */ } if (!r.ok) throw Object.assign(new Error(d.error || `Request failed (${r.status})`), { status: r.status, data: d }); return d; };
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -97,7 +120,10 @@ export default function MeetView({ orgId, email }) {
       {error && <p className="text-red-400 text-xs">{error}</p>}
 
       <div className={card}>
-        <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm mb-3">Start or join</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm">Start or join</h3>
+          {isDesktopApp() && <button onClick={() => popOutMeet()} className={ghost}>Open in its own window</button>}
+        </div>
         <div className="flex flex-wrap gap-2 items-center">
           <input value={creating.title} onChange={(e) => setCreating({ ...creating, title: e.target.value })} placeholder="Meeting title (optional)" className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-[var(--inaya-text-primary)] flex-1 min-w-[200px]" />
           <button onClick={create} className={btn}>New Meeting</button>
@@ -158,6 +184,7 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
   const [remoteIds, setRemoteIds] = useState([]);
   const cursorRef = useRef({ seq: 0, at: null });
   const pollAbort = useRef(false);
+  const roomSecretRef = useRef(null); // base64 string, generated locally by the host on first need -- never sent to the server in plaintext
 
   const loadRoom = useCallback(async () => {
     const r = await j(`/api/meet/rooms/${roomId}?orgId=${orgId}${authQS()}`);
@@ -307,6 +334,32 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
     await j(`/api/meet/rooms/${roomId}/participants/${participantId}?orgId=${orgId}`, { method: "PATCH", body: JSON.stringify({ orgId, action, ...extra }) }).catch((e) => setError(e.message));
     refreshWaiting(); refreshParticipants();
   };
+
+  // Admit, with a real wrapped room-secret envelope when the participant's device has a registered
+  // PQC key (see the Pqc import/helpers above). Falls back to admitting with no envelope for
+  // CLASSICAL/HYBRID_PQC rooms when no key is found -- the meeting still works via WebRTC's own
+  // transport encryption (see the Meet ADR §4) -- but genuinely refuses for PQC_REQUIRED, matching
+  // the server's own enforcement rather than letting a confusing 409 surface with no explanation.
+  const approveWaiting = async (w) => {
+    setError("");
+    if (!roomSecretRef.current) roomSecretRef.current = newRoomSecret();
+    const combinedKey = await fetchActivePqcKey(orgId, w.deviceId);
+    let roomSecretEnvelope = null, algorithmId = null;
+    if (combinedKey) {
+      try {
+        const mlKemLen = Pqc.capabilityInfo().mlKemPublicKeyLength;
+        const mode = room.policy.keyMode === Pqc.SHARING_MODE.PQC_REQUIRED ? Pqc.SHARING_MODE.PQC_REQUIRED : Pqc.SHARING_MODE.HYBRID_PQC;
+        roomSecretEnvelope = Pqc.wrapForRecipient({ plaintext: roomSecretRef.current, recipientClassicalPublicKey: combinedKey.slice(mlKemLen), recipientPqcPublicKey: combinedKey, mode });
+        algorithmId = Pqc.isAgileHybridEnvelope(roomSecretEnvelope) ? roomSecretEnvelope.algorithm : "LEGACY_CLASSICAL";
+      } catch (e) {
+        if (room.policy.keyMode === Pqc.SHARING_MODE.PQC_REQUIRED) { setError(e.message); return; }
+      }
+    } else if (room.policy.keyMode === Pqc.SHARING_MODE.PQC_REQUIRED) {
+      setError("This participant's device has no registered PQC key yet, and this meeting requires one.");
+      return;
+    }
+    await moderate(w.participantId, "approve", { roomSecretEnvelope, algorithmId });
+  };
   const refreshWaiting = useCallback(async () => {
     if (!room || room.hostEmail !== email) return;
     const r = await j(`/api/meet/rooms/${roomId}/participants?orgId=${orgId}&waiting=1`).catch(() => ({ waiting: [] }));
@@ -386,7 +439,7 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
             <div key={w.participantId} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
               <span className="text-xs text-[var(--inaya-text-primary)]">{w.guestName || w.email}{w.isGuest ? " (guest)" : ""}</span>
               <div className="flex gap-2">
-                <button onClick={() => moderate(w.participantId, "approve")} className={ghost}>Admit</button>
+                <button onClick={() => approveWaiting(w)} className={ghost}>Admit</button>
                 <button onClick={() => moderate(w.participantId, "reject")} className={ghost}>Reject</button>
               </div>
             </div>

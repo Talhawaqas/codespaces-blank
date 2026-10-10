@@ -27,3 +27,12 @@ export async function native(command, args = {}) {
 
 /** Opens Secure Chat in its own native window (the open_module_window command the desktop app already has). */
 export const popOutChat = () => native("open_module_window", { label: "chat", path: "/business?view=chat" });
+
+/** Opens Inaya Meet in its own native window -- same existing open_module_window command, no new
+ *  native code (Internxt-inspired SOW §7.31: "Do not create a fifth native application"). Meet's
+ *  meeting window is just this web UI in a separate Tauri window, identical to how chat pops out. */
+export const popOutMeet = () => native("open_module_window", { label: "meet", path: "/business?view=meet" });
+
+/** Opens a specific Meet join link in its own native window -- used for "New Meeting"/"Join
+ *  Meeting" from the desktop app so the meeting runs in its own window from the start. */
+export const openMeetLink = (joinLink) => native("open_module_window", { label: `meet-${Date.now()}`, path: joinLink });

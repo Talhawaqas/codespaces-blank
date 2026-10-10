@@ -100,6 +100,11 @@ export async function deviceAction({ orgId, membership, actorEmail, deviceId, ac
   }
   clearDeviceGateCache();
   if (action === "revoke" || action === "block") import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "device.revoked", data: { deviceId: d.deviceId, action, person: d.email } })).catch(() => {});
+  // Internxt-inspired SOW §8.3/§4.19: PQC key revocation is one part of this same device-revocation
+  // workflow, not a parallel mechanism -- the device-level action stays the single source of truth,
+  // this just keeps the two in lock-step the way pqc/deviceKeys.js's own header already documents.
+  // Best-effort: FEATURE_PQC is often off, so "no PQC keys to revoke" is the common, expected case.
+  if (action === "revoke" || action === "block") import("../pqc/deviceKeys.js").then((m) => m.revokeAllKeysForDevice({ orgId, deviceId: d.deviceId, actorEmail, reason: `device ${action}d` })).catch(() => {});
   await audit(orgId, d, actorEmail, action.toUpperCase(), result.sessionsEnded != null ? { sessionsEnded: result.sessionsEnded } : {});
   if (d.email !== lower(actorEmail) && (action === "revoke" || action === "block")) import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "device.revoked", targetEmail: d.email, title: "A device on your account was changed", body: `An administrator applied “${action.replace("_", " ")}” to ${d.name}.`, link: "/business?view=deviceProtection", sourceId: d.deviceId, dedupeKey: `dev:${d.deviceId}:${action}:${now.slice(0, 16)}`, protectedContent: false })).catch(() => {});
   return { ok: true, ...result };

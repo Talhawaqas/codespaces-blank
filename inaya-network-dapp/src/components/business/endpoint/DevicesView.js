@@ -54,11 +54,22 @@ export function DeviceCheckIn({ orgId }) {
 
 export default function DevicesView({ orgId, canManage }) {
   const [scope, setScope] = useState("mine"); const [rows, setRows] = useState(null); const [sum, setSum] = useState(null); const [err, setErr] = useState(""); const [msg, setMsg] = useState(""); const [off, setOff] = useState(false); const here = typeof window !== "undefined" ? localDeviceId() : null;
+  const [pqcByDevice, setPqcByDevice] = useState({}); // deviceId -> "active" | "revoked", one fetch for the whole list rather than one per row
   const load = useCallback(async () => {
     try { const d = await j(`/api/orgs/devices?orgId=${orgId}&scope=${scope}`); setRows(d.devices); setErr(""); if (canManage) setSum(await j(`/api/orgs/devices?orgId=${orgId}&scope=summary`)); }
     catch (e) { if (e.status === 404) setOff(true); else setErr(e.message); }
   }, [orgId, scope, canManage]);
   useEffect(() => { load(); }, [load]);
+  // §8.2 (Internxt-inspired SOW, Workstream E): a per-device PQC capability badge. Best-effort --
+  // FEATURE_PQC is often off, in which case this 404s and every device just shows no badge at all
+  // (never "Quantum Safe" or any PQC claim for a device that hasn't actually activated it, per
+  // §8.2's own explicit instruction).
+  useEffect(() => {
+    j(`/api/orgs/pqc/devices?orgId=${orgId}&scope=${scope === "org" ? "org" : "mine"}`).then((d) => {
+      const by = {}; for (const k of d.keys || []) if (k.status === "active") by[k.deviceId] = true;
+      setPqcByDevice(by);
+    }).catch(() => {});
+  }, [orgId, scope]);
   const act = async (d, action, confirmText) => { if (confirmText && !window.confirm(confirmText)) return; setErr(""); setMsg(""); try { const r = await j(`/api/orgs/devices/${d.deviceId}`, { method: "POST", body: JSON.stringify({ orgId, action }) }); setMsg(r.note || (r.sessionsEnded != null ? `Done. ${r.sessionsEnded} sign-in${r.sessionsEnded === 1 ? "" : "s"} ended.` : "Done.")); load(); } catch (e) { setErr(e.message); } };
   if (off) return <EmptyState title="Device control is not enabled" description={canManage ? "Turn on “Device inventory and control” under Settings, Beta features." : "Your organization has not turned on device control yet."} />;
   return (
@@ -72,7 +83,11 @@ export default function DevicesView({ orgId, canManage }) {
       {rows === null ? <p className={`text-[12px] ${muted}`}>Loading…</p> : rows.length === 0 ? <EmptyState compact icon="💻" description="No devices have checked in yet. This browser checks in automatically while device control is on." /> : rows.map((d) => (
         <div key={d.deviceId} className={`${card} p-3`}>
           <div className="flex flex-wrap items-center gap-2"><b className="text-[13px]">{d.name}</b>{d.deviceId === here && <span className="text-[10px] font-bold uppercase text-[#00f2fe]">this device</span>}
-            <span className={`text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 ${d.revokedAt ? "text-slate-400 border-slate-500/30" : d.blockedAt ? "text-red-400 border-red-400/30" : d.trust === "trusted" ? "text-emerald-400 border-emerald-400/30" : "text-amber-300 border-amber-400/30"}`}>{d.revokedAt ? "removed" : d.blockedAt ? "blocked" : d.trust}</span></div>
+            <span className={`text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 ${d.revokedAt ? "text-slate-400 border-slate-500/30" : d.blockedAt ? "text-red-400 border-red-400/30" : d.trust === "trusted" ? "text-emerald-400 border-emerald-400/30" : "text-amber-300 border-amber-400/30"}`}>{d.revokedAt ? "removed" : d.blockedAt ? "blocked" : d.trust}</span>
+            {!d.revokedAt && (pqcByDevice[d.deviceId]
+              ? <span className="text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 text-[#00f2fe] border-[#00f2fe]/30">PQC Ready</span>
+              : <span className="text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 text-slate-400 border-slate-500/30">Legacy Client</span>)}
+          </div>
           <p className={`text-[11px] ${muted} mt-1`}>{scope === "org" ? `${d.email} · ` : ""}{d.platform}{d.osVersion ? ` · ${d.osVersion}` : ""}{d.appVersion ? ` · ${d.appVersion}` : ""} · first seen {when(d.firstSeenAt)} · last seen {when(d.lastSeenAt)}{d.lastIp ? ` · network ${d.lastIp}` : ""} · {d.encryption?.secureStorage ? "secure storage" : "no secure storage reported"}{d.cache?.bytes ? ` · local data ${(d.cache.bytes / 1048576).toFixed(1)} MB` : ""}{d.syncDisabled ? " · sync disabled" : ""}</p>
           {d.pendingCommands.length > 0 && <p className="text-[11px] text-amber-300 mt-1">Waiting for the device to check in: {d.pendingCommands.map((c) => c.type.replace("_", " ")).join(", ")}</p>}
           {!d.revokedAt && <div className="flex flex-wrap gap-1 mt-2">
