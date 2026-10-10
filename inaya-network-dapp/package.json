@@ -63,7 +63,7 @@
     "read-excel-file": "^9.3.10",
     "remark-gfm": "^4.0.1",
     "ssh2": "^1.17.0",
-    "stripe": "^22.3.2",
+    "stripe": "^23.0.0",
     "tailwindcss": "^3.4.6",
     "three": "^0.185.1",
     "three-globe": "^2.45.2",
