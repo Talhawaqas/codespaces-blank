@@ -123,7 +123,7 @@ export async function reportRun({ orgId, email, report }) {
   if (report.status === "failed") { set.lastFailureAt = at.toISOString(); set.lastFailure = errs[0]?.error || "The run failed."; } else { set.lastSuccessAt = at.toISOString(); }
   await profiles.updateOne({ _id: p._id }, { $set: set });
   import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "backup.event", eventId: String(doc._id), data: { kind: "endpoint_backup_run", profileId: String(p._id), status: report.status, changed: doc.files.changed, failed: doc.files.failed } })).catch(() => {});
-  if (report.status === "failed") import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "backup.failed", targetEmail: p.email, title: "A backup run failed", body: `“${p.name}” failed: ${set.lastFailure}`, link: "/business?view=endpointBackup", sourceId: String(p._id), dedupeKey: `epb:${p._id}:${at.toISOString().slice(0, 13)}`, protectedContent: false })).catch(() => {});
+  if (report.status === "failed") import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "backup.failed", targetEmail: p.email, title: "A backup run failed", body: `“${p.name}” failed: ${set.lastFailure}`, link: "/business?view=deviceProtection", sourceId: String(p._id), dedupeKey: `epb:${p._id}:${at.toISOString().slice(0, 13)}`, protectedContent: false })).catch(() => {});
   return { runId: String(doc._id), health: profileHealth({ ...p, ...set }) };
 }
 export async function listRuns({ orgId, email, membership, profileId, limit = 30 }) {

@@ -73,9 +73,8 @@ import S3CompatView from "../../components/business/S3CompatView";
 import BusinessEventsView from "../../components/business/BusinessEventsView";
 import WhatIfStudioView from "../../components/business/WhatIfStudioView";
 import CloudBackupSchedulerView from "../../components/business/CloudBackupSchedulerView";
-import DirectSyncView from "../../components/business/DirectSyncView";
-import CleanerView from "../../components/business/CleanerView";
 import ChatView from "../../components/business/chat/ChatView";
+import MeetView from "../../components/business/meet/MeetView";
 import OfflineBanner from "../../components/business/OfflineBanner";
 import StepUpPrompt, { fetchWithStepUp } from "../../components/StepUpPrompt";
 import { applyChatSignOutPolicy, searchLiveChat } from "../../components/business/chat/signOut";
@@ -94,8 +93,8 @@ import ComplianceReadinessView from "../../components/business/admin/ComplianceR
 import BrandingPanel from "../../components/business/admin/BrandingPanel";
 import NotificationPrefsPanel from "../../components/business/admin/NotificationPrefsPanel";
 import GovernanceView from "../../components/business/governance/GovernanceView";
-import DevicesView, { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
-import EndpointBackupView from "../../components/business/endpoint/EndpointBackupView";
+import { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
+import DeviceProtectionView from "../../components/business/DeviceProtectionView";
 import RansomwareView from "../../components/business/endpoint/RansomwareView";
 import DocGovernancePanel from "../../components/business/governance/DocGovernancePanel";
 import SecureViewer from "../../components/viewer/SecureViewer";
@@ -753,14 +752,14 @@ const NAV_ITEMS = [
   { key: "brief", label: "Brief", icon: "insights", group: "core" },
   { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
   { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
+  { key: "meet", label: "Inaya Meet", icon: "aiAssistant", group: "collaboration" },
   { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
   { key: "adminDashboard", label: "Admin Dashboard", icon: "insights", manageOnly: true, adminRole: ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], group: "trust" },
   { key: "webhooks", label: "Webhooks", icon: "integrations", manageOnly: true, adminRole: "integrationAdmin", group: "enterprise" },
   { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, adminRole: ["dataGovernanceAdmin", "securityAdmin"], group: "trust" },
   { key: "complianceReadiness", label: "Compliance Readiness", icon: "enterpriseHardening", manageOnly: true, adminRole: ["complianceAdmin", "securityAdmin"], group: "trust" },
   { key: "gateway", label: "Sovereign Gateway", icon: "enterpriseHardening", group: "trust" },
-  { key: "devices", label: "Devices", icon: "enterpriseHardening", group: "trust" },
-  { key: "endpointBackup", label: "Endpoint Backup", icon: "enterpriseHardening", group: "trust" },
+  { key: "deviceProtection", label: "Device Protection", icon: "enterpriseHardening", group: "trust" },
   { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, adminRole: "securityAdmin", group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
@@ -806,8 +805,6 @@ const NAV_ITEMS = [
   { key: "activity", label: "Activity", icon: "activity", group: "trust" },
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "directSync", label: "DirectSync", icon: "documents", group: "enterprise" },
-  { key: "cleaner", label: "Cleaner", icon: "health", group: "enterprise" },
   { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
   { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "nas", label: "Sovereign NAS", icon: "integrations", manageOnly: true, group: "enterprise" },
@@ -1090,14 +1087,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     gateway: { title: "Sovereign Gateway", description: "Network folders on your own servers, read through a gateway that connects out from your network. Your system's permissions decide who sees what." },
     portalRequests: { title: "Customer Requests", description: "Ask a customer for files, a form or an agreement in the portal, and follow their progress." },
     office: { title: "Microsoft 365 and Outlook", description: "Edit in Word, Excel and PowerPoint and send secure links from Outlook, without sending your files to Microsoft." },
-    devices: { title: "Devices", description: "The devices signed in to your account, and what administrators can do about them." },
-    endpointBackup: { title: "Endpoint Backup", description: "Backup profiles, health, integrity checks and restores for your computers." },
+    deviceProtection: { title: "Device Protection", description: "Backup, sync, local cleanup and device status for your computers, in one place." },
     ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
     adminDashboard: { title: "Admin Dashboard", description: "What is happening across storage, sharing, devices, backups and security, with honest NO DATA states." },
     webhooks: { title: "Webhooks", description: "Signed events to your own systems, with retries, a dead-letter list and secret rotation." },
     governance: { title: "Governance", description: "Versioned policies, data protection rules, classification and metadata for your files." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
     chat: { title: "Secure Chat", description: "End-to-end encrypted conversations, files and contacts for your organization." },
+    meet: { title: "Inaya Meet", description: "Private video meetings with a lobby, moderator controls and ephemeral in-call chat." },
     security: { title: "Account Security", description: "Your own sign-in and multi-factor authentication settings." },
     browse: { title: BROWSE_SECTION_LABELS[browseSection], description: "Company → Department → Project → Document." },
     tasks: { title: "Tasks", description: "Track and assign work across departments and projects." },
@@ -1119,8 +1116,6 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
-    directSync: { title: "DirectSync", description: "Automatic local-folder backup into Inaya from the desktop app." },
-    cleaner: { title: "Cleaner", description: "Local-first scan for temporary and duplicate files on this computer." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
     nas: { title: "Sovereign NAS", description: "Real SMB/NFS network storage with RAID pools, snapshots and immutable protection, quotas, ACLs, backup and verified recovery, replication, ransomware response, evidence and What-If simulation." },
@@ -1241,6 +1236,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             />
           )}
           {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
+          {activeView === "meet" && <MeetView orgId={orgId} email={email} />}
           {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
           {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
           {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
@@ -1249,8 +1245,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
           {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
           {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
-          {activeView === "devices" && <DevicesView orgId={orgId} canManage={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })} />}
-          {activeView === "endpointBackup" && <EndpointBackupView orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin", { read: true })} />}
+          {activeView === "deviceProtection" && (
+            <DeviceProtectionView
+              orgId={orgId}
+              canManage={canManage}
+              deviceAdmin={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })}
+              storageAdmin={canManage || hasAdminRole(membership, "storageAdmin", { read: true })}
+            />
+          )}
           {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage || hasAdminRole(membership, "securityAdmin", { read: true })} />}
           <DeviceCheckIn orgId={orgId} />
           {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
@@ -1274,8 +1276,6 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
           {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
           {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
-          {activeView === "directSync" && <DirectSyncView />}
-          {activeView === "cleaner" && <CleanerView />}
           {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
           {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
           {activeView === "nas" && <NasManagementView orgId={orgId} />}

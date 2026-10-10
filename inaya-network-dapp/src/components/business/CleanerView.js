@@ -13,7 +13,7 @@
 // Desktop-only, same honest degrade as DirectSyncView: there is no local filesystem to scan from
 // inside a browser tab, so this shows a plain message rather than pretending to offer it on web.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import EmptyState from "../EmptyState";
 
 function isDesktop() {
@@ -22,6 +22,28 @@ function isDesktop() {
 
 async function invoke(cmd, args) {
   return window.__TAURI__.core.invoke(cmd, args);
+}
+
+// Internxt-inspired SOW §5.6 (Backup + Cleaner integration): Cleaner must never silently delete
+// a file inside a folder the user has set up for endpoint backup without warning them first. This
+// reuses the existing endpoint-backup profiles API (src/lib/endpoint/backup.js) purely to read the
+// folder list for the warning below -- Cleaner never touches the remote backup copy, never mirrors
+// a local deletion into it, and still only ever deletes what the user explicitly selects.
+const norm = (p) => String(p || "").replace(/\\/g, "/").toLowerCase().replace(/\/+$/, "");
+async function fetchBackedUpFolders(orgId) {
+  if (!orgId) return [];
+  try {
+    const r = await fetch(`/api/orgs/endpoint-backup/profiles?orgId=${orgId}&scope=mine`, { credentials: "include" });
+    if (!r.ok) return [];
+    const { profiles } = await r.json();
+    return (profiles || []).flatMap((p) => (p.folders || []).map((f) => norm(f.path))).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+function isInsideBackedUpFolder(path, backedUpFolders) {
+  const p = norm(path);
+  return backedUpFolders.some((f) => p === f || p.startsWith(f + "/"));
 }
 
 function formatBytes(n) {
@@ -45,22 +67,32 @@ function CategorySection({ title, description, children }) {
   );
 }
 
-function CandidateRow({ path, size, checked, onToggle }) {
+function CandidateRow({ path, size, checked, onToggle, backedUp }) {
   return (
     <label className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0 cursor-pointer">
       <input type="checkbox" checked={checked} onChange={onToggle} className="accent-[#00f2fe]" />
-      <span className="flex-1 text-[12px] font-mono text-[var(--inaya-text-primary)] truncate" title={path}>{path}</span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[12px] font-mono text-[var(--inaya-text-primary)] truncate" title={path}>{path}</span>
+        {backedUp && (
+          <span className="block text-[10px] text-amber-300">
+            ⚠ Inside a backed-up folder — removing this local copy does not delete it from your backup.
+          </span>
+        )}
+      </span>
       <span className="text-[11px] text-[var(--inaya-text-muted)] font-mono shrink-0">{formatBytes(size)}</span>
     </label>
   );
 }
 
-export default function CleanerView() {
+export default function CleanerView({ orgId } = {}) {
   const [report, setReport] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState(null);
+  const [backedUpFolders, setBackedUpFolders] = useState([]);
+
+  useEffect(() => { fetchBackedUpFolders(orgId).then(setBackedUpFolders); }, [orgId]);
 
   const scan = useCallback(async () => {
     setBusy(true);
@@ -151,7 +183,7 @@ export default function CleanerView() {
             {report.temporary_files.length === 0 ? (
               <EmptyState compact icon="✨" description="No temporary files found." />
             ) : (
-              <div>{report.temporary_files.map((c) => <CandidateRow key={c.path} path={c.path} size={c.size} checked={selected.has(c.path)} onToggle={() => toggle(c.path)} />)}</div>
+              <div>{report.temporary_files.map((c) => <CandidateRow key={c.path} path={c.path} size={c.size} checked={selected.has(c.path)} onToggle={() => toggle(c.path)} backedUp={isInsideBackedUpFolder(c.path, backedUpFolders)} />)}</div>
             )}
           </CategorySection>
 
@@ -167,7 +199,7 @@ export default function CleanerView() {
                     </p>
                     <p className="text-[11px] font-mono text-emerald-400 truncate mb-1" title={g.keeper}>Keeping: {g.keeper}</p>
                     {g.others.map((p) => (
-                      <CandidateRow key={p} path={p} size={g.total_bytes / (g.others.length + 1)} checked={selected.has(p)} onToggle={() => toggle(p)} />
+                      <CandidateRow key={p} path={p} size={g.total_bytes / (g.others.length + 1)} checked={selected.has(p)} onToggle={() => toggle(p)} backedUp={isInsideBackedUpFolder(p, backedUpFolders)} />
                     ))}
                   </div>
                 ))}

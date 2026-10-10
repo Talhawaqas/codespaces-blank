@@ -40,6 +40,9 @@ export const EVENTS = {
   "gateway.offline": { label: "A gateway went offline", defaults: { inApp: true, email: true }, severity: "warning", generic: "A gateway in your network has stopped reporting.", webhook: "gateway.event" },
   "device.revoked": { label: "A device was removed or blocked", defaults: { inApp: true, email: true }, severity: "warning", generic: "A device on your account was removed or blocked.", webhook: "device.revoked" },
   "security.incident": { label: "A security incident was detected", defaults: { inApp: true, email: true, push: true, desktop: true }, severity: "critical", generic: "Unusual activity was detected. Review it in Inaya.", webhook: "ransomware.signal" },
+  "meeting.invitation": { label: "I'm invited to a meeting", defaults: { inApp: true, email: true }, severity: "info", generic: "You're invited to a meeting." },
+  "meeting.participant_waiting": { label: "Someone is waiting to join my meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "Someone is waiting in your meeting's lobby." },
+  "meeting.admitted": { label: "I was admitted to a meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "You were admitted to a meeting." },
 };
 
 let indexed = false;

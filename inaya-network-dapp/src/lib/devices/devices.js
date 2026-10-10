@@ -101,7 +101,7 @@ export async function deviceAction({ orgId, membership, actorEmail, deviceId, ac
   clearDeviceGateCache();
   if (action === "revoke" || action === "block") import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: "device.revoked", data: { deviceId: d.deviceId, action, person: d.email } })).catch(() => {});
   await audit(orgId, d, actorEmail, action.toUpperCase(), result.sessionsEnded != null ? { sessionsEnded: result.sessionsEnded } : {});
-  if (d.email !== lower(actorEmail) && (action === "revoke" || action === "block")) import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "device.revoked", targetEmail: d.email, title: "A device on your account was changed", body: `An administrator applied “${action.replace("_", " ")}” to ${d.name}.`, link: "/business?view=devices", sourceId: d.deviceId, dedupeKey: `dev:${d.deviceId}:${action}:${now.slice(0, 16)}`, protectedContent: false })).catch(() => {});
+  if (d.email !== lower(actorEmail) && (action === "revoke" || action === "block")) import("../notify/router.js").then((m) => m.notifyEvent({ orgId, event: "device.revoked", targetEmail: d.email, title: "A device on your account was changed", body: `An administrator applied “${action.replace("_", " ")}” to ${d.name}.`, link: "/business?view=deviceProtection", sourceId: d.deviceId, dedupeKey: `dev:${d.deviceId}:${action}:${now.slice(0, 16)}`, protectedContent: false })).catch(() => {});
   return { ok: true, ...result };
 }
 

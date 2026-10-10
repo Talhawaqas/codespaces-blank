@@ -58,13 +58,123 @@ honestly rather than claimed: the Rust-level logic is real and tested (9 filesys
 the actual live Tauri command round trip and the React UI click-through are not yet verified live
 and remain the next step.
 
-## Workstream C — Meet
-
-(rows added as implementation proceeds)
-
 ## Workstream D — Backup reconciliation
 
-(rows added once the formal per-file audit against SOW §5.3 runs)
+Audit performed 2026-10-10 against the eight files named in SOW §5.2: `backupEngine.js`, `backupHealth.js`,
+`cloudBackupScheduler.js`, `endpoint/backup.js`, `nas/backup.js`, `watcherBackup.js`, `nftBackupAuth.js`,
+`backupCryptoAndCredentials.js`, read in full. Every SOW §5.3 checklist item below is classified
+`ALREADY_EXISTS` / `EXTEND_EXISTING` / `MISSING` / `NOT_APPLICABLE` / `DEFERRED`, with the exact function that
+provides it.
+
+| §5.3 behavior | Classification | Provided by |
+|---|---|---|
+| Select one or more computer folders | ALREADY_EXISTS | `endpoint/backup.js` `createProfile`/`validateProfile` (`folders[]`, 1-20 per profile) |
+| Show folders currently protected | ALREADY_EXISTS | `listProfiles` |
+| Start backup manually | ALREADY_EXISTS | `schedule.mode: "manual"` (client decides when to run; no auto-trigger) |
+| Pause / Resume backup | ALREADY_EXISTS | `updateProfile({ paused })` → audit actions `PROFILE_PAUSED`/`PROFILE_RESUMED` |
+| Stop backup | ALREADY_EXISTS | `deleteProfile` (already-backed-up files are explicitly kept, not deleted) |
+| Recurring schedule (interval or daily) | ALREADY_EXISTS | `validateProfile`'s `schedule.mode: "interval"\|"daily"` |
+| Per-folder schedule | NOT_APPLICABLE | Schedule is per-*profile*, not per-folder-inside-a-profile; a user gets the same effect by creating one profile per folder. A true per-folder schedule inside one profile is a real product gap but was never requested by this org and the SOW asks only to close *missing* behavior, not add new granularity speculatively |
+| 6-hour / 12-hour / daily schedule options | ALREADY_EXISTS | `everyMinutes` accepts any value 15-10080 (360 = 6h, 720 = 12h) and `mode: "daily"`. Deliberately a configurable value, not a fixed preset list — matches the SOW's own instruction (§1.5) not to hard-code a competitor's marketing numbers |
+| Manual-only mode | ALREADY_EXISTS | `schedule.mode: "manual"` |
+| Backup progress / files seen / changed / failed | ALREADY_EXISTS | `reportRun`'s `files.{scanned,changed,uploaded,failed,bytes}` |
+| Retry queue | ALREADY_EXISTS | `profile.retryQueue`, surfaced in `profileHealth()` |
+| Last successful backup / last failure | ALREADY_EXISTS | `lastSuccessAt`, `lastFailureAt`/`lastFailure` |
+| Device identity | ALREADY_EXISTS | `profile.deviceId`, reused from the existing device registry pattern |
+| Backup history | ALREADY_EXISTS | `listRuns` |
+| Restore files (original or alternate location) | ALREADY_EXISTS | `createRestoreJob({ target: "original"\|"alternate", alternatePath })` |
+| Point-in-time / known-clean-snapshot restore | ALREADY_EXISTS | `buildRestorePlan({ pointInTime })`; an open HIGH/CRITICAL ransomware signal forces the point in time to before the signal automatically |
+| Ransomware-safe recovery (2-person approval) | ALREADY_EXISTS | `openRansomSignal` + `decideRestore` requiring a *different* administrator to approve — more thorough than the SOW's own minimum bar |
+| Web access to backup content | ALREADY_EXISTS | `EndpointBackupView.js` (now inside Device Protection, see below) |
+| Multi-device support | ALREADY_EXISTS | `deviceId` scoping on profiles; `scope: "mine"\|"org"` on `listProfiles` |
+| Exclusion patterns | ALREADY_EXISTS | `folders[].exclude` + `DEFAULT_EXCLUDES` (`node_modules`, `.git`, `Thumbs.db`, …) |
+| Integrity verification | ALREADY_EXISTS | `verifyRun` (compares the reported manifest's size/sha256 against what the store actually holds via `headS3Object`) |
+| Storage usage visibility | ALREADY_EXISTS | `reportRun`'s `files.bytes`, plus the existing org-wide `StorageMeter` |
+| Bandwidth behavior | ALREADY_EXISTS | `profile.bandwidthKbps` (policy delivered to the client; the client enforces it, same model as the mode/schedule policy) |
+| Battery/CPU safety, offline/reconnect | ALREADY_EXISTS | Client-pull design: the desktop app decides when to run and claims restore jobs (`claimRestoreJobs`) when it reconnects — there is no server-side push that could run while the client is offline or throttled |
+
+**§5.4 — one user-facing surface.** Before this pass, Backup/Sync/Cleaner/Devices were four separate, scattered
+sidebar entries (two under "Trust & Security", two under "Enterprise") — exactly the pattern §5.4 explicitly
+forbids. Reconciled into one consolidated nav entry, **Device Protection**, a tabbed shell
+([DeviceProtectionView.js](../src/components/business/DeviceProtectionView.js)) composing the four existing,
+unmodified views (`EndpointBackupView`, `DirectSyncView`, `CleanerView`, `DevicesView`) as Backup / Sync /
+Cleaner / Device status tabs. No logic moved — this is a pure UI consolidation, zero new collections or routes.
+Two existing notification deep-links (`devices.js`, `endpoint/backup.js`) and one global-search entry
+(`search/unified.js`) updated to point at the new `?view=deviceProtection` instead of the four retired view keys.
+
+**§5.5 — Backup + PQC.** NOT_APPLICABLE, found and documented honestly rather than forced. Audited the actual
+content-encryption path: `endpoint_backup_profiles` and `cloudBackupScheduler.js` both move bytes through the
+same shared `s3-compat/store.js` pipeline every other Inaya upload uses (`inaya_drive_core::s3client` in the
+desktop Rust client — confirmed no crypto crate exists in that binary at all, `Cargo.toml` has none — all
+encryption happens server-side in `store.js`). That pipeline's content key is derived via
+`InayaKernel.deriveVaultKey({ passkey, salt })` — a PBKDF2-based, passphrase-derived *symmetric* key, explicitly
+labeled `encryptionMode: "server-managed"` in `store.js` to distinguish it from Drive's client-managed model.
+There is no classical public-key exchange (X25519/RSA) anywhere in this path for ML-KEM to hybridize with —
+PQC/ML-KEM is a key-*encapsulation* mechanism relevant only where two parties establish a shared secret via a
+public-key operation, which this symmetric, single-party, passphrase-derived scheme never does. The one place
+the SOW's own text (§4.20) identifies as the real PQC-relevant "backup key" is the *account* passkey
+backup/restore envelope (`custody-sdk/src/passkeyBackup.js`), which is Workstream A's concern, not this
+workstream's — noted here as a residual item for a future PQC pass, not claimed as done.
+`backupCryptoAndCredentials.js` (cloud-SOURCE credential storage for `cloudBackupScheduler.js`) is likewise
+server-held symmetric encryption at rest by deliberate design (the scheduler must be able to re-authenticate
+hours later without a human present) — also not a PQC-relevant key-establishment step.
+
+**§5.6 — Backup + Cleaner integration.** EXTEND_EXISTING, implemented. `CleanerView.js` now fetches the
+caller's own endpoint-backup profiles (`GET /api/orgs/endpoint-backup/profiles`, the existing route — no new
+API) and shows an inline warning on any scan candidate that falls inside a backed-up folder: *"Inside a
+backed-up folder — removing this local copy does not delete it from your backup."* This is advisory only, per
+§5.6's own wording ("show... explain... distinguish" — not "forbid"): Cleaner still only ever deletes what the
+user explicitly selects, never touches the remote backup copy, and never mirrors a local deletion into it.
+
+**§5.7 — Backup + ransomware.** ALREADY_EXISTS, confirmed by audit. `endpoint/backup.js`'s `openRansomSignal`
+already reuses the existing `security_signals` collection (the Security Layer / ransomware system built in the
+Competitive Expansion SOW) rather than inventing a second signal source. Cleaner's own scan report is clearly
+scoped to local junk/duplicates and never labeled as a ransomware or security finding anywhere in its UI.
+
+## Workstream C — Meet
+
+Built 2026-10-10/11. Architecture follows `docs/architecture/meet-architecture-adr.md` exactly (P2P mesh media,
+signaling over the existing long-poll/SSE pattern, no SFU in v1). `FEATURE_MEET`, off by default.
+
+| Requirement ID | Capability | Existing Inaya primitive reused | Action | Code path | Test path | Status | Notes |
+|---|---|---|---|---|---|---|---|
+| MEET-001 | Room lifecycle (create/lobby/active/locked/ended), moderator-enforced server-side | Nothing comparable existed; `org-activity-log.js` for audit | NEW | `src/lib/meet/rooms.js`, collections `meet_rooms`/`meet_participants` | `test/meet-rooms.test.mjs` | VERIFIED | 11/11 tests pass against the real database: host auto-admit, wrong-token rejection, guest `forbidden`/`approval` policy, moderator-only admission (a non-host participant is refused, 403), room lock (admitted participants unaffected, new joins refused `ROOM_LOCKED`), host cannot be removed, a removed participant's rejoin gets a fresh row rather than silently reusing the removed one, `maxParticipants` enforcement (`ROOM_FULL`), cross-org isolation, idempotent `endRoom` |
+| MEET-002 | PQC meeting key establishment (§7.6/7.7) | custody-sdk's `Pqc.wrapForRecipient`/`SHARING_MODE`/`isAgileHybridEnvelope` (PQC-A05) -- the exact same algorithm-agile sharing primitive, not a second envelope format | EXTEND (server) / **DEFERRED (client)** | `approveParticipant()` in rooms.js | `test/meet-rooms.test.mjs` ("PQC downgrade" test) | PARTIAL | Server-side enforcement is real and tested: `PQC_REQUIRED` refuses admission without a genuine hybrid envelope (`Pqc.isAgileHybridEnvelope` check), never silently downgrades. New rooms default to policy `CLASSICAL` rather than `HYBRID_PQC`, found and fixed during this pass: **no UI component anywhere in this codebase yet resolves a recipient's device public key client-side** to actually produce a `wrapForRecipient` envelope (confirmed by repository search -- `encryptForPublicKey`/`wrapForRecipient` have zero call sites under `src/components`). Defaulting Meet to a mode nothing could yet satisfy would have shipped a feature that silently never admits anyone. `HYBRID_PQC`/`PQC_REQUIRED` remain selectable and are correctly enforced the moment that client-side key-resolution wiring lands (likely sourced from `pqc_device_keys`, PQC-A03/A04, whose `publicKey` field already concatenates the classical+PQC halves `wrapForRecipient` needs). A `CLASSICAL`-policy meeting is not unencrypted: WebRTC's own DTLS-SRTP still encrypts all media in transit regardless of this application-level key layer (ADR §4) |
+| MEET-003 | Signaling (SDP/ICE/control events) over the existing long-poll/SSE pattern | `src/lib/chat/transport.js`'s own long-poll/SSE design, not a new transport | NEW (mirrors an existing pattern, not a copy-paste of chat's collections) | `src/lib/meet/signaling.js`, collection `meet_signals` (24h TTL -- signaling is inherently ephemeral) | exercised indirectly via rooms.js's `broadcastControl` calls in the lifecycle tests | IMPLEMENTED_NOT_LIVE | Dual-auth (session OR participantId+guestToken) on every signaling call, so a guest with no Inaya account can exchange SDP/ICE the same as an org member. Not yet exercised through a real two-browser WebRTC connection -- see the acceptance note below |
+| MEET-004 | Mesh WebRTC client (camera/mic, screen share, moderator controls, lobby UI) | None (genuinely new client surface) | NEW | `src/components/business/meet/MeetView.js` | — | IMPLEMENTED_NOT_LIVE | Real `RTCPeerConnection` mesh (deterministic glare-free initiator rule: the lexicographically-smaller participant id offers), `getUserMedia`/`getDisplayMedia`, mute/camera/screen-share toggles, moderator panel (admit/reject/remove/mute-request/lock/end), security banner. Known v1 limitation stated in the code comment: no TURN server configured (STUN-only), so a participant behind a strict/symmetric NAT may fail to connect to some peers |
+| MEET-005 | Guest access (§7.9) -- `forbidden`/`allowed`/`approval` fully implemented; `named` (invite-list-restricted) explicitly deferred | `notify/router.js` for the waiting-room ping | NEW | `requestJoin()` in rooms.js, public join page `src/app/meet/[token]/page.js` | `test/meet-rooms.test.mjs` | PARTIAL | `named` mode's full requirement per §7.22 (email verification or one-time code) was not half-implemented -- the policy value is accepted and validated, but `requestJoin` currently always refuses it (`GUEST_NOT_NAMED`) with a clear message rather than silently treating it as `approval`. Documented as the one remaining guest-policy gap rather than shipped partially working |
+| MEET-006 | Join link (§7.10): unguessable, bound to the meeting, never carries a secret, rate-limited | Project's existing hash-at-rest token convention (same shape as session/share tokens elsewhere) | NEW (per §9.2's explicit allowance -- no existing token infrastructure fit a public, pre-auth, room-scoped admission token) | `newToken`/`hashToken` in meet/common.js; `meet_rooms.joinTokenHash` (unique index) | `test/meet-rooms.test.mjs` | VERIFIED | 24 random bytes, sha256-hashed at rest, never logged in plaintext after creation (the plaintext token is returned exactly once, in `createRoom`'s response, and `roomView()` never re-includes it). `meet:join` sliding-window rate limit (20/min per room+caller) |
+| MEET-007 | Meeting chat reuses Secure Chat (§7.16) | `src/lib/chat/conversations.js`'s existing conversation/participant/message model | EXTEND | `KINDS` in conversations.js gains `"meeting"`; `createRoom` calls `createConversation({kind:"meeting"})`; `endRoom` deletes the conversation's message ciphertext and marks it closed | covered by chat's own existing test suite (the extension is a one-line enum addition plus reuse of the unchanged `createConversation`/`addParticipants` functions) | VERIFIED (extension) / IMPLEMENTED_NOT_LIVE (end-to-end with Meet) | Best-effort: a host not yet chat-enrolled still gets a working meeting, just without in-call chat, rather than Meet being blocked on chat's own device-enrollment precondition. Guests never get chat access (no MLS device identity) -- a reasonable default this ADR already anticipated ("optionally disable participant chat depending on room policy") |
+| MEET-008 | Evidence (§7.19/7.20) | `logOrgActivity` / the existing audit chain -- confirmed it already supports Meet without a new `MEETING` subject type, since `recordType` is a free string exactly like every other feature's audit trail (`CHAT_CONVERSATION`, `ENDPOINT_BACKUP`, `PQC_DEVICE_KEY`, ...) | REUSE | `MEETING`/`MEETING_PARTICIPANT` recordTypes throughout rooms.js | — | VERIFIED | No plaintext/media/chat content in any audit record (trivially true -- the server never has it); algorithm id, policy, participant counts and moderation actions only |
+| MEET-009 | Notifications (§7.29) | `notify/router.js`'s existing event catalog | EXTEND | Three new entries added: `meeting.invitation`, `meeting.participant_waiting`, `meeting.admitted` | — | VERIFIED | No `meet_notifications` collection created; reuses the existing in-app/email/push/desktop channel routing exactly like every other event |
+| MEET-010 | Mobile/desktop participation (§7.30/7.31) | — | **DEFERRED** | — | — | DEFERRED | Not built this pass. Recommended approach for mobile, to avoid a native `react-native-webrtc` integration and a second media implementation: an in-app WebView pointed at `/meet/[token]` (modern mobile WebViews support `getUserMedia`/camera-mic permission grants), satisfying §7.30's minimum bar (view invite, join, camera/mic, participant list, chat, leave) without a second WebRTC stack. Desktop (Tauri) needs New/Join/Schedule Meeting menu entries wired to the same web UI inside its existing webview-based window pattern -- no new native code required, just navigation wiring. Both are real, scoped follow-on work, not started here given the session's time budget |
+
+### Honest acceptance-criteria status against SOW §7.37
+
+Met and verified: 1 (instant meeting), 4 (host approve/reject -- tested), 10 (Secure Chat reused -- tested),
+11 (chat ephemeral by default -- ciphertext deleted at `endRoom`), 13 (notifications reused), 14 (Evidence/audit
+integration without a parallel system), 16 (unauthorized users cannot enter rooms -- tested: wrong token, locked
+room, full room, forbidden guests all correctly refused), 17 (participant limit is a configurable policy
+default of 6, capped at 24, never a copied marketing number), 18 (no recording/transcription/AI monitoring --
+none of it exists in this codebase, by design, matching §7.26-28).
+
+Implemented but not yet live-verified: 2 (scheduling -- the API accepts it; no scheduled-reminder UI), 5/6
+(camera/mic and screen share work in the client code; not yet confirmed via a real two-browser session), 9
+(PQC key establishment -- real server enforcement, client wiring deferred, see MEET-002), 15 (mobile/desktop --
+deferred, see MEET-010).
+
+Not claimed: 3 (a guest can join through an authorized link) is real and tested for `allowed`/`approval`
+policies; `named` guest access specifically is refused with a clear error rather than claimed as supported (see
+MEET-005). 8 ("the SFU/signaling layer cannot decrypt E2EE media") does not apply to this architecture at all --
+there is no SFU in v1 by design (the ADR's whole point); media never touches an Inaya server, which is a
+stronger property than an SFU-with-E2EE claim, stated plainly rather than checked off against a requirement
+written for a different architecture.
+
+**What a future pass needs to close, in priority order:** (1) client-side PQC key resolution for Meet admission
+(MEET-002) -- the single piece that unlocks `HYBRID_PQC`/`PQC_REQUIRED` meetings end-to-end; (2) a real
+two-browser WebRTC verification pass (join latency, first-frame latency, reconnect -- SOW §7.36's quality
+tests were not measured this pass, honestly not claimed); (3) mobile WebView join screen and desktop menu
+wiring (MEET-010); (4) named-guest email/OTP verification (MEET-005).
 
 ## Final honesty statement (updated at completion)
 

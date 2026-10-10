@@ -23,7 +23,11 @@ import { applyLeafChanges, inspectCommit, inspectPrivateMessage, inspectWelcome,
 import { claimKeyPackagesForDevices, getActiveDevice, touchDevice } from "./devices.js";
 import { isBlockedEitherWay } from "./contacts.js";
 
-const KINDS = ["direct", "group", "org"];
+// "meeting" (Internxt-inspired SOW, Workstream C, §7.16): Meet's in-call chat reuses this exact
+// conversation model rather than a second message system -- the only addition is the kind value
+// itself. A meeting conversation starts with zero invitees (the host only); participants are added
+// via addParticipants() as Meet admits them, same function every other kind already uses.
+const KINDS = ["direct", "group", "org", "meeting"];
 const SUBS = ["msg", "edit", "delete", "rename", "meta", "embed"];
 const oid = (id) => new ObjectId(id);
 
@@ -171,7 +175,7 @@ async function resolveInvitees({ orgId, creatorEmail, emails, external }) {
 
 export async function createConversation({ orgId, membership, email, deviceId, conversationId, kind, emails, external = false }) {
   const em = normEmail(email);
-  if (!KINDS.includes(kind)) fail(400, "kind must be direct, group or org.");
+  if (!KINDS.includes(kind)) fail(400, "kind must be direct, group, org or meeting.");
   if (!isId(conversationId)) fail(400, "conversationId must be 24 hex characters (the MLS group id).");
   const dev = await getActiveDevice({ orgId, email: em, deviceId });
   if (!dev || dev.status !== "active") fail(403, "Enroll this device and publish KeyPackages before chatting.", "DEVICE_NOT_READY");
