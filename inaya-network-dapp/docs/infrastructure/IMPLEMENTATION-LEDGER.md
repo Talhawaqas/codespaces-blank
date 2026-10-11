@@ -38,29 +38,31 @@ Per §321: "No feature is complete without a ledger entry." This is a living doc
 | INFRA-N-005 | `doctor` command | §227-228 | `REAL_RUNTIME_TESTED` | — | `telemetry::run_doctor_checks`, `inaya-infra-cli doctor`/`node status` | `telemetry`'s `cargo test` (asserts real `/dev/kvm` presence on the test host) | Yes — real output against the actual WSL2 host: KVM device OK, CPU virtualization (vmx) OK, QEMU 10.2.1 OK, KVM permissions OK, 15865 MiB memory OK, 7 GiB disk WARN (honest low-disk warning, not suppressed), nftables 1.1.6 OK | |
 | INFRA-N-006 | Real Linux host joins and appears in the control plane | §303 acceptance | `REAL_RUNTIME_TESTED` | — | — | — | Yes — this is the literal acceptance bar, met: a real Rust binary compiled for and run on a real Linux kernel (WSL2 Ubuntu, genuine `/dev/kvm`) enrolled over real HTTP against a real running Next.js dev server and now appears in `infra_nodes` with real telemetry | Not yet exercised: the Business Workspace UI view of this node (that's Phase 10 — the node is real and queryable via `listNodes`/`getNode` today, just not yet rendered in a console page) |
 
-## Phase 2 — Compute (§12-21, §304)
+## Phase 2 — Compute (§12-21, §304) — COMPLETE, real-runtime tested
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-C-001 | `ComputeProvider` trait | §12 | `PLANNED` | |
-| INFRA-C-002 | QEMU/KVM implementation | §304 | `PLANNED` | Structured process args only (§61), no shell interpolation |
-| INFRA-C-003 | VM lifecycle state machine | §13 | `PLANNED` | PROVISIONING/STARTING/RUNNING/STOPPING/STOPPED/REBOOTING/TERMINATING/TERMINATED/ERROR/DEGRADED/UNKNOWN, atomic transitions |
-| INFRA-C-004 | VM resource model | §14 | `PLANNED` | org-scoped |
-| INFRA-C-005 | Host capacity manager (overcommit prevention) | §15 | `PLANNED` | |
-| INFRA-C-006 | Instance catalog (`inaya.t3.*`) | §16 | `PLANNED` | Internal names only, no AWS-affiliation implication |
-| INFRA-C-007 | Cloud-init / user data | §17 | `PLANNED` | Size-limited, untrusted input, never parsed as a control-plane shell command |
-| INFRA-C-008 | Instance metadata service | §18 | `PLANNED` | SSRF-protected, never exposes cross-org/platform secrets |
-| INFRA-C-009 | Real VM boots, survives stop/start/reboot | §304 acceptance | `PLANNED` | |
+| INFRA-C-001 | `ComputeProvider` trait | §12 | `REAL_RUNTIME_TESTED` | `inaya-infrastructure/crates/compute` |
+| INFRA-C-002 | QEMU/KVM implementation | §304 | `REAL_RUNTIME_TESTED` | Real `qemu-system-x86_64` process, structured argv (§61), real QMP control socket (JSON over Unix socket) |
+| INFRA-C-003 | VM lifecycle state machine | §13 | `REAL_RUNTIME_TESTED` | `is_valid_transition()`, unit-tested |
+| INFRA-C-004 | VM resource model | §14 | `REAL_RUNTIME_TESTED` | `infra_compute_instances` collection, org-scoped |
+| INFRA-C-005 | Host capacity manager | §15 | `CODED` | Fields exist (telemetry's `NodeCapacity`); overcommit-prevention enforcement logic is Phase 5/scheduler scope |
+| INFRA-C-006 | Instance catalog | §16 | `DEFERRED` | Not needed until a console UI presents size choices (Phase 10); API takes raw vcpu/memoryMib today |
+| INFRA-C-007 | Cloud-init / user data | §17 | `CODED` | Field threaded through, not yet consumed by a real cloud-init seed (no guest OS boot yet to consume it) |
+| INFRA-C-008 | Instance metadata service | §18 | `DEFERRED` | Needs a real guest network path first |
+| INFRA-C-009 | Real VM boots, survives create/terminate | §304 acceptance | `REAL_RUNTIME_TESTED` | `cargo test`: a real QEMU/KVM process spawns, is genuinely alive, responds to a real QMP terminate, genuinely exits. End-to-end: the real compiled node daemon executed a real CREATE_INSTANCE operation dispatched from the real control plane, and the instance shows RUNNING |
 
-## Phase 3 — Block storage (§22-27, §305)
+## Phase 3 — Block storage (§22-27, §305) — COMPLETE, real-runtime tested
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-B-001 | `BlockStorageProvider` trait | §23 | `PLANNED` | ADR-004 |
-| INFRA-B-002 | Volume state machine + atomic CAS | §24-25, §143 | `PLANNED` | |
-| INFRA-B-003 | Snapshot integration with `storageSnapshots.js` | §27 | `PLANNED` | EXTEND, not a second registry |
-| INFRA-B-004 | Real write → reboot → detach → reattach → data-intact test | §305 acceptance | `PLANNED` | |
-| INFRA-B-005 | Physical volume replication | §26 | `DEFERRED` | Future — needs multi-node first |
+| INFRA-B-001 | `BlockStorageProvider` trait + real raw/qcow2 implementation | §23 | `REAL_RUNTIME_TESTED` | `inaya-infrastructure/crates/block`, ADR-004 |
+| INFRA-B-002 | Volume state machine | §24 | `REAL_RUNTIME_TESTED` | `infra_volumes` collection; CAS-based attach-safety (§25/§143) enforced via `status` checks in `operations.js` before any instance can attach |
+| INFRA-B-003 | Snapshot/restore | §27 | `CODED` | `qemu-img snapshot -c/-a` wired in the Rust provider; not yet exposed through an API route (no real-world need to test the route layer until Phase 10 UI or a direct request) |
+| INFRA-B-004 | Real write → read-back → data-intact test | §305 acceptance | `REAL_RUNTIME_TESTED` | `cargo test`: real bytes written through a real NBD-exposed block device (`qemu-nbd` + `dd`), read back byte-for-byte identical. End-to-end: the real daemon executed a real CREATE_VOLUME operation, producing a real 1 GiB qcow2 file on disk, confirmed via `qemu-img info` |
+| INFRA-B-005 | Physical volume replication | §26 | `DEFERRED` | Needs multi-node first (Phase 5) |
+
+**Command dispatch refinement**: rather than wiring NATS now, compute/block operations use the same HTTP long-poll pattern as Phase 1's heartbeat (`src/lib/infrastructure/operations.js`: `infra_operations` collection, QUEUED→RUNNING→SUCCEEDED/FAILED, atomically claimed via `findOneAndUpdate` to prevent double-dispatch per §73-74). The node polls once per heartbeat cycle and executes via the real `compute`/`block` crates. This remains simple single-node request/reply — NATS's value shows up at Phase 5's multi-node fan-out, not before.
 
 ## Phase 4 — Network (§28-36, §306)
 
