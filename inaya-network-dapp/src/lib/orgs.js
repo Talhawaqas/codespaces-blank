@@ -76,6 +76,8 @@ import {
   canAccessNAS,
   canManageAiSecurity,
   canAccessAiSecurity,
+  canManageInfrastructure,
+  canAccessInfrastructure,
 } from "./orgGates.js";
 
 export {
@@ -89,6 +91,7 @@ export {
   canManageEscrow, canAccessEscrow, canManageAttestations, canAccessAttestations,
   canManageNAS, canAccessNAS,
   canManageAiSecurity, canAccessAiSecurity,
+  canManageInfrastructure, canAccessInfrastructure,
 };
 
 export const ROLES = ["owner", "admin", "member"];

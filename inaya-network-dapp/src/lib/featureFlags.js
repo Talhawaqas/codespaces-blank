@@ -32,6 +32,7 @@ export const FEATURES = [
   "FEATURE_FILE_WORKFLOW_AUTOMATION",
   "FEATURE_PQC",
   "FEATURE_MEET",
+  "FEATURE_INFRASTRUCTURE",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);

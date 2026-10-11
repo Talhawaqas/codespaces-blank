@@ -1,0 +1,178 @@
+# Sovereign Infrastructure Fabric — implementation ledger
+
+Per §321: "No feature is complete without a ledger entry." This is a living document, updated in the same commit as the work it describes, every phase, per the §316 workflow. It covers every capability group the SOW's 350 sections name — grouped by phase/workstream (as the two prior SOW ledgers in this repo were), not one row per section, since many sections (e.g. the SOW's own 18-section "acceptance criteria" block, §214-227) describe one capability's test requirements rather than 18 separate features.
+
+**Status legend** (§46, §327): `PLANNED` (not built) · `CODED` (written, not yet run against anything real) · `LOCAL_TESTED` (unit/integration tests pass) · `REAL_RUNTIME_TESTED` (exercised against real QEMU/KVM/NATS/etc.) · `MULTI_NODE_TESTED` · `OFFLINE_TESTED` · `SECURITY_VERIFIED` · `PRODUCTION_VERIFIED` (not claimed anywhere in this document — nothing here has shipped to production hardware) · `DEFERRED` (explicitly out of scope this pass, per the SOW's own text) · `NOT_APPLICABLE`.
+
+## Phase 0 — Audit & architecture (§1-9, §204-206, §297-301, §318-321)
+
+| ID | Capability | SOW §§ | Status | Existing Inaya reuse | New files | Notes |
+|---|---|---|---|---|---|---|
+| INFRA-P0-001 | Capability audit | §297 | `LOCAL_TESTED` | — | `docs/infrastructure/capability-audit.md` | 22-item audit, every SOW §6 reuse target confirmed by direct file inspection |
+| INFRA-P0-002 | Architecture doc | — | `LOCAL_TESTED` | — | `docs/infrastructure/architecture.md` | |
+| INFRA-P0-003 | ADR-001 runtime language | §298 | `LOCAL_TESTED` | — | `docs/infrastructure/adr-001-runtime.md` | Rust, confirmed by user |
+| INFRA-P0-004 | ADR-002 network provider | §300 | `LOCAL_TESTED` | — | `docs/infrastructure/adr-002-network.md` | Linux bridge+nftables Phase 1, OVN deferred |
+| INFRA-P0-005 | ADR-003 message fabric | §299 | `LOCAL_TESTED` | — | `docs/infrastructure/adr-003-message-fabric.md` | NATS+JetStream |
+| INFRA-P0-006 | ADR-004 block storage | §301 | `LOCAL_TESTED` | — | `docs/infrastructure/adr-004-block-storage.md` | raw/qcow2 over virtio-blk |
+| INFRA-P0-007 | Dependency/license audit | §8, §204 | `LOCAL_TESTED` | — | `docs/infrastructure/DEPENDENCY-LICENSE-AUDIT.md` | No AGPL/Spinifex code; NATS Apache-2.0, QEMU invoked as external GPL binary (subprocess, not linked) |
+| INFRA-P0-008 | Threat model | §205-209 | `LOCAL_TESTED` | — | `docs/infrastructure/threat-model.md` | 10 threat actors from §205, honest gap list included |
+| INFRA-P0-009 | Differences from Spinifex | §341 | `LOCAL_TESTED` | — | `docs/infrastructure/differences-from-spinifex.md` | |
+| INFRA-P0-010 | Non-duplication checklist | §344 | `LOCAL_TESTED` | — | folded into this ledger's phase gates | Enforced as a merge gate per phase, not a one-time checkbox |
+| INFRA-P0-011 | Duplicate-capability scanner | §318 | `REAL_RUNTIME_TESTED` | — | `scripts/infrastructure/check-duplicate-capabilities.mjs` | Ran clean against the current (empty) infra directories |
+| INFRA-P0-012 | Infrastructure permission gates | §67, §243-255 | `LOCAL_TESTED` | `src/lib/orgGates.js` (EXTEND) | `canManageInfrastructure`/`canAccessInfrastructure` added, `infrastructureRole` org_members field | Finer-grained compute/network/cluster gates deferred until a real sub-scoping need appears |
+| INFRA-P0-013 | Feature flag | §55 (Competitive Expansion precedent) | `LOCAL_TESTED` | `src/lib/featureFlags.js` (EXTEND) | `FEATURE_INFRASTRUCTURE` added | Off by default everywhere until an org opts in |
+
+## Phase 1 — Node runtime (§40-43, §303)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-N-001 | `inaya-infra-node` binary scaffold | §10-11 | `PLANNED` | Rust Cargo workspace at `inaya-infrastructure/` |
+| INFRA-N-002 | Node identity + mTLS enrollment | §41-42 | `PLANNED` | Enrollment token → cert issuance → PENDING → admin-approve (if required) → ACTIVE |
+| INFRA-N-003 | Node revocation | §43 | `PLANNED` | |
+| INFRA-N-004 | Heartbeat + capacity reporting | §15, §126 | `PLANNED` | |
+| INFRA-N-005 | `doctor` command | §227-228 | `PLANNED` | Checks KVM/QEMU/CPU-virt/RAM/disk/network/clock/certs/firewall/permissions |
+| INFRA-N-006 | Real Linux host joins and appears in Business Workspace | §303 acceptance | `PLANNED` | Target: a real WSL2 Ubuntu node |
+
+## Phase 2 — Compute (§12-21, §304)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-C-001 | `ComputeProvider` trait | §12 | `PLANNED` | |
+| INFRA-C-002 | QEMU/KVM implementation | §304 | `PLANNED` | Structured process args only (§61), no shell interpolation |
+| INFRA-C-003 | VM lifecycle state machine | §13 | `PLANNED` | PROVISIONING/STARTING/RUNNING/STOPPING/STOPPED/REBOOTING/TERMINATING/TERMINATED/ERROR/DEGRADED/UNKNOWN, atomic transitions |
+| INFRA-C-004 | VM resource model | §14 | `PLANNED` | org-scoped |
+| INFRA-C-005 | Host capacity manager (overcommit prevention) | §15 | `PLANNED` | |
+| INFRA-C-006 | Instance catalog (`inaya.t3.*`) | §16 | `PLANNED` | Internal names only, no AWS-affiliation implication |
+| INFRA-C-007 | Cloud-init / user data | §17 | `PLANNED` | Size-limited, untrusted input, never parsed as a control-plane shell command |
+| INFRA-C-008 | Instance metadata service | §18 | `PLANNED` | SSRF-protected, never exposes cross-org/platform secrets |
+| INFRA-C-009 | Real VM boots, survives stop/start/reboot | §304 acceptance | `PLANNED` | |
+
+## Phase 3 — Block storage (§22-27, §305)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-B-001 | `BlockStorageProvider` trait | §23 | `PLANNED` | ADR-004 |
+| INFRA-B-002 | Volume state machine + atomic CAS | §24-25, §143 | `PLANNED` | |
+| INFRA-B-003 | Snapshot integration with `storageSnapshots.js` | §27 | `PLANNED` | EXTEND, not a second registry |
+| INFRA-B-004 | Real write → reboot → detach → reattach → data-intact test | §305 acceptance | `PLANNED` | |
+| INFRA-B-005 | Physical volume replication | §26 | `DEFERRED` | Future — needs multi-node first |
+
+## Phase 4 — Network (§28-36, §306)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-NET-001 | `NetworkProvider` trait | §189 | `PLANNED` | |
+| INFRA-NET-002 | Linux bridge + nftables implementation | ADR-002 | `PLANNED` | |
+| INFRA-NET-003 | VPC/Subnet/Route table model | §29-31 | `PLANNED` | |
+| INFRA-NET-004 | Security groups (stateful) | §32 | `PLANNED` | All mutations audited |
+| INFRA-NET-005 | Network interfaces + IP management | §33-34 | `PLANNED` | Caller-supplied interface ID always ownership-verified |
+| INFRA-NET-006 | Real cross-tenant isolation test | §306 acceptance, §216 | `PLANNED` | |
+| INFRA-NET-007 | OVN/OVS | §28 | `DEFERRED` | ADR-002 — documented future upgrade |
+| INFRA-NET-008 | Load balancing | §35 | `DEFERRED` | SOW itself: "Phase 1 should not create a custom packet-processing stack" |
+| INFRA-NET-009 | DNS / service discovery | §36 | `DEFERRED` | SOW itself frames as future evaluation |
+
+## Phase 5 — Cluster / HA (§44-50, §91-96, §307)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-CL-001 | Cluster model + modes | §44 | `PLANNED` | DEVELOPMENT/SINGLE_NODE/EDGE/HA/AIR_GAPPED/REGULATED/AI_GPU |
+| INFRA-CL-002 | Capability model + states | §45-46 | `PLANNED` | Never shows `supported` merely because code exists |
+| INFRA-CL-003 | Scheduler (hard/soft constraints) | §47-48, §91-92 | `PLANNED` | Explainable placement output |
+| INFRA-CL-004 | Data residency model | §49-50 | `PLANNED` | DECLARED/VERIFIED/UNKNOWN, never inferred |
+| INFRA-CL-005 | Node leases | §108 | `PLANNED` | |
+| INFRA-CL-006 | Node draining | §95, §141 | `PLANNED` | |
+| INFRA-CL-007 | 3-node real join + 1-node-failure test | §307 acceptance, §93, §217 | `PLANNED` | Substrate: WSL2 distro clones primary, VirtualBox/VMware fallback (per the approved plan) |
+| INFRA-CL-008 | Live migration | §96, §142, §171 | `DEFERRED` | SOW: "Phase 0 research only... do not create a UI toggle before the real feature exists" |
+
+## Phase 6 — Offline / edge (§51-58, §308)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-OFF-001 | Offline local state | §52-53 | `PLANNED` | Secrets encrypted, never plaintext |
+| INFRA-OFF-002 | Offline authorization bounds | §54 | `PLANNED` | Fail-closed for high-risk actions past expiry |
+| INFRA-OFF-003 | Offline audit queue + reconciliation | §55-56 | `PLANNED` | Feeds into the existing audit chain on reconnect — no second permanent ledger |
+| INFRA-OFF-004 | Real WAN-disconnect test | §308 acceptance, §218 | `PLANNED` | Tested by disconnecting the WSL2 node's network interface |
+| INFRA-OFF-005 | Air-gapped installer (ISO, offline package repo, SBOM) | §57-58 | `DEFERRED` | Real air-gap installer packaging is a later-phase deliverable once the runtime itself is stable, per §233's own sequencing |
+
+## Phase 7 — Trust integration (§81-83, §99-123, §309)
+
+| ID | Capability | SOW §§ | Status | Existing Inaya reuse |
+|---|---|---|---|---|
+| INFRA-TR-001 | Audit events for every infra lifecycle action | §82, §263 | `PLANNED` | `auditChain.js:appendAuditEntry()` — free-string `recordType`, no registry edit needed |
+| INFRA-TR-002 | Evidence Graph subjects | §81, §264 | `PLANNED` | `businessEvents.js` `EVENT_TYPES`/`SUBJECT_RESOLVERS` — closed registry, one entry per subject |
+| INFRA-TR-003 | Infrastructure passport | §83, §253 | `PLANNED` | `businessEventPassport.js` — generic once subjects are registered |
+| INFRA-TR-004 | Digital Twin integration | §99-100, §251 | `PLANNED` | `digitalTwin.js` — org-wide gate precedent (storage-resource special case) |
+| INFRA-TR-005 | Resilience integration | §101-105, §262 | `PLANNED` | `resilience-orchestrator.js` — new adapters, no second engine |
+| INFRA-TR-006 | Security Layer integration | §109, §179, §270 | `PLANNED` | `incidents.js:createIncident()` — NOT `security.js` (its enum is on-chain-synced) |
+| INFRA-TR-007 | Infrastructure AI (read-only tools) | §111, §269 | `PLANNED` | `ai-os-router.js` pattern, `infra_` prefix |
+| INFRA-TR-008 | AI mutation rule (no direct destructive execution) | §112-114, §182-183 | `PLANNED` | `ai-action-requests.js` `EXECUTORS` map — same 36h-delay pipeline as every other AI mutation |
+| INFRA-TR-009 | Digital Twin what-if scenarios | §115-118 | `PLANNED` | NODE_FAILURE/GPU_FAILURE/VOLUME_FAILURE/NETWORK_PARTITION/etc. |
+| INFRA-TR-010 | Notifications | §123, §266 | `PLANNED` | `notify/router.js` `EVENTS` catalog |
+| INFRA-TR-011 | Workflow Manager integration | §119, §181, §268 | `PLANNED` | `src/lib/workflows/` catalog |
+| INFRA-TR-012 | Business event integration | §120 | `PLANNED` | Reference, never shadow-copy — already enforced by `createBusinessEvent()`'s own design |
+| INFRA-TR-013 | Evidence export (JSON/CSV/PDF) | §121 | `PLANNED` | `evidenceExporter.js` — no second PDF system |
+| INFRA-TR-014 | Infrastructure search | §122, §265 | `PLANNED` | Extend existing global search/command palette |
+| INFRA-TR-015 | `trustHealth.js` integration | §80 | `PLANNED` | One more input signal, not a second dashboard |
+
+## Phase 8 — Terraform (§161-163, §310)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-TF-001 | `inaya_compute_instance`, `inaya_compute_volume`, `inaya_vpc`, `inaya_subnet`, `inaya_security_group`, `inaya_network_interface`, `inaya_public_ip`, `inaya_compute_snapshot`, `inaya_compute_reservation`, `inaya_compute_cluster` resources | §161 | `PLANNED` | `resource_storage_resource.go` is the exact template |
+| INFRA-TF-002 | State-drift safety (re-fetch authoritative state after Create) | §162 | `PLANNED` | Same fix pattern already applied once in this provider |
+| INFRA-TF-003 | Real apply/refresh/plan/update/destroy cycle | §163, §310 acceptance | `PLANNED` | Against the real local control plane |
+
+## Phase 9 — AWS CLI/SDK interoperability (§157-160, §220, §311)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-AWS-001 | Capability-based compatibility registry | §158 | `PLANNED` | DISCOVERED/READ_ONLY/PARTIAL/VERIFIED/COMPATIBLE/UNSUPPORTED — only the highest *verified* level advertised |
+| INFRA-AWS-002 | EC2-like compute via real `aws-cli` test | §159, §311 | `PLANNED` | create/read/mutate/destroy/verify-no-leaked-state, real CLI against the real endpoint |
+| INFRA-AWS-003 | VPC-like networking via real `aws-cli` test | §159 | `PLANNED` | |
+| INFRA-AWS-004 | EBS-like volumes via real `aws-cli` test | §159 | `PLANNED` | |
+| INFRA-AWS-005 | AWS SDK (JS) test | §160 | `PLANNED` | At least one official SDK, not just the CLI |
+| INFRA-AWS-006 | Full AWS compatibility claim | §157, §220 | `NOT_APPLICABLE` | Explicitly never claimed — only the tested operation subset is ever labeled compatible |
+
+## Phase 10 — Infrastructure console (§124-130, §312)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-UX-001 | Business Workspace "Infrastructure" nav section | §124 | `PLANNED` | Overview/Clusters/Nodes/Compute/Volumes/Networks/Security Groups/Load Balancers/GPU/Capacity/Resilience/Evidence/Policies |
+| INFRA-UX-002 | Infrastructure overview page | §125 | `PLANNED` | All values real, no placeholder numbers |
+| INFRA-UX-003 | Node view | §126 | `PLANNED` | |
+| INFRA-UX-004 | Compute view | §127 | `PLANNED` | |
+| INFRA-UX-005 | Mobile scope (observability only) | §128 | `DEFERRED` | Web console first, per the approved plan |
+| INFRA-UX-006 | Desktop scope | §129 | `DEFERRED` | Explicitly: "do not turn the Drive helper into a hypervisor service" — deferred past this pass |
+| INFRA-UX-007 | Stateless SDK methods | §130 | `DEFERRED` | After the API itself is stable |
+| INFRA-UX-008 | `inaya-infra` CLI | §131-132 | `PLANNED` | `inaya-infra-cli` crate, part of the Phase 1 workspace scaffold |
+
+## Phase 11 — GPU (§19-20, §90, §219, §313)
+
+| ID | Capability | SOW §§ | Status | Notes |
+|---|---|---|---|---|
+| INFRA-GPU-001 | Hardware detection (vendor/model/memory/IOMMU/driver state) | §90 Phase 0, §19 | `PLANNED` | Real test target: the user's NVIDIA GeForce MX350, confirmed reachable via `nvidia-smi` |
+| INFRA-GPU-002 | GPU scheduling states | §20 | `PLANNED` | No fake fractional GPU support |
+| INFRA-GPU-003 | Controlled passthrough allocation | §90 Phase 1, §219 acceptance | `DEFERRED` | Requires a bare-metal Linux host owning the PCI device directly — not achievable from WSL2, and not attempted against the user's primary/only (muxless Optimus) display GPU. Explicit hardware-safety deferral, documented in the approved plan, not a silent gap |
+
+## Phase 12 — Advanced orchestration (explicitly future, per the SOW's own text throughout)
+
+| ID | Capability | SOW §§ | Status | SOW's own words |
+|---|---|---|---|---|
+| INFRA-ADV-001 | Load balancing (full) | §35, §1001 | `DEFERRED` | "Phase 1 should not create a custom packet-processing stack" |
+| INFRA-ADV-002 | DNS/service discovery (full) | §36 | `DEFERRED` | "Do not write a custom DNS server just because another project has one" |
+| INFRA-ADV-003 | Container runtime | §192 | `DEFERRED` | "Do not implement full ECS/container orchestration in Phase 1" |
+| INFRA-ADV-004 | Kubernetes | §193, §314 | `DEFERRED` | "Do not claim EKS support merely because Spinifex supports it... Phase 1 only after the VM/network/storage base is stable" |
+| INFRA-ADV-005 | Container registry | §194 | `DEFERRED` | Future, reuses existing S3 when built |
+| INFRA-ADV-006 | RDS-on-sovereign-compute | §195 | `DEFERRED` | Future integration, no second RDS control plane |
+| INFRA-ADV-007 | Confidential compute (TEE/SGX/SEV/TDX) | §154, §256 | `DEFERRED` | "Existing Inaya Attestation is software-simulated, not hardware-backed... Do not claim SGX/SEV/TDX hardware security in Phase 1" |
+| INFRA-ADV-008 | TPM-backed identity | §155 | `DEFERRED` | "Phase 0 research... No Phase-1 certification claim" |
+| INFRA-ADV-009 | Customer-managed KMS/HSM/Vault | §187 | `DEFERRED` | "No fake KMS connector" |
+| INFRA-ADV-010 | Live migration | §96, §142, §171, §314 | `DEFERRED` | Covered under Phase 5 above; repeated here since §314 lists it under "Advanced" too |
+| INFRA-ADV-011 | AI training / distributed GPU | §256 | `DEFERRED` | "Do not build this until a real customer workload exists" |
+| INFRA-ADV-012 | Public DePIN compute marketplace | §151-153, §333-334 | `DEFERRED` | "Not Phase 1" — and explicitly kept architecturally separate from this sovereign-infrastructure work, never silently merged |
+| INFRA-ADV-013 | Spot/interruptible capacity | §150 | `DEFERRED` | "Future feature" |
+| INFRA-ADV-014 | Federation | §314 | `DEFERRED` | Listed as future in the SOW's own Phase 12 |
+
+## Quality gates (§322) — applied to every phase above before it moves out of `PLANNED`
+
+A phase advances only when: tests pass, a security review is complete for that phase's surface, no regression in the existing suite, documentation is updated, limitations are documented, and every capability state above is truthful — never `REAL_RUNTIME_TESTED` where the actual result was `NOT TESTED` (§327).

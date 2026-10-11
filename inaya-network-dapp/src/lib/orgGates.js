@@ -307,3 +307,17 @@ export function hasAdminRole(membership, role, { read = false } = {}) {
   if (read && mine.includes("auditor")) return true;
   return (Array.isArray(role) ? role : [role]).some((r) => mine.includes(r));
 }
+
+// ============================================================
+// Sovereign Infrastructure Fabric SOW (Spinifex-inspired). `infrastructureRole`
+// is one more optional, additive org_members field, same shape as
+// storageRole/dataSourceRole/nasRole above -- gates the whole Infrastructure
+// console/API surface (clusters, nodes, compute, volumes, networks).
+// ============================================================
+export function canManageInfrastructure(membership) {
+  return canManageOrg(membership) || membership?.infrastructureRole === "manager";
+}
+
+export function canAccessInfrastructure(membership) {
+  return canManageInfrastructure(membership) || membership?.infrastructureRole === "staff";
+}
