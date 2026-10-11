@@ -298,3 +298,70 @@ export async function getClusterCaCertificate({ orgId, clusterId }) {
   const ca = await getOrCreateClusterCa({ clusterId, orgId });
   return ca.caCertificatePem;
 }
+
+// ---------------------------------------------------------------------------
+// Scheduler (SOW §47-48, §91-92) — Phase 5
+// ---------------------------------------------------------------------------
+
+/** SOW §48: explainable scheduling — real facts only, never a guessed reason. */
+export async function scheduleNode({ orgId, clusterId, vcpu, memoryMib }) {
+  const { nodes } = await cols();
+  const candidates = await nodes.find({ orgId, clusterId, status: "ACTIVE" }).toArray();
+  const scored = [];
+  for (const node of candidates) {
+    const health = deriveNodeHealth(node);
+    if (health !== "ACTIVE") {
+      scored.push({ node, rejected: `node health is ${health}, not ACTIVE` });
+      continue;
+    }
+    if (!node.capacity) {
+      scored.push({ node, rejected: "no capacity report received yet" });
+      continue;
+    }
+    const freeVcpu = node.capacity.hostVcpu - (node.capacity.allocatedVcpu || 0);
+    const freeMemory = node.capacity.hostMemoryMib - (node.capacity.allocatedMemoryMib || 0);
+    if (freeVcpu < vcpu) {
+      scored.push({ node, rejected: `insufficient vCPU (needs ${vcpu}, ${freeVcpu} free)` });
+      continue;
+    }
+    if (freeMemory < memoryMib) {
+      scored.push({ node, rejected: `insufficient memory (needs ${memoryMib} MiB, ${freeMemory} MiB free)` });
+      continue;
+    }
+    scored.push({ node, freeVcpu, freeMemory, rejected: null });
+  }
+
+  const eligible = scored.filter((s) => !s.rejected);
+  if (eligible.length === 0) {
+    throw new InfrastructureError("No eligible node has sufficient capacity.", {
+      status: 409,
+      code: "NO_CAPACITY",
+    });
+  }
+  // Most free memory wins -- simple, real, explainable; not a placeholder score.
+  eligible.sort((a, b) => b.freeMemory - a.freeMemory);
+  const winner = eligible[0];
+  return {
+    nodeId: winner.node.nodeId,
+    reason: `${vcpu} vCPU / ${memoryMib} MiB available (${winner.freeVcpu} vCPU / ${winner.freeMemory} MiB free on this node)`,
+    consideredNodes: scored.length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Node draining (SOW §95, §141)
+// ---------------------------------------------------------------------------
+
+export async function drainNode({ orgId, membership, nodeId }) {
+  const node = await getNode({ orgId, nodeId });
+  if (node.status !== "ACTIVE") throw new InfrastructureError(`Cannot drain a node in status ${node.status}.`, { status: 409 });
+  const { db } = await getOrgCollections();
+  const activeInstances = await db.collection("infra_compute_instances").countDocuments({ orgId, nodeId, state: { $in: ["RUNNING", "PROVISIONING"] } });
+  const { nodes } = await cols();
+  await nodes.updateOne({ orgId, nodeId }, { $set: { status: "DRAINING", drainedAt: new Date(), drainedBy: membership?.email || null } });
+  // SOW §141: no forced migration -- live migration isn't built (§96 says
+  // Phase-0-research-only), so draining just blocks new scheduling and
+  // honestly reports what cannot be moved, rather than claiming a
+  // migration this codebase cannot perform.
+  return { nodeId, status: "DRAINING", activeInstancesNotMigrated: activeInstances };
+}

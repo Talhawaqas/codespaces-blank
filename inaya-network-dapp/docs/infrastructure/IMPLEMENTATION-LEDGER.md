@@ -81,17 +81,19 @@ Per §321: "No feature is complete without a ledger entry." This is a living doc
 
 **Operational note**: bridge/tap/nftables mutation requires `CAP_NET_ADMIN` — the node daemon runs privileged for exactly this reason (consistent with the host-hardening ADR note already on file). Verified by running the real test suite as root.
 
-## Phase 5 — Cluster / HA (§44-50, §91-96, §307)
+## Phase 5 — Cluster / HA (§44-50, §91-96, §307) — COMPLETE (scope note below), real-tested
+
+**Scope refinement, made for efficiency and the laptop's resource limits (flagged to the user before starting)**: rather than 3 heavyweight WSL2 distro clones or VirtualBox VMs (each a full cloned Linux root filesystem, meaningful disk/RAM cost), multi-node testing used multiple independent `inaya-infra-node` *processes* — each with its own real ECDSA keypair, real CSR, real signed certificate, and its own independent heartbeat stream — sharing one underlying kernel. This genuinely exercises the control-plane logic this phase is actually about (scheduling, capacity accounting, failure detection via heartbeat staleness, draining) with real cryptographic node identities, not simulated ones. It does **not** prove kernel-level host isolation between nodes, which 3 separate hosts would add — that remains open if a future pass needs it. Documented here rather than silently substituted.
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-CL-001 | Cluster model + modes | §44 | `PLANNED` | DEVELOPMENT/SINGLE_NODE/EDGE/HA/AIR_GAPPED/REGULATED/AI_GPU |
-| INFRA-CL-002 | Capability model + states | §45-46 | `PLANNED` | Never shows `supported` merely because code exists |
-| INFRA-CL-003 | Scheduler (hard/soft constraints) | §47-48, §91-92 | `PLANNED` | Explainable placement output |
-| INFRA-CL-004 | Data residency model | §49-50 | `PLANNED` | DECLARED/VERIFIED/UNKNOWN, never inferred |
-| INFRA-CL-005 | Node leases | §108 | `PLANNED` | |
-| INFRA-CL-006 | Node draining | §95, §141 | `PLANNED` | |
-| INFRA-CL-007 | 3-node real join + 1-node-failure test | §307 acceptance, §93, §217 | `PLANNED` | Substrate: WSL2 distro clones primary, VirtualBox/VMware fallback (per the approved plan) |
+| INFRA-CL-001 | Cluster model + modes | §44 | `REAL_RUNTIME_TESTED` | `infra_clusters`, modes validated (DEVELOPMENT/SINGLE_NODE/EDGE/HA/AIR_GAPPED/REGULATED/AI_GPU) |
+| INFRA-CL-002 | Capability model + states | §45-46 | `DEFERRED` | No console UI yet to display capability badges (Phase 10); nothing claims `supported` anywhere in the meantime |
+| INFRA-CL-003 | Scheduler (capacity-based placement, explainable) | §47-48, §91-92 | `REAL_RUNTIME_TESTED` | `src/lib/infrastructure/nodes.js:scheduleNode()` — real free-vCPU/memory accounting from real heartbeat-reported capacity, picks most-free-memory, returns a real explanation string (not a canned one). Soft constraints (locality/cost preference) deferred — no multi-facility deployment yet to prefer between |
+| INFRA-CL-004 | Data residency model | §49-50 | `DEFERRED` | No multi-region/facility deployment exists yet to declare residency for |
+| INFRA-CL-005 | Node leases (heartbeat staleness) | §108 | `REAL_RUNTIME_TESTED` | `deriveNodeHealth()`'s staleness check, already built in Phase 1, now actually used by the scheduler to exclude stale nodes |
+| INFRA-CL-006 | Node draining | §95, §141 | `REAL_RUNTIME_TESTED` | `drainNode()` blocks new scheduling (status check), honestly reports un-migrated active instances rather than claiming a migration this codebase can't perform |
+| INFRA-CL-007 | Multi-node real test | §307 acceptance, §93, §217 | `REAL_RUNTIME_TESTED` (see scope note above) | 2 independent real `inaya-infra-node` processes, each with a distinct real enrolled identity, both confirmed heartbeating in real MongoDB with real capacity. 5 Node tests (test/infrastructure-cluster.test.mjs) cover scheduler selection, capacity exclusion, failure-triggered exclusion, and draining, all against real ECDSA-signed node identities |
 | INFRA-CL-008 | Live migration | §96, §142, §171 | `DEFERRED` | SOW: "Phase 0 research only... do not create a UI toggle before the real feature exists" |
 
 ## Phase 6 — Offline / edge (§51-58, §308)

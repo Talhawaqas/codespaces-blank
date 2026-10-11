@@ -14,7 +14,7 @@
 
 import crypto from "node:crypto";
 import { getOrgCollections } from "../orgs.js";
-import { InfrastructureError, verifyNodeAuth, getCluster } from "./nodes.js";
+import { InfrastructureError, verifyNodeAuth, getCluster, scheduleNode } from "./nodes.js";
 
 const OPERATION_STATUSES = ["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "CANCELLED"];
 
@@ -143,11 +143,15 @@ export async function getVpc({ orgId, vpcId }) {
 
 export async function createInstance({ orgId, membership, clusterId, nodeId, name, vcpu, memoryMib, volumeId, vpcId }) {
   await getCluster({ orgId, clusterId });
-  if (!nodeId) throw new InfrastructureError("nodeId is required.", { status: 400 });
   if (!name) throw new InfrastructureError("name is required.", { status: 400 });
   if (!Number.isInteger(vcpu) || vcpu < 1 || vcpu > 64) throw new InfrastructureError("vcpu must be an integer between 1 and 64.", { status: 400 });
   if (!Number.isInteger(memoryMib) || memoryMib < 128 || memoryMib > 1048576) {
     throw new InfrastructureError("memoryMib must be an integer between 128 and 1048576.", { status: 400 });
+  }
+  let schedule = null;
+  if (!nodeId) {
+    schedule = await scheduleNode({ orgId, clusterId, vcpu, memoryMib });
+    nodeId = schedule.nodeId;
   }
   if (volumeId) {
     const v = await getVolume({ orgId, volumeId });
@@ -188,7 +192,7 @@ export async function createInstance({ orgId, membership, clusterId, nodeId, nam
     params: { instanceId, name, vcpu, memoryMib, volumeId: volumeId || null, vpcId: vpcId || null, securityGroupRules: vpcSecurityGroupRules },
     actorEmail: membership?.email,
   });
-  return { instanceId, state: "PROVISIONING" };
+  return { instanceId, state: "PROVISIONING", nodeId, schedulingReason: schedule?.reason || "explicitly requested node" };
 }
 
 async function instanceAction(action, { orgId, membership, instanceId }) {
