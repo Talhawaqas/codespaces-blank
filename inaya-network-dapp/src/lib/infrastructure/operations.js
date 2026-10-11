@@ -143,6 +143,17 @@ export async function getVpc({ orgId, vpcId }) {
   return v;
 }
 
+export async function deleteVpc({ orgId, membership, vpcId }) {
+  const vpc = await getVpc({ orgId, vpcId });
+  const { instances } = await cols();
+  const attached = await instances.countDocuments({ orgId, vpcId, state: { $in: ["RUNNING", "PROVISIONING"] } });
+  if (attached > 0) throw new InfrastructureError("Cannot delete a VPC with attached instances.", { status: 409 });
+  const { vpcs } = await cols();
+  await vpcs.updateOne({ orgId, vpcId }, { $set: { status: "DELETING" } });
+  await enqueue({ orgId, clusterId: vpc.clusterId, nodeId: vpc.nodeId, type: "DELETE_VPC", resourceId: vpcId, params: { vpcId }, actorEmail: membership?.email });
+  return { vpcId, status: "DELETING" };
+}
+
 // ---------------------------------------------------------------------------
 // Compute instances (SOW §12-14)
 // ---------------------------------------------------------------------------
@@ -268,6 +279,9 @@ export async function completeOperation({ signedToken, operationId, status, resu
   switch (op.type) {
     case "CREATE_VPC":
       await vpcs.updateOne({ orgId, vpcId: op.resourceId }, { $set: { status: ok ? "AVAILABLE" : "FAILED" } });
+      break;
+    case "DELETE_VPC":
+      if (ok) await vpcs.updateOne({ orgId, vpcId: op.resourceId }, { $set: { status: "DELETED" } });
       break;
     case "CREATE_VOLUME":
       await volumes.updateOne({ orgId, volumeId: op.resourceId }, { $set: { status: ok ? "AVAILABLE" : "FAILED" } });
