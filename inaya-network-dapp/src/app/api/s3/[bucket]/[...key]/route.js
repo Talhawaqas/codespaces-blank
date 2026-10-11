@@ -298,6 +298,7 @@ export async function GET(req, { params }) {
             ETag: `"${etagOf(doc)}"`,
             "Accept-Ranges": "bytes",
             // SQA-021: no x-amz-checksum for a PARTIAL body -- the stored checksum is of the whole object, so the AWS CLI's validation of it failed every ranged GET
+            "Cache-Control": "private, no-store",
           },
         });
       }
@@ -311,6 +312,7 @@ export async function GET(req, { params }) {
         ETag: `"${etagOf(doc)}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
+        "Cache-Control": "private, no-store",
         ...checksumHeaders(doc),
       },
     });
@@ -338,6 +340,7 @@ export async function HEAD(req, { params }) {
         ETag: `"${etagOf(doc)}"`,
         "Accept-Ranges": "bytes",
         "Last-Modified": new Date(doc.createdAt).toUTCString(),
+        "Cache-Control": "private, no-store",
         ...checksumHeaders(doc),
         ...(doc.versionId ? { "x-amz-version-id": doc.versionId } : {}),
       },

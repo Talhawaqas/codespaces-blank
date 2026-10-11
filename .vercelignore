@@ -26,7 +26,20 @@ node_modules
 
 # Separately hosted repos, not part of this deploy's build
 inaya-mobile
+inaya-mobile-release
+inaya-mobile-verify
 inaya-network-dapp/custody-sdk
+
+# Sibling Rust/native repos -- not part of this deploy's build, and their
+# build output directories alone run into multiple GB (confirmed: 3.9G
+# inaya-infrastructure/, 1.1G inaya-drive-helper/, 470M inaya-drive-core/)
+inaya-infrastructure
+inaya-drive-core
+inaya-drive-helper
+**/target
+
+# Prebuilt Linux build artifacts -- large, regenerable, not part of the web deploy
+linux-build-artifacts
 
 # Hardhat build output -- regenerable, and not needed by the Next.js build
 artifacts

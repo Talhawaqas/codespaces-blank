@@ -11,8 +11,10 @@
 //   3. hands it to the same processing as every other channel (lib/support/inbound.js): idempotent by Message-ID,
 //      threaded only by the signed reply-address or stored Message-IDs, sender must be a participant and pass
 //      DKIM/DMARC, otherwise it is quarantined for a person to review.
-// Configuration (platform level): RESEND_API_KEY (already used for sending; must be allowed to read received email),
-// RESEND_WEBHOOK_SECRET, and SUPPORT_INBOUND_DOMAIN (the domain Resend receives mail for).
+// Configuration (platform level): RESEND_INBOUND_API_KEY (a dedicated key, separate from RESEND_API_KEY which the
+// rest of the app uses for sending -- kept separate so rotating or scoping one never risks the other), falling back
+// to RESEND_API_KEY only if the dedicated key isn't set; RESEND_WEBHOOK_SECRET; and SUPPORT_INBOUND_DOMAIN (the
+// domain Resend receives mail for).
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { orgBySlug } from "./settings.js";
@@ -56,8 +58,8 @@ export function authFromHeaders(headers) {
 }
 
 async function resendGet(path) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY is not configured.");
+  const key = process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_INBOUND_API_KEY is not configured.");
   const res = await fetch(`${API()}${path}`, { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Resend answered ${res.status} for ${path.split("/").slice(0, 3).join("/")}.`);
   return res.json();
