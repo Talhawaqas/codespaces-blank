@@ -20,6 +20,10 @@ Status: Accepted, 2026-10-10.
 
 NATS + JetStream, run as a container (confirmed: WSL2's Docker daemon is live and reachable from this session) for development/testing, with a documented path to a dedicated NATS cluster for production multi-node deployments.
 
+## Phase 1 refinement (made during implementation, 2026-10-11)
+
+Phase 1 (node enrollment, heartbeat, `doctor`) turned out not to need NATS at all — it's simple request/reply between one node and the control plane, which plain HTTPS handles correctly and more simply than standing up a broker this phase has no real multi-node dispatch traffic to test against. Wiring up `async-nats` before there's a genuine need to exercise it would mean claiming infrastructure this phase doesn't actually use, which §328 forbids. The decision above (NATS + JetStream) stands for Phase 2 onward, when the control plane needs to dispatch commands to potentially many nodes — that's where durable delivery and pub/sub actually earn their complexity. The `messages` crate holds the real, stable part that doesn't depend on that timing: the subject-naming convention (§38), so Phase 2's NATS wiring has one source of truth to build against rather than inventing subject strings ad hoc.
+
 ## Consequences
 
 - `inaya-infrastructure/crates/messages` wraps `async-nats` (the official Rust client) with Inaya's own subject-naming module (§38) and message-metadata envelope (§39: `orgId`, `actorIdentityId`, `requestId`, `traceId`, `clusterId`, `resourceId`, `policyVersion`, `timestamp` on every message) — the receiving daemon never trusts org identity solely because it's present in a JSON body (§39's own rule), it's independently verified against the sender's mTLS-authenticated node identity.

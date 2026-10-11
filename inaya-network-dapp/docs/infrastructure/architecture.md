@@ -42,7 +42,9 @@ Browser / SDK / Terraform / CLI
      Customer Hardware
 ```
 
-The Next.js application is explicitly the business/identity/policy/evidence/billing control plane — never the hypervisor (§7). Every physical action (a VM actually starting, a disk actually attaching) happens inside `inaya-infra-node`, on the customer's own host, authenticated by mTLS node identity, dispatched over NATS. The control plane only ever holds **desired state**; `inaya-infra-node` reports **observed state** back, and the reconciler (Phase 5) is the only thing allowed to notice and surface drift between the two (§78).
+The Next.js application is explicitly the business/identity/policy/evidence/billing control plane — never the hypervisor (§7). Every physical action (a VM actually starting, a disk actually attaching) happens inside `inaya-infra-node`, on the customer's own host. The control plane only ever holds **desired state**; `inaya-infra-node` reports **observed state** back, and the reconciler (Phase 5) is the only thing allowed to notice and surface drift between the two (§78).
+
+**Node authentication, built in Phase 1 (real, not theoretical):** §41 calls for mTLS between infrastructure components. For node↔message-fabric (Phase 2+, a broker Inaya fully runs and controls), real TLS client-certificate negotiation is available and used. For node↔this Next.js control plane specifically, the path runs through Vercel's edge, which doesn't expose custom client-certificate verification to serverless routes — the same real platform constraint that already shaped Secure Chat's and Meet's transport choices (no persistent WebSockets either). The same cryptographic property mTLS provides — proof the caller holds the private key matching a certificate the server trusts — is instead achieved over plain HTTPS via request signing: the node signs a short-lived token with its certified private key; the control plane verifies that signature against the node's stored certificate. Confirmed working end-to-end against a real compiled node binary (see the implementation ledger, INFRA-N-002/004).
 
 ## Two provider models (§9)
 

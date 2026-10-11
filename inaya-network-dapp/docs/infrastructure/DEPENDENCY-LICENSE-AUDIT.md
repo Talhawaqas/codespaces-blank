@@ -30,7 +30,10 @@ Exact versions are locked in `inaya-infrastructure/Cargo.lock` once the workspac
 
 ## Node.js / Next.js side (`inaya-network-dapp`)
 
-No new npm dependencies are required for the control-plane work in Phases 0/7/8/10 — everything needed (MongoDB driver, Next.js routing, existing crypto/audit/evidence libraries) is already in `package.json`. This row is updated if that changes in a later phase.
+| Dependency | License | Why | Notes |
+|---|---|---|---|
+| `@peculiar/x509` | MIT | Cluster CA generation, CSR verification, and node certificate signing for node enrollment (§41-42). Built on the standard WebCrypto API (Node's own built-in `crypto.webcrypto`, no separate crypto backend needed), with first-class ECDSA support matching the Rust node runtime's own `rcgen`-generated keys (ECDSA P-256) — confirmed by an end-to-end smoke test (CA → CSR → signed cert → chain verification → auth-token signature verification, all real, all passing) before adopting it. Initially tried `node-forge` instead; swapped after confirming forge's elliptic-curve support is far less mature than its RSA path, and RSA keygen isn't natively available on the Rust side without extra crates — `@peculiar/x509` avoids the mismatch entirely. | Added in Phase 1 for `src/lib/infrastructure/nodeCerts.js` |
+| `reflect-metadata` | Apache-2.0 | Required runtime polyfill for `@peculiar/x509`'s dependency-injection internals (`tsyringe`) — imported once at process start, does not change any application behavior itself | Transitive requirement of `@peculiar/x509`, declared directly per npm's own guidance rather than left as an undeclared transitive dependency |
 
 ## Go side (`terraform-provider-inaya/`)
 
