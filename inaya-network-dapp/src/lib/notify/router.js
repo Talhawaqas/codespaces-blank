@@ -21,6 +21,9 @@ export const CHANNELS = ["inApp", "email", "push", "desktop", "webhook"];
 const HIGH_TRUST = new Set(["inApp", "desktop"]);
 /** event -> label, defaults, severity, and the registry webhook type (if any). `generic` is the text safe for any channel. */
 export const EVENTS = {
+  // Sovereign Infrastructure Fabric SOW §123
+  "infra.node_revoked": { label: "An infrastructure node was revoked", defaults: { inApp: true, email: true }, severity: "warning", generic: "An infrastructure node's certificate was revoked." },
+  "infra.operation_failed": { label: "An infrastructure operation failed", defaults: { inApp: true }, severity: "warning", generic: "A compute/network/storage operation failed on one of your nodes." },
   "file.shared": { label: "A file is shared with me", defaults: { inApp: true, email: true }, severity: "info", generic: "A file was shared with you." },
   "file.changed": { label: "A file I follow changed", defaults: { inApp: true }, severity: "info", generic: "A file you follow was changed." },
   "file.locked": { label: "A file is locked", defaults: { inApp: true }, severity: "info", generic: "A file was locked for editing." },

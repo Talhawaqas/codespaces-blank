@@ -15,6 +15,7 @@ import { getOrgCollections } from "../src/lib/orgs.js";
 import { setOrgFeature } from "../src/lib/featureFlags.js";
 import { canAccessInfrastructure, canManageInfrastructure } from "../src/lib/orgGates.js";
 import * as I from "../src/lib/infrastructure/nodes.js";
+import { listAuditChain } from "../src/lib/auditChain.js";
 
 x509.cryptoProvider.set(globalThis.crypto);
 
@@ -198,4 +199,20 @@ test("cross-org isolation: another org cannot see or approve this org's nodes", 
   for (const n of ["infra_clusters", "infra_enrollment_tokens", "infra_nodes", "infra_cluster_cas"]) {
     await db.collection(n).deleteMany({ orgId: otherOrg.orgId }).catch(() => {});
   }
+});
+
+test("Phase 7: node lifecycle actions genuinely append to the real audit chain", T, async () => {
+  const membership = { role: "owner", email: org.owner.email };
+  const cluster = await I.createCluster({ orgId: org.oid, membership, name: "Audit Cluster" });
+  const { token } = await I.createEnrollmentToken({ orgId: org.oid, membership, clusterId: cluster.clusterId });
+  const { csrPem } = await realCsr("audit-node");
+  const enrolled = await I.enrollNode({ enrollmentToken: token, hostname: "audit-host", csrPem });
+  await I.approveNode({ orgId: org.oid, membership, nodeId: enrolled.nodeId });
+  await I.revokeNode({ orgId: org.oid, membership, nodeId: enrolled.nodeId });
+
+  const chain = await listAuditChain(org.oid, { limit: 500 });
+  const actions = chain.filter((e) => e.recordId === enrolled.nodeId).map((e) => e.action);
+  assert.ok(actions.includes("NODE_ENROLLED"), `expected NODE_ENROLLED in ${JSON.stringify(actions)}`);
+  assert.ok(actions.includes("NODE_APPROVED"));
+  assert.ok(actions.includes("NODE_REVOKED"));
 });

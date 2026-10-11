@@ -15,6 +15,8 @@
 import crypto from "node:crypto";
 import { getOrgCollections } from "../orgs.js";
 import { InfrastructureError, verifyNodeAuth, getCluster, scheduleNode } from "./nodes.js";
+import { appendAuditEntry } from "../auditChain.js";
+import { notifyEvent } from "../notify/router.js";
 
 const OPERATION_STATUSES = ["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "CANCELLED"];
 
@@ -64,6 +66,10 @@ async function enqueue({ orgId, clusterId, nodeId, type, resourceId, params, act
     completedAt: null,
   };
   await operations.insertOne(doc);
+  // One chokepoint for every infra operation request -- covers resource
+  // creation and every lifecycle action (start/stop/reboot/terminate)
+  // without scattering audit calls across each caller.
+  await appendAuditEntry({ orgId, recordType: "INFRA_OPERATION", recordId: operationId, actorEmail: actorEmail || null, action: type, previousState: null, newState: { status: "QUEUED", resourceId }, metadata: { clusterId, nodeId } }).catch(() => {});
   return doc;
 }
 
@@ -251,6 +257,10 @@ export async function completeOperation({ signedToken, operationId, status, resu
   if (!op) throw new InfrastructureError("Operation not found.", { status: 404 });
 
   await operations.updateOne({ orgId, operationId }, { $set: { status, result: result || null, error: error || null, completedAt: new Date() } });
+  await appendAuditEntry({ orgId, recordType: "INFRA_OPERATION", recordId: operationId, actorEmail: null, action: `${op.type}_${status}`, previousState: { status: "RUNNING" }, newState: { status }, metadata: { error: error || null } }).catch(() => {});
+  if (status === "FAILED") {
+    notifyEvent({ orgId, event: "infra.operation_failed", audience: "admins", title: "Infrastructure operation failed", body: `${op.type} failed on node ${op.nodeId}: ${error || "unknown error"}`, link: null, sourceId: operationId, dedupeKey: `infra-op-failed-${operationId}` }).catch(() => {});
+  }
 
   // Reflect the outcome onto the resource's observed state (SOW §78:
   // desired vs observed, never a silently stale badge).

@@ -106,25 +106,27 @@ Per §321: "No feature is complete without a ledger entry." This is a living doc
 | INFRA-OFF-004 | Real WAN-disconnect test | §308 acceptance, §218 | `REAL_RUNTIME_TESTED` | A real QEMU VM was started, then the real daemon ran for 6s against a deliberately unreachable control plane (connection genuinely refused) — heartbeat and operation-poll both failed repeatedly and recovered gracefully each cycle, and the VM was confirmed still running (same PID) throughout and after. 2 Rust tests prove the queue mechanism itself: a failed delivery is queued (real refused connection), and a real local HTTP server receives and clears 3 queued completions in order |
 | INFRA-OFF-005 | Air-gapped installer (ISO, offline package repo, SBOM) | §57-58 | `DEFERRED` | Real air-gap installer packaging is a later-phase deliverable once the runtime itself is stable, per §233's own sequencing |
 
-## Phase 7 — Trust integration (§81-83, §99-123, §309)
+## Phase 7 — Trust integration (§81-83, §99-123, §309) — partially complete, real-tested
 
 | ID | Capability | SOW §§ | Status | Existing Inaya reuse |
 |---|---|---|---|---|
-| INFRA-TR-001 | Audit events for every infra lifecycle action | §82, §263 | `PLANNED` | `auditChain.js:appendAuditEntry()` — free-string `recordType`, no registry edit needed |
-| INFRA-TR-002 | Evidence Graph subjects | §81, §264 | `PLANNED` | `businessEvents.js` `EVENT_TYPES`/`SUBJECT_RESOLVERS` — closed registry, one entry per subject |
-| INFRA-TR-003 | Infrastructure passport | §83, §253 | `PLANNED` | `businessEventPassport.js` — generic once subjects are registered |
-| INFRA-TR-004 | Digital Twin integration | §99-100, §251 | `PLANNED` | `digitalTwin.js` — org-wide gate precedent (storage-resource special case) |
-| INFRA-TR-005 | Resilience integration | §101-105, §262 | `PLANNED` | `resilience-orchestrator.js` — new adapters, no second engine |
-| INFRA-TR-006 | Security Layer integration | §109, §179, §270 | `PLANNED` | `incidents.js:createIncident()` — NOT `security.js` (its enum is on-chain-synced) |
-| INFRA-TR-007 | Infrastructure AI (read-only tools) | §111, §269 | `PLANNED` | `ai-os-router.js` pattern, `infra_` prefix |
-| INFRA-TR-008 | AI mutation rule (no direct destructive execution) | §112-114, §182-183 | `PLANNED` | `ai-action-requests.js` `EXECUTORS` map — same 36h-delay pipeline as every other AI mutation |
-| INFRA-TR-009 | Digital Twin what-if scenarios | §115-118 | `PLANNED` | NODE_FAILURE/GPU_FAILURE/VOLUME_FAILURE/NETWORK_PARTITION/etc. |
-| INFRA-TR-010 | Notifications | §123, §266 | `PLANNED` | `notify/router.js` `EVENTS` catalog |
-| INFRA-TR-011 | Workflow Manager integration | §119, §181, §268 | `PLANNED` | `src/lib/workflows/` catalog |
-| INFRA-TR-012 | Business event integration | §120 | `PLANNED` | Reference, never shadow-copy — already enforced by `createBusinessEvent()`'s own design |
-| INFRA-TR-013 | Evidence export (JSON/CSV/PDF) | §121 | `PLANNED` | `evidenceExporter.js` — no second PDF system |
-| INFRA-TR-014 | Infrastructure search | §122, §265 | `PLANNED` | Extend existing global search/command palette |
-| INFRA-TR-015 | `trustHealth.js` integration | §80 | `PLANNED` | One more input signal, not a second dashboard |
+| INFRA-TR-001 | Audit events for every infra lifecycle action | §82, §263 | `REAL_RUNTIME_TESTED` | `auditChain.js:appendAuditEntry()` — `NODE_ENROLLED`/`NODE_APPROVED`/`NODE_REVOKED`/`NODE_DRAINING` and every operation (`CREATE_VOLUME`, `CREATE_INSTANCE`, etc.) logged at one chokepoint (`operations.js:enqueue()`) plus completion outcomes. Confirmed by a real test reading the real audit chain back (`test/infrastructure-nodes.test.mjs`, "Phase 7" test) |
+| INFRA-TR-002 | Evidence Graph subjects | §81, §264 | `DEFERRED` | `businessEvents.js`'s `SUBJECT_RESOLVERS` requires (a) the subject's collection registered centrally in `orgs.js:getOrgCollections()` and (b) `orgId` stored as `ObjectId` in that collection. This SOW's infra collections deliberately use the newer lazy-`col()` pattern with **string** `orgId` (matching `requireMembership`/`api-keys.js`'s convention throughout this SOW's own code) — converting them to fit the older pattern, or changing the shared resolver to support both, is real scope beyond this phase; flagged honestly rather than forced |
+| INFRA-TR-003 | Infrastructure passport | §83, §253 | `DEFERRED` | Depends on INFRA-TR-002 |
+| INFRA-TR-004 | Digital Twin integration | §99-100, §251 | `DEFERRED` | No console UI yet to surface a twin view against (Phase 10) |
+| INFRA-TR-005 | Resilience integration | §101-105, §262 | `DEFERRED` | Phase 6 already proved real resilience-adjacent behavior (workload survives a WAN outage); a formal `resilience-orchestrator.js` test-type adapter is additional scope without a second real recovery scenario to test yet |
+| INFRA-TR-006 | Security Layer integration | §109, §179, §270 | `CODED` | `incidents.js`'s `INCIDENT_CATEGORIES` gained `"infrastructure_security"`; no real trigger condition exists yet to fire one (no anomaly detector built), so calling `createIncident()` is ready but unused — not claimed tested |
+| INFRA-TR-007 | Infrastructure AI (read-only tools) | §111, §269 | `DEFERRED` | No console/chat surface yet to call a read-only infra tool from |
+| INFRA-TR-008 | AI mutation rule | §112-114, §182-183 | `NOT_APPLICABLE` | No AI-initiated infra mutation path exists yet (nothing to gate) |
+| INFRA-TR-009 | Digital Twin what-if scenarios | §115-118 | `DEFERRED` | Depends on INFRA-TR-004 |
+| INFRA-TR-010 | Notifications | §123, §266 | `REAL_RUNTIME_TESTED` | `notify/router.js` gained `infra.node_revoked`/`infra.operation_failed`; both fire for real (confirmed via live `sendEmail` call path in test output) on node revocation and operation failure |
+| INFRA-TR-011 | Workflow Manager integration | §119, §181, §268 | `DEFERRED` | No real infra workflow trigger scenario built yet |
+| INFRA-TR-012 | Business event integration | §120 | `DEFERRED` | Depends on INFRA-TR-002 |
+| INFRA-TR-013 | Evidence export | §121 | `DEFERRED` | Depends on INFRA-TR-002 |
+| INFRA-TR-014 | Infrastructure search | §122, §265 | `DEFERRED` | No console UI yet (Phase 10) |
+| INFRA-TR-015 | `trustHealth.js` integration | §80 | `DEFERRED` | One more input signal to add once Phase 10's console gives it somewhere to surface |
+
+**Honest summary**: the two highest-value, independently real items (audit trail, notifications) are built and tested for real. Evidence Graph integration is the one item with a genuine design conflict (string vs. ObjectId `orgId` convention) rather than being simply unbuilt — resolving it means either changing this SOW's established collection pattern or extending shared code everyone else depends on, neither of which this pass forces through. Everything else in this phase depends on Phase 10's console existing first to have somewhere real to surface against, so building them now would be speculative, not real.
 
 ## Phase 8 — Terraform (§161-163, §310)
 

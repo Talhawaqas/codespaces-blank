@@ -23,6 +23,11 @@ export const INCIDENT_CATEGORIES = [
   // broader incident-class list a regulated-enterprise org needs beyond
   // the original security-only set above.
   "financial", "fraud", "regulatory", "data_integrity", "vendor", "physical_security", "safety",
+  // Sovereign Infrastructure Fabric SOW §109 — infra security signals
+  // (e.g. a node certificate violation, repeated auth failure) reuse this
+  // generic incident system rather than security.js's on-chain-synced
+  // threat-registry category enum, which this domain doesn't belong to.
+  "infrastructure_security",
 ];
 
 export const INCIDENT_SEVERITIES = ["low", "medium", "high", "critical"];

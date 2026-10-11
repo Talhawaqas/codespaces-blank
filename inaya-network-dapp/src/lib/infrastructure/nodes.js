@@ -27,6 +27,8 @@ import "reflect-metadata";
 import * as x509 from "@peculiar/x509";
 import { getOrgCollections } from "../orgs.js";
 import { signNodeCsr, getOrCreateClusterCa, SIGNING_ALGORITHM } from "./nodeCerts.js";
+import { appendAuditEntry } from "../auditChain.js";
+import { notifyEvent } from "../notify/router.js";
 
 x509.cryptoProvider.set(globalThis.crypto);
 
@@ -177,6 +179,7 @@ export async function enrollNode({ enrollmentToken, hostname, csrPem }) {
   };
   await nodes.insertOne(nodeDoc);
   await (await cols()).clusters.updateOne({ clusterId: record.clusterId }, { $addToSet: { nodeIds: nodeId } });
+  await appendAuditEntry({ orgId: record.orgId, recordType: "INFRA_NODE", recordId: nodeId, actorEmail: null, action: "NODE_ENROLLED", previousState: null, newState: { status: "PENDING", hostname }, metadata: { clusterId: record.clusterId } }).catch(() => {});
 
   return {
     nodeId,
@@ -192,6 +195,7 @@ export async function approveNode({ orgId, membership, nodeId }) {
   if (!node) throw new InfrastructureError("Node not found.", { status: 404 });
   if (node.status === "REVOKED") throw new InfrastructureError("Cannot approve a revoked node.", { status: 409 });
   await nodes.updateOne({ orgId, nodeId }, { $set: { status: "ACTIVE", approvedAt: new Date(), approvedBy: membership?.email || null } });
+  await appendAuditEntry({ orgId, recordType: "INFRA_NODE", recordId: nodeId, actorEmail: membership?.email || null, action: "NODE_APPROVED", previousState: { status: node.status }, newState: { status: "ACTIVE" }, metadata: {} }).catch(() => {});
   return { ...node, status: "ACTIVE" };
 }
 
@@ -200,6 +204,8 @@ export async function revokeNode({ orgId, membership, nodeId }) {
   const node = await nodes.findOne({ orgId, nodeId });
   if (!node) throw new InfrastructureError("Node not found.", { status: 404 });
   await nodes.updateOne({ orgId, nodeId }, { $set: { status: "REVOKED", revokedAt: new Date(), revokedBy: membership?.email || null } });
+  await appendAuditEntry({ orgId, recordType: "INFRA_NODE", recordId: nodeId, actorEmail: membership?.email || null, action: "NODE_REVOKED", previousState: { status: node.status }, newState: { status: "REVOKED" }, metadata: {} }).catch(() => {});
+  notifyEvent({ orgId, event: "infra.node_revoked", audience: "admins", title: "Infrastructure node revoked", body: `Node "${node.hostname}" was revoked and can no longer connect.`, link: null, sourceId: nodeId, dedupeKey: `infra-node-revoked-${nodeId}` }).catch(() => {});
   return { ...node, status: "REVOKED", revokedAt: new Date() };
 }
 
@@ -359,6 +365,7 @@ export async function drainNode({ orgId, membership, nodeId }) {
   const activeInstances = await db.collection("infra_compute_instances").countDocuments({ orgId, nodeId, state: { $in: ["RUNNING", "PROVISIONING"] } });
   const { nodes } = await cols();
   await nodes.updateOne({ orgId, nodeId }, { $set: { status: "DRAINING", drainedAt: new Date(), drainedBy: membership?.email || null } });
+  await appendAuditEntry({ orgId, recordType: "INFRA_NODE", recordId: nodeId, actorEmail: membership?.email || null, action: "NODE_DRAINING", previousState: { status: "ACTIVE" }, newState: { status: "DRAINING" }, metadata: { activeInstancesNotMigrated: activeInstances } }).catch(() => {});
   // SOW §141: no forced migration -- live migration isn't built (§96 says
   // Phase-0-research-only), so draining just blocks new scheduling and
   // honestly reports what cannot be moved, rather than claiming a
