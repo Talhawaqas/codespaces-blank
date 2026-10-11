@@ -9,6 +9,11 @@
 // transaction"). That does not match the deployed checkout flow (page.js's
 // handleCorporateCheckout): two separate, client-initiated transactions.
 // Corrected throughout below.
+//
+// ADDITIVE EDIT (October 2026) — Section 08 gained one scope note: the
+// October Secure Collaboration and Device Protection SOWs added no new
+// on-chain revenue mechanics, so the settlement/escrow/vesting flow this
+// whole document describes is unchanged by them.
 
 export const enterpriseRevenueArchitecture = {
   cover: {
@@ -177,6 +182,11 @@ export const enterpriseRevenueArchitecture = {
         {
           type: "note",
           text: "This ties operator compensation directly to verified network performance — real, on-chain, but via two client-initiated transactions rather than a single atomic cascade, as corrected above.",
+        },
+        {
+          type: "note",
+          label: "Scope note, October 2026.",
+          text: "Business Workspace's October additions — a Filen/FileCloud-inspired Secure Collaboration suite and an Internxt-inspired Device Protection suite (hybrid post-quantum key establishment, a local-only Cleaner, Inaya Meet) — are SaaS-side features with no on-chain revenue mechanics of their own; the settlement, escrow, and vesting flow described in this document is unchanged. See the companion SaaS Business Model document for where they fit in the SaaS revenue line instead.",
         },
       ],
     },

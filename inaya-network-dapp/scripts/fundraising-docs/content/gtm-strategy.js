@@ -62,6 +62,18 @@
 // object versioning, immutable/locked retention, legal hold, lifecycle
 // policies, a desktop drive mount). Factual only, no numbers, no
 // superlative competitive claims — doesn't touch anything PROTECTED above.
+//
+// ADDITIVE EDIT (October 2026) — Section 01's "Current Position" bullet
+// list gained one more line naming the Filen/FileCloud-inspired Secure
+// Collaboration suite and the Internxt-inspired Device Protection suite
+// (full detail: docs/competitive-expansion-final-verification.md,
+// docs/internxt-implementation-ledger.md). Section 15 ("Business
+// Workspace Competitive Landscape") gained one note naming Filen and
+// Internxt directly as the products these two SOWs drew inspiration from,
+// since this section already names real competitors by name and leaving
+// the two products unnamed here would read as an omission once named
+// elsewhere. Factual only, hedged, no numbers, no superlative claims —
+// doesn't touch anything PROTECTED above.
 
 export const gtmStrategy = {
   cover: {
@@ -128,6 +140,7 @@ export const gtmStrategy = {
             "Enterprise-oriented product architecture",
             "Beyond storage: a Business Workspace SaaS product (now including real business operations — Tasks, CRM, Procurement, Inventory — and a Finance & HR layer), a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and four purpose-built AI assistants — all live on the same infrastructure",
             "Enterprise storage interoperability: real AWS S3 and Azure Blob Storage API compatibility (tested against the actual AWS CLI and the official Azure SDK), plus an enterprise storage governance suite — scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native desktop drive mount — so an enterprise customer's existing tools and workflows connect directly, with no migration required",
+            "Secure Collaboration suite (Filen/FileCloud-inspired, October 2026): end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, enterprise Governance, device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization. Device Protection suite (Internxt-inspired, October 2026): a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls",
           ],
         },
         {
@@ -847,6 +860,12 @@ export const gtmStrategy = {
         {
           type: "note",
           text: "This is an early-stage comparison, not a claim of feature parity with mature, well-funded incumbents — SharePoint and Box in particular have years of enterprise trust and compliance certifications the Business Workspace does not yet have. The differentiation above is about product design center, not current market share.",
+        },
+        {
+          // Additive, October 2026 — see the top-of-file note on this edit.
+          type: "note",
+          label: "A second comparison set, added October 2026.",
+          text: "Two further SOWs drew explicitly on patterns from privacy-focused personal/enterprise cloud products — Filen and FileCloud (Secure Chat, Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent) and Internxt (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls) — named here rather than left implicit. As with SharePoint/Box above, this is a design-pattern comparison, not a claim of feature parity: every item is off by default, the chat library has not had an independent security audit, and Meet's mesh architecture trades a scalable SFU for a stronger privacy property (media never touches an Inaya server) at a conservative default room size.",
         },
       ],
     },

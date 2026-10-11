@@ -17,6 +17,18 @@
 // policies, a desktop drive mount). Factual only — every item named is
 // real and tested against the actual AWS CLI/Azure SDK, no new numeric or
 // mainnet claims.
+//
+// ADDITIVE EDIT (October 2026) — Section 10's application-layer bullet
+// list gained two lines: the Filen/FileCloud-inspired Competitive
+// Expansion (Secure Chat, Secure Notes, Sharing 2.0, Governance, Device
+// Control, Sovereign Gateway — docs/competitive-expansion-final-verification.md)
+// and the Internxt-inspired expansion (hybrid post-quantum key
+// establishment, Inaya Cleaner, Inaya Meet, Device Protection —
+// docs/internxt-implementation-ledger.md). Both are hedged exactly as the
+// underlying verification ledgers hedge them: hybrid key establishment,
+// never a "quantum-safe" claim; peer-to-peer mesh calling with a
+// conservative room size, never an SFU claim; a local-only scanner, never
+// a cloud inventory. No new numeric or mainnet claims.
 
 export const whitepaper = {
   cover: {
@@ -243,6 +255,8 @@ export const whitepaper = {
             "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center with client-side cryptographic verification of the audit chain, cross-organization trust primitives, a scoped API-key developer platform, and recovery capability automatically re-tested daily against real infrastructure using system-owned synthetic assets.",
             "A Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth connections to nine external business tools, and a spoken-voice mode for the Business AI Assistant.",
             "Multi-Cloud Storage Compatibility & Enterprise Storage Governance — a real, tested AWS S3-compatible API and Azure Blob Storage-compatible API (verified against the actual AWS CLI and the official Azure SDK), plus scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native Windows drive mount — so enterprise customers connect existing tools with no migration.",
+            "Secure Collaboration (October 2026) — end-to-end encrypted Secure Chat on the MLS group-messaging standard (RFC 9420) and Secure Notes; Sharing 2.0 with expiring, password-protected and watermarked links plus inbound file requests; Governance (classification, data-loss prevention, retention, legal hold, a secure document viewer); device trust/block/revoke; and a Sovereign Gateway agent connecting a customer's own on-premises file servers. Off by default per organization; the chat library has not had an independent security audit, and a handful of enterprise integrations are tested against the real protocol but not yet against a live customer system.",
+            "Post-Quantum Key Establishment, Inaya Cleaner & Inaya Meet (October 2026) — a hybrid key-establishment layer combining the existing classical X25519 exchange with ML-KEM-768 (Kyber) through a domain-separated HKDF, additive to classical cryptography rather than a replacement of it; Inaya Cleaner, a local-first desktop duplicate/junk-file scanner that never uploads a file inventory and moves deletions to the trash rather than deleting permanently; and Inaya Meet, private peer-to-peer/mesh video calls that reuse Secure Chat for in-call messaging and the existing long-poll/SSE signaling transport, with a conservative default room size rather than a scalable SFU. Device revocation now cascades to revoking that device's post-quantum keys.",
           ],
         },
         {

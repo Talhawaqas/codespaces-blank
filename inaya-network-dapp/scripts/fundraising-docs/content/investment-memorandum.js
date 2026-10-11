@@ -7,6 +7,14 @@
 // paragraph and Section 11's mainnet-readiness language, Section 13's
 // financial projections, and Section 17's funding ask/use-of-funds/
 // milestones. These are marked inline below.
+//
+// ADDITIVE EDIT (October 2026) — Section 05's "Product Suite" bullet list
+// gained two lines, same factual, no-financial-claims pattern as every
+// prior addition to this list: the Filen/FileCloud-inspired Competitive
+// Expansion (Secure Chat, Secure Notes, Sharing 2.0, Governance, device
+// control, Sovereign Gateway) and the Internxt-inspired expansion (hybrid
+// post-quantum key establishment, Inaya Cleaner, Inaya Meet, Device
+// Protection). Does not touch the PROTECTED paragraph below it.
 
 export const investmentMemorandum = {
   cover: {
@@ -150,6 +158,14 @@ export const investmentMemorandum = {
             // four new business primitives, real OAuth, voice AI, and the
             // Business Workspace UX/UI makeover. Same factual pattern.
             "Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), real OAuth connections to nine external business tools, a spoken-voice mode for the Business AI Assistant, and a Business Workspace usability pass — each described in the ecosystem architecture and dev-deepdive documents with the precise scope of what's real versus what's UI-only, so no claim here overstates the underlying mechanism.",
+            // New addition, Competitive Expansion SOW, October 2026 — same
+            // factual, no-financial-claims, off-by-default pattern as every
+            // line above.
+            "Secure Collaboration (October 2026) — end-to-end encrypted Secure Chat (MLS/RFC 9420) and Secure Notes, Sharing 2.0 (expiring/password-protected/watermarked links, inbound file requests), enterprise Governance (classification, DLP, retention, legal hold, a secure viewer), device control, and a Sovereign Gateway agent for a customer's own on-premises file servers — every feature off by default per organization. The chat library has not had an independent security audit.",
+            // New addition, Internxt-Inspired Expansion SOW, October 2026 —
+            // same factual, hedged pattern: hybrid, not quantum-safe;
+            // local-only; mesh, not an SFU.
+            "Device Protection (October 2026) — a hybrid post-quantum key-establishment layer (classical X25519 combined with ML-KEM-768 via a domain-separated HKDF, additive to classical cryptography, not a replacement), Inaya Cleaner (a local-only desktop duplicate/junk-file scanner that never uploads a file inventory), and Inaya Meet (private peer-to-peer video calls reusing Secure Chat, with a conservative default room size rather than a scalable SFU). Device revocation now cascades to revoking that device's post-quantum keys.",
           ],
         },
         {

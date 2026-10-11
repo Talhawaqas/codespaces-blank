@@ -10,6 +10,10 @@
 // (2) the old Q2's "0.1 USDT + 0.1 INAYA per GB" dual-asset ingress pricing
 // contradicts the already-corrected Community FAQ, which states storage
 // ingress currently has no required $INAYA fee. Aligned to match.
+//
+// ADDITIVE EDIT (October 2026) — one new Q8 added on the two October SOWs
+// (Secure Collaboration; Device Protection), hedged the same way the
+// underlying verification ledgers hedge them.
 
 export const institutionalFaqs = {
   cover: {
@@ -156,6 +160,30 @@ export const institutionalFaqs = {
         {
           type: "lead",
           text: "Yes — Business Workspace is a fully independent B2B SaaS product built on the same infrastructure: organizations, departments, projects, documents, server-enforced approval workflows, granular permissions, secure external sharing, and a permission-aware AI assistant. It's priced and evaluated like any other business software — an institutional buyer never has to engage with the token economics above to use it. As of September 2026, a Sovereign Enterprise OS layer also ties the whole workspace together: one home screen showing real trust & health status (built from the actual audit trail and backup data, not a decorative dashboard), unified notifications, cross-module search, and a single AI assistant covering both business and security questions. Also as of September 2026: a public Trust Center where an outside party can independently, cryptographically verify Inaya's own audit chain in their own browser (rather than take Inaya's word for it); a scoped API-key developer platform for programmatic access; cross-organization trust primitives; and recovery capability that's automatically re-tested daily against real infrastructure using synthetic, system-owned assets — never a real customer's data.",
+        },
+      ],
+    },
+    {
+      number: "Q8",
+      title: "What did the two October 2026 additions (Secure Collaboration; Device Protection) add, and what's still hedged?",
+      blocks: [
+        {
+          type: "lead",
+          text: "Secure Collaboration (Filen/FileCloud-inspired) added end-to-end encrypted Secure Chat (the MLS group-messaging standard, RFC 9420) and Secure Notes, Sharing 2.0 (expiring/password-protected/watermarked links, inbound file requests), Governance (classification, DLP, retention, legal hold, a secure viewer), device trust/block/revoke, and a Sovereign Gateway agent connecting a customer's own on-premises file servers. Device Protection (Internxt-inspired) added a hybrid post-quantum key-establishment layer, a local-only desktop duplicate/junk-file scanner (Inaya Cleaner), and private peer-to-peer video calls (Inaya Meet) that reuse Secure Chat for in-call messaging. Every feature in both additions is off by default per organization.",
+        },
+        {
+          type: "table",
+          headers: ["Claim", "What's actually true"],
+          rows: [
+            ["Post-quantum", "Hybrid key establishment — the existing classical X25519 exchange combined with ML-KEM-768 through a domain-separated HKDF. Additive to classical cryptography, not a replacement; file encryption itself (AES-256-GCM) is unchanged."],
+            ["Chat security", "Real MLS group messaging; the server stores and relays ciphertext only. The open-source MLS library used has not had an independent security audit."],
+            ["Meet", "Peer-to-peer/mesh video, not routed through an Inaya server, trading a scalable SFU for a stronger privacy property at a conservative default room size."],
+            ["Cleaner", "Local-only; never uploads a file inventory anywhere; moves deletions to the OS trash rather than deleting permanently."],
+          ],
+        },
+        {
+          type: "note",
+          text: "A full, line-item verification ledger (what's VERIFIED against real tests and a real browser versus IMPLEMENTED_NOT_LIVE versus PARTIAL) is available on request for an institutional reviewer's own technical diligence.",
         },
       ],
     },

@@ -23,6 +23,12 @@
 //   - New: mainnet assignment priority threshold, now that one's actually
 //     defined (90+ days at 95%+ testnet uptime) instead of an unspecified
 //     future claim.
+//
+// ADDITIVE EDIT (October 2026) — Section 03 gained one new subsection,
+// parallel to the existing "New: Contribute to the Security Layer" one,
+// on the hybrid post-quantum key-establishment layer. Kept deliberately
+// brief: it secures sharing/key-establishment upstream of a node, not the
+// node's own storage/commission mechanics, which are entirely unchanged.
 
 export const operatorManifesto = {
   cover: {
@@ -164,6 +170,11 @@ export const operatorManifesto = {
           type: "subsection",
           heading: "New: Contribute to the Security Layer",
           body: "The same node-daemon you're already running now supports a second, independent way to contribute: inaya-node-daemon report <indicator> submits a signed observation to Inaya's decentralized threat-intelligence network — the same reputation-weighted, on-chain-confirmed system that powers the public Inaya Firewall. It's a separate track from storage commissions, using the identity you've already registered.",
+        },
+        {
+          type: "subsection",
+          heading: "New: Stronger Encryption Upstream (October 2026)",
+          body: "A hybrid post-quantum key-establishment layer (the existing classical X25519 exchange combined with ML-KEM-768) now protects sharing and device-key establishment upstream of where your node ever sees data. It changes nothing about how your node stores shards, how uptime is scored, or how commissions are calculated — those remain exactly as described above.",
         },
         {
           type: "quote",

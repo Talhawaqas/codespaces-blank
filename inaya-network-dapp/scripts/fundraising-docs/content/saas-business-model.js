@@ -13,6 +13,13 @@
 // Section 09 is explicitly labeled illustrative unit economics, not a
 // forecast, and doesn't touch the Investment Memorandum's protected
 // Section 13 figures.
+//
+// ADDITIVE EDIT (October 2026) — Section 03's lead block gained one
+// sentence naming the two October SOWs (Secure Collaboration; Device
+// Protection), and Section 10's Product Roadmap gained two new "LIVE
+// (flag-gated)" stage entries. Factual only, hedged the same way the
+// underlying ledgers hedge them — no new financial projections, doesn't
+// touch Section 09's illustrative-only framing.
 
 export const saasBusinessModel = {
   cover: {
@@ -79,7 +86,7 @@ export const saasBusinessModel = {
         },
         {
           type: "lead",
-          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath.",
+          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization.",
         },
       ],
     },
@@ -231,6 +238,8 @@ export const saasBusinessModel = {
             { heading: "Four New Business Primitives — LIVE.", body: "Inaya Sign (document signing with document/version-bound signatures and an optional on-chain completion anchor), DePIN Storage Manager (an org's own storage-node control plane), Milestone Escrow (an approval-gated, timelocked release workflow), and Financial Attestation (a cryptographic hash-commitment proof over real financial data)." },
             { heading: "Business Intelligence — FUTURE.", body: "Reporting and analytics across everything stored in the workspace." },
             { heading: "AI-Powered Business Operations — LIVE (guided, not autonomous).", body: "A real LLM-backed assistant that walks a user through a multi-step task one real step at a time — advancing only on real proof the step was completed, never on its own say-so, and with no path to creating a business record on its own. Any actual mutation it proposes still requires human approval and a built-in delay before it executes." },
+            { heading: "Secure Collaboration Suite — LIVE (flag-gated).", body: "End-to-end encrypted Secure Chat (MLS/RFC 9420) and Secure Notes; Sharing 2.0 (expiring/password-protected/watermarked links, file requests); Governance (classification, DLP, retention, legal hold); device trust/block/revoke; and a Sovereign Gateway agent for on-premises file servers. Off by default per organization; the chat library has not had an independent security audit." },
+            { heading: "Device Protection & Post-Quantum Key Establishment — LIVE (flag-gated).", body: "A hybrid key-establishment layer combining the existing classical X25519 exchange with ML-KEM-768 (additive, not a replacement of classical crypto); a local-only Cleaner that never uploads a file inventory; and Inaya Meet, private peer-to-peer video calls with a conservative default room size rather than a scalable SFU. Backup, sync, Cleaner, and device status are now one consolidated view." },
           ],
         },
       ],

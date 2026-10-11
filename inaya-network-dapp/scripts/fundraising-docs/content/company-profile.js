@@ -1,6 +1,14 @@
 // Corporate Profile — editable content. Source of truth for
 // public/documents/inaya-company-profile.pdf. Edit this file, then run
 // `node scripts/fundraising-docs/generate.mjs`. See README.md.
+//
+// ADDITIVE EDIT (October 2026) — Section 03's "Product Ecosystem" bullet
+// list gained two lines: the Filen/FileCloud-inspired Competitive
+// Expansion (Secure Chat, Secure Notes, Sharing 2.0, Governance, device
+// control, Sovereign Gateway) and the Internxt-inspired expansion (hybrid
+// post-quantum key establishment, Inaya Cleaner, Inaya Meet, Device
+// Protection). Factual only, hedged the same way the underlying
+// verification ledgers hedge them — no new numeric or mainnet claims.
 
 export const companyProfile = {
   cover: {
@@ -79,6 +87,8 @@ export const companyProfile = {
             "AI Bookkeeper — reads bank statements, bills and receipts, matches and reconciles them with full provenance, and sends anything uncertain or risky to a person; no posting happens without a human, and no ledger was invented.",
             "An independent, ongoing whole-codebase quality and security review — a critical bridge signing flaw, a double-settlement risk, and a production PDF-rendering defect were each found, fixed and locked in with a regression test.",
             "Managed Database, Document Intelligence & AI/ML Studio — a real, provisioned PostgreSQL database, a general document-understanding studio for any document type (not just invoices), and an AI workbench for data cataloguing, quality checks, model registry, and one governed piece of code run at a time in a real, disposable, network-off-by-default sandbox — 26 real tests passing, including live runs against a real cloud sandbox.",
+            "Secure Collaboration — end-to-end encrypted Secure Chat (MLS/RFC 9420) and Secure Notes, Sharing 2.0 (expiring/password-protected/watermarked links, file requests), enterprise Governance (classification, DLP, retention, legal hold), device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization, Filen/FileCloud-inspired.",
+            "Device Protection — a hybrid post-quantum key-establishment layer (classical X25519 combined with ML-KEM-768), Inaya Cleaner (a local-only desktop duplicate/junk-file scanner, trash rather than permanent delete), and Inaya Meet (private peer-to-peer video calls reusing Secure Chat), consolidated with the existing backup/sync/device screens into one view — Internxt-inspired, hybrid and local-first by design, not a mainnet or fully-audited claim.",
           ],
         },
       ],

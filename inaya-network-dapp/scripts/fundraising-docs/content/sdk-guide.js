@@ -16,6 +16,17 @@
 // IdentityIntegration, Analytics, Backup, AppStore, ComplianceProofs,
 // Intent, Attestation, plus the standalone passkey backup/restore
 // functions. Every one has its own passing test file in custody-sdk/test/.
+//
+// ADDITIVE EDIT (October 2026) — added one API Quick Reference row for the
+// new Pqc namespace (custody-sdk 1.0.12-beta, algorithm-agile hybrid
+// post-quantum sharing layer, custody-sdk/test/pqc.test.mjs and
+// custody-sdk/test/pqc-agile-sharing.test.mjs, 10/10 + full suite 127/127).
+// Hybrid key establishment only — not a claim that every downstream
+// primitive is independently quantum-hardened. Also corrected the cover
+// docLine's version/date: the published package is now 1.0.13-beta (this
+// is a real package-version reference, not a cosmetic revision date, so
+// it's corrected to stay accurate rather than left stale like the other
+// documents' plain month/year labels).
 
 export const sdkGuide = {
   cover: {
@@ -24,7 +35,7 @@ export const sdkGuide = {
     kicker: "SDK & INTEGRATION GUIDE",
     title: "Inaya Custody SDK",
     subtitle: "Client-side cryptographic sovereignty for distributed applications.",
-    docLine: "@inaya-network/custody-sdk · v1.0.10-beta · BNB Chain Testnet · September 2026",
+    docLine: "@inaya-network/custody-sdk · v1.0.13-beta · BNB Chain Testnet · October 2026",
   },
   docId: "INAYA-SDK-2026-V3",
   sections: [
@@ -216,6 +227,7 @@ export const sdkGuide = {
             ["Analytics.getWalletStorageStats()", "Real per-wallet storage usage/cost statistics."],
             ["Backup.{getBackupStatus,getBackupHealth,getRedundancyStatus,requestRecovery}", "Shard redundancy and recovery status for a stored file, plus a client to request recovery."],
             ["AppStore.{submitListing,getListings,getMyListings}", "Client for the Web3 App Store — list and browse third-party applications built on Inaya."],
+            ["Pqc.{generateDeviceKeyPair,wrapContentKeyHybrid,unwrapContentKeyHybrid,capabilityInfo,isHybridEnvelope}", "Hybrid post-quantum key establishment (classical X25519 combined with ML-KEM-768 via a domain-separated HKDF) — additive to classical cryptography, not a replacement of it. Algorithm-agile sharing envelopes (LEGACY_CLASSICAL / HYBRID_PQC / PQC_REQUIRED) so existing classical-only shares keep working."],
           ],
         },
         {

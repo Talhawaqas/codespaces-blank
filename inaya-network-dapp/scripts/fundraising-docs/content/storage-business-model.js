@@ -16,6 +16,11 @@
 // legal hold, lifecycle policies, a desktop drive mount). No new numeric
 // claims; every item named is real and tested against the actual AWS
 // CLI/Azure SDK.
+//
+// ADDITIVE EDIT (October 2026) — Section 08 gained one more note covering
+// the Filen/FileCloud-inspired Secure Collaboration suite and the
+// Internxt-inspired Device Protection suite. No new numeric claims; hedged
+// the same way the underlying verification ledgers hedge them.
 
 export const storageBusinessModel = {
   cover: {
@@ -184,6 +189,11 @@ export const storageBusinessModel = {
           type: "note",
           label: "Enterprise interoperability, September 2026.",
           text: "The storage layer itself now speaks the two protocols enterprise IT already standardizes on: a real, tested AWS S3-compatible API and Azure Blob Storage-compatible API (verified against the actual AWS CLI and the official Azure SDK — not a simplified approximation). On top of that sits an enterprise storage governance suite: scoped, time-limited access credentials; object version history with one-click restore; immutable locked retention for compliance; legal hold; automated lifecycle/retention policies; and a native desktop drive mount so storage appears as an ordinary drive letter. This closes the single largest objection enterprise storage buyers raise — migration cost — since existing tools and scripts connect with no rewrite.",
+        },
+        {
+          type: "note",
+          label: "Secure Collaboration & Device Protection, October 2026.",
+          text: "Two further additions to Business Workspace, both off by default per organization: a Filen/FileCloud-inspired Secure Collaboration suite (end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent for on-premises file servers), and an Internxt-inspired Device Protection suite (a hybrid post-quantum key-establishment layer combining classical X25519 with ML-KEM-768, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls). Neither changes the storage/DePIN revenue mechanics described above.",
         },
         {
           type: "note",

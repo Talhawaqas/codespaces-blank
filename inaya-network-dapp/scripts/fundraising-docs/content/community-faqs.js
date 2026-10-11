@@ -1,6 +1,10 @@
 // General User & Community FAQs — editable content. Source of truth for
 // public/documents/inaya-community-faqs.pdf. Edit this file, then run
 // `node scripts/fundraising-docs/generate.mjs`. See README.md.
+//
+// ADDITIVE EDIT (October 2026) — one new Q8, friendly-tone, on the two
+// October SOWs (Secure Chat/Notes/Sharing; post-quantum encryption,
+// Cleaner, Meet). Hedged the same way the underlying ledgers hedge them.
 
 export const communityFaqs = {
   cover: {
@@ -96,6 +100,20 @@ export const communityFaqs = {
             "Inaya Sign — sign a document with a real cryptographic signature tied to that exact document and moment, with an optional stamp onto the blockchain as extra proof.",
             "Node Operators — if you run an Inaya storage node, you now have your own dashboard for uptime, rewards, and network standing, separate from the wallet app.",
           ],
+        },
+      ],
+    },
+    {
+      number: "Q8",
+      title: "What are Secure Chat, Secure Notes, Cleaner, and Meet?",
+      blocks: [
+        {
+          type: "lead",
+          text: "Four new, optional additions to Business Workspace, each off by default until an organization turns it on. Secure Chat and Secure Notes are end-to-end encrypted — your organization's own server only ever sees scrambled ciphertext, never your messages or notes. Sharing got real upgrades too: links can expire, require a password, carry a watermark, or let an outsider upload a file to you securely. Inaya Cleaner is a desktop tool that finds junk and duplicate files on your own computer and never uploads a list of what it found anywhere — anything it removes goes to your recycle bin, never a permanent delete. Inaya Meet is a private video-calling feature where your camera and microphone connect directly between participants' devices rather than through an Inaya server.",
+        },
+        {
+          type: "note",
+          text: "Honest limits worth knowing: the chat encryption library hasn't had an independent outside security audit yet. Meet's direct-connection design works best for smaller calls, not yet a large-meeting replacement. And underneath all of it, device keys now get an extra, future-proofing layer that combines today's encryption with a newer method designed to resist tomorrow's computers — on top of, not instead of, the encryption already protecting your data.",
         },
       ],
     },

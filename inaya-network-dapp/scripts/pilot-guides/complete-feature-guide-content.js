@@ -6,6 +6,15 @@
 // mirrors the authoritative navigation this codebase actually ships
 // (root page.js's NAV_GROUPS and business/page.js's NAV_ITEMS), not an
 // aspirational feature list.
+//
+// ADDITIVE EDIT (October 2026) -- this file already covered the Oct 3-5
+// Competitive Expansion SOW (Section 54, "Secure Collaboration"), added in
+// a prior session. Appended one new final section, without a number (same
+// convention used for the equivalent new section in
+// ecosystem-dev-deepdive.js/ecosystem-overview.js), covering the Oct 10
+// Internxt-Inspired Expansion SOW: the hybrid post-quantum layer, Inaya
+// Cleaner, Inaya Meet, and the Device Protection backup reconciliation.
+// Content and every hedge drawn directly from docs/internxt-implementation-ledger.md.
 
 export const completeFeatureGuide = {
   cover: {
@@ -1057,6 +1066,35 @@ export const completeFeatureGuide = {
             { heading: "FAQ.", body: "Go to inayanetwork.com/faq for answers to common questions." },
             { heading: "Getting help.", body: "Use the Contact Us link from the main navigation's \"About Us\" section for direct support." },
           ],
+        },
+      ],
+    },
+    {
+      title: "Device Protection — Post-Quantum Encryption, Cleaner, and Private Meetings (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A second, Internxt-inspired expansion on top of Secure Collaboration (Section 54): a future-proofing encryption layer for key establishment, a local-only tool that finds junk and duplicate files without ever uploading anything, private peer-to-peer video meetings, and one consolidated view over the backup/sync/device protection Inaya already had. Every feature below is off by default.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Open Device Protection.", body: "In the desktop app (or Business Workspace), what used to be four separate Backup / Sync / Cleaner / Devices screens are now one consolidated \"Device Protection\" view with a tab for each." },
+            { heading: "Run Inaya Cleaner.", body: "Scans temporary and duplicate files on your own computer entirely locally — it never uploads a file inventory anywhere. Review the list, then confirm before anything is removed. Removed files go to the OS trash/recycle bin, never a permanent delete, and a built-in denylist protects OS directories and Inaya's own key material from ever being touched. If a file sits inside an active backup folder, Cleaner shows a warning instead of silently skipping or deleting it." },
+            { heading: "Start or join an Inaya Meet call.", body: "Create an instant meeting from Business Workspace; share the join link or invite by email. Video and audio connect directly peer-to-peer between participants' own devices — never routed through an Inaya server — reusing Secure Chat for in-call messaging. Guests without an account can be let in automatically, after moderator approval, or (for a named guest) after verifying a one-time emailed code." },
+            { heading: "Register a device's post-quantum key.", body: "When an organization turns on the post-quantum policy, each device registers a hybrid key — the existing classical X25519 exchange combined with the NIST-standardized ML-KEM-768 method, combined through a domain-separated HKDF. Sharing keeps working for devices without a registered key; an organization can require the hybrid mode going forward without breaking older links." },
+            { heading: "Revoke a device.", body: "From the device list, revoking or blocking a device now also revokes that device's post-quantum keys automatically, closing a gap where a revoked device could otherwise still be addressed by a stale key." },
+          ],
+        },
+        {
+          type: "note",
+          label: "What's real and tested, stated plainly.",
+          text: "Post-quantum key establishment: the cryptography and the device-key registry are tested (custody-sdk's full suite, 127/127; the device-key registry, 13/13), and device-revocation-cascades-to-key-revocation is tested end to end. The server side of meeting admission with a post-quantum key is tested; a real two-browser call with a live post-quantum key on one side has not yet been run. Cleaner's filesystem logic is tested on real files on Windows (9/9); the live round trip through the compiled desktop app's native bridge was attempted but did not complete in this environment, a tooling limitation rather than a code defect. Meet's room lifecycle, guest access (including named-guest email verification), signaling connection, and moderator controls were run end to end against a real server in a real browser, which caught and fixed two real bugs (a pre-existing Sidebar crash, and a false \"couldn't open this meeting\" message on a denied camera); actual camera/microphone frames between two real peers could not be exercised in this environment (the sandboxed test browser blocks camera/microphone access entirely) and still needs a real two-person session. Backup/sync/Cleaner/device consolidation is a UI reorganization only — no new backup engine, no change to existing backup/restore behavior.",
+        },
+        {
+          type: "note",
+          label: "Honest limits.",
+          text: "This is hybrid post-quantum key establishment, not a claim that every downstream primitive (the file encryption itself, signatures) is independently quantum-hardened. Inaya Meet is peer-to-peer/mesh, with a conservative default room size, not a scalable SFU — nothing is recorded, transcribed, or AI-monitored. Cleaner is local-only by design and will never report a scan to Inaya's servers under any circumstance. Nothing described here is live on mainnet.",
         },
       ],
     },
