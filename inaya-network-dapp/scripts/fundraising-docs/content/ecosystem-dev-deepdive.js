@@ -1214,5 +1214,39 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      title: "Internxt-Inspired Expansion Reference — Post-Quantum Cryptography, Cleaner, Meet & Backup Reconciliation (October 2026)",
+      blocks: [
+        {
+          type: "note",
+          text: "A delta scope on top of the Competitive Expansion SOW above, gated by the same non-duplication discipline: a full audit of 8 existing backup-related files, the chat/device/PQC-key registries, and the desktop native-command pattern happened before any new code, recorded in docs/internxt-gap-analysis.md, docs/internxt-feature-reuse-matrix.md, and the living docs/internxt-implementation-ledger.md this whole section summarizes.",
+        },
+        {
+          type: "table",
+          headers: ["File / route", "Purpose"],
+          rows: [
+            ["custody-sdk/src/pqc/provider.js: generateKeyPair, encapsulate, decapsulate", "Hybrid ML-KEM-768 + X25519 key establishment. ml_kem768 from @noble/post-quantum (hashes-only dependency) combined with the SDK's existing x25519 import through a hand-rolled HKDF-SHA256 -- NOT the package's own hybrid.js preset, which was found during development to hard-require a major version of @noble/curves this app's existing wallet/signing code doesn't use, a real dependency conflict npm run build itself caught. info parameter binds a domain-separation label plus both ciphertexts and both public keys, so tampering with any component changes the derived key rather than leaving it unauthenticated -- never SHA256(a+b)."],
+            ["custody-sdk/src/pqc/envelope.js, agileSharing.js: wrapContentKeyHybrid, wrapForRecipient, SHARING_MODE", "A versioned hybrid envelope (AES-256-GCM over the derived shared secret) and an algorithm-agile extension of the SDK's own existing X25519/XChaCha sharing primitive -- LEGACY_CLASSICAL calls that unchanged function byte-for-byte; HYBRID_PQC/PQC_REQUIRED route through the new hybrid path, with PQC_REQUIRED refusing outright rather than silently downgrading."],
+            ["src/lib/pqc/deviceKeys.js: registerDeviceKey, activeKeyForDevice, revokeAllKeysForDevice", "pqc_device_keys collection -- public key, algorithm, status only; a key must reference an already-checked-in org_devices record. revokeAllKeysForDevice() existed from the start but was never actually called by the device-revocation workflow until this pass's Workstream E wiring (see below) -- a real, closed gap, not a new function."],
+            ["inaya-desktop/src-tauri/src/cleaner.rs", "scan_temporary_files, scan_duplicates (content-hash grouping, size-staged for performance), protected_paths/is_protected re-checked at the actual deletion call site (not just scan time), cleanup_selected uses the trash crate (OS recycle bin, not permanent delete). Wired through the existing build.rs COMMANDS manifest + capabilities/default.json allow-* + verify_trusted_origin pattern identical to every other command in lib.rs -- no new native-command plumbing invented."],
+            ["src/lib/meet/{common,rooms,signaling}.js", "Room lifecycle (meet_rooms/meet_participants), signaling (meet_signals, 24h TTL) over the exact long-poll/SSE transport pattern src/lib/chat/transport.js already established -- not a second real-time stack, since Vercel serverless cannot hold a persistent WebSocket open. Moderator authorization re-derived from the database on every call, never a client-asserted role. Media is peer-to-peer mesh, never routed through an Inaya server -- a deliberate v1 decision recorded in docs/architecture/meet-architecture-adr.md given no SFU can run on serverless infrastructure without new always-on hosting."],
+            ["src/lib/chat/conversations.js: KINDS", "Extended with a \"meeting\" value so Meet's in-call chat reuses the existing MLS conversation model -- one line, not a second message system. A meeting's conversation starts with zero invitees (the host only); participants are added via the same addParticipants() every other kind already uses as they're admitted to the room."],
+            ["src/app/api/meet/rooms/** (12 route files) + src/app/meet/[token]/page.js", "Dual-auth design throughout: an org session resolves identity from the cookie; a guest with no Inaya account authenticates via participantId + a hashed, single-use guestToken returned once at join time. The public /meet/[token] page works for both without branching UI logic at the route level."],
+            ["src/components/business/meet/MeetView.js", "Real RTCPeerConnection mesh -- a deterministic glare-free initiator rule (the lexicographically-smaller participant id offers), getUserMedia/getDisplayMedia, and client-side PQC key resolution for admission: fetches a waiting participant's active device key and calls Pqc.wrapForRecipient for real before approving, not a stub. No TURN server configured (STUN-only) -- stated plainly as a known v1 limitation, not hidden."],
+            ["src/lib/devices/devices.js: deviceAction", "revoke/block now also calls pqc/deviceKeys.js's revokeAllKeysForDevice() in the same action (fire-and-forget, matching the function's existing webhook/notify calls) -- the Workstream E gap this pass closed. Also: a per-device PQC-capability badge and backup-health badge added to DevicesView.js, each one batched fetch for the whole list, not N+1 queries."],
+            ["src/components/business/DeviceProtectionView.js", "Consolidates four previously scattered sidebar entries (Devices, Endpoint Backup, DirectSync, Cleaner) into one tabbed surface, per the SOW's own explicit instruction not to expose confusing separate modules. Pure UI composition -- none of the four underlying views' logic moved."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Two real bugs found and fixed by actually running the software, not assumed from the code.",
+          text: "A live verification pass against a real running server (a real organization, a real login through the production magic-link route, a real browser) found: (1) a pre-existing crash in business/page.js's Sidebar component -- a nav-item filter referenced a `membership` variable that was never actually passed into that component as a prop, throwing an uncaught ReferenceError for any user whenever a timing race left `canManage` momentarily false, with no recovery short of a page reload; (2) a Meet-specific bug where a denied camera/microphone permission and a genuine room-load failure shared one error-state variable, so any user without a camera -- or who simply declined the browser's permission prompt -- was incorrectly told the meeting had failed to open instead of being let in without video. Both fixed and re-verified in the same pass.",
+        },
+        {
+          type: "note",
+          text: "Honestly scoped as still open, because no automated or sandboxed pass can close it: a real two-person video call between two real browsers with real cameras (the engineering sandbox used for this pass blocks camera/microphone access entirely, by design), and a real phone running the mobile app's Meet join screen (built: a web-view around the same /meet/[token] link; camera/microphone permissions added to app.json but need a real native build, not just an over-the-air update, to actually take effect). 127/127 SDK cryptography tests (including official ML-KEM test vectors and adversarial downgrade/tamper cases), 9/9 Cleaner filesystem tests, and 28 server-side Meet/device tests are passing; the full backup-system audit, consolidation, and PQC-applicability finding are written up in docs/internxt-implementation-ledger.md, which states plainly, row by row, what's VERIFIED versus PARTIAL versus DEFERRED versus genuinely NOT_APPLICABLE given this codebase's own architecture -- never rounding up.",
+        },
+      ],
+    },
   ],
 };

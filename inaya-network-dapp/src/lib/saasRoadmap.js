@@ -707,6 +707,55 @@ export const ROADMAP_STAGES = [
     notes:
       "Built across 26 workstreams and deployed to the live website behind off-by-default feature flags, 3–5 October 2026. Honest ledger of 114 tracked deliverables: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built (mobile chat and push notifications — left for later by deliberate choice, not an oversight). The Sovereign Gateway, NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant. The chat protocol's open-source library implementation has not had an independent security audit. The project's own final verification report states plainly that the SOW is not yet complete — this stage stays IN_PROGRESS until it is.",
   },
+  {
+    number: 29,
+    title: "Post-Quantum Security, Private Meetings & Device Protection — Internxt-Inspired Expansion",
+    status: ROADMAP_STATUS.IN_PROGRESS,
+    description:
+      "A delta scope on top of the Competitive Expansion above, inspired by another well-known product's strongest ideas: future-proof encryption key establishment, a private local device cleaner, private video meetings, and one coherent view over the backup system Inaya already had. Nothing here duplicates an existing system — the first engineering step was a full audit of what already existed, and every new piece extends it.",
+    securityStatement:
+      "The post-quantum layer protects key establishment, not file content — AES-256 remains the content cipher, unchanged. Meeting media never touches an Inaya server (peer-to-peer by design, not routed through a middle server). Nothing here is described as quantum-safe, zero-access, or fully end-to-end encrypted beyond what is actually implemented and tested.",
+    groups: [
+      {
+        title: "Post-Quantum Cryptography",
+        items: [
+          "A hybrid ML-KEM-768 + X25519 key-establishment layer (the NIST-standardized successor to what competitors market as \"Kyber\"), combined through a domain-separated HKDF — never a bare hash of two secrets concatenated together",
+          "A versioned envelope format and a device key registry, with no private key ever leaving the device it was generated on",
+          "An algorithm-agile extension of the existing file-sharing primitive — classical, hybrid, or PQC-required, with a policy that refuses to silently downgrade",
+          "Device revocation now also revokes that device's PQC key in the same action",
+        ],
+      },
+      {
+        title: "Inaya Cleaner",
+        items: [
+          "A local-first scan for temporary and duplicate files, built into the existing desktop app rather than a separate application",
+          "A platform-specific protected-path list so system, application and Inaya's own files can never be touched",
+          "Trash, not permanent delete, by default — reviewed and confirmed before anything is removed",
+          "A warning (never a silent skip) when a file is inside a folder actively protected by backup",
+        ],
+      },
+      {
+        title: "Inaya Meet",
+        items: [
+          "Private, peer-to-peer video meetings — media flows directly between participants' browsers, never through an Inaya server",
+          "A lobby with host approval, server-enforced moderator controls (lock, end, remove, mute request)",
+          "Four guest-access modes, including a named-invite list verified by a one-time emailed code",
+          "In-call chat reuses the existing Secure Chat system rather than a second messaging engine, and is ephemeral by default",
+          "A public join link for guests with no Inaya account, plus desktop (native window) and mobile (join screen) support",
+        ],
+      },
+      {
+        title: "Device Protection",
+        items: [
+          "Backup, Sync, Cleaner and Device status consolidated into one surface instead of four scattered screens",
+          "A per-device PQC-capability badge and backup-health badge",
+          "A full audit of the 8 existing backup-related files found nearly everything Internxt-style already existed — the only new work was reconciliation, not a second backup engine",
+        ],
+      },
+    ],
+    notes:
+      "Post-quantum cryptography and Computer Backup reconciliation are complete and verified (127/127 SDK cryptography tests, including official ML-KEM test vectors and adversarial downgrade/tamper cases). Cleaner is built and tested (9/9 real filesystem tests on Windows); the live round trip through the compiled desktop app's native command bridge was attempted but not completed in this environment. Meet is functionally complete — 28 server-side tests passing, including every guest-access mode and server-enforced PQC-downgrade rejection — and was verified against a real running server in a real browser, a pass that found and fixed two genuine bugs (a pre-existing crash affecting any user, and a Meet-specific false error for anyone without a camera). What Meet still needs, honestly: a real two-person video call with real cameras, and a real phone running the mobile build — both need real hardware this engineering environment cannot provide. This stage stays IN_PROGRESS until that real-world test happens.",
+  },
 ];
 
 export const VISION = {

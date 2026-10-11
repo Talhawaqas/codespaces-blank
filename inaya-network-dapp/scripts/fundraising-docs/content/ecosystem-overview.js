@@ -935,5 +935,32 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      title: "Post-Quantum Security, a Private Device Cleaner & Private Meetings (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A future-proof encryption layer for establishing keys, a local tool that finds junk and duplicate files without ever uploading anything, private peer-to-peer video meetings, and one coherent view over the backup protection Inaya already had — inspired by another privacy-focused product's strongest ideas, built only where Inaya genuinely didn't already have the capability.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Post-quantum cryptography: a hybrid key-establishment layer combining a classical method with the new NIST-standardized post-quantum method (ML-KEM), so files stay protected even against a future quantum computer — while the actual file encryption itself (AES-256) is unchanged, since that part was never the weak link.",
+            "Inaya Cleaner: scans a computer locally for temporary and duplicate files, never uploads a file inventory anywhere, and moves anything removed to the recycle bin rather than deleting it permanently — reviewed and confirmed by the person before anything happens.",
+            "Inaya Meet: private video meetings where the call itself flows directly between participants' own devices, never through an Inaya server. A host can require approval before someone joins, lock a meeting in progress, and invite guests with no Inaya account at all — including a mode limited to specific invited email addresses, verified with a one-time code.",
+            "Device Protection: backup, sync, local cleanup and device status brought into one place instead of four separate screens, with an at-a-glance badge showing whether each device is ready for the new post-quantum protection.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "Not a claim that any part of Inaya is now \"quantum-safe\" in some generic sense — only the key-establishment step uses the new method, stated exactly that precisely. Not a video-call server that can see meeting content — there's nothing in the middle to see, by design. Not a replacement for the existing backup system — the engineering work here was reconciling and presenting it better, not rebuilding it.",
+        },
+        {
+          type: "note",
+          text: "Verified against a real running server in a real browser — a pass that found and fixed two genuine bugs, including a meeting incorrectly reporting a failure for anyone without a camera, before this was written up. A real two-person video call with real cameras, and a real phone running the mobile app, are the two pieces still waiting on real-world hardware to confirm.",
+        },
+      ],
+    },
   ],
 };

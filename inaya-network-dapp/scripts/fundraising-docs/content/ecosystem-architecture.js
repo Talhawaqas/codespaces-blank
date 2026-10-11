@@ -1918,5 +1918,36 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      title: "Post-Quantum Cryptography, Cleaner, Meet & Device Protection — Architecture (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A hybrid PQC key-establishment layer that extends the existing sharing primitive rather than replacing it; a local-only device scanner that never leaves the desktop app's own process; peer-to-peer meeting media that never touches an Inaya server; and a reconciliation pass that added zero new backup engines after auditing eight existing ones.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["PQC provider", "custody-sdk/src/pqc/provider.js", "ML-KEM-768 (hashes-only dependency) + X25519 combined through a domain-separated HKDF-SHA256 -- a hand-rolled combiner chosen specifically to avoid a real @noble/curves major-version conflict the package's own bundled hybrid preset would have forced onto every existing wallet-signing code path."],
+            ["Algorithm-agile sharing", "custody-sdk/src/pqc/agileSharing.js", "LEGACY_CLASSICAL/HYBRID_PQC/PQC_REQUIRED modes over the SDK's existing X25519 sharing primitive -- the classical path is byte-for-byte the function that's always been there, never forked."],
+            ["Device key registry", "src/lib/pqc/deviceKeys.js", "Public keys only, scoped to an already-checked-in device; revocation now wired into the existing device-revocation workflow rather than left as a standalone, unused function."],
+            ["Cleaner", "inaya-desktop/src-tauri/src/cleaner.rs", "Local filesystem scan only -- no file inventory ever leaves the device. Protected paths re-checked at the actual deletion call, not just at scan time; OS recycle bin, never a permanent delete, by default."],
+            ["Meet room lifecycle + signaling", "src/lib/meet/{rooms,signaling}.js", "Signaling over the same long-poll/SSE pattern Secure Chat's own real-time layer already uses -- the honest architectural answer on a serverless platform that cannot hold a persistent connection open. Media is mesh peer-to-peer; no SFU exists in this version, a deliberate v1 scope decision, not an oversight (docs/architecture/meet-architecture-adr.md)."],
+            ["Meet client", "src/components/business/meet/MeetView.js", "Real RTCPeerConnection negotiation and client-side PQC key wrapping for admission -- the room secret is generated on the host's own device and never reaches the server in plaintext."],
+            ["Device Protection", "src/components/business/DeviceProtectionView.js", "Composition only -- Backup, Sync, Cleaner and Device status tabs each render an existing, unmodified view. No logic moved, no new data path."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Why backup reconciliation added no new engine.",
+          text: "An audit of all 8 existing backup-related files found nearly every behavior the SOW asked about already real -- scheduling, pause/resume, retry queues, point-in-time restore, and a ransomware-aware recovery flow requiring a second administrator's approval were all already there. The only genuinely new work was UI consolidation and a Cleaner-aware warning before deleting a file inside an active backup folder.",
+        },
+        {
+          type: "note",
+          text: "A live pass against a real running server and a real browser found and fixed two genuine bugs before this was written up -- a pre-existing crash unrelated to this work, and a Meet-specific false error for a user with no camera. A real two-person video call and a real mobile device run remain the two pieces needing real-world hardware this pass could not provide.",
+        },
+      ],
+    },
   ],
 };
