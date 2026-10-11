@@ -59,7 +59,10 @@ export default function MeetJoinPage({ params }) {
             {info.guestAccess !== "forbidden" && (
               <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Your name" className={input + " mb-3"} maxLength={80} />
             )}
-            <button onClick={join} disabled={busy || (info.guestAccess !== "forbidden" && !guestName.trim())} className={primary}>
+            {/* Not gated on guestName here: an already-authenticated org member joins via their
+                session alone and doesn't need to type a name. An unauthenticated caller with no
+                name gets a clear 400 from the server ("A display name is required...") instead. */}
+            <button onClick={join} disabled={busy} className={primary}>
               {busy ? "Joining..." : "Join meeting"}
             </button>
           </>

@@ -172,6 +172,7 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
   const [participants, setParticipants] = useState([]);
   const [waiting, setWaiting] = useState([]);
   const [error, setError] = useState("");
+  const [deviceWarning, setDeviceWarning] = useState(""); // separate from `error`: a denied camera/mic is informational, never the reason the meeting "failed to open"
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [sharing, setSharing] = useState(false);
@@ -200,7 +201,7 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
     } catch {
-      setError("Camera/microphone permission was denied. You can still join with no camera or mic.");
+      setDeviceWarning("Camera/microphone permission was denied. You can still join with no camera or mic.");
     }
   }, []);
   useEffect(() => { startPreflight(); return () => { localStreamRef.current?.getTracks().forEach((t) => t.stop()); }; }, [startPreflight]);
@@ -385,7 +386,8 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
             </div>
           )}
           <video ref={localVideoRef} autoPlay muted playsInline className="w-full max-w-md rounded-xl bg-black aspect-video" />
-          {error && <p className="text-amber-300 text-xs mt-2">{error}</p>}
+          {deviceWarning && <p className="text-amber-300 text-xs mt-2">{deviceWarning}</p>}
+          {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
           <div className="flex gap-2 mt-3">
             <button onClick={confirmJoin} className={btn}>Join now</button>
             <button onClick={onLeave} className={ghost}>Cancel</button>

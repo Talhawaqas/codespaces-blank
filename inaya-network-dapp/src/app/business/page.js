@@ -926,7 +926,7 @@ function VoiceAiSettings({ orgId, aiPolicy, onChanged }) {
   );
 }
 
-function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile }) {
+function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile, membership }) {
   return (
     <>
       {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
@@ -1161,6 +1161,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         vertical={orgVertical}
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
+        membership={membership}
       />
 
       <div className="flex-1 min-w-0">
