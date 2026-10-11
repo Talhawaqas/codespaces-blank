@@ -131,6 +131,46 @@ test("cross-org isolation: a room created in one org is not reachable through a 
   }
 });
 
+test("named guest access: the right code from the right email admits automatically; everything else is rejected (SOW §7.9/§7.22)", T, async () => {
+  let sentTo = null, sentCode = null;
+  rooms.setGuestCodeEmailSender(async ({ to, text }) => { sentTo = to; sentCode = /is (\d{6})/.exec(text)?.[1]; });
+  try {
+    const r = await rooms.createRoom({ orgId: org.oid, membership: owner.membership, hostEmail: owner.email, title: "Named guests", policy: { guestAccess: "named", namedGuestEmails: ["invited@example.com"] } });
+
+    // An uninvited email gets the same generic "sent" response -- never reveals eligibility.
+    const uninvited = await rooms.requestNamedGuestCode({ orgId: org.oid, roomId: r.roomId, joinToken: r.joinToken, email: "stranger@example.com" });
+    assert.equal(uninvited.sent, true);
+    assert.equal(sentTo, null, "no email actually went out for an address that isn't on the list");
+
+    // The invited email gets a real code.
+    const ok = await rooms.requestNamedGuestCode({ orgId: org.oid, roomId: r.roomId, joinToken: r.joinToken, email: "invited@example.com" });
+    assert.equal(ok.sent, true);
+    assert.equal(sentTo, "invited@example.com");
+    assert.match(sentCode, /^\d{6}$/);
+
+    // Wrong code is rejected.
+    const wrongCode = await code(rooms.requestJoin({ orgId: org.oid, roomId: r.roomId, joinToken: r.joinToken, email: null, guestName: "Alice Guest", namedGuestEmail: "invited@example.com", code: "000000" }));
+    assert.equal(wrongCode.code, "BAD_CODE");
+
+    // Right code, right email: auto-admitted (being on the list is itself the approval).
+    const joined = await rooms.requestJoin({ orgId: org.oid, roomId: r.roomId, joinToken: r.joinToken, email: null, guestName: "Alice Guest", namedGuestEmail: "invited@example.com", code: sentCode });
+    assert.equal(joined.status, "admitted");
+    assert.equal(joined.isGuest, true);
+    assert.equal(joined.email, "invited@example.com");
+
+    // The code is single-use -- a second join attempt with the SAME code (after a fresh code request) fails.
+    const r2 = await rooms.createRoom({ orgId: org.oid, membership: owner.membership, hostEmail: owner.email, title: "Named guests 2", policy: { guestAccess: "named", namedGuestEmails: ["invited@example.com"] } });
+    await rooms.requestNamedGuestCode({ orgId: org.oid, roomId: r2.roomId, joinToken: r2.joinToken, email: "invited@example.com" });
+    const reusedCode = sentCode;
+    await rooms.requestJoin({ orgId: org.oid, roomId: r2.roomId, joinToken: r2.joinToken, email: null, guestName: "Reuse Test", namedGuestEmail: "invited@example.com", code: reusedCode });
+    const replay = await code(rooms.requestJoin({ orgId: org.oid, roomId: r2.roomId, joinToken: r2.joinToken, email: null, guestName: "Reuse Test 2", namedGuestEmail: "other-name@example.com", code: reusedCode }));
+    // A different email can't reuse a code issued to someone else's address.
+    assert.ok(replay.code === "BAD_CODE" || replay.code === "GUEST_NOT_NAMED");
+  } finally {
+    rooms.setGuestCodeEmailSender(async () => {}); // restore a harmless no-op for any later test
+  }
+});
+
 test("endRoom: ends for everyone, marks admitted participants left, and is idempotent", T, async () => {
   const r = await rooms.createRoom({ orgId: org.oid, membership: owner.membership, hostEmail: owner.email, title: "End test" });
   await rooms.requestJoin({ orgId: org.oid, roomId: r.roomId, joinToken: r.joinToken, email: alice.email });

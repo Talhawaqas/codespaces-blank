@@ -22,15 +22,30 @@ export default function MeetJoinPage({ params }) {
   const [info, setInfo] = useState(null);
   const [error, setError] = useState("");
   const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestCode, setGuestCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [joined, setJoined] = useState(null); // { roomId, orgId, me: {...}, guestAuth: {...} | null }
 
   useEffect(() => { j(`/api/meet/by-token/${token}`).then(setInfo).catch((e) => setError(e.message)); }, [token]);
 
+  const named = info?.guestAccess === "named";
+
+  const sendCode = async () => {
+    setBusy(true); setError("");
+    try {
+      const r = await j(`/api/meet/rooms/${info.roomId}/named-guest-code?orgId=${info.orgId}`, { method: "POST", body: JSON.stringify({ orgId: info.orgId, joinToken: token, email: guestEmail }) });
+      if (r.sent === false) setError(r.error || "Could not send a code right now.");
+      else setCodeSent(true);
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
   const join = async () => {
     setBusy(true); setError("");
     try {
-      const r = await j(`/api/meet/rooms/${info.roomId}/join?orgId=${info.orgId}`, { method: "POST", body: JSON.stringify({ orgId: info.orgId, joinToken: token, deviceId: localDeviceId(), guestName: guestName || undefined }) });
+      const r = await j(`/api/meet/rooms/${info.roomId}/join?orgId=${info.orgId}`, { method: "POST", body: JSON.stringify({ orgId: info.orgId, joinToken: token, deviceId: localDeviceId(), guestName: guestName || undefined, namedGuestEmail: named ? guestEmail : undefined, code: named ? guestCode : undefined }) });
       setJoined({ roomId: info.roomId, orgId: info.orgId, email: r.email || null, guestAuth: r.isGuest ? { participantId: r.participantId, guestToken: r.guestToken } : null });
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
@@ -54,17 +69,39 @@ export default function MeetJoinPage({ params }) {
           <>
             <h1 className="text-white font-bold text-lg mb-1">{info.title}</h1>
             <p className="text-[#8a96ab] text-xs mb-4">
-              {info.guestAccess === "forbidden" ? "Sign in to your Inaya account to join this meeting." : "Enter your name to join, or sign in first if you already have an Inaya account."}
+              {info.guestAccess === "forbidden"
+                ? "Sign in to your Inaya account to join this meeting."
+                : named
+                ? "This meeting is limited to invited addresses. Enter your email to get a one-time code, or sign in first if you already have an Inaya account."
+                : "Enter your name to join, or sign in first if you already have an Inaya account."}
             </p>
-            {info.guestAccess !== "forbidden" && (
-              <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Your name" className={input + " mb-3"} maxLength={80} />
+
+            {named ? (
+              <>
+                <input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Your invited email address" className={input + " mb-3"} maxLength={254} disabled={codeSent} type="email" />
+                {!codeSent ? (
+                  <button onClick={sendCode} disabled={busy || !guestEmail.trim()} className={primary}>{busy ? "Sending..." : "Send code"}</button>
+                ) : (
+                  <>
+                    <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Your name" className={input + " mb-3"} maxLength={80} />
+                    <input value={guestCode} onChange={(e) => setGuestCode(e.target.value)} placeholder="6-digit code" className={input + " mb-3"} maxLength={6} inputMode="numeric" />
+                    <button onClick={join} disabled={busy || !guestName.trim() || !guestCode.trim()} className={primary}>{busy ? "Joining..." : "Join meeting"}</button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {info.guestAccess !== "forbidden" && (
+                  <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Your name" className={input + " mb-3"} maxLength={80} />
+                )}
+                {/* Not gated on guestName here: an already-authenticated org member joins via their
+                    session alone and doesn't need to type a name. An unauthenticated caller with no
+                    name gets a clear 400 from the server ("A display name is required...") instead. */}
+                <button onClick={join} disabled={busy} className={primary}>
+                  {busy ? "Joining..." : "Join meeting"}
+                </button>
+              </>
             )}
-            {/* Not gated on guestName here: an already-authenticated org member joins via their
-                session alone and doesn't need to type a name. An unauthenticated caller with no
-                name gets a clear 400 from the server ("A display name is required...") instead. */}
-            <button onClick={join} disabled={busy} className={primary}>
-              {busy ? "Joining..." : "Join meeting"}
-            </button>
           </>
         )}
       </div>

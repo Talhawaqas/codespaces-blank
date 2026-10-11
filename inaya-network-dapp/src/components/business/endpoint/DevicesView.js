@@ -55,6 +55,7 @@ export function DeviceCheckIn({ orgId }) {
 export default function DevicesView({ orgId, canManage }) {
   const [scope, setScope] = useState("mine"); const [rows, setRows] = useState(null); const [sum, setSum] = useState(null); const [err, setErr] = useState(""); const [msg, setMsg] = useState(""); const [off, setOff] = useState(false); const here = typeof window !== "undefined" ? localDeviceId() : null;
   const [pqcByDevice, setPqcByDevice] = useState({}); // deviceId -> "active" | "revoked", one fetch for the whole list rather than one per row
+  const [backupByDevice, setBackupByDevice] = useState({}); // deviceId -> GREEN | AMBER | RED | PAUSED | NEVER_RUN
   const load = useCallback(async () => {
     try { const d = await j(`/api/orgs/devices?orgId=${orgId}&scope=${scope}`); setRows(d.devices); setErr(""); if (canManage) setSum(await j(`/api/orgs/devices?orgId=${orgId}&scope=summary`)); }
     catch (e) { if (e.status === 404) setOff(true); else setErr(e.message); }
@@ -68,6 +69,19 @@ export default function DevicesView({ orgId, canManage }) {
     j(`/api/orgs/pqc/devices?orgId=${orgId}&scope=${scope === "org" ? "org" : "mine"}`).then((d) => {
       const by = {}; for (const k of d.keys || []) if (k.status === "active") by[k.deviceId] = true;
       setPqcByDevice(by);
+    }).catch(() => {});
+  }, [orgId, scope]);
+  // §8.1 (Internxt-inspired SOW, Workstream E): backup health per device, one batched fetch for the
+  // whole list. Sync health and "cleaner last scan" are deliberately NOT shown here -- DirectSync's
+  // health is a per-folder state on whichever browser is currently syncing, never tracked per
+  // org-device server-side, and Cleaner's own local-first design (§6.3 of the SOW) means it NEVER
+  // reports a scan to the server at all; inventing either would mean either guessing or quietly
+  // breaking a privacy guarantee this codebase already made deliberately. Documented in the ledger
+  // rather than silently left out.
+  useEffect(() => {
+    j(`/api/orgs/endpoint-backup/profiles?orgId=${orgId}&scope=${scope === "org" ? "org" : "mine"}`).then((d) => {
+      const by = {}; for (const p of d.profiles || []) if (p.deviceId) by[p.deviceId] = p.health?.state || "UNKNOWN";
+      setBackupByDevice(by);
     }).catch(() => {});
   }, [orgId, scope]);
   const act = async (d, action, confirmText) => { if (confirmText && !window.confirm(confirmText)) return; setErr(""); setMsg(""); try { const r = await j(`/api/orgs/devices/${d.deviceId}`, { method: "POST", body: JSON.stringify({ orgId, action }) }); setMsg(r.note || (r.sessionsEnded != null ? `Done. ${r.sessionsEnded} sign-in${r.sessionsEnded === 1 ? "" : "s"} ended.` : "Done.")); load(); } catch (e) { setErr(e.message); } };
@@ -87,6 +101,11 @@ export default function DevicesView({ orgId, canManage }) {
             {!d.revokedAt && (pqcByDevice[d.deviceId]
               ? <span className="text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 text-[#00f2fe] border-[#00f2fe]/30">PQC Ready</span>
               : <span className="text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 text-slate-400 border-slate-500/30">Legacy Client</span>)}
+            {!d.revokedAt && backupByDevice[d.deviceId] && (
+              <span className={`text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 ${{ GREEN: "text-emerald-400 border-emerald-400/30", AMBER: "text-amber-300 border-amber-400/30", RED: "text-red-400 border-red-400/30", PAUSED: "text-slate-400 border-slate-500/30", NEVER_RUN: "text-slate-400 border-slate-500/30" }[backupByDevice[d.deviceId]] || "text-slate-400 border-slate-500/30"}`}>
+                Backup: {backupByDevice[d.deviceId].replace("_", " ").toLowerCase()}
+              </span>
+            )}
           </div>
           <p className={`text-[11px] ${muted} mt-1`}>{scope === "org" ? `${d.email} · ` : ""}{d.platform}{d.osVersion ? ` · ${d.osVersion}` : ""}{d.appVersion ? ` · ${d.appVersion}` : ""} · first seen {when(d.firstSeenAt)} · last seen {when(d.lastSeenAt)}{d.lastIp ? ` · network ${d.lastIp}` : ""} · {d.encryption?.secureStorage ? "secure storage" : "no secure storage reported"}{d.cache?.bytes ? ` · local data ${(d.cache.bytes / 1048576).toFixed(1)} MB` : ""}{d.syncDisabled ? " · sync disabled" : ""}</p>
           {d.pendingCommands.length > 0 && <p className="text-[11px] text-amber-300 mt-1">Waiting for the device to check in: {d.pendingCommands.map((c) => c.type.replace("_", " ")).join(", ")}</p>}

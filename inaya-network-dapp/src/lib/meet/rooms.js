@@ -14,6 +14,7 @@
 // place "can this caller moderate this room" is decided.
 
 import { ObjectId } from "mongodb";
+import { randomInt, createHash } from "node:crypto";
 import { Pqc } from "@inaya-network/custody-sdk";
 import { canManageOrg } from "../orgs.js";
 import { hasAdminRole } from "../orgGates.js";
@@ -21,6 +22,7 @@ import { slidingWindowCheck } from "../rateLimit.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { createConversation, addParticipants } from "../chat/conversations.js";
 import { chatDb } from "../chat/common.js";
+import { sendEmail } from "../email.js";
 import { LIMITS, GUEST_ACCESS_MODES, POLICY_KEY_MODES, fail, nowIso, normEmail, newToken, hashToken, isPqcEnvelope, meetDb, toObjectId } from "./common.js";
 import { broadcastControl } from "./signaling.js";
 
@@ -213,7 +215,53 @@ export async function updatePolicy({ orgId, membership, actorEmail, roomId, patc
  * to enter a room via its join token. Server-enforced: the client NEVER gets to assert "I'm the host" or
  * "admit me automatically" -- every admission rule below is decided from room.policy and room.hostEmail alone.
  */
-export async function requestJoin({ orgId, roomId, joinToken, email, deviceId, guestName }) {
+// Named-guest email verification (SOW §7.9/§7.22: guestAccess "named" = limited to invited
+// addresses, proven via a one-time code). Mirrors sharing/shares.js's requestShareCode/
+// emailCodeValid exactly -- same shape (hashed 6-digit code, 10-minute expiry, 5 wrong-code
+// attempts, single use, the answer never reveals whether an address was eligible) -- applied to a
+// meeting room instead of a share link. Stored on the room document itself (a small embedded
+// array, not a new top-level collection) since §9.2 only authorizes a new collection when nothing
+// existing fits, and this is genuinely small, room-scoped, short-lived state.
+const sha = (s) => createHash("sha256").update(s).digest("hex");
+let guestCodeEmailSender = sendEmail;
+/** Tests replace the sender (same pattern as sharing/shares.js's setShareEmailSender) so a test can
+ *  read the actual code without a real email provider configured. */
+export function setGuestCodeEmailSender(fn) { guestCodeEmailSender = fn; }
+export async function requestNamedGuestCode({ orgId, roomId, joinToken, email }) {
+  const r = await loadRoom({ orgId, roomId });
+  if (hashToken(String(joinToken || "")) !== r.joinTokenHash) fail(404, "Meeting not found.");
+  const generic = { sent: true };
+  if (r.policy.guestAccess !== "named" || r.status === "ended") return generic;
+  const em = normEmail(email);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return generic;
+  const rl = await slidingWindowCheck({ action: "meet:guest-code", key: `${roomId}:${em}`, max: 6, windowMs: 3600_000 });
+  if (!rl.allowed) fail(429, "Too many codes requested. Try again later.");
+  if (!r.policy.namedGuestEmails.includes(em)) return generic; // never reveals eligibility, same as shares.js
+  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  const { rooms } = await meetDb();
+  const entry = { email: em, codeHash: sha(`${roomId}:${em}:${code}`), attempts: 0, expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() };
+  await rooms.updateOne({ _id: r._id }, { $pull: { namedGuestCodes: { email: em } } });
+  await rooms.updateOne({ _id: r._id }, { $push: { namedGuestCodes: entry } });
+  try { await guestCodeEmailSender({ to: em, subject: "Your Inaya Meet code", text: `Your code to join "${r.title}" is ${code}. It expires in 10 minutes. If you did not request this, ignore this message.`, html: `<p>Your code to join "${r.title}" is <b>${code}</b>. It expires in 10 minutes.</p>` }); }
+  catch { return { sent: false, error: "Email delivery is not available right now." }; }
+  return generic;
+}
+
+async function namedGuestCodeValid(r, email, code) {
+  if (!email || !code) return false;
+  const em = normEmail(email); const { rooms } = await meetDb();
+  const row = await rooms.findOneAndUpdate(
+    { _id: r._id, namedGuestCodes: { $elemMatch: { email: em, expiresAt: { $gt: new Date().toISOString() }, attempts: { $lt: 5 } } } },
+    { $inc: { "namedGuestCodes.$.attempts": 1 } },
+    { returnDocument: "after" }
+  );
+  const entry = row?.namedGuestCodes?.find((c) => c.email === em);
+  if (!entry || entry.codeHash !== sha(`${String(r._id)}:${em}:${String(code).trim()}`)) return false;
+  await rooms.updateOne({ _id: r._id }, { $pull: { namedGuestCodes: { email: em } } }); // single use
+  return true;
+}
+
+export async function requestJoin({ orgId, roomId, joinToken, email, deviceId, guestName, namedGuestEmail, code }) {
   const r = await loadRoom({ orgId, roomId });
   if (hashToken(String(joinToken || "")) !== r.joinTokenHash) fail(404, "Meeting not found.");
   if (r.status === "ended") fail(410, "This meeting has ended.", "MEETING_ENDED");
@@ -227,16 +275,28 @@ export async function requestJoin({ orgId, roomId, joinToken, email, deviceId, g
 
   const { rooms, participants } = await meetDb();
   const now = nowIso();
+  const isGuest = !email;
+  const isNamedMode = r.policy.guestAccess === "named";
+  const verifiedGuestEmail = isGuest && isNamedMode && namedGuestEmail ? normEmail(namedGuestEmail) : null;
 
   // Returning participant (already admitted or still waiting) -- idempotent rejoin, not a new row.
-  const already = await participants.findOne({ roomId: r._id, email: email ? normEmail(email) : null, status: { $in: ["waiting", "admitted"] } });
+  // A named guest is looked up by their verified email (the only identity they have); any other
+  // guest has no stable identity to dedupe on, so a fresh join always makes a fresh row for them.
+  const already = await participants.findOne({ roomId: r._id, email: email ? normEmail(email) : verifiedGuestEmail, status: { $in: ["waiting", "admitted"] } });
   if (already) return { ...participantView(already), waiting: already.status === "waiting" };
 
-  const isGuest = !email;
   if (isGuest) {
     if (r.policy.guestAccess === "forbidden") fail(403, "This meeting does not allow guests.", "GUEST_FORBIDDEN");
     const name = String(guestName || "").trim().slice(0, LIMITS.guestNameLen);
     if (!name) fail(400, "A display name is required to join as a guest.");
+  }
+  if (isNamedMode) {
+    if (!namedGuestEmail) fail(400, "Your email address is required for this meeting.");
+    if (!(await namedGuestCodeValid(r, namedGuestEmail, code))) fail(401, "That code is not right or has expired. Request a new one.", "BAD_CODE");
+    // namedGuestCodeValid already confirmed this email received a code, which requestNamedGuestCode
+    // only ever sends to an address on r.policy.namedGuestEmails -- re-checking here costs nothing
+    // and keeps the actual admission decision from trusting anything the client asserts.
+    if (!r.policy.namedGuestEmails.includes(verifiedGuestEmail)) fail(403, "This meeting is limited to invited guests.", "GUEST_NOT_NAMED");
   }
 
   const count = await participants.countDocuments({ roomId: r._id, status: "admitted" });
@@ -245,25 +305,20 @@ export async function requestJoin({ orgId, roomId, joinToken, email, deviceId, g
   let status = "waiting";
   let guestToken = null;
   const doc = {
-    _id: new ObjectId(), roomId: r._id, orgId: String(orgId), email: isGuest ? null : normEmail(email),
+    _id: new ObjectId(), roomId: r._id, orgId: String(orgId), email: isGuest ? verifiedGuestEmail : normEmail(email),
     isGuest, guestName: isGuest ? String(guestName).trim().slice(0, LIMITS.guestNameLen) : null,
     deviceId: deviceId || null, role: "participant", status, requestedAt: now, admittedAt: null, admittedBy: null,
     guestTokenHash: null,
   };
 
   if (isGuest) {
-    if (r.policy.guestAccess === "named") {
-      fail(403, "This meeting is limited to invited guests. Ask the host for a direct invitation.", "GUEST_NOT_NAMED");
-      // Named-guest identity verification (email + one-time code via the existing notification
-      // primitive) is a real §7.22 requirement; this v1 ships the simpler, equally honest "approval"
-      // and "allowed" modes end-to-end and documents named-guest OTP as a DEFERRED follow-on in the
-      // ledger rather than half-implementing email verification here.
-    }
     guestToken = newToken(LIMITS.guestTokenBytes);
     doc.guestTokenHash = hashToken(guestToken);
   }
 
-  const autoAdmit = (!isGuest && r.policy.orgMemberAutoAdmit) || (isGuest && r.policy.guestAccess === "allowed");
+  // A verified named guest auto-admits -- being on the host's invite list already is the approval;
+  // any other guest still waits for the host unless policy is the fully-open "allowed" mode.
+  const autoAdmit = (!isGuest && r.policy.orgMemberAutoAdmit) || (isGuest && (r.policy.guestAccess === "allowed" || isNamedMode));
   if (autoAdmit) { doc.status = "admitted"; doc.admittedAt = now; doc.admittedBy = "policy:auto"; status = "admitted"; }
 
   await participants.insertOne(doc);

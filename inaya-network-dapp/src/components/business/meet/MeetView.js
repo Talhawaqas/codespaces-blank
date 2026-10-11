@@ -331,6 +331,20 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
   const endForEveryone = async () => { await j(`/api/meet/rooms/${roomId}/end?orgId=${orgId}`, { method: "POST", body: JSON.stringify({ orgId }) }).catch((e) => setError(e.message)); onLeave(); };
   const toggleLock = async () => { await j(`/api/meet/rooms/${roomId}/lock?orgId=${orgId}`, { method: "POST", body: JSON.stringify({ orgId, locked: room.status !== "locked" }) }).catch((e) => setError(e.message)); loadRoom(); };
 
+  const [namedEmailsInput, setNamedEmailsInput] = useState("");
+  const [policySaving, setPolicySaving] = useState(false);
+  const updateGuestAccess = async (guestAccess) => {
+    await j(`/api/meet/rooms/${roomId}?orgId=${orgId}`, { method: "PATCH", body: JSON.stringify({ orgId, guestAccess }) }).catch((e) => setError(e.message));
+    loadRoom();
+  };
+  const saveNamedEmails = async () => {
+    setPolicySaving(true);
+    const namedGuestEmails = namedEmailsInput.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+    await j(`/api/meet/rooms/${roomId}?orgId=${orgId}`, { method: "PATCH", body: JSON.stringify({ orgId, namedGuestEmails }) }).catch((e) => setError(e.message));
+    setPolicySaving(false);
+    loadRoom();
+  };
+
   const moderate = async (participantId, action, extra = {}) => {
     await j(`/api/meet/rooms/${roomId}/participants/${participantId}?orgId=${orgId}`, { method: "PATCH", body: JSON.stringify({ orgId, action, ...extra }) }).catch((e) => setError(e.message));
     refreshWaiting(); refreshParticipants();
@@ -463,6 +477,25 @@ export function MeetRoom({ orgId, email, roomId, shareLink, initialGuestAuth = n
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {isModerator && (
+        <div className={card}>
+          <h4 className="text-[var(--inaya-text-primary)] font-bold text-xs mb-2">Guest access</h4>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {["forbidden", "allowed", "approval", "named"].map((mode) => (
+              <button key={mode} onClick={() => updateGuestAccess(mode)} className={room.policy.guestAccess === mode ? btn + " !border-[#00f2fe]/40 !text-[#00f2fe]" : ghost}>{mode}</button>
+            ))}
+          </div>
+          {room.policy.guestAccess === "named" && (
+            <>
+              <p className="text-[11px] text-[var(--inaya-text-muted)] mb-1">Invited email addresses (one per line) -- only these can join as a guest, after verifying with an emailed code.</p>
+              <textarea value={namedEmailsInput} onChange={(e) => setNamedEmailsInput(e.target.value)} placeholder={room.policy.namedGuestEmails.join("\n") || "name@example.com"} rows={3} className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-[var(--inaya-text-primary)] mb-2" />
+              <button onClick={saveNamedEmails} disabled={policySaving} className={btn}>{policySaving ? "Saving..." : "Save invited list"}</button>
+              {room.policy.namedGuestEmails.length > 0 && <p className="text-[11px] text-[var(--inaya-text-muted)] mt-2">Currently invited: {room.policy.namedGuestEmails.join(", ")}</p>}
+            </>
+          )}
         </div>
       )}
     </div>
