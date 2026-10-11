@@ -95,6 +95,7 @@ import NotificationPrefsPanel from "../../components/business/admin/Notification
 import GovernanceView from "../../components/business/governance/GovernanceView";
 import { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
 import DeviceProtectionView from "../../components/business/DeviceProtectionView";
+import InfrastructureView from "../../components/business/InfrastructureView";
 import RansomwareView from "../../components/business/endpoint/RansomwareView";
 import DocGovernancePanel from "../../components/business/governance/DocGovernancePanel";
 import SecureViewer from "../../components/viewer/SecureViewer";
@@ -760,6 +761,7 @@ const NAV_ITEMS = [
   { key: "complianceReadiness", label: "Compliance Readiness", icon: "enterpriseHardening", manageOnly: true, adminRole: ["complianceAdmin", "securityAdmin"], group: "trust" },
   { key: "gateway", label: "Sovereign Gateway", icon: "enterpriseHardening", group: "trust" },
   { key: "deviceProtection", label: "Device Protection", icon: "enterpriseHardening", group: "trust" },
+  { key: "infrastructure", label: "Infrastructure", icon: "enterpriseHardening", group: "trust" },
   { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, adminRole: "securityAdmin", group: "trust" },
   { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
   { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
@@ -1088,6 +1090,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     portalRequests: { title: "Customer Requests", description: "Ask a customer for files, a form or an agreement in the portal, and follow their progress." },
     office: { title: "Microsoft 365 and Outlook", description: "Edit in Word, Excel and PowerPoint and send secure links from Outlook, without sending your files to Microsoft." },
     deviceProtection: { title: "Device Protection", description: "Backup, sync, local cleanup and device status for your computers, in one place." },
+    infrastructure: { title: "Infrastructure", description: "Customer-owned bare-metal compute, block storage and networking -- clusters, nodes, VMs, volumes and networks you run yourself." },
     ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
     adminDashboard: { title: "Admin Dashboard", description: "What is happening across storage, sharing, devices, backups and security, with honest NO DATA states." },
     webhooks: { title: "Webhooks", description: "Signed events to your own systems, with retries, a dead-letter list and secret rotation." },
@@ -1246,6 +1249,9 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
           {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
           {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
+          {activeView === "infrastructure" && (
+            <InfrastructureView orgId={orgId} canManage={canManage || membership?.infrastructureRole === "manager"} />
+          )}
           {activeView === "deviceProtection" && (
             <DeviceProtectionView
               orgId={orgId}

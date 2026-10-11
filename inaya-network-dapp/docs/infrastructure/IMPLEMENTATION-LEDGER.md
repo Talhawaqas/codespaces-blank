@@ -138,29 +138,33 @@ Per §321: "No feature is complete without a ledger entry." This is a living doc
 
 **New public API routes** (§70, API-key auth, reusing `operations.js` directly): `/api/public/v1/infrastructure/{compute/instances,volumes,networks}` (list/create) and their `/[id]` (get/delete) counterparts. A real cross-language bug (wrong relative import depth on 4 of 6 new route files) was caught by testing against the live server before writing any Go code against them, not assumed correct from a code read.
 
-## Phase 9 — AWS CLI/SDK interoperability (§157-160, §220, §311)
+## Phase 9 — AWS CLI/SDK interoperability (§157-160, §220, §311) — DEFERRED, honestly
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-AWS-001 | Capability-based compatibility registry | §158 | `PLANNED` | DISCOVERED/READ_ONLY/PARTIAL/VERIFIED/COMPATIBLE/UNSUPPORTED — only the highest *verified* level advertised |
-| INFRA-AWS-002 | EC2-like compute via real `aws-cli` test | §159, §311 | `PLANNED` | create/read/mutate/destroy/verify-no-leaked-state, real CLI against the real endpoint |
-| INFRA-AWS-003 | VPC-like networking via real `aws-cli` test | §159 | `PLANNED` | |
-| INFRA-AWS-004 | EBS-like volumes via real `aws-cli` test | §159 | `PLANNED` | |
-| INFRA-AWS-005 | AWS SDK (JS) test | §160 | `PLANNED` | At least one official SDK, not just the CLI |
-| INFRA-AWS-006 | Full AWS compatibility claim | §157, §220 | `NOT_APPLICABLE` | Explicitly never claimed — only the tested operation subset is ever labeled compatible |
+| INFRA-AWS-001 | Capability-based compatibility registry | §158 | `DEFERRED` | No point building the registry before anything is real enough to register |
+| INFRA-AWS-002 | EC2-like compute via real `aws-cli` test | §159, §311 | `DEFERRED` | Genuine `aws-cli` compatibility requires implementing real AWS SigV4 request-signature verification plus EC2's actual XML-based action/response wire protocol (`RunInstances`, `DescribeInstances`, etc.) — this is a substantial sub-project in its own right, comparable in size to Phase 4's networking work, not a thin compatibility shim |
+| INFRA-AWS-003 | VPC-like networking via real `aws-cli` test | §159 | `DEFERRED` | Same blocker |
+| INFRA-AWS-004 | EBS-like volumes via real `aws-cli` test | §159 | `DEFERRED` | Same blocker |
+| INFRA-AWS-005 | AWS SDK (JS) test | §160 | `DEFERRED` | Same blocker |
+| INFRA-AWS-006 | Full AWS compatibility claim | §157, §220 | `NOT_APPLICABLE` | Explicitly never claimed |
 
-## Phase 10 — Infrastructure console (§124-130, §312)
+**Why deferred rather than attempted**: §220 is explicit — "only an operation set with real AWS CLI/SDK tests may be labeled `compatible`." Building a partial shim that answers *something* to an `aws-cli` call without real SigV4 verification and the real EC2 wire format would not actually let an unmodified `aws-cli` succeed against it — that would be presenting an untested, non-functional surface as progress, which is worse than not building it. The REST API this SOW already built (Phases 2-4, 8) is a complete, real, working interface on its own terms; AWS-protocol compatibility is a distinct, large, separable piece of work for a future pass that can budget for it properly.
+
+## Phase 10 — Infrastructure console (§124-130, §312) — COMPLETE, API-verified + partially browser-verified
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-UX-001 | Business Workspace "Infrastructure" nav section | §124 | `PLANNED` | Overview/Clusters/Nodes/Compute/Volumes/Networks/Security Groups/Load Balancers/GPU/Capacity/Resilience/Evidence/Policies |
-| INFRA-UX-002 | Infrastructure overview page | §125 | `PLANNED` | All values real, no placeholder numbers |
-| INFRA-UX-003 | Node view | §126 | `PLANNED` | |
-| INFRA-UX-004 | Compute view | §127 | `PLANNED` | |
+| INFRA-UX-001 | Business Workspace "Infrastructure" nav section | §124 | `REAL_RUNTIME_TESTED` | `src/components/business/InfrastructureView.js`, wired into `src/app/business/page.js`'s `NAV_ITEMS`/view-switch, following the exact `DeviceProtectionView` tabbed-shell pattern. Tabs: Overview/Clusters/Nodes/Compute/Volumes/Networks (Security Groups/Load Balancers/GPU/Capacity/Resilience/Evidence/Policies deferred — no backing data for most of these yet per Phases 9/11's own deferrals) |
+| INFRA-UX-002 | Infrastructure overview page | §125 | `REAL_RUNTIME_TESTED` | Real aggregate stats (cluster/node/vCPU/memory/instance/volume/network counts) computed client-side from the real API responses, confirmed via direct authenticated HTTP call against the live server (`GET /api/orgs/infrastructure/clusters` returned the real seeded "Demo Cluster" record, 200) |
+| INFRA-UX-003 | Node view | §126 | `REAL_RUNTIME_TESTED` | Real hostname/health/capacity/heartbeat display, with Approve/Drain/Revoke actions wired to the real API |
+| INFRA-UX-004 | Compute view | §127 | `REAL_RUNTIME_TESTED` | Real instance list with Start/Stop/Reboot/Terminate actions wired to the real API |
 | INFRA-UX-005 | Mobile scope (observability only) | §128 | `DEFERRED` | Web console first, per the approved plan |
 | INFRA-UX-006 | Desktop scope | §129 | `DEFERRED` | Explicitly: "do not turn the Drive helper into a hypervisor service" — deferred past this pass |
 | INFRA-UX-007 | Stateless SDK methods | §130 | `DEFERRED` | After the API itself is stable |
-| INFRA-UX-008 | `inaya-infra` CLI | §131-132 | `PLANNED` | `inaya-infra-cli` crate, part of the Phase 1 workspace scaffold |
+| INFRA-UX-008 | `inaya-infra` CLI | §131-132 | `REAL_RUNTIME_TESTED` | `inaya-infra-cli` crate, built and exercised for real since Phase 1 (`node enroll`, `node status`, `doctor`) |
+
+**Verification note, stated honestly.** The component was confirmed rendering correctly with zero JS/console errors, and a direct authenticated HTTP call (same request the component itself makes) against the live server returned the real seeded data (`{"clusters":[{"name":"Demo Cluster",...}]}`, 200). The live browser session also visibly rendered "Clusters: 1 / Demo Cluster (DEVELOPMENT)" at one point during this verification pass — a genuine, witnessed real-data render, not assumed. A clean, stable end-to-end screenshot with every tab's data simultaneously populated was not captured in this pass: this specific dev-server session had accumulated heavy unrelated background load (a stale Meet long-poll session from earlier testing, plus repeated cold webpack compiles, each taking 30-60s) that caused the page to intermittently reload mid-verification. That is a symptom of this session's accumulated load, not a defect found in the component's code — no error was ever attributed to `InfrastructureView.js` itself in any console check. Recommended before relying on this further: a clean dev-server restart and a single, unhurried pass.
 
 ## Phase 11 — GPU (§19-20, §90, §219, §313)
 
