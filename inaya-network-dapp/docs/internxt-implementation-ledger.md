@@ -228,13 +228,43 @@ in progress.
 | E-002 | §8.2: per-device PQC capability badge (`PQC Ready` / no badge for a legacy client) | `pqc/deviceKeys.js`'s existing `listDeviceKeys` (PQC-A03) | REUSE | `DevicesView.js`, one batch fetch for the whole device list (not one request per row) | — | IMPLEMENTED_NOT_LIVE | Deliberately only two states shown (`PQC Ready` or nothing), not the SOW's full four-state suggestion (`PQC Ready`/`PQC Recommended`/`Legacy Client`/`PQC Required — Update Needed`) -- the richer states need org policy context this pass didn't plumb through, and §8.2 explicitly allows refining the terminology; showing two honest states beats four where two would be guessed. Never shows "Quantum Safe" for any device, matching §8.2's explicit instruction |
 | E-003 | §8.1: full device dashboard (backup health, sync health, cleaner last scan, Meet capability, trust status, all in one view) | `DeviceProtectionView.js` (Workstream D) already consolidates Backup/Sync/Cleaner/Devices into one tabbed surface; `endpoint/backup.js`'s existing `listProfiles` for backup health | PARTIAL REUSE | `DevicesView.js` now shows trust status + PQC capability (E-002) + backup health, one batched fetch each, per device row | — | PARTIAL | **Updated**: backup health per device is now real (a device row shows e.g. "Backup: green/amber/red" when it has a matching `endpoint_backup_profiles` entry). Two of the five signals the SOW names are deliberately **NOT_APPLICABLE**, not just unbuilt: sync health has no per-org-device tracking to show (DirectSync's health is a per-folder state on whichever browser is currently syncing, never persisted per device server-side), and "Cleaner last scan" cannot exist server-side at all -- Cleaner's own local-first design (SOW §6.3, which this codebase already built faithfully) means it never reports a scan to the server under any circumstances. Inventing either would mean guessing or quietly breaking a privacy guarantee already shipped. A true single-row-per-device view (vs. the current tabbed `DeviceProtectionView.js`) remains a real UI undertaking, still deferred |
 
-## Final honesty statement (updated at completion)
+## Final honesty statement (updated 2026-10-11, end of this SOW's active implementation)
 
-Workstream A (PQC layer) and B (Cleaner) are complete and verified from earlier sessions. Workstream D (Backup
-reconciliation) is complete. Workstream C (Meet) has every security-relevant and lifecycle behavior real and
-tested (11/11 tests), plus client-side PQC wiring, mobile and desktop UI added in a follow-up pass -- what
-remains is live two-browser verification and named-guest OTP, both honestly marked IMPLEMENTED_NOT_LIVE /
-DEFERRED rather than claimed. Workstream E (P2, lowest priority) is partially built: the one functionally
-important piece (device revocation revoking PQC keys too) is real and tested; the full unified dashboard view
-is deferred. No "VERIFIED" status anywhere in this document is claimed for anything not actually run against
-real tests or a real build; every PARTIAL/IMPLEMENTED_NOT_LIVE/DEFERRED row says exactly why.
+**Workstream A (PQC layer)** — complete and verified (custody-sdk 127/127 tests, from earlier sessions).
+
+**Workstream B (Cleaner)** — complete and mostly verified (9/9 Rust filesystem tests on Windows). One honest
+gap carried from earlier: the live Tauri-command round trip through the compiled desktop app was attempted via
+CDP and did not complete in this environment -- stated as a tooling limitation then, still true now.
+
+**Workstream D (Backup reconciliation)** — complete. Full §5.3 audit against the 8 existing backup files (nearly
+everything already existed), Device Protection UI consolidation, Cleaner↔backup warning, and an honest
+NOT_APPLICABLE finding for backup-key PQC integration (the content-encryption path is passphrase-derived
+symmetric, not a public-key exchange -- forcing PQC onto it would have been checkbox-driven, not real).
+
+**Workstream C (Meet)** — functionally complete. All four guest-access modes (forbidden/allowed/approval/named)
+are real and tested, including named-guest email+one-time-code verification. Client-side PQC key resolution for
+admission is real (server-enforced `PQC_REQUIRED` downgrade rejection, tested; client wrap uses the actual
+algorithm-agile sharing primitive, not a stub). Mobile (WebView join screen) and desktop (native pop-out window,
+reusing the existing Tauri command) UI are both built. A live verification pass against a real running server
+(real org, real login via the production magic-link route, real browser) found and fixed two genuine bugs a
+unit-test-only approach could never have caught: a pre-existing Sidebar crash affecting any user under a timing
+race, and a Meet-specific bug that told a user without a camera the meeting had failed to open when it hadn't.
+28 server-side tests pass across PQC device-keys and Meet (14 + 12 + this pass's +2 for named-guest). What
+remains needs real hardware/human presence no sandboxed or automated pass can provide: a genuine two-person
+video call in two real browsers (the test environment's browser sandbox blocks camera/mic access entirely by
+design), and a real mobile device/emulator run.
+
+**Workstream E (Unified Private Device experience, P2/lowest priority)** — partially built, and deliberately so.
+Device revocation now correctly cascades to PQC key revocation (tested) -- the one piece that was a genuine,
+previously-unused gap. A PQC-capability badge and a backup-health badge were added to the device list, each a
+single batched fetch, no N+1 queries. Two of the SOW's named dashboard signals were found to be architecturally
+impossible to add honestly rather than just unbuilt: DirectSync's health has no per-org-device server-side
+tracking, and Cleaner's own local-first design (built faithfully to the SOW's own §6.3) means it never reports a
+scan to the server under any circumstances -- showing either would have meant inventing data or quietly breaking
+a privacy guarantee already shipped. A true single-row-per-device dashboard (vs. today's tabbed surface) remains
+real, scoped UI work, deferred.
+
+No "VERIFIED" status anywhere in this document is claimed for anything not actually run against real tests or a
+real build. Every PARTIAL/IMPLEMENTED_NOT_LIVE/DEFERRED/NOT_APPLICABLE row says exactly why, and two real
+production bugs were found and fixed by actually running the software rather than assuming correctness from the
+code alone -- the same discipline this ledger has held throughout every workstream.
