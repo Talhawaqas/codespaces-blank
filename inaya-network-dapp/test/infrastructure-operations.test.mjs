@@ -29,7 +29,7 @@ before(async () => {
 });
 
 after(async () => {
-  for (const n of ["infra_clusters", "infra_nodes", "infra_operations", "infra_compute_instances", "infra_volumes"]) {
+  for (const n of ["infra_clusters", "infra_nodes", "infra_operations", "infra_compute_instances", "infra_volumes", "infra_vpcs"]) {
     await db.collection(n).deleteMany({ orgId: org.orgId }).catch(() => {});
   }
   await teardown();
@@ -101,4 +101,23 @@ test("listInstances/listVolumes are tenant-scoped", T, async () => {
   assert.ok(!mine.some((v) => theirs.some((t) => t.volumeId === v.volumeId)));
 
   for (const n of ["infra_clusters", "infra_volumes", "infra_operations"]) await db.collection(n).deleteMany({ orgId: otherOrg.orgId }).catch(() => {});
+});
+
+test("createVpc: validates CIDR and security-group protocol, queues a CREATE_VPC operation", T, async () => {
+  await assert.rejects(() => O.createVpc({ orgId: org.oid, membership, clusterId: cluster.clusterId, nodeId, cidr: "not-a-cidr" }), /cidr/i);
+  await assert.rejects(
+    () => O.createVpc({ orgId: org.oid, membership, clusterId: cluster.clusterId, nodeId, cidr: "10.88.0.1/24", securityGroupRules: [{ protocol: "ftp" }] }),
+    /protocol/i
+  );
+
+  const vpc = await O.createVpc({ orgId: org.oid, membership, clusterId: cluster.clusterId, nodeId, cidr: "10.88.0.1/24", securityGroupRules: [{ protocol: "tcp", fromPort: 22, toPort: 22, source: "0.0.0.0/0" }] });
+  assert.equal(vpc.status, "CREATING");
+  const ops = await O.listOperations({ orgId: org.oid, resourceId: vpc.vpcId });
+  assert.equal(ops[0].type, "CREATE_VPC");
+});
+
+test("createInstance: rejects a non-AVAILABLE VPC", T, async () => {
+  const vpc = await O.createVpc({ orgId: org.oid, membership, clusterId: cluster.clusterId, nodeId, cidr: "10.89.0.1/24" });
+  // Freshly created VPC is CREATING, not yet AVAILABLE.
+  await assert.rejects(() => O.createInstance({ orgId: org.oid, membership, clusterId: cluster.clusterId, nodeId, name: "x", vcpu: 1, memoryMib: 512, vpcId: vpc.vpcId }), /not AVAILABLE/);
 });

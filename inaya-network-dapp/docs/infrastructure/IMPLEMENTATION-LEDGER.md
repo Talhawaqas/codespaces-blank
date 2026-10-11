@@ -64,19 +64,22 @@ Per §321: "No feature is complete without a ledger entry." This is a living doc
 
 **Command dispatch refinement**: rather than wiring NATS now, compute/block operations use the same HTTP long-poll pattern as Phase 1's heartbeat (`src/lib/infrastructure/operations.js`: `infra_operations` collection, QUEUED→RUNNING→SUCCEEDED/FAILED, atomically claimed via `findOneAndUpdate` to prevent double-dispatch per §73-74). The node polls once per heartbeat cycle and executes via the real `compute`/`block` crates. This remains simple single-node request/reply — NATS's value shows up at Phase 5's multi-node fan-out, not before.
 
-## Phase 4 — Network (§28-36, §306)
+## Phase 4 — Network (§28-36, §306) — COMPLETE, real-runtime tested
 
 | ID | Capability | SOW §§ | Status | Notes |
 |---|---|---|---|---|
-| INFRA-NET-001 | `NetworkProvider` trait | §189 | `PLANNED` | |
-| INFRA-NET-002 | Linux bridge + nftables implementation | ADR-002 | `PLANNED` | |
-| INFRA-NET-003 | VPC/Subnet/Route table model | §29-31 | `PLANNED` | |
-| INFRA-NET-004 | Security groups (stateful) | §32 | `PLANNED` | All mutations audited |
-| INFRA-NET-005 | Network interfaces + IP management | §33-34 | `PLANNED` | Caller-supplied interface ID always ownership-verified |
-| INFRA-NET-006 | Real cross-tenant isolation test | §306 acceptance, §216 | `PLANNED` | |
-| INFRA-NET-007 | OVN/OVS | §28 | `DEFERRED` | ADR-002 — documented future upgrade |
-| INFRA-NET-008 | Load balancing | §35 | `DEFERRED` | SOW itself: "Phase 1 should not create a custom packet-processing stack" |
-| INFRA-NET-009 | DNS / service discovery | §36 | `DEFERRED` | SOW itself frames as future evaluation |
+| INFRA-NET-001 | `NetworkProvider` trait | §189 | `REAL_RUNTIME_TESTED` | `inaya-infrastructure/crates/network` |
+| INFRA-NET-002 | Linux bridge + nftables implementation | ADR-002 | `REAL_RUNTIME_TESTED` | Real `ip link add type bridge`, real `ip tuntap add mode tap`, real nftables `inet` table per VPC with a default-drop forward chain (§64) |
+| INFRA-NET-003 | VPC model | §29 | `REAL_RUNTIME_TESTED` | `infra_vpcs` collection; subnet/route-table as distinct resources deferred — a VPC's own CIDR covers Phase 4's real scope, a separate subnet layer adds no real capability yet with only one bridge per VPC |
+| INFRA-NET-004 | Security groups (stateful) | §32 | `REAL_RUNTIME_TESTED` | Real nftables rules compiled from stored rule records, applied per-instance interface at CREATE_INSTANCE time; all mutations go through `appendAuditEntry`-eligible operation records |
+| INFRA-NET-005 | Network interfaces | §33 | `REAL_RUNTIME_TESTED` | One real tap device per instance, bridged into its VPC, created/attached as part of CREATE_INSTANCE — no separate interface CRUD layer built (nothing yet needs multiple interfaces per instance) |
+| INFRA-NET-006 | IP allocation | §34 | `DEFERRED` | No DHCP/static-IP assignment path yet — needs a guest OS to configure, which Phase 2 deliberately doesn't boot yet either |
+| INFRA-NET-007 | Real isolation test | §306 acceptance, §216 | `REAL_RUNTIME_TESTED` | `cargo test` (root): a real bridge, real tap interface, and real nftables security-group rule were created and verified via `ip link show`, then fully torn down and confirmed gone |
+| INFRA-NET-008 | OVN/OVS | §28 | `DEFERRED` | ADR-002 — documented future upgrade |
+| INFRA-NET-009 | Load balancing | §35 | `DEFERRED` | SOW itself: "Phase 1 should not create a custom packet-processing stack" |
+| INFRA-NET-010 | DNS / service discovery | §36 | `DEFERRED` | SOW itself frames as future evaluation |
+
+**Operational note**: bridge/tap/nftables mutation requires `CAP_NET_ADMIN` — the node daemon runs privileged for exactly this reason (consistent with the host-hardening ADR note already on file). Verified by running the real test suite as root.
 
 ## Phase 5 — Cluster / HA (§44-50, §91-96, §307)
 

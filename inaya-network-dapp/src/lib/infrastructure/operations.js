@@ -24,6 +24,7 @@ async function cols() {
   const operations = c.db.collection("infra_operations");
   const instances = c.db.collection("infra_compute_instances");
   const volumes = c.db.collection("infra_volumes");
+  const vpcs = c.db.collection("infra_vpcs");
   if (!indexed) {
     await Promise.all([
       operations.createIndex({ nodeId: 1, status: 1 }),
@@ -33,11 +34,15 @@ async function cols() {
       instances.createIndex({ orgId: 1, clusterId: 1 }),
       volumes.createIndex({ volumeId: 1 }, { unique: true }),
       volumes.createIndex({ orgId: 1, clusterId: 1 }),
+      vpcs.createIndex({ vpcId: 1 }, { unique: true }),
+      vpcs.createIndex({ orgId: 1, clusterId: 1 }),
     ]);
     indexed = true;
   }
-  return { c, operations, instances, volumes };
+  return { c, operations, instances, volumes, vpcs };
 }
+
+const CIDR_RE = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
 
 async function enqueue({ orgId, clusterId, nodeId, type, resourceId, params, actorEmail }) {
   const { operations } = await cols();
@@ -101,10 +106,42 @@ export async function deleteVolume({ orgId, membership, volumeId }) {
 }
 
 // ---------------------------------------------------------------------------
+// VPCs / security groups (SOW §28-32, ADR-002: Linux bridge + nftables)
+// ---------------------------------------------------------------------------
+
+export async function createVpc({ orgId, membership, clusterId, nodeId, cidr, securityGroupRules }) {
+  await getCluster({ orgId, clusterId });
+  if (!nodeId) throw new InfrastructureError("nodeId is required.", { status: 400 });
+  if (!CIDR_RE.test(cidr || "")) throw new InfrastructureError("cidr must be a valid IPv4 CIDR (e.g. 10.77.0.1/24).", { status: 400 });
+  const rules = Array.isArray(securityGroupRules) ? securityGroupRules : [];
+  for (const r of rules) {
+    if (!["tcp", "udp", "icmp"].includes(r.protocol)) throw new InfrastructureError(`Invalid security group protocol: ${r.protocol}`, { status: 400 });
+  }
+
+  const { vpcs } = await cols();
+  const vpcId = crypto.randomUUID();
+  await vpcs.insertOne({ vpcId, orgId, clusterId, nodeId, cidr, securityGroupRules: rules, status: "CREATING", createdAt: new Date(), createdBy: membership?.email || null });
+  await enqueue({ orgId, clusterId, nodeId, type: "CREATE_VPC", resourceId: vpcId, params: { vpcId, cidr, securityGroupRules: rules }, actorEmail: membership?.email });
+  return { vpcId, status: "CREATING" };
+}
+
+export async function listVpcs({ orgId, clusterId }) {
+  const { vpcs } = await cols();
+  return vpcs.find(clusterId ? { orgId, clusterId } : { orgId }).sort({ createdAt: -1 }).toArray();
+}
+
+export async function getVpc({ orgId, vpcId }) {
+  const { vpcs } = await cols();
+  const v = await vpcs.findOne({ orgId, vpcId });
+  if (!v) throw new InfrastructureError("VPC not found.", { status: 404 });
+  return v;
+}
+
+// ---------------------------------------------------------------------------
 // Compute instances (SOW §12-14)
 // ---------------------------------------------------------------------------
 
-export async function createInstance({ orgId, membership, clusterId, nodeId, name, vcpu, memoryMib, volumeId }) {
+export async function createInstance({ orgId, membership, clusterId, nodeId, name, vcpu, memoryMib, volumeId, vpcId }) {
   await getCluster({ orgId, clusterId });
   if (!nodeId) throw new InfrastructureError("nodeId is required.", { status: 400 });
   if (!name) throw new InfrastructureError("name is required.", { status: 400 });
@@ -115,6 +152,12 @@ export async function createInstance({ orgId, membership, clusterId, nodeId, nam
   if (volumeId) {
     const v = await getVolume({ orgId, volumeId });
     if (v.status !== "AVAILABLE") throw new InfrastructureError(`Volume is not AVAILABLE (status: ${v.status}).`, { status: 409 });
+  }
+  let vpcSecurityGroupRules = [];
+  if (vpcId) {
+    const vpc = await getVpc({ orgId, vpcId });
+    if (vpc.status !== "AVAILABLE") throw new InfrastructureError(`VPC is not AVAILABLE (status: ${vpc.status}).`, { status: 409 });
+    vpcSecurityGroupRules = vpc.securityGroupRules || [];
   }
 
   const { instances, volumes } = await cols();
@@ -128,6 +171,7 @@ export async function createInstance({ orgId, membership, clusterId, nodeId, nam
     vcpu,
     memoryMib,
     volumeId: volumeId || null,
+    vpcId: vpcId || null,
     state: "PROVISIONING",
     createdAt: new Date(),
     createdBy: membership?.email || null,
@@ -141,7 +185,7 @@ export async function createInstance({ orgId, membership, clusterId, nodeId, nam
     nodeId,
     type: "CREATE_INSTANCE",
     resourceId: instanceId,
-    params: { instanceId, name, vcpu, memoryMib, volumeId: volumeId || null },
+    params: { instanceId, name, vcpu, memoryMib, volumeId: volumeId || null, vpcId: vpcId || null, securityGroupRules: vpcSecurityGroupRules },
     actorEmail: membership?.email,
   });
   return { instanceId, state: "PROVISIONING" };
@@ -198,7 +242,7 @@ export async function claimPendingOperations({ signedToken, maxOperations = 5 })
 export async function completeOperation({ signedToken, operationId, status, result, error }) {
   const { node, orgId } = await verifyNodeAuth({ signedToken });
   if (!["SUCCEEDED", "FAILED"].includes(status)) throw new InfrastructureError("status must be SUCCEEDED or FAILED.", { status: 400 });
-  const { operations, instances, volumes } = await cols();
+  const { operations, instances, volumes, vpcs } = await cols();
   const op = await operations.findOne({ orgId, operationId, nodeId: node.nodeId });
   if (!op) throw new InfrastructureError("Operation not found.", { status: 404 });
 
@@ -208,6 +252,9 @@ export async function completeOperation({ signedToken, operationId, status, resu
   // desired vs observed, never a silently stale badge).
   const ok = status === "SUCCEEDED";
   switch (op.type) {
+    case "CREATE_VPC":
+      await vpcs.updateOne({ orgId, vpcId: op.resourceId }, { $set: { status: ok ? "AVAILABLE" : "FAILED" } });
+      break;
     case "CREATE_VOLUME":
       await volumes.updateOne({ orgId, volumeId: op.resourceId }, { $set: { status: ok ? "AVAILABLE" : "FAILED" } });
       break;
