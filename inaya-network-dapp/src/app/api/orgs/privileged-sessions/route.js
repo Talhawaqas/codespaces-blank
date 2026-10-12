@@ -35,7 +35,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, action, reason, scope } = body;
     if (!orgId || !action || !reason || !scope) return NextResponse.json({ error: "orgId, action, reason, and scope are required." }, { status: 400 });
     if (!["request", "breakGlass"].includes(action)) return NextResponse.json({ error: `Unknown action "${action}".` }, { status: 400 });

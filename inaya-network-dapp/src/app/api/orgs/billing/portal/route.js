@@ -14,7 +14,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(req) {
   try {
-    const { orgId } = await req.json();
+    let reqBody = {}; try { reqBody = await req.json(); } catch { reqBody = {}; }
+    const { orgId } = reqBody;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();

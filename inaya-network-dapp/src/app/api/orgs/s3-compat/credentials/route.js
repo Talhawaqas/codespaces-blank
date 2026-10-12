@@ -20,7 +20,8 @@ import { getOrgCollections } from "../../../../../lib/orgs.js";
 
 export async function POST(req) {
   try {
-    const { orgId, label, scope } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, label, scope } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();

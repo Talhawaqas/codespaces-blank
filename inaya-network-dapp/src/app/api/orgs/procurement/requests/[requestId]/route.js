@@ -44,7 +44,8 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const { orgId, title, description, estimatedCost } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, title, description, estimatedCost } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadAuthorized(req, orgId, params.requestId);

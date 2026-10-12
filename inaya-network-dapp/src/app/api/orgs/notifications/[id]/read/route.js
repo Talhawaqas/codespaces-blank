@@ -10,7 +10,8 @@ import { markRead } from "../../../../../../lib/notifications.js";
 
 export async function POST(req, { params }) {
   try {
-    const { orgId } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const auth = await requireMembership(req, orgId);

@@ -42,7 +42,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, providerId } = body;
     if (!orgId || !providerId) return NextResponse.json({ error: "orgId and providerId are required." }, { status: 400 });
 

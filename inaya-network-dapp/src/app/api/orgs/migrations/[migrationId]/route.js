@@ -33,7 +33,7 @@ export async function GET(req, { params }) {
 export async function PATCH(req, { params }) {
   try {
     const { migrationId } = await params;
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, action } = body;
     if (!orgId || !action) return NextResponse.json({ error: "orgId and action are required." }, { status: 400 });
 

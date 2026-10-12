@@ -47,7 +47,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, name } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     if (!name) return NextResponse.json({ error: "name is required." }, { status: 400 });

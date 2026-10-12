@@ -16,7 +16,8 @@ import { createApiKey, listApiKeys } from "../../../../lib/api-keys.js";
 
 export async function POST(req) {
   try {
-    const { orgId, label } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, label } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();

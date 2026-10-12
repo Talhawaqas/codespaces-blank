@@ -24,7 +24,8 @@ function serialize(a) {
 
 export async function POST(req) {
   try {
-    const { orgId, statementType, startDate, endDate, threshold, displayCurrency } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, statementType, startDate, endDate, threshold, displayCurrency } = body;
     if (!orgId || !statementType || !startDate || !endDate) {
       return NextResponse.json({ error: "orgId, statementType, startDate, and endDate are required." }, { status: 400 });
     }

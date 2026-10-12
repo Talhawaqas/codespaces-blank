@@ -32,7 +32,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     if (!body.orgId || !body.category || !body.severity) return NextResponse.json({ error: "orgId, category, and severity are required." }, { status: 400 });
 
     await ensureOrgIndexes();

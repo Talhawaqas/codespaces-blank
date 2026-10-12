@@ -18,6 +18,7 @@ export async function GET(req) {
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const [profile, classificationLevels] = await Promise.all([getOrgProfile(orgId), getOrgClassificationLevels(orgId)]);
+    if (!profile) return NextResponse.json({ error: "Organization not found." }, { status: 404 });
     return NextResponse.json({
       profile: { vertical: profile.vertical, industry: profile.industry, organizationType: profile.organizationType, timeZone: profile.timeZone, branding: profile.branding, aiPolicy: profile.aiPolicy },
       classificationLevels: classificationLevels.map((l) => ({ key: l.key, label: l.label, restricted: l.restricted })),

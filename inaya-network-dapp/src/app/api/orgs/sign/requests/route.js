@@ -20,7 +20,8 @@ function serialize(r) {
 
 export async function POST(req) {
   try {
-    const { orgId, documentId, signers, deadline, message } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, documentId, signers, deadline, message } = body;
     if (!orgId || !documentId) return NextResponse.json({ error: "orgId and documentId are required." }, { status: 400 });
 
     await ensureOrgIndexes();

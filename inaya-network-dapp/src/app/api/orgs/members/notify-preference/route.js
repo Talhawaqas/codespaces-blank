@@ -16,7 +16,8 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, toObjectId } fr
 
 export async function POST(req) {
   try {
-    const { orgId, notifyOnApprovals } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, notifyOnApprovals } = body;
     if (!orgId || typeof notifyOnApprovals !== "boolean") {
       return NextResponse.json({ error: "orgId and a boolean notifyOnApprovals are required." }, { status: 400 });
     }

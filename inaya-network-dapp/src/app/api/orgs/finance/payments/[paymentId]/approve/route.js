@@ -14,7 +14,8 @@ import { logOrgActivity } from "../../../../../../../lib/org-activity-log.js";
 export async function POST(req, { params }) {
   try {
     const { paymentId } = params;
-    const { orgId } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();

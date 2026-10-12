@@ -19,7 +19,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json(); const { orgId, name, description, type, ref, tags } = body || {};
+    let body = {}; try { body = await req.json(); } catch { body = {}; } const { orgId, name, description, type, ref, tags } = body || {};
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true }); if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });

@@ -72,7 +72,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, departmentId, contactId, invoiceNumber, issueDate, dueDate, lineItems: rawItems, notes, currency } = body;
     if (!orgId || !departmentId || !contactId || !dueDate) {
       return NextResponse.json({ error: "orgId, departmentId, contactId, and dueDate are required." }, { status: 400 });

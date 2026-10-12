@@ -87,7 +87,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems, currency } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems, currency } = body;
     if (!orgId || !departmentId || !supplierId) return NextResponse.json({ error: "orgId, departmentId, and supplierId are required." }, { status: 400 });
 
     const poCurrency = currency ? String(currency).toUpperCase() : "USD";

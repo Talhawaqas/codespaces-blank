@@ -27,7 +27,8 @@ const TRIAL_DAYS = 14; // matches "Start Free Trial" wording on the pricing card
 
 export async function POST(req) {
   try {
-    const { orgId, planId, interval = "month" } = await req.json();
+    let reqBody = {}; try { reqBody = await req.json(); } catch { reqBody = {}; }
+    const { orgId, planId, interval = "month" } = reqBody;
 
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     const plan = PLANS[planId];

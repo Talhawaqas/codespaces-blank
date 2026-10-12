@@ -31,7 +31,8 @@ import { getOrgPlan, getOrgUsage } from "../../../../lib/orgPlans.js";
 
 export async function POST(req) {
   try {
-    const { orgId, email: rawEmail, role = "member", departmentIds = [] } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, email: rawEmail, role = "member", departmentIds = [] } = body;
     const email = normalizeEmail(rawEmail);
 
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });

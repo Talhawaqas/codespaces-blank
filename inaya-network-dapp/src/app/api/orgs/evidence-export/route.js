@@ -55,6 +55,7 @@ export async function GET(req) {
 
     return NextResponse.json(pkg);
   } catch (err) {
+    if (err.message === "Organization not found.") return NextResponse.json({ error: err.message }, { status: 404 });
     console.error("orgs/evidence-export GET failed:", err);
     return NextResponse.json({ error: "Could not generate the evidence export." }, { status: 500 });
   }

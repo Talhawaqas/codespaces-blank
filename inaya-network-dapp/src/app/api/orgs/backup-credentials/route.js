@@ -30,7 +30,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, provider, label, credentials } = body;
     if (!orgId || !provider || !credentials) return NextResponse.json({ error: "orgId, provider and credentials are required." }, { status: 400 });
 

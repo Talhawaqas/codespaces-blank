@@ -65,7 +65,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, fullName: rawName, jobTitle, memberEmail: rawMemberEmail, joiningDate, contactEmail, contactPhone, annualLeaveAllocationDays } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, departmentId, fullName: rawName, jobTitle, memberEmail: rawMemberEmail, joiningDate, contactEmail, contactPhone, annualLeaveAllocationDays } = body;
     const fullName = String(rawName || "").trim();
     if (!orgId || !departmentId) return NextResponse.json({ error: "orgId and departmentId are required." }, { status: 400 });
     if (!fullName) return NextResponse.json({ error: "Full name is required." }, { status: 400 });

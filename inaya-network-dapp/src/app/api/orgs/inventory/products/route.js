@@ -75,7 +75,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, sku: rawSku, name: rawName, description, unitPrice, reorderThreshold } = await req.json();
+    let body = {}; try { body = await req.json(); } catch { body = {}; }
+    const { orgId, departmentId, sku: rawSku, name: rawName, description, unitPrice, reorderThreshold } = body;
     const sku = String(rawSku || "").trim();
     const name = String(rawName || "").trim();
     if (!orgId || !departmentId) return NextResponse.json({ error: "orgId and departmentId are required." }, { status: 400 });
