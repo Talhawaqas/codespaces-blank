@@ -18,16 +18,9 @@ import { searchOrg } from "../orgSearch.js";
 import { hasAdminRole, canManageOrg } from "../orgGates.js";
 import { prefsForDocs } from "../filePrefs.js";
 import { activeLock } from "../filelocks.js";
+import { NAV_ITEMS, isNavItemVisible, searchWordsFor } from "../navigation/navItems.js";
+import { getOrgProfile } from "../industry-config.js";
 
-const PAGES = [
-  { view: "chat", label: "Secure Chat", words: "chat messages conversations contacts" }, { view: "notes", label: "Secure Notes", words: "notes checklist markdown" },
-  { view: "shares", label: "Shares", words: "share links secure links access" }, { view: "portalRequests", label: "Customer Requests", words: "customer portal request nda form upload download agreement", admin: "helpdeskAdmin" }, { view: "office", label: "Microsoft 365 and Outlook", words: "outlook office word excel powerpoint microsoft add-in secure link edit" }, { view: "fileRequests", label: "File Requests", words: "upload request send files" },
-  { view: "documents", label: "Documents", words: "files folders upload" }, { view: "dataRooms", label: "Data Rooms", words: "vdr data room investors diligence", admin: true },
-  { view: "complianceReadiness", label: "Compliance Readiness", words: "compliance nist 800-53 controls evidence oscal fips government profile keys kms", admin: ["complianceAdmin", "securityAdmin"] }, { view: "gateway", label: "Sovereign Gateway", words: "gateway network folders smb nfs ntfs permissions on-premises" }, { view: "deviceProtection", label: "Device Protection", words: "devices wipe block trust backup restore desktop profiles sync directsync cleaner duplicate temporary files" },
-  { view: "governance", label: "Governance", words: "policy dlp classification metadata retention", admin: ["dataGovernanceAdmin", "securityAdmin"] }, { view: "ransomware", label: "Ransomware Signals", words: "ransomware security signals rollback", admin: "securityAdmin" },
-  { view: "adminDashboard", label: "Admin Dashboard", words: "dashboard overview analytics health", admin: true }, { view: "webhooks", label: "Webhooks", words: "webhooks events integrations", admin: "integrationAdmin" },
-  { view: "settings", label: "Settings", words: "settings beta features branding notifications roles", admin: true },
-];
 const lc = (v) => String(v ?? "").toLowerCase();
 const extOf = (n) => (String(n).includes(".") ? lc(String(n).split(".").pop()) : "");
 
@@ -38,8 +31,17 @@ export async function unifiedSearch({ orgId, membership, email, query, filters =
   if (q.length < 2 && !hasFilters) return { results: [], tiers: TIERS };
   const out = []; const seen = new Set(); const push = (r) => { const k = `${r.entityType}:${r.id}`; if (seen.has(k) || out.length >= limit) return; seen.add(k); out.push(r); };
 
-  // navigation (command palette): only pages the caller may open
-  if (q.length >= 2) for (const p of PAGES) { if (p.admin && !(p.admin === true ? canManageOrg(membership) || hasAdminRole(membership, ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], { read: true }) : hasAdminRole(membership, p.admin, { read: true }))) continue; if (lc(p.label).includes(q) || p.words.includes(q)) push({ entityType: "page", id: p.view, title: p.label, subtitle: "Go to", view: p.view, actionUrl: `/business?view=${p.view}` }); }
+  // navigation (command palette): every NAV_ITEMS entry the caller may open -- same source of truth and
+  // gating as the sidebar (src/lib/navigation/navItems.js), so this list can never drift out of sync with
+  // it again the way the old hand-written PAGES array (17 of 72 modules) did.
+  if (q.length >= 2) {
+    const vertical = (await getOrgProfile(orgId))?.vertical || "general";
+    const canManage = canManageOrg(membership);
+    for (const item of NAV_ITEMS) {
+      if (!isNavItemVisible(item, { canManage, membership, vertical })) continue;
+      if (lc(item.label).includes(q) || searchWordsFor(item).includes(q)) push({ entityType: "page", id: item.key, title: item.label, subtitle: "Go to", view: item.key, actionUrl: `/business?view=${item.key}` });
+    }
+  }
 
   // documents: name (existing search) plus metadata, classification, tags, path. Permission-filtered by getAccessibleScope.
   const scope = await getAccessibleScope({ orgId, membership, email }); const docs = scope.visibleDocuments || [];

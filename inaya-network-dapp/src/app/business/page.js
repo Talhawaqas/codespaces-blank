@@ -66,6 +66,8 @@ import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
 import CommandPalette from "../../components/CommandPalette";
+import GuideHintBubble from "../../components/business/ui/GuideHintBubble";
+import { useStuckNavDetector } from "../../hooks/useStuckNavDetector";
 import GuidedTaskPanel from "../../components/business/GuidedTaskPanel";
 import TrustRelationshipsView from "../../components/business/TrustRelationshipsView";
 import ApiKeysView from "../../components/business/ApiKeysView";
@@ -82,6 +84,7 @@ import SharesView from "../../components/business/shares/SharesView";
 import NotesView from "../../components/business/notes/NotesView";
 import AdminRolesPanel from "../../components/business/AdminRolesPanel";
 import { hasAdminRole } from "../../lib/orgGates";
+import { NAV_ITEMS, GROUP_LABELS, isNavItemVisible } from "../../lib/navigation/navItems";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
 import WebhooksView from "../../components/business/admin/WebhooksView";
@@ -743,94 +746,13 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
 // Icon/ICONS now imported from components/business/ui/icons.js -- see
 // BUSINESS_WORKSPACE_UX_AUDIT.md #3.1 for why this used to be a locally
 // defined, unexported duplicate reinvented in 2 other files.
-// UI Enhancement Specs v2, §3 -- each item's `group` drives the sidebar's
-// micro-heading chunking. Order here is also render order, so items in
-// the same group stay contiguous; GROUP_LABELS below defines display order
-// and text independently of these internal keys.
-const NAV_ITEMS = [
-  { key: "osHome", label: "OS Home", icon: "dashboard", group: "core" },
-  { key: "insights", label: "Insights", icon: "insights", group: "core" },
-  { key: "brief", label: "Brief", icon: "insights", group: "core" },
-  { key: "whatChanged", label: "What Changed?", icon: "insights", group: "core" },
-  { key: "chat", label: "Secure Chat", icon: "aiAssistant", group: "collaboration" },
-  { key: "meet", label: "Inaya Meet", icon: "aiAssistant", group: "collaboration" },
-  { key: "notes", label: "Secure Notes", icon: "documents", group: "collaboration" },
-  { key: "adminDashboard", label: "Admin Dashboard", icon: "insights", manageOnly: true, adminRole: ["securityAdmin", "storageAdmin", "complianceAdmin", "dataGovernanceAdmin", "deviceAdmin", "vdrAdmin", "integrationAdmin"], group: "trust" },
-  { key: "webhooks", label: "Webhooks", icon: "integrations", manageOnly: true, adminRole: "integrationAdmin", group: "enterprise" },
-  { key: "governance", label: "Governance", icon: "enterpriseHardening", manageOnly: true, adminRole: ["dataGovernanceAdmin", "securityAdmin"], group: "trust" },
-  { key: "complianceReadiness", label: "Compliance Readiness", icon: "enterpriseHardening", manageOnly: true, adminRole: ["complianceAdmin", "securityAdmin"], group: "trust" },
-  { key: "gateway", label: "Sovereign Gateway", icon: "enterpriseHardening", group: "trust" },
-  { key: "deviceProtection", label: "Device Protection", icon: "enterpriseHardening", group: "trust" },
-  { key: "infrastructure", label: "Infrastructure", icon: "enterpriseHardening", group: "trust" },
-  { key: "ransomware", label: "Ransomware Signals", icon: "enterpriseHardening", manageOnly: true, adminRole: "securityAdmin", group: "trust" },
-  { key: "shares", label: "Shares", icon: "documents", group: "collaboration" },
-  { key: "fileRequests", label: "File Requests", icon: "documents", group: "collaboration" },
-  { key: "office", label: "Microsoft 365 and Outlook", icon: "integrations", group: "collaboration" },
-  { key: "portalRequests", label: "Customer Requests", icon: "documents", manageOnly: true, adminRole: "helpdeskAdmin", group: "collaboration" },
-  { key: "departments", label: "Departments", icon: "departments", group: "operations" },
-  { key: "projects", label: "Projects", icon: "projects", group: "operations" },
-  { key: "documents", label: "Documents", icon: "documents", group: "operations" },
-  { key: "tasks", label: "Tasks", icon: "tasks", group: "operations" },
-  { key: "crm", label: "CRM", icon: "crm", group: "operations" },
-  { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
-  { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
-  { key: "finance", label: "Finance", icon: "finance", group: "operations" },
-  { key: "bookkeeper", label: "AI Bookkeeper", icon: "finance", group: "operations" },
-  { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
-  { key: "hr", label: "HR", icon: "hr", group: "operations" },
-  { key: "sign", label: "Inaya Sign", icon: "documents", group: "operations" },
-  { key: "escrow", label: "Milestone Escrow", icon: "finance", group: "operations" },
-  { key: "storageManager", label: "DePIN Storage", icon: "resilience", group: "operations" },
-  { key: "attestations", label: "Attestations", icon: "financial", group: "operations" },
-  { key: "health", label: "Health OS", icon: "health", verticalOnly: "healthcare", group: "industry" },
-  { key: "legal", label: "Legal OS", icon: "legal", verticalOnly: "legal", group: "industry" },
-  { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated", group: "industry" },
-  { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"], group: "industry" },
-  { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
-  { key: "security", label: "Account Security", icon: "activity", group: "trust" },
-  { key: "resilience", label: "Security & Resilience Controls", icon: "resilience", manageOnly: true, group: "trust" },
-  { key: "resilienceTesting", label: "Resilience Testing", icon: "resilience", manageOnly: true, group: "trust" },
-  { key: "approvals", label: "Approvals", icon: "approvals", manageOnly: true, group: "trust" },
-  { key: "aiActions", label: "AI Action Requests", icon: "aiAssistant", group: "trust" },
-  { key: "workflows", label: "Automations", icon: "aiAssistant", group: "operations" },
-  { key: "support", label: "Customer Support", icon: "activity", group: "operations" },
-  { key: "help", label: "Help & Support", icon: "activity", group: "trust" },
-  { key: "docIntelligence", label: "Document Intelligence", icon: "insights", group: "operations" },
-  { key: "databases", label: "Databases", icon: "activity", manageOnly: true, group: "enterprise" },
-  { key: "mlStudio", label: "AI/ML Studio", icon: "aiAssistant", manageOnly: true, group: "enterprise" },
-  { key: "identity", label: "Identity & Access", icon: "lock", manageOnly: true, group: "enterprise" },
-  { key: "evidence", label: "Evidence", icon: "lock", group: "trust" },
-  { key: "whatIf", label: "What-If Studio", icon: "insights", group: "trust" },
-  { key: "auditTrail", label: "Audit Trail", icon: "activity", manageOnly: true, group: "trust" },
-  { key: "complianceEvidence", label: "Compliance Evidence", icon: "lock", manageOnly: true, group: "trust" },
-  { key: "trustRelationships", label: "Cross-Org Trust", icon: "activity", manageOnly: true, group: "trust" },
-  { key: "activity", label: "Activity", icon: "activity", group: "trust" },
-  { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
-  { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "nas", label: "Sovereign NAS", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "aiSecurity", label: "AI Security", icon: "lock", manageOnly: false, group: "enterprise" },
-  { key: "sqlConsole", label: "SQL Console", icon: "activity", manageOnly: true, group: "enterprise" },
-  { key: "s3Compat", label: "S3-Compatible Storage", icon: "integrations", manageOnly: true, group: "enterprise" },
-  { key: "executive", label: "Executive", icon: "executive", manageOnly: true, group: "enterprise" },
-  { key: "dataRooms", label: "Data Rooms", icon: "dataRooms", manageOnly: true, group: "enterprise" },
-  { key: "cloudBackup", label: "Cloud Backup", icon: "health", manageOnly: true, group: "enterprise" },
-  { key: "enterpriseHardening", label: "Export & Migration", icon: "enterpriseHardening", manageOnly: true, group: "enterprise" },
-  { key: "ai", label: "AI Assistant", icon: "aiAssistant", group: "settings" },
-  { key: "billing", label: "Billing", icon: "billing", manageOnly: true, group: "settings" },
-  { key: "settings", label: "Settings", icon: "settings", manageOnly: true, group: "settings" },
-];
-
-const GROUP_LABELS = {
-  core: "Core",
-  collaboration: "Collaboration",
-  operations: "Operations",
-  industry: "Industry",
-  trust: "Trust & Security",
-  enterprise: "Enterprise",
-  settings: "Settings",
-};
+// Command Palette + Virtual Guide SOW -- NAV_ITEMS/GROUP_LABELS/
+// isNavItemVisible moved to src/lib/navigation/navItems.js (framework-free)
+// so the command palette's server-side search index
+// (src/lib/search/unified.js) uses the exact same list and gating instead
+// of a hand-maintained copy that drifts (that drift -- 17 of 72 modules
+// indexed -- was the actual root cause of the palette missing most of
+// Business Workspace). Imported at the top of this file.
 
 // Business Workspace UX/UI Makeover SOW -- see VIEW_TITLES.browse's own
 // comment for why this exists.
@@ -955,7 +877,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {(() => {
-            const visible = NAV_ITEMS.filter((item) => (!item.manageOnly || canManage || (item.adminRole && hasAdminRole(membership, item.adminRole, { read: true }))) && (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)));
+            const visible = NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical }));
             let lastGroup = null;
             return visible.map((item) => {
               const showHeading = item.group !== lastGroup;
@@ -1036,6 +958,20 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("inaya:guided-nav", { detail: { view: activeView } }));
   }, [activeView]);
+
+  // Command Palette + Virtual Guide SOW -- the same nav-change event above
+  // doubles as the stuck-detection signal: no second listener needed.
+  const { stuckView, dismiss: dismissGuideHint } = useStuckNavDetector();
+
+  async function startGuidedTaskFromHint(workflowKey) {
+    try {
+      const data = await api("/api/orgs/guided-tasks", { method: "POST", body: JSON.stringify({ orgId, workflowKey, currentView: activeView }) });
+      setGuidedTask({ ...data.task, currentStep: data.currentStep, label: data.label, totalSteps: data.totalSteps });
+      dismissGuideHint();
+    } catch {
+      // the hint bubble stays open; the user can just try the button again
+    }
+  }
 
   // Healthcare & Legal Expansion SOW — Health OS / Legal OS nav items are
   // gated on the org's configured vertical, not shown unconditionally.
@@ -1155,6 +1091,13 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView !== "ai" && (
         <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
       )}
+      <GuideHintBubble
+        orgId={orgId}
+        stuckView={stuckView}
+        onDismiss={dismissGuideHint}
+        onStartGuidedTask={startGuidedTaskFromHint}
+        orgVoiceEnabled={!!orgAiPolicy?.voiceEnabled}
+      />
       <Sidebar
         orgName={membership.orgName}
         role={role}
