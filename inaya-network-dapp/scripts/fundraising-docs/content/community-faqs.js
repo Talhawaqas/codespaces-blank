@@ -13,7 +13,7 @@ export const communityFaqs = {
     kicker: "COMMUNITY FAQS",
     title: "General User & Community FAQs",
     subtitle: "A friendly guide for everyday users and builders — Inaya Network's DePIN infrastructure and custody protocol.",
-    docLine: "Document INAYA-FAQ-COMMUNITY-V3 · Classification Public · August 2026",
+    docLine: "Document INAYA-FAQ-COMMUNITY-V3 · Classification Public · October 2026",
   },
   docId: "INAYA-FAQ-COMMUNITY-V3",
   sections: [

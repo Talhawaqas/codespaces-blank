@@ -17,6 +17,7 @@ import { multicloudGuide } from "./multicloud-content.js";
 import { storageCapabilitiesGuide } from "./storage-capabilities-content.js";
 import { gcsGuide } from "./gcs-content.js";
 import { migrationAgentGuide } from "./migration-agent-content.js";
+import { mainframeLegacyGuide } from "./mainframe-legacy-content.js";
 import { completeFeatureGuide } from "./complete-feature-guide-content.js";
 import { buildInvestmentMemorandumHTML } from "../fundraising-docs/template.js";
 
@@ -65,6 +66,7 @@ async function main() {
     { name: "inaya-pilot-guide-advanced-storage-capabilities.pdf", html: buildInvestmentMemorandumHTML(storageCapabilitiesGuide) },
     { name: "inaya-pilot-guide-google-cloud-storage.pdf", html: buildInvestmentMemorandumHTML(gcsGuide) },
     { name: "inaya-pilot-guide-data-migration.pdf", html: buildInvestmentMemorandumHTML(migrationAgentGuide) },
+    { name: "inaya-pilot-guide-mainframe-legacy-data-access.pdf", html: buildInvestmentMemorandumHTML(mainframeLegacyGuide) },
     { name: "inaya-complete-feature-guide.pdf", html: buildInvestmentMemorandumHTML(completeFeatureGuide) },
   ];
 

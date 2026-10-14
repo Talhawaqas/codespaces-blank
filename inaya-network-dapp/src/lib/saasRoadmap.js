@@ -756,6 +756,56 @@ export const ROADMAP_STAGES = [
     notes:
       "Post-quantum cryptography and Computer Backup reconciliation are complete and verified (127/127 SDK cryptography tests, including official ML-KEM test vectors and adversarial downgrade/tamper cases). Cleaner is built and tested (9/9 real filesystem tests on Windows); the live round trip through the compiled desktop app's native command bridge was attempted but not completed in this environment. Meet is functionally complete — 28 server-side tests passing, including every guest-access mode and server-enforced PQC-downgrade rejection — and was verified against a real running server in a real browser, a pass that found and fixed two genuine bugs (a pre-existing crash affecting any user, and a Meet-specific false error for anyone without a camera). What Meet still needs, honestly: a real two-person video call with real cameras, and a real phone running the mobile build — both need real hardware this engineering environment cannot provide. This stage stays IN_PROGRESS until that real-world test happens.",
   },
+  {
+    number: 30,
+    title: "Sovereign Infrastructure Fabric — Bring-Your-Own-Hardware Compute",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "Inaya could always store and protect files, but had no way to actually run compute for a customer. This stage closes that gap: a customer connects their own computer (or a rented server) and it comes online as real, managed infrastructure — their own private slice of cloud-like compute, running on hardware they own, not shared with anyone else. Built independently, inspired by how BYOH providers like Spinifex approach the problem, reusing Inaya's existing security, permissions and activity-logging rather than a second stack.",
+    securityStatement:
+      "Each connected node authenticates with its own signed-request credential, never a shared password, and can be revoked at any time. Each customer's virtual machines sit in their own isolated network with default-drop firewall rules. TPM and confidential-compute hardware is detected and reported, never claimed as in use beyond what's verified — see what's explicitly not built below.",
+    groups: [
+      {
+        title: "Compute, storage & networking",
+        items: [
+          "Real QEMU/KVM virtual machines on a customer's own connected hardware — create, start, stop, restart, delete, confirmed by a real guest OS genuinely booting and coming online with its own network address, not just an engine starting and stopping",
+          "Real qcow2 block storage, written and read back byte-for-byte, with image-backed overlay disks for fast VM creation",
+          "A private, isolated network per customer with default-drop nftables rules and NAT so guests reach the internet safely without reaching each other",
+          "An Infrastructure console in the Business Workspace showing connected nodes, VMs, capacity, clusters, load balancers and access keys, with real Terraform provider support (3 compute resources, separate from the earlier storage-only provider)",
+        ],
+      },
+      {
+        title: "AWS CLI compatibility",
+        items: [
+          "The real, official `aws` command-line tool — not a lookalike — authenticated with a real Inaya-issued key pair and real SigV4 request signing, genuinely creating, listing, starting, stopping and terminating virtual machines on a customer's own hardware",
+          "A working subset only: instance and volume lifecycle plus VPCs. S3, IAM and autoscaling are not included — never claimed as \"full AWS compatibility\"",
+        ],
+      },
+      {
+        title: "Load balancing",
+        items: [
+          "A real HAProxy process per load balancer, run on the customer's own node, spreading real TCP connections round-robin across healthy backends and surviving a live configuration change without dropping traffic",
+          "TCP-level only today — no HTTP-aware routing yet, and no AWS-compatible load-balancer API",
+        ],
+      },
+      {
+        title: "Kubernetes",
+        items: [
+          "Real upstream Kubernetes (k3s, not a custom orchestrator) installed on real guest VMs this stage creates, with a working kubeconfig handed to the customer's own `kubectl` — proven by `kubectl get nodes` showing real nodes Ready and a real test pod reaching Running",
+          "This required building real guest OS boot from scratch as new groundwork — the first VM in this project to ever boot and come online, now reused by every capability above",
+        ],
+      },
+      {
+        title: "Hardware detection",
+        items: [
+          "Honest detection and reporting of whether a connected node has a TPM security chip or a confidential-compute CPU feature (SEV/TDX) — detection only, same precedent as existing GPU detection",
+          "Not yet built: GPU passthrough (needs a dedicated GPU host this environment can't test against), TPM-backed node identity, and actual SEV/TDX-encrypted VM execution",
+        ],
+      },
+    ],
+    notes:
+      "Built in two rounds and tested against real hardware throughout, not just written and assumed to work — a real VM, a real disk, a real VPC, a real `aws` CLI call, a real HAProxy round-trip, and a real k3s cluster were each exercised end to end on a real QEMU/KVM host. 82+ automated tests pass (30 Rust, 52 Node.js). Real hardware testing caught and fixed 7 genuine bugs a code review alone would have missed, including a pre-existing camelCase/snake_case wire-format mismatch in the node scheduler's capacity comparison (fixed at the customer's own request) and an SSH protocol ordering bug that silently truncated longer guest responses. Explicitly not built: GPU passthrough, full AWS coverage (S3/IAM/autoscaling), HTTP-aware load balancing, and TPM-backed identity or real SEV/TDX execution — each deferred for a stated, concrete reason, not silently skipped.",
+  },
 ];
 
 export const VISION = {

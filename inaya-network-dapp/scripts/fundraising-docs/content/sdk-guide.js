@@ -27,6 +27,13 @@
 // is a real package-version reference, not a cosmetic revision date, so
 // it's corrected to stay accurate rather than left stale like the other
 // documents' plain month/year labels).
+//
+// STALENESS FIX (investor-doc audit, October 2026) — Section 01's body text
+// still said "both the beta and latest dist-tags currently point at the
+// same 1.0.10-beta release" after the cover docLine above had already been
+// bumped past it twice (1.0.11-beta, 1.0.12-beta, now 1.0.13-beta) — an
+// editing oversight where the cover was updated but the body wasn't.
+// Corrected below to match the cover.
 
 export const sdkGuide = {
   cover: {
@@ -61,7 +68,8 @@ export const sdkGuide = {
           items: [
             "Requirements: Node.js 18+, ethers v6 as a peer dependency.",
             "Two modes: browser (via InayaKernel.connectWallet()) or Node.js/server-side (pass a raw ethers.Wallet directly).",
-            "Published on the public npm registry — both the `beta` and `latest` dist-tags currently point at the same 1.0.10-beta release, so a plain install with no tag suffix works.",
+            "Published on the public npm registry — both the `beta` and `latest` dist-tags currently point at the same 1.0.13-beta release, so a plain install with no tag suffix works.",
+            "Reproducible builds: every published release ships with a CHECKSUMS.md (custody-sdk/CHECKSUMS.md) listing the expected SHA256 of each distributed file, so a security-conscious integrator can rebuild from source and verify the published tarball matches it byte for byte, rather than trusting npm alone.",
           ],
         },
       ],
@@ -237,7 +245,7 @@ export const sdkGuide = {
         {
           type: "note",
           label: "Two more published packages, same monorepo.",
-          text: "@inaya-network/bridge-sdk (cross-chain $INAYA transfer and staking) and @inaya-network/react (InayaUploader / InayaFileBrowser / InayaConnect components) are both real, separately versioned npm packages alongside custody-sdk — out of scope for this guide, which covers custody-sdk specifically; ask your Inaya contact for their own reference material.",
+          text: "@inaya-network/bridge-sdk (cross-chain $INAYA transfer and staking) and @inaya-network/react (InayaUploader / InayaFileBrowser / InayaConnect components) are both real, separately versioned npm packages alongside custody-sdk — out of scope for this guide, which covers custody-sdk specifically; ask your Inaya contact for their own reference material. A developer provisioning compute on their own hardware (rather than storage) instead wants the real, official aws CLI against Inaya's AWS CLI-compatible endpoint, the terraform-provider-inaya compute resources, or a downloaded kubeconfig for their own kubectl — see the Ecosystem Dev-Deepdive document's Sovereign Infrastructure Fabric reference for the full file-level surface.",
         },
       ],
     },

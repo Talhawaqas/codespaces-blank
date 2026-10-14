@@ -83,7 +83,7 @@ export const gtmStrategy = {
     title: "The Inaya GTM Blueprint",
     subtitle:
       "How a DePIN sovereign storage protocol converts developer-led adoption into enterprise revenue and durable network effects.",
-    docLine: "Document INAYA-GTM-2026-V1 · Classification Confidential · Prepared for Strategic Investors · August 2026",
+    docLine: "Document INAYA-GTM-2026-V1 · Classification Confidential · Prepared for Strategic Investors · October 2026",
   },
   docId: "INAYA-GTM-2026-V1",
   entries: [
@@ -141,6 +141,8 @@ export const gtmStrategy = {
             "Beyond storage: a Business Workspace SaaS product (now including real business operations — Tasks, CRM, Procurement, Inventory — and a Finance & HR layer), a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and four purpose-built AI assistants — all live on the same infrastructure",
             "Enterprise storage interoperability: real AWS S3 and Azure Blob Storage API compatibility (tested against the actual AWS CLI and the official Azure SDK), plus an enterprise storage governance suite — scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native desktop drive mount — so an enterprise customer's existing tools and workflows connect directly, with no migration required",
             "Secure Collaboration suite (Filen/FileCloud-inspired, October 2026): end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, enterprise Governance, device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization. Device Protection suite (Internxt-inspired, October 2026): a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls",
+            "September 2026: Identity Integration & MSP multi-tenancy (Entra ID/Active Directory sign-in, SCIM, Rewst), an AI Bookkeeper, a Managed Database/Document Intelligence/AI-ML Studio, Document & Invoice Automation, an AI Business Operations Manager (Automations), and a Customer Portal with ticketing and a knowledge base",
+            "October 2026: Sovereign Infrastructure — bring-your-own-hardware compute: real virtual machines, block storage, and private networking on a customer's own server, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s)",
           ],
         },
         {
@@ -520,7 +522,7 @@ export const gtmStrategy = {
           headers: ["Market", "Size", "Inaya's Approach"],
           rows: [
             ["TAM\nTotal Addressable Market", "$100B+\nGlobal cloud storage", "Participates in the broader evolution of enterprise digital infrastructure — object storage, archival, backup, AI datasets, and sovereign infrastructure."],
-            ["SAM\nServiceable Available Market", "$10B\nWeb3 & AI data storage", "Organizations actively seeking decentralized, privacy-first, AI-safe storage: AI startups, SaaS companies, Web3 developers, fintech, healthcare, legal technology, digital media."],
+            ["SAM\nServiceable Available Market", "$10B\nWeb3 & AI data storage", "Organizations actively seeking decentralized, privacy-first, AI-safe storage: AI startups, SaaS companies, Web3 developers, fintech, healthcare, legal technology, digital media. This figure covers the storage/DePIN line specifically — it is a deliberately conservative scope that does not add in the Business Workspace SaaS, Identity/MSP, AI Bookkeeper, or Sovereign Infrastructure compute revenue lines described elsewhere in this document, each a separate market with its own buyer."],
             ["SOM\nServiceable Obtainable Market", "$150M\nYear 1-3 target", "Developer-first startups, blockchain-native companies, privacy-focused software vendors, and innovation-driven enterprises most likely to adopt decentralized storage within the next several years."],
           ],
         },
@@ -581,10 +583,19 @@ export const gtmStrategy = {
             "Enterprise customers represent the largest long-term revenue opportunity. Unlike startups, enterprises rarely adopt infrastructure because it is technically impressive — they adopt infrastructure because it solves measurable business problems. Primary enterprise industries: Healthcare (EHRs, medical imaging, genomics, research datasets; HIPAA compliance, patient privacy, long-term archival, data security), Financial Services (transaction histories, KYC documents, audit records, investment research; regulatory compliance, long-term retention, cybersecurity, disaster recovery), Legal (contracts, litigation documents, M&A due diligence, IP; confidentiality is the primary concern — zero-knowledge storage provides significant value), Artificial Intelligence Companies (training datasets, model checkpoints, proprietary research, synthetic datasets — storage as strategic infrastructure), and Government & Public Sector (sovereign infrastructure, long-term archives, national security, high resilience — decentralized architecture reduces reliance on centralized infrastructure providers).",
         },
         {
+          type: "note",
+          label: "Update, September 2026 — these are no longer storage-only pitches.",
+          text: "Three of the four enterprise industries above now have a real, purpose-built vertical OS on the Business Workspace foundation, not just a storage value proposition: a Healthcare & Legal OS, a Financial Services & Regulated Enterprise OS (live), and a Government & Public Sector Sovereign OS — each adding the compliance workflows and record types that vertical actually needs.",
+        },
+        {
           type: "subsection",
           heading: "Phase Four: Infrastructure Partners",
           body:
             "Beyond end customers, Inaya will support ecosystem partners including system integrators, managed service providers, enterprise consultants, cloud migration specialists, and AI infrastructure providers. These organizations expand distribution while reducing direct sales costs.",
+        },
+        {
+          type: "note",
+          text: "Update, September 2026 — managed service providers are no longer only a distribution channel. Identity Integration shipped real MSP multi-tenant management (Entra ID/Active Directory sign-in, SCIM provisioning, Rewst automation), so an MSP can now be sold to directly as a buyer, not only recruited as a partner.",
         },
         // Approved addition — new, distinct phase for Business Workspace,
         // not nested under Phase Three's storage-motivated Enterprise segment.
@@ -750,7 +761,7 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Principle Five — Continuous Platform Expansion",
-          body: "Storage represents only the initial infrastructure layer. Potential future expansions include identity, data sharing, AI storage optimization, enterprise analytics, storage automation, access management, governance, and marketplace integrations — each increasing switching costs while expanding platform utility.",
+          body: "Storage represents only the initial infrastructure layer. Identity, data sharing, enterprise analytics, storage automation, access management, and governance have each since shipped (see the September/October 2026 updates below and the Business Workspace Competitive Landscape section) — each increasing switching costs while expanding platform utility. AI storage optimization and a public marketplace of third-party integrations remain genuinely future.",
         },
         {
           type: "subsection",
@@ -760,6 +771,10 @@ export const gtmStrategy = {
         {
           type: "note",
           text: "Update, September 2026 — a real piece of Phase Three shipped: a Sovereign Enterprise OS layer now provides unified identity, cross-module notifications, unified search, a real trust & health signal, and one AI assistant spanning business and security questions, on both the web app and Business Workspace. Not a rebrand of this roadmap — an actual, shipped, tested connecting layer over the features already described throughout this document.",
+        },
+        {
+          type: "note",
+          text: "Update, September–October 2026 — more of Phase Three and Four have since shipped: real external identity (Microsoft Entra ID and Active Directory sign-in, SCIM provisioning, MSP multi-tenancy); real Business Intelligence (KPI cards, period-over-period comparison, trend charts, business alerts); and a Secure Collaboration suite whose Governance module (classification, DLP, retention, legal hold) is exactly the \"governance\" and \"access management\" items named above. This is no longer a forward-looking list for those three items — treat them as shipped everywhere else in this document references them.",
         },
         {
           type: "bullets",
@@ -813,6 +828,11 @@ export const gtmStrategy = {
             ["Mobile Integration", "Yes", "Limited", "Yes"],
             ["Fiat Enterprise Payments", "Yes", "Limited", "Yes"],
           ],
+        },
+        {
+          type: "note",
+          label: "Bring-your-own-hardware compute, October 2026.",
+          text: "Sovereign Infrastructure adds a second, adjacent competitive set this table doesn't cover: BYOH/bare-metal compute providers (e.g. Spinifex-style offerings) that let a customer run virtual machines, Kubernetes, and load-balanced workloads on hardware they already own. Inaya's angle here is the same as its storage angle — ownership and sovereignty — now extended to compute, with a real, tested subset of AWS CLI compatibility as the on-ramp for teams already standardized on AWS tooling.",
         },
       ],
     },
@@ -1483,7 +1503,7 @@ export const gtmStrategy = {
           type: "subsection",
           heading: "Ten-Year Vision",
           body:
-            "The long-term ambition extends beyond storage. Inaya seeks to become the foundational infrastructure layer for sovereign digital ownership, with potential ecosystem expansion into identity, secure collaboration, AI infrastructure, governance, and enterprise infrastructure services. The company's long-term opportunity lies in becoming a core component of next-generation internet infrastructure.",
+            "The long-term ambition extends beyond storage. Inaya seeks to become the foundational infrastructure layer for sovereign digital ownership. Identity, secure collaboration, and governance are no longer potential expansions — they shipped in September–October 2026 — and enterprise infrastructure services took its first real step in October 2026 with bring-your-own-hardware compute (Sovereign Infrastructure). What remains genuinely ahead on this ten-year horizon is deepening AI infrastructure and broadening enterprise infrastructure services beyond today's working subset. The company's long-term opportunity lies in becoming a core component of next-generation internet infrastructure.",
         },
       ],
     },

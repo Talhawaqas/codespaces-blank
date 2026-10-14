@@ -21,7 +21,7 @@ export const ecosystemArchitecture = {
     title: "How Inaya Actually Works",
     subtitle:
       "Every contract, app, backend, and data flow across the ecosystem — written from the real code, not the pitch. For the founding team.",
-    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · September 2026",
+    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · October 2026",
   },
   docId: "INAYA-ARCH-2026-V1",
   sections: [
@@ -1919,6 +1919,118 @@ export const ecosystemArchitecture = {
       ],
     },
     {
+      number: "58",
+      title: "Sovereign Infrastructure Fabric -- Core Architecture: VMs, Storage, Networking (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A new sibling Rust workspace, inaya-infrastructure/, gives a customer's own connected hardware a real control plane: real QEMU/KVM virtual machines, real qcow2 block storage, real Linux-bridge+nftables networking, and a capacity-based scheduler -- authenticated node-to-node over signed requests on HTTPS (not literal TLS mTLS, a documented Vercel-edge platform constraint), surfaced through a new 'Infrastructure' console in the Business Workspace.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["Node daemon entry point", "inaya-infrastructure/crates/inaya-infra-node/src/main.rs", "The long-running process a customer installs on their own hardware; registers with Inaya, polls for operations, reports capacity."],
+            ["Operation executor", "inaya-infrastructure/crates/inaya-infra-node/src/operations.rs", "One match arm per operation type (CREATE_INSTANCE, BOOT_GUEST_INSTANCE, CREATE_VOLUME, CREATE_VPC, CREATE_LOAD_BALANCER, etc.) -- every new capability this round added is a new arm here, not a new executor."],
+            ["Compute lifecycle", "inaya-infrastructure/crates/compute/src/lib.rs", "QemuKvmProvider: create/start/stop/restart/delete a real VM, tracked by PID, signalled on stop -- the same process-lifecycle pattern the load balancer crate reuses below."],
+            ["Base image caching", "inaya-infrastructure/crates/compute/src/cloud_image.rs", "Downloads a real Ubuntu Server cloud image (qcow2) on first use, verifies it against the official published SHA256SUMS, caches it once per node."],
+            ["Cloud-init seed", "inaya-infrastructure/crates/compute/src/cloud_init.rs", "Builds the NoCloud user-data/meta-data/network-config seed ISO a new guest boots with -- the piece that actually gets a VM online with a real static IP, not just an engine that starts and stops."],
+            ["Block storage", "inaya-infrastructure/crates/block/src/lib.rs", "Real qcow2 volumes; create_volume_from_image() layers a fast copy-on-write overlay over the cached base image for new instances."],
+            ["Networking", "inaya-infrastructure/crates/network/src/lib.rs", "LinuxBridgeNetworkProvider: one isolated bridge + nftables default-drop ruleset per customer VPC, plus a gateway IP, IP forwarding, and a scoped NAT/masquerade rule so guests reach the internet without reaching each other."],
+            ["Guest SSH channel", "inaya-infrastructure/crates/guest-exec/src/lib.rs", "A pure-Rust SSH client (russh, no shelling out) that waits for guest connectivity with backoff and runs real commands/pulls real files inside a guest -- general-purpose, not k3s-specific; reused by the Kubernetes work in Section 59."],
+            ["Node identity", "inaya-infrastructure/crates/certificates/src/lib.rs", "Per-node keypair issuance and the signed-request auth scheme every node-to-node call uses in place of literal mTLS."],
+            ["Hardware telemetry", "inaya-infrastructure/crates/telemetry/src/lib.rs", "Heartbeat capacity reporting, extended this round with detect_tpm() and detect_confidential_compute_flags() -- detection only, same precedent as the existing GPU detection."],
+            ["Terraform provider", "terraform-provider-inaya (compute resources)", "3 compute resources, intentionally separate from the pre-existing storage-only Terraform provider rather than merged into it -- different lifecycle, different blast radius."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real, previously-missing prerequisite this round had to build.",
+          text: "Before this round, no VM in this project had ever booted a real guest OS and come online -- every prior VM test proved the engine could start and stop, nothing more. Real guest boot (cloud_image.rs + cloud_init.rs + the network crate's NAT rule + guest-exec's SSH wait-with-backoff) had to be built from scratch, and is now reused by everything in Section 59.",
+        },
+        {
+          type: "note",
+          label: "A real, pre-existing bug this round found and fixed.",
+          text: "NodeCapacity was serialized camelCase on one side of the wire and read snake_case on the other, so the scheduler's \"pick the node with the most free memory\" comparison silently never matched -- it never crashed or errored, it just quietly stopped picking the best node. Fixed with #[serde(rename_all = \"camelCase\")] in api-types, with its own regression test.",
+        },
+      ],
+    },
+    {
+      number: "59",
+      title: "Sovereign Infrastructure Fabric -- AWS CLI, Load Balancing & Kubernetes (Gap-Closure Round, October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The core architecture in Section 58 named three things deliberately left for later: AWS CLI/SDK compatibility, load balancing, and Kubernetes/container hosting. This gap-closure round built all three as a real, tested subset -- plus TPM/confidential-compute detection -- leaving only GPU passthrough out, for the same stated hardware reason as before.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["SigV4 request signing", "src/lib/infrastructure/awsSigV4.js", "Real canonical-request construction and the real kDate->kRegion->kService->kSigning HMAC chain -- verified against AWS's own published SigV4 worked example, not a lookalike."],
+            ["Access key issuance", "src/lib/infrastructure/awsCredentials.js", "Mints a real Inaya-issued key pair an organization uses with the actual aws CLI or boto3 via --endpoint-url, secret encrypted at rest with the same pattern nodeCerts.js already uses for CA keys."],
+            ["EC2 query-protocol responses", "src/lib/infrastructure/awsEc2Xml.js", "Real EC2-shaped XML (botocore's EC2 model expects XML, not JSON) for RunInstances/DescribeInstances/Start/Stop/TerminateInstances and volume/VPC calls."],
+            ["EC2 API entry point", "src/app/api/aws-ec2/route.js", "Single POST route dispatching on the real EC2 query protocol's Action form field, mapping each action straight onto the existing operations.js functions -- no second state model."],
+            ["Load balancer process lifecycle", "inaya-infrastructure/crates/loadbalancer/src/lib.rs", "HaproxyLoadBalancerProvider: renders a real haproxy.cfg (TCP mode, round-robin, health checks) and spawns/reloads/stops the real haproxy process, reusing compute's own process-lifecycle pattern."],
+            ["Load balancer records", "src/lib/infrastructure/loadBalancers.js", "CRUD over a new infra_load_balancers collection, mirroring operations.js's existing volume/VPC pattern -- required exporting enqueue() from operations.js, a zero-risk visibility change."],
+            ["Kubernetes clusters", "src/lib/infrastructure/k8sClusters.js", "Tracks {k8sClusterId, serverInstanceId, agentInstanceIds[], kubeApiEndpoint}; retrieves the real k3s node-token and kubeconfig over the guest-exec SSH channel from Section 58, rewriting the server's loopback IP to its real static IP."],
+          ],
+        },
+        {
+          type: "note",
+          label: "A real, pre-existing-pattern bug this round found and fixed.",
+          text: "guest-exec's exec() broke its read loop on ChannelMsg::Eof, which worked by luck for short SSH responses (the node-token) but silently truncated longer ones (the kubeconfig) because ExitStatus can legitimately arrive after Eof for larger payloads. Fixed to only break on ChannelMsg::Close.",
+        },
+        {
+          type: "note",
+          label: "Proven for real, not simulated.",
+          text: "A real Ubuntu cloud image boots under QEMU/KVM, gets its static IP from cloud-init, and reaches the public internet through the VPC's NAT rule. The real aws CLI genuinely creates and lists a real instance through this stack. A real haproxy process round-robins real TCP connections across two real backends, surviving a live config reload. A real k3s server and agent come up on real guest VMs, kubectl get nodes shows both Ready against the real downloaded kubeconfig, and a real test pod reaches Running. 82+ automated tests pass across both rounds (30 Rust, 52 Node.js).",
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "Not full AWS coverage -- S3, IAM and autoscaling are not included. Not HTTP-aware load balancing -- today's load balancer is TCP-only, no AWS-compatible load-balancer API. Not GPU passthrough -- no dedicated GPU host exists in this environment to test real PCI passthrough against, so it stays deferred rather than claimed. Not TPM-backed identity or real SEV/TDX execution -- hardware detection only, same honesty bar as the existing GPU-detection precedent.",
+        },
+      ],
+    },
+    {
+      number: "60",
+      title: "Secure Collaboration & Enterprise Governance — Architecture (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A Filen/FileCloud-inspired suite built across 26 workstreams on top of the existing Business Workspace permission foundation -- end-to-end encrypted chat and notes, link sharing controls, an enterprise governance/compliance layer, device trust, and an on-premises gateway agent -- every feature off by default per organization.",
+        },
+        {
+          type: "table",
+          headers: ["Component", "File", "Responsibility"],
+          rows: [
+            ["MLS group messaging", "src/lib/chat/mlsServer.js", "Server-side MLS (RFC 9420) group state and message relay -- the server stores and forwards ciphertext, never holds a group's decryption-capable key."],
+            ["Chat conversations & devices", "src/lib/chat/{conversations,devices,contacts,presence}.js", "Conversation membership, per-device MLS client registration, contact resolution and presence, all scoped to the existing org/department permission model."],
+            ["Chat transport", "src/lib/chat/transport.js", "The same long-poll/SSE real-time pattern Meet's signaling layer reuses (Section 61) -- one real-time primitive for the whole platform, not a second one per feature."],
+            ["Attachments", "src/lib/chat/attachments.js", "Encrypted file attachments over the existing sharded storage backend, not a second file-storage path."],
+            ["Secure Notes", "src/lib/notes/notes.js", "End-to-end encrypted notes on the same client-side encryption model as chat, with the same device-key registry."],
+            ["Sharing 2.0", "src/lib/sharing/{shares,policy}.js", "Expiring, password-protected and watermarked links plus inbound file requests, layered on the existing secure-sharing primitive rather than a second sharing engine."],
+            ["Governance -- classification & DLP", "src/lib/governance/{classification,classifyRules,dlp}.js", "Document classification labels and data-loss-prevention rule matching, enforced at the point data would leave a scope."],
+            ["Governance -- retention & lifecycle", "src/lib/governance/{retention,lifecycle,metadata}.js", "Automated retention/legal-hold policies and lifecycle transitions, journaled through governance/events.js for the audit trail."],
+            ["Governance enforcement", "src/lib/governance/enforce.js", "The single checkpoint every governed action passes through -- policy evaluation lives here once, not duplicated per feature."],
+            ["Sovereign Gateway", "src/lib/gateway/{gateway,acl,transfers,health,modes}.js", "An agent connecting a customer's own on-premises file server into Business Workspace, with its own ACL model, transfer queue, and health reporting -- built and tested but not yet proven against a real company file server."],
+          ],
+        },
+        {
+          type: "note",
+          label: "Coverage, stated plainly.",
+          text: "114 tracked deliverables: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built by deliberate choice (mobile chat and push notifications). The Sovereign Gateway, the NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration fall in the \"tested but not proven against a real outside system\" group.",
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "The MLS protocol library's open-source implementation has not had an independent security audit. This stage stays explicitly in-progress -- the project's own final verification report says the SOW is not yet complete, and this document does not round that up.",
+        },
+      ],
+    },
+    {
+      number: "61",
       title: "Post-Quantum Cryptography, Cleaner, Meet & Device Protection — Architecture (October 2026)",
       blocks: [
         {

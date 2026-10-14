@@ -12,7 +12,7 @@ export const storageCapabilitiesGuide = {
     kicker: "ADVANCED ENTERPRISE STORAGE CAPABILITIES",
     title: "Govern Your Storage Like an Enterprise",
     subtitle: "A step-by-step guide for pilot admins: scoped access credentials, version history, compliance-grade locked retention, legal hold, automated lifecycle policies, and a native desktop drive.",
-    docLine: "Pilot Guide · Advanced Enterprise Storage Capabilities · September 2026",
+    docLine: "Pilot Guide · Advanced Enterprise Storage Capabilities · October 2026",
   },
   docId: "INAYA-PILOT-STORAGE-GOV-2026",
   sections: [
@@ -177,6 +177,30 @@ export const storageCapabilitiesGuide = {
     },
     {
       number: "09",
+      title: "Tags, Checksums, Bulk Operations, Inventory & Policy Review (September 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A rounder storage feature set added on top of everything above: object tags for organizing and filtering your data, a real independently-verifiable checksum on every upload, bulk operations across up to 1,000 objects at once, a one-click inventory export, per-bucket analytics, and a read-only review of what each of your storage credentials can actually do.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "1. Open \"Buckets, Versions & Object Protection\" → \"Tags & batch.\"", body: "Pick a bucket, then select objects individually or with \"Select all.\"" },
+            { heading: "2. Apply one change to many objects at once.", body: "Choose an operation — Set tags (e.g. \"project=apollo, tier=gold\"), Set retention (needs Object Lock already enabled, same as Section 04), or Legal hold — then click \"Apply to N objects.\" Every object reports its own success or failure, so one failure never hides or blocks the rest." },
+            { heading: "3. Switch to the \"Inventory\" tab.", body: "Click \"Download CSV\" for a one-click export of every object in a bucket (or across all buckets), ready for a spreadsheet or an external compliance review tool." },
+            { heading: "4. Switch to the \"Analytics\" tab.", body: "See per-bucket object counts, total size, and how many objects are version-locked or under legal hold — the same figures referenced in Section 07, broken out by bucket." },
+            { heading: "5. Switch to the \"Credential review\" tab.", body: "A read-only analysis of each storage credential's actual scope and permissions — \"No findings\" means nothing suspicious was detected; any finding is labeled by severity (High/Medium/Low) so you can tighten an over-broad credential before it's a problem, not after." },
+          ],
+        },
+        {
+          type: "note",
+          text: "Every uploaded object now carries a real, independently-verifiable checksum — you can confirm a file arrived byte-for-byte intact without trusting Inaya's own say-so. Covered by 9 additional automated tests, with zero regressions to the 57 pre-existing storage tests.",
+        },
+      ],
+    },
+    {
+      number: "10",
       title: "Everything Is Audited",
       blocks: [
         {
@@ -196,7 +220,7 @@ export const storageCapabilitiesGuide = {
       ],
     },
     {
-      number: "10",
+      number: "11",
       title: "Getting Help",
       blocks: [
         {

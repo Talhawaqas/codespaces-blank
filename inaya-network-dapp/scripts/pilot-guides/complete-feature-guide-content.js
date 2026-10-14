@@ -23,7 +23,7 @@ export const completeFeatureGuide = {
     kicker: "COMPLETE FEATURE GUIDE",
     title: "The Complete Inaya Network Guide",
     subtitle: "Step-by-step instructions for every feature — the web dApp, Business Workspace, mobile, desktop, and developer tools.",
-    docLine: "Document INAYA-GUIDE-2026-V1 · September 2026",
+    docLine: "Document INAYA-GUIDE-2026-V1 · October 2026",
   },
   docId: "INAYA-GUIDE-2026-V1",
   sections: [
@@ -631,7 +631,7 @@ export const completeFeatureGuide = {
         },
         {
           type: "note",
-          text: "A \"volume\" or \"file share\" here is a logical, taggable storage container — not a physical attachable disk or a mountable network drive. Inaya has no virtual-machine layer for a disk to attach to, so every resource states its own physical capability plainly rather than implying more than it actually delivers.",
+          text: "A \"volume\" or \"file share\" here is a logical, taggable storage container, independent of the virtual machines described in Section 59 (Sovereign Infrastructure) — it's not a disk attached to one of those VMs. If you need a real disk a real virtual machine can actually boot from and write to, see Section 59's block storage instead; this section's own resources state their own capability plainly rather than implying more than they deliver.",
         },
       ],
     },
@@ -1070,6 +1070,61 @@ export const completeFeatureGuide = {
       ],
     },
     {
+      number: "58",
+      title: "Managed Database, Document Intelligence & AI/ML Studio",
+      blocks: [
+        {
+          type: "lead",
+          text: "A real, provisioned PostgreSQL database managed from inside Business Workspace; a document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Provision a database.", body: "From the Managed Database tab, create a real PostgreSQL database through a real external provider (Supabase) — Inaya's own serverless hosting can't run a database engine itself, so it manages a real one elsewhere rather than pretending to host one. Start, stop, list backups, and restore to a point in time." },
+            { heading: "Build a Document Intelligence analyzer.", body: "Use a built-in reader for invoices, purchase orders, receipts or contracts, or build a custom analyzer for any other document type, moving it through a draft → testing → ready → live lifecycle before it's trusted with real work. Every extracted field shows its confidence and whether it was actually found in the document's own text; a correction you make is added to the record, never silently overwriting the original extraction." },
+            { heading: "Catalogue and check your data in AI/ML Studio.", body: "Register a data source or model into the catalogue (each entry is verified against a real source before it's accepted), run automatic data-quality checks, and track models in a registry with real artifact hashing." },
+            { heading: "Run a governed script.", body: "Execute one Python or Node.js snippet in a fresh, network-off-by-default sandbox that's destroyed the instant it finishes — deliberately not a persistent notebook with saved state between runs." },
+          ],
+        },
+        {
+          type: "note",
+          text: "26 real tests passing across all three workstreams, including live runs against a real, disposable cloud sandbox created and destroyed for each test. Not built: read replicas or failover for the managed database (not yet verified through a real incident), and REGEX-type data-quality rules (the reference SQL connector has no portable REGEXP). Inaya does not train AI models on its own infrastructure — registering a model tracks a real file your team already produced elsewhere.",
+        },
+      ],
+    },
+    {
+      number: "59",
+      title: "Sovereign Infrastructure — Bring Your Own Hardware",
+      blocks: [
+        {
+          type: "lead",
+          text: "Connect your own computer or a rented server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — running on hardware you own, not shared with anyone else, managed from inside Business Workspace.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Connect a node.", body: "Install the node agent on a Linux computer and enroll it with a one-time token from the Infrastructure console. Each node authenticates with its own signed-request credential and can be revoked at any time." },
+            { heading: "Create a virtual machine.", body: "Create, start, stop, restart, or delete a real virtual machine on your connected hardware — it genuinely boots a real operating system and comes online with its own network address, not just an engine that starts and stops." },
+            { heading: "Give it storage and a private network.", body: "Create a real disk for the VM to use, and a private, isolated network with default-drop firewall rules and real internet access — unrelated things can't reach each other by accident, but your own machines can still safely reach the outside world." },
+            { heading: "Use the real AWS CLI.", body: "Issue yourself an Inaya access key pair from the Infrastructure console, then point the real, official aws command at your own Inaya infrastructure (--endpoint-url) to create, list, start, stop, and terminate virtual machines — it's the actual Amazon tool, genuinely talking to Inaya." },
+            { heading: "Spread traffic with a load balancer.", body: "Create a load balancer and point it at two or more of your VMs — a real HAProxy process balances real connections round-robin across whichever backends are healthy." },
+            { heading: "Run real Kubernetes.", body: "Create a Kubernetes cluster and Inaya installs k3s — real, production-grade Kubernetes, not a custom imitation — on guest VMs it creates for you. Download the kubeconfig and point your own kubectl at it like any other cluster." },
+          ],
+        },
+        {
+          type: "note",
+          label: "What's real and tested, stated plainly.",
+          text: "82+ automated tests pass (30 Rust, 52 Node.js). A real virtual machine was created and shut down for real; a real disk was written to and read back byte for byte; a real private network was created and cleanly removed; a real aws CLI call created and listed a real VM; a real HAProxy process correctly split real connections across two real backends, surviving a live configuration change; a real k3s server and agent came up on real guest VMs with kubectl get nodes showing both Ready, and a real test pod reached Running.",
+        },
+        {
+          type: "note",
+          label: "What's deliberately not included yet.",
+          text: "GPU passthrough inside a virtual machine — detection of a graphics card works, but no dedicated GPU host is available to safely test real passthrough against. Full AWS compatibility — only instance, volume, and VPC lifecycle work today, not S3, IAM, or autoscaling. Smarter load balancing — today's balancer is plain TCP, not HTTP-aware routing. Using the TPM or confidential-compute hardware Inaya can now detect — detection only, not yet wired into anything.",
+        },
+      ],
+    },
+    {
+      number: "60",
       title: "Device Protection — Post-Quantum Encryption, Cleaner, and Private Meetings (October 2026)",
       blocks: [
         {

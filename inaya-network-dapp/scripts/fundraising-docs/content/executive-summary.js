@@ -8,7 +8,7 @@ export const executiveSummary = {
     kicker: "Sovereign Storage DePIN",
     title: "INAYA NETWORK",
     badge: "One-Page Executive Summary",
-    date: "September 2026",
+    date: "October 2026",
   },
   columns: [
     [
@@ -35,10 +35,9 @@ export const executiveSummary = {
           "Staking interface and business/pricing flows implemented",
           "Full interactive Proof-of-Storage scheduled for mainnet",
           "Also live: a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, and a Sovereign Enterprise OS tying it all together (identity, notifications, search, trust/health, multi-window desktop)",
-          "September 2026: a self-verifying public Trust Center, a daily-retested Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Sign, DePIN Storage, Escrow, Attestation), real OAuth for 9 business tools, and a voice-enabled AI Assistant",
-          // Additive, October 2026 — factual, hedged (hybrid not
+          // Additive, September–October 2026 — factual, hedged (hybrid not
           // quantum-safe; mesh not SFU; local-only), off by default.
-          "October 2026: Secure Chat, Secure Notes and Sharing 2.0 (Filen/FileCloud-inspired, off by default); a hybrid post-quantum key-establishment layer, Inaya Cleaner, and Inaya Meet private video calls (Internxt-inspired) — all testnet only",
+          "Sept–Oct 2026: a Trust Center, Node Operator Dashboard, Entra/AD identity + MSP, AI Bookkeeper, Managed DB/AI-ML Studio, Secure Chat/Notes/Sharing, post-quantum keys, Meet, and Sovereign Infrastructure (bring-your-own-hardware VMs, AWS CLI, Kubernetes) — testnet only",
         ],
         // Approved addition (2 sentences, see fundraising docs SOW §5) —
         // deliberately prose, not more bullets, to keep this a compression

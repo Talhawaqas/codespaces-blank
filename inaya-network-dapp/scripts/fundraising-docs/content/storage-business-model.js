@@ -29,7 +29,7 @@ export const storageBusinessModel = {
     kicker: "STRATEGIC BUSINESS MODEL",
     title: "DePIN Disruption Architecture",
     subtitle: "Enterprise-grade sovereign storage at Web2-commodity pricing.",
-    docLine: "Document INAYA-EXEC-2026-V2 · Classification Confidential · August 2026",
+    docLine: "Document INAYA-EXEC-2026-V2 · Classification Confidential · October 2026",
   },
   docId: "INAYA-EXEC-2026-V2",
   sections: [
@@ -159,7 +159,7 @@ export const storageBusinessModel = {
         },
         {
           type: "note",
-          text: "Fixed 30,000,000 total supply, consistently published across every prior team document and cross-checked here: the six allocations above sum to exactly 30,000,000 tokens.",
+          text: "Fixed 30,000,000 total supply, consistently published across every prior team document. The five allocations above sum to 29,000,000 tokens (96.7% of total supply); the remaining 1,000,000 INAYA (3.3%) is held unallocated pending a future allocation decision, not yet assigned to a named sector.",
         },
       ],
     },
@@ -183,7 +183,7 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, and four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation).",
+          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), Identity Integration with MSP multi-tenancy, an AI Bookkeeper, and a Managed Database/Document Intelligence/AI-ML Studio.",
         },
         {
           type: "note",
@@ -194,6 +194,11 @@ export const storageBusinessModel = {
           type: "note",
           label: "Secure Collaboration & Device Protection, October 2026.",
           text: "Two further additions to Business Workspace, both off by default per organization: a Filen/FileCloud-inspired Secure Collaboration suite (end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent for on-premises file servers), and an Internxt-inspired Device Protection suite (a hybrid post-quantum key-establishment layer combining classical X25519 with ML-KEM-768, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls). Neither changes the storage/DePIN revenue mechanics described above.",
+        },
+        {
+          type: "note",
+          label: "Sovereign Infrastructure, October 2026.",
+          text: "A third addition, structurally distinct from the storage/DePIN protocol above: a customer can now connect their own server and run real virtual machines, block storage, and private networking on it, managed from the Business Workspace, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. This is customer-owned hardware — it does not route through the storage network's node-reward economics described elsewhere in this document.",
         },
         {
           type: "note",

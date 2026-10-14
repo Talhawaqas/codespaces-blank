@@ -17,7 +17,7 @@ export const companyProfile = {
     kicker: "CORPORATE PROFILE",
     title: "Inaya Network",
     subtitle: "Re-establishing absolute client-side data sovereignty — Web3 infrastructure and DePIN, built on BNB Chain.",
-    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · September 2026",
+    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · October 2026",
   },
   docId: "INAYA-PROFILE-2026-V2",
   sections: [
@@ -89,6 +89,8 @@ export const companyProfile = {
             "Managed Database, Document Intelligence & AI/ML Studio — a real, provisioned PostgreSQL database, a general document-understanding studio for any document type (not just invoices), and an AI workbench for data cataloguing, quality checks, model registry, and one governed piece of code run at a time in a real, disposable, network-off-by-default sandbox — 26 real tests passing, including live runs against a real cloud sandbox.",
             "Secure Collaboration — end-to-end encrypted Secure Chat (MLS/RFC 9420) and Secure Notes, Sharing 2.0 (expiring/password-protected/watermarked links, file requests), enterprise Governance (classification, DLP, retention, legal hold), device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization, Filen/FileCloud-inspired.",
             "Device Protection — a hybrid post-quantum key-establishment layer (classical X25519 combined with ML-KEM-768), Inaya Cleaner (a local-only desktop duplicate/junk-file scanner, trash rather than permanent delete), and Inaya Meet (private peer-to-peer video calls reusing Secure Chat), consolidated with the existing backup/sync/device screens into one view — Internxt-inspired, hybrid and local-first by design, not a mainnet or fully-audited claim.",
+            "Vertical Sovereign OS products — purpose-built editions of the same Business Workspace foundation for Healthcare & Legal, Financial Services & Regulated Enterprise, and Government & Public Sector customers, each adding the compliance workflows and record types that vertical actually needs rather than a generic one-size-fits-all SaaS layer.",
+            "Sovereign Infrastructure — bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it from the Business Workspace, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates — each verified against real hardware. GPU passthrough, full AWS coverage, and TPM-backed execution remain explicitly out of scope today.",
           ],
         },
       ],

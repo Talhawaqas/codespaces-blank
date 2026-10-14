@@ -29,7 +29,7 @@ export const saasBusinessModel = {
     title: "Business Workspace: The SaaS Engine",
     subtitle:
       "A zero-knowledge, encrypted business collaboration platform — built on the same client-side encryption and decentralized storage infrastructure as Inaya's DePIN network, packaged as a recurring-revenue SaaS product for companies of every size.",
-    docLine: "Document INAYA-SAAS-BM-2026-V1 · Classification Confidential · August 2026",
+    docLine: "Document INAYA-SAAS-BM-2026-V1 · Classification Confidential · October 2026",
   },
   docId: "INAYA-SAAS-BM-2026-V1",
   sections: [
@@ -119,7 +119,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Four self-serve tiers, priced monthly or annually (17% discount on annual billing), each with a 14-day free trial. Enterprise is contact-sales only.",
+          text: "Three self-serve checkout tiers — Starter, Professional, and Business — priced monthly or annually (17% discount on annual billing), each with a 14-day free trial. Enterprise is shown at a published reference price below but is contact-sales only, not self-serve checkout.",
         },
         {
           type: "table",
@@ -137,7 +137,7 @@ export const saasBusinessModel = {
           items: [
             "Additional users — starting at $2.49/user/month",
             "Additional storage — $3.99/TB/month",
-            "Enterprise (50+ users or 50+ TB) — custom pricing via direct sales engagement",
+            "Beyond Enterprise's own listed capacity (25+ users or 10+ TB) — fully custom pricing via direct sales engagement",
           ],
         },
       ],
@@ -190,7 +190,7 @@ export const saasBusinessModel = {
             "Product-led growth. The 14-day free trial on every self-serve tier lets a company's own owner/admin activate and evaluate the product directly, without a sales conversation.",
             "Cross-promotion from the existing DePIN dApp. Wallet-connected users of Inaya's core network are shown Business Workspace directly inside the dApp, converting an already-engaged audience into a second product line.",
             "Regional partnership channel. A distribution relationship with a regional technology consultancy is in active development, including introductions to their existing enterprise client base — consistent with the channel strategy already outlined in the GTM Strategy document.",
-            "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, and any organization whose documents carry real confidentiality requirements.",
+            "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, managed service providers (as direct multi-tenant buyers, not just distribution partners, via Identity Integration's MSP support), and any organization whose documents carry real confidentiality requirements.",
           ],
         },
       ],
@@ -222,7 +222,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace ships in stages — the first six are live today; the rest extend it toward a full business operations platform.",
+          text: "Business Workspace ships in stages — every stage below is live today, extending it toward a full business operations platform.",
         },
         {
           type: "numbered",
@@ -236,10 +236,14 @@ export const saasBusinessModel = {
             { heading: "Institutional Trust Infrastructure — LIVE.", body: "A public Trust Center with client-side cryptographic verification of the audit chain; cross-organization trust primitives; a scoped API-key developer platform; a merged evidence-trail view for any record." },
             { heading: "Autonomous Resilience Layer — LIVE.", body: "Recovery capability that's automatically, continuously re-tested against real infrastructure using synthetic canary assets — never real customer data — on a daily schedule, with a plain five-state dashboard." },
             { heading: "Four New Business Primitives — LIVE.", body: "Inaya Sign (document signing with document/version-bound signatures and an optional on-chain completion anchor), DePIN Storage Manager (an org's own storage-node control plane), Milestone Escrow (an approval-gated, timelocked release workflow), and Financial Attestation (a cryptographic hash-commitment proof over real financial data)." },
-            { heading: "Business Intelligence — FUTURE.", body: "Reporting and analytics across everything stored in the workspace." },
+            { heading: "Business Intelligence — LIVE.", body: "KPI cards, period-over-period comparison, and business alerts computed from the same permission-scoped data every other module reads, plus trend charts on web (mobile has KPIs/alerts, trend charts not yet ported)." },
             { heading: "AI-Powered Business Operations — LIVE (guided, not autonomous).", body: "A real LLM-backed assistant that walks a user through a multi-step task one real step at a time — advancing only on real proof the step was completed, never on its own say-so, and with no path to creating a business record on its own. Any actual mutation it proposes still requires human approval and a built-in delay before it executes." },
             { heading: "Secure Collaboration Suite — LIVE (flag-gated).", body: "End-to-end encrypted Secure Chat (MLS/RFC 9420) and Secure Notes; Sharing 2.0 (expiring/password-protected/watermarked links, file requests); Governance (classification, DLP, retention, legal hold); device trust/block/revoke; and a Sovereign Gateway agent for on-premises file servers. Off by default per organization; the chat library has not had an independent security audit." },
             { heading: "Device Protection & Post-Quantum Key Establishment — LIVE (flag-gated).", body: "A hybrid key-establishment layer combining the existing classical X25519 exchange with ML-KEM-768 (additive, not a replacement of classical crypto); a local-only Cleaner that never uploads a file inventory; and Inaya Meet, private peer-to-peer video calls with a conservative default room size rather than a scalable SFU. Backup, sync, Cleaner, and device status are now one consolidated view." },
+            { heading: "Identity Integration & MSP Multi-Tenancy — LIVE.", body: "Microsoft Entra ID and on-premises Active Directory sign-in, SCIM user provisioning, a Rewst automation connector, and multi-tenant management for managed service providers, verified against a real Entra tenant and a real Windows Server AD domain controller." },
+            { heading: "AI Bookkeeper — LIVE.", body: "AI-assisted transaction categorization, reconciliation, and reporting on top of the existing Finance & HR layer, with every suggested entry reviewed and confirmed by a person before it posts." },
+            { heading: "Managed Database, Document Intelligence & AI/ML Studio — LIVE.", body: "A provisioned PostgreSQL database managed from inside the Business Workspace, a document-understanding studio for invoices, purchase orders, receipts and contracts, and an AI workbench for data cataloguing, model registration, and running one governed script at a time in an isolated, disposable sandbox." },
+            { heading: "Sovereign Infrastructure — LIVE.", body: "Bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. A structurally distinct revenue line from the SaaS seat/storage tiers above — the customer's own hardware, managed through Business Workspace." },
           ],
         },
       ],

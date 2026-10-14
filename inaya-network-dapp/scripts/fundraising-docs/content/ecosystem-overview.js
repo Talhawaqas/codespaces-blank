@@ -23,7 +23,7 @@ export const ecosystemOverview = {
     title: "The Inaya Ecosystem, End to End",
     subtitle:
       "How the storage protocol, the applications built on it, and the AI layer all fit together — the shape of the system, without the code.",
-    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · September 2026",
+    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · October 2026",
   },
   docId: "INAYA-OV-2026-V1",
   sections: [
@@ -936,6 +936,7 @@ export const ecosystemOverview = {
       ],
     },
     {
+      number: "35",
       title: "Post-Quantum Security, a Private Device Cleaner & Private Meetings (October 2026)",
       blocks: [
         {
@@ -959,6 +960,58 @@ export const ecosystemOverview = {
         {
           type: "note",
           text: "Verified against a real running server in a real browser — a pass that found and fixed two genuine bugs, including a meeting incorrectly reporting a failure for anyone without a camera, before this was written up. A real two-person video call with real cameras, and a real phone running the mobile app, are the two pieces still waiting on real-world hardware to confirm.",
+        },
+      ],
+    },
+    {
+      number: "36",
+      title: "Secure Collaboration & Enterprise Governance (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "A Filen/FileCloud-inspired expansion built across 26 workstreams: end-to-end encrypted Secure Chat on the MLS group-messaging standard (RFC 9420) and Secure Notes; Sharing 2.0 with expiring, password-protected and watermarked links plus inbound file requests; enterprise Governance (classification, data-loss prevention, retention, legal hold, a secure document viewer); device trust/block/revoke; and a Sovereign Gateway agent connecting a customer's own on-premises file servers — every feature off by default per organization.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "114 tracked deliverables across the whole suite, honestly split: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built by deliberate choice (mobile chat and push notifications), not an oversight.",
+            "The Sovereign Gateway, the NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant.",
+            "Readiness against the NIST 800-53 control catalogue is self-assessed; no third-party certification is claimed.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "The chat protocol's open-source library implementation has not had an independent security audit. This stage stays explicitly in-progress rather than claimed complete — the project's own final verification report says so plainly.",
+        },
+      ],
+    },
+    {
+      number: "37",
+      title: "Sovereign Infrastructure — Bring-Your-Own-Hardware Compute (October 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Inaya could always store and protect files, but had no way to actually run compute for a customer. This closes that gap: a customer connects their own server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — on hardware they own, not shared with anyone else, managed from inside the Business Workspace.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Real QEMU/KVM virtual machines, confirmed by a real guest OS genuinely booting and coming online with its own network address, not just an engine starting and stopping — the first VM in this project to ever do that.",
+            "Real qcow2 block storage with image-backed overlay disks, and a private, isolated network per customer with default-drop firewall rules and NAT.",
+            "A working subset of AWS CLI compatibility (the real, official `aws` command, authenticated with a real Inaya-issued key pair and real SigV4 signing) covering instance, volume and VPC lifecycle — not S3, IAM, or autoscaling.",
+            "A real HAProxy load balancer and real upstream Kubernetes (k3s, not a custom orchestrator), with a working kubeconfig handed to the customer's own `kubectl`.",
+            "Honest TPM and confidential-compute (SEV/TDX) hardware detection — detection only, same precedent as existing GPU detection.",
+          ],
+        },
+        {
+          type: "note",
+          label: "What this deliberately is not.",
+          text: "GPU passthrough, full AWS coverage (S3/IAM/autoscaling), HTTP-aware load balancing, and TPM-backed identity or real SEV/TDX execution are explicitly not built — each deferred for a stated, concrete reason (mainly: no dedicated GPU host exists to test real PCI passthrough against), not silently skipped.",
+        },
+        {
+          type: "note",
+          text: "82+ automated tests pass (30 Rust, 52 Node.js). Real hardware testing caught and fixed 7 genuine bugs a code review alone would have missed, including a pre-existing camelCase/snake_case wire-format mismatch in the node scheduler's capacity comparison and an SSH protocol ordering bug that silently truncated longer guest responses.",
         },
       ],
     },

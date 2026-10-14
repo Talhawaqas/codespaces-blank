@@ -22,7 +22,7 @@ export const enterpriseRevenueArchitecture = {
     kicker: "EXECUTIVE PRESENTATION DECK",
     title: "Enterprise Revenue & Node Reward Architecture",
     subtitle: "How a corporate storage payment actually flows through the protocol to a node operator's wallet.",
-    docLine: "Document INAYA-REV-2026-V2 · Classification Confidential · August 2026",
+    docLine: "Document INAYA-REV-2026-V2 · Classification Confidential · October 2026",
   },
   docId: "INAYA-REV-2026-V2",
   sections: [
@@ -91,7 +91,7 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          text: "Worked example, real tier: a 250 TB / Year Corporate Reserve customer pays 13,500 USDT/yr. At the 39% node-operator commission, that's 5,265 USDT/yr escrowed for the operator — 438.75 USDT/month across the 12 fixed releases, or roughly 14.63 USDT/day.",
+          text: "Worked example, real tier: a 250 TB / Year Corporate Reserve customer pays 13,500 USDT/yr. At the 39% node-operator commission, that's 5,265 USDT/yr escrowed for the operator — 438.75 USDT/month across the 12 fixed releases, or roughly 14.63 USDT/day under a 30-day-month convention (438.75 ÷ 30).",
         },
       ],
     },
@@ -187,6 +187,11 @@ export const enterpriseRevenueArchitecture = {
           type: "note",
           label: "Scope note, October 2026.",
           text: "Business Workspace's October additions — a Filen/FileCloud-inspired Secure Collaboration suite and an Internxt-inspired Device Protection suite (hybrid post-quantum key establishment, a local-only Cleaner, Inaya Meet) — are SaaS-side features with no on-chain revenue mechanics of their own; the settlement, escrow, and vesting flow described in this document is unchanged. See the companion SaaS Business Model document for where they fit in the SaaS revenue line instead.",
+        },
+        {
+          type: "note",
+          label: "Scope note, October 2026 — Sovereign Infrastructure.",
+          text: "Sovereign Infrastructure (bring-your-own-hardware virtual machines, storage, networking, AWS CLI compatibility, load balancing, and Kubernetes) also does not route through the 39% node-reward escrow this document describes: it runs on a customer's own hardware, not Inaya's storage node network, so there is no node operator to compensate for it. See the companion Storage Business Model document's October 2026 scope note for where this revenue line sits instead.",
         },
       ],
     },

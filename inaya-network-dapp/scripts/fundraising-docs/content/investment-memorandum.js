@@ -24,7 +24,7 @@ export const investmentMemorandum = {
     title: "Building the Sovereign Storage Layer",
     subtitle:
       "A DePIN protocol bridging Web2 enterprise infrastructure with Web3 sovereign storage — raising a Seed round to scale developer adoption and enterprise revenue.",
-    docLine: "Document INAYA-IM-2026-V1 · Classification Strictly Confidential · August 2026",
+    docLine: "Document INAYA-IM-2026-V1 · Classification Strictly Confidential · October 2026",
   },
   docId: "INAYA-IM-2026-V1",
   sections: [
@@ -36,7 +36,7 @@ export const investmentMemorandum = {
           type: "paragraphs",
           text: [
             "Inaya Network represents the next evolution in decentralized physical infrastructure networks (DePIN), targeting the $100B+ cloud storage sector. By bridging traditional Web2 enterprise environments and Web3 storage protocols, Inaya solves the critical bottlenecks of data sovereignty, vendor lock-in, and infrastructure vulnerability that plague centralized cloud providers.",
-            "We are raising Seed capital to aggressively expand our go-to-market strategy, secure enterprise partnerships, and scale our developer ecosystem. With our open-source framework and file management components fully active and mainnet applications reviewed and ready for deployment, Inaya is positioned to capture significant market share — offering a hybrid model that pairs BNB Chain's high-throughput execution with proprietary binary sharding and client-side encryption to guarantee zero-knowledge data persistence.",
+            "We are raising Seed capital to aggressively expand our go-to-market strategy, secure enterprise partnerships, and scale our developer ecosystem. With our open-source framework and file management components fully active on testnet and a growing enterprise SaaS layer already live, Inaya is positioned to capture significant market share — offering a hybrid model that pairs BNB Chain's high-throughput execution with proprietary binary sharding and client-side encryption to guarantee zero-knowledge data persistence.",
             "The transition from legacy architectures to distributed, resilient DePIN solutions is accelerating. Inaya leads by prioritizing developer experience and enterprise-grade billing logic — a suite of APIs, React components, and SDKs that make decentralized storage as intuitive as AWS S3, with unmatched security and economic efficiency.",
           ],
         },
@@ -154,6 +154,12 @@ export const investmentMemorandum = {
             // Resilience Layer SOWs, September 2026 — same factual,
             // no-financial-claims pattern as the lines above.
             "Institutional Trust Infrastructure & Autonomous Resilience — a public Trust Center (inayanetwork.com/trust) with client-side cryptographic verification of Inaya's own audit chain; cross-organization trust primitives; a scoped API-key developer platform; and recovery capability that's automatically re-tested daily against real infrastructure using system-owned synthetic assets, never real customer data.",
+            // New addition, Identity Integration + AI Bookkeeper + Managed
+            // DB/AI-ML Studio SOWs, September 2026 — same factual,
+            // no-financial-claims pattern as the lines above.
+            "Identity Integration & MSP Multi-Tenancy — Microsoft Entra ID and on-premises Active Directory sign-in, SCIM user provisioning, a Rewst automation connector, and multi-tenant management for managed service providers, verified against a real Entra tenant and a real Windows Server AD domain controller.",
+            "AI Bookkeeper — AI-assisted transaction categorization, reconciliation, and reporting on top of the existing Finance & HR layer, with every suggested entry reviewed and confirmed by a person before it posts.",
+            "Managed Database, Document Intelligence & AI/ML Studio — a provisioned PostgreSQL database managed from inside the Business Workspace, a document-understanding studio for invoices, purchase orders, receipts and contracts, and an AI workbench for data cataloguing, model registration, and running one governed script at a time in an isolated, disposable sandbox.",
             // New addition, September 2026 — Node Operator Dashboard,
             // four new business primitives, real OAuth, voice AI, and the
             // Business Workspace UX/UI makeover. Same factual pattern.
@@ -166,6 +172,10 @@ export const investmentMemorandum = {
             // same factual, hedged pattern: hybrid, not quantum-safe;
             // local-only; mesh, not an SFU.
             "Device Protection (October 2026) — a hybrid post-quantum key-establishment layer (classical X25519 combined with ML-KEM-768 via a domain-separated HKDF, additive to classical cryptography, not a replacement), Inaya Cleaner (a local-only desktop duplicate/junk-file scanner that never uploads a file inventory), and Inaya Meet (private peer-to-peer video calls reusing Secure Chat, with a conservative default room size rather than a scalable SFU). Device revocation now cascades to revoking that device's post-quantum keys.",
+            // New addition, Sovereign Infrastructure Fabric SOW, October
+            // 2026 — same factual, no-financial-claims pattern as the lines
+            // above.
+            "Sovereign Infrastructure (October 2026) — bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, managed from the Business Workspace. Includes a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates — each verified against real hardware, not simulated. GPU passthrough, full AWS coverage, and TPM-backed execution remain explicitly out of scope today.",
           ],
         },
         {
@@ -238,7 +248,7 @@ export const investmentMemorandum = {
           items: [
             "Architecture & metadata. A dual-layer system: file names, permissions, and shard maps are managed via a state-channel-like layer anchored to BNB Chain for rapid retrieval without burdening the L1; physical storage is distributed across independent nodes.",
             "Security & encryption. Client-side AES-GCM encryption before sharding guarantees node operators remain entirely blind to the data they host — true zero-knowledge storage.",
-            "BNB Chain integration. Low transaction costs and high throughput; sharding logic is inherently parallelized, so read/write speed scales linearly with network growth.",
+            "BNB Chain integration. Low transaction costs and high throughput; a 2-shard midpoint-bisection scheme splits storage and metadata load across the network's current shard topology.",
           ],
         },
       ],
@@ -284,7 +294,7 @@ export const investmentMemorandum = {
             },
             {
               heading: "Enterprise Partnerships.",
-              body: "Targeting mid-market companies optimizing infrastructure costs, particularly those migrating away from legacy virtualization (e.g. VMware) toward modern, distributed stacks.",
+              body: "Targeting mid-market companies optimizing infrastructure costs, particularly those migrating away from legacy virtualization (e.g. VMware) toward modern, distributed stacks — Inaya's own Sovereign Infrastructure (bring-your-own-hardware virtual machines, storage, and networking) gives this segment a direct landing spot, not just a storage pitch.",
             },
             {
               heading: "Community & Node Operators.",
