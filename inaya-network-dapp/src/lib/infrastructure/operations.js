@@ -46,7 +46,11 @@ async function cols() {
 
 const CIDR_RE = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
 
-async function enqueue({ orgId, clusterId, nodeId, type, resourceId, params, actorEmail }) {
+// Gap-closure round: exported so loadBalancers.js/k8sClusters.js can reuse
+// the exact same operation-dispatch chokepoint (audit entry included)
+// instead of re-implementing it — zero behavior change for existing
+// callers in this file.
+export async function enqueue({ orgId, clusterId, nodeId, type, resourceId, params, actorEmail }) {
   const { operations } = await cols();
   const operationId = crypto.randomUUID();
   const doc = {
@@ -143,6 +147,37 @@ export async function getVpc({ orgId, vpcId }) {
   return v;
 }
 
+/** Gap-closure round, Phase A: a deterministic static IPv4 inside this
+ *  VPC's own subnet for a guest-booting instance (DHCP was never built --
+ *  ledger INFRA-NET-006, deferred -- cloud-init's static network-config is
+ *  the real replacement). Atomically claims the next host octet so two
+ *  concurrent allocations can never collide; starts at .10 to leave the
+ *  gateway (.1, already assigned to the bridge in network::create_vpc) and
+ *  a small reserved range free. IPv4 /24-only, matching every other VPC
+ *  CIDR this codebase has ever actually created. */
+export async function allocateStaticIp({ orgId, vpcId }) {
+  const vpc = await getVpc({ orgId, vpcId });
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}\/(\d{1,2})$/.exec(vpc.cidr || "");
+  if (!match) throw new InfrastructureError(`VPC ${vpcId} has no usable IPv4 /24 CIDR for static IP allocation.`, { status: 409 });
+  const [, a, b, c, prefix] = match;
+  if (prefix !== "24") throw new InfrastructureError(`Static IP allocation currently only supports /24 VPCs (this VPC is /${prefix}).`, { status: 409 });
+  const { vpcs } = await cols();
+  const updated = await vpcs.findOneAndUpdate(
+    { orgId, vpcId },
+    { $inc: { nextHostOctet: 1 }, $setOnInsert: {} },
+    { returnDocument: "after" }
+  );
+  let octet = updated?.nextHostOctet;
+  if (!octet || octet < 10) {
+    // First allocation for a VPC created before this field existed, or
+    // the counter genuinely starting fresh.
+    await vpcs.updateOne({ orgId, vpcId }, { $set: { nextHostOctet: 10 } });
+    octet = 10;
+  }
+  if (octet > 254) throw new InfrastructureError(`VPC ${vpcId}'s /24 subnet has no remaining static addresses.`, { status: 409 });
+  return { staticIp: `${a}.${b}.${c}.${octet}`, gatewayIp: `${a}.${b}.${c}.1` };
+}
+
 export async function deleteVpc({ orgId, membership, vpcId }) {
   const vpc = await getVpc({ orgId, vpcId });
   const { instances } = await cols();
@@ -210,6 +245,65 @@ export async function createInstance({ orgId, membership, clusterId, nodeId, nam
     actorEmail: membership?.email,
   });
   return { instanceId, state: "PROVISIONING", nodeId, schedulingReason: schedule?.reason || "explicitly requested node" };
+}
+
+// ---------------------------------------------------------------------------
+// Guest-booting compute instances (gap-closure round, Phase A/D) -- unlike
+// createInstance() above (blank or no disk, never boots an actual OS), this
+// provisions a real base-cloud-image-backed overlay with a real cloud-init
+// seed over BOOT_GUEST_INSTANCE, the node's new real guest-boot operation.
+// Requires a VPC (a guest needs a real static IP to reach -- see
+// allocateStaticIp above) and currently only this project's one supported
+// base image size class.
+// ---------------------------------------------------------------------------
+
+export async function createGuestInstance({ orgId, membership, clusterId, nodeId, name, vcpu = 2, memoryMib = 2048, sizeGib, vpcId, role = "plain", k3sServerUrl, k3sToken }) {
+  await getCluster({ orgId, clusterId });
+  if (!name) throw new InfrastructureError("name is required.", { status: 400 });
+  if (!vpcId) throw new InfrastructureError("vpcId is required -- a guest-booting instance needs a real static IP to be reachable.", { status: 400 });
+  if (!["plain", "k8s-server", "k8s-agent"].includes(role)) throw new InfrastructureError(`Unknown role "${role}".`, { status: 400 });
+  if (role === "k8s-agent" && (!k3sServerUrl || !k3sToken)) {
+    throw new InfrastructureError("k3sServerUrl and k3sToken are required for a k8s-agent instance.", { status: 400 });
+  }
+
+  let schedule = null;
+  if (!nodeId) {
+    schedule = await scheduleNode({ orgId, clusterId, vcpu, memoryMib });
+    nodeId = schedule.nodeId;
+  }
+  const vpc = await getVpc({ orgId, vpcId });
+  if (vpc.status !== "AVAILABLE") throw new InfrastructureError(`VPC is not AVAILABLE (status: ${vpc.status}).`, { status: 409 });
+  const { staticIp, gatewayIp } = await allocateStaticIp({ orgId, vpcId });
+
+  const { instances } = await cols();
+  const instanceId = crypto.randomUUID();
+  await instances.insertOne({
+    instanceId,
+    orgId,
+    clusterId,
+    nodeId,
+    name,
+    vcpu,
+    memoryMib,
+    volumeId: null,
+    vpcId,
+    staticIp,
+    role,
+    bootsRealGuestOs: true,
+    state: "PROVISIONING",
+    createdAt: new Date(),
+    createdBy: membership?.email || null,
+  });
+  await enqueue({
+    orgId,
+    clusterId,
+    nodeId,
+    type: "BOOT_GUEST_INSTANCE",
+    resourceId: instanceId,
+    params: { instanceId, name, vcpu, memoryMib, sizeGib: sizeGib || undefined, vpcId, securityGroupRules: vpc.securityGroupRules || [], staticIp, gatewayIp, role, k3sServerUrl, k3sToken },
+    actorEmail: membership?.email,
+  });
+  return { instanceId, state: "PROVISIONING", nodeId, staticIp, schedulingReason: schedule?.reason || "explicitly requested node" };
 }
 
 async function instanceAction(action, { orgId, membership, instanceId }) {
@@ -304,6 +398,15 @@ export async function completeOperation({ signedToken, operationId, status, resu
       break;
     case "TERMINATE_INSTANCE":
       await instances.updateOne({ orgId, instanceId: op.resourceId }, { $set: { state: ok ? "TERMINATED" : "ERROR" } });
+      break;
+    case "BOOT_GUEST_INSTANCE":
+      // Gap-closure round: same RUNNING/ERROR reflection as CREATE_INSTANCE.
+      // The real k3sNodeToken/kubeconfig a successful k8s-server boot
+      // returns stay on this operation's own `result` field (set just
+      // above) -- k8sClusters.js reads it back from there rather than this
+      // file reaching into k8s-specific storage, the same layering this
+      // codebase already keeps between operations.js and its callers.
+      await instances.updateOne({ orgId, instanceId: op.resourceId }, { $set: { state: ok ? "RUNNING" : "ERROR" } });
       break;
     default:
       break;

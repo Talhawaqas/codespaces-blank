@@ -32,7 +32,12 @@ const TABS = [
   { key: "compute", label: "Compute" },
   { key: "volumes", label: "Volumes" },
   { key: "networks", label: "Networks" },
+  { key: "k8s", label: "Kubernetes" },
+  { key: "aws", label: "AWS CLI" },
+  { key: "lb", label: "Load Balancers" },
 ];
+
+const K8S_STATUS_COLOR = { PROVISIONING_SERVER: "text-yellow-400", SERVER_READY: "text-green-400", ERROR: "text-red-400", DELETED: "text-slate-500" };
 
 const HEALTH_COLOR = { ACTIVE: "text-green-400", PENDING: "text-yellow-400", UNAVAILABLE: "text-red-400", REVOKED: "text-red-400", UNKNOWN: "text-slate-500" };
 
@@ -44,6 +49,9 @@ export default function InfrastructureView({ orgId, canManage }) {
   const [instances, setInstances] = useState([]);
   const [volumes, setVolumes] = useState([]);
   const [vpcs, setVpcs] = useState([]);
+  const [k8sClusters, setK8sClusters] = useState([]);
+  const [awsKeys, setAwsKeys] = useState([]);
+  const [loadBalancers, setLoadBalancers] = useState([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -58,21 +66,30 @@ export default function InfrastructureView({ orgId, canManage }) {
   const loadAll = useCallback(async () => {
     if (!selectedCluster) return;
     try {
-      const [n, i, v, p] = await Promise.all([
+      const [n, i, v, p, k, l] = await Promise.all([
         j(`/api/orgs/infrastructure/nodes?orgId=${orgId}&clusterId=${selectedCluster}`),
         j(`/api/orgs/infrastructure/compute/instances?orgId=${orgId}&clusterId=${selectedCluster}`),
         j(`/api/orgs/infrastructure/volumes?orgId=${orgId}&clusterId=${selectedCluster}`),
         j(`/api/orgs/infrastructure/networks?orgId=${orgId}&clusterId=${selectedCluster}`),
+        j(`/api/orgs/infrastructure/k8s-clusters?orgId=${orgId}&clusterId=${selectedCluster}`),
+        j(`/api/orgs/infrastructure/load-balancers?orgId=${orgId}&clusterId=${selectedCluster}`),
       ]);
       setNodes(n.nodes || []);
       setInstances(i.instances || []);
       setVolumes(v.volumes || []);
       setVpcs(p.vpcs || []);
+      setK8sClusters(k.k8sClusters || []);
+      setLoadBalancers(l.loadBalancers || []);
     } catch (e) { setError(e.message); }
   }, [orgId, selectedCluster]);
 
+  const loadAwsKeys = useCallback(async () => {
+    try { const r = await j(`/api/orgs/infrastructure/aws-credentials?orgId=${orgId}`); setAwsKeys(r.accessKeys || []); } catch (e) { setError(e.message); }
+  }, [orgId]);
+
   useEffect(() => { loadClusters(); }, [loadClusters]);
   useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { loadAwsKeys(); }, [loadAwsKeys]);
 
   const createCluster = async () => {
     const name = prompt("Cluster name?");
@@ -125,6 +142,82 @@ export default function InfrastructureView({ orgId, canManage }) {
     if (!cidr) return;
     setBusy(true);
     try { await j(`/api/orgs/infrastructure/networks`, { method: "POST", body: JSON.stringify({ orgId, clusterId: selectedCluster, nodeId, cidr }) }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const createK8sCluster = async () => {
+    const nodeId = nodes.find((n) => n.status === "ACTIVE")?.nodeId;
+    if (!nodeId) return setError("No ACTIVE node available for this cluster.");
+    const vpc = vpcs.find((p) => p.status === "AVAILABLE");
+    if (!vpc) return setError("A network (VPC) is required first -- create one on the Networks tab.");
+    if (!confirm(`Create a k3s Kubernetes server on network ${vpc.cidr}? This boots a real guest OS and runs the real k3s installer -- it can take a few minutes.`)) return;
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/k8s-clusters`, { method: "POST", body: JSON.stringify({ orgId, clusterId: selectedCluster, nodeId, vpcId: vpc.vpcId }) }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const addK8sAgent = async (k8sClusterId) => {
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/k8s-clusters/${k8sClusterId}/agents`, { method: "POST", body: JSON.stringify({ orgId }) }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const deleteK8sCluster = async (k8sClusterId) => {
+    if (!confirm("Delete this Kubernetes cluster? This terminates its server and agent instances.")) return;
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/k8s-clusters/${k8sClusterId}`, { method: "DELETE" }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const downloadKubeconfig = (k8sClusterId) => {
+    window.open(`/api/orgs/infrastructure/k8s-clusters/${k8sClusterId}/kubeconfig?orgId=${orgId}`, "_blank");
+  };
+
+  const createAwsAccessKey = async () => {
+    setBusy(true);
+    try {
+      const r = await j(`/api/orgs/infrastructure/aws-credentials`, { method: "POST", body: JSON.stringify({ orgId }) });
+      const endpoint = typeof window !== "undefined" ? `${window.location.origin}/api/aws-ec2` : "<this app's URL>/api/aws-ec2";
+      alert(
+        `AWS access key (shown once -- save it now):\n\n` +
+        `Access Key ID: ${r.accessKeyId}\n` +
+        `Secret Access Key: ${r.secretAccessKey}\n\n` +
+        `Configure the real AWS CLI:\n` +
+        `aws configure --profile inaya\n` +
+        `  (enter the key/secret above, region e.g. us-east-1)\n\n` +
+        `Then call it with:\n` +
+        `aws ec2 describe-instances --profile inaya --endpoint-url ${endpoint}`
+      );
+      await loadAwsKeys();
+    } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const revokeAwsAccessKey = async (accessKeyId) => {
+    if (!confirm(`Revoke access key ${accessKeyId}? Any aws-cli profile using it will stop working immediately.`)) return;
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/aws-credentials/${accessKeyId}`, { method: "DELETE" }); await loadAwsKeys(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const createLoadBalancer = async () => {
+    const nodeId = nodes.find((n) => n.status === "ACTIVE")?.nodeId;
+    if (!nodeId) return setError("No ACTIVE node available for this cluster.");
+    const staticInstances = instances.filter((i) => i.bootsRealGuestOs && i.state === "RUNNING");
+    if (staticInstances.length === 0) return setError("No running guest-booting instances to target -- a load balancer needs at least one real (static-IP) instance, e.g. a Kubernetes agent or a plain guest-boot instance.");
+    const listenPort = Number(prompt("Listen port?", "8080"));
+    const targetPort = Number(prompt("Target port on each instance?", "80"));
+    if (!listenPort || !targetPort) return;
+    const idsCsv = prompt(`Target instance IDs, comma-separated (available: ${staticInstances.map((i) => i.instanceId.slice(0, 8)).join(", ")}):`, staticInstances.map((i) => i.instanceId).join(","));
+    if (!idsCsv) return;
+    const targetInstanceIds = idsCsv.split(",").map((s) => s.trim()).filter(Boolean);
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/load-balancers`, { method: "POST", body: JSON.stringify({ orgId, clusterId: selectedCluster, nodeId, listenPort, targetInstanceIds, targetPort }) }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const deleteLoadBalancer = async (lbId) => {
+    if (!confirm("Delete this load balancer?")) return;
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/load-balancers/${lbId}`, { method: "DELETE" }); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  const syncLoadBalancer = async (lbId) => {
+    setBusy(true);
+    try { await j(`/api/orgs/infrastructure/load-balancers/${lbId}?orgId=${orgId}`); await loadAll(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
 
   const totalCapacity = nodes.reduce((acc, n) => {
@@ -233,6 +326,73 @@ export default function InfrastructureView({ orgId, canManage }) {
             <div key={v.volumeId} className={card}>
               <div className="flex justify-between"><span className="font-semibold">{v.volumeId.slice(0, 8)}</span><span className={`text-xs ${muted}`}>{v.status}</span></div>
               <div className={`text-xs ${muted} mt-1`}>{v.sizeGib} GiB · node {v.nodeId.slice(0, 8)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "k8s" && (
+        <div className="space-y-2">
+          {canManage && selectedCluster && <button className={btnPrimary} disabled={busy} onClick={createK8sCluster}>+ New Kubernetes cluster</button>}
+          {k8sClusters.length === 0 && <p className={`text-sm ${muted}`}>No Kubernetes clusters in this cluster. Real k3s running on real guest VMs -- not a simulation.</p>}
+          {k8sClusters.map((k) => (
+            <div key={k.k8sClusterId} className={card}>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">k3s on {k.serverStaticIp}</span>
+                <span className={`text-xs font-bold ${K8S_STATUS_COLOR[k.status] || "text-slate-400"}`}>{k.status}</span>
+              </div>
+              <div className={`text-xs ${muted} mt-1`}>{k.agentInstanceIds?.length || 0} agent node(s) · API {k.kubeApiEndpoint}</div>
+              {k.status === "ERROR" && k.errorMessage && <div className="text-xs text-red-400 mt-1">{k.errorMessage}</div>}
+              {canManage && (
+                <div className="flex gap-2 mt-2">
+                  {k.status === "SERVER_READY" && <button className={btn} disabled={busy} onClick={() => downloadKubeconfig(k.k8sClusterId)}>Download kubeconfig</button>}
+                  {k.status === "SERVER_READY" && <button className={btn} disabled={busy} onClick={() => addK8sAgent(k.k8sClusterId)}>+ Add agent</button>}
+                  <button className={btn} disabled={busy} onClick={() => deleteK8sCluster(k.k8sClusterId)}>Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "lb" && (
+        <div className="space-y-2">
+          <p className={`text-xs ${muted}`}>Real HAProxy processes on your node, balancing across real guest-booting instances -- not a simulated proxy.</p>
+          {canManage && selectedCluster && <button className={btnPrimary} disabled={busy} onClick={createLoadBalancer}>+ New load balancer</button>}
+          {loadBalancers.length === 0 && <p className={`text-sm ${muted}`}>No load balancers in this cluster.</p>}
+          {loadBalancers.map((l) => (
+            <div key={l.lbId} className={card}>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">:{l.listenPort} &rarr; :{l.targetPort}</span>
+                <span className={`text-xs font-bold ${l.status === "ACTIVE" ? "text-green-400" : l.status === "ERROR" ? "text-red-400" : "text-yellow-400"}`}>{l.status}</span>
+              </div>
+              <div className={`text-xs ${muted} mt-1`}>{l.targetInstanceIds?.length || 0} target(s) · node {l.nodeId.slice(0, 8)}</div>
+              {l.status === "ERROR" && l.errorMessage && <div className="text-xs text-red-400 mt-1">{l.errorMessage}</div>}
+              {canManage && (
+                <div className="flex gap-2 mt-2">
+                  {["CREATING", "UPDATING", "DELETING"].includes(l.status) && <button className={btn} disabled={busy} onClick={() => syncLoadBalancer(l.lbId)}>Refresh status</button>}
+                  <button className={btn} disabled={busy} onClick={() => deleteLoadBalancer(l.lbId)}>Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "aws" && (
+        <div className="space-y-2">
+          <p className={`text-xs ${muted}`}>Real AWS CLI/SDK compatibility -- a tested subset (RunInstances, DescribeInstances, Start/Stop/TerminateInstances, volumes, networks), not full AWS coverage.</p>
+          {canManage && <button className={btnPrimary} disabled={busy} onClick={createAwsAccessKey}>+ New access key</button>}
+          {awsKeys.length === 0 && <p className={`text-sm ${muted}`}>No AWS access keys yet.</p>}
+          {awsKeys.map((k) => (
+            <div key={k.accessKeyId} className={card}>
+              <div className="flex justify-between"><span className="font-semibold">{k.accessKeyId}</span><span className={`text-xs ${k.status === "ACTIVE" ? "text-green-400" : "text-red-400"}`}>{k.status}</span></div>
+              <div className={`text-xs ${muted} mt-1`}>created {when(k.createdAt)}{k.revokedAt ? ` · revoked ${when(k.revokedAt)}` : ""}</div>
+              {canManage && k.status === "ACTIVE" && (
+                <div className="flex gap-2 mt-2">
+                  <button className={btn} disabled={busy} onClick={() => revokeAwsAccessKey(k.accessKeyId)}>Revoke</button>
+                </div>
+              )}
             </div>
           ))}
         </div>

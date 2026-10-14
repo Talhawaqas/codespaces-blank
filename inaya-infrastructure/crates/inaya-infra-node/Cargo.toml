@@ -1,0 +1,36 @@
+[package]
+name = "inaya-infra-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "inaya_infra_node"
+path = "src/lib.rs"
+
+[[bin]]
+name = "inaya-infra-node"
+path = "src/main.rs"
+
+[dependencies]
+api-types = { path = "../api-types" }
+certificates = { path = "../certificates" }
+telemetry = { path = "../telemetry" }
+compute = { path = "../compute" }
+block = { path = "../block" }
+network = { path = "../network" }
+guest-exec = { path = "../guest-exec" }
+loadbalancer = { path = "../loadbalancer" }
+tokio.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+chrono.workspace = true
+clap.workspace = true
+
+[dev-dependencies]
+uuid.workspace = true

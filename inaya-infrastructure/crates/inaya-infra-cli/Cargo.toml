@@ -1,0 +1,19 @@
+[package]
+name = "inaya-infra-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "inaya-infra"
+path = "src/main.rs"
+
+[dependencies]
+inaya-infra-node = { path = "../inaya-infra-node" }
+api-types = { path = "../api-types" }
+clap.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+hostname = "0.4"

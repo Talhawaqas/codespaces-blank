@@ -1,0 +1,18 @@
+[package]
+name = "guest-exec"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait = "0.1"
+russh.workspace = true
+russh-keys.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+uuid.workspace = true
