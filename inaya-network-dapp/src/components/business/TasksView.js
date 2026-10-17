@@ -26,6 +26,7 @@ import Modal from "./ui/Modal";
 import StatusBadge, { STATUS_TONE } from "./ui/StatusBadge";
 import FormField from "./ui/FormField";
 import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
+import RecordSharingPanel from "./RecordSharingPanel";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -472,6 +473,7 @@ function TaskDetailModal({ orgId, taskId, canManage, email, onClose, onChanged }
             </div>
           )}
         </div>
+        <RecordSharingPanel orgId={orgId} basePath={`/api/orgs/tasks/${taskId}`} idPrefix="task-share" />
       </div>
     </Modal>
   );

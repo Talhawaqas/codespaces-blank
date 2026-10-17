@@ -19,8 +19,9 @@ const resendKey = () => process.env.RESEND_API_KEY;
 const fromEmail = () => process.env.EMAIL_FROM || "Inaya Network <onboarding@resend.dev>";
 
 // `headers` (for example Message-ID / In-Reply-To, so replies thread safely) and `replyTo` are optional and
-// additive: every existing caller is unchanged.
-export async function sendEmail({ to, subject, html, text, headers, replyTo }) {
+// additive: every existing caller is unchanged. `attachments` ([{ filename, content (base64), contentType }],
+// e.g. a calendar invite) is passed straight to Resend.
+export async function sendEmail({ to, subject, html, text, headers, replyTo, attachments }) {
   const RESEND_API_KEY = resendKey(); const FROM_EMAIL = fromEmail();
   if (!RESEND_API_KEY) {
     console.warn(`sendEmail: RESEND_API_KEY not set — skipping real delivery to ${to}. Set RESEND_API_KEY in .env.local to enable.`);
@@ -31,7 +32,7 @@ export async function sendEmail({ to, subject, html, text, headers, replyTo }) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html, text, ...(headers ? { headers } : {}), ...(replyTo ? { reply_to: replyTo } : {}) }),
+      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html, text, ...(headers ? { headers } : {}), ...(replyTo ? { reply_to: replyTo } : {}), ...(attachments?.length ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, ...(a.contentType ? { content_type: a.contentType } : {}) })) } : {}) }),
     });
     if (!res.ok) {
       // Status only — never the response body, this call carries our API key

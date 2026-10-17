@@ -57,6 +57,7 @@ import { documentVisibilityFilter } from "./documentAutomation/visibility.js";
 import { randomBytes, createHash } from "node:crypto";
 import { getOrgCollections, canManageOrg, canAccessDepartment, canAccessFinance, canAccessHR, canAccessHealthRecords, canAccessLegalMatters, canAccessFinancialEntities, toObjectId } from "./orgs.js";
 import { logDocumentActivity } from "./activity-log.js";
+import { filterVisibleRecords } from "./record-grants.js";
 
 export const PERMISSION_LEVELS = ["VIEW", "EDIT", "MANAGE"];
 export const ACCESS_LEVELS = ["PRIVATE", "DEPARTMENT", "PROJECT"];
@@ -214,8 +215,11 @@ export async function getAccessibleScope({ orgId, membership, email }) {
   // is the whole permission story for Phase 1), so project-membership
   // visibility via the same projectIds above is sufficient, no bulk-access
   // resolution step needed the way documents require.
+  // Batch 2: a task or deal marked PRIVATE is further limited to its insiders
+  // and explicit grantees (record-grants.js). Records without `visibility`
+  // pass straight through, so department-wide behavior is unchanged.
   const visibleTasks = projectIds.length
-    ? await tasks.find({ orgId: orgObjectId, projectId: { $in: projectIds }, deletedAt: null }).sort({ createdAt: -1 }).toArray()
+    ? await filterVisibleRecords({ orgId, recordType: "TASK", membership, email, records: await tasks.find({ orgId: orgObjectId, projectId: { $in: projectIds }, deletedAt: null }).sort({ createdAt: -1 }).toArray() })
     : [];
 
   // Business Operations, Phases 2-4 (CRM/Procurement/Inventory) — none of
@@ -226,7 +230,7 @@ export async function getAccessibleScope({ orgId, membership, email }) {
   const deptScopedQuery = (extra = {}) => (visibleDeptIds.length ? { orgId: orgObjectId, departmentId: { $in: visibleDeptIds }, deletedAt: null, ...extra } : null);
   const [visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts] = await Promise.all([
     visibleDeptIds.length ? crmContacts.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
-    visibleDeptIds.length ? crmDeals.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
+    visibleDeptIds.length ? crmDeals.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray().then((records) => filterVisibleRecords({ orgId, recordType: "DEAL", membership, email, records })) : [],
     visibleDeptIds.length ? suppliers.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
     visibleDeptIds.length ? purchaseRequests.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],
     visibleDeptIds.length ? purchaseOrders.find(deptScopedQuery()).sort({ createdAt: -1 }).toArray() : [],

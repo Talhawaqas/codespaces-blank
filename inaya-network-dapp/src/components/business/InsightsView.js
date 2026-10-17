@@ -112,6 +112,11 @@ export default function InsightsView({ orgId, canManage, onNavigate }) {
         <button onClick={applyCustomRange} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#00f2fe]/15 text-[#00f2fe]">Apply</button>
         {activeRange && <button onClick={resetToPresets} className="px-3 py-1.5 text-xs font-bold rounded-lg text-[var(--inaya-text-muted)] border border-white/5">Reset</button>}
       </div>
+      <a
+        href={`/api/orgs/insights?orgId=${orgId}&${activeRange ? `startDate=${activeRange.startDate}&endDate=${activeRange.endDate}` : `periodDays=${periodDays}`}&format=csv`}
+        download
+        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#00f2fe]/15 text-[#00f2fe]"
+      >↓ Export CSV</a>
       {rangeError && <p className="text-red-400 text-[11px] font-semibold w-full">{rangeError}</p>}
       {activeRange && !rangeError && <p className="text-[#00f2fe] text-[11px] font-semibold w-full">Showing {activeRange.startDate} to {activeRange.endDate}</p>}
     </div>

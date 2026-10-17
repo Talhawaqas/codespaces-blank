@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
 import { listOrgActivityForRecord } from "../../../../../../lib/org-activity-log.js";
+import { canAccessRecord } from "../../../../../../lib/record-grants.js";
 
 export async function GET(req, { params }) {
   try {
@@ -22,7 +23,7 @@ export async function GET(req, { params }) {
     const { tasks } = await getOrgCollections();
     const task = await tasks.findOne({ _id: toObjectId(taskId), orgId: toObjectId(orgId) });
     if (!task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
-    if (!canAccessDepartment(auth.membership, task.departmentId)) {
+    if (!canAccessDepartment(auth.membership, task.departmentId) || !(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership: auth.membership, email: auth.session.email }))) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
 

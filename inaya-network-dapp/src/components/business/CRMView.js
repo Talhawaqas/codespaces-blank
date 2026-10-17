@@ -20,6 +20,7 @@ import Modal from "./ui/Modal";
 import StatusBadge from "./ui/StatusBadge";
 import FormField from "./ui/FormField";
 import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
+import RecordSharingPanel from "./RecordSharingPanel";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -309,6 +310,7 @@ function ContactDetailModal({ orgId, contact, onClose, onChanged }) {
         <button onClick={toggleType} disabled={saving} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">
           {saving ? "…" : contact.type === "LEAD" ? "Convert to Customer" : "Revert to Lead"}
         </button>
+        <ContactActivityPanel orgId={orgId} contact={contact} />
       </div>
     </Modal>
   );
@@ -502,8 +504,105 @@ function DealDetailModal({ orgId, dealId, onClose, onChanged }) {
           )}
         </div>
         {error && <p className="text-red-400 text-xs">{error}</p>}
+        <RecordSharingPanel orgId={orgId} basePath={`/api/orgs/crm/deals/${dealId}`} idPrefix="deal-share" />
       </div>
     </Modal>
+  );
+}
+
+// ============================================================
+// CONTACT ACTIVITY — explainable lead score, timeline, log a note or call,
+// email from CRM (outbound only) and calendar invites (lib/crm-activity.js).
+// ============================================================
+const BAND_TONE = { HOT: "text-red-400 border-red-400/40 bg-red-400/10", WARM: "text-amber-400 border-amber-400/40 bg-amber-400/10", COLD: "text-[#4facfe] border-[#4facfe]/40 bg-[#4facfe]/10" };
+const ACTIVITY_ICON = { NOTE: "📝", CALL: "📞", MEETING: "📅", EMAIL: "✉️" };
+
+function ContactActivityPanel({ orgId, contact }) {
+  const [data, setData] = useState(null);
+  const [mode, setMode] = useState(null); // NOTE | CALL | EMAIL | MEETING
+  const [form, setForm] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const base = `/api/orgs/crm/contacts/${contact.id}`;
+
+  const load = useCallback(async () => {
+    try { setData(await api(`${base}/activities?orgId=${orgId}`)); } catch (err) { setError(err.message); }
+  }, [orgId, base]);
+  useEffect(() => { load(); }, [load]);
+
+  const field = (k) => ({ value: form[k] ?? "", onChange: (e) => setForm((f) => ({ ...f, [k]: e.target.value })) });
+  async function submit() {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      if (mode === "NOTE" || mode === "CALL") {
+        await api(`${base}/activities`, { method: "POST", body: JSON.stringify({ orgId, type: mode, subject: form.subject, body: form.body, durationMinutes: form.duration ? Number(form.duration) : undefined }) });
+      } else if (mode === "EMAIL") {
+        const r = await api(`${base}/email`, { method: "POST", body: JSON.stringify({ orgId, subject: form.subject, body: form.body }) });
+        setNotice(r.sent ? "Email sent." : `Logged, but not sent (${r.reason || "mail not configured"}).`);
+      } else if (mode === "MEETING") {
+        const r = await api(`${base}/meetings`, {
+          method: "POST",
+          body: JSON.stringify({ orgId, subject: form.subject, start: form.start ? new Date(form.start).toISOString() : "", durationMinutes: Number(form.duration) || 30, location: form.location, description: form.body, attendeeEmails: (form.attendees || "").split(/[,\s]+/).filter(Boolean) }),
+        });
+        const sent = r.deliveries.filter((d) => d.sent).length;
+        setNotice(`Invite sent to ${sent} of ${r.deliveries.length} recipient${r.deliveries.length === 1 ? "" : "s"}.`);
+      }
+      setMode(null); setForm({}); await load();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
+
+  if (!data) return error ? <p className="text-red-400 text-xs">{error}</p> : <p className="text-[var(--inaya-text-muted)] font-mono text-xs">Loading activity…</p>;
+  const { score, activities } = data;
+  const btn = "text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40";
+
+  return (
+    <div className="space-y-3 border-t border-white/10 pt-3">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${BAND_TONE[score.band]}`}>{score.band} · {score.score}/100</span>
+          <span className="text-[10px] uppercase font-bold text-[var(--inaya-text-muted)]">Lead score</span>
+        </div>
+        {score.reasons.length > 0 && <p className="text-[11px] text-[var(--inaya-text-muted)]">{score.reasons.map((r) => `+${r.points} ${r.label}`).join(" · ")}</p>}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {[["NOTE", "Add note"], ["CALL", "Log call"], ["EMAIL", "Send email"], ["MEETING", "Schedule meeting"]].map(([m, l]) => (
+          <button key={m} disabled={busy || (m === "EMAIL" && !contact.email)} title={m === "EMAIL" && !contact.email ? "This contact has no email address." : undefined} onClick={() => { setMode(mode === m ? null : m); setForm({}); setError(""); }} className={btn}>{l}</button>
+        ))}
+      </div>
+      {mode && (
+        <div className="space-y-1.5">
+          {mode !== "NOTE" && <input id="crm-activity-subject" placeholder={mode === "CALL" ? "Call summary" : "Subject"} {...field("subject")} className={`${inputCls} w-full`} />}
+          {mode === "MEETING" && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <input id="crm-meeting-start" type="datetime-local" aria-label="Start" {...field("start")} className={inputCls} />
+              <input id="crm-meeting-duration" inputMode="numeric" placeholder="Minutes (30)" {...field("duration")} className={inputCls} />
+              <input id="crm-meeting-location" placeholder="Location or video link" {...field("location")} className={`${inputCls} col-span-2`} />
+              <input id="crm-meeting-attendees" placeholder="Other attendees (emails, comma-separated)" {...field("attendees")} className={`${inputCls} col-span-2`} />
+            </div>
+          )}
+          {mode === "CALL" && <input id="crm-call-duration" inputMode="numeric" placeholder="Duration (minutes)" {...field("duration")} className={`${inputCls} w-full`} />}
+          <textarea id="crm-activity-body" rows={3} placeholder={mode === "EMAIL" ? "Message" : mode === "MEETING" ? "Agenda (optional)" : "Notes"} {...field("body")} className={`${inputCls} w-full`} />
+          {mode === "EMAIL" && <p className="text-[10px] text-[var(--inaya-text-muted)]">Sent from Inaya with your address as reply-to. Replies arrive in your own inbox.</p>}
+          <button disabled={busy} onClick={submit} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{busy ? "…" : mode === "EMAIL" ? "Send" : mode === "MEETING" ? "Send invite" : "Save"}</button>
+        </div>
+      )}
+      {notice && <p className="text-emerald-400 text-xs">{notice}</p>}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {activities.length === 0 ? <p className="text-[11px] text-[var(--inaya-text-muted)]">No activity logged yet.</p> : (
+        <ul className="space-y-2 max-h-64 overflow-y-auto">
+          {activities.map((a) => (
+            <li key={a.id} className="text-xs">
+              <p className="text-[var(--inaya-text-primary)]">{ACTIVITY_ICON[a.type]} <span className="font-bold">{a.subject || a.type.toLowerCase()}</span>{a.delivery === "NOT_SENT" && <span className="text-amber-400"> · not sent</span>}</p>
+              <p className="text-[10px] font-mono text-[var(--inaya-text-muted)]">{new Date(a.at).toLocaleString()}{a.durationMinutes ? ` · ${a.durationMinutes} min` : ""} · {a.createdByEmail}
+                {a.hasInvite && <> · <a href={`${base}/meetings?orgId=${orgId}&activityId=${a.id}`} className="text-[#00f2fe]">invite.ics</a></>}
+              </p>
+              {a.body && <p className="text-[11px] text-[var(--inaya-text-muted)] whitespace-pre-wrap">{a.body}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

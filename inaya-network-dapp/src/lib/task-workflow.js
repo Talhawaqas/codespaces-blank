@@ -28,6 +28,7 @@
 // retrofit of the document-scoped one.
 
 import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
+import { canAccessRecord } from "./record-grants.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { findOpenBlockers, findOpenSubtasks, spawnNextOccurrence } from "./task-relations.js";
 
@@ -65,6 +66,13 @@ export async function transitionTask({ orgId, taskId, action, membership, actorE
   }
   if (!canAccessDepartment(membership, task.departmentId)) {
     return { error: "You don't have permission to do that.", status: 403 };
+  }
+  // Batch 2: a PRIVATE task behaves as nonexistent for people outside it.
+  if (!(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership, email: actorEmail }))) {
+    return { error: "Task not found.", status: 404 };
+  }
+  if (!(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership, email: actorEmail, need: "EDIT" }))) {
+    return { error: "You have view-only access to this task.", status: 403 };
   }
 
   // Dependencies and subtasks (both optional; absent on older tasks, so

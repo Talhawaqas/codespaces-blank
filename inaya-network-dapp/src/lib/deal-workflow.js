@@ -19,6 +19,7 @@
 // document_permissions rather than retrofitting this file.
 
 import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
+import { canAccessRecord } from "./record-grants.js";
 import { logOrgActivity } from "./org-activity-log.js";
 
 export const DEAL_STAGES = ["NEW", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"];
@@ -53,6 +54,13 @@ export async function transitionDeal({ orgId, dealId, action, membership, actorE
   if (!deal) return { error: "Deal not found.", status: 404 };
   if (!canAccessDepartment(membership, deal.departmentId)) {
     return { error: "You don't have permission to do that.", status: 403 };
+  }
+  // Batch 2: a PRIVATE deal behaves as nonexistent for people outside it.
+  if (!(await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership, email: actorEmail }))) {
+    return { error: "Deal not found.", status: 404 };
+  }
+  if (!(await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership, email: actorEmail, need: "EDIT" }))) {
+    return { error: "You have view-only access to this deal.", status: 403 };
   }
 
   let to;

@@ -59,7 +59,7 @@ export default function FinanceView({ orgId, email }) {
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["invoices", "Invoices"], ["expenses", "Expenses"], ["payments", "Payments"], ["reports", "Reports"]].map(([key, label]) => (
+          {[["invoices", "Invoices"], ["expenses", "Expenses"], ["payments", "Payments"], ["reports", "Reports"], ["ledger", "Ledger"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
@@ -70,6 +70,7 @@ export default function FinanceView({ orgId, email }) {
       {tab === "expenses" && <ExpensesTab orgId={orgId} email={email} departments={departments} />}
       {tab === "payments" && <PaymentsTab orgId={orgId} departments={departments} />}
       {tab === "reports" && <ReportsTab orgId={orgId} />}
+      {tab === "ledger" && <LedgerTab orgId={orgId} />}
     </div>
   );
 }
@@ -836,6 +837,212 @@ function ReportsTab({ orgId }) {
         )}
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// LEDGER — double-entry general ledger (lib/ledger.js). Entries for
+// invoices, expenses and payments post automatically; manual entries and
+// reversals are for Finance Managers / owners / admins.
+// ============================================================
+const LEDGER_REPORTS = [["trial-balance", "Trial balance"], ["pnl", "Profit & loss"], ["balance-sheet", "Balance sheet"]];
+const money = (n) => (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const inputCls = "bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]";
+
+function LedgerTab({ orgId }) {
+  const [view, setView] = useState("journal");
+  const [accounts, setAccounts] = useState([]);
+  const [entries, setEntries] = useState(null);
+  const [sync, setSync] = useState(null);
+  const [error, setError] = useState("");
+  const [showEntry, setShowEntry] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [a, e] = await Promise.all([api(`/api/orgs/finance/ledger/accounts?orgId=${orgId}`), api(`/api/orgs/finance/ledger/entries?orgId=${orgId}`)]);
+      setAccounts(a.accounts); setEntries(e.entries); setSync(e.sync); setError("");
+    } catch (err) { setError(err.message); }
+  }, [orgId]);
+  useEffect(() => { load(); }, [load]);
+
+  const names = Object.fromEntries(accounts.map((a) => [a.code, a.name]));
+  const reverse = async (id) => {
+    try { await api(`/api/orgs/finance/ledger/entries/${id}/reverse`, { method: "POST", body: JSON.stringify({ orgId }) }); load(); } catch (err) { setError(err.message); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex bg-black/30 border border-white/10 rounded-lg p-0.5">
+          {[["journal", "Journal"], ["accounts", "Chart of accounts"], ["reports", "Statements"]].map(([k, l]) => (
+            <button key={k} onClick={() => setView(k)} className={`px-3 py-1.5 text-[11px] font-bold rounded-md ${view === k ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{l}</button>
+          ))}
+        </div>
+        {view === "journal" && <button onClick={() => setShowEntry(true)} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ Manual entry</button>}
+        {view === "accounts" && <button onClick={() => setShowAccount(true)} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ Account</button>}
+      </div>
+      <p className="text-[var(--inaya-text-muted)] text-[11px]">Sent and paid invoices, approved expenses and approved payments post automatically. Non-USD amounts use reference exchange rates, not live FX.</p>
+      {sync?.errors?.length > 0 && <p className="text-amber-400 text-xs">{sync.errors.length} record{sync.errors.length === 1 ? "" : "s"} couldn&apos;t be posted: {sync.errors.map((e) => e.error || e).join("; ")}</p>}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+
+      {view === "journal" && (
+        <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+          {!entries ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : entries.length === 0 ? (
+            <EmptyState compact icon="📒" description="No journal entries yet. They appear once an invoice is sent or an expense is approved." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="text-[var(--inaya-text-muted)] uppercase text-[10px]"><th className="text-left py-1.5 pr-4">Date</th><th className="text-left pr-4">Memo</th><th className="text-left pr-4">Account</th><th className="text-right pr-4">Debit</th><th className="text-right pr-4">Credit</th><th /></tr></thead>
+                <tbody>
+                  {entries.map((e) => e.lines.map((l, i) => (
+                    <tr key={`${e.id}-${i}`} className={i === 0 ? "border-t border-white/10" : ""}>
+                      <td className="py-1 pr-4 font-mono text-[var(--inaya-text-muted)]">{i === 0 ? e.date : ""}</td>
+                      <td className="pr-4 text-[var(--inaya-text-primary)]">{i === 0 ? <>{e.memo}{e.reversalOf && <span className="ml-1 text-amber-400">(reversal)</span>}{!e.source && !e.reversalOf && <span className="ml-1 text-[var(--inaya-text-muted)]">(manual)</span>}</> : ""}</td>
+                      <td className="pr-4 text-[var(--inaya-text-primary)] font-mono">{l.accountCode} {names[l.accountCode] || ""}{l.originalCurrency && <span className="text-[var(--inaya-text-muted)]"> · {l.originalCurrency} {money(l.originalAmount)} @ {l.fxRate}</span>}</td>
+                      <td className="pr-4 text-right font-mono tabular-nums">{l.debit ? money(l.debit) : ""}</td>
+                      <td className="pr-4 text-right font-mono tabular-nums">{l.credit ? money(l.credit) : ""}</td>
+                      <td className="text-right">{i === 0 && !e.reversalOf && !e.source && <ConfirmButton onConfirm={() => reverse(e.id)} confirmLabel="Post reversal?" className="text-[10px] font-bold uppercase text-amber-400">Reverse</ConfirmButton>}</td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === "accounts" && (
+        <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="text-[var(--inaya-text-muted)] uppercase text-[10px]"><th className="text-left py-1.5 pr-4">Code</th><th className="text-left pr-4">Name</th><th className="text-left">Type</th></tr></thead>
+            <tbody>{accounts.map((a) => <tr key={a.code} className="border-t border-white/5"><td className="py-1.5 pr-4 font-mono">{a.code}</td><td className="pr-4 text-[var(--inaya-text-primary)]">{a.name}</td><td className="text-[var(--inaya-text-muted)]">{a.type}</td></tr>)}</tbody>
+          </table>
+        </div>
+      )}
+
+      {view === "reports" && <LedgerStatements orgId={orgId} />}
+      {showEntry && <ManualEntryModal orgId={orgId} accounts={accounts} onClose={() => setShowEntry(false)} onPosted={() => { setShowEntry(false); load(); }} />}
+      {showAccount && <AccountModal orgId={orgId} onClose={() => setShowAccount(false)} onCreated={() => { setShowAccount(false); load(); }} />}
+    </div>
+  );
+}
+
+function LedgerStatements({ orgId }) {
+  const [type, setType] = useState("trial-balance");
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setReport(null);
+    api(`/api/orgs/finance/ledger/reports?orgId=${orgId}&type=${type}`).then((r) => { setReport(r); setError(""); }).catch((err) => setError(err.message));
+  }, [orgId, type]);
+
+  const Rows = ({ title, rows, total }) => (
+    <div className="space-y-1">
+      <p className="text-[10px] font-bold uppercase text-[var(--inaya-text-muted)]">{title}</p>
+      {rows.map((r) => <div key={r.code || r.name} className="flex justify-between text-xs"><span className="text-[var(--inaya-text-primary)]">{r.code} {r.name}</span><span className="font-mono tabular-nums">{money(r.amount)}</span></div>)}
+      {total !== undefined && <div className="flex justify-between text-xs font-bold border-t border-white/10 pt-1"><span>Total {title.toLowerCase()}</span><span className="font-mono tabular-nums">{money(total)}</span></div>}
+    </div>
+  );
+  const sum = (list) => list.reduce((s, r) => s + r.amount, 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>{LEDGER_REPORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        <a href={`/api/orgs/finance/ledger/reports?orgId=${orgId}&type=${type}&format=csv`} download className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">↓ Download CSV</a>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-4">
+        {!report ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : type === "trial-balance" ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="text-[var(--inaya-text-muted)] uppercase text-[10px]"><th className="text-left py-1.5 pr-4">Account</th><th className="text-right pr-4">Debit</th><th className="text-right">Credit</th></tr></thead>
+              <tbody>
+                {report.rows.map((r) => <tr key={r.code} className="border-t border-white/5"><td className="py-1 pr-4">{r.code} {r.name}</td><td className="pr-4 text-right font-mono tabular-nums">{r.debit ? money(r.debit) : ""}</td><td className="text-right font-mono tabular-nums">{r.credit ? money(r.credit) : ""}</td></tr>)}
+                <tr className="border-t border-white/20 font-bold"><td className="py-1 pr-4">Total {report.balanced ? "✓ balanced" : "⚠ out of balance"}</td><td className="pr-4 text-right font-mono tabular-nums">{money(report.totalDebit)}</td><td className="text-right font-mono tabular-nums">{money(report.totalCredit)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        ) : type === "pnl" ? (
+          <>
+            <Rows title="Revenue" rows={report.revenue} total={report.totalRevenue} />
+            <Rows title="Expenses" rows={report.expenses} total={report.totalExpenses} />
+            <div className="flex justify-between text-sm font-bold"><span>Net income</span><span className={`font-mono tabular-nums ${report.netIncome < 0 ? "text-red-400" : "text-emerald-400"}`}>{money(report.netIncome)}</span></div>
+          </>
+        ) : (
+          <>
+            <Rows title="Assets" rows={report.assets} total={report.totalAssets} />
+            <Rows title="Liabilities" rows={report.liabilities} total={sum(report.liabilities)} />
+            <Rows title="Equity" rows={[...report.equity, { code: "", name: "Retained earnings", amount: report.retainedEarnings }]} />
+            <div className="flex justify-between text-sm font-bold"><span>Liabilities + equity {report.balanced ? "✓" : "⚠"}</span><span className="font-mono tabular-nums">{money(report.totalLiabilitiesAndEquity)}</span></div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ManualEntryModal({ orgId, accounts, onClose, onPosted }) {
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [memo, setMemo] = useState("");
+  const [lines, setLines] = useState([{ accountCode: "", debit: "", credit: "" }, { accountCode: "", debit: "", credit: "" }]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const cents = (v) => Math.round((Number(v) || 0) * 100);
+  const dr = lines.reduce((s, l) => s + cents(l.debit), 0);
+  const cr = lines.reduce((s, l) => s + cents(l.credit), 0);
+  const balanced = dr > 0 && dr === cr;
+  const setLine = (i, patch) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+
+  const submit = async () => {
+    setSubmitting(true); setError("");
+    try {
+      await api("/api/orgs/finance/ledger/entries", { method: "POST", body: JSON.stringify({ orgId, date, memo, lines: lines.filter((l) => l.accountCode).map((l) => ({ accountCode: l.accountCode, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0 })) }) });
+      onPosted();
+    } catch (err) { setError(err.message); } finally { setSubmitting(false); }
+  };
+
+  return (
+    <Modal title="Manual journal entry" onClose={onClose} wide>
+      <div className="space-y-3">
+        <div className="flex gap-2"><input id="ledger-entry-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} /><input id="ledger-entry-memo" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Memo" className={`${inputCls} flex-1`} /></div>
+        {lines.map((l, i) => (
+          <div key={i} className="flex gap-2">
+            <select id={`ledger-line-${i}-account`} value={l.accountCode} onChange={(e) => setLine(i, { accountCode: e.target.value })} className={`${inputCls} flex-1 min-w-0`}>
+              <option value="">Account…</option>{accounts.map((a) => <option key={a.code} value={a.code}>{a.code} {a.name}</option>)}
+            </select>
+            <input id={`ledger-line-${i}-debit`} inputMode="decimal" value={l.debit} onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })} placeholder="Debit" className={`${inputCls} w-24`} />
+            <input id={`ledger-line-${i}-credit`} inputMode="decimal" value={l.credit} onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })} placeholder="Credit" className={`${inputCls} w-24`} />
+          </div>
+        ))}
+        <button onClick={() => setLines((ls) => [...ls, { accountCode: "", debit: "", credit: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Line</button>
+        <p className={`text-xs font-mono ${balanced ? "text-emerald-400" : "text-amber-400"}`}>Debits {money(dr / 100)} · Credits {money(cr / 100)} {balanced ? "· balanced" : "· must balance"}</p>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button disabled={!balanced || submitting} onClick={submit} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">{submitting ? "Posting…" : "Post entry"}</button>
+      </div>
+    </Modal>
+  );
+}
+
+function AccountModal({ orgId, onClose, onCreated }) {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [type, setType] = useState("EXPENSE");
+  const [error, setError] = useState("");
+  const submit = async () => {
+    try { await api("/api/orgs/finance/ledger/accounts", { method: "POST", body: JSON.stringify({ orgId, code, name, type }) }); onCreated(); } catch (err) { setError(err.message); }
+  };
+  return (
+    <Modal title="New account" onClose={onClose}>
+      <div className="space-y-3">
+        <input id="ledger-account-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code (3–6 digits)" className={`${inputCls} w-full`} />
+        <input id="ledger-account-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={`${inputCls} w-full`} />
+        <select id="ledger-account-type" value={type} onChange={(e) => setType(e.target.value)} className={`${inputCls} w-full`}>{["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"].map((t) => <option key={t}>{t}</option>)}</select>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button onClick={submit} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">Add account</button>
+      </div>
+    </Modal>
   );
 }
 

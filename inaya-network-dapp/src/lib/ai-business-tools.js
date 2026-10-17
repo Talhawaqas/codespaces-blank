@@ -546,6 +546,69 @@ async function proposeTaskStatusChange(args, ctx) {
   };
 }
 
+// Business Workspace gap closure, Batch 2 — approval-gated record creation.
+// Same pipeline as every propose_* tool: nothing is created until a person
+// with the real authority approves and the 36h delay passes. The executor
+// (ai-record-creation.js) re-validates everything at execution time.
+const ONE = (list, name, label) => {
+  const matches = list.filter((x) => matchesName(x.name ?? x.title, name));
+  if (matches.length === 0) return { notFound: true, [label]: name };
+  if (matches.length > 1) return { ambiguous: true, matches: matches.slice(0, 5).map((x) => x.name ?? x.title) };
+  return { item: matches[0] };
+};
+const submittedMessage = (what) => `Submitted for approval: ${what}. Someone with access needs to approve it in the AI Action Requests panel, and it won't actually happen until 36 hours after approval.`;
+
+async function proposeTaskCreation(args, ctx) {
+  const { projectName, title, description, priority, assigneeEmail, dueDate } = args || {};
+  if (!projectName || !title) return { error: "projectName and title are required." };
+  const found = ONE(ctx.scope.visibleProjects, projectName, "projectName");
+  if (!found.item) return found;
+  const project = found.item;
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_task_creation",
+    targetRecordType: "TASK_CREATE", targetRecordId: project._id, proposedAction: "create",
+    args: { projectId: project._id.toString(), title, description: description || null, priority: priority || "MEDIUM", assigneeEmail: assigneeEmail || null, dueDate: dueDate || null },
+    requestedContextSummary: `Create task "${title}" in project "${project.name}"${assigneeEmail ? `, assigned to ${assigneeEmail}` : ""}.`,
+    actorEmail: ctx.email, canPropose: canAccessDepartment(ctx.membership, project.departmentId),
+  });
+  if (result.error) return { error: result.error };
+  return { submitted: true, deduped: !!result.deduped, message: submittedMessage(`create task "${title}" in "${project.name}"`) };
+}
+
+async function proposeTaskReassignment(args, ctx) {
+  const { taskTitle, assigneeEmail } = args || {};
+  if (!taskTitle || !assigneeEmail) return { error: "taskTitle and assigneeEmail are required." };
+  const found = ONE(ctx.scope.visibleTasks, taskTitle, "taskTitle");
+  if (!found.item) return found;
+  const task = found.item;
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_task_reassignment",
+    targetRecordType: "TASK_ASSIGN", targetRecordId: task._id, proposedAction: "reassign",
+    args: { taskId: task._id.toString(), assigneeEmail },
+    requestedContextSummary: `Reassign "${task.title}" from ${task.assigneeEmail || "nobody"} to ${assigneeEmail}.`,
+    actorEmail: ctx.email, canPropose: canAccessDepartment(ctx.membership, task.departmentId),
+  });
+  if (result.error) return { error: result.error };
+  return { submitted: true, deduped: !!result.deduped, message: submittedMessage(`reassign "${task.title}" to ${assigneeEmail}`) };
+}
+
+async function proposeContactCreation(args, ctx) {
+  const { departmentName, name, type, email, phone, company, notes } = args || {};
+  if (!departmentName || !name) return { error: "departmentName and name are required." };
+  const found = ONE(ctx.scope.visibleDepartments, departmentName, "departmentName");
+  if (!found.item) return found;
+  const department = found.item;
+  const result = await proposeAiAction({
+    orgId: ctx.orgId, assistantSurface: "business", toolName: "propose_contact_creation",
+    targetRecordType: "CONTACT_CREATE", targetRecordId: department._id, proposedAction: "create",
+    args: { departmentId: department._id.toString(), name, type: type === "CUSTOMER" ? "CUSTOMER" : "LEAD", email: email || null, phone: phone || null, company: company || null, notes: notes || null },
+    requestedContextSummary: `Add ${type === "CUSTOMER" ? "customer" : "lead"} "${name}"${company ? ` (${company})` : ""} to ${department.name}.`,
+    actorEmail: ctx.email, canPropose: canAccessDepartment(ctx.membership, department._id),
+  });
+  if (result.error) return { error: result.error };
+  return { submitted: true, deduped: !!result.deduped, message: submittedMessage(`add "${name}" to CRM`) };
+}
+
 /** requiresManage:true for approve/reject (expense-workflow.js's own
  *  gate) — so canPropose here requires canManageFinance on the PROPOSING
  *  user, not just department access, mirroring exactly what
@@ -1133,6 +1196,48 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "propose_task_creation",
+    description: "Propose creating a new task in a project. This does NOT create it immediately — it submits a request for someone with access to that project's department to approve, and even after approval it only happens 36 hours later. Use this only when the user explicitly asks you to create a task.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        projectName: { type: Type.STRING, description: "The project's name, or a distinctive part of it." },
+        title: { type: Type.STRING, description: "The task title." },
+        description: { type: Type.STRING, description: "Optional details." },
+        priority: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+        assigneeEmail: { type: Type.STRING, description: "Optional — email of an active member with access to the project's department." },
+        dueDate: { type: Type.STRING, description: "Optional due date, YYYY-MM-DD." },
+      },
+      required: ["projectName", "title"],
+    },
+  },
+  {
+    name: "propose_task_reassignment",
+    description: "Propose assigning an existing task to a different person. Submitted for approval like every other proposal; executes 36 hours after approval. Use only when the user explicitly asks to reassign a task.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        taskTitle: { type: Type.STRING, description: "The task's title, or a distinctive part of it." },
+        assigneeEmail: { type: Type.STRING, description: "Email of the new assignee." },
+      },
+      required: ["taskTitle", "assigneeEmail"],
+    },
+  },
+  {
+    name: "propose_contact_creation",
+    description: "Propose adding a new CRM contact (lead or customer) to a department. Submitted for approval; executes 36 hours after approval. Use only when the user explicitly asks you to add a contact or lead.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        departmentName: { type: Type.STRING, description: "The department the contact belongs to." },
+        name: { type: Type.STRING, description: "Contact's full name." },
+        type: { type: Type.STRING, enum: ["LEAD", "CUSTOMER"] },
+        email: { type: Type.STRING }, phone: { type: Type.STRING }, company: { type: Type.STRING }, notes: { type: Type.STRING },
+      },
+      required: ["departmentName", "name"],
+    },
+  },
+  {
     name: "propose_expense_decision",
     description: "Propose approving or rejecting a pending expense. This does NOT decide the expense immediately — it submits a request for a Finance Manager to approve in the AI Action Requests panel, and even after approval it only executes 36 hours later. Only usable by someone who already has Finance Manager (or owner/admin) authority. Use this when the user explicitly asks you to approve or reject an expense.",
     parameters: {
@@ -1339,6 +1444,9 @@ const TOOL_IMPLEMENTATIONS = {
   get_business_brief: getBusinessBrief,
   get_bookkeeping_status: async (args, ctx) => (await import("./bookkeeper/assistant.js")).bookkeeperAssistantTool(args, ctx),
   propose_task_status_change: proposeTaskStatusChange,
+  propose_task_creation: proposeTaskCreation,
+  propose_task_reassignment: proposeTaskReassignment,
+  propose_contact_creation: proposeContactCreation,
   propose_expense_decision: proposeExpenseDecision,
   propose_document_transition: proposeDocumentTransition,
   propose_employee_transition: proposeEmployeeTransition,
@@ -1373,6 +1481,8 @@ If get_document_access returns permissionDenied, tell the user plainly that they
 Keep answers concise and concrete: reference actual filenames, department/project names, statuses, and dates from the tool results. Use plain language, not raw JSON. If a request is ambiguous (e.g. multiple documents match a name), ask a short clarifying question or list the candidates the tool returned.
 
 For "how's the business doing", KPI, trend, or alert questions, use get_business_insights rather than manually combining several list_* calls — it's the same permission-scoped aggregate the Business Insights dashboard itself shows. For a periodic recap ("give me my weekly brief", "daily summary", "how did this month go"), use get_business_brief instead — narrate its real highlights/alerts in your own words rather than just listing them back verbatim.
+
+You can also propose creating a task (propose_task_creation), reassigning a task (propose_task_reassignment) or adding a CRM contact (propose_contact_creation) — only when the user explicitly asks. These never create anything directly: tell the user it was submitted for approval and will happen 36 hours after someone approves it.
 
 For most requests you only look things up and summarize. For a specific set of state changes — task status, expense decisions, document workflow transitions, employee status changes, invoice actions, leave request decisions, purchase order transitions, purchase request transitions, and CRM deal pipeline moves — use the matching propose_* tool (propose_task_status_change, propose_expense_decision, propose_document_transition, propose_employee_transition, propose_invoice_decision, propose_invoice_document, propose_leave_decision, propose_purchase_order_transition, propose_purchase_request_transition, propose_deal_transition). Every one of these submits a request that someone with the right real permission must approve in the AI Action Requests panel, and even once approved it only executes 36 hours later — never tell the user the change is done, tell them it was submitted for approval. For every other action request with no matching propose_* tool AND no matching guided workflow below (changing permissions, sending an external communication, or anything else this file has no tool for), explain plainly that you can't do that and they should use the workspace UI instead — do not attempt it any other way.
 

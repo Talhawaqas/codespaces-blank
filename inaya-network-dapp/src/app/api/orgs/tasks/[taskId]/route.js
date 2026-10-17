@@ -14,6 +14,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
 import { validateRecurrence, recurrenceFieldsFor, setTaskDependencies, getTaskRelations } from "../../../../../lib/task-relations.js";
 import { notifyTaskAssigned } from "../../../../../lib/business-notify.js";
+import { canAccessRecord } from "../../../../../lib/record-grants.js";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -60,7 +61,7 @@ export async function GET(req, { params }) {
     const { tasks } = await getOrgCollections();
     const task = await tasks.findOne({ _id: toObjectId(taskId), orgId: toObjectId(orgId), deletedAt: null });
     if (!task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
-    if (!canAccessDepartment(auth.membership, task.departmentId)) {
+    if (!canAccessDepartment(auth.membership, task.departmentId) || !(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership: auth.membership, email: auth.session.email }))) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
 
@@ -88,7 +89,7 @@ export async function PATCH(req, { params }) {
 
     const task = await tasks.findOne({ _id: taskObjectId, orgId: orgObjectId, deletedAt: null });
     if (!task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
-    if (!canAccessDepartment(auth.membership, task.departmentId)) {
+    if (!canAccessDepartment(auth.membership, task.departmentId) || !(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership: auth.membership, email: auth.session.email }))) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
     if (!canEditTask(task, auth.membership, auth.session.email)) {
@@ -175,7 +176,7 @@ export async function DELETE(req, { params }) {
 
     const task = await tasks.findOne({ _id: taskObjectId, orgId: orgObjectId, deletedAt: null });
     if (!task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
-    if (!canAccessDepartment(auth.membership, task.departmentId)) {
+    if (!canAccessDepartment(auth.membership, task.departmentId) || !(await canAccessRecord({ orgId, recordType: "TASK", record: task, membership: auth.membership, email: auth.session.email }))) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
     if (!canEditTask(task, auth.membership, auth.session.email)) {

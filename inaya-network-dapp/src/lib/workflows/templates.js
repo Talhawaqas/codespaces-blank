@@ -164,8 +164,27 @@ function notificationTest() {
   };
 }
 
+// Business Workspace gap closure, Batch 2 — scheduled KPI digest. Existing
+// nodes only: weekly schedule -> KPI snapshot -> weekly report -> email to
+// managers + in-app copy. The CSV of the same numbers is GET
+// /api/orgs/insights?format=csv.
+function weeklyKpiDigest() {
+  return {
+    nodes: [
+      n("trigger", "trigger.schedule", "Every Monday", 40, 160, { schedule: { kind: "weekly", daysOfWeek: [1], time: "08:00", timezone: "UTC", enabled: true } }),
+      n("kpi", "kpi.snapshot", "KPI snapshot (last 7 days)", 300, 160, { periodDays: 7 }),
+      n("report", "action.report", "Weekly report", 560, 160, { reportType: "weekly_operations" }),
+      n("email", "notify.email", "Email digest", 820, 80, { title: "Weekly KPI digest", body: "{{ nodes.report.output.markdown }}", severity: "info", recipients: [], audience: "managers", alertType: "weekly_kpi_digest" }),
+      n("inaya", "notify.inaya", "In-app digest", 820, 240, { title: "Weekly KPI digest", body: "{{ nodes.report.output.markdown }}", severity: "info", audience: "managers", alertType: "weekly_kpi_digest_inapp" }),
+    ],
+    edges: [e("trigger", "kpi"), e("kpi", "report"), e("report", "email"), e("report", "inaya")],
+    settings: SETTINGS(["insights", "notify"]),
+  };
+}
+
 const T = [
   { id: "daily-business-health", name: "Daily Business Health", category: "Operations", description: "Every morning: CRM, support, overdue invoices and tasks → KPI snapshot → AI Operations Manager → urgent alert or daily report.", requiredIntegrations: ["helpdesk (optional)", "Slack (optional)"], build: dailyBusinessHealth },
+  { id: "weekly-kpi-digest", name: "Weekly KPI Digest", category: "Operations", description: "Every Monday: last 7 days' KPIs → weekly operations report → emailed to owners/admins with an in-app copy. Export the same numbers any time as CSV from Insights.", requiredIntegrations: [], build: weeklyKpiDigest },
   { id: "finance-exception-monitor", name: "Finance Exception Monitor", category: "Finance", description: "Watch overdue invoices against thresholds, classify with AI, alert managers when urgent.", requiredIntegrations: [], build: financeExceptionMonitor },
   { id: "finance-operations-manager", name: "Finance Operations Manager", category: "Finance", description: "Every morning: run the AI Bookkeeper pass (categorize, match, reconcile, queue exceptions), summarize, and tell finance what needs a person. Nothing is posted or paid automatically.", requiredIntegrations: [], build: financeOperationsManager },
   { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check Inaya Customer Support every hour for tickets that breached or are about to breach their SLA, or are urgent, and alert managers. (To read an external helpdesk instead, use the Get Support Tickets (helpdesk via HTTP) node.)", requiredIntegrations: [], build: supportEscalation },

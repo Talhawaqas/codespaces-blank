@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
 import { computeBusinessInsights } from "../../../../lib/business-insights.js";
+import { insightsToCsv } from "../../../../lib/insights-export.js";
 
 export async function GET(req) {
   try {
@@ -26,6 +27,9 @@ export async function GET(req) {
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const insights = await computeBusinessInsights({ orgId, membership: auth.membership, email: auth.session.email, periodDays, startDate, endDate });
+    if (searchParams.get("format") === "csv") {
+      return new NextResponse(insightsToCsv(insights), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="business-insights.csv"' } });
+    }
     return NextResponse.json(insights);
   } catch (err) {
     if (err.message?.startsWith("Invalid date range")) {

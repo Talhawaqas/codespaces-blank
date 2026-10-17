@@ -49,6 +49,7 @@ import { transitionPurchaseRequest } from "./purchase-request-workflow.js";
 import { transitionDeal } from "./deal-workflow.js";
 import { amendPolicy } from "./compliance-policies.js";
 import { releaseMilestonePayment } from "./escrow-workflow.js";
+import { createTaskFromProposal, reassignTaskFromProposal, createContactFromProposal } from "./ai-record-creation.js";
 
 // Maps a request's targetRecordType to the real workflow transition it's
 // eventually allowed to trigger, and how to turn a request's stored args
@@ -99,6 +100,12 @@ const EXECUTORS = {
     const { executeApprovedGrant } = await import("./identity/approvals.js");
     return executeApprovedGrant({ orgId, args, actorEmail });
   },
+  // Business Workspace gap closure, Batch 2 — approval-gated AI record
+  // creation. Same validation and stored shape as the human routes; see
+  // ai-record-creation.js. Attributed to the approver.
+  TASK_CREATE: ({ orgId, args, actorEmail }) => createTaskFromProposal({ orgId: String(orgId), projectId: args.projectId, title: args.title, description: args.description, priority: args.priority, assigneeEmail: args.assigneeEmail, dueDate: args.dueDate, actorEmail }),
+  TASK_ASSIGN: ({ orgId, args, actorEmail }) => reassignTaskFromProposal({ orgId: String(orgId), taskId: args.taskId, assigneeEmail: args.assigneeEmail, actorEmail }),
+  CONTACT_CREATE: ({ orgId, args, actorEmail }) => createContactFromProposal({ orgId: String(orgId), departmentId: args.departmentId, type: args.type, name: args.name, email: args.email, phone: args.phone, company: args.company, notes: args.notes, actorEmail }),
   DOCUMENT_GENERATION: async ({ orgId, args, actorEmail }) => {
     const { createDocument } = await import("./documentAutomation/pipeline.js");
     return createDocument({ orgId, documentType: args.documentType, sourceId: args.sourceId, options: args.options, membership: SYSTEM_EXECUTOR_MEMBERSHIP, email: actorEmail, actorType: "ai", idempotencyKey: `ai-${String(args.sourceId)}-${String(args.documentType)}-${new Date().toISOString().slice(0, 10)}` });
@@ -208,6 +215,9 @@ const RISK_LEVELS = {
   "ESCROW:release": "HIGH",
   "DOCUMENT_GENERATION:generate": "MEDIUM",
   "IDENTITY_LIFECYCLE:grant": "HIGH",
+  "TASK_CREATE:create": "LOW",
+  "TASK_ASSIGN:reassign": "LOW",
+  "CONTACT_CREATE:create": "LOW",
 };
 
 export function classifyRisk(targetRecordType, proposedAction) {

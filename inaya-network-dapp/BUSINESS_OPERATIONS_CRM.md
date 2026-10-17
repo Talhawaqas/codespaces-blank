@@ -33,7 +33,7 @@ crm_deals
 
 ## Permission model
 
-Department-level access (`canAccessDepartment`) — the same model Tasks uses, and the option the approved plan flagged as "not blocking Phase 1" but needing a real decision before Phase 2 shipped. No record-level deal-permission grant table in this pass; if sales-data sensitivity beyond department scope becomes a real requirement later, add one mirroring `document_permissions` rather than retrofitting this file.
+Department-level access (`canAccessDepartment`) — the same model Tasks uses, and the option the approved plan flagged as "not blocking Phase 1" but needing a real decision before Phase 2 shipped. Since the Business Workspace gap closure (Batch 2), a deal can also be marked PRIVATE: only its creator, org owners/admins and people it's explicitly shared with (VIEW or EDIT, optional expiry) can see it (`src/lib/record-grants.js`, `record_grants` collection). Deals without a visibility setting behave exactly as before.
 
 ## Pipeline state machine
 
@@ -58,6 +58,5 @@ Every transition is the same atomic `findOneAndUpdate` pattern as every other wo
 
 ## Explicitly out of scope (this pass)
 
-- No lead-scoring, email integration, or calendar sync.
-- No record-level deal permissions beyond department access.
+- Lead scoring, an activity timeline, email from CRM and calendar invites shipped in Batch 2 (`src/lib/crm-activity.js`, `src/lib/ics.js`). The score is a fixed, explainable 0–100 rule set (no AI). Email is outbound only: reply-to is the sender and there's no inbox sync. Invites are RFC 5545 .ics files emailed to the contact and attendees. Two-way Google/Outlook calendar sync remains out of scope.
 - Deal "value" is a plain number the user enters — no currency conversion, no rollup forecasting beyond the dashboard's simple open-deals-value sum.

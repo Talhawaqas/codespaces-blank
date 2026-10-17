@@ -179,6 +179,12 @@ export async function getOrgCollections() {
     leaveRequests: db.collection("leave_requests"),
     hrOnboardingTemplates: db.collection("hr_onboarding_templates"),
     hrOnboardingItems: db.collection("hr_onboarding_items"),
+    // Business Workspace gap closure, Batch 2 — general ledger, CRM
+    // activity timeline, and per-record sharing for tasks/deals.
+    ledgerAccounts: db.collection("ledger_accounts"),
+    journalEntries: db.collection("journal_entries"),
+    crmActivities: db.collection("crm_activities"),
+    recordGrants: db.collection("record_grants"),
     attachments: db.collection("attachments"),
     // Phase 2 — cryptographic audit trail. A hash-chained overlay on top
     // of org_activity/document_activity (see src/lib/auditChain.js), not a
@@ -581,6 +587,7 @@ export async function ensureOrgIndexes() {
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
     hrOnboardingTemplates, hrOnboardingItems,
+    ledgerAccounts, journalEntries, crmActivities, recordGrants,
     auditChainEntries, auditChainHeads, aiActionRequests,
     industryPolicies, dataClassifications, incidents, retentionPolicies,
     riskRegister, vendorRecords, trainingRecords, exportRequests,
@@ -699,6 +706,13 @@ export async function ensureOrgIndexes() {
     employees.createIndex({ orgId: 1, managerEmployeeId: 1 }),
     hrOnboardingTemplates.createIndex({ orgId: 1 }, { unique: true }),
     hrOnboardingItems.createIndex({ orgId: 1, employeeId: 1, position: 1 }),
+    ledgerAccounts.createIndex({ orgId: 1, code: 1 }, { unique: true }),
+    // Automatic postings are idempotent on their source event; manual
+    // entries have no source and are excluded from the uniqueness rule.
+    journalEntries.createIndex({ orgId: 1, "source.type": 1, "source.id": 1, "source.event": 1 }, { unique: true, partialFilterExpression: { "source.type": { $type: "string" } } }),
+    journalEntries.createIndex({ orgId: 1, date: 1 }),
+    crmActivities.createIndex({ orgId: 1, contactId: 1, at: -1 }),
+    recordGrants.createIndex({ orgId: 1, recordType: 1, recordId: 1, email: 1 }, { unique: true }),
     attachments.createIndex({ orgId: 1, relatedRecordType: 1, relatedRecordId: 1 }),
     // Phase 2 — cryptographic audit trail
     auditChainEntries.createIndex({ orgId: 1, seq: 1 }, { unique: true }),

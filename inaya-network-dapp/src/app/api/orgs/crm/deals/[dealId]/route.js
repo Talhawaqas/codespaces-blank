@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
+import { canAccessRecord } from "../../../../../../lib/record-grants.js";
 
 function serializeDeal(d) {
   return {
@@ -17,7 +18,7 @@ function serializeDeal(d) {
   };
 }
 
-async function loadAuthorized(req, orgId, dealId) {
+async function loadAuthorized(req, orgId, dealId, need = "VIEW") {
   await ensureOrgIndexes();
   const auth = await requireMembership(req, orgId);
   if (auth.error) return { error: auth.error, status: auth.status };
@@ -26,6 +27,8 @@ async function loadAuthorized(req, orgId, dealId) {
   const deal = await crmDeals.findOne({ _id: toObjectId(dealId), orgId: toObjectId(orgId), deletedAt: null });
   if (!deal) return { error: "Deal not found.", status: 404 };
   if (!canAccessDepartment(auth.membership, deal.departmentId)) return { error: "Deal not found.", status: 404 };
+  if (!(await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership: auth.membership, email: auth.session.email }))) return { error: "Deal not found.", status: 404 };
+  if (need === "EDIT" && !(await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership: auth.membership, email: auth.session.email, need }))) return { error: "You have view-only access to this deal.", status: 403 };
 
   return { auth, deal, crmDeals };
 }
@@ -48,7 +51,7 @@ export async function PATCH(req, { params }) {
     const { orgId, title, value } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
-    const result = await loadAuthorized(req, orgId, params.dealId);
+    const result = await loadAuthorized(req, orgId, params.dealId, "EDIT");
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     const { crmDeals, deal } = result;
 
@@ -76,7 +79,7 @@ export async function DELETE(req, { params }) {
   try {
     const orgId = new URL(req.url).searchParams.get("orgId");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
-    const result = await loadAuthorized(req, orgId, params.dealId);
+    const result = await loadAuthorized(req, orgId, params.dealId, "EDIT");
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     await result.crmDeals.updateOne({ _id: result.deal._id }, { $set: { deletedAt: new Date().toISOString() } });
     return NextResponse.json({ deleted: true });

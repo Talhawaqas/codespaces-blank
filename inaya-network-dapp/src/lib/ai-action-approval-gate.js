@@ -14,15 +14,16 @@
 
 import { getOrgCollections, canAccessDepartment, canManageOrg, canManageFinance, canAccessHR, canManageHR, canManageEscrow, toObjectId } from "./orgs.js";
 import { getDocumentAccessLevel, meetsLevel } from "./document-permissions.js";
+import { canAccessRecord } from "./record-grants.js";
 
 export async function resolveCanApprove({ orgId, targetRecordType, targetRecordId, proposedAction, membership, email }) {
-  const { tasks, expenses, orgDocuments, employees, invoices, leaveRequests, purchaseOrders, purchaseRequests, crmDeals, escrows } = await getOrgCollections();
+  const { tasks, expenses, orgDocuments, employees, invoices, leaveRequests, purchaseOrders, purchaseRequests, crmDeals, escrows, projects, departments } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
 
   if (targetRecordType === "TASK") {
     const task = await tasks.findOne({ _id: targetRecordId, orgId: orgObjectId });
     if (!task) return { canApprove: false, reason: "The underlying task no longer exists." };
-    return { canApprove: canAccessDepartment(membership, task.departmentId) };
+    return { canApprove: canAccessDepartment(membership, task.departmentId) && await canAccessRecord({ orgId, recordType: "TASK", record: task, membership, email, need: "EDIT" }) };
   }
   if (targetRecordType === "EXPENSE") {
     const expense = await expenses.findOne({ _id: targetRecordId, orgId: orgObjectId });
@@ -79,7 +80,7 @@ export async function resolveCanApprove({ orgId, targetRecordType, targetRecordI
   if (targetRecordType === "DEAL") {
     const deal = await crmDeals.findOne({ _id: targetRecordId, orgId: orgObjectId });
     if (!deal) return { canApprove: false, reason: "The underlying deal no longer exists." };
-    return { canApprove: canAccessDepartment(membership, deal.departmentId) };
+    return { canApprove: canAccessDepartment(membership, deal.departmentId) && await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership, email, need: "EDIT" }) };
   }
   if (targetRecordType === "ESCROW") {
     const escrow = await escrows.findOne({ _id: targetRecordId, orgId: orgObjectId });
@@ -89,6 +90,26 @@ export async function resolveCanApprove({ orgId, targetRecordType, targetRecordI
     // own (it trusts the caller entirely), so this IS the real gate, not
     // a redundant check: canManageEscrow (or org owner/admin) only.
     return { canApprove: canManageEscrow(membership) };
+  }
+  // Batch 2 — AI record creation. Same gates as the human routes: creating
+  // a task needs the project's department, a contact needs its department,
+  // reassigning needs the task's department and (for a private task) edit
+  // access to it.
+  if (targetRecordType === "TASK_CREATE") {
+    const project = await projects.findOne({ _id: toObjectId(targetRecordId), orgId: orgObjectId });
+    if (!project) return { canApprove: false, reason: "The project no longer exists." };
+    return { canApprove: canAccessDepartment(membership, project.departmentId) };
+  }
+  if (targetRecordType === "TASK_ASSIGN") {
+    const task = await tasks.findOne({ _id: toObjectId(targetRecordId), orgId: orgObjectId, deletedAt: null });
+    if (!task) return { canApprove: false, reason: "The underlying task no longer exists." };
+    if (!canAccessDepartment(membership, task.departmentId)) return { canApprove: false };
+    return { canApprove: await canAccessRecord({ orgId, recordType: "TASK", record: task, membership, email, need: "EDIT" }) };
+  }
+  if (targetRecordType === "CONTACT_CREATE") {
+    const department = await departments.findOne({ _id: toObjectId(targetRecordId), orgId: orgObjectId });
+    if (!department) return { canApprove: false, reason: "The department no longer exists." };
+    return { canApprove: canAccessDepartment(membership, department._id) };
   }
   if (targetRecordType === "IDENTITY_LIFECYCLE") {
     // Granting privilege from an external identity source: only an owner/admin may approve (and never the source itself).

@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { DEAL_STAGES } from "../../../../../lib/deal-workflow.js";
+import { filterVisibleRecords } from "../../../../../lib/record-grants.js";
 
 function serializeDeal(d) {
   return {
@@ -49,6 +50,7 @@ export async function GET(req) {
       }
       if (contactId) query.contactId = toObjectId(contactId);
       list = await crmDeals.find(query).sort({ createdAt: -1 }).toArray();
+      list = await filterVisibleRecords({ orgId, recordType: "DEAL", records: list, membership: auth.membership, email: auth.session.email });
       if (contactId && !departmentId) {
         const scope = await getAccessibleScope({ orgId, membership: auth.membership, email: auth.session.email });
         const visibleIds = new Set(scope.visibleDeals.map((d) => d._id.toString()));

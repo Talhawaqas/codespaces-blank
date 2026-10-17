@@ -18,6 +18,7 @@ import { getAccessibleScope } from "../../../../lib/document-permissions.js";
 import { TASK_STATES } from "../../../../lib/task-workflow.js";
 import { validateParentTask, validateRecurrence, recurrenceFieldsFor } from "../../../../lib/task-relations.js";
 import { notifyTaskAssigned } from "../../../../lib/business-notify.js";
+import { filterVisibleRecords } from "../../../../lib/record-grants.js";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -86,6 +87,8 @@ export async function GET(req) {
       // projectId alone (no departmentId) doesn't carry an explicit access
       // check above — filter against the caller's real accessible scope so
       // a project ID guess can't leak tasks from a department they can't see.
+      // Private tasks (Batch 2) are filtered on every branch.
+      list = await filterVisibleRecords({ orgId, recordType: "TASK", records: list, membership: auth.membership, email: auth.session.email });
       if (projectId && !departmentId) {
         const visibleIds = new Set(scope.visibleTasks.map((t) => t._id.toString()));
         list = list.filter((t) => visibleIds.has(t._id.toString()));

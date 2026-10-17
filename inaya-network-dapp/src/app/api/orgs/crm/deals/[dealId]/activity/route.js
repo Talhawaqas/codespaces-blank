@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../../lib/orgs.js";
 import { listOrgActivityForRecord } from "../../../../../../../lib/org-activity-log.js";
+import { canAccessRecord } from "../../../../../../../lib/record-grants.js";
 
 export async function GET(req, { params }) {
   try {
@@ -20,7 +21,7 @@ export async function GET(req, { params }) {
     const { crmDeals } = await getOrgCollections();
     const deal = await crmDeals.findOne({ _id: toObjectId(dealId), orgId: toObjectId(orgId) });
     if (!deal) return NextResponse.json({ error: "Deal not found." }, { status: 404 });
-    if (!canAccessDepartment(auth.membership, deal.departmentId)) return NextResponse.json({ error: "Deal not found." }, { status: 404 });
+    if (!canAccessDepartment(auth.membership, deal.departmentId) || !(await canAccessRecord({ orgId, recordType: "DEAL", record: deal, membership: auth.membership, email: auth.session.email }))) return NextResponse.json({ error: "Deal not found." }, { status: 404 });
 
     const events = await listOrgActivityForRecord({ orgId, recordType: "DEAL", recordId: dealId });
     return NextResponse.json({
