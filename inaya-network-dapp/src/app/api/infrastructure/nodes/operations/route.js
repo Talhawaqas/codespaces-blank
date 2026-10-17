@@ -1,7 +1,8 @@
 // Node-facing: a node polls for its own pending operations, authenticated
 // by its certificate-signed token (same scheme as heartbeat).
 import { NextResponse } from "next/server";
-import { claimPendingOperations, InfrastructureError } from "../../../../../lib/infrastructure/operations.js";
+import { claimPendingOperations } from "../../../../../lib/infrastructure/operations.js";
+import { InfrastructureError } from "../../../../../lib/infrastructure/nodes.js";
 
 export async function POST(req) {
   try {

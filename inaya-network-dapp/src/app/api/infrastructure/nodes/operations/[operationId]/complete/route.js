@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { completeOperation, InfrastructureError } from "../../../../../../../lib/infrastructure/operations.js";
+import { completeOperation } from "../../../../../../../lib/infrastructure/operations.js";
+import { InfrastructureError } from "../../../../../../../lib/infrastructure/nodes.js";
 
 export async function POST(req, ctx) {
   try {

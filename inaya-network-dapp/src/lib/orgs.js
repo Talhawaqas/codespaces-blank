@@ -177,6 +177,8 @@ export async function getOrgCollections() {
     payments: db.collection("payments"),
     employees: db.collection("employees"),
     leaveRequests: db.collection("leave_requests"),
+    hrOnboardingTemplates: db.collection("hr_onboarding_templates"),
+    hrOnboardingItems: db.collection("hr_onboarding_items"),
     attachments: db.collection("attachments"),
     // Phase 2 — cryptographic audit trail. A hash-chained overlay on top
     // of org_activity/document_activity (see src/lib/auditChain.js), not a
@@ -578,6 +580,7 @@ export async function ensureOrgIndexes() {
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
+    hrOnboardingTemplates, hrOnboardingItems,
     auditChainEntries, auditChainHeads, aiActionRequests,
     industryPolicies, dataClassifications, incidents, retentionPolicies,
     riskRegister, vendorRecords, trainingRecords, exportRequests,
@@ -648,6 +651,13 @@ export async function ensureOrgIndexes() {
     tasks.createIndex({ orgId: 1, departmentId: 1 }),
     tasks.createIndex({ orgId: 1, assigneeEmail: 1, status: 1 }),
     tasks.createIndex({ orgId: 1, dueDate: 1 }),
+    tasks.createIndex({ orgId: 1, parentTaskId: 1 }),
+    // Partial: only tasks that belong to a recurring series carry
+    // recurrenceSeriesId, so no pre-existing task can violate uniqueness.
+    tasks.createIndex(
+      { recurrenceSeriesId: 1, recurrenceOccurrence: 1 },
+      { unique: true, partialFilterExpression: { recurrenceSeriesId: { $type: "string" } } }
+    ),
     orgActivity.createIndex({ eventId: 1 }, { unique: true }),
     orgActivity.createIndex({ orgId: 1, recordType: 1, recordId: 1, timestamp: 1 }),
     orgActivity.createIndex({ orgId: 1, timestamp: 1 }),
@@ -662,6 +672,7 @@ export async function ensureOrgIndexes() {
     suppliers.createIndex({ orgId: 1, departmentId: 1 }),
     purchaseRequests.createIndex({ orgId: 1, departmentId: 1 }),
     purchaseRequests.createIndex({ orgId: 1, status: 1 }),
+    purchaseRequests.createIndex({ orgId: 1, reorderForProductId: 1, status: 1 }),
     purchaseOrders.createIndex({ orgId: 1, departmentId: 1 }),
     purchaseOrders.createIndex({ orgId: 1, supplierId: 1 }),
     purchaseOrders.createIndex({ orgId: 1, status: 1 }),
@@ -685,6 +696,9 @@ export async function ensureOrgIndexes() {
     employees.createIndex({ orgId: 1, memberEmail: 1 }),
     leaveRequests.createIndex({ orgId: 1, employeeId: 1 }),
     leaveRequests.createIndex({ orgId: 1, status: 1 }),
+    employees.createIndex({ orgId: 1, managerEmployeeId: 1 }),
+    hrOnboardingTemplates.createIndex({ orgId: 1 }, { unique: true }),
+    hrOnboardingItems.createIndex({ orgId: 1, employeeId: 1, position: 1 }),
     attachments.createIndex({ orgId: 1, relatedRecordType: 1, relatedRecordId: 1 }),
     // Phase 2 — cryptographic audit trail
     auditChainEntries.createIndex({ orgId: 1, seq: 1 }, { unique: true }),

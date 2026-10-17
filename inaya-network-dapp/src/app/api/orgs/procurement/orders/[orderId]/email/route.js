@@ -10,6 +10,9 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../../lib/orgs.js";
 import { sendEmail } from "../../../../../../../lib/email.js";
+import { computePoTotals } from "../../../../../../../lib/purchase-order-totals.js";
+
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export async function POST(req, { params }) {
   try {
@@ -31,16 +34,22 @@ export async function POST(req, { params }) {
       suppliers.findOne({ _id: po.supplierId, orgId: orgObjectId }),
       orgs.findOne({ _id: orgObjectId }),
     ]);
-    const recipient = to ? String(to).trim() : supplier?.email;
+    // Suppliers are stored with contactEmail; `email` kept as a fallback for any older record.
+    const recipient = to ? String(to).trim() : (supplier?.contactEmail || supplier?.email);
     if (!recipient) return NextResponse.json({ error: "No recipient email available — pass one explicitly or add an email to this supplier." }, { status: 400 });
 
-    const rows = po.items.map((i) => `<tr><td>${i.description}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${i.unitPrice ?? "—"}</td></tr>`).join("");
-    const total = po.items.reduce((s, i) => s + i.quantity * (i.unitPrice || 0), 0);
-    const html = `<h2>Purchase Order</h2><p>From: ${org?.name || "Our company"}</p><p>Status: ${po.status}</p>
+    const currency = po.currency || "USD";
+    const { subtotal, taxRate, taxAmount, shippingCost, total } = computePoTotals(po);
+    const rows = po.items.map((i) => `<tr><td>${escapeHtml(i.description)}</td><td style="text-align:right">${escapeHtml(i.quantity)}</td><td style="text-align:right">${i.unitPrice ?? "—"}</td></tr>`).join("");
+    const extraLines = taxAmount || shippingCost
+      ? `<p>Subtotal: ${currency} ${subtotal.toFixed(2)}</p>${taxAmount ? `<p>Tax (${taxRate}%): ${currency} ${taxAmount.toFixed(2)}</p>` : ""}${shippingCost ? `<p>Shipping: ${currency} ${shippingCost.toFixed(2)}</p>` : ""}`
+      : "";
+    const delivery = po.expectedDeliveryDate ? `<p>Expected delivery: ${escapeHtml(po.expectedDeliveryDate)}</p>` : "";
+    const html = `<h2>Purchase Order</h2><p>From: ${escapeHtml(org?.name || "Our company")}</p><p>Status: ${escapeHtml(po.status)}</p>${delivery}
       <table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Description</th><th>Qty</th><th>Unit Price</th></tr>${rows}</table>
-      <p><strong>Total: ${po.currency || "USD"} ${total.toFixed(2)}</strong></p>`;
+      ${extraLines}<p><strong>Total: ${currency} ${total.toFixed(2)}</strong></p>`;
 
-    const result = await sendEmail({ to: recipient, subject: `Purchase Order from ${org?.name || "Inaya"}`, html, text: `Purchase order, total ${po.currency || "USD"} ${total.toFixed(2)}, status ${po.status}.` });
+    const result = await sendEmail({ to: recipient, subject: `Purchase Order from ${org?.name || "Inaya"}`, html, text: `Purchase order, total ${currency} ${total.toFixed(2)}, status ${po.status}.` });
     return NextResponse.json({ sent: result.sent, to: recipient, reason: result.reason || null });
   } catch (err) {
     console.error("orgs/procurement/orders/[orderId]/email POST failed:", err);

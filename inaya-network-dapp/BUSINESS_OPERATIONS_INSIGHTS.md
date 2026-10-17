@@ -54,5 +54,6 @@ Alerts (most-severe first):
 ## Explicitly out of scope (this pass)
 
 - **Mobile has no trend charts** — KPI cards, comparison, and alerts only. Charting on mobile is a real UI investment (hand-rolled SVG doesn't translate directly to React Native) better done as a deliberate follow-up than a rushed port; the same "core workflows on mobile, richer visuals on web" split this session already applied to Finance/HR's creation forms and document attachments.
-- **No custom date-range picker** — period is a fixed 7/30/90-day selector, not an arbitrary start/end date. Covers the acceptance criteria's "date/period filters" without building a full calendar-range UI for a first pass.
 - **No saved/exportable insights snapshots** — every load is computed fresh from live data; there's no "email me last week's KPI summary" or CSV export of the insights themselves (Finance's own CSV reporting already covers the underlying invoice/expense data).
+
+Closed since this was written (commit `4f17457`, 2026-09-12): a custom start/end date-range picker on web. The mobile app's lack of trend charts above is still open — that commit made the web view's charts phone-friendly, not the React Native app.

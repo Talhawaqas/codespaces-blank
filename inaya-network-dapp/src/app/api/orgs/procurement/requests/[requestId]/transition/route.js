@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/orgs.js";
 import { transitionPurchaseRequest } from "../../../../../../../lib/purchase-request-workflow.js";
+import { notifyApprovalNeeded, notifyDecision } from "../../../../../../../lib/business-notify.js";
 
 export async function POST(req, { params }) {
   try {
@@ -20,7 +21,15 @@ export async function POST(req, { params }) {
     const result = await transitionPurchaseRequest({ orgId, requestId, action, membership: auth.membership, actorEmail: auth.session.email, note });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 
-    return NextResponse.json({ status: result.request.status, updatedAt: result.request.updatedAt });
+    const request = result.request;
+    const label = `Purchase request "${request.title}"`;
+    if (action === "submit") {
+      await notifyApprovalNeeded({ orgId, recordType: "PURCHASE_REQUEST", recordId: request._id, label, departmentId: request.departmentId, requesterEmail: auth.session.email });
+    } else if (action === "approve" || action === "reject") {
+      await notifyDecision({ orgId, recordType: "PURCHASE_REQUEST", recordId: request._id, label, targetEmail: request.createdByEmail, decision: request.status, actorEmail: auth.session.email });
+    }
+
+    return NextResponse.json({ status: request.status, updatedAt: request.updatedAt });
   } catch (err) {
     console.error("orgs/procurement/requests/[requestId]/transition failed:", err);
     return NextResponse.json({ error: "Could not update the purchase request's status." }, { status: 500 });

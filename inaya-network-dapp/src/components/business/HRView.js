@@ -52,7 +52,7 @@ export default function HRView({ orgId, email }) {
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["employees", "Employees"], ["leave", "Leave"], ["managers", "Department Managers"]].map(([key, label]) => (
+          {[["employees", "Employees"], ["leave", "Leave"], ["managers", "Department Managers"], ["orgChart", "Org Chart"], ["onboarding", "Onboarding"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
@@ -62,6 +62,8 @@ export default function HRView({ orgId, email }) {
       {tab === "employees" && <EmployeesTab orgId={orgId} email={email} departments={departments} />}
       {tab === "leave" && <LeaveTab orgId={orgId} email={email} />}
       {tab === "managers" && <ManagersTab orgId={orgId} departments={departments} />}
+      {tab === "orgChart" && <OrgChartTab orgId={orgId} departments={departments} />}
+      {tab === "onboarding" && <OnboardingTemplateTab orgId={orgId} />}
     </div>
   );
 }
@@ -115,7 +117,7 @@ function EmployeesTab({ orgId, email, departments }) {
         )}
       </div>
       {showCreate && <CreateEmployeeModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
-      {selected && <EmployeeDetailModal orgId={orgId} email={email} employee={selected} onClose={() => setSelected(null)} onChanged={() => { load(); setSelected(null); }} />}
+      {selected && <EmployeeDetailModal orgId={orgId} email={email} employee={selected} employees={employees || []} onClose={() => setSelected(null)} onChanged={() => { load(); setSelected(null); }} onRefresh={load} />}
     </div>
   );
 }
@@ -171,7 +173,7 @@ const EMPLOYEE_ACTIONS = {
   ON_LEAVE: [["returnFromLeave", "Return from leave"], ["terminate", "Terminate"]],
 };
 
-function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
+function EmployeeDetailModal({ orgId, email, employee, employees = [], onClose, onChanged, onRefresh }) {
   const [balance, setBalance] = useState(null);
   const [attachments, setAttachments] = useState(null);
   const [submitting, setSubmitting] = useState(null);
@@ -258,6 +260,8 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
         )}
         {error && <p className="text-red-400 text-xs">{error}</p>}
 
+        <EmployeeStructure orgId={orgId} employee={employee} employees={employees} onRefresh={onRefresh} />
+
         <div className="space-y-2 border-t border-white/5 pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Documents</p>
           {attachments && attachments.length > 0 && (
@@ -274,6 +278,202 @@ function EmployeeDetailModal({ orgId, email, employee, onClose, onChanged }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Reporting line + onboarding checklist. The checklist endpoint's canEdit is
+// the same rule the server applies to employee edits (HR with department
+// access), so edit controls only appear for people who can actually use them.
+function EmployeeStructure({ orgId, employee, employees, onRefresh }) {
+  const [checklist, setChecklist] = useState(null);
+  const [managerId, setManagerId] = useState(employee.managerEmployeeId || "");
+  const [savedManagerId, setSavedManagerId] = useState(employee.managerEmployeeId || "");
+  const [newItem, setNewItem] = useState("");
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/hr/employees/${employee.id}/onboarding?orgId=${orgId}`).then(setChecklist).catch((err) => setError(err.message));
+  }, [orgId, employee.id]);
+
+  const canEdit = !!checklist?.canEdit;
+  const managerName = employees.find((e) => e.id === savedManagerId)?.fullName;
+  const managerOptions = employees.filter((e) => e.id !== employee.id && e.employmentStatus !== "TERMINATED");
+
+  async function run(label, fn) {
+    setBusy(label); setError("");
+    try { await fn(); } catch (err) { setError(err.message); } finally { setBusy(""); }
+  }
+
+  const saveManager = () => run("manager", async () => {
+    await api(`/api/orgs/hr/employees/${employee.id}`, { method: "PATCH", body: JSON.stringify({ orgId, managerEmployeeId: managerId || null }) });
+    setSavedManagerId(managerId);
+    onRefresh?.();
+  });
+  const toggleItem = (item) => run(item.id, async () => {
+    const result = await api(`/api/orgs/hr/employees/${employee.id}/onboarding`, { method: "PATCH", body: JSON.stringify({ orgId, itemId: item.id, done: !item.done }) });
+    setChecklist((c) => ({ ...c, ...result }));
+  });
+  const addItem = (e) => {
+    e.preventDefault();
+    if (!newItem.trim()) return;
+    run("add", async () => {
+      const result = await api(`/api/orgs/hr/employees/${employee.id}/onboarding`, { method: "POST", body: JSON.stringify({ orgId, title: newItem.trim() }) });
+      setChecklist((c) => ({ ...c, ...result }));
+      setNewItem("");
+    });
+  };
+
+  const showChecklist = checklist && (checklist.items.length > 0 || employee.employmentStatus === "ONBOARDING");
+
+  return (
+    <div className="space-y-3 border-t border-white/5 pt-3">
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Reports to</p>
+        {canEdit ? (
+          <div className="flex gap-2">
+            <label htmlFor={`manager-${employee.id}`} className="sr-only">Manager</label>
+            <select id={`manager-${employee.id}`} value={managerId} onChange={(e) => setManagerId(e.target.value)} className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]">
+              <option value="">No manager</option>
+              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.fullName}{e.jobTitle ? ` — ${e.jobTitle}` : ""}</option>)}
+            </select>
+            {managerId !== savedManagerId && <button type="button" onClick={saveManager} disabled={!!busy} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{busy === "manager" ? "…" : "Save"}</button>}
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--inaya-text-primary)]">{managerName || (savedManagerId ? "Someone outside your view" : "No manager set")}</p>
+        )}
+      </div>
+
+      {showChecklist && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Onboarding checklist</p>
+            <span className="text-[11px] font-mono tabular-nums text-[var(--inaya-text-muted)]">{checklist.done}/{checklist.total}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full bg-emerald-400" style={{ width: `${checklist.total ? (checklist.done / checklist.total) * 100 : 0}%` }} />
+          </div>
+          <div className="space-y-1">
+            {checklist.items.map((item) => (
+              <label key={item.id} className="flex items-center gap-2 text-xs text-[var(--inaya-text-primary)]">
+                <input type="checkbox" checked={item.done} disabled={!canEdit || !!busy} onChange={() => toggleItem(item)} />
+                <span className={item.done ? "line-through text-[var(--inaya-text-muted)]" : ""}>{item.title}</span>
+              </label>
+            ))}
+          </div>
+          {canEdit && (
+            <form onSubmit={addItem} className="flex gap-2">
+              <label htmlFor={`onboard-add-${employee.id}`} className="sr-only">New checklist item</label>
+              <input id={`onboard-add-${employee.id}`} value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add an item for this person" className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <button disabled={!!busy || !newItem.trim()} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{busy === "add" ? "…" : "Add"}</button>
+            </form>
+          )}
+          {checklist.complete && employee.employmentStatus === "ONBOARDING" && (
+            <p className="text-emerald-400 text-xs">All onboarding items are done — use Activate above when you&apos;re ready.</p>
+          )}
+        </div>
+      )}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// ORG CHART
+// ============================================================
+function OrgChartNode({ node, departmentName, depth }) {
+  const [open, setOpen] = useState(depth < 2);
+  const hasReports = node.reports.length > 0;
+  return (
+    <div>
+      <div className="flex items-center gap-2 py-1" style={{ paddingLeft: depth * 18 }}>
+        {hasReports ? (
+          <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${node.fullName}'s reports`} className="w-5 h-5 shrink-0 rounded text-[11px] text-[var(--inaya-text-muted)] hover:bg-white/10">{open ? "▾" : "▸"}</button>
+        ) : <span className="w-5 shrink-0" />}
+        <div className="min-w-0 flex-1 bg-black/20 border border-white/5 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-[var(--inaya-text-primary)] truncate">{node.fullName}</span>
+            <StatusBadge status={node.employmentStatus} />
+          </div>
+          <p className="text-[11px] font-mono text-[var(--inaya-text-muted)] truncate">
+            {[node.jobTitle, departmentName(node.departmentId)].filter(Boolean).join(" · ")}
+            {hasReports ? ` · ${node.reports.length} direct report${node.reports.length === 1 ? "" : "s"}` : ""}
+          </p>
+        </div>
+      </div>
+      {open && node.reports.map((child) => <OrgChartNode key={child.id} node={child} departmentName={departmentName} depth={depth + 1} />)}
+    </div>
+  );
+}
+
+function OrgChartTab({ orgId, departments }) {
+  const [chart, setChart] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/hr/org-chart?orgId=${orgId}`).then(setChart).catch((err) => setError(err.message));
+  }, [orgId]);
+
+  const deptName = (id) => departments.find((d) => d.id === id)?.name || null;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px] text-[var(--inaya-text-muted)]">Reporting lines for the employees you can see. Set someone&apos;s manager from their employee record.</p>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 overflow-x-auto">
+        {!chart && !error ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : chart && chart.roots.length === 0 ? (
+          <EmptyState compact icon="🌳" description="No employee records visible yet." />
+        ) : chart && (
+          <div className="min-w-[280px]">
+            {chart.roots.map((root) => <OrgChartNode key={root.id} node={root} departmentName={deptName} depth={0} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ONBOARDING TEMPLATE
+// ============================================================
+function OnboardingTemplateTab({ orgId }) {
+  const [template, setTemplate] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/hr/onboarding-template?orgId=${orgId}`)
+      .then((t) => { setTemplate(t); setDraft(t.items.join("\n")); })
+      .catch((err) => setError(err.message));
+  }, [orgId]);
+
+  async function save() {
+    setSaving(true); setError(""); setMessage("");
+    try {
+      const t = await api("/api/orgs/hr/onboarding-template", { method: "PUT", body: JSON.stringify({ orgId, items: draft.split("\n") }) });
+      setTemplate(t);
+      setDraft(t.items.join("\n"));
+      setMessage("Saved. New hires get this checklist; existing checklists aren't changed.");
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px] text-[var(--inaya-text-muted)]">The checklist every new employee starts with. One item per line.{template?.isDefault ? " You're seeing the default — edit it to make it yours." : ""}</p>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {template && (
+        <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-3">
+          <label htmlFor="onboarding-template" className="sr-only">Onboarding checklist items, one per line</label>
+          <textarea id="onboarding-template" value={draft} onChange={(e) => setDraft(e.target.value)} rows={8} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] resize-y" />
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={save} disabled={saving || draft.trim() === template.items.join("\n")} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">{saving ? "Saving…" : "Save checklist"}</button>
+            {message && <p className="text-emerald-400 text-xs">{message}</p>}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

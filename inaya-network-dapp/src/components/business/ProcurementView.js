@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import ConfirmButton from "./ConfirmButton";
 import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
+import { computePoTotals } from "../../lib/purchase-order-totals.js";
 
 const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
 
@@ -77,6 +78,7 @@ function SuppliersTab({ orgId, departments }) {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -105,19 +107,61 @@ function SuppliersTab({ orgId, departments }) {
         ) : (
           <div className="space-y-2">
             {filtered.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
+              <button key={s.id} type="button" onClick={() => setSelectedSupplier(s)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
                   <span className="text-[var(--inaya-text-primary)] text-sm">{s.name}</span>
                   <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{s.contactEmail || "No contact email"}</p>
                 </div>
                 <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${s.status === "ACTIVE" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" : "bg-white/5 text-[var(--inaya-text-muted)] border-white/10"}`}>{s.status}</span>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </div>
       {showCreate && <CreateSupplierModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {selectedSupplier && <SupplierScorecardModal orgId={orgId} supplier={selectedSupplier} onClose={() => setSelectedSupplier(null)} />}
     </div>
+  );
+}
+
+function ScoreTile({ label, value, sample, unit = "%", note }) {
+  return (
+    <div className="bg-black/20 border border-white/5 rounded-lg p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--inaya-text-muted)]">{label}</p>
+      <p className="text-xl font-mono tabular-nums text-[var(--inaya-text-primary)] mt-1">{value === null ? "—" : `${value}${unit}`}</p>
+      <p className="text-[10px] font-mono text-[#8a96ab] mt-0.5">{value === null ? "Not enough data yet" : `Based on ${sample} order${sample === 1 ? "" : "s"}`}{note ? ` · ${note}` : ""}</p>
+    </div>
+  );
+}
+
+function SupplierScorecardModal({ orgId, supplier, onClose }) {
+  const [card, setCard] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/procurement/suppliers/${supplier.id}/scorecard?orgId=${orgId}`).then(setCard).catch((err) => setError(err.message));
+  }, [orgId, supplier.id]);
+
+  return (
+    <Modal title={supplier.name} onClose={onClose}>
+      <div className="space-y-3">
+        <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{supplier.contactEmail || "No contact email"}{supplier.phone ? ` · ${supplier.phone}` : ""}</p>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        {!card && !error && <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading scorecard…</p>}
+        {card && (
+          <>
+            <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Scorecard · {card.totalOrders} purchase order{card.totalOrders === 1 ? "" : "s"}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <ScoreTile label="Fill rate" value={card.fillRate.percent} sample={card.fillRate.sample} note={card.fillRate.percent === null ? null : `${card.fillRate.unitsReceived}/${card.fillRate.unitsOrdered} units`} />
+              <ScoreTile label="On time" value={card.onTimeRate.percent} sample={card.onTimeRate.sample} />
+              <ScoreTile label="Avg. lead time" value={card.averageLeadTimeDays.days} sample={card.averageLeadTimeDays.sample} unit=" days" />
+              <ScoreTile label="Cancelled / rejected" value={card.cancellationRate.percent} sample={card.cancellationRate.sample} />
+            </div>
+            <p className="text-[11px] text-[#8a96ab]">Computed only from this supplier&apos;s real purchase orders in departments you can access. On-time needs an expected delivery date on the order.</p>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -369,6 +413,9 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
   const [supplierId, setSupplierId] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [items, setItems] = useState([{ description: "", quantity: 1, unitPrice: "" }]);
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
+  const [taxRate, setTaxRate] = useState("");
+  const [shippingCost, setShippingCost] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -395,6 +442,9 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
         body: JSON.stringify({
           orgId, departmentId, supplierId, currency,
           items: validItems.map((it) => ({ description: it.description.trim(), quantity: Number(it.quantity), unitPrice: it.unitPrice ? Number(it.unitPrice) : undefined })),
+          expectedDeliveryDate: expectedDeliveryDate || undefined,
+          taxRate: taxRate !== "" ? Number(taxRate) : undefined,
+          shippingCost: shippingCost !== "" ? Number(shippingCost) : undefined,
         }),
       });
       window.dispatchEvent(new CustomEvent("inaya:guided-po-created"));
@@ -432,6 +482,16 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
           ))}
           <button type="button" onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add item</button>
         </div>
+
+        <PoExtrasFields
+          idPrefix="po-create" currency={currency}
+          expectedDeliveryDate={expectedDeliveryDate} onExpectedDeliveryDate={setExpectedDeliveryDate}
+          taxRate={taxRate} onTaxRate={setTaxRate} shippingCost={shippingCost} onShippingCost={setShippingCost}
+        />
+        <PoTotalsBreakdown currency={currency} totals={computePoTotals({
+          items: validItems.map((it) => ({ quantity: Number(it.quantity), unitPrice: it.unitPrice ? Number(it.unitPrice) : null })),
+          taxRate: taxRate !== "" ? Number(taxRate) : null, shippingCost: shippingCost !== "" ? Number(shippingCost) : null,
+        })} />
 
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !supplierId || validItems.length === 0} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create purchase order"}</button>
@@ -587,6 +647,9 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
           </div>
         )}
 
+        <PoTotalsBreakdown currency={po.currency} totals={po} />
+        <PoDetailsEditor orgId={orgId} po={po} onSaved={async () => { await load(); onChanged(); }} />
+
         <div className="flex flex-wrap gap-1.5">
           {(PO_ACTIONS[po.status] || []).map(([action, label]) =>
             DESTRUCTIVE_ACTIONS.has(action) ? (
@@ -607,6 +670,96 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
         {error && <p className="text-red-400 text-xs">{error}</p>}
       </div>
     </Modal>
+  );
+}
+
+const fieldClass = "w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] disabled:opacity-40";
+
+function PoExtrasFields({ idPrefix, currency, expectedDeliveryDate, onExpectedDeliveryDate, taxRate, onTaxRate, shippingCost, onShippingCost, moneyLocked = false, dateLocked = false }) {
+  return (
+    <div className="grid grid-cols-3 gap-1.5">
+      <label htmlFor={`${idPrefix}-delivery`} className="text-[10px] text-[var(--inaya-text-muted)]">
+        Expected delivery
+        <input id={`${idPrefix}-delivery`} type="date" value={expectedDeliveryDate} disabled={dateLocked} onChange={(e) => onExpectedDeliveryDate(e.target.value)} className={`mt-1 ${fieldClass}`} />
+      </label>
+      <label htmlFor={`${idPrefix}-tax`} className="text-[10px] text-[var(--inaya-text-muted)]">
+        Tax %
+        <input id={`${idPrefix}-tax`} type="number" min="0" max="100" step="0.01" value={taxRate} disabled={moneyLocked} onChange={(e) => onTaxRate(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
+      </label>
+      <label htmlFor={`${idPrefix}-shipping`} className="text-[10px] text-[var(--inaya-text-muted)]">
+        Shipping ({currency})
+        <input id={`${idPrefix}-shipping`} type="number" min="0" step="0.01" value={shippingCost} disabled={moneyLocked} onChange={(e) => onShippingCost(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
+      </label>
+    </div>
+  );
+}
+
+function PoTotalsBreakdown({ currency, totals }) {
+  const money = (n) => `${currency} ${Number(n || 0).toFixed(2)}`;
+  const hasExtras = totals.taxAmount > 0 || totals.shippingCost > 0;
+  return (
+    <div className="bg-black/20 border border-white/5 rounded-lg p-2.5 text-[11px] font-mono space-y-0.5">
+      {hasExtras && (
+        <>
+          <div className="flex justify-between text-[var(--inaya-text-muted)]"><span>Subtotal</span><span className="tabular-nums">{money(totals.subtotal)}</span></div>
+          {totals.taxAmount > 0 && <div className="flex justify-between text-[var(--inaya-text-muted)]"><span>Tax ({totals.taxRate}%)</span><span className="tabular-nums">{money(totals.taxAmount)}</span></div>}
+          {totals.shippingCost > 0 && <div className="flex justify-between text-[var(--inaya-text-muted)]"><span>Shipping</span><span className="tabular-nums">{money(totals.shippingCost)}</span></div>}
+        </>
+      )}
+      <div className="flex justify-between text-[var(--inaya-text-primary)] font-bold"><span>Total</span><span className="tabular-nums">{money(totals.total)}</span></div>
+    </div>
+  );
+}
+
+// Mirrors the server rule: tax/shipping change the approved total, so they
+// are editable only while DRAFT; the delivery date until the PO is closed.
+function PoDetailsEditor({ orgId, po, onSaved }) {
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(po.expectedDeliveryDate || "");
+  const [taxRate, setTaxRate] = useState(po.taxRate ? String(po.taxRate) : "");
+  const [shippingCost, setShippingCost] = useState(po.shippingCost ? String(po.shippingCost) : "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setExpectedDeliveryDate(po.expectedDeliveryDate || "");
+    setTaxRate(po.taxRate ? String(po.taxRate) : "");
+    setShippingCost(po.shippingCost ? String(po.shippingCost) : "");
+  }, [po]);
+
+  const moneyLocked = po.status !== "DRAFT";
+  const dateLocked = ["RECEIVED", "REJECTED", "CANCELLED"].includes(po.status);
+  if (moneyLocked && dateLocked && !po.expectedDeliveryDate) return null;
+
+  const changes = {};
+  if (!dateLocked && expectedDeliveryDate !== (po.expectedDeliveryDate || "")) changes.expectedDeliveryDate = expectedDeliveryDate || null;
+  if (!moneyLocked && taxRate !== (po.taxRate ? String(po.taxRate) : "")) changes.taxRate = taxRate === "" ? null : Number(taxRate);
+  if (!moneyLocked && shippingCost !== (po.shippingCost ? String(po.shippingCost) : "")) changes.shippingCost = shippingCost === "" ? null : Number(shippingCost);
+  const dirty = Object.keys(changes).length > 0;
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    try {
+      await api(`/api/orgs/procurement/orders/${po.id}`, { method: "PATCH", body: JSON.stringify({ orgId, ...changes }) });
+      await onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <PoExtrasFields
+        idPrefix={`po-${po.id}`} currency={po.currency} moneyLocked={moneyLocked} dateLocked={dateLocked}
+        expectedDeliveryDate={expectedDeliveryDate} onExpectedDeliveryDate={setExpectedDeliveryDate}
+        taxRate={taxRate} onTaxRate={setTaxRate} shippingCost={shippingCost} onShippingCost={setShippingCost}
+      />
+      {moneyLocked && !dateLocked && <p className="text-[10px] text-[#8a96ab]">Tax and shipping are locked after submission because they change the approved total.</p>}
+      {dirty && <button type="button" onClick={save} disabled={saving} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40">{saving ? "…" : "Save details"}</button>}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
   );
 }
 

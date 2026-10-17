@@ -67,6 +67,7 @@ DRAFT | PENDING_APPROVAL | APPROVED | ORDERED -> CANCELLED
 
 ## Explicitly out of scope (this pass)
 
-- No PO line-item editing after creation (cancel and recreate instead) — editing items after `DRAFT` would need to interact with `receivedQuantity`/status in ways the SOW doesn't call for yet.
-- No multi-currency, tax, or shipping-cost handling on POs.
-- No supplier scorecards/performance tracking.
+- Line items, tax and shipping are editable only while `DRAFT` — they change the total an approver signs off on.
+- Currency conversion uses a static, dated reference-rate table (`src/lib/currency.js`), not a live FX feed.
+
+Closed since this was written: DRAFT-only line-item editing and multi-currency (commit `4f17457`, 2026-09-12). Optional tax rate, shipping cost and expected delivery date on POs, and supplier scorecards (fill rate, on-time rate, lead time, cancellation rate — from real PO data, "not enough data" rather than invented numbers) shipped in the Business Workspace gap closure, Batch 1, 2026-10 — `src/lib/purchase-order-totals.js`, `src/lib/supplier-scorecard.js`, `test/supplier-scorecard.test.mjs`.

@@ -46,6 +46,15 @@ export const EVENTS = {
   "meeting.invitation": { label: "I'm invited to a meeting", defaults: { inApp: true, email: true }, severity: "info", generic: "You're invited to a meeting." },
   "meeting.participant_waiting": { label: "Someone is waiting to join my meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "Someone is waiting in your meeting's lobby." },
   "meeting.admitted": { label: "I was admitted to a meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "You were admitted to a meeting." },
+  // Business Workspace gap closure, Batch 1 — Business Operations
+  "task.assigned": { label: "A task is assigned to me", defaults: { inApp: true }, severity: "info", generic: "A task was assigned to you." },
+  "task.due_soon": { label: "A task of mine is due tomorrow", defaults: { inApp: true }, severity: "info", generic: "One of your tasks is due tomorrow." },
+  "task.overdue": { label: "A task of mine is overdue", defaults: { inApp: true }, severity: "warning", generic: "One of your tasks is overdue." },
+  "procurement.approval": { category: "approval", label: "A purchase request or order needs my approval", defaults: { inApp: true, email: true }, severity: "info", generic: "A purchase request or purchase order is waiting for your approval." },
+  "procurement.decided": { label: "My purchase request or order was decided", defaults: { inApp: true }, severity: "info", generic: "A purchase request or purchase order you submitted was decided." },
+  "leave.approval": { category: "approval", label: "A leave request needs my approval", defaults: { inApp: true, email: true }, severity: "info", generic: "A leave request is waiting for your approval." },
+  "leave.decided": { label: "My leave request was decided", defaults: { inApp: true }, severity: "info", generic: "Your leave request was decided." },
+  "inventory.reorder_drafted": { label: "A reorder request was drafted for low stock", defaults: { inApp: true }, severity: "info", generic: "A reorder purchase request was drafted for a low-stock product." },
 };
 
 let indexed = false;

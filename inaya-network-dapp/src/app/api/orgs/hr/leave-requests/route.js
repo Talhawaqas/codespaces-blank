@@ -12,6 +12,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessHR, isSelfEmployeeRecord, toObjectId } from "../../../../../lib/orgs.js";
 import { LEAVE_STATES } from "../../../../../lib/leave-workflow.js";
+import { notifyApprovalNeeded } from "../../../../../lib/business-notify.js";
 
 function serializeLeaveRequest(r) {
   return {
@@ -92,6 +93,12 @@ export async function POST(req) {
     const result = await leaveRequests.insertOne({
       orgId: orgObjectId, employeeId: employeeObjectId, leaveType, startDate, endDate,
       reason: reason ? String(reason).trim() : null, status: "PENDING", approvedByEmail: null, createdAt: now, updatedAt: now,
+    });
+
+    await notifyApprovalNeeded({
+      orgId, recordType: "LEAVE_REQUEST", recordId: result.insertedId,
+      label: `Leave request for ${employee.fullName} (${String(startDate).slice(0, 10)} to ${String(endDate).slice(0, 10)})`,
+      departmentId: employee.departmentId, requesterEmail: auth.session.email,
     });
 
     return NextResponse.json(serializeLeaveRequest({

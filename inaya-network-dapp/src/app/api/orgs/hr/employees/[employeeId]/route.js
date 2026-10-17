@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessHR, isDepartmentManager, isSelfEmployeeRecord, normalizeEmail, toObjectId } from "../../../../../../lib/orgs.js";
+import { setEmployeeManager } from "../../../../../../lib/hr-structure.js";
 
 function serializeEmployee(e) {
   return {
@@ -15,6 +16,7 @@ function serializeEmployee(e) {
     employmentStatus: e.employmentStatus, joiningDate: e.joiningDate, contactEmail: e.contactEmail || null,
     contactPhone: e.contactPhone || null, annualLeaveAllocationDays: e.annualLeaveAllocationDays,
     createdByEmail: e.createdByEmail, createdAt: e.createdAt, updatedAt: e.updatedAt,
+    managerEmployeeId: e.managerEmployeeId ? e.managerEmployeeId.toString() : null,
   };
 }
 
@@ -50,7 +52,7 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const { orgId, fullName, jobTitle, contactEmail, contactPhone, annualLeaveAllocationDays } = await req.json();
+    const { orgId, fullName, jobTitle, contactEmail, contactPhone, annualLeaveAllocationDays, managerEmployeeId } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadForRead(req, orgId, params.employeeId);
@@ -70,6 +72,11 @@ export async function PATCH(req, { params }) {
     if (annualLeaveAllocationDays !== undefined) {
       if (!Number.isFinite(annualLeaveAllocationDays) || annualLeaveAllocationDays < 0) return NextResponse.json({ error: "annualLeaveAllocationDays must be a non-negative number." }, { status: 400 });
       updateFields.annualLeaveAllocationDays = annualLeaveAllocationDays;
+    }
+    // Validated last (self/cycle checks) so a rejected manager never leaves a half-applied edit.
+    if (managerEmployeeId !== undefined) {
+      const managerResult = await setEmployeeManager({ orgId, employeeId: params.employeeId, managerEmployeeId: managerEmployeeId || null, actorEmail: result.auth.session.email });
+      if (managerResult.error) return NextResponse.json({ error: managerResult.error }, { status: managerResult.status });
     }
 
     await result.employees.updateOne({ _id: result.employee._id }, { $set: updateFields });

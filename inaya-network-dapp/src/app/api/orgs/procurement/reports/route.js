@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
+import { computePoTotals } from "../../../../../lib/purchase-order-totals.js";
 
 const REPORT_TYPES = ["open-pos", "closed-pos", "po-by-vendor", "po-by-department", "ar-payment-history"];
 const OPEN_STATUSES = ["DRAFT", "PENDING_APPROVAL", "APPROVED", "ORDERED", "PARTIALLY_RECEIVED"];
@@ -27,8 +28,10 @@ function toCsv(rows, columns) {
   const body = rows.map((row) => columns.map((col) => csvEscape(row[col])).join(",")).join("\n");
   return `${header}\n${body}`;
 }
+// Includes optional tax and shipping; identical to the plain line-item sum
+// for POs that don't use them.
 function poTotal(po) {
-  return po.items.reduce((s, i) => s + i.quantity * (i.unitPrice || 0), 0);
+  return computePoTotals(po).total;
 }
 
 export async function GET(req) {

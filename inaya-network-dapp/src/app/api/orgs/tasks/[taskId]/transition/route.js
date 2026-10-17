@@ -12,6 +12,7 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.js";
 import { transitionTask } from "../../../../../../lib/task-workflow.js";
+import { notifyTaskAssigned } from "../../../../../../lib/business-notify.js";
 
 export async function POST(req, { params }) {
   try {
@@ -35,10 +36,15 @@ export async function POST(req, { params }) {
     });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 
+    if (result.nextTaskCreated && result.nextTask) {
+      await notifyTaskAssigned({ orgId, task: result.nextTask, actorEmail: auth.session.email, assignedAt: result.nextTask.createdAt });
+    }
+
     return NextResponse.json({
       status: result.task.status,
       updatedAt: result.task.updatedAt,
       completedAt: result.task.completedAt || null,
+      ...(result.nextTask ? { nextTaskId: result.nextTask._id.toString(), nextDueDate: result.nextTask.dueDate || null } : {}),
     });
   } catch (err) {
     console.error("orgs/tasks/[taskId]/transition failed:", err);

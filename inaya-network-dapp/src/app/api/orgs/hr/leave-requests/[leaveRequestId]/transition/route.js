@@ -6,8 +6,9 @@
 // requester's own PENDING request too — see leave-workflow.js.)
 
 import { NextResponse } from "next/server";
-import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/orgs.js";
+import { ensureOrgIndexes, requireMembership, getOrgCollections } from "../../../../../../../lib/orgs.js";
 import { transitionLeaveRequest } from "../../../../../../../lib/leave-workflow.js";
+import { notifyDecision } from "../../../../../../../lib/business-notify.js";
 
 export async function POST(req, { params }) {
   try {
@@ -21,6 +22,17 @@ export async function POST(req, { params }) {
 
     const result = await transitionLeaveRequest({ orgId, leaveRequestId, action, membership: auth.membership, actorEmail: auth.session.email, note });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+
+    if (action === "approve" || action === "reject") {
+      const leave = result.leaveRequest;
+      const { employees } = await getOrgCollections();
+      const employee = await employees.findOne({ _id: leave.employeeId }, { projection: { memberEmail: 1 } });
+      await notifyDecision({
+        orgId, recordType: "LEAVE_REQUEST", recordId: leave._id,
+        label: `Your leave request (${String(leave.startDate).slice(0, 10)} to ${String(leave.endDate).slice(0, 10)})`,
+        targetEmail: employee?.memberEmail, decision: leave.status, actorEmail: auth.session.email,
+      });
+    }
 
     return NextResponse.json({ status: result.leaveRequest.status, updatedAt: result.leaveRequest.updatedAt });
   } catch (err) {

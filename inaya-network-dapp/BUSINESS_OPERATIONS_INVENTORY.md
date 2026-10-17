@@ -57,5 +57,6 @@ Department-level access, same as every other Business Operations module. Warehou
 ## Explicitly out of scope (this pass)
 
 - No barcode scanning, no multi-unit conversion (each SKU is tracked in one unit).
-- No warehouse-to-warehouse transfer UI yet (the `TRANSFER_IN`/`TRANSFER_OUT` movement types exist in the schema for this, but no route wires them up — a manual two-movement workaround via the existing ISSUE/RECEIPT types covers the same real effect today).
-- No automatic reorder/purchase-request generation when a product goes low-stock — the dashboard/AI surfaces the signal, a human still decides to act on it.
+- Reorder drafts are never submitted automatically — a person submits and an owner/admin approves through the normal purchase-request workflow.
+
+Closed since this was written: warehouse-to-warehouse transfers (route + UI, commit `4f17457`, 2026-09-12). Low stock now drafts a DRAFT purchase request — manually from the product, or daily for products with auto-reorder switched on — with no second draft while one is in flight (Business Workspace gap closure, Batch 1, 2026-10; `src/lib/inventory-reorder.js`, `test/inventory-reorder.test.mjs`).

@@ -65,6 +65,7 @@ Unlike Tasks' `dueDate` (a computed `isOverdue` boolean with no stored transitio
 
 ## Explicitly out of scope (this pass)
 
-- No PDF invoice generation — no runtime PDF library exists anywhere in this app today; adding one is real new scope better done once there's an actual invoice-template design, not silently promised here.
-- No multi-currency conversion — one currency label per record (defaults `"USD"`), stored as-entered.
 - No regulated banking/payment-processor integration — payments are records of amounts, not real money movement, per the SOW's explicit testnet-scope instruction.
+- Currency conversion uses a static, dated reference-rate table, not a live FX feed; the original amount and currency are always kept as entered.
+
+Closed since this was written (commit `4f17457`, 2026-09-12): invoice PDFs (`/api/orgs/finance/invoices/[invoiceId]/pdf`) and display-only multi-currency conversion (`src/lib/currency.js`).

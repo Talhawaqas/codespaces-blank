@@ -15,15 +15,27 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { isLowStock } from "../../../../../lib/inventory.js";
+import { findOpenReorderRequest } from "../../../../../lib/inventory-reorder.js";
 
 function serializeProduct(p, totalStock) {
   return {
     id: p._id.toString(), orgId: p.orgId.toString(), departmentId: p.departmentId.toString(),
     sku: p.sku, name: p.name, description: p.description || null, unitPrice: p.unitPrice ?? null,
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
+    reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
+}
+
+/** Marks low-stock products that already have a reorder request in flight
+ *  (only low-stock ones are checked, so this stays cheap). */
+async function attachOpenReorders(orgId, serialized) {
+  await Promise.all(serialized.filter((p) => p.lowStock).map(async (p) => {
+    const open = await findOpenReorderRequest(orgId, p.id);
+    p.openReorderRequestId = open ? open._id.toString() : null;
+  }));
+  return serialized;
 }
 
 async function attachStock(list) {
@@ -65,6 +77,7 @@ export async function GET(req) {
 
     let serialized = await attachStock(list);
     if (lowStockOnly) serialized = serialized.filter((p) => p.lowStock);
+    serialized = await attachOpenReorders(orgId, serialized);
 
     return NextResponse.json({ products: serialized });
   } catch (err) {

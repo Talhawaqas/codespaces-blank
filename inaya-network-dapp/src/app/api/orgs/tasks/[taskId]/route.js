@@ -12,6 +12,8 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canManageOrg, toObjectId } from "../../../../../lib/orgs.js";
 import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
+import { validateRecurrence, recurrenceFieldsFor, setTaskDependencies, getTaskRelations } from "../../../../../lib/task-relations.js";
+import { notifyTaskAssigned } from "../../../../../lib/business-notify.js";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -31,6 +33,9 @@ function serializeTask(t) {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     completedAt: t.completedAt || null,
+    parentTaskId: t.parentTaskId ? t.parentTaskId.toString() : null,
+    blockedByTaskIds: (t.blockedByTaskIds || []).map((id) => id.toString()),
+    recurrence: t.recurrence || null,
   };
 }
 
@@ -59,7 +64,7 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
 
-    return NextResponse.json(serializeTask(task));
+    return NextResponse.json({ ...serializeTask(task), ...(await getTaskRelations(task)) });
   } catch (err) {
     console.error("orgs/tasks/[taskId] GET failed:", err);
     return NextResponse.json({ error: "Could not fetch the task." }, { status: 500 });
@@ -70,7 +75,7 @@ export async function PATCH(req, { params }) {
   try {
     const { taskId } = params;
     const body = await req.json();
-    const { orgId, title, description, priority, assigneeEmail: rawAssignee, dueDate } = body;
+    const { orgId, title, description, priority, assigneeEmail: rawAssignee, dueDate, blockedByTaskIds, recurrence: rawRecurrence } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();
@@ -112,9 +117,28 @@ export async function PATCH(req, { params }) {
       }
       updateFields.assigneeEmail = normalized;
     }
+    if (rawRecurrence !== undefined) {
+      const { recurrence, error: recurrenceError } = validateRecurrence(rawRecurrence);
+      if (recurrenceError) return NextResponse.json({ error: recurrenceError }, { status: 400 });
+      if (recurrence && task.parentTaskId) {
+        return NextResponse.json({ error: "A subtask can't repeat on its own; make the parent task recurring instead." }, { status: 400 });
+      }
+      Object.assign(updateFields, recurrenceFieldsFor({ ...task, ...updateFields }, recurrence));
+    }
+
+    // Applied last, after every other field has validated, so a rejected
+    // dependency change never leaves a half-applied edit.
+    if (blockedByTaskIds !== undefined) {
+      const dependencyResult = await setTaskDependencies({ orgId, taskId, blockedByTaskIds, actorEmail: auth.session.email });
+      if (dependencyResult.error) return NextResponse.json({ error: dependencyResult.error }, { status: dependencyResult.status });
+    }
 
     await tasks.updateOne({ _id: taskObjectId }, { $set: updateFields });
     const updated = await tasks.findOne({ _id: taskObjectId });
+
+    if (updateFields.assigneeEmail && updateFields.assigneeEmail !== task.assigneeEmail) {
+      await notifyTaskAssigned({ orgId, task: updated, actorEmail: auth.session.email, assignedAt: updateFields.updatedAt });
+    }
 
     await logOrgActivity({
       orgId: orgObjectId,

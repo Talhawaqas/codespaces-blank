@@ -12,9 +12,12 @@
 //      project itself).
 
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../lib/document-permissions.js";
 import { TASK_STATES } from "../../../../lib/task-workflow.js";
+import { validateParentTask, validateRecurrence, recurrenceFieldsFor } from "../../../../lib/task-relations.js";
+import { notifyTaskAssigned } from "../../../../lib/business-notify.js";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
@@ -36,6 +39,9 @@ function serializeTask(t, deptNameById, projNameById) {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     completedAt: t.completedAt || null,
+    parentTaskId: t.parentTaskId ? t.parentTaskId.toString() : null,
+    blockedByTaskIds: (t.blockedByTaskIds || []).map((id) => id.toString()),
+    recurrence: t.recurrence || null,
   };
 }
 
@@ -110,12 +116,15 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, projectId, title: rawTitle, description, priority: rawPriority, assigneeEmail: rawAssignee, dueDate } = await req.json();
+    const { orgId, projectId, title: rawTitle, description, priority: rawPriority, assigneeEmail: rawAssignee, dueDate, parentTaskId, recurrence: rawRecurrence } = await req.json();
     const title = String(rawTitle || "").trim();
     if (!orgId || !projectId) return NextResponse.json({ error: "orgId and projectId are required." }, { status: 400 });
     if (!title) return NextResponse.json({ error: "Task title is required." }, { status: 400 });
     const priority = PRIORITIES.includes(rawPriority) ? rawPriority : "MEDIUM";
     const assigneeEmail = rawAssignee ? String(rawAssignee).trim().toLowerCase() : null;
+    const { recurrence, error: recurrenceError } = validateRecurrence(rawRecurrence);
+    if (recurrenceError) return NextResponse.json({ error: recurrenceError }, { status: 400 });
+    if (recurrence && parentTaskId) return NextResponse.json({ error: "A subtask can't repeat on its own; make the parent task recurring instead." }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
@@ -138,8 +147,17 @@ export async function POST(req) {
       }
     }
 
+    let parentObjectId = null;
+    if (parentTaskId) {
+      const parentCheck = await validateParentTask({ orgId, parentTaskId, projectId });
+      if (parentCheck.error) return NextResponse.json({ error: parentCheck.error }, { status: parentCheck.status });
+      parentObjectId = parentCheck.parent._id;
+    }
+
     const now = new Date().toISOString();
-    const result = await tasks.insertOne({
+    const taskObjectId = new ObjectId();
+    const doc = {
+      _id: taskObjectId,
       orgId: orgObjectId,
       departmentId: project.departmentId,
       projectId: projectObjectId,
@@ -154,13 +172,16 @@ export async function POST(req) {
       updatedAt: now,
       completedAt: null,
       deletedAt: null,
-    });
+    };
+    // New optional fields are only written when used, so a plain task's
+    // stored shape is unchanged.
+    if (parentObjectId) doc.parentTaskId = parentObjectId;
+    if (recurrence) Object.assign(doc, recurrenceFieldsFor(doc, recurrence));
+    await tasks.insertOne(doc);
 
-    return NextResponse.json(serializeTask({
-      _id: result.insertedId, orgId: orgObjectId, departmentId: project.departmentId, projectId: projectObjectId,
-      title, description, status: "TODO", priority, assigneeEmail, dueDate: dueDate || null,
-      createdByEmail: auth.session.email, createdAt: now, updatedAt: now, completedAt: null,
-    }));
+    await notifyTaskAssigned({ orgId, task: doc, actorEmail: auth.session.email, assignedAt: now });
+
+    return NextResponse.json(serializeTask(doc));
   } catch (err) {
     console.error("orgs/tasks POST failed:", err);
     return NextResponse.json({ error: "Could not create the task." }, { status: 500 });

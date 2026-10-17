@@ -94,6 +94,7 @@ function ProductsTab({ orgId, departments }) {
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}</span>
                   {p.lowStock && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Low stock</span>}
+                  {p.openReorderRequestId && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30">Reorder drafted</span>}
                 </div>
               </button>
             ))}
@@ -283,6 +284,8 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
           </div>
         )}
 
+        <ReorderSection orgId={orgId} productId={product.id} refreshKey={stock} onChanged={onChanged} />
+
         <form onSubmit={handleSubmit} className="space-y-2 border-t border-white/5 pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Record a movement</p>
           <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
@@ -316,6 +319,85 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
         )}
       </div>
     </Modal>
+  );
+}
+
+// Low stock -> a DRAFT purchase request (never submitted on anyone's
+// behalf). refreshKey changes whenever stock reloads, so this re-reads the
+// product's live low-stock / in-flight state after a movement is recorded.
+function ReorderSection({ orgId, productId, refreshKey, onChanged }) {
+  const [info, setInfo] = useState(null);
+  const [reorderQuantity, setReorderQuantity] = useState("");
+  const [autoReorder, setAutoReorder] = useState(false);
+  const [busy, setBusy] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api(`/api/orgs/inventory/products/${productId}?orgId=${orgId}`)
+      .then((p) => { setInfo(p); setReorderQuantity(p.reorderQuantity ?? ""); setAutoReorder(!!p.autoReorder); })
+      .catch((err) => setError(err.message));
+  }, [orgId, productId, refreshKey]);
+
+  if (!info) return null;
+  const hasThreshold = info.reorderThreshold > 0;
+  const settingsChanged = String(reorderQuantity) !== String(info.reorderQuantity ?? "") || autoReorder !== !!info.autoReorder;
+
+  async function saveSettings() {
+    setBusy("save"); setError(""); setMessage("");
+    try {
+      const qty = String(reorderQuantity).trim() === "" ? null : Number(reorderQuantity);
+      const updated = await api(`/api/orgs/inventory/products/${productId}`, { method: "PATCH", body: JSON.stringify({ orgId, reorderQuantity: qty, autoReorder }) });
+      setInfo((i) => ({ ...i, ...updated }));
+      setMessage("Reorder settings saved.");
+      onChanged();
+    } catch (err) { setError(err.message); } finally { setBusy(""); }
+  }
+
+  async function draftReorder() {
+    setBusy("draft"); setError(""); setMessage("");
+    try {
+      const result = await api(`/api/orgs/inventory/products/${productId}/reorder`, { method: "POST", body: JSON.stringify({ orgId }) });
+      setInfo((i) => ({ ...i, openReorderRequestId: result.request.id }));
+      setMessage(result.created
+        ? `Draft purchase request created for ${result.request.reorderQuantity} units. Submit it from Procurement when ready.`
+        : "A reorder request for this product is already in progress — see Procurement.");
+      onChanged();
+    } catch (err) { setError(err.message); } finally { setBusy(""); }
+  }
+
+  return (
+    <div className="space-y-2 border-t border-white/5 pt-3">
+      <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Reordering</p>
+      {!hasThreshold ? (
+        <p className="text-[#8a96ab] text-xs italic">Set a reorder threshold on this product to enable reordering.</p>
+      ) : (
+        <>
+          {info.lowStock && (
+            info.openReorderRequestId ? (
+              <p className="text-xs text-[#00f2fe]">A reorder request is already in progress for this product.</p>
+            ) : (
+              <button type="button" onClick={draftReorder} disabled={!!busy} className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-amber-400/10 text-amber-400 border border-amber-400/30 disabled:opacity-40">
+                {busy === "draft" ? "Drafting…" : "Draft reorder request"}
+              </button>
+            )
+          )}
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <label className="text-[11px] text-[var(--inaya-text-muted)]" htmlFor={`reorder-qty-${productId}`}>
+              Reorder quantity
+              <input id={`reorder-qty-${productId}`} value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} type="number" min="1" placeholder={`Auto: top up to ${info.reorderThreshold * 2}`} className="mt-1 w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+            </label>
+            <label className="flex items-center gap-2 text-xs text-[var(--inaya-text-primary)] pb-2" htmlFor={`auto-reorder-${productId}`}>
+              <input id={`auto-reorder-${productId}`} type="checkbox" checked={autoReorder} onChange={(e) => setAutoReorder(e.target.checked)} />
+              Draft automatically each day when low
+            </label>
+          </div>
+          {settingsChanged && <button type="button" onClick={saveSettings} disabled={!!busy} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{busy === "save" ? "Saving…" : "Save reorder settings"}</button>}
+        </>
+      )}
+      {message && <p className="text-emerald-400 text-xs">{message}</p>}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
   );
 }
 

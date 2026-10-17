@@ -61,7 +61,7 @@ The dashboard's `taskSummary` (`totalOpen`, `overdueCount`, `dueSoonCount`, `byS
 
 ## Explicitly out of scope (this pass)
 
-- CRM, Procurement, Inventory — schema and design recorded in the approved plan, not built.
 - No record-level task permissions beyond department access (no per-task grant table, matching the plan's explicit Phase 1 scoping decision).
-- No recurring tasks, subtasks, or task dependencies.
-- No push notifications for assignment or due dates.
+- No mobile push for task events — the notification router records push as NOT_CONFIGURED until mobile push credentials exist.
+
+Closed since this was written: CRM, Procurement and Inventory were all built (see their own docs). Subtasks (one level), dependencies ("blocked by", cycle-checked, enforced on start/complete) and completion-based recurring tasks, plus assignment / due-tomorrow / overdue notifications (in-app by default, email if the person opts in), shipped in the Business Workspace gap closure, Batch 1 (2026-10) — `src/lib/task-relations.js`, `src/lib/business-notify.js`, `test/task-relations.test.mjs`, `test/business-notifications.test.mjs`.

@@ -25,6 +25,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/business-ops",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/cron/share-expiry",
       "schedule": "15 * * * *"
     },

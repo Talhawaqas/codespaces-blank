@@ -29,6 +29,7 @@
 
 import { getOrgCollections, canAccessDepartment, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
+import { findOpenBlockers, findOpenSubtasks, spawnNextOccurrence } from "./task-relations.js";
 
 export const TASK_STATES = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELLED"];
 
@@ -66,6 +67,21 @@ export async function transitionTask({ orgId, taskId, action, membership, actorE
     return { error: "You don't have permission to do that.", status: 403 };
   }
 
+  // Dependencies and subtasks (both optional; absent on older tasks, so
+  // these checks are no-ops for them).
+  if (action === "start" || action === "complete") {
+    const blockers = await findOpenBlockers(task);
+    if (blockers.length) {
+      return { error: `This task is blocked by: ${blockers.map((b) => `"${b.title}" (${b.status})`).join(", ")}. Finish those first.`, status: 409 };
+    }
+  }
+  if (action === "complete") {
+    const openSubtasks = await findOpenSubtasks(task);
+    if (openSubtasks.length) {
+      return { error: `Finish or cancel its ${openSubtasks.length} open subtask${openSubtasks.length === 1 ? "" : "s"} first.`, status: 409 };
+    }
+  }
+
   const fromFilter = Array.isArray(definition.from) ? { $in: definition.from } : definition.from;
   const now = new Date().toISOString();
   const updateFields = { status: definition.to, updatedAt: now };
@@ -96,5 +112,9 @@ export async function transitionTask({ orgId, taskId, action, membership, actorE
     metadata: note ? { note } : {},
   });
 
+  if (definition.to === "DONE" && updated.recurrence) {
+    const { nextTask, created } = await spawnNextOccurrence({ task: updated, actorEmail });
+    return { task: updated, nextTask, nextTaskCreated: created };
+  }
   return { task: updated };
 }

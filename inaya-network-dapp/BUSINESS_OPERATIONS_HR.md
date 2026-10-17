@@ -66,6 +66,7 @@ The dashboard/AI aggregate resolver (`document-permissions.js`) originally filte
 
 ## Explicitly out of scope (this pass)
 
-- No formal onboarding checklist/document-requirements system — `employmentStatus`'s ONBOARDING state plus free-form document attachments cover "onboarding" without a separate checklist feature the SOW doesn't ask for in detail.
 - No payroll processing, tax withholding, or compensation/salary tracking — HR records identity, status, documents, and leave; nothing that touches real compensation.
-- No org chart / reporting-line hierarchy beyond department + Department Manager.
+- Completing every onboarding item never changes an employee's status by itself; activating them stays a deliberate HR action.
+
+Closed since this was written: reporting lines (`managerEmployeeId`, self/cycle-checked) with an Org Chart tab, and an onboarding checklist (an editable org template copied once per new hire, ticked by HR) shipped in the Business Workspace gap closure, Batch 1, 2026-10 — `src/lib/hr-structure.js`, `test/hr-structure.test.mjs`.

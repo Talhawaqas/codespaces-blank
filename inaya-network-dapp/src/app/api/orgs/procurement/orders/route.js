@@ -15,6 +15,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { PURCHASE_ORDER_STATES } from "../../../../../lib/purchase-order-workflow.js";
 import { isSupportedCurrency } from "../../../../../lib/currency.js";
+import { computePoTotals, validatePoExtras } from "../../../../../lib/purchase-order-totals.js";
 
 function serializeOrder(po) {
   return {
@@ -28,6 +29,8 @@ function serializeOrder(po) {
     })),
     currency: po.currency || "USD",
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
+    expectedDeliveryDate: po.expectedDeliveryDate || null,
+    ...computePoTotals(po),
   };
 }
 
@@ -88,8 +91,10 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
-    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems, currency } = body;
+    const { orgId, departmentId, supplierId, sourceRequestId, items: rawItems, currency, expectedDeliveryDate, taxRate, shippingCost } = body;
     if (!orgId || !departmentId || !supplierId) return NextResponse.json({ error: "orgId, departmentId, and supplierId are required." }, { status: 400 });
+    const { fields: extras, error: extrasError } = validatePoExtras({ expectedDeliveryDate, taxRate, shippingCost });
+    if (extrasError) return NextResponse.json({ error: extrasError }, { status: 400 });
 
     const poCurrency = currency ? String(currency).toUpperCase() : "USD";
     if (!isSupportedCurrency(poCurrency)) return NextResponse.json({ error: `Unsupported currency "${poCurrency}".` }, { status: 400 });
@@ -135,16 +140,14 @@ export async function POST(req) {
     }
 
     const now = new Date().toISOString();
-    const result = await purchaseOrders.insertOne({
+    const doc = {
       orgId: orgObjectId, departmentId: departmentObjectId, supplierId: supplierObjectId, sourceRequestId: sourceRequestObjectId,
       items, currency: poCurrency, status: "DRAFT", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
-    });
+      ...extras,
+    };
+    const result = await purchaseOrders.insertOne(doc);
 
-    return NextResponse.json(serializeOrder({
-      _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, supplierId: supplierObjectId,
-      sourceRequestId: sourceRequestObjectId, items, currency: poCurrency, status: "DRAFT",
-      createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
-    }));
+    return NextResponse.json(serializeOrder({ ...doc, _id: result.insertedId }));
   } catch (err) {
     console.error("orgs/procurement/orders POST failed:", err);
     return NextResponse.json({ error: "Could not create the purchase order." }, { status: 500 });

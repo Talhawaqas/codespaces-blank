@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessHR, normalizeEmail, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { EMPLOYMENT_STATES } from "../../../../../lib/employee-workflow.js";
+import { ensureOnboardingChecklist } from "../../../../../lib/hr-structure.js";
 
 function serializeEmployee(e) {
   return {
@@ -19,6 +20,7 @@ function serializeEmployee(e) {
     employmentStatus: e.employmentStatus, joiningDate: e.joiningDate, contactEmail: e.contactEmail || null,
     contactPhone: e.contactPhone || null, annualLeaveAllocationDays: e.annualLeaveAllocationDays,
     createdByEmail: e.createdByEmail, createdAt: e.createdAt, updatedAt: e.updatedAt,
+    managerEmployeeId: e.managerEmployeeId ? e.managerEmployeeId.toString() : null,
   };
 }
 
@@ -102,6 +104,14 @@ export async function POST(req) {
       annualLeaveAllocationDays: Number.isFinite(annualLeaveAllocationDays) ? annualLeaveAllocationDays : 20,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
+
+    // Non-fatal: the employee exists either way, and the onboarding route
+    // creates the checklist on first view if this didn't.
+    try {
+      await ensureOnboardingChecklist({ orgId, employee: { _id: result.insertedId, orgId: orgObjectId, employmentStatus: "ONBOARDING" }, actorEmail: auth.session.email });
+    } catch (checklistErr) {
+      console.error("orgs/hr/employees POST: onboarding checklist creation failed (non-fatal):", checklistErr.message);
+    }
 
     return NextResponse.json(serializeEmployee({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, memberEmail, fullName, jobTitle,

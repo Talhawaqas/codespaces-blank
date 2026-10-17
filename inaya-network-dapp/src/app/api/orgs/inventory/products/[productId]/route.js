@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
 import { totalStockForProduct, isLowStock } from "../../../../../../lib/inventory.js";
+import { findOpenReorderRequest } from "../../../../../../lib/inventory-reorder.js";
 
 const STATUSES = ["ACTIVE", "DISCONTINUED"];
 
@@ -15,6 +16,7 @@ function serializeProduct(p, totalStock) {
     id: p._id.toString(), orgId: p.orgId.toString(), departmentId: p.departmentId.toString(),
     sku: p.sku, name: p.name, description: p.description || null, unitPrice: p.unitPrice ?? null,
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
+    reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -40,7 +42,12 @@ export async function GET(req, { params }) {
     const result = await loadAuthorized(req, orgId, params.productId);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     const total = await totalStockForProduct(orgId, result.product._id);
-    return NextResponse.json(serializeProduct(result.product, total));
+    const serialized = serializeProduct(result.product, total);
+    if (serialized.lowStock) {
+      const open = await findOpenReorderRequest(orgId, result.product._id);
+      serialized.openReorderRequestId = open ? open._id.toString() : null;
+    }
+    return NextResponse.json(serialized);
   } catch (err) {
     console.error("orgs/inventory/products/[productId] GET failed:", err);
     return NextResponse.json({ error: "Could not fetch the product." }, { status: 500 });
@@ -49,7 +56,7 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const { orgId, name, description, unitPrice, reorderThreshold, status } = await req.json();
+    const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadAuthorized(req, orgId, params.productId);
@@ -74,6 +81,16 @@ export async function PATCH(req, { params }) {
     if (status !== undefined) {
       if (!STATUSES.includes(status)) return NextResponse.json({ error: "Invalid status." }, { status: 400 });
       updateFields.status = status;
+    }
+    if (reorderQuantity !== undefined) {
+      if (reorderQuantity !== null && (!Number.isInteger(reorderQuantity) || reorderQuantity < 1)) {
+        return NextResponse.json({ error: "reorderQuantity must be a whole number of at least 1, or empty." }, { status: 400 });
+      }
+      updateFields.reorderQuantity = reorderQuantity;
+    }
+    if (autoReorder !== undefined) {
+      if (typeof autoReorder !== "boolean") return NextResponse.json({ error: "autoReorder must be true or false." }, { status: 400 });
+      updateFields.autoReorder = autoReorder;
     }
 
     await products.updateOne({ _id: product._id }, { $set: updateFields });
