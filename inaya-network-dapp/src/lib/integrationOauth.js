@@ -164,7 +164,7 @@ export async function completeOauthFlow({ state, code, error: providerError, red
   }
 
   const now = new Date().toISOString();
-  const credentialsEncrypted = encryptIntegrationSecret(JSON.stringify({ accessToken: tokenResult.accessToken, refreshToken: tokenResult.refreshToken || null }));
+  const credentialsEncrypted = encryptIntegrationSecret(JSON.stringify({ accessToken: tokenResult.accessToken, refreshToken: tokenResult.refreshToken || null, accessTokenExpiresAt: expiryFrom(tokenResult.expiresIn) }));
   await integrationConnections.updateOne(
     { orgId, providerId },
     {
@@ -182,6 +182,52 @@ export async function completeOauthFlow({ state, code, error: providerError, red
   try { await appendAuditEntry({ orgId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, action: "OAUTH_CONNECTED", actorEmail, metadata: { providerId } }); } catch (err) { console.error("appendAuditEntry failed (non-fatal):", err.message); }
 
   return { orgId: orgId.toString(), providerId, success: true, externalAccountName: verification.externalAccountName };
+}
+
+const REFRESH_MARGIN_MS = 2 * 60 * 1000; // refresh a little before expiry, not after a call has already failed
+const expiryFrom = (expiresIn) => (Number(expiresIn) > 0 ? new Date(Date.now() + Number(expiresIn) * 1000).toISOString() : null);
+
+/**
+ * Returns a usable access token for an ACTIVE OAuth connection, refreshing it
+ * first when it is expired or about to expire (providers that implement
+ * refreshAccessToken, e.g. Microsoft). The new token is re-encrypted and
+ * stored. A refresh the provider rejects for good (revoked, password reset,
+ * consent removed) moves the connection to ERROR so it is shown as needing
+ * a reconnect — never left looking ACTIVE with a dead token.
+ * Returns { accessToken, refreshed } or { error, reconnectRequired }.
+ */
+export async function getFreshAccessToken({ orgId, providerId, connection: given = null, now = Date.now() }) {
+  const adapter = getAdapter(providerId);
+  if (!adapter) return { error: `"${providerId}" is not an OAuth-backed integration.` };
+  const { integrationConnections } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const connection = given || await integrationConnections.findOne({ orgId: orgObjectId, providerId });
+  if (!connection?.credentialsEncrypted) return { error: "This integration has no stored credential; connect it first.", reconnectRequired: true };
+
+  let creds;
+  try { creds = JSON.parse(decryptIntegrationSecret(connection.credentialsEncrypted)); } catch { return { error: "The stored credential can't be read; reconnect this integration.", reconnectRequired: true }; }
+  const expiresAt = creds.accessTokenExpiresAt ? Date.parse(creds.accessTokenExpiresAt) : null;
+  const stillValid = expiresAt !== null && expiresAt - REFRESH_MARGIN_MS > now;
+  // Providers without refresh support (or connections made before expiry was recorded and with no refresh token) use the token as-is.
+  if (stillValid || typeof adapter.refreshAccessToken !== "function" || (!creds.refreshToken && expiresAt === null)) {
+    return { accessToken: creds.accessToken, refreshed: false };
+  }
+
+  const refreshed = await adapter.refreshAccessToken({ refreshToken: creds.refreshToken, providerId });
+  if (refreshed.error) {
+    if (refreshed.reconnectRequired || !creds.refreshToken) {
+      const ts = new Date().toISOString();
+      await integrationConnections.updateOne({ _id: connection._id }, { $set: { status: "ERROR", credentialsStatus: "refresh_failed", updatedAt: ts }, $inc: { errorCount: 1 } });
+      await logOrgActivity({ orgId: orgObjectId, recordType: "INTEGRATION_CONNECTION", recordId: connection._id, actorEmail: connection.ownerEmail || "system", action: "OAUTH_REFRESH_FAILED", previousState: connection.status, newState: "ERROR", metadata: { providerId, message: refreshed.error } });
+    }
+    return { error: refreshed.error, reconnectRequired: !!refreshed.reconnectRequired };
+  }
+  const next = { accessToken: refreshed.accessToken, refreshToken: refreshed.refreshToken || creds.refreshToken || null, accessTokenExpiresAt: expiryFrom(refreshed.expiresIn) };
+  await integrationConnections.updateOne(
+    { _id: connection._id },
+    { $set: { credentialsEncrypted: encryptIntegrationSecret(JSON.stringify(next)), credentialsStatus: "verified", tokenRefreshedAt: new Date().toISOString() } }
+  );
+  return { accessToken: next.accessToken, refreshed: true };
 }
 
 async function markConnectionError({ orgId, providerId, actorEmail, message }) {
@@ -214,7 +260,9 @@ export async function disconnectOauthConnection({ orgId, providerId, actorEmail,
   let revokeResult = { revoked: false, note: "No live credential was stored to revoke." };
   if (connection.credentialsEncrypted) {
     try {
-      const { accessToken } = JSON.parse(decryptIntegrationSecret(connection.credentialsEncrypted));
+      // Refresh first when the provider supports it, so revoke still works after the access token's first hour.
+      const fresh = await getFreshAccessToken({ orgId, providerId, connection });
+      const accessToken = fresh.accessToken || JSON.parse(decryptIntegrationSecret(connection.credentialsEncrypted)).accessToken;
       let orgConfig = null;
       if (adapter.requiresOrgConfig) orgConfig = { ...connection.oauthConfig, clientSecret: decryptIntegrationSecret(connection.oauthClientSecretEncrypted) };
       revokeResult = await adapter.revoke({ accessToken, orgConfig });

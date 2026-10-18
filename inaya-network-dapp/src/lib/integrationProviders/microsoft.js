@@ -21,6 +21,13 @@
 // real Microsoft Graph oauth2PermissionGrants endpoint: it looks up this
 // app's own delegated consent grant for the signed-in user and deletes it —
 // Microsoft's real mechanism for "this app may no longer act on my behalf."
+// It never deletes an "AllPrincipals" grant (a tenant admin's consent for
+// everyone): one person disconnecting must not remove the app for the whole
+// organization (fixed after the 2026-10-18 live test; see revoke()).
+//
+// Tokens: access tokens last about an hour. refreshAccessToken() renews them
+// from the stored refresh token; integrationOauth.getFreshAccessToken() calls
+// it before expiry and re-encrypts what it stores.
 //
 // Calling that endpoint at all requires the "Directory.AccessAsUser.All"
 // delegated scope, which is why it's included below even though nothing
@@ -85,7 +92,25 @@ export async function exchangeCodeForToken({ code, redirectUri, providerId }) {
   const res = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params });
   const data = await res.json();
   if (!res.ok) return { error: data.error_description || data.error || "Microsoft rejected the authorization code." };
-  return { accessToken: data.access_token, refreshToken: data.refresh_token, raw: data };
+  return { accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: Number(data.expires_in) || null, raw: data };
+}
+
+/** Exchanges the stored refresh token for a new access token. Microsoft may
+ *  rotate the refresh token; when it doesn't return one, the old one stays
+ *  valid and is kept. Access tokens last about an hour. */
+export async function refreshAccessToken({ refreshToken, providerId }) {
+  if (!refreshToken) return { error: "No refresh token is stored for this connection; reconnect it." };
+  const params = new URLSearchParams({
+    client_id: process.env.MICROSOFT_CLIENT_ID,
+    client_secret: process.env.MICROSOFT_CLIENT_SECRET,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    scope: GRAPH_SCOPE_BY_PROVIDER[providerId] || GRAPH_SCOPE_BY_PROVIDER.entra_id,
+  });
+  const res = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { error: data.error_description || data.error || `Microsoft would not refresh the token (HTTP ${res.status}).`, reconnectRequired: data.error === "invalid_grant" };
+  return { accessToken: data.access_token, refreshToken: data.refresh_token || refreshToken, expiresIn: Number(data.expires_in) || null };
 }
 
 /** The real proof-of-connection call — Microsoft Graph's own /me endpoint,
@@ -97,30 +122,45 @@ export async function verifyConnection({ accessToken }) {
   return { verified: true, externalAccountId: data.id, externalAccountName: data.userPrincipalName || data.mail || data.displayName };
 }
 
-/** Real revoke attempt — finds THIS app's own delegated consent grant via
- *  Graph and deletes it. Falls back to an honest failure (never a false
- *  "revoked:true") plus MANUAL_REVOKE_URL when the tenant restricts this
- *  call or no grant is found. */
+// Where a tenant admin removes an admin-consented app for everyone.
+export const ADMIN_REVOKE_URL = "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview";
+
+/** Real revoke attempt — deletes THIS user's own delegated consent grant for
+ *  this app (consentType "Principal", principalId = the signed-in user).
+ *  It never touches an "AllPrincipals" grant: that is a tenant admin's
+ *  consent covering every user, and one person disconnecting must not
+ *  remove it for the whole organization. Falls back to an honest failure
+ *  (never a false "revoked:true") plus the right manual link. */
 export async function revoke({ accessToken }) {
   const clientId = process.env.MICROSOFT_CLIENT_ID;
   try {
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    const meRes = await fetch("https://graph.microsoft.com/v1.0/me?$select=id", { headers });
+    const me = await meRes.json().catch(() => ({}));
+    if (!meRes.ok || !me.id) {
+      return { revoked: false, error: me.error?.message || `Microsoft Graph would not identify this account (HTTP ${meRes.status}).`, manualRevokeUrl: MANUAL_REVOKE_URL };
+    }
     const listRes = await fetch(
       `https://graph.microsoft.com/v1.0/me/oauth2PermissionGrants?$filter=${encodeURIComponent(`clientId eq '${clientId}'`)}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers }
     );
     const listData = await listRes.json().catch(() => ({}));
     if (!listRes.ok) {
       return { revoked: false, error: listData.error?.message || `Microsoft Graph would not list this account's consent grants (HTTP ${listRes.status}).`, manualRevokeUrl: MANUAL_REVOKE_URL };
     }
 
-    const grant = listData.value?.[0];
+    const grants = listData.value || [];
+    const grant = grants.find((g) => g.consentType === "Principal" && g.principalId === me.id);
     if (!grant) {
-      return { revoked: false, note: "No revocable consent grant was found for this app under this account (it may have been granted by a tenant admin, which only that admin can revoke).", manualRevokeUrl: MANUAL_REVOKE_URL };
+      if (grants.some((g) => g.consentType === "AllPrincipals")) {
+        return { revoked: false, adminConsent: true, note: "This app was approved for everyone by a tenant admin, so disconnecting here can't remove that approval. Inaya's stored token was deleted; an admin can remove the app for the whole organization in Entra.", manualRevokeUrl: ADMIN_REVOKE_URL };
+      }
+      return { revoked: false, note: "No consent grant for this account was found for this app.", manualRevokeUrl: MANUAL_REVOKE_URL };
     }
 
     const deleteRes = await fetch(`https://graph.microsoft.com/v1.0/oauth2PermissionGrants/${grant.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers,
     });
     if (deleteRes.status === 204) return { revoked: true };
 
