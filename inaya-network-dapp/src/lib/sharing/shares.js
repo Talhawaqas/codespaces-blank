@@ -13,7 +13,7 @@ import { createNotification } from "../notifications.js";
 import { logDocumentActivity } from "../document-workflow.js";
 import { generateShareToken, hashShareToken } from "../document-permissions.js";
 import { sendEmail } from "../email.js";
-import { LIMITS, evaluateShareAccess, hashPassword, publicShareView, shareStatus, validateLinkOptions, verifyPassword, watermarkText, MEMBER_PERMISSIONS } from "./policy.js";
+import { LIMITS, evaluateShareAccess, hashPassword, publicShareView, requiresEmail, emailAllowed, shareStatus, validateLinkOptions, verifyPassword, watermarkText, MEMBER_PERMISSIONS } from "./policy.js";
 import { enforceShareCreation, dlpForShareAccess } from "../governance/enforce.js";
 import { GovError } from "../governance/policies.js";
 import { emitFileEvent } from "../governance/events.js";
@@ -89,13 +89,13 @@ export async function createLinkShare({ orgId, documentId, actorEmail, expiresAt
     maxUses: o.maxUses, useCount: 0, revokedAt: null,
     v: 2, kind: "link", permission: o.permission, oneTime: o.oneTime, maxDownloads: o.maxDownloads, downloadCount: 0,
     passwordHash: o.password ? await hashPassword(o.password) : null, passwordFailures: 0, lockedUntil: null,
-    ipAllow: o.ipAllow, domainAllow: o.domainAllow, deviceBinding: o.deviceBinding, boundDeviceId: null,
+    ipAllow: o.ipAllow, domainAllow: o.domainAllow, emailAllow: o.emailAllow, deviceBinding: o.deviceBinding, boundDeviceId: null,
     notifyOnAccess: o.notifyOnAccess, watermark: o.watermark, label: o.label, note: o.note, managerEmails: o.managerEmails, lastAccessAt: null,
   };
   const r = await documentShares.insertOne(doc);
   import("../metrics/metrics.js").then((m) => m.metric("storage.share_created", { orgId, label: "link" })).catch(() => {});
   await logDocumentActivity({ organizationId: orgId, documentId, actorId: normEmail(actorEmail), action: "DOCUMENT_SHARE_CREATED", previousState: null, newState: null,
-    metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, oneTime: o.oneTime } });
+    metadata: { shareId: String(r.insertedId), v: 2, permission: o.permission, expiresAt, passwordProtected: !!o.password, ipRestricted: o.ipAllow.length > 0, domainRestricted: o.domainAllow.length > 0, recipientRestricted: o.emailAllow.length > 0, oneTime: o.oneTime } });
   import("../ransomware/cloud.js").then((m) => m.noteActivity({ orgId, actorKey: actorEmail, kind: "share_create" })).catch(() => {});
   import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId: orgId, type: "share.created", data: { shareId: String(r.insertedId), documentId: String(documentId), permission: o.permission, passwordProtected: !!o.password, expiresAt, createdBy: normEmail(actorEmail) } })).catch(() => {});
   emitFileEvent(orgId, "shared", { documentId: String(documentId), shareId: String(r.insertedId), permission: o.permission, passwordProtected: !!o.password, expiresAt });
@@ -237,17 +237,16 @@ let emailSender = async ({ to, subject, text }) => sendEmail({ to, subject, text
 /** Tests replace the sender; production uses src/lib/email.js (Resend). */
 export function setShareEmailSender(fn) { emailSender = fn; }
 
-/** Domain-restricted links: emails a 6-digit code to an address in an allowed domain. The answer never says whether the address was
+/** Email-restricted links (allowed domain or listed address): emails a 6-digit code to an eligible address. The answer never says whether the address was
  *  eligible. Sending depends on the email provider being configured; when it is not, the visitor is told it is not available. */
 export async function requestShareCode({ token, email, ip }) {
   const share = await shareByToken(token);
   const generic = { sent: true };
   const em = normEmail(email);
-  if (!share || share.v !== 2 || !share.domainAllow?.length || shareStatus(share) !== "active") return generic;
+  if (!share || share.v !== 2 || !requiresEmail(share) || shareStatus(share) !== "active") return generic;
   const rl = await slidingWindowCheck({ action: "share:code", key: `${share._id}:${ip || "?"}`, max: 6, windowMs: 3600_000 });
   if (!rl.allowed) fail(429, "Too many codes requested. Try again later.");
-  const domain = em.split("@")[1];
-  if (!domain || !share.domainAllow.includes(domain)) return generic;
+  if (!emailAllowed(share, em)) return generic;
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   const c = await cols();
   await c.codes.deleteMany({ shareId: String(share._id), email: em });
@@ -278,7 +277,7 @@ export async function openShare({ token, password, email, code, ip, deviceId, us
   if (share.v !== 2) fail(409, "This is a legacy link.", { legacy: true });
   const c = await cols();
   const em = email ? normEmail(email) : null;
-  const emailVerified = share.domainAllow?.length && em ? await emailCodeValid(share, em, code) : false;
+  const emailVerified = requiresEmail(share) && em ? await emailCodeValid(share, em, code) : false;
   let passwordChecked;
   if (share.passwordHash && password !== undefined && password !== null && password !== "") passwordChecked = await verifyPassword(password, share.passwordHash);
   const base = { ip, deviceId, email: em, emailVerified, passwordChecked };
@@ -362,7 +361,7 @@ export async function readShareContent({ token, sessionToken, part, ip }) {
   if (!session || session.revokedAt || session.expiresAt <= new Date()) fail(401, "Your access has expired. Open the link again.");
   // Content fetches re-check revocation, expiry, IP range and device only. The use/download limits were consumed when the session was
   // opened (and the download reserved on the first fetch), so a session already holding its last allowed use may finish its fetches.
-  const verdict = evaluateShareAccess({ ...share, passwordHash: null, domainAllow: [], maxUses: null, maxDownloads: null, lockedUntil: null }, { ip, deviceId: session.deviceId });
+  const verdict = evaluateShareAccess({ ...share, passwordHash: null, domainAllow: [], emailAllow: [], maxUses: null, maxDownloads: null, lockedUntil: null }, { ip, deviceId: session.deviceId });
   if (!verdict.allow) fail(verdict.status, verdict.error);
   if (share.revokedAt) { fail(410, "This link has been revoked."); }
   if (share.permission === "download" && !session.downloadCounted) {
@@ -388,5 +387,5 @@ export async function peekShare(token) {
   if (!share || share.v !== 2) return null;
   const st = shareStatus(share);
   if (st !== "active") return { v2: true, status: st, error: st === "revoked" ? "This link has been revoked." : st === "expired" ? "This link has expired." : "This link has reached its limit." };
-  return { v2: true, status: "active", requires: { password: !!share.passwordHash, email: !!share.domainAllow?.length }, permission: share.permission, label: share.label || null, branding: await (await import("../branding/branding.js")).publicBranding(share.orgId) };
+  return { v2: true, status: "active", requires: { password: !!share.passwordHash, email: requiresEmail(share) }, permission: share.permission, label: share.label || null, branding: await (await import("../branding/branding.js")).publicBranding(share.orgId) };
 }

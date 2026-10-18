@@ -117,13 +117,13 @@ function CreateSigningRequestModal({ orgId, onClose, onCreated }) {
   return (
     <Modal title="New signing request" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input value={documentId} onChange={(e) => setDocumentId(e.target.value)} required placeholder="Document ID" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Document ID" value={documentId} onChange={(e) => setDocumentId(e.target.value)} required placeholder="Document ID" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <div className="space-y-2">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Signers</p>
           {signers.map((s, i) => (
             <div key={i} className="grid grid-cols-[1fr_1fr_90px] gap-1.5">
-              <input value={s.email} onChange={(e) => updateSigner(i, "email", e.target.value)} placeholder="Email (org member)" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={s.wallet} onChange={(e) => updateSigner(i, "wallet", e.target.value)} placeholder="Wallet (0x…)" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] font-mono" />
+              <input aria-label="Email (org member)" value={s.email} onChange={(e) => updateSigner(i, "email", e.target.value)} placeholder="Email (org member)" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Wallet (0x…)" value={s.wallet} onChange={(e) => updateSigner(i, "wallet", e.target.value)} placeholder="Wallet (0x…)" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] font-mono" />
               <select value={s.role} onChange={(e) => updateSigner(i, "role", e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]">
                 <option value="required">Required</option>
                 <option value="optional">Optional</option>
@@ -132,8 +132,8 @@ function CreateSigningRequestModal({ orgId, onClose, onCreated }) {
           ))}
           <button type="button" onClick={() => setSigners((prev) => [...prev, { email: "", wallet: "", role: "required" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add signer</button>
         </div>
-        <input value={deadline} onChange={(e) => setDeadline(e.target.value)} type="date" placeholder="Deadline (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Deadline (optional)" value={deadline} onChange={(e) => setDeadline(e.target.value)} type="date" placeholder="Deadline (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
+        <textarea aria-label="Message (optional)" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !documentId.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create request"}</button>
       </form>
@@ -235,7 +235,7 @@ function SigningRequestModal({ orgId, email, requestId, onClose, onChanged }) {
             <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Sign this document</p>
             <button onClick={handleSignWithWallet} disabled={!!acting} className="w-full py-2 rounded-lg text-xs font-bold uppercase bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{acting === "sign-wallet" ? "…" : "Sign with wallet"}</button>
             <div className="flex gap-1.5">
-              <input value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder="Type your full name" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Type your full name" value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder="Type your full name" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
               <button onClick={handleSignWithConsent} disabled={!!acting} className="text-[11px] font-bold uppercase px-3 py-2 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40">{acting === "sign-consent" ? "…" : "Consent & sign"}</button>
             </div>
             <p className="text-[var(--inaya-text-muted)] text-[10px]">Session consent is recorded as your typed consent, not a cryptographic signature.</p>

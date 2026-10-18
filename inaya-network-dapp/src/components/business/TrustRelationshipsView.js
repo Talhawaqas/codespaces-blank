@@ -145,9 +145,9 @@ function ProposeModal({ orgId, onClose, onCreated }) {
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <form onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit} className="bg-[var(--inaya-surface)] border border-white/10 rounded-2xl p-5 w-full max-w-md space-y-3">
         <h4 className="text-[var(--inaya-text-primary)] font-bold text-sm">Propose a trust relationship</h4>
-        <input value={toOrgId} onChange={(e) => setToOrgId(e.target.value)} placeholder="Target organization ID" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
-        <input value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope, comma-separated (e.g. evidence:read)" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
-        <input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose (optional)" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
+        <input aria-label="Target organization ID" value={toOrgId} onChange={(e) => setToOrgId(e.target.value)} placeholder="Target organization ID" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
+        <input aria-label="Scope, comma-separated (e.g. evidence:read)" value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope, comma-separated (e.g. evidence:read)" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
+        <input aria-label="Purpose (optional)" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose (optional)" className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
         <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <div className="flex gap-2 justify-end pt-1">

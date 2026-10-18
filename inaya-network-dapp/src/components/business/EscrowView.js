@@ -103,7 +103,7 @@ function CreateEscrowModal({ orgId, onClose, onCreated }) {
   return (
     <Modal title="New escrow" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)} required placeholder="Purchase Order ID" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Purchase Order ID" value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)} required placeholder="Purchase Order ID" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {["USD", "EUR", "GBP", "AED", "PKR"].map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -111,8 +111,8 @@ function CreateEscrowModal({ orgId, onClose, onCreated }) {
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Milestones</p>
           {milestones.map((m, i) => (
             <div key={i} className="grid grid-cols-[1fr_100px] gap-1.5">
-              <input value={m.description} onChange={(e) => updateMilestone(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={m.amount} onChange={(e) => updateMilestone(i, "amount", e.target.value)} type="number" min="0" placeholder="Amount" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Description" value={m.description} onChange={(e) => updateMilestone(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Amount" value={m.amount} onChange={(e) => updateMilestone(i, "amount", e.target.value)} type="number" min="0" placeholder="Amount" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             </div>
           ))}
           <button type="button" onClick={() => setMilestones((prev) => [...prev, { description: "", amount: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add milestone</button>
@@ -198,7 +198,7 @@ function EscrowDetailModal({ orgId, escrowId, onClose, onChanged }) {
               {m.status === "CONFIRMED" && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   <button onClick={() => handleProposeRelease(i)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 disabled:opacity-40">{acting === `release-${i}` ? "…" : "Propose release"}</button>
-                  <input value={disputeReason[i] || ""} onChange={(ev) => setDisputeReason((prev) => ({ ...prev, [i]: ev.target.value }))} placeholder="Dispute reason" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[11px] text-[var(--inaya-text-primary)] w-40" />
+                  <input aria-label="Dispute reason" value={disputeReason[i] || ""} onChange={(ev) => setDisputeReason((prev) => ({ ...prev, [i]: ev.target.value }))} placeholder="Dispute reason" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[11px] text-[var(--inaya-text-primary)] w-40" />
                   <button onClick={() => handleDispute(i)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 disabled:opacity-40">Dispute</button>
                 </div>
               )}

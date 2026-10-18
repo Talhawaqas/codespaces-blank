@@ -185,6 +185,8 @@ export async function getOrgCollections() {
     journalEntries: db.collection("journal_entries"),
     crmActivities: db.collection("crm_activities"),
     recordGrants: db.collection("record_grants"),
+    // Batch 3 — one dated USD-based exchange-rate snapshot per day (fx-rates.js).
+    fxRates: db.collection("fx_rates"),
     attachments: db.collection("attachments"),
     // Phase 2 — cryptographic audit trail. A hash-chained overlay on top
     // of org_activity/document_activity (see src/lib/auditChain.js), not a
@@ -587,7 +589,7 @@ export async function ensureOrgIndexes() {
     warehouses, products, stockLevels, stockMovements,
     invoices, expenses, payments, employees, leaveRequests, attachments,
     hrOnboardingTemplates, hrOnboardingItems,
-    ledgerAccounts, journalEntries, crmActivities, recordGrants,
+    ledgerAccounts, journalEntries, crmActivities, recordGrants, fxRates,
     auditChainEntries, auditChainHeads, aiActionRequests,
     industryPolicies, dataClassifications, incidents, retentionPolicies,
     riskRegister, vendorRecords, trainingRecords, exportRequests,
@@ -713,6 +715,9 @@ export async function ensureOrgIndexes() {
     journalEntries.createIndex({ orgId: 1, date: 1 }),
     crmActivities.createIndex({ orgId: 1, contactId: 1, at: -1 }),
     recordGrants.createIndex({ orgId: 1, recordType: 1, recordId: 1, email: 1 }, { unique: true }),
+    fxRates.createIndex({ date: 1 }, { unique: true }),
+    // Batch 3 — a barcode identifies one product per org; products without one are unaffected.
+    products.createIndex({ orgId: 1, barcode: 1 }, { unique: true, partialFilterExpression: { barcode: { $type: "string" } } }),
     attachments.createIndex({ orgId: 1, relatedRecordType: 1, relatedRecordId: 1 }),
     // Phase 2 — cryptographic audit trail
     auditChainEntries.createIndex({ orgId: 1, seq: 1 }, { unique: true }),

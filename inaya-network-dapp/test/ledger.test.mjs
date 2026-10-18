@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { getOrgCollections, ensureOrgIndexes } from "../src/lib/orgs.js";
 import { validateLines, syncLedger, syncAllLedgers, postEntry, reverseEntry, listEntries, trialBalance, profitAndLoss, balanceSheet, createAccount, ACCOUNTS } from "../src/lib/ledger.js";
+import { convertAt } from "../src/lib/fx-rates.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
 
 const RUN_ID = randomUUID().slice(0, 8);
@@ -108,7 +109,11 @@ test("non-USD invoices post in USD with the reference rate recorded", async () =
   assert.equal(r.posted, 1);
   assert.equal(r.errors.length, 1, "an unsupported currency is reported, never guessed");
   const [entry] = await listEntries(fx.id);
-  assert.equal(entry.total, 100);
+  // Daily live rates may exist in the shared database, so the expectation is
+  // whatever convertAt gives for that entry's date (static: 92 EUR = 100 USD).
+  const expected = await convertAt(92, "EUR", "USD", entry.date);
+  assert.equal(entry.total, expected.convertedAmount);
+  assert.equal(entry.lines[0].fxSource, expected.source);
   assert.equal(entry.lines[0].originalCurrency, "EUR");
   assert.equal(entry.lines[0].originalAmount, 92);
   assert.ok(entry.lines[0].ratesAsOf);

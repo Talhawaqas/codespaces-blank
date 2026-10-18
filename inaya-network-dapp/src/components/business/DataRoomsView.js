@@ -151,7 +151,7 @@ export default function DataRoomsView({ orgId, email }) {
             </optgroup>
           )}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Room name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Room name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Room name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create room</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -242,9 +242,9 @@ function RoomRow({ room, orgId, actorEmail, expanded, onToggle, onChanged }) {
           {!room.closedAt && (
             <>
               <form onSubmit={(e) => { e.preventDefault(); act("addDocument", { documentId: documentId.trim(), section: section || undefined }); setDocumentId(""); setSection(""); }} className="flex gap-2">
-                <input value={documentId} onChange={(e) => setDocumentId(e.target.value)} placeholder="Document ID" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+                <input aria-label="Document ID" value={documentId} onChange={(e) => setDocumentId(e.target.value)} placeholder="Document ID" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
                 {room.sections?.length > 0 && (
-                  <select value={section} onChange={(e) => setSection(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]">
+                  <select aria-label="Section" value={section} onChange={(e) => setSection(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)]">
                     <option value="">No section</option>
                     {room.sections.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -252,7 +252,7 @@ function RoomRow({ room, orgId, actorEmail, expanded, onToggle, onChanged }) {
                 <button disabled={!documentId.trim()} className="text-[10px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">Add doc</button>
               </form>
               <form onSubmit={(e) => { e.preventDefault(); act("invite", { externalEmail: inviteEmail.trim() }); setInviteEmail(""); }} className="flex gap-2">
-                <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="External email to invite" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+                <input aria-label="External email to invite" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="External email to invite" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
                 <button disabled={!inviteEmail.trim()} className="text-[10px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">Invite</button>
               </form>
               {inviteResult && <p className="text-[10px] font-mono text-emerald-400 break-all">Send this link to the invitee (expires in 30 min, single-use): {inviteResult}</p>}

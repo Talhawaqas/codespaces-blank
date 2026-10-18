@@ -109,8 +109,8 @@ function ControlsTab({ orgId }) {
       </div>
       {showCreate && (
         <form onSubmit={create} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-wrap gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Control name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Control name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Control name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={!name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create</button>
         </form>
       )}
@@ -183,11 +183,11 @@ function EvidenceTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={submit} className="flex flex-wrap gap-2">
-        <input value={controlId} onChange={(e) => setControlId(e.target.value)} placeholder="Control ID" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-40" />
+        <input aria-label="Control ID" value={controlId} onChange={(e) => setControlId(e.target.value)} placeholder="Control ID" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-40" />
         <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {["policy", "procedure", "screenshot", "configuration_export", "log", "audit_record", "access_review", "training_record", "vendor_assessment", "penetration_test", "vulnerability_scan"].map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
         </select>
-        <input value={sourceRef} onChange={(e) => setSourceRef(e.target.value)} placeholder="Source reference (optional)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Source reference (optional)" value={sourceRef} onChange={(e) => setSourceRef(e.target.value)} placeholder="Source reference (optional)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!controlId.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Submit</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -342,8 +342,8 @@ function PoliciesTab({ orgId }) {
       </div>
       {showCreate && (
         <form onSubmit={create} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-wrap gap-2">
-          <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Policy key (e.g. acceptable-use)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Policy key (e.g. acceptable-use)" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Policy key (e.g. acceptable-use)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={!key.trim() || !title.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Draft</button>
         </form>
       )}
@@ -427,7 +427,7 @@ function RiskExceptionsTab({ orgId }) {
     <div className="space-y-4">
       <p className="text-[var(--inaya-text-muted)] text-xs max-w-lg">Exceptions always require an expiry date — no permanent silent exceptions. The full risk register lives alongside every other Business Workspace module's risk entries; this view shows compliance exceptions specifically.</p>
       <form onSubmit={request} className="flex flex-wrap gap-2">
-        <input value={justification} onChange={(e) => setJustification(e.target.value)} placeholder="Justification" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Justification" value={justification} onChange={(e) => setJustification(e.target.value)} placeholder="Justification" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} type="date" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)]" />
         <button disabled={!justification.trim() || !expiresAt} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Request exception</button>
       </form>
@@ -503,7 +503,7 @@ function AuditsTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Audit plan name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Audit plan name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Audit plan name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create plan</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -579,7 +579,7 @@ function ExaminationsTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={examinerOrgName} onChange={(e) => setExaminerOrgName(e.target.value)} placeholder="Examining organization name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Examining organization name" value={examinerOrgName} onChange={(e) => setExaminerOrgName(e.target.value)} placeholder="Examining organization name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!examinerOrgName.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Open examination</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -666,8 +666,8 @@ function ExaminationRequestsModal({ orgId, examination, onClose }) {
 
         <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--inaya-text-muted)] mb-1.5">Evidence requests</p>
         <form onSubmit={createRequest} className="flex flex-wrap gap-2 mb-2">
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" placeholder="Owner email (optional)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Owner email (optional)" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" placeholder="Owner email (optional)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Add</button>
         </form>
         {error && <p className="text-red-400 text-[11px] mb-2">{error}</p>}
@@ -690,7 +690,7 @@ function ExaminationRequestsModal({ orgId, examination, onClose }) {
 
         <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--inaya-text-muted)] mb-1.5">Examiner access</p>
         <form onSubmit={issueAccess} className="flex flex-wrap gap-2">
-          <input value={examinerEmail} onChange={(e) => setExaminerEmail(e.target.value)} type="email" placeholder="Examiner email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Examiner email" value={examinerEmail} onChange={(e) => setExaminerEmail(e.target.value)} type="email" placeholder="Examiner email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Issue access link</button>
         </form>
         {issuedToken && (

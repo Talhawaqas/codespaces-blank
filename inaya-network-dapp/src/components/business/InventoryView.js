@@ -9,7 +9,7 @@
 // show up in the same per-product movement history here — this view
 // doesn't duplicate that recording path, only the manual one.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import EmptyState from "../EmptyState";
 
 async function api(path, options) {
@@ -54,6 +54,8 @@ function ProductsTab({ orgId, departments }) {
   const [showTransfer, setShowTransfer] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
+  const [showScan, setShowScan] = useState(false);
+  const [newBarcode, setNewBarcode] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -67,12 +69,13 @@ function ProductsTab({ orgId, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = (products || []).filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()) || p.sku.toLowerCase().includes(search.trim().toLowerCase()));
+  const filtered = (products || []).filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()) || p.sku.toLowerCase().includes(search.trim().toLowerCase()) || (p.barcode || "").includes(search.trim()));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+      <div className="flex flex-wrap items-center gap-2">
+        <input aria-label="Search products" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU or barcode…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-full sm:w-56" />
+        <button onClick={() => setShowScan(true)} className="text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border bg-black/45 text-[var(--inaya-text-primary)] border-white/15">▥ Scan</button>
         <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>Low stock only</button>
         <button onClick={() => setShowTransfer(true)} className="ml-auto text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border bg-black/45 text-[var(--inaya-text-primary)] border-white/15">⇄ Transfer stock</button>
         <button onClick={() => setShowCreate(true)} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
@@ -89,10 +92,10 @@ function ProductsTab({ orgId, departments }) {
               <button key={p.id} onClick={() => setSelected(p)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
                   <span className="text-[var(--inaya-text-primary)] text-sm">{p.name}</span>
-                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}{p.barcode ? ` · ${p.barcode}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}</span>
+                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}{p.unit && p.unit !== "each" ? ` ${p.unit}` : ""}</span>
                   {p.lowStock && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Low stock</span>}
                   {p.openReorderRequestId && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30">Reorder drafted</span>}
                 </div>
@@ -101,7 +104,8 @@ function ProductsTab({ orgId, departments }) {
           </div>
         )}
       </div>
-      {showCreate && <CreateProductModal orgId={orgId} departments={departments} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {showCreate && <CreateProductModal orgId={orgId} departments={departments} initialBarcode={newBarcode} onClose={() => { setShowCreate(false); setNewBarcode(null); }} onCreated={() => { setShowCreate(false); setNewBarcode(null); load(); }} />}
+      {showScan && <ScanModal products={products || []} onClose={() => setShowScan(false)} onFound={(p) => { setShowScan(false); setSelected(p); }} onCreate={(code) => { setShowScan(false); setNewBarcode(code); setShowCreate(true); }} />}
       {showTransfer && <TransferStockModal orgId={orgId} products={products || []} onClose={() => setShowTransfer(false)} onTransferred={() => { setShowTransfer(false); load(); }} />}
       {selected && <ProductDetailModal orgId={orgId} product={selected} onClose={() => setSelected(null)} onChanged={load} />}
     </div>
@@ -148,21 +152,21 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
     <Modal title="Transfer stock" onClose={onClose}>
       {!reviewing ? (
         <div className="space-y-3">
-          <select value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          <select aria-label="Product" value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Product…</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
           </select>
-          <select value={sourceWarehouseId} onChange={(e) => setSourceWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+          <select aria-label="Source warehouse" value={sourceWarehouseId} onChange={(e) => setSourceWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
             <option value="">Source warehouse…</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
-          <select value={destWarehouseId} onChange={(e) => setDestWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+          <select aria-label="Destination warehouse" value={destWarehouseId} onChange={(e) => setDestWarehouseId(e.target.value)} disabled={!product} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
             <option value="">Destination warehouse…</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           {sourceWarehouseId && destWarehouseId && sourceWarehouseId === destWarehouseId && <p className="text-red-400 text-xs">Source and destination must be different.</p>}
-          <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="1" placeholder="Quantity" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="1" placeholder="Quantity" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {error && <p className="text-red-400 text-xs">{error}</p>}
           <button disabled={!canReview} onClick={() => setReviewing(true)} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">Review transfer</button>
         </div>
@@ -185,8 +189,12 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
   );
 }
 
-function CreateProductModal({ orgId, departments, onClose, onCreated }) {
+function CreateProductModal({ orgId, departments, initialBarcode = null, onClose, onCreated }) {
   const [departmentId, setDepartmentId] = useState("");
+  const [barcode, setBarcode] = useState(initialBarcode || "");
+  const [unit, setUnit] = useState("");
+  const [purchaseUnit, setPurchaseUnit] = useState("");
+  const [perPurchaseUnit, setPerPurchaseUnit] = useState("");
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [reorderThreshold, setReorderThreshold] = useState("");
@@ -199,7 +207,7 @@ function CreateProductModal({ orgId, departments, onClose, onCreated }) {
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/inventory/products", { method: "POST", body: JSON.stringify({ orgId, departmentId, sku: sku.trim(), name: name.trim(), reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined }) });
+      await api("/api/orgs/inventory/products", { method: "POST", body: JSON.stringify({ orgId, departmentId, sku: sku.trim(), name: name.trim(), reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined, barcode: barcode.trim() || undefined, unit: unit.trim() || undefined, ...(purchaseUnit.trim() ? { purchaseUnit: purchaseUnit.trim(), unitsPerPurchaseUnit: Number(perPurchaseUnit) } : {}) }) });
       onCreated();
     } catch (err) {
       setError(err.message);
@@ -211,16 +219,118 @@ function CreateProductModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New product" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={sku} onChange={(e) => setSku(e.target.value)} required placeholder="SKU" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Product name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={reorderThreshold} onChange={(e) => setReorderThreshold(e.target.value)} type="number" min="0" placeholder="Reorder threshold (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} required placeholder="SKU" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Product name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Product name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Reorder threshold (optional)" value={reorderThreshold} onChange={(e) => setReorderThreshold(e.target.value)} type="number" min="0" placeholder="Reorder threshold (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <UnitFields barcode={barcode} setBarcode={setBarcode} unit={unit} setUnit={setUnit} purchaseUnit={purchaseUnit} setPurchaseUnit={setPurchaseUnit} perPurchaseUnit={perPurchaseUnit} setPerPurchaseUnit={setPerPurchaseUnit} />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !sku.trim() || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create product"}</button>
       </form>
+    </Modal>
+  );
+}
+
+// Batch 3 — barcode + units of measure (lib/inventory-units.js).
+const unitInput = "w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]";
+
+function UnitFields({ barcode, setBarcode, unit, setUnit, purchaseUnit, setPurchaseUnit, perPurchaseUnit, setPerPurchaseUnit }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <input aria-label="Barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Barcode (optional)" className={unitInput} />
+      <input aria-label="Stock unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Counted in (each, kg, m…)" className={unitInput} />
+      <input aria-label="Purchase unit" value={purchaseUnit} onChange={(e) => setPurchaseUnit(e.target.value)} placeholder="Bought in (box, case…) optional" className={unitInput} />
+      <input aria-label="Units per purchase unit" value={perPurchaseUnit} onChange={(e) => setPerPurchaseUnit(e.target.value)} type="number" min="2" disabled={!purchaseUnit.trim()} placeholder="Units in each one" className={`${unitInput} disabled:opacity-40`} />
+    </div>
+  );
+}
+
+function UnitsEditor({ orgId, product, onChanged }) {
+  const [open, setOpen] = useState(false);
+  const [barcode, setBarcode] = useState(product.barcode || "");
+  const [unit, setUnit] = useState(product.unit && product.unit !== "each" ? product.unit : "");
+  const [purchaseUnit, setPurchaseUnit] = useState(product.purchaseUnit || "");
+  const [perPurchaseUnit, setPerPurchaseUnit] = useState(product.unitsPerPurchaseUnit ? String(product.unitsPerPurchaseUnit) : "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  if (!open) return <button onClick={() => setOpen(true)} className="text-[11px] font-bold uppercase text-[#00f2fe]">Edit barcode & units</button>;
+  async function save() {
+    setSaving(true); setMsg("");
+    try {
+      await api(`/api/orgs/inventory/products/${product.id}`, { method: "PATCH", body: JSON.stringify({ orgId, barcode: barcode.trim() || null, unit: unit.trim() || null, purchaseUnit: purchaseUnit.trim() || null, unitsPerPurchaseUnit: purchaseUnit.trim() ? Number(perPurchaseUnit) : null }) });
+      setMsg("Saved. New purchase-order lines use these units; existing ones keep theirs."); onChanged();
+    } catch (err) { setMsg(err.message); } finally { setSaving(false); }
+  }
+  return (
+    <div className="space-y-2 border border-white/10 rounded-lg p-3">
+      <UnitFields barcode={barcode} setBarcode={setBarcode} unit={unit} setUnit={setUnit} purchaseUnit={purchaseUnit} setPurchaseUnit={setPurchaseUnit} perPurchaseUnit={perPurchaseUnit} setPerPurchaseUnit={setPerPurchaseUnit} />
+      <button disabled={saving} onClick={save} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{saving ? "…" : "Save"}</button>
+      {msg && <p className="text-xs text-[var(--inaya-text-muted)]">{msg}</p>}
+    </div>
+  );
+}
+
+/** Scan with the camera where the browser supports BarcodeDetector; a USB or
+ *  Bluetooth scanner types into the field like a keyboard and presses Enter. */
+function ScanModal({ products, onClose, onFound, onCreate }) {
+  const [code, setCode] = useState("");
+  const [notFound, setNotFound] = useState("");
+  const [camera, setCamera] = useState("off"); // off | on | unsupported | error
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const lookup = useCallback((raw) => {
+    const c = String(raw || "").trim();
+    if (!c) return;
+    const match = products.find((p) => p.barcode === c || p.sku === c);
+    if (match) onFound(match); else setNotFound(c);
+  }, [products, onFound]);
+
+  useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+
+  async function startCamera() {
+    if (typeof window === "undefined" || !("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) { setCamera("unsupported"); return; }
+    try {
+      const detector = new window.BarcodeDetector();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      setCamera("on");
+      const video = videoRef.current;
+      video.srcObject = stream;
+      await video.play();
+      const tick = async () => {
+        if (!streamRef.current) return;
+        try {
+          const found = await detector.detect(video);
+          if (found[0]?.rawValue) { stream.getTracks().forEach((t) => t.stop()); streamRef.current = null; setCamera("off"); setCode(found[0].rawValue); lookup(found[0].rawValue); return; }
+        } catch { /* keep scanning */ }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    } catch { setCamera("error"); }
+  }
+
+  return (
+    <Modal title="Scan a barcode" onClose={onClose}>
+      <div className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); setNotFound(""); lookup(code); }} className="flex gap-2">
+          <input aria-label="Barcode or SKU" autoFocus value={code} onChange={(e) => { setCode(e.target.value); setNotFound(""); }} placeholder="Scan or type a barcode / SKU" className={unitInput} />
+          <button className="text-[11px] font-bold uppercase px-3 rounded-lg bg-white/10 text-[var(--inaya-text-primary)]">Find</button>
+        </form>
+        <video ref={videoRef} className={camera === "on" ? "w-full rounded-lg bg-black" : "hidden"} muted playsInline />
+        {camera !== "on" && <button onClick={startCamera} className="text-[11px] font-bold uppercase px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--inaya-text-primary)]">Use camera</button>}
+        {camera === "unsupported" && <p className="text-xs text-[var(--inaya-text-muted)]">This browser can't read barcodes from the camera (Chrome, Edge and Android can). A handheld scanner or typing the code works everywhere.</p>}
+        {camera === "error" && <p className="text-xs text-amber-400">The camera couldn't be opened. Check the browser's camera permission.</p>}
+        {notFound && (
+          <div className="text-xs space-y-2">
+            <p className="text-[var(--inaya-text-muted)]">No product has the barcode or SKU "{notFound}".</p>
+            <button onClick={() => onCreate(notFound)} className="text-[11px] font-bold uppercase text-[#00f2fe]">Create a product with this barcode</button>
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -270,7 +380,8 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
   return (
     <Modal title={product.name} onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">SKU {product.sku} · Reorder at {product.reorderThreshold}</p>
+        <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">SKU {product.sku} · Reorder at {product.reorderThreshold}{product.barcode ? ` · Barcode ${product.barcode}` : ""} · Counted in {product.unit || "each"}{product.purchaseUnit ? ` · Bought by the ${product.purchaseUnit} of ${product.unitsPerPurchaseUnit}` : ""}</p>
+        <UnitsEditor orgId={orgId} product={product} onChanged={onChanged} />
 
         {stock && (
           <div className="space-y-1">
@@ -288,19 +399,19 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
 
         <form onSubmit={handleSubmit} className="space-y-2 border-t border-white/5 pt-3">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Record a movement</p>
-          <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          <select aria-label="Warehouse" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Warehouse…</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
               <option value="RECEIPT">Stock in</option>
               <option value="ISSUE">Stock out</option>
               <option value="ADJUSTMENT">Adjustment (+/-)</option>
             </select>
-            <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Quantity" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
+            <input aria-label="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Quantity" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           </div>
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {error && <p className="text-red-400 text-xs">{error}</p>}
           <button disabled={submitting || !warehouseId || !quantity} className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Recording…" : "Record movement"}</button>
         </form>
@@ -382,7 +493,7 @@ function ReorderSection({ orgId, productId, refreshKey, onChanged }) {
               </button>
             )
           )}
-          <div className="grid grid-cols-2 gap-2 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
             <label className="text-[11px] text-[var(--inaya-text-muted)]" htmlFor={`reorder-qty-${productId}`}>
               Reorder quantity
               <input id={`reorder-qty-${productId}`} value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} type="number" min="1" placeholder={`Auto: top up to ${info.reorderThreshold * 2}`} className="mt-1 w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
@@ -461,7 +572,7 @@ function WarehousesTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search warehouses…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search warehouses" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search warehouses…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New warehouse</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -511,12 +622,12 @@ function CreateWarehouseModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New warehouse" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Warehouse name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Warehouse name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Warehouse name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create warehouse"}</button>
       </form>

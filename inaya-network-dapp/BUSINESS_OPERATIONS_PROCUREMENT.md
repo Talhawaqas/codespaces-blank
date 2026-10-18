@@ -68,6 +68,6 @@ DRAFT | PENDING_APPROVAL | APPROVED | ORDERED -> CANCELLED
 ## Explicitly out of scope (this pass)
 
 - Line items, tax and shipping are editable only while `DRAFT` — they change the total an approver signs off on.
-- Currency conversion uses a static, dated reference-rate table (`src/lib/currency.js`), not a live FX feed.
+- Currency conversion on PO displays still uses the static, dated reference-rate table (`src/lib/currency.js`). The daily live snapshot added in Batch 3 (`src/lib/fx-rates.js`) is used by the ledger and invoice PDFs. PO lines can now be ordered in a purchase unit (see Inventory).
 
 Closed since this was written: DRAFT-only line-item editing and multi-currency (commit `4f17457`, 2026-09-12). Optional tax rate, shipping cost and expected delivery date on POs, and supplier scorecards (fill rate, on-time rate, lead time, cancellation rate — from real PO data, "not enough data" rather than invented numbers) shipped in the Business Workspace gap closure, Batch 1, 2026-10 — `src/lib/purchase-order-totals.js`, `src/lib/supplier-scorecard.js`, `test/supplier-scorecard.test.mjs`.

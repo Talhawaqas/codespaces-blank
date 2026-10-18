@@ -146,6 +146,24 @@ test("domain restriction: email, then an emailed one-time code; wrong domain, wr
   await S.requestShareCode({ token, email: "bob@acme.com", ip: "1.1.1.1" }).then((r) => assert.equal(r.sent, false), () => {});
 });
 
+test("recipient restriction (Batch 3): only the listed addresses get a code and open; same domain is not enough", T, async () => {
+  const sent = []; S.setShareEmailSender(async (m) => { sent.push(m); });
+  const { token, share } = await mk({ emailAllow: ["Dana@Partner.org"] });
+  assert.equal(share.recipientRestricted, 1);
+  assert.equal((await code(open(token))).needs, "email");
+  assert.equal((await code(open(token, { email: "sam@partner.org" }))).status, 403, "a colleague at the same domain is refused");
+  await S.requestShareCode({ token, email: "sam@partner.org", ip: "1.1.1.2" });
+  assert.equal(sent.length, 0, "nothing is sent to an unlisted address");
+  await S.requestShareCode({ token, email: "dana@partner.org", ip: "1.1.1.2" });
+  assert.equal(sent.length, 1);
+  const real = /(\d{6})/.exec(sent[0].text)[1];
+  const ok = await open(token, { email: "dana@partner.org", code: real }); assert.ok(ok.sessionToken);
+  assert.match((await code(mk({ emailAllow: ["not-an-email"] }))).message, /not a valid email/);
+  const plain = await mk({});
+  assert.equal(plain.share.recipientRestricted, null, "links without emailAllow are unchanged");
+  assert.ok((await open(plain.token)).sessionToken);
+});
+
 test("delegation: a delegated manager can revoke; a stranger and another organization cannot; admins always can", T, async () => {
   const { shareId } = await mk({ managerEmails: [org.bob.email] });
   await assert.rejects(() => S.revokeShare({ orgId: org.oid, shareId, actorEmail: org.carol.email, membership: org.carol.membership }), (e) => e.status === 403);

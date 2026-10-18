@@ -16,6 +16,7 @@ import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { PURCHASE_ORDER_STATES } from "../../../../../lib/purchase-order-workflow.js";
 import { isSupportedCurrency } from "../../../../../lib/currency.js";
 import { computePoTotals, validatePoExtras } from "../../../../../lib/purchase-order-totals.js";
+import { applyPurchaseUnits } from "../../../../../lib/inventory-units.js";
 
 function serializeOrder(po) {
   return {
@@ -26,6 +27,7 @@ function serializeOrder(po) {
       productId: item.productId ? item.productId.toString() : null,
       warehouseId: item.warehouseId ? item.warehouseId.toString() : null,
       quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0,
+      unit: item.unit || null, unitsPerPurchaseUnit: item.unitsPerPurchaseUnit ?? null, stockUnit: item.stockUnit || null,
     })),
     currency: po.currency || "USD",
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
@@ -138,6 +140,9 @@ export async function POST(req) {
         item.warehouseId = warehouse._id;
       }
     }
+
+    // Batch 3: lines for a product bought in a larger unit (e.g. box of 12) snapshot that conversion.
+    await applyPurchaseUnits(orgId, items);
 
     const now = new Date().toISOString();
     const doc = {

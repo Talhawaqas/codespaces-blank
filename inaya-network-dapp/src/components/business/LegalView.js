@@ -70,7 +70,7 @@ function MattersTab({ orgId, email }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search matters…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search matters" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search matters…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New matter</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -125,14 +125,14 @@ function CreateMatterModal({ orgId, onClose, onCreated }) {
   return (
     <Modal title="Open matter" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Matter name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Matter name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Matter name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="litigation">Litigation</option>
           <option value="corporate">Corporate</option>
           <option value="regulatory">Regulatory</option>
           <option value="advisory">Advisory</option>
         </select>
-        <input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="Jurisdiction (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Jurisdiction (optional)" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="Jurisdiction (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Opening…" : "Open matter"}</button>
       </form>
@@ -224,7 +224,7 @@ function TeamSection({ orgId, matterId, team, onChanged }) {
   return (
     <Section title={`Team (${team.length})`}>
       <form onSubmit={assign} className="flex flex-wrap gap-2 mb-2">
-        <input value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Member email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Member email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Member email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]">
           <option value="partner">Partner</option>
           <option value="associate">Associate</option>
@@ -264,7 +264,7 @@ function DeadlinesSection({ orgId, matterId, deadlines, onChanged }) {
   return (
     <Section title={`Deadlines (${deadlines.length})`}>
       <form onSubmit={create} className="flex flex-wrap gap-2 mb-2">
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={dueAt} onChange={(e) => setDueAt(e.target.value)} type="datetime-local" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Add</button>
       </form>
@@ -306,7 +306,7 @@ function EvidenceSection({ orgId, matterId, evidence, onChanged }) {
   return (
     <Section title={`Evidence (${evidence.length})`}>
       <form onSubmit={acquire} className="flex flex-wrap gap-2 mb-2">
-        <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Source (e.g. seized laptop)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Source (e.g. seized laptop)" value={source} onChange={(e) => setSource(e.target.value)} placeholder="Source (e.g. seized laptop)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Acquire</button>
       </form>
       {error && <p className="text-red-400 text-[11px] mb-1">{error}</p>}
@@ -360,7 +360,7 @@ function HoldsSection({ orgId, matterId, email }) {
     <Section title={`Legal holds (${holds?.length ?? "…"})`}>
       <p className="text-[11px] text-[var(--inaya-text-muted)] mb-2">A hold on this matter blocks deletion of related records until released.</p>
       <form onSubmit={create} className="flex flex-wrap gap-2 mb-2">
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for hold" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Reason for hold" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for hold" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Create hold</button>
       </form>
       {error && <p className="text-red-400 text-[11px] mb-1">{error}</p>}
@@ -424,15 +424,15 @@ function DiscoverySection({ orgId, matterId }) {
     <Section title="Discovery">
       {!created ? (
         <form onSubmit={create} className="flex flex-wrap gap-2">
-          <input value={requestingParty} onChange={(e) => setRequestingParty(e.target.value)} placeholder="Requesting party" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={respondingParty} onChange={(e) => setRespondingParty(e.target.value)} placeholder="Responding party" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Requesting party" value={requestingParty} onChange={(e) => setRequestingParty(e.target.value)} placeholder="Requesting party" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Responding party" value={respondingParty} onChange={(e) => setRespondingParty(e.target.value)} placeholder="Responding party" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Create request</button>
         </form>
       ) : (
         <div className="space-y-2">
           <p className="text-[var(--inaya-text-primary)] text-xs">{created.requestingParty} ↔ {created.respondingParty} — <span className="font-mono text-[var(--inaya-text-muted)]">{created.status}</span></p>
           <div className="flex flex-wrap gap-2">
-            <input value={docIds} onChange={(e) => setDocIds(e.target.value)} placeholder="Document IDs, comma-separated" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+            <input aria-label="Document IDs, comma-separated" value={docIds} onChange={(e) => setDocIds(e.target.value)} placeholder="Document IDs, comma-separated" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
             <button onClick={addDocs} className="text-[11px] font-bold uppercase text-[#00f2fe] px-3 py-1.5">Add documents</button>
           </div>
           <p className="text-[11px] text-[var(--inaya-text-muted)]">Document tagging (responsive/privileged) is done per-document via the API; the production step below automatically excludes anything tagged privileged even if responsive.</p>
@@ -464,7 +464,7 @@ function RedactionSection({ orgId, matterId }) {
     <Section title="Redaction">
       <p className="text-[11px] text-[var(--inaya-text-muted)] mb-2">Redacting a document never mutates the original — it produces a new, separately-linked redacted document.</p>
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={originalDocumentId} onChange={(e) => setOriginalDocumentId(e.target.value)} placeholder="Original document ID" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Original document ID" value={originalDocumentId} onChange={(e) => setOriginalDocumentId(e.target.value)} placeholder="Original document ID" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Request redaction</button>
       </form>
       {error && <p className="text-red-400 text-[11px] mt-1">{error}</p>}
@@ -515,7 +515,7 @@ function ContractsSection({ orgId, matterId }) {
   return (
     <Section title={`Contracts (${contracts?.length ?? "…"})`}>
       <form onSubmit={create} className="flex flex-wrap gap-2 mb-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contract name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Contract name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Contract name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Create</button>
       </form>
       {error && <p className="text-red-400 text-[11px] mb-1">{error}</p>}
@@ -584,9 +584,9 @@ function TimeBillingSection({ orgId, matterId, email }) {
   return (
     <Section title={`Time & billing (${entries?.length ?? "…"})`}>
       <form onSubmit={logTime} className="flex flex-wrap gap-2 mb-2">
-        <input value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)} placeholder="Task" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={minutes} onChange={(e) => setMinutes(e.target.value)} type="number" placeholder="Minutes" className="w-20 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={rate} onChange={(e) => setRate(e.target.value)} type="number" placeholder="Rate/hr" className="w-20 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Task" value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)} placeholder="Task" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Minutes" value={minutes} onChange={(e) => setMinutes(e.target.value)} type="number" placeholder="Minutes" className="w-20 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Rate/hr" value={rate} onChange={(e) => setRate(e.target.value)} type="number" placeholder="Rate/hr" className="w-20 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Log</button>
       </form>
       {error && <p className="text-red-400 text-[11px] mb-1">{error}</p>}
@@ -640,7 +640,7 @@ function TrustAccountingSection({ orgId, matterId }) {
     <Section title={`Trust accounting — balance: ${balance === null ? "…" : `$${balance}`}`}>
       <p className="text-[11px] text-[var(--inaya-text-muted)] mb-2">A withdrawal can never exceed this matter's real trust balance — enforced server-side, not just in this form.</p>
       <div className="flex flex-wrap gap-2 mb-2">
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="0.01" placeholder="Amount" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="0.01" placeholder="Amount" className="w-28 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button onClick={() => transact("deposit")} className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg">Deposit</button>
         <button onClick={() => transact("withdrawal")} className="text-[11px] font-bold uppercase text-red-300 bg-red-400/10 border border-red-400/30 px-3 py-1.5 rounded-lg">Withdraw</button>
       </div>
@@ -684,7 +684,7 @@ function ClientsTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Client name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Client name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Client name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New client</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -726,7 +726,7 @@ function ProspectsTab({ orgId }) {
     <div className="space-y-4">
       <p className="text-[var(--inaya-text-muted)] text-xs max-w-lg">Prospective clients are kept restricted (Confidential classification) — intake is tracked here separately from full clients until you decide to engage.</p>
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Prospect name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Prospect name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Prospect name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ Intake prospect</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -786,8 +786,8 @@ function EntitiesTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Entity name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
-        <input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="Jurisdiction (optional)" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-40" />
+        <input aria-label="Entity name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Entity name" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Jurisdiction (optional)" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="Jurisdiction (optional)" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-40" />
         <button className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New entity</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}

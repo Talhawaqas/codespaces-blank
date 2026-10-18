@@ -19,7 +19,7 @@ export const LINK_PERMISSIONS = ["view", "download"];
 export const MEMBER_PERMISSIONS = { view: "VIEW", edit: "EDIT", manage: "MANAGE" };
 export const SHARE_KINDS = ["link", "member", "group"];
 export const LIMITS = {
-  passwordMin: 8, passwordMax: 128, ipEntries: 20, domainEntries: 10, labelMax: 80, noteMax: 500, managers: 10,
+  passwordMin: 8, passwordMax: 128, ipEntries: 20, domainEntries: 10, emailEntries: 10, labelMax: 80, noteMax: 500, managers: 10,
   maxExpiryDays: 365, maxMaxUses: 100000, sessionMinutes: 15, passwordAttempts: 8, lockMinutes: 15,
 };
 
@@ -58,6 +58,12 @@ export function validateLinkOptions(input = {}) {
   if (doms.length > LIMITS.domainEntries) errors.push(`At most ${LIMITS.domainEntries} email domains.`);
   for (const d of doms) if (!DOMAIN.test(d)) errors.push(`"${d.slice(0, 40)}" is not a valid email domain.`);
   v.domainAllow = [...new Set(doms)];
+  // Batch 3: specific recipients. Same email-code check as domains, but the
+  // address must match exactly.
+  const ems = Array.isArray(input.emailAllow) ? input.emailAllow.map((x) => String(x).trim().toLowerCase()).filter(Boolean) : [];
+  if (ems.length > LIMITS.emailEntries) errors.push(`At most ${LIMITS.emailEntries} recipient email addresses.`);
+  for (const e of ems) if (!EMAIL.test(e) || e.length > 200) errors.push(`"${e.slice(0, 40)}" is not a valid email address.`);
+  v.emailAllow = [...new Set(ems)];
   v.deviceBinding = input.deviceBinding === "first-use" ? "first-use" : null;
   if (input.deviceBinding && input.deviceBinding !== "first-use") errors.push('deviceBinding must be "first-use" or empty.');
   v.notifyOnAccess = input.notifyOnAccess === true;
@@ -119,10 +125,9 @@ export function evaluateShareAccess(share, ctx = {}) {
   if (share.lockedUntil && new Date(share.lockedUntil).getTime() > now) return { allow: false, status: 429, error: "Too many wrong passwords. Try again later." };
   if (share.ipAllow?.length && !ipMatchesAny(ctx.ip, share.ipAllow)) return { allow: false, status: 403, error: GENERIC_FORBIDDEN };
   if (share.deviceBinding === "first-use" && share.boundDeviceId && share.boundDeviceId !== ctx.deviceId) return { allow: false, status: 403, error: GENERIC_FORBIDDEN };
-  if (share.domainAllow?.length) {
+  if (requiresEmail(share)) {
     if (!ctx.email) return { allow: false, status: 401, error: "Enter your work email address to open this link.", needs: "email" };
-    const domain = String(ctx.email).split("@")[1]?.toLowerCase();
-    if (!domain || !share.domainAllow.includes(domain)) return { allow: false, status: 403, error: GENERIC_FORBIDDEN };
+    if (!emailAllowed(share, ctx.email)) return { allow: false, status: 403, error: GENERIC_FORBIDDEN };
     if (!ctx.emailVerified) return { allow: false, status: 401, error: "Enter the code we emailed you.", needs: "code" };
   }
   if (share.passwordHash) {
@@ -139,11 +144,20 @@ export function watermarkText({ email, ip, now = Date.now(), label }) {
   return [label, who, ip ? String(ip).slice(0, 45) : null, when].filter(Boolean).join(" | ").slice(0, 160);
 }
 
+/** A link that asks for a verified email: by allowed domain and/or exact address. */
+export const requiresEmail = (share) => !!(share?.domainAllow?.length || share?.emailAllow?.length);
+export function emailAllowed(share, email) {
+  const em = String(email || "").trim().toLowerCase();
+  const domain = em.split("@")[1];
+  if (!domain) return false;
+  return !!(share.domainAllow?.includes(domain) || share.emailAllow?.includes(em));
+}
+
 export const publicShareView = (s, now = Date.now()) => ({
   shareId: String(s._id), kind: s.kind || "link", permission: s.permission || "download", label: s.label || null, note: s.note || null,
   createdByEmail: s.createdByEmail, createdAt: s.createdAt, expiresAt: s.expiresAt,
   maxUses: s.maxUses ?? null, useCount: s.useCount || 0, maxDownloads: s.maxDownloads ?? null, downloadCount: s.downloadCount || 0,
-  passwordProtected: !!s.passwordHash, ipRestricted: !!s.ipAllow?.length, domainRestricted: s.domainAllow?.length ? s.domainAllow : null,
+  passwordProtected: !!s.passwordHash, ipRestricted: !!s.ipAllow?.length, domainRestricted: s.domainAllow?.length ? s.domainAllow : null, recipientRestricted: s.emailAllow?.length ? s.emailAllow.length : null,
   deviceBound: s.deviceBinding === "first-use", notifyOnAccess: !!s.notifyOnAccess, watermark: !!s.watermark, oneTime: !!s.oneTime,
   managerEmails: s.managerEmails || [], lastAccessAt: s.lastAccessAt || null, revokedAt: s.revokedAt || null, status: shareStatus(s, now),
   v: s.v || 1,

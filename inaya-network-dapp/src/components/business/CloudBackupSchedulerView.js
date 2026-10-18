@@ -122,7 +122,7 @@ function CredentialsPanel({ orgId, credentials, onChanged }) {
           <select value={provider} onChange={(e) => { setProvider(e.target.value); setFields({}); }} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
             {Object.entries(PROVIDER_LABELS).map(([key, l]) => <option key={key} value={key}>{l}</option>)}
           </select>
-          <input placeholder="Label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Label (optional)" placeholder="Label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {PROVIDER_FIELDS[provider].map((f) => (
             <input key={f.key} type={f.secret ? "password" : "text"} placeholder={f.label} value={fields[f.key] || ""} onChange={(e) => setField(f.key, e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           ))}
@@ -277,14 +277,14 @@ function CreateScheduleForm({ orgId, credentials, onChanged }) {
   return (
     <form onSubmit={create} className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <input placeholder="Schedule name" value={name} onChange={(e) => setName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <select value={credentialId} onChange={(e) => setCredentialId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
+        <input aria-label="Schedule name" placeholder="Schedule name" value={name} onChange={(e) => setName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <select aria-label="Choose a credential" value={credentialId} onChange={(e) => setCredentialId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
           <option value="">Choose a credential…</option>
           {credentials.map((c) => <option key={c.id} value={c.id}>{c.label || PROVIDER_LABELS[c.provider]} ({PROVIDER_LABELS[c.provider]})</option>)}
         </select>
-        <input placeholder="Source bucket" value={sourceBucket} onChange={(e) => setSourceBucket(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input placeholder="Source prefix (optional)" value={sourcePrefix} onChange={(e) => setSourcePrefix(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input placeholder="Destination bucket (Inaya)" value={destinationBucket} onChange={(e) => setDestinationBucket(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Source bucket" placeholder="Source bucket" value={sourceBucket} onChange={(e) => setSourceBucket(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Source prefix (optional)" placeholder="Source prefix (optional)" value={sourcePrefix} onChange={(e) => setSourcePrefix(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Destination bucket (Inaya)" placeholder="Destination bucket (Inaya)" value={destinationBucket} onChange={(e) => setDestinationBucket(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input type="number" min="1" value={intervalHours} onChange={(e) => setIntervalHours(e.target.value)} className="w-20 bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]" />
         <span className="text-[11px] text-[var(--inaya-text-muted)]">hours</span>
         <button type="submit" disabled={busy || !credentialId || !name.trim() || !sourceBucket.trim() || !destinationBucket.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">

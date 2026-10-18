@@ -23,6 +23,7 @@ function serializeOrder(po) {
       productId: item.productId ? item.productId.toString() : null,
       warehouseId: item.warehouseId ? item.warehouseId.toString() : null,
       quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0,
+      unit: item.unit || null, unitsPerPurchaseUnit: item.unitsPerPurchaseUnit ?? null, stockUnit: item.stockUnit || null,
     })),
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
     currency: po.currency || "USD",

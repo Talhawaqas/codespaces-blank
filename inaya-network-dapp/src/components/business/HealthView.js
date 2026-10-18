@@ -68,7 +68,7 @@ function PatientsTab({ orgId, email }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search patients…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search patients" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search patients…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New patient</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -124,10 +124,10 @@ function CreatePatientModal({ orgId, onClose, onCreated }) {
   return (
     <Modal title="Register patient" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input value={legalName} onChange={(e) => setLegalName(e.target.value)} required placeholder="Legal name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={preferredName} onChange={(e) => setPreferredName(e.target.value)} placeholder="Preferred name (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Legal name" value={legalName} onChange={(e) => setLegalName(e.target.value)} required placeholder="Legal name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Preferred name (optional)" value={preferredName} onChange={(e) => setPreferredName(e.target.value)} placeholder="Preferred name (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} type="date" required className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-        <input value={facility} onChange={(e) => setFacility(e.target.value)} placeholder="Facility (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Facility (optional)" value={facility} onChange={(e) => setFacility(e.target.value)} placeholder="Facility (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !legalName.trim() || !dateOfBirth} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Registering…" : "Register patient"}</button>
       </form>
@@ -237,7 +237,7 @@ function AppointmentsSection({ orgId, patientId, appointments, onChanged }) {
     <Section title={`Appointments (${appointments.length})`} onAdd={() => setShowForm((v) => !v)}>
       {showForm && (
         <form onSubmit={handleCreate} className="flex flex-wrap gap-2 mb-2 bg-black/20 border border-white/5 rounded-lg p-2.5">
-          <input value={type} onChange={(e) => setType(e.target.value)} placeholder="Type (e.g. checkup)" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Type (e.g. checkup)" value={type} onChange={(e) => setType(e.target.value)} placeholder="Type (e.g. checkup)" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <input value={startAt} onChange={(e) => setStartAt(e.target.value)} type="datetime-local" required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           <button disabled={submitting} className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg disabled:opacity-40">Schedule</button>
         </form>
@@ -291,8 +291,8 @@ function ConsentSection({ orgId, patientId, consents, onChanged }) {
     <Section title={`Consents (${consents.length})`} onAdd={() => setShowForm((v) => !v)}>
       {showForm && (
         <form onSubmit={handleCreate} className="flex flex-wrap gap-2 mb-2 bg-black/20 border border-white/5 rounded-lg p-2.5">
-          <input value={type} onChange={(e) => setType(e.target.value)} placeholder="Type (e.g. treatment)" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Type (e.g. treatment)" value={type} onChange={(e) => setType(e.target.value)} placeholder="Type (e.g. treatment)" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg disabled:opacity-40">Record</button>
         </form>
       )}
@@ -359,8 +359,8 @@ function RoiSection({ orgId, patientId }) {
     <Section title={`Release of information (${requests?.length ?? "…"})`} onAdd={() => setShowForm((v) => !v)}>
       {showForm && (
         <form onSubmit={handleCreate} className="flex flex-wrap gap-2 mb-2 bg-black/20 border border-white/5 rounded-lg p-2.5">
-          <input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose (e.g. insurance claim)" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="Recipient (optional)" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Purpose (e.g. insurance claim)" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose (e.g. insurance claim)" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Recipient (optional)" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="Recipient (optional)" className="flex-1 min-w-[100px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg disabled:opacity-40">Request</button>
         </form>
       )}
@@ -424,8 +424,8 @@ function BillingSection({ orgId, patientId }) {
     <Section title={`Billing (${invoices?.length ?? "…"})`} onAdd={() => setShowForm((v) => !v)}>
       {showForm && (
         <form onSubmit={handleCreate} className="flex flex-wrap gap-2 mb-2 bg-black/20 border border-white/5 rounded-lg p-2.5">
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Line item description" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="0.01" placeholder="Amount" className="w-24 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Line item description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Line item description" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="0.01" placeholder="Amount" className="w-24 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={submitting} className="text-[11px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3 py-1.5 rounded-lg disabled:opacity-40">Create invoice</button>
         </form>
       )}
@@ -463,7 +463,7 @@ function CareTeamSection({ orgId, patientId }) {
     <Section title="Care team" onAdd={() => setShowForm((v) => !v)}>
       {showForm && (
         <form onSubmit={handleAssign} className="flex flex-wrap gap-2 mb-2 bg-black/20 border border-white/5 rounded-lg p-2.5">
-          <input value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Member email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Member email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Member email" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]">
             <option value="member">Member</option>
             <option value="physician">Physician</option>
@@ -566,9 +566,9 @@ function ResearchTab({ orgId, canManage }) {
     <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-3 max-w-lg">
       <p className="text-[var(--inaya-text-muted)] text-xs">De-identified research datasets require a documented methodology — there's no "anonymous" checkbox, you describe exactly what was done to the data.</p>
       <form onSubmit={handleCreate} className="space-y-2.5">
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Dataset name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <textarea value={methodology} onChange={(e) => setMethodology(e.target.value)} required placeholder="De-identification methodology (required — describe what fields were stripped/generalized and how)" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={patientIds} onChange={(e) => setPatientIds(e.target.value)} placeholder="Source patient IDs, comma-separated" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Dataset name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Dataset name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <textarea aria-label="De-identification methodology (required — describe what fields were stripped/generalized and how)" value={methodology} onChange={(e) => setMethodology(e.target.value)} required placeholder="De-identification methodology (required — describe what fields were stripped/generalized and how)" rows={3} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Source patient IDs, comma-separated" value={patientIds} onChange={(e) => setPatientIds(e.target.value)} placeholder="Source patient IDs, comma-separated" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !name.trim() || !methodology.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create dataset"}</button>
       </form>

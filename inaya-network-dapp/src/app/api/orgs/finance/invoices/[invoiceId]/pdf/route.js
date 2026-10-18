@@ -13,7 +13,8 @@
 // record" acceptance criterion.
 
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../../../lib/orgs.js";
-import { convert, isSupportedCurrency } from "../../../../../../../lib/currency.js";
+import { isSupportedCurrency } from "../../../../../../../lib/currency.js";
+import { convertAt } from "../../../../../../../lib/fx-rates.js";
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -50,10 +51,10 @@ export async function GET(req, { params }) {
 
     let conversionRow = "";
     if (displayCurrency && isSupportedCurrency(displayCurrency) && displayCurrency !== invoice.currency) {
-      const result = convert(invoice.total, invoice.currency, displayCurrency);
+      const result = await convertAt(invoice.total, invoice.currency, displayCurrency);
       conversionRow = result.error
         ? `<p class="muted">Converted total unavailable: ${escapeHtml(result.error)}</p>`
-        : `<p class="muted">≈ ${fmtMoney(result.convertedAmount, displayCurrency)} at ${result.rate.toFixed(4)} (reference rate as of ${result.ratesAsOf}, not a live rate)</p>`;
+        : `<p class="muted">≈ ${fmtMoney(result.convertedAmount, displayCurrency)} at ${result.rate.toFixed(4)} (${result.source?.startsWith("live:") ? `daily market rate as of ${result.ratesAsOf}` : `reference rate as of ${result.ratesAsOf}, not a live rate`})</p>`;
     }
 
     const rows = invoice.lineItems.map((item) => `

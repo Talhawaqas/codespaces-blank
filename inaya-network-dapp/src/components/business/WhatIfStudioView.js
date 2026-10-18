@@ -214,27 +214,27 @@ export default function WhatIfStudioView({ orgId }) {
             </select>
 
             {scenarioType === "SUPPLIER_UNAVAILABLE" && (
-              <select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
+              <select aria-label="Choose a supplier" value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
                 <option value="">Choose a supplier…</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             )}
             {scenarioType === "WAREHOUSE_UNAVAILABLE" && (
-              <select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
+              <select aria-label="Choose a warehouse" value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
                 <option value="">Choose a warehouse…</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
             )}
             {scenarioType === "EMPLOYEE_ACCESS_REMOVED" && (
-              <input type="email" placeholder="employee@example.com" value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]" />
+              <input aria-label="employee@example.com" type="email" placeholder="employee@example.com" value={entityId} onChange={(e) => setEntityId(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]" />
             )}
             {scenarioType === "PROJECT_DELAYED" && (
               <>
-                <select value={selectedDepartment} onChange={(e) => { setSelectedDepartment(e.target.value); setEntityId(""); }} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
+                <select aria-label="Choose a department" value={selectedDepartment} onChange={(e) => { setSelectedDepartment(e.target.value); setEntityId(""); }} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)]">
                   <option value="">Choose a department…</option>
                   {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
-                <select value={entityId} onChange={(e) => setEntityId(e.target.value)} disabled={!selectedDepartment} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)] disabled:opacity-40">
+                <select aria-label="Choose a project" value={entityId} onChange={(e) => setEntityId(e.target.value)} disabled={!selectedDepartment} className="bg-black/30 border border-white/10 rounded-md text-xs px-2 py-1.5 text-[var(--inaya-text-primary)] disabled:opacity-40">
                   <option value="">Choose a project…</option>
                   {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
                 </select>

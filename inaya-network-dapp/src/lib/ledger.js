@@ -23,14 +23,15 @@
 //                                  already moved the cash (no double count)
 //     INCOMING, unlinked           Dr Cash / Cr Other Income
 //     OUTGOING, otherwise          Dr Other Expenses / Cr Cash
-// The ledger is kept in USD. A non-USD invoice is converted with the
-// platform's static, dated reference-rate table (currency.js); each line
-// keeps the original amount, currency, rate and ratesAsOf. An unsupported
-// currency is reported, never guessed.
+// The ledger is kept in USD. A non-USD amount is converted at the daily
+// rate stored for the entry's date (fx-rates.js), or the static dated
+// reference table (currency.js) when no daily rate exists; each line keeps
+// the original amount, currency, rate, ratesAsOf and fxSource. An
+// unsupported currency is reported, never guessed.
 
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
-import { convert } from "./currency.js";
+import { convertAt } from "./fx-rates.js";
 
 export const ACCOUNT_TYPES = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
 const DEBIT_NORMAL = new Set(["ASSET", "EXPENSE"]);
@@ -106,7 +107,7 @@ export function validateLines(lines, accountCodes) {
     debit += d;
     credit += c;
     const line = { accountCode, debit: fromCents(d), credit: fromCents(c) };
-    for (const k of ["memo", "originalAmount", "originalCurrency", "fxRate", "ratesAsOf"]) if (raw[k] !== undefined && raw[k] !== null) line[k] = raw[k];
+    for (const k of ["memo", "originalAmount", "originalCurrency", "fxRate", "ratesAsOf", "fxSource"]) if (raw[k] !== undefined && raw[k] !== null) line[k] = raw[k];
     clean.push(line);
   }
   if (debit !== credit) return { error: `Entry doesn't balance: debits ${fromCents(debit).toFixed(2)} vs credits ${fromCents(credit).toFixed(2)}.` };
@@ -157,20 +158,26 @@ export async function reverseEntry({ orgId, entryId, date, actorEmail }) {
   });
 }
 
+// Returns a builder resolved at posting time, so a non-USD amount converts
+// at the daily rate stored for the entry's own date (fx-rates.js), falling
+// back to the static reference table. Posted entries keep the rate they
+// were posted with.
 function usdLines(amount, currency, debitCode, creditCode, memo) {
-  const cur = String(currency || "USD").toUpperCase();
-  let usd = amount;
-  const extra = {};
-  if (cur !== "USD") {
-    const c = convert(Number(amount), cur, "USD");
-    if (c.error) return { error: c.error };
-    usd = c.convertedAmount;
-    Object.assign(extra, { originalAmount: amount, originalCurrency: cur, fxRate: c.rate, ratesAsOf: c.ratesAsOf });
-  }
-  return { lines: [
-    { accountCode: debitCode, debit: usd, credit: 0, memo, ...extra },
-    { accountCode: creditCode, debit: 0, credit: usd, memo, ...extra },
-  ] };
+  return async (date) => {
+    const cur = String(currency || "USD").toUpperCase();
+    let usd = amount;
+    const extra = {};
+    if (cur !== "USD") {
+      const c = await convertAt(Number(amount), cur, "USD", date ? String(date).slice(0, 10) : undefined);
+      if (c.error) return { error: c.error };
+      usd = c.convertedAmount;
+      Object.assign(extra, { originalAmount: amount, originalCurrency: cur, fxRate: c.rate, ratesAsOf: c.ratesAsOf, fxSource: c.source });
+    }
+    return { lines: [
+      { accountCode: debitCode, debit: usd, credit: 0, memo, ...extra },
+      { accountCode: creditCode, debit: 0, credit: usd, memo, ...extra },
+    ] };
+  };
 }
 
 /** Posts every missing automatic entry for an org. Safe to call any time,
@@ -244,9 +251,10 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
   let count = 0;
   const errors = [];
   for (const p of plan) {
-    if (p.built.error) { errors.push({ source: `${p.type}:${p.doc._id}:${p.event}`, error: p.built.error }); continue; }
+    const built = await p.built(p.date);
+    if (built.error) { errors.push({ source: `${p.type}:${p.doc._id}:${p.event}`, error: built.error }); continue; }
     const result = await postEntry({
-      orgId, date: p.date, memo: p.memo, lines: p.built.lines, actorEmail,
+      orgId, date: p.date, memo: p.memo, lines: built.lines, actorEmail,
       source: { type: p.type, id: p.doc._id.toString(), event: p.event },
     });
     if (result.error) errors.push({ source: `${p.type}:${p.doc._id}:${p.event}`, error: result.error });

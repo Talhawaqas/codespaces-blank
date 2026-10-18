@@ -109,12 +109,12 @@ function CreateAttestationModal({ orgId, onClose, onCreated }) {
           <option value="revenue_threshold">Revenue ≥ threshold</option>
           <option value="expense_threshold">Expenses ≤ threshold</option>
         </select>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           <input value={endDate} onChange={(e) => setEndDate(e.target.value)} type="date" required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <input value={threshold} onChange={(e) => setThreshold(e.target.value)} type="number" min="0" required placeholder="Threshold" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input aria-label="Threshold" value={threshold} onChange={(e) => setThreshold(e.target.value)} type="number" min="0" required placeholder="Threshold" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           <select value={displayCurrency} onChange={(e) => setDisplayCurrency(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             {["USD", "EUR", "GBP", "AED", "PKR"].map((c) => <option key={c} value={c}>{c}</option>)}
           </select>

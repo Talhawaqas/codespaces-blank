@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import EvidenceGraph from "./EvidenceGraph";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -55,6 +56,7 @@ function EventDetail({ orgId, eventId, onClose }) {
   const [simAction, setSimAction] = useState("");
   const [simResult, setSimResult] = useState(null);
   const [busy, setBusy] = useState("");
+  const [whyView, setWhyView] = useState("graph");
 
   const load = useCallback(async () => {
     try {
@@ -137,9 +139,17 @@ function EventDetail({ orgId, eventId, onClose }) {
 
       {explanation && (
         <div>
-          <p className="text-[var(--inaya-text-muted)] text-[11px] uppercase font-bold mb-1">Why?</p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-[var(--inaya-text-muted)] text-[11px] uppercase font-bold">Why?</p>
+            <div className="flex bg-black/30 border border-white/10 rounded-md p-0.5">
+              {[["graph", "Graph"], ["list", "List"]].map(([k, l]) => (
+                <button key={k} onClick={() => setWhyView(k)} aria-pressed={whyView === k} className={`px-2 py-0.5 text-[10px] font-bold rounded ${whyView === k ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{l}</button>
+              ))}
+            </div>
+          </div>
+          {whyView === "graph" && <EvidenceGraph title={event.subjectSummary?.label || event.subjectType} evidence={explanation.sourceEvidence} />}
           <div className="space-y-1.5 text-xs">
-            {explanation.sourceEvidence.map((e, i) => (
+            {whyView === "list" && explanation.sourceEvidence.map((e, i) => (
               <p key={i} className="text-[var(--inaya-text-muted)]">
                 {e.relationship} → {e.targetType}{" "}
                 <span className={e.state === "INCLUDED" ? "text-emerald-400" : e.state === "RESTRICTED" ? "text-amber-400" : "text-[var(--inaya-text-muted)]"}>[{e.state}]</span>

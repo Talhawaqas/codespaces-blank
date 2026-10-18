@@ -56,7 +56,7 @@ Department-level access, same as every other Business Operations module. Warehou
 
 ## Explicitly out of scope (this pass)
 
-- No barcode scanning, no multi-unit conversion (each SKU is tracked in one unit).
+- Barcodes and units of measure shipped in Batch 3 (`src/lib/inventory-units.js`). A product can have a barcode (unique per company), the unit its stock is counted in, and a purchase unit with a conversion (for example a box of 12). PO lines snapshot the conversion, so receiving 3 boxes adds 36 to stock, and changing the product later never rewrites an existing PO. Scanning uses the camera where the browser supports it (Chrome, Edge, Android); a handheld scanner or typing works everywhere.
 - Reorder drafts are never submitted automatically — a person submits and an owner/admin approves through the normal purchase-request workflow.
 
 Closed since this was written: warehouse-to-warehouse transfers (route + UI, commit `4f17457`, 2026-09-12). Low stock now drafts a DRAFT purchase request — manually from the product, or daily for products with auto-reorder switched on — with no second draft while one is in flight (Business Workspace gap closure, Batch 1, 2026-10; `src/lib/inventory-reorder.js`, `test/inventory-reorder.test.mjs`).

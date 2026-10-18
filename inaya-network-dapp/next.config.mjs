@@ -148,7 +148,9 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-          { key: "Permissions-Policy", value: "geolocation=(), camera=(), usb=(), bluetooth=(), midi=(), payment=(), magnetometer=()" },
+          // camera=(self) (Batch 3): Inventory's barcode scanner and Inaya Meet use the camera on this
+          // site's own pages only; third-party frames still get none, and the browser still asks the user.
+          { key: "Permissions-Policy", value: "geolocation=(), camera=(self), usb=(), bluetooth=(), midi=(), payment=(), magnetometer=()" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },

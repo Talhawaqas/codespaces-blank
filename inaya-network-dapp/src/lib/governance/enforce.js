@@ -24,7 +24,8 @@ export async function enforceShareCreation({ orgId, actorEmail, role, documentId
   const cap = Math.min(...dl.map((p) => p.config.maxPerShare).filter((n) => n != null), Infinity);
   if (cap !== Infinity && (!options.maxDownloads || options.maxDownloads > cap)) refuse(`Links must allow at most ${cap} downloads.`);
   const allowed = dom.flatMap((p) => p.config.allowedDomains || []); const blocked = dom.flatMap((p) => p.config.blockedDomains || []);
-  const wanted = (options.domainAllow || []).map((d) => String(d).toLowerCase().replace(/^@/, ""));
+  // Listed recipient addresses (emailAllow) are held to the same domain policy as allowed domains.
+  const wanted = [...new Set([...(options.domainAllow || []), ...(options.emailAllow || []).map((e) => String(e).split("@")[1] || "")].map((d) => String(d).toLowerCase().replace(/^@/, "")).filter(Boolean))];
   if (allowed.length && (!wanted.length || wanted.some((d) => !inList(allowed, d)))) refuse(`External links must be limited to these domains: ${allowed.join(", ")}.`);
   if (wanted.some((d) => inList(blocked, d))) refuse("One of those domains is not allowed by your organization.");
   await assertDlp({ orgId, ctx: { email: actorEmail, role, ip, action: "share_create", resourceType: "document", resourceId: documentId, classification, shareType: "link", destinationType: wanted.length ? "external" : "public_link", destinationDomain: wanted[0] || null, link: { passwordProtected: !!options.password, expiresInHours: exp === Infinity ? null : lifeHours, maxUses: options.maxUses || null }, source: "shares" } });

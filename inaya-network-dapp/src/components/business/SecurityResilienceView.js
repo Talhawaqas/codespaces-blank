@@ -151,8 +151,8 @@ function VendorsTab({ orgId, actorEmail }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vendor name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={service} onChange={(e) => setService(e.target.value)} placeholder="Service" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Vendor name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vendor name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Service" value={service} onChange={(e) => setService(e.target.value)} placeholder="Service" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={criticality} onChange={(e) => setCriticality(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {["low", "medium", "high", "critical"].map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -230,7 +230,7 @@ function IctAssetsTab({ orgId }) {
         <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Asset name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Asset name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Asset name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Register asset</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -282,8 +282,8 @@ function ContinuityTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Critical function name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={rto} onChange={(e) => setRto(e.target.value)} type="number" placeholder="RTO (hours)" className="w-32 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Critical function name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Critical function name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="RTO (hours)" value={rto} onChange={(e) => setRto(e.target.value)} type="number" placeholder="RTO (hours)" className="w-32 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Add function</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -350,7 +350,7 @@ function ContinuityPlanSection({ orgId, functionId }) {
   return (
     <div className="mt-2 pt-2 border-t border-white/5 space-y-2">
       <form onSubmit={create} className="flex gap-2">
-        <input value={planText} onChange={(e) => setPlanText(e.target.value)} placeholder="Continuity plan text" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Continuity plan text" value={planText} onChange={(e) => setPlanText(e.target.value)} placeholder="Continuity plan text" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-[10px] text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!planText.trim()} className="text-[10px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-2.5 py-1 rounded-lg disabled:opacity-40">Create plan</button>
       </form>
       {error && <p className="text-red-400 text-[10px]">{error}</p>}
@@ -413,8 +413,8 @@ function DisasterRecoveryTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="flex flex-wrap gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Runbook name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={procedure} onChange={(e) => setProcedure(e.target.value)} placeholder="Restoration procedure" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Runbook name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Runbook name" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Restoration procedure" value={procedure} onChange={(e) => setProcedure(e.target.value)} placeholder="Restoration procedure" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button disabled={!name.trim() || !procedure.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create runbook</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -482,7 +482,7 @@ function ResilienceTestsTab({ orgId }) {
         <select value={testType} onChange={(e) => setTestType(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
         </select>
-        <input value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Scope" value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={result} onChange={(e) => setResult(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           {["pass", "fail", "partial"].map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
@@ -563,8 +563,8 @@ function PrivilegedAccessTab({ orgId, actorEmail }) {
   return (
     <div className="space-y-4">
       <form className="flex flex-wrap gap-2">
-        <input value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope (e.g. prod-db-01)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Scope (e.g. prod-db-01)" value={scope} onChange={(e) => setScope(e.target.value)} placeholder="Scope (e.g. prod-db-01)" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" className="flex-1 min-w-[140px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button onClick={request} disabled={!scope.trim() || !reason.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Request elevation</button>
         <button onClick={breakGlass} disabled={!scope.trim() || !reason.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-red-400 to-amber-400 px-3.5 py-2 rounded-lg disabled:opacity-40">🚨 Break-glass</button>
       </form>
@@ -632,8 +632,8 @@ function DataResidencyTab({ orgId }) {
   return (
     <div className="space-y-4">
       <form onSubmit={save} className="flex flex-wrap gap-2">
-        <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region" className="flex-1 min-w-[120px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">Save policy</button>
       </form>
       {error && <p className="text-red-400 text-xs">{error}</p>}

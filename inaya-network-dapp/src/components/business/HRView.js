@@ -93,7 +93,7 @@ function EmployeesTab({ orgId, email, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search employees" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New employee</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -152,13 +152,13 @@ function CreateEmployeeModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New employee" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Full name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="Job title (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Linked workspace login (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Full name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Job title (optional)" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="Job title (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Linked workspace login (optional)" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} type="email" placeholder="Linked workspace login (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={joiningDate} onChange={(e) => setJoiningDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !fullName.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create employee"}</button>
@@ -272,7 +272,7 @@ function EmployeeDetailModal({ orgId, email, employee, employees = [], onClose, 
           {attachments && attachments.length === 0 && <p className="text-[#8a96ab] text-xs italic">No documents yet.</p>}
           <form onSubmit={handleUploadDoc} className="space-y-1.5">
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
-            <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+            <input aria-label="Encryption passkey" type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{uploading ? "Uploading…" : "Upload document"}</button>
           </form>
         </div>
@@ -333,7 +333,7 @@ function EmployeeStructure({ orgId, employee, employees, onRefresh }) {
         {canEdit ? (
           <div className="flex gap-2">
             <label htmlFor={`manager-${employee.id}`} className="sr-only">Manager</label>
-            <select id={`manager-${employee.id}`} value={managerId} onChange={(e) => setManagerId(e.target.value)} className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]">
+            <select aria-label="Manager" id={`manager-${employee.id}`} value={managerId} onChange={(e) => setManagerId(e.target.value)} className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]">
               <option value="">No manager</option>
               {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.fullName}{e.jobTitle ? ` — ${e.jobTitle}` : ""}</option>)}
             </select>
@@ -364,7 +364,7 @@ function EmployeeStructure({ orgId, employee, employees, onRefresh }) {
           {canEdit && (
             <form onSubmit={addItem} className="flex gap-2">
               <label htmlFor={`onboard-add-${employee.id}`} className="sr-only">New checklist item</label>
-              <input id={`onboard-add-${employee.id}`} value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add an item for this person" className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <input aria-label="Add an item for this person" id={`onboard-add-${employee.id}`} value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add an item for this person" className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
               <button disabled={!!busy || !newItem.trim()} className="text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-md bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{busy === "add" ? "…" : "Add"}</button>
             </form>
           )}
@@ -585,7 +585,7 @@ function CreateLeaveModal({ orgId, email, onClose, onCreated }) {
   return (
     <Modal title="Request leave" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Employee" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Employee…</option>
           {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.fullName}{emp.memberEmail === email ? " (you)" : ""}</option>)}
         </select>
@@ -595,11 +595,11 @@ function CreateLeaveModal({ orgId, email, onClose, onCreated }) {
           <option value="UNPAID">Unpaid</option>
           <option value="OTHER">Other</option>
         </select>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           <input value={endDate} onChange={(e) => setEndDate(e.target.value)} type="date" required className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
         </div>
-        <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <textarea aria-label="Reason (optional)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !employeeId || !startDate || !endDate} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Submitting…" : "Submit request"}</button>
       </form>
@@ -646,7 +646,7 @@ function ManagersTab({ orgId, departments }) {
               <div key={d.id} className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-2">
                 <span className="text-[var(--inaya-text-primary)] text-sm">{d.name}</span>
                 <div className="flex gap-2">
-                  <input
+                  <input aria-label="Member email"
                     value={memberEmail[d.id] || ""}
                     onChange={(e) => setMemberEmail((m) => ({ ...m, [d.id]: e.target.value }))}
                     type="email"

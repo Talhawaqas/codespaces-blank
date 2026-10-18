@@ -100,7 +100,7 @@ function InvoicesTab({ orgId, email, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice #…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search invoice #" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice #…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New invoice</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -184,11 +184,11 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New invoice" onClose={onClose} wide>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => { setDepartmentId(e.target.value); setContactId(""); }} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => { setDepartmentId(e.target.value); setContactId(""); }} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <select value={contactId} onChange={(e) => setContactId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+        <select aria-label="Customer" value={contactId} onChange={(e) => setContactId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
           <option value="">Customer…</option>
           {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
@@ -201,9 +201,9 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Line items</p>
           {lineItems.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_60px_80px_24px] gap-1.5">
-              <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="0.000001" step="any" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" step="any" placeholder="Price" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Description" value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Qty" value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="0.000001" step="any" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Price" value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" step="any" placeholder="Price" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
               <button type="button" onClick={() => removeItem(i)} disabled={lineItems.length === 1} className="text-[var(--inaya-text-muted)] hover:text-red-400 disabled:opacity-30 text-lg leading-none">×</button>
             </div>
           ))}
@@ -211,14 +211,14 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
           <p className="text-right text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">Total: ${total.toFixed(2)}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 border-t border-white/5 pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 border-t border-white/5 pt-3">
           <p className="col-span-2 text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Commercial terms (optional)</p>
           {[["paymentTerms", "Payment terms (e.g. Net 30)"], ["poNumber", "Customer PO number"], ["taxPercent", "Tax % (blank = company default)"], ["discountPercent", "Invoice discount %"], ["shippingAmount", "Shipping amount"], ["feeAmount", "Fees amount"]].map(([k, label]) => (
             <input key={k} value={terms[k]} onChange={(e) => setTerms({ ...terms, [k]: e.target.value })} placeholder={label} aria-label={label} inputMode={k === "paymentTerms" || k === "poNumber" ? "text" : "decimal"} className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
           ))}
           <p className="col-span-2 text-[10px] text-[var(--inaya-text-muted)]">The stored total is computed exactly by the server (tax, discount, shipping and fees included) - the amount shown above is only a line-item estimate.</p>
         </div>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <textarea aria-label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !contactId || !dueDate} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create invoice"}</button>
       </form>
@@ -231,6 +231,30 @@ const INVOICE_ACTIONS = {
   SENT: [["markPaid", "Mark paid"], ["cancel", "Cancel"]],
   OVERDUE: [["markPaid", "Mark paid"], ["cancel", "Cancel"]],
 };
+
+// Batch 3 — UBL 2.1 / Peppol BIS Billing 3.0 file (lib/einvoice/ubl.js).
+// Checks first, so missing seller/buyer details are listed instead of a failed download.
+function EInvoiceButton({ orgId, invoice }) {
+  const [problems, setProblems] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const base = `/api/orgs/finance/invoices/${invoice.id}/einvoice?orgId=${orgId}`;
+  async function check() {
+    setChecking(true);
+    try {
+      const r = await api(`${base}&check=1`);
+      if (r.ready) { setProblems([]); window.location.href = base; } else setProblems(r.problems);
+    } catch (err) { setProblems([err.message]); } finally { setChecking(false); }
+  }
+  return (
+    <div className="space-y-1">
+      <button onClick={check} disabled={checking} className="inline-block text-[11px] font-bold uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[var(--inaya-text-primary)] hover:bg-white/10 disabled:opacity-40">{checking ? "Checking…" : "Download e-invoice (UBL / Peppol)"}</button>
+      {problems?.length > 0 && (
+        <ul className="text-[11px] text-amber-400 list-disc pl-4 space-y-0.5">{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+      )}
+      <p className="text-[10px] text-[var(--inaya-text-muted)]">A standards-format file for the buyer's accounting system. Sending it over the Peppol network needs a certified access point.</p>
+    </div>
+  );
+}
 
 function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
   const [activity, setActivity] = useState(null);
@@ -269,6 +293,7 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
         >
           Generate PDF Invoice
         </a>
+        <EInvoiceButton orgId={orgId} invoice={invoice} />
 
         <div className="space-y-1 border-t border-white/5 pt-3">
           {invoice.lineItems.map((it, i) => (
@@ -408,7 +433,7 @@ function ExpensesTab({ orgId, email, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vendor or category…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search vendor or category" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vendor or category…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New expense</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -471,15 +496,15 @@ function CreateExpenseModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New expense" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={vendor} onChange={(e) => setVendor(e.target.value)} required placeholder="Vendor" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="Category" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} required placeholder="Vendor" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="Category" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <textarea aria-label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !vendor.trim() || !category.trim() || !amount} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create expense"}</button>
       </form>
@@ -577,7 +602,7 @@ function ExpenseDetailModal({ orgId, expense, onClose, onChanged }) {
           )}
           <form onSubmit={handleUploadReceipt} className="space-y-1.5">
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00f2fe]/10 file:text-[#00f2fe]" />
-            <input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+            <input aria-label="Encryption passkey" type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} placeholder="Encryption passkey" className="w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             <button disabled={uploading || !file || !passkey} className="w-full py-1.5 rounded-lg text-[11px] font-bold uppercase bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{uploading ? "Uploading…" : "Attach receipt"}</button>
           </form>
         </div>
@@ -669,7 +694,7 @@ function PaymentsTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search method…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search method" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search method…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1">
           {[["all", "All"], ["vendor", "By Vendor"], ["customer", "By Customer"]].map(([value, label]) => (
             <button key={value} onClick={() => setGroupBy(value)} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${groupBy === value ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
@@ -763,7 +788,7 @@ function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCre
   return (
     <Modal title="Record payment" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
@@ -772,13 +797,13 @@ function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCre
           <option value="OUTGOING">Outgoing</option>
         </select>
         {direction === "OUTGOING" && (
-          <select value={relatedPurchaseOrderId} onChange={(e) => setRelatedPurchaseOrderId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          <select aria-label="Link to a purchase order (optional)" value={relatedPurchaseOrderId} onChange={(e) => setRelatedPurchaseOrderId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Link to a purchase order (optional)…</option>
             {(purchaseOrders || []).map((po) => <option key={po.id} value={po.id}>{po.id.slice(-6)} · {po.items.length} item{po.items.length === 1 ? "" : "s"} · {po.currency}</option>)}
           </select>
         )}
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Method (e.g. bank transfer)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Method (e.g. bank transfer)" value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Method (e.g. bank transfer)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !amount} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Recording…" : "Record payment"}</button>
@@ -1006,14 +1031,14 @@ function ManualEntryModal({ orgId, accounts, onClose, onPosted }) {
   return (
     <Modal title="Manual journal entry" onClose={onClose} wide>
       <div className="space-y-3">
-        <div className="flex gap-2"><input id="ledger-entry-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} /><input id="ledger-entry-memo" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Memo" className={`${inputCls} flex-1`} /></div>
+        <div className="flex gap-2"><input id="ledger-entry-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} /><input aria-label="Memo" id="ledger-entry-memo" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Memo" className={`${inputCls} flex-1`} /></div>
         {lines.map((l, i) => (
           <div key={i} className="flex gap-2">
-            <select id={`ledger-line-${i}-account`} value={l.accountCode} onChange={(e) => setLine(i, { accountCode: e.target.value })} className={`${inputCls} flex-1 min-w-0`}>
+            <select aria-label="Account" id={`ledger-line-${i}-account`} value={l.accountCode} onChange={(e) => setLine(i, { accountCode: e.target.value })} className={`${inputCls} flex-1 min-w-0`}>
               <option value="">Account…</option>{accounts.map((a) => <option key={a.code} value={a.code}>{a.code} {a.name}</option>)}
             </select>
-            <input id={`ledger-line-${i}-debit`} inputMode="decimal" value={l.debit} onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })} placeholder="Debit" className={`${inputCls} w-24`} />
-            <input id={`ledger-line-${i}-credit`} inputMode="decimal" value={l.credit} onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })} placeholder="Credit" className={`${inputCls} w-24`} />
+            <input aria-label="Debit" id={`ledger-line-${i}-debit`} inputMode="decimal" value={l.debit} onChange={(e) => setLine(i, { debit: e.target.value, credit: "" })} placeholder="Debit" className={`${inputCls} w-24`} />
+            <input aria-label="Credit" id={`ledger-line-${i}-credit`} inputMode="decimal" value={l.credit} onChange={(e) => setLine(i, { credit: e.target.value, debit: "" })} placeholder="Credit" className={`${inputCls} w-24`} />
           </div>
         ))}
         <button onClick={() => setLines((ls) => [...ls, { accountCode: "", debit: "", credit: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Line</button>
@@ -1036,8 +1061,8 @@ function AccountModal({ orgId, onClose, onCreated }) {
   return (
     <Modal title="New account" onClose={onClose}>
       <div className="space-y-3">
-        <input id="ledger-account-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code (3–6 digits)" className={`${inputCls} w-full`} />
-        <input id="ledger-account-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={`${inputCls} w-full`} />
+        <input aria-label="Code (3–6 digits)" id="ledger-account-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code (3–6 digits)" className={`${inputCls} w-full`} />
+        <input aria-label="Name" id="ledger-account-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={`${inputCls} w-full`} />
         <select id="ledger-account-type" value={type} onChange={(e) => setType(e.target.value)} className={`${inputCls} w-full`}>{["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"].map((t) => <option key={t}>{t}</option>)}</select>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={submit} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">Add account</button>

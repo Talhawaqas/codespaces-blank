@@ -145,7 +145,7 @@ export default function S3CompatView({ orgId }) {
 
       <form onSubmit={create} className="space-y-2">
         <div className="flex gap-2 flex-wrap">
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional)" className="flex-1 min-w-[200px] bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
+          <input aria-label="Label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional)" className="flex-1 min-w-[200px] bg-black/45 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-[var(--inaya-text-primary)]" />
           <button type="button" onClick={() => setScopeOpen((v) => !v)} className="text-[11px] font-bold px-3 py-2 rounded-xl bg-white/5 text-[var(--inaya-text-muted)]">
             {scopeOpen ? "Hide scope ▲" : "Restrict scope (optional) ▼"}
           </button>
@@ -160,8 +160,8 @@ export default function S3CompatView({ orgId }) {
               server-side on every request — a scoped credential can never read/write outside its own grant.
             </p>
             <div className="flex gap-2 flex-wrap">
-              <input value={scopeBucket} onChange={(e) => setScopeBucket(e.target.value)} placeholder="Bucket (e.g. finance)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={scopePrefix} onChange={(e) => setScopePrefix(e.target.value)} disabled={!scopeBucket} placeholder="Prefix (e.g. invoices/2026/)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
+              <input aria-label="Bucket (e.g. finance)" value={scopeBucket} onChange={(e) => setScopeBucket(e.target.value)} placeholder="Bucket (e.g. finance)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Prefix (e.g. invoices/2026/)" value={scopePrefix} onChange={(e) => setScopePrefix(e.target.value)} disabled={!scopeBucket} placeholder="Prefix (e.g. invoices/2026/)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
               <input type="date" value={scopeExpiry} onChange={(e) => setScopeExpiry(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             </div>
             <div className="flex gap-1.5 flex-wrap">
@@ -281,9 +281,9 @@ function InayaDrivePanel({ endpointUrl, prefill }) {
         directly, no upload/download step. Backed by the same S3-compatible endpoint and credential above.
       </p>
       <div className="flex gap-2 flex-wrap">
-        <input value={accessKeyId} onChange={(e) => setAccessKeyId(e.target.value)} placeholder="Access Key ID" disabled={mounted} className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
-        <input value={secretAccessKey} onChange={(e) => setSecretAccessKey(e.target.value)} placeholder="Secret Access Key" disabled={mounted} className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
-        <input value={drive} onChange={(e) => setDrive(e.target.value)} placeholder="I:" disabled={mounted} className="w-16 bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
+        <input aria-label="Access Key ID" value={accessKeyId} onChange={(e) => setAccessKeyId(e.target.value)} placeholder="Access Key ID" disabled={mounted} className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
+        <input aria-label="Secret Access Key" value={secretAccessKey} onChange={(e) => setSecretAccessKey(e.target.value)} placeholder="Secret Access Key" disabled={mounted} className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
+        <input aria-label="I:" value={drive} onChange={(e) => setDrive(e.target.value)} placeholder="I:" disabled={mounted} className="w-16 bg-black/45 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40" />
         {!mounted ? (
           <button onClick={mount} disabled={busy || !accessKeyId || !secretAccessKey} className="text-[11px] font-bold uppercase px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
             {busy ? "Mounting…" : "Mount"}
@@ -461,7 +461,7 @@ function BucketsPanel({ orgId }) {
                 <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
                   <div className="flex items-center gap-2 text-[11px] text-[var(--inaya-text-muted)]">
                     <span>Lifecycle: expire after</span>
-                    <input
+                    <input aria-label="days"
                       type="number" min="1" placeholder="days"
                       defaultValue={lifecycle?.rules?.[0]?.expirationDays || ""}
                       onBlur={(e) => saveLifecycle(b.name, e.target.value)}

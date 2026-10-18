@@ -120,7 +120,7 @@ function ResourceRow({ orgId, resource, onChanged }) {
       {error && <p className="text-red-400 text-[11px]">{error}</p>}
       {resource.type === "volume" && resource.attachmentState !== "ATTACHED" && (
         <div className="flex items-center gap-2">
-          <input placeholder="Attach to (label)" value={attachTarget} onChange={(e) => setAttachTarget(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-[11px] px-2 py-1 text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Attach to (label)" placeholder="Attach to (label)" value={attachTarget} onChange={(e) => setAttachTarget(e.target.value)} className="bg-black/30 border border-white/10 rounded-md text-[11px] px-2 py-1 text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button onClick={attach} disabled={busy || !attachTarget.trim()} className="text-[10px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">Attach</button>
         </div>
       )}
@@ -165,8 +165,8 @@ function CreateResourceForm({ orgId, onChanged }) {
           <option value="volume">Volume</option>
           <option value="fileShare">File Share</option>
         </select>
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input placeholder="Capacity (GB, optional)" type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="w-40 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Capacity (GB, optional)" placeholder="Capacity (GB, optional)" type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="w-40 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <button type="submit" disabled={busy || !name.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">
           {busy ? "Creating…" : "Create"}
         </button>
@@ -341,8 +341,8 @@ export default function StorageControlPlaneView({ orgId }) {
               <div className="space-y-1.5">{policies.map((p) => <PolicyRow key={p._id} orgId={orgId} policy={p} onChanged={load} />)}</div>
             )}
             <form onSubmit={createPolicy} className="border-t border-white/5 pt-4 flex flex-wrap items-center gap-2">
-              <input placeholder="Policy name" value={policyName} onChange={(e) => setPolicyName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-              <input placeholder="tag selector, e.g. env=prod" value={policySelector} onChange={(e) => setPolicySelector(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <input aria-label="Policy name" placeholder="Policy name" value={policyName} onChange={(e) => setPolicyName(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <input aria-label="tag selector, e.g. env=prod" placeholder="tag selector, e.g. env=prod" value={policySelector} onChange={(e) => setPolicySelector(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
               <button type="submit" disabled={policyBusy || !policyName.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">
                 {policyBusy ? "Creating…" : "Create Policy"}
               </button>

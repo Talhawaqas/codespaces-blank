@@ -95,7 +95,7 @@ function SuppliersTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suppliers…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search suppliers" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suppliers…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New supplier</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -151,7 +151,7 @@ function SupplierScorecardModal({ orgId, supplier, onClose }) {
         {card && (
           <>
             <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Scorecard · {card.totalOrders} purchase order{card.totalOrders === 1 ? "" : "s"}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <ScoreTile label="Fill rate" value={card.fillRate.percent} sample={card.fillRate.sample} note={card.fillRate.percent === null ? null : `${card.fillRate.unitsReceived}/${card.fillRate.unitsOrdered} units`} />
               <ScoreTile label="On time" value={card.onTimeRate.percent} sample={card.onTimeRate.sample} />
               <ScoreTile label="Avg. lead time" value={card.averageLeadTimeDays.days} sample={card.averageLeadTimeDays.sample} unit=" days" />
@@ -190,12 +190,12 @@ function CreateSupplierModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New supplier" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Supplier name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Contact email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Supplier name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Supplier name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Contact email (optional)" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} type="email" placeholder="Contact email (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create supplier"}</button>
       </form>
@@ -241,7 +241,7 @@ function RequestsTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
+        <input aria-label="Search requests" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-56" />
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New request</button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -307,12 +307,12 @@ function CreateRequestModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New purchase request" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="What do you need to buy?" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} type="number" min="0" placeholder="Estimated cost in USD (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="What do you need to buy?" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="What do you need to buy?" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <input aria-label="Estimated cost in USD (optional)" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} type="number" min="0" placeholder="Estimated cost in USD (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !title.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create request"}</button>
       </form>
@@ -367,7 +367,7 @@ function OrdersTab({ orgId, departments }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Filter by supplier" value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">All suppliers</option>
           {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -459,11 +459,11 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
   return (
     <Modal title="New purchase order" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+        <select aria-label="Department" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} required className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
           <option value="">Department…</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
+        <select aria-label="Supplier" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required disabled={!departmentId} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] disabled:opacity-40">
           <option value="">Supplier…</option>
           {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -475,9 +475,9 @@ function CreateOrderModal({ orgId, departments, onClose, onCreated }) {
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Line items</p>
           {items.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_60px_70px] gap-1.5">
-              <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-              <input value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-              <input value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="Description" value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              <input aria-label="Qty" value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+              <input aria-label="$/unit" value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
             </div>
           ))}
           <button type="button" onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add item</button>
@@ -616,9 +616,9 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
             <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Edit line items</p>
             {draftItems.map((item, i) => (
               <div key={i} className="grid grid-cols-[1fr_60px_70px] gap-1.5">
-                <input value={item.description} onChange={(e) => updateDraftItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-                <input value={item.quantity} onChange={(e) => updateDraftItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
-                <input value={item.unitPrice ?? ""} onChange={(e) => updateDraftItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+                <input aria-label="Description" value={item.description} onChange={(e) => updateDraftItem(i, "description", e.target.value)} placeholder="Description" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+                <input aria-label="Qty" value={item.quantity} onChange={(e) => updateDraftItem(i, "quantity", e.target.value)} type="number" min="1" placeholder="Qty" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+                <input aria-label="$/unit" value={item.unitPrice ?? ""} onChange={(e) => updateDraftItem(i, "unitPrice", e.target.value)} type="number" min="0" placeholder="$/unit" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
               </div>
             ))}
             <button type="button" onClick={() => setDraftItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: "" }])} className="text-[11px] font-bold text-[#00f2fe]">+ Add item</button>
@@ -635,7 +635,7 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
                 <p className="text-[var(--inaya-text-muted)] text-[11px] font-mono mt-0.5">Qty {item.quantity}{item.unitPrice ? ` · $${item.unitPrice}/unit` : ""} · Received {item.receivedQuantity}/{item.quantity}</p>
                 {canReceive && item.receivedQuantity < item.quantity && (
                   <div className="flex items-center gap-1.5 mt-1.5">
-                    <input value={receiveQty[i] || ""} onChange={(e) => setReceiveQty((prev) => ({ ...prev, [i]: e.target.value }))} type="number" min="1" max={item.quantity - item.receivedQuantity} placeholder="Qty received" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-xs text-[var(--inaya-text-primary)] w-28" />
+                    <input aria-label="Qty received" value={receiveQty[i] || ""} onChange={(e) => setReceiveQty((prev) => ({ ...prev, [i]: e.target.value }))} type="number" min="1" max={item.quantity - item.receivedQuantity} placeholder="Qty received" className="bg-black/45 border border-white/15 rounded-lg px-2 py-1 text-xs text-[var(--inaya-text-primary)] w-28" />
                     <button onClick={() => handleReceive(i)} disabled={!!acting} className="text-[11px] font-bold uppercase px-2 py-1 rounded-md bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 disabled:opacity-40">
                       {acting === `receive-${i}` ? "…" : "Receive"}
                     </button>
@@ -677,18 +677,18 @@ const fieldClass = "w-full bg-black/45 border border-white/15 rounded-lg px-2 py
 
 function PoExtrasFields({ idPrefix, currency, expectedDeliveryDate, onExpectedDeliveryDate, taxRate, onTaxRate, shippingCost, onShippingCost, moneyLocked = false, dateLocked = false }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
       <label htmlFor={`${idPrefix}-delivery`} className="text-[10px] text-[var(--inaya-text-muted)]">
         Expected delivery
         <input id={`${idPrefix}-delivery`} type="date" value={expectedDeliveryDate} disabled={dateLocked} onChange={(e) => onExpectedDeliveryDate(e.target.value)} className={`mt-1 ${fieldClass}`} />
       </label>
       <label htmlFor={`${idPrefix}-tax`} className="text-[10px] text-[var(--inaya-text-muted)]">
         Tax %
-        <input id={`${idPrefix}-tax`} type="number" min="0" max="100" step="0.01" value={taxRate} disabled={moneyLocked} onChange={(e) => onTaxRate(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
+        <input aria-label="0" id={`${idPrefix}-tax`} type="number" min="0" max="100" step="0.01" value={taxRate} disabled={moneyLocked} onChange={(e) => onTaxRate(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
       </label>
       <label htmlFor={`${idPrefix}-shipping`} className="text-[10px] text-[var(--inaya-text-muted)]">
         Shipping ({currency})
-        <input id={`${idPrefix}-shipping`} type="number" min="0" step="0.01" value={shippingCost} disabled={moneyLocked} onChange={(e) => onShippingCost(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
+        <input aria-label="0" id={`${idPrefix}-shipping`} type="number" min="0" step="0.01" value={shippingCost} disabled={moneyLocked} onChange={(e) => onShippingCost(e.target.value)} placeholder="0" className={`mt-1 ${fieldClass}`} />
       </label>
     </div>
   );

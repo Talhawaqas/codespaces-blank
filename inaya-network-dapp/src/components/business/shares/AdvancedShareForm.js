@@ -20,14 +20,14 @@ const accent = "text-[11px] font-bold uppercase px-3 py-1.5 rounded-md bg-[#00f2
 const list = (s) => String(s || "").split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
 
 export default function AdvancedShareForm({ orgId, documentId, onCreated }) {
-  const [f, setF] = useState({ permission: "download", expirationPreset: "24h", oneTime: false, maxUses: "", maxDownloads: "", password: "", ipAllow: "", domainAllow: "", deviceBinding: false, notifyOnAccess: true, watermark: false, label: "" });
+  const [f, setF] = useState({ permission: "download", expirationPreset: "24h", oneTime: false, maxUses: "", maxDownloads: "", password: "", ipAllow: "", domainAllow: "", emailAllow: "", deviceBinding: false, notifyOnAccess: true, watermark: false, label: "" });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(""); const [made, setMade] = useState(null); const [copied, setCopied] = useState(false);
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
 
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr(""); setMade(null); setCopied(false);
     try {
-      const body = { orgId, documentId, expirationPreset: f.expirationPreset, permission: f.permission, oneTime: f.oneTime, notifyOnAccess: f.notifyOnAccess, watermark: f.watermark, deviceBinding: f.deviceBinding ? "first-use" : undefined, label: f.label || undefined, password: f.password || undefined, ipAllow: list(f.ipAllow), domainAllow: list(f.domainAllow) };
+      const body = { orgId, documentId, expirationPreset: f.expirationPreset, permission: f.permission, oneTime: f.oneTime, notifyOnAccess: f.notifyOnAccess, watermark: f.watermark, deviceBinding: f.deviceBinding ? "first-use" : undefined, label: f.label || undefined, password: f.password || undefined, ipAllow: list(f.ipAllow), domainAllow: list(f.domainAllow), emailAllow: list(f.emailAllow) };
       if (f.maxUses) body.maxUses = Number(f.maxUses);
       if (f.maxDownloads && f.permission === "download") body.maxDownloads = Number(f.maxDownloads);
       const r = await sharesApi("/api/orgs/shares", { method: "POST", body: JSON.stringify(body) });
@@ -55,6 +55,9 @@ export default function AdvancedShareForm({ orgId, documentId, onCreated }) {
           <input id="sh-ip" className={field} value={f.ipAllow} onChange={(e) => set("ipAllow", e.target.value)} placeholder="203.0.113.0/24, 198.51.100.7" /></div>
         <div><label className={lbl} htmlFor="sh-dom">Only these email domains (optional)</label>
           <input id="sh-dom" className={field} value={f.domainAllow} onChange={(e) => set("domainAllow", e.target.value)} placeholder="acme.com" /></div>
+        <div className="sm:col-span-2"><label className={lbl} htmlFor="sh-em">Only these people (optional)</label>
+          <input id="sh-em" className={field} value={f.emailAllow} onChange={(e) => set("emailAllow", e.target.value)} placeholder="dana@acme.com, sam@partner.org" />
+          <p className="text-[11px] text-[var(--inaya-text-muted)] mt-1">They'll get a one-time code by email to prove it's them before the link opens.</p></div>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[12px]">
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.oneTime} onChange={(e) => set("oneTime", e.target.checked)} />One-time link</label>

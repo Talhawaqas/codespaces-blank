@@ -23,6 +23,7 @@
 import { getOrgCollections, canAccessDepartment, canManageOrg, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { recordStockMovement } from "./inventory.js";
+import { applyPurchaseUnits, stockUnitsFor } from "./inventory-units.js";
 
 export const PURCHASE_ORDER_STATES = [
   "DRAFT", "PENDING_APPROVAL", "APPROVED", "ORDERED", "PARTIALLY_RECEIVED", "RECEIVED", "REJECTED", "CANCELLED",
@@ -62,6 +63,8 @@ export async function updatePurchaseOrderItems({ orgId, poId, items, membership,
       quantity, unitPrice, receivedQuantity: 0,
     });
   }
+
+  await applyPurchaseUnits(orgId, cleanItems);
 
   const { purchaseOrders } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
@@ -203,8 +206,8 @@ export async function receivePurchaseOrder({ orgId, poId, receipts, membership, 
     const item = items[itemIndex];
     if (item.productId && item.warehouseId) {
       await recordStockMovement({
-        orgId, productId: item.productId, warehouseId: item.warehouseId, delta: quantity,
-        type: "RECEIPT", relatedPurchaseOrderId: poId, note: `PO receipt: ${item.description}`, actorEmail,
+        orgId, productId: item.productId, warehouseId: item.warehouseId, delta: stockUnitsFor(item, quantity),
+        type: "RECEIPT", relatedPurchaseOrderId: poId, note: item.unitsPerPurchaseUnit > 1 ? `PO receipt: ${item.description} (${quantity} ${item.unit} × ${item.unitsPerPurchaseUnit})` : `PO receipt: ${item.description}`, actorEmail,
       });
     }
   }

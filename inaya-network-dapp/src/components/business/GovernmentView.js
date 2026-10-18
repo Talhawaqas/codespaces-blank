@@ -115,7 +115,7 @@ function CitizenRecordsTab({ orgId, email }) {
       </div>
       {showCreate && (
         <form onSubmit={create} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-wrap gap-2">
-          <input value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="Legal name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Legal name" value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="Legal name" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
           <button disabled={!legalName.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create</button>
         </form>
@@ -211,7 +211,7 @@ function CasesTab({ orgId }) {
       </div>
       {showCreate && (
         <form onSubmit={create} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-wrap gap-2">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Case title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Case title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Case title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]">
             {["citizen_services", "regulatory", "procurement_dispute", "records_request", "internal_investigation", "interdepartmental", "policy_exception", "other"].map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
           </select>
@@ -304,8 +304,8 @@ function PolicyKbTab({ orgId }) {
       </div>
       {showCreate && (
         <form onSubmit={create} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 flex flex-wrap gap-2">
-          <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. records-retention)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Key (e.g. records-retention)" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. records-retention)" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <input aria-label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           <button disabled={!key.trim() || !title.trim()} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg disabled:opacity-40">Create</button>
         </form>
       )}

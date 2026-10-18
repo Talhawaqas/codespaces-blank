@@ -52,4 +52,9 @@ No Jest/Vitest/Testing Library/Playwright/Cypress anywhere in `package.json` or 
 5. **Module migration** (mechanical — swap local duplicated Modal/StatusBadge/formatting for the shared ones, add real `<label>`s, add responsive prefixes where absent) applied to: Documents (`browse`), Tasks, CRM, Procurement, Inventory, Finance, HR, Insights, Settings, Integrations.
 6. **Jest + React Testing Library** added via Next's `next/jest` helper, with tests for the new shared components and a smoke test per migrated view.
 
+**Closed in Batch 3 (Business Workspace gap closure):**
+- Per-view URLs (Back/Forward, refresh and shared links) plus breadcrumbs. The pop-out window `?view=` mechanism is unchanged.
+- `FinancialView.js` split into `financial/*.js`, moved verbatim.
+- Accessible names (`aria-label`) on about 280 previously placeholder-only fields, and phone-width grid breakpoints, across the niche views. Fields with no placeholder or prompt option were left alone rather than given a guessed name.
+
 **Explicitly deferred, not silently dropped** — see the final implementation report for the complete list: `FinancialView.js` (too large for this pass), the remaining ~15 smaller/niche views (Health/Legal/Regulated/Government OS, DataRooms, EnterpriseHardening, Executive, AuditTrail, TrustRelationships, ApiKeys, Attestations, Escrow, Sign, StorageManager, AI Action Requests — all continue working exactly as today, unchanged), and real per-module URL routing (a larger architectural change than a UX/UI makeover, and a risk to the Tauri desktop popout mechanism).

@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../../lib/orgs.js";
 import { totalStockForProduct, isLowStock } from "../../../../../../lib/inventory.js";
 import { findOpenReorderRequest } from "../../../../../../lib/inventory-reorder.js";
+import { validateUnitFields, DEFAULT_UNIT } from "../../../../../../lib/inventory-units.js";
 
 const STATUSES = ["ACTIVE", "DISCONTINUED"];
 
@@ -17,6 +18,7 @@ function serializeProduct(p, totalStock) {
     sku: p.sku, name: p.name, description: p.description || null, unitPrice: p.unitPrice ?? null,
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
+    barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -56,7 +58,8 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder } = await req.json();
+    const body = await req.json();
+    const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadAuthorized(req, orgId, params.productId);
@@ -93,7 +96,18 @@ export async function PATCH(req, { params }) {
       updateFields.autoReorder = autoReorder;
     }
 
-    await products.updateOne({ _id: product._id }, { $set: updateFields });
+    const units = validateUnitFields(body, { existing: product });
+    if (units.error) return NextResponse.json({ error: units.error }, { status: 400 });
+    if (units.fields.barcode && await products.findOne({ orgId: product.orgId, barcode: units.fields.barcode, _id: { $ne: product._id } })) {
+      return NextResponse.json({ error: `Barcode "${units.fields.barcode}" is already used by another product.` }, { status: 409 });
+    }
+    Object.assign(updateFields, units.fields);
+    try {
+      await products.updateOne({ _id: product._id }, { $set: updateFields });
+    } catch (e) {
+      if (e?.code === 11000) return NextResponse.json({ error: "That barcode is already used by another product." }, { status: 409 });
+      throw e;
+    }
     const updated = await products.findOne({ _id: product._id });
     const total = await totalStockForProduct(orgId, product._id);
     return NextResponse.json(serializeProduct(updated, total));

@@ -85,6 +85,7 @@ import NotesView from "../../components/business/notes/NotesView";
 import AdminRolesPanel from "../../components/business/AdminRolesPanel";
 import { hasAdminRole } from "../../lib/orgGates";
 import { NAV_ITEMS, GROUP_LABELS, isNavItemVisible } from "../../lib/navigation/navItems";
+import { viewUrl, breadcrumbs } from "../../lib/business-nav.js";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
 import WebhooksView from "../../components/business/admin/WebhooksView";
@@ -931,9 +932,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   // here: Workspace only ever mounts client-side after the async session
   // fetch resolves (BusinessPage shows a loading/auth screen until then),
   // so there's no SSR render of this component to mismatch against.
+  // Batch 3: the URL now also follows navigation (pushState below), so
+  // refresh, Back/Forward and copied links land on the same view.
   const [activeView, setActiveView] = useState(() => {
     if (typeof window === "undefined") return "osHome";
-    return new URLSearchParams(window.location.search).get("view") || "osHome";
+    const v = new URLSearchParams(window.location.search).get("view") || "osHome";
+    return ["departments", "projects", "documents"].includes(v) ? "browse" : v;
   });
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -995,9 +999,13 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   // BUSINESS_WORKSPACE_UX_AUDIT.md #3.2). All three still render the same
   // OrgWorkspace drill-down component underneath -- this only affects the
   // header title, not the routing.
-  const [browseSection, setBrowseSection] = useState("documents");
+  const [browseSection, setBrowseSection] = useState(() => {
+    if (typeof window === "undefined") return "documents";
+    const v = new URLSearchParams(window.location.search).get("view");
+    return ["departments", "projects", "documents"].includes(v) ? v : "documents";
+  });
 
-  function navigate(view, target) {
+  function applyView(view, target) {
     if (view === "departments" || view === "projects" || view === "documents") {
       setBrowseSection(view);
       setActiveView("browse");
@@ -1007,6 +1015,23 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     setBrowseTarget(target || null);
     setMobileNavOpen(false);
   }
+
+  function navigate(view, target) {
+    applyView(view, target);
+    try {
+      const next = `${window.location.pathname}${viewUrl(view, window.location.search)}`;
+      if (next !== `${window.location.pathname}${window.location.search}`) window.history.pushState({ view }, "", next);
+    } catch {
+      // URL sync is a convenience; navigation itself already happened.
+    }
+  }
+
+  useEffect(() => {
+    const onPop = () => applyView(new URLSearchParams(window.location.search).get("view") || "osHome");
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Business Workspace UX/UI Makeover SOW -- each entry gains a short
   // description (SOW §9's page-standardization: title + description),
@@ -1082,6 +1107,11 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     settings: { title: "Settings", description: "Company type, AI features, team, and departments." },
   };
 
+  // A bad or stale ?view= link falls back to OS Home instead of a blank page.
+  if (!VIEW_TITLES[activeView] && !NAV_ITEMS.some((i) => i.key === activeView)) {
+    queueMicrotask(() => setActiveView("osHome"));
+  }
+
   return (
     <div className="flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
       <GlobeBackground variant="subtle" />
@@ -1117,6 +1147,18 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <Icon path={<path d="M4 6h16M4 12h16M4 18h16" />} />
             </button>
             <div className="min-w-0">
+              <nav aria-label="Breadcrumb" className="hidden sm:block">
+                <ol className="flex items-center gap-1 text-[11px] text-[var(--inaya-text-muted)]">
+                  {breadcrumbs(activeView, { titles: VIEW_TITLES, browseSection }).map((c, i, all) => (
+                    <li key={i} className="flex items-center gap-1 min-w-0">
+                      {i > 0 && <span aria-hidden="true">›</span>}
+                      {c.view && i < all.length - 1
+                        ? <button onClick={() => navigate(c.view)} className="hover:text-[var(--inaya-text-primary)] truncate">{c.label}</button>
+                        : <span className="truncate" aria-current={i === all.length - 1 ? "page" : undefined}>{c.label}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
               <h1 className="text-lg font-extrabold text-[var(--inaya-text-primary)] tracking-tight truncate">{VIEW_TITLES[activeView]?.title}</h1>
               <p className="text-[var(--inaya-text-muted)] text-[13px] truncate" title={email}>{VIEW_TITLES[activeView]?.description}</p>
             </div>

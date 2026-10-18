@@ -16,6 +16,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { isLowStock } from "../../../../../lib/inventory.js";
 import { findOpenReorderRequest } from "../../../../../lib/inventory-reorder.js";
+import { validateUnitFields, DEFAULT_UNIT } from "../../../../../lib/inventory-units.js";
 
 function serializeProduct(p, totalStock) {
   return {
@@ -23,6 +24,7 @@ function serializeProduct(p, totalStock) {
     sku: p.sku, name: p.name, description: p.description || null, unitPrice: p.unitPrice ?? null,
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
+    barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -57,6 +59,7 @@ export async function GET(req) {
     const orgId = searchParams.get("orgId");
     const departmentId = searchParams.get("departmentId");
     const lowStockOnly = searchParams.get("lowStockOnly") === "true";
+    const barcode = searchParams.get("barcode");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();
@@ -77,6 +80,8 @@ export async function GET(req) {
 
     let serialized = await attachStock(list);
     if (lowStockOnly) serialized = serialized.filter((p) => p.lowStock);
+    // Batch 3: scanner lookup, within what this person can already see.
+    if (barcode) serialized = serialized.filter((p) => p.barcode === String(barcode).trim());
     serialized = await attachOpenReorders(orgId, serialized);
 
     return NextResponse.json({ products: serialized });
@@ -115,18 +120,30 @@ export async function POST(req) {
 
     const existing = await products.findOne({ orgId: orgObjectId, sku });
     if (existing) return NextResponse.json({ error: `A product with SKU "${sku}" already exists in this company.` }, { status: 409 });
+    const units = validateUnitFields(body);
+    if (units.error) return NextResponse.json({ error: units.error }, { status: 400 });
+    if (units.fields.barcode && await products.findOne({ orgId: orgObjectId, barcode: units.fields.barcode })) {
+      return NextResponse.json({ error: `Barcode "${units.fields.barcode}" is already used by another product.` }, { status: 409 });
+    }
 
     const now = new Date().toISOString();
-    const result = await products.insertOne({
-      orgId: orgObjectId, departmentId: departmentObjectId, sku, name,
-      description: description ? String(description).trim() : null,
-      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0,
-      status: "ACTIVE", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
-    });
+    const unitDoc = Object.fromEntries(Object.entries(units.fields).filter(([, v]) => v !== null));
+    let result;
+    try {
+      result = await products.insertOne({
+        orgId: orgObjectId, departmentId: departmentObjectId, sku, name,
+        description: description ? String(description).trim() : null,
+        unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, ...unitDoc,
+        status: "ACTIVE", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
+      });
+    } catch (e) {
+      if (e?.code === 11000) return NextResponse.json({ error: "That SKU or barcode is already used by another product." }, { status: 409 });
+      throw e;
+    }
 
     return NextResponse.json(serializeProduct({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, sku, name, description,
-      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE",
+      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE", ...unitDoc,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }, 0));
   } catch (err) {
