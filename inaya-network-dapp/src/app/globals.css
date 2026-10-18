@@ -194,3 +194,72 @@ select:focus {
     background: linear-gradient(90deg, #00f2fe, #4facfe);
   }
 }
+
+/* ==========================================================================
+   Business Workspace — light adapter layer (redesign, 2026-10-18)
+
+   The workspace views were built dark-first with ~5,000 hard-coded utility
+   classes (bg-black/45, border-white/15, text-[#00f2fe], cyan gradient
+   buttons, text-red-400 ...). These rules remap exactly those classes to the
+   light palette, ONLY when the Light theme is active on a page that contains
+   the workspace (html[data-theme="white"]:has(.bw) — :has() also reaches
+   dialogs rendered in portals outside the workspace root). Dark and Neon
+   never match, so they render exactly as before. [class~="x"] matches one
+   whole class token, so hover:/focus: variants only apply on hover/focus.
+   New code should use the --inaya-* tokens directly instead.
+   ========================================================================== */
+html[data-theme="white"]:has(.bw) body { background: var(--inaya-bg); }
+.bw { font-family: var(--font-workspace), system-ui, -apple-system, "Segoe UI", sans-serif; }
+html[data-theme="white"]:has(.bw) [data-globe-bg] { display: none; }
+
+/* Surfaces and inputs */
+html[data-theme="white"]:has(.bw) :is([class~="bg-black/20"],[class~="bg-black/25"],[class~="bg-black/30"],[class~="bg-black/40"]) { background-color: #f8fafb; }
+html[data-theme="white"]:has(.bw) :is([class~="bg-black/45"],[class~="bg-black/50"]) { background-color: var(--inaya-input); }
+html[data-theme="white"]:has(.bw) :is(input,select,textarea):is([class~="bg-black/45"],[class~="bg-black/50"],[class~="bg-black/30"],[class~="bg-black/40"],[class~="bg-black/20"]) { background-color: #ffffff; border-color: #d0d5dd; color: var(--inaya-text-primary); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-black/60"],[class~="bg-black/70"],[class~="bg-black/80"]) { background-color: rgba(15,23,42,0.32); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-[#060913]"],[class~="bg-[#0b1120]"],[class~="bg-[#0e1526]"]) { background-color: var(--inaya-bg); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-[#090d16]"],[class~="bg-[#090d16]/80"],[class~="bg-[#0b1120]/40"],[class~="bg-[#090e1a]/75"],[class~="bg-[#0b1426]/80"],[class~="bg-[#0a0f1e]"]) { background-color: var(--inaya-surface); }
+html[data-theme="white"]:has(.bw) [class~="bg-white/5"] { background-color: rgba(15,23,42,0.035); }
+html[data-theme="white"]:has(.bw) [class~="bg-white/10"] { background-color: rgba(15,23,42,0.06); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-white/15"],[class~="bg-white/20"]) { background-color: rgba(15,23,42,0.09); }
+html[data-theme="white"]:has(.bw) [class~="hover:bg-white/5"]:hover { background-color: rgba(15,23,42,0.04); }
+html[data-theme="white"]:has(.bw) :is([class~="hover:bg-white/10"],[class~="hover:bg-white/15"]):hover { background-color: rgba(15,23,42,0.07); }
+html[data-theme="white"]:has(.bw) :is([class~="hover:bg-black/30"],[class~="hover:bg-black/40"]):hover { background-color: rgba(15,23,42,0.05); }
+
+/* Borders */
+html[data-theme="white"]:has(.bw) :is([class~="border-white/5"],[class~="border-white/10"]) { border-color: #e4e7ec; }
+html[data-theme="white"]:has(.bw) :is([class~="border-white/15"],[class~="border-white/20"],[class~="border-white/25"]) { border-color: #d0d5dd; }
+html[data-theme="white"]:has(.bw) :is([class~="divide-white/5"],[class~="divide-white/10"]) > * + * { border-color: #e4e7ec; }
+
+/* Text */
+html[data-theme="white"]:has(.bw) :is([class~="text-[#e2e8f0]"],[class~="text-slate-100"],[class~="text-slate-200"],[class~="text-slate-300"],[class~="text-[#c8d3e6]"],[class~="text-gray-200"]) { color: var(--inaya-text-primary); }
+html[data-theme="white"]:has(.bw) :is([class~="text-[#8a96ab]"],[class~="text-[#94a3b8]"],[class~="text-slate-400"],[class~="text-slate-500"],[class~="text-gray-400"],[class~="text-gray-500"]) { color: var(--inaya-text-muted); }
+html[data-theme="white"]:has(.bw) [class~="hover:text-slate-200"]:hover { color: var(--inaya-text-primary); }
+html[data-theme="white"]:has(.bw) :is([class~="placeholder-[#8a96ab]"],[class~="placeholder-slate-500"])::placeholder { color: #98a2b3; }
+
+/* Brand cyan -> teal accent */
+html[data-theme="white"]:has(.bw) :is([class~="text-[#00f2fe]"],[class~="text-[#00f2fe]/80"],[class~="text-[#4facfe]"]) { color: var(--inaya-accent); }
+html[data-theme="white"]:has(.bw) [class~="hover:text-[#00f2fe]"]:hover { color: var(--inaya-accent); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-[#00f2fe]/5"],[class~="bg-[#00f2fe]/10"],[class~="bg-[#00f2fe]/15"],[class~="bg-[#00f2fe]/20"],[class~="bg-[#00f2fe]/25"],[class~="bg-[#4facfe]/10"]) { background-color: var(--inaya-accent-soft); }
+html[data-theme="white"]:has(.bw) :is([class~="hover:bg-[#00f2fe]/20"],[class~="hover:bg-[#00f2fe]/25"]):hover { background-color: #d5ebed; }
+html[data-theme="white"]:has(.bw) :is([class~="border-[#00f2fe]/20"],[class~="border-[#00f2fe]/30"],[class~="border-[#00f2fe]/40"],[class~="border-[#00f2fe]/50"],[class~="border-[#4facfe]/40"]) { border-color: rgba(11,110,117,0.35); }
+html[data-theme="white"]:has(.bw) :is([class~="border-[#00f2fe]"],[class~="focus:border-[#00f2fe]/40"]:focus,[class~="focus:border-[#00f2fe]/50"]:focus,[class~="hover:border-[#00f2fe]/30"]:hover) { border-color: var(--inaya-accent); }
+html[data-theme="white"]:has(.bw) :is([class~="bg-[#00f2fe]"],[class~="bg-[#00f2fe]/60"]) { background-color: var(--inaya-accent); color: var(--inaya-on-accent); }
+/* The cyan->blue gradient primary buttons become one solid teal with white text */
+html[data-theme="white"]:has(.bw) [class~="from-[#00f2fe]"] { background-image: none; background-color: var(--inaya-accent); color: var(--inaya-on-accent); }
+html[data-theme="white"]:has(.bw) [class~="from-[#00f2fe]"]:hover { background-color: #08555b; }
+html[data-theme="white"]:has(.bw) [class~="from-[#00f2fe]"] :is([class~="text-black"],[class~="text-[#060913]"]) { color: var(--inaya-on-accent); }
+html[data-theme="white"]:has(.bw) [class*="shadow-[-2px_0_8px_rgba(0,242,254"] { box-shadow: none; }
+
+/* Status colors: same meaning, darker shades that pass contrast on white */
+html[data-theme="white"]:has(.bw) :is([class~="text-emerald-300"],[class~="text-emerald-400"],[class~="text-green-400"]) { color: var(--inaya-success); }
+html[data-theme="white"]:has(.bw) :is([class~="text-amber-300"],[class~="text-amber-400"],[class~="text-yellow-400"],[class~="text-orange-400"]) { color: var(--inaya-warning); }
+html[data-theme="white"]:has(.bw) :is([class~="text-red-300"],[class~="text-red-400"],[class~="text-rose-400"]) { color: var(--inaya-danger); }
+html[data-theme="white"]:has(.bw) :is([class~="text-sky-400"],[class~="text-blue-400"],[class~="text-cyan-400"]) { color: #175cd3; }
+html[data-theme="white"]:has(.bw) :is([class~="text-violet-400"],[class~="text-purple-400"],[class~="text-fuchsia-400"]) { color: #6941c6; }
+html[data-theme="white"]:has(.bw) :is([class~="bg-emerald-400/5"],[class~="bg-emerald-400/10"],[class~="bg-emerald-400/15"],[class~="bg-emerald-400/20"]) { background-color: #ecfdf3; }
+html[data-theme="white"]:has(.bw) :is([class~="bg-amber-400/5"],[class~="bg-amber-400/10"],[class~="bg-amber-400/15"],[class~="bg-amber-400/20"]) { background-color: #fffaeb; }
+html[data-theme="white"]:has(.bw) :is([class~="bg-red-400/5"],[class~="bg-red-400/10"],[class~="bg-red-400/15"],[class~="bg-red-400/20"]) { background-color: #fef3f2; }
+html[data-theme="white"]:has(.bw) :is([class~="border-emerald-400/15"],[class~="border-emerald-400/20"],[class~="border-emerald-400/30"],[class~="border-emerald-400/40"]) { border-color: #abefc6; }
+html[data-theme="white"]:has(.bw) :is([class~="border-amber-400/20"],[class~="border-amber-400/30"],[class~="border-amber-400/40"]) { border-color: #fedf89; }
+html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="border-red-400/30"],[class~="border-red-400/40"]) { border-color: #fecdca; }

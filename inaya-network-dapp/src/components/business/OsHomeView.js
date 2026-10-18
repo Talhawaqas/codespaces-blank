@@ -178,6 +178,22 @@ function OsAssistantWidget({ orgId }) {
   );
 }
 
+// Business Workspace redesign helpers for the "today" section.
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+const ATTENTION_TONE = { danger: "text-[var(--inaya-danger)] border-[var(--inaya-danger)]", warning: "text-[var(--inaya-warning)] border-[var(--inaya-warning)]" };
+function AttentionRow({ tone, kind, text, action, onClick }) {
+  return (
+    <li className="flex flex-wrap items-center gap-3 px-5 py-3">
+      <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${ATTENTION_TONE[tone]}`}>{kind}</span>
+      <span className="flex-1 min-w-0 text-sm text-[var(--inaya-text-primary)]">{text}</span>
+      <button onClick={onClick} className="text-[13px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-5)]">{action}</button>
+    </li>
+  );
+}
+
 export default function OsHomeView({ onNavigate }) {
   const { orgId, can } = useOrg();
   const [dashboard, setDashboard] = useState(null);
@@ -193,6 +209,11 @@ export default function OsHomeView({ onNavigate }) {
   const [overdueTasks, setOverdueTasks] = useState(null);
   const [overdueInvoices, setOverdueInvoices] = useState(null);
   const [lowStockProducts, setLowStockProducts] = useState(null);
+  const [invoiceCount, setInvoiceCount] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  // Redesign: the setup checklist can be hidden; remembered in this browser per company.
+  const checklistKey = `inaya_bw_setup_hidden:${orgId}`;
+  const [checklistHidden, setChecklistHidden] = useState(() => { try { return typeof window !== "undefined" && window.localStorage.getItem(checklistKey) === "1"; } catch { return false; } });
 
   const load = useCallback(async () => {
     setError("");
@@ -215,8 +236,12 @@ export default function OsHomeView({ onNavigate }) {
     // not load-bearing data.
     if (trendsRes.status === "fulfilled") setTrends(trendsRes.value);
     if (tasksRes.status === "fulfilled") setOverdueTasks(tasksRes.value.tasks || []);
-    if (invoicesRes.status === "fulfilled") setOverdueInvoices((invoicesRes.value.invoices || []).filter((inv) => inv.status === "OVERDUE"));
+    if (invoicesRes.status === "fulfilled") {
+      setOverdueInvoices((invoicesRes.value.invoices || []).filter((inv) => inv.status === "OVERDUE"));
+      setInvoiceCount((invoicesRes.value.invoices || []).length);
+    }
     if (stockRes.status === "fulfilled") setLowStockProducts(stockRes.value.products || []);
+    setLoaded(true);
   }, [orgId]);
 
   useEffect(() => {
@@ -237,78 +262,63 @@ export default function OsHomeView({ onNavigate }) {
           shell header the same way. */}
       {error && <p className="text-[12px] text-red-400">{error}</p>}
 
-      {/* Desktop app cross-promotion, merged in from the former separate
-          "Dashboard" screen (see BUSINESS_WORKSPACE_UX_AUDIT.md #3.2 --
-          OS Home and Dashboard were two redundant overview screens;
-          consolidated into this one). Hidden when already inside the
-          desktop app. */}
-      {!isDesktopApp && (
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-[var(--inaya-overlay-10)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="pointer-events-none absolute -right-6 -top-6 opacity-40 hidden sm:block" aria-hidden="true">
-            <AccentGraphic variant="business" size={120} />
-          </div>
-          <div className="relative">
-            <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
-              New · Desktop App
-            </span>
-            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
-            <p className="text-[var(--inaya-text-muted)] text-xs sm:text-sm mt-1 max-w-lg">
-              Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
-            </p>
-          </div>
-          <div className="relative flex gap-2 shrink-0 w-full sm:w-auto">
-            <a href="/business/download" className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110">
-              Download
-            </a>
-          </div>
+      {/* Business Workspace redesign (2026-10-18): the first screen answers
+          "what needs me today" — attention first (always shown, even when
+          empty), a setup checklist for new companies, then quick actions.
+          The overview cards and the desktop-app promotion follow below. */}
+      <section aria-labelledby="today-title" className="bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl">
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-4 pb-2">
+          <h2 id="today-title" className="text-base font-bold text-[var(--inaya-text-primary)]">{greeting()}</h2>
+          <span className="text-sm text-[var(--inaya-text-muted)]">
+            {!loaded ? "Checking what needs you…" : attentionCount > 0 ? `${attentionCount} thing${attentionCount === 1 ? "" : "s"} need${attentionCount === 1 ? "s" : ""} you today.` : "Nothing needs you right now."}
+          </span>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <TrustHealthCard snapshot={trust} loading={!trust && !trustError} error={trustError} />
-        <OsAssistantWidget orgId={orgId} />
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Tile label="Departments" value={dashboard?.counts?.departments} onClick={() => onNavigate("departments")} />
-        <Tile label="Projects" value={dashboard?.counts?.projects} onClick={() => onNavigate("projects")} />
-        <Tile label="Documents" value={dashboard?.counts?.documents} onClick={() => onNavigate("documents")} />
-        <Tile label="Pending approvals" value={dashboard?.pendingApprovals?.length} onClick={() => onNavigate("approvals")} trend={trends?.pendingApprovals} />
-      </div>
-
-      {/* Business Workspace UX/UI Makeover SOW §8 -- "Attention Required":
-          real overdue tasks/invoices and low-stock items, from the same
-          endpoints TasksView/FinanceView/InventoryView already use (never
-          invented). Absent entirely for a caller with none of those three
-          data sources visible to them, rather than an empty, confusing
-          section. */}
-      {attentionCount > 0 && (
-        <div className="bg-[var(--inaya-surface)] border border-amber-400/20 rounded-2xl p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-amber-400 mb-3">⚠ Attention Required</p>
-          <div className="space-y-2">
+        {!loaded ? null : attentionCount === 0 ? (
+          <p className="px-5 pb-4 text-[13px] text-[var(--inaya-text-muted)]">No overdue invoices or tasks, and nothing is low on stock.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--inaya-border)] border-t border-[var(--inaya-border)]">
             {overdueInvoices?.length > 0 && (
-              <button onClick={() => onNavigate("finance")} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-                <span className="text-[var(--inaya-text-primary)] text-sm">{overdueInvoices.length} overdue invoice{overdueInvoices.length === 1 ? "" : "s"}</span>
-                <span className="text-[12px] font-mono text-red-400 shrink-0">
-                  {formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0), overdueInvoices[0]?.currency)}
-                </span>
-              </button>
-            )}
-            {lowStockProducts?.length > 0 && (
-              <button onClick={() => onNavigate("inventory")} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-                <span className="text-[var(--inaya-text-primary)] text-sm">{lowStockProducts.length} product{lowStockProducts.length === 1 ? "" : "s"} low on stock</span>
-                <span className="text-[12px] font-mono text-amber-400 shrink-0">Reorder soon</span>
-              </button>
+              <AttentionRow tone="danger" kind="Overdue" text={`${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"} · ${formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0), overdueInvoices[0]?.currency)}`} action="Open invoices" onClick={() => onNavigate("finance")} />
             )}
             {overdueTasks?.length > 0 && (
-              <button onClick={() => onNavigate("tasks")} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-                <span className="text-[var(--inaya-text-primary)] text-sm">{overdueTasks.length} overdue task{overdueTasks.length === 1 ? "" : "s"}</span>
-                <span className="text-[12px] font-mono text-red-400 shrink-0">Past due</span>
-              </button>
+              <AttentionRow tone="danger" kind="Tasks" text={`${overdueTasks.length} overdue task${overdueTasks.length === 1 ? "" : "s"}`} action="Open tasks" onClick={() => onNavigate("tasks")} />
             )}
-          </div>
-        </div>
-      )}
+            {lowStockProducts?.length > 0 && (
+              <AttentionRow tone="warning" kind="Low stock" text={`${lowStockProducts.length} product${lowStockProducts.length === 1 ? "" : "s"} low on stock`} action="Reorder" onClick={() => onNavigate("inventory")} />
+            )}
+          </ul>
+        )}
+      </section>
+
+      {!checklistHidden && (() => {
+        const steps = [
+          { done: (dashboard?.counts?.departments || 0) > 0, title: "Create a department", hint: "Your teams, e.g. Sales or Operations", view: "departments" },
+          { done: (dashboard?.counts?.projects || 0) > 0, title: "Start a project", hint: "Group work and documents", view: "projects" },
+          { done: (dashboard?.counts?.documents || 0) > 0, title: "Upload a document", hint: "Encrypted on your device first", view: "documents" },
+          { done: (invoiceCount || 0) > 0, title: "Create your first invoice", hint: "About two minutes", view: "finance" },
+        ];
+        const doneCount = steps.filter((x) => x.done).length;
+        if (!dashboard || doneCount === steps.length) return null;
+        return (
+          <section aria-labelledby="setup-title" className="bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5 space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 id="setup-title" className="text-base font-bold text-[var(--inaya-text-primary)]">Finish setting up your workspace</h2>
+              <span className="text-sm text-[var(--inaya-text-muted)]">{doneCount} of {steps.length} done</span>
+              <div className="h-1.5 w-32 rounded-full bg-[var(--inaya-overlay-10)] overflow-hidden" aria-hidden="true"><div className="h-full bg-[var(--inaya-accent)]" style={{ width: `${(doneCount / steps.length) * 100}%` }} /></div>
+              <button onClick={() => { setChecklistHidden(true); try { window.localStorage.setItem(checklistKey, "1"); } catch { /* storage blocked: hidden for this visit only */ } }} className="ml-auto text-[13px] font-semibold text-[var(--inaya-accent)]">Hide</button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {steps.map((st) => (
+                <button key={st.title} onClick={() => onNavigate(st.view)} disabled={st.done} className={`text-left rounded-xl border border-[var(--inaya-border)] p-3 transition-colors ${st.done ? "opacity-70" : "hover:border-[var(--inaya-accent)]"}`}>
+                  <span className={`block text-xs font-semibold ${st.done ? "text-[var(--inaya-success)]" : "text-[var(--inaya-accent)]"}`}>{st.done ? "Done" : "Next"}</span>
+                  <span className="block text-sm font-semibold text-[var(--inaya-text-primary)]">{st.title}</span>
+                  <span className="block text-xs text-[var(--inaya-text-muted)]">{st.hint}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* SOW §8 -- "Quick actions": jumps straight to the module that owns
           the action (each module's own "+ New" button opens the real
@@ -331,6 +341,18 @@ export default function OsHomeView({ onNavigate }) {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TrustHealthCard snapshot={trust} loading={!trust && !trustError} error={trustError} />
+        <OsAssistantWidget orgId={orgId} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Tile label="Departments" value={dashboard?.counts?.departments} onClick={() => onNavigate("departments")} />
+        <Tile label="Projects" value={dashboard?.counts?.projects} onClick={() => onNavigate("projects")} />
+        <Tile label="Documents" value={dashboard?.counts?.documents} onClick={() => onNavigate("documents")} />
+        <Tile label="Pending approvals" value={dashboard?.pendingApprovals?.length} onClick={() => onNavigate("approvals")} trend={trends?.pendingApprovals} />
       </div>
 
       <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-4">
@@ -430,6 +452,33 @@ export default function OsHomeView({ onNavigate }) {
           )}
         </div>
       </div>
+      {/* Desktop app cross-promotion, merged in from the former separate
+          "Dashboard" screen (see BUSINESS_WORKSPACE_UX_AUDIT.md #3.2 --
+          OS Home and Dashboard were two redundant overview screens;
+          consolidated into this one). Hidden when already inside the
+          desktop app. */}
+      {!isDesktopApp && (
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#00f2fe]/10 via-[#090d16] to-violet-500/10 border border-[var(--inaya-overlay-10)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="pointer-events-none absolute -right-6 -top-6 opacity-40 hidden sm:block" aria-hidden="true">
+            <AccentGraphic variant="business" size={120} />
+          </div>
+          <div className="relative">
+            <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
+              New · Desktop App
+            </span>
+            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
+            <p className="text-[var(--inaya-text-muted)] text-xs sm:text-sm mt-1 max-w-lg">
+              Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
+            </p>
+          </div>
+          <div className="relative flex gap-2 shrink-0 w-full sm:w-auto">
+            <a href="/business/download" className="flex-1 sm:flex-none text-center text-xs font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-violet-400 px-4 py-2.5 rounded-lg hover:brightness-110">
+              Download
+            </a>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

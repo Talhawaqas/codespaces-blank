@@ -10,10 +10,10 @@
 // Defaults to "dark" (the site's existing look) until localStorage says
 // otherwise, so first paint never flashes an unexpected theme.
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { THEME_TOKENS, THEME_STORAGE_KEY, isValidTheme } from "../lib/theme";
 
-const ThemeContext = createContext({ theme: "dark", setTheme: () => {} });
+const ThemeContext = createContext({ theme: "dark", setTheme: () => {}, preferDefaultTheme: () => {} });
 
 function applyThemeToDocument(theme) {
   if (typeof document === "undefined") return;
@@ -27,6 +27,11 @@ function applyThemeToDocument(theme) {
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState("dark");
+  // A page's preferred default for people with no saved theme (see
+  // preferDefaultTheme below). Child effects run before this provider's, so
+  // the startup effect reads it rather than overwriting it.
+  const preferredDefault = useRef(null);
+  const started = useRef(false);
 
   useEffect(() => {
     let stored = null;
@@ -37,15 +42,27 @@ export function ThemeProvider({ children }) {
       // same tolerant handling every other localStorage read in this
       // codebase already uses.
     }
-    const initial = isValidTheme(stored) ? stored : "dark";
+    const initial = isValidTheme(stored) ? stored : (preferredDefault.current || "dark");
+    started.current = true;
     setThemeState(initial);
     applyThemeToDocument(initial);
   }, []);
 
-  const setTheme = useCallback((next) => {
+  /** Uses `t` when the person never chose a theme; never saved, so other pages keep their own default. */
+  const preferDefaultTheme = useCallback((t) => {
+    if (!isValidTheme(t)) return;
+    let saved = false;
+    try { saved = isValidTheme(window.localStorage.getItem(THEME_STORAGE_KEY)); } catch { saved = false; }
+    if (saved) return;
+    preferredDefault.current = t;
+    if (started.current) { setThemeState(t); applyThemeToDocument(t); }
+  }, []);
+
+  const setTheme = useCallback((next, { persist = true } = {}) => {
     if (!isValidTheme(next)) return;
     setThemeState(next);
     applyThemeToDocument(next);
+    if (!persist) return;
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {
@@ -54,7 +71,7 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme, setTheme, preferDefaultTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

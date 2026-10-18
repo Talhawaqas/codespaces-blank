@@ -45,23 +45,37 @@ export const THEME_TOKENS = {
     "--inaya-overlay-5": "rgba(255,255,255,0.05)",
     "--inaya-overlay-10": "rgba(255,255,255,0.10)",
     "--inaya-overlay-15": "rgba(255,255,255,0.15)",
+    // Redesign tokens (2026-10-18). Dark values equal the literals the views already use,
+    // so adopting them changes nothing in dark.
+    "--inaya-accent-soft": "rgba(0,242,254,0.10)",
+    "--inaya-on-accent": "#000000",
+    "--inaya-input": "rgba(0,0,0,0.45)",
+    "--inaya-success": "#34d399",
+    "--inaya-warning": "#fbbf24",
+    "--inaya-danger": "#f87171",
   },
-  // Replaces the old stark white/near-black pairing (#f4f6fb bg, #ffffff cards, #0284c7 accent)
-  // with a warm ivory/paper base, white cards for a real sense of elevation against it, and a
-  // deeper, more considered teal accent -- still clearly "the light theme," but designed rather
-  // than a flat inversion of dark.
+  // Business Workspace redesign (2026-10-18, approved design): light-first professional --
+  // a cool, neutral grey ground, white cards, slate text and one deep teal accent derived from
+  // the brand cyan. Hard-coded dark utility classes in the views are remapped for this theme by
+  // the light adapter layer in globals.css (html[data-theme="white"] .bw ...).
   white: {
-    "--inaya-bg": "#f6f3ec",
+    "--inaya-bg": "#f5f6f8",
     "--inaya-surface": "#ffffff",
-    "--inaya-surface-2": "#efe9dc",
-    "--inaya-accent": "#0e7490",
-    "--inaya-accent-2": "#0891b2",
-    "--inaya-text-primary": "#1c1917",
-    "--inaya-text-muted": "#78716c",
-    "--inaya-border": "rgba(28,25,23,0.10)",
-    "--inaya-overlay-5": "rgba(28,25,23,0.04)",
-    "--inaya-overlay-10": "rgba(28,25,23,0.07)",
-    "--inaya-overlay-15": "rgba(28,25,23,0.11)",
+    "--inaya-surface-2": "#f0f2f5",
+    "--inaya-accent": "#0b6e75",
+    "--inaya-accent-2": "#0e8a93",
+    "--inaya-text-primary": "#0f172a",
+    "--inaya-text-muted": "#5b6474",
+    "--inaya-border": "#e4e7ec",
+    "--inaya-overlay-5": "rgba(15,23,42,0.04)",
+    "--inaya-overlay-10": "rgba(15,23,42,0.07)",
+    "--inaya-overlay-15": "rgba(15,23,42,0.12)",
+    "--inaya-accent-soft": "#e7f3f4",
+    "--inaya-on-accent": "#ffffff",
+    "--inaya-input": "#ffffff",
+    "--inaya-success": "#067647",
+    "--inaya-warning": "#b54708",
+    "--inaya-danger": "#b42318",
   },
   neon: {
     "--inaya-bg": "#050014",
@@ -75,6 +89,12 @@ export const THEME_TOKENS = {
     "--inaya-overlay-5": "rgba(255,255,255,0.05)",
     "--inaya-overlay-10": "rgba(255,255,255,0.10)",
     "--inaya-overlay-15": "rgba(255,255,255,0.15)",
+    "--inaya-accent-soft": "rgba(0,255,225,0.10)",
+    "--inaya-on-accent": "#000000",
+    "--inaya-input": "rgba(0,0,0,0.45)",
+    "--inaya-success": "#34d399",
+    "--inaya-warning": "#fbbf24",
+    "--inaya-danger": "#f87171",
   },
 };
 

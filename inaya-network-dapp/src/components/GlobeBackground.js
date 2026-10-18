@@ -215,6 +215,7 @@ export default function GlobeBackground({ variant = "ambient", className = "" })
   return (
     <div
       aria-hidden="true"
+      data-globe-bg=""
       className={`pointer-events-none fixed inset-0 overflow-hidden -z-10 ${className}`}
       style={{ opacity }}
     >

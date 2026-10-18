@@ -61,6 +61,7 @@ import OsHomeView from "../../components/business/OsHomeView";
 import MfaVerifyScreen from "../../components/business/MfaVerifyScreen";
 import MfaSettings from "../../components/business/MfaSettings";
 import ThemeSwitcher from "../../components/ThemeSwitcher";
+import { useTheme } from "../../components/ThemeProvider";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
@@ -86,6 +87,9 @@ import AdminRolesPanel from "../../components/business/AdminRolesPanel";
 import { hasAdminRole } from "../../lib/orgGates";
 import { NAV_ITEMS, GROUP_LABELS, isNavItemVisible } from "../../lib/navigation/navItems";
 import { viewUrl, breadcrumbs } from "../../lib/business-nav.js";
+import { sidebarSections, labelFor, readNavPrefs, writeNavPrefs, defaultPins, EXTRA_DESCRIPTIONS } from "../../lib/navigation/launcher.js";
+import AppLauncherView from "../../components/business/AppLauncherView";
+import WelcomeView from "../../components/business/WelcomeView";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
 import WebhooksView from "../../components/business/admin/WebhooksView";
@@ -176,6 +180,10 @@ async function api(path, options) {
 }
 
 export default function BusinessPage() {
+  // Business Workspace redesign: light-first for people who never picked a
+  // theme. Not saved, so the rest of the site keeps its own default.
+  const { preferDefaultTheme } = useTheme();
+  useEffect(() => { preferDefaultTheme("white"); }, [preferDefaultTheme]);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [session, setSession] = useState(null); // { email, orgs: [{orgId, orgName, role, departmentIds}] }
   const [selectedOrgId, setSelectedOrgId] = useState(null);
@@ -310,7 +318,7 @@ export default function BusinessPage() {
   const needsPlanSelection = currentMembership?.requiresPlanSelection && !currentMembership?.plan;
 
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans">
+    <div className="bw min-h-screen bg-[#060913] text-[#e2e8f0] font-sans">
       {currentMembership && needsPlanSelection && (
         <PlanSelectionGate email={session.email} membership={currentMembership} onLogout={handleLogout} />
       )}
@@ -424,7 +432,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
+    <div className="bw min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
@@ -482,7 +490,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
 
 function CenteredShell({ children }) {
   return (
-    <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10 relative overflow-hidden z-0">
+    <div className="bw min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10 relative overflow-hidden z-0">
       <GlobeBackground variant="ambient" />
       {/* Ambient glow -- purely decorative, matches the dashboard promo banner's
           cyan/violet gradient so the sign-in screen doesn't read as a flat,
@@ -851,7 +859,7 @@ function VoiceAiSettings({ orgId, aiPolicy, onChanged }) {
   );
 }
 
-function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile, membership }) {
+function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile, membership, pins = [] }) {
   return (
     <>
       {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
@@ -876,34 +884,49 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {/* Business Workspace redesign: a short sidebar (everyday areas +
+            pinned apps + the current page) instead of all ~70 modules; the
+            rest live in All apps (view=apps). Visibility is still decided by
+            isNavItemVisible, so role and industry gating are unchanged. */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto" aria-label="Main">
           {(() => {
             const visible = NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical }));
-            let lastGroup = null;
-            return visible.map((item) => {
-              const showHeading = item.group !== lastGroup;
-              lastGroup = item.group;
-              return (
-                <div key={item.key}>
-                  {showHeading && (
-                    <p className={`px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] opacity-40 ${item === visible[0] ? "mb-1.5" : "mt-4 mb-1.5"}`}>
-                      {GROUP_LABELS[item.group] || item.group}
-                    </p>
-                  )}
-                  <button
-                    onClick={() => onNavigate(item.key)}
-                    className={`w-full flex items-center gap-3 pl-2.5 pr-3 py-2.5 rounded-lg text-sm font-medium border-l-2 transition-colors ${
-                      activeView === item.key
-                        ? "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe] shadow-[-2px_0_8px_rgba(0,242,254,0.35)]"
-                        : "text-[var(--inaya-text-muted)] border-transparent hover:bg-[var(--inaya-overlay-5)] hover:text-slate-200"
-                    }`}
-                  >
-                    <Icon path={ICONS[item.icon]} />
-                    {item.label}
-                  </button>
-                </div>
-              );
-            });
+            const { primary, pinned, current, moreCount } = sidebarSections({ visible, pins, activeKey: activeView });
+            const isActive = (key) => activeView === key || (key === "documents" && activeView === "browse");
+            const navButton = (item) => (
+              <button
+                key={item.key}
+                onClick={() => onNavigate(item.key)}
+                aria-current={isActive(item.key) ? "page" : undefined}
+                className={`w-full flex items-center gap-3 pl-2.5 pr-3 py-2 rounded-lg text-sm font-medium border-l-2 transition-colors ${
+                  isActive(item.key)
+                    ? "bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe] shadow-[-2px_0_8px_rgba(0,242,254,0.35)]"
+                    : "text-[var(--inaya-text-muted)] border-transparent hover:bg-[var(--inaya-overlay-5)] hover:text-slate-200"
+                }`}
+              >
+                <Icon path={ICONS[item.icon]} />
+                {labelFor(item)}
+              </button>
+            );
+            const heading = (text) => <p className="px-3 mt-5 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--inaya-text-muted)] opacity-60">{text}</p>;
+            return (
+              <>
+                <div className="space-y-0.5">{primary.map(navButton)}</div>
+                {pinned.length > 0 && (<>{heading("Pinned")}<div className="space-y-0.5">{pinned.map(navButton)}</div></>)}
+                {current && (<>{heading("Current page")}<div className="space-y-0.5">{navButton(current)}</div></>)}
+                <button
+                  onClick={() => onNavigate("apps")}
+                  aria-current={activeView === "apps" ? "page" : undefined}
+                  className={`mt-5 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
+                    activeView === "apps" ? "border-[#00f2fe]/40 bg-[#00f2fe]/10 text-[#00f2fe]" : "border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-5)]"
+                  }`}
+                >
+                  <Icon path={ICONS.dashboard} />
+                  All apps
+                  {moreCount > 0 && <span className="ml-auto text-xs font-medium text-[var(--inaya-text-muted)]">{moreCount} more</span>}
+                </button>
+              </>
+            );
           })()}
         </nav>
 
@@ -939,6 +962,19 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     const v = new URLSearchParams(window.location.search).get("view") || "osHome";
     return ["departments", "projects", "documents"].includes(v) ? "browse" : v;
   });
+  // Business Workspace redesign: this person's pinned apps and whether they
+  // have seen the first-run welcome, per company, kept in this browser.
+  const [navPrefs, setNavPrefs] = useState(() => (typeof window === "undefined" ? null : readNavPrefs(window.localStorage, orgId)));
+  useEffect(() => { setNavPrefs(typeof window === "undefined" ? null : readNavPrefs(window.localStorage, orgId)); }, [orgId]);
+  const saveNavPrefs = useCallback((next) => {
+    setNavPrefs(next);
+    if (typeof window !== "undefined") writeNavPrefs(window.localStorage, orgId, next);
+  }, [orgId]);
+  const pins = navPrefs?.pins ?? defaultPins(null);
+  const togglePin = useCallback((key) => {
+    const cur = navPrefs?.pins ?? defaultPins(null);
+    saveNavPrefs({ ...(navPrefs || {}), pins: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key], welcomed: navPrefs?.welcomed ?? true });
+  }, [navPrefs, saveNavPrefs]);
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -1040,7 +1076,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   // former separate "Dashboard" screen was a redundant second home screen
   // (see the audit's #3.2) and has been consolidated into "OS Home" below.
   const VIEW_TITLES = {
-    osHome: { title: "OS Home", description: `Welcome back — ${membership.orgName}. One place for what's happening across your organization.` },
+    osHome: { title: "Home", description: `Welcome back — ${membership.orgName}. One place for what's happening across your organization.` },
     insights: { title: "Business Insights", description: "KPIs, trends, and alerts for this company." },
     brief: { title: "Business Brief", description: "A periodic recap of what happened and what needs attention." },
     whatChanged: { title: "What Changed?", description: "A running log of recent activity across the company." },
@@ -1105,6 +1141,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     ai: { title: "AI Assistant", description: "Ask about this company's real data, grounded and permission-scoped." },
     billing: { title: "Billing", description: "Plan, usage, and payment details." },
     settings: { title: "Settings", description: "Company type, AI features, team, and departments." },
+    apps: { title: "All apps", description: "Everything in your workspace. Pin the ones you use to keep them in the sidebar." },
   };
 
   // A bad or stale ?view= link falls back to OS Home instead of a blank page.
@@ -1113,7 +1150,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
+    <div className="bw flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
       <GlobeBackground variant="subtle" />
       <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
@@ -1128,6 +1165,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         onStartGuidedTask={startGuidedTaskFromHint}
         orgVoiceEnabled={!!orgAiPolicy?.voiceEnabled}
       />
+      {!navPrefs?.welcomed && (
+        <WelcomeView
+          onChoose={(useCaseId) => saveNavPrefs({ pins: defaultPins(useCaseId), useCase: useCaseId, welcomed: true })}
+          onSkip={() => saveNavPrefs({ pins, useCase: null, welcomed: true })}
+        />
+      )}
       <Sidebar
         orgName={membership.orgName}
         role={role}
@@ -1137,6 +1180,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         vertical={orgVertical}
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
+        pins={pins}
         membership={membership}
       />
 
@@ -1210,6 +1254,15 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           <OfflineBanner />
           <StepUpPrompt />
           {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
+          {activeView === "apps" && (
+            <AppLauncherView
+              items={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
+              describe={(key) => EXTRA_DESCRIPTIONS[key] || VIEW_TITLES[key]?.description || ""}
+              pins={pins}
+              onTogglePin={togglePin}
+              onOpen={navigate}
+            />
+          )}
           {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
           {activeView === "brief" && <BriefView orgId={orgId} />}
           {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
