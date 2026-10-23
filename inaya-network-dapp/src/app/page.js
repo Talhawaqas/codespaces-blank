@@ -2295,6 +2295,15 @@ export default function Home() {
   const [cardUploadAssets, setCardUploadAssets] = useState([]);
   const [pendingEgressReconstructHash, setPendingEgressReconstructHash] = useState(null);
 
+  // Deep links into tabs (e.g. /learn redirects to /?page=learn). Allowlisted so
+  // a query param can only ever select a known public tab.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const DEEP_LINK_PAGES = { learn: 'Learn' };
+    const target = DEEP_LINK_PAGES[new URLSearchParams(window.location.search).get('page')?.toLowerCase()];
+    if (target) setCurrentPage(target);
+  }, []);
+
   // Handle the redirect back from Stripe Checkout (card-based Corporate Reserve
   // purchases). This app has no real routing — everything lives at '/' and
   // switches tabs via currentPage state — so create-checkout-session's
