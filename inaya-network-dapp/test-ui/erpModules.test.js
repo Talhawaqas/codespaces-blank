@@ -7,46 +7,48 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NAV_ITEMS, isNavItemVisible } from "../src/lib/navigation/navItems";
-import { ERP_MODULES, ERP_EXTRA_VIEWS, erpLayout, erpModuleFor, erpPlacedKeys, erpLabelFor, erpActiveItem } from "../src/lib/navigation/erpModules";
+import {
+  ERP_MODULES, ERP_EXTRA_VIEWS, erpLayout, erpModuleFor, erpPlacedViews, erpLabelFor, erpActiveItem,
+  parseErpItem, erpDefaultSection, erpListsSections,
+} from "../src/lib/navigation/erpModules";
 
 const INDUSTRY_KEYS = ["health", "legal", "regulated", "financial", "government"];
 const VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital", "government"];
+const read = (rel) => fs.readFileSync(path.join(__dirname, "..", rel), "utf8");
 
 function visibleKeys({ canManage = true, membership = { role: "owner" }, vertical = "general" } = {}) {
   return NAV_ITEMS.filter((i) => isNavItemVisible(i, { canManage, membership, vertical })).map((i) => i.key);
 }
-
-function allItemKeys(layout) {
-  return layout.flatMap((m) => m.groups.flatMap((g) => g.items.map((i) => i.key)));
-}
+const allViews = (layout) => [...new Set(layout.flatMap((m) => m.groups.flatMap((g) => g.items.map((i) => i.view))))];
+const allKeys = (layout) => layout.flatMap((m) => m.groups.flatMap((g) => g.items.map((i) => i.key)));
 
 describe("inventory: nothing live is left out", () => {
-  test("every NAV_ITEMS key and every extra view is placed exactly once", () => {
-    const placed = erpPlacedKeys();
+  test("every NAV_ITEMS key and every extra view is placed, each in exactly one module", () => {
     const expected = [...NAV_ITEMS.map((i) => i.key), ...ERP_EXTRA_VIEWS];
-    expect([...placed].sort()).toEqual([...expected].sort());
-    expect(new Set(placed).size).toBe(placed.length);
+    expect([...erpPlacedViews()].sort()).toEqual([...expected].sort());
+    const owner = new Map();
+    for (const m of ERP_MODULES) for (const g of m.groups) for (const i of g.items) {
+      const v = parseErpItem(i).view;
+      if (owner.has(v)) expect(owner.get(v)).toBe(m.id);
+      owner.set(v, m.id);
+    }
+  });
+
+  test("no task-panel item is listed twice", () => {
+    const items = ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items));
+    expect(new Set(items).size).toBe(items.length);
   });
 
   test("every view the workspace renders is reachable from an ERP module", () => {
     // Reads the real render switch in business/page.js, so a new view added
     // there without an ERP home fails this test.
-    const src = fs.readFileSync(path.join(__dirname, "../src/app/business/page.js"), "utf8");
-    const rendered = new Set([...src.matchAll(/activeView === "([a-zA-Z]+)"/g)].map((m) => m[1]));
-    const placed = new Set(erpPlacedKeys());
-    const missing = [...rendered].filter((k) => k !== "browse" && !placed.has(k));
-    expect(missing).toEqual([]);
+    const rendered = new Set([...read("src/app/business/page.js").matchAll(/activeView === "([a-zA-Z]+)"/g)].map((m) => m[1]));
+    const placed = new Set(erpPlacedViews());
+    expect([...rendered].filter((k) => k !== "browse" && !placed.has(k))).toEqual([]);
     expect(rendered.size).toBeGreaterThan(60);
   });
 
-  test("an owner of a general company sees every non-industry view in ERP mode", () => {
-    const keys = visibleKeys();
-    const layoutKeys = new Set(allItemKeys(erpLayout({ visibleKeys: keys })));
-    for (const k of keys) expect(layoutKeys.has(k)).toBe(true);
-    expect(layoutKeys.has("apps")).toBe(true);
-  });
-
-  test("ERP mode shows exactly what the standard layout shows, for every role and industry", () => {
+  test("ERP mode shows exactly the views the standard layout shows, for every role and industry", () => {
     const people = [
       { canManage: true, membership: { role: "owner" } },
       { canManage: false, membership: { role: "member" } },
@@ -56,10 +58,52 @@ describe("inventory: nothing live is left out", () => {
     for (const vertical of VERTICALS) {
       for (const p of people) {
         const keys = visibleKeys({ ...p, vertical });
-        const shown = allItemKeys(erpLayout({ visibleKeys: keys })).filter((k) => !ERP_EXTRA_VIEWS.includes(k));
+        const shown = allViews(erpLayout({ visibleKeys: keys })).filter((k) => !ERP_EXTRA_VIEWS.includes(k));
         expect([...shown].sort()).toEqual([...keys].sort());
       }
     }
+  });
+});
+
+describe("sections and actions point at things that really exist", () => {
+  // The section ids each screen really has, read from its source, so a
+  // renamed tab breaks this test instead of silently breaking the panel.
+  const SOURCES = {
+    finance: "src/components/business/FinanceView.js",
+    hr: "src/components/business/HRView.js",
+    inventory: "src/components/business/InventoryView.js",
+    procurement: "src/components/business/ProcurementView.js",
+    crm: "src/components/business/CRMView.js",
+    tasks: "src/components/business/TasksView.js",
+  };
+  const items = ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items)).map(parseErpItem);
+
+  test("every listed section is a real tab of its screen", () => {
+    for (const i of items.filter((x) => x.section && !x.action)) {
+      expect(Object.keys(SOURCES)).toContain(i.view);
+      expect(read(SOURCES[i.view])).toMatch(new RegExp(`useErpSection\\([^)]*"${i.section}"`));
+    }
+  });
+
+  test("every \"New ...\" item is wired to that screen's own form", () => {
+    for (const i of items.filter((x) => x.action === "new")) {
+      expect(read(SOURCES[i.view])).toContain(`useErpCreate("${i.section}"`);
+    }
+  });
+
+  test("defaults and active item", () => {
+    expect(erpDefaultSection("finance")).toBe("invoices");
+    expect(erpDefaultSection("tasks")).toBeNull();
+    expect(erpListsSections("hr")).toBe(true);
+    expect(erpListsSections("support")).toBe(false);
+    expect(erpActiveItem("finance")).toBe("finance:invoices");
+    expect(erpActiveItem("finance", "documents", "ledger")).toBe("finance:ledger");
+    expect(erpActiveItem("support", "documents", "tickets")).toBe("support");
+    expect(erpActiveItem("browse", "projects")).toBe("projects");
+  });
+
+  test("labels: every action and section has ERP wording", () => {
+    for (const i of items.filter((x) => x.section)) expect(erpLabelFor(i.key)).not.toBe(i.key);
   });
 });
 
@@ -68,12 +112,11 @@ describe("industry OS isolation", () => {
 
   test.each(VERTICALS)("a %s company sees only its own industry OS", (vertical) => {
     const layout = erpLayout({ visibleKeys: visibleKeys({ vertical }) });
-    const industryShown = allItemKeys(layout).filter((k) => INDUSTRY_KEYS.includes(k));
-    expect(industryShown).toEqual(expectedOs[vertical]);
+    expect(allViews(layout).filter((k) => INDUSTRY_KEYS.includes(k))).toEqual(expectedOs[vertical]);
     const tile = layout.find((m) => m.id === "industry");
     if (expectedOs[vertical].length) {
       expect(tile.label).toBe(erpLabelFor(expectedOs[vertical][0]));
-      expect(tile.home).toBe(expectedOs[vertical][0]);
+      expect(tile.home.view).toBe(expectedOs[vertical][0]);
     } else {
       expect(tile).toBeUndefined();
     }
@@ -81,23 +124,25 @@ describe("industry OS isolation", () => {
 
   test("the layout never adds a view the caller did not pass in", () => {
     const layout = erpLayout({ visibleKeys: ["osHome", "legal"] });
-    expect(allItemKeys(layout).sort()).toEqual(["apps", "legal", "osHome"]);
+    expect(allViews(layout).sort()).toEqual(["apps", "legal", "osHome"]);
   });
 });
 
 describe("module structure", () => {
-  test("module ids are unique and each module has a home view it can show", () => {
+  test("module ids are unique and each module opens on something it shows", () => {
     expect(new Set(ERP_MODULES.map((m) => m.id)).size).toBe(ERP_MODULES.length);
     for (const m of erpLayout({ visibleKeys: visibleKeys() })) {
-      expect(allItemKeys([m])).toContain(m.home);
+      expect(allViews([m])).toContain(m.home.view);
+      expect(m.home.action).toBeNull();
     }
   });
 
-  test("a member without admin rights still gets a usable Admin tile for their own account security", () => {
+  test("a member without admin rights still gets a usable Admin tile for their own account", () => {
     const layout = erpLayout({ visibleKeys: visibleKeys({ canManage: false, membership: { role: "member" } }) });
     const admin = layout.find((m) => m.id === "admin");
-    expect(allItemKeys([admin])).toContain("security");
-    expect(allItemKeys([admin])).not.toContain("settings");
+    expect(allKeys([admin])).toEqual(expect.arrayContaining(["security", "appearance"]));
+    expect(allKeys([admin])).not.toContain("settings");
+    expect(admin.home.view).toBe("security");
   });
 
   test("erpModuleFor resolves views, including the Departments/Projects/Documents browser", () => {
@@ -107,7 +152,10 @@ describe("module structure", () => {
     expect(erpModuleFor("browse", "projects")).toBe("workplace");
     expect(erpModuleFor("browse", "departments")).toBe("workplace");
     expect(erpModuleFor("unknownView")).toBe("home");
-    expect(erpActiveItem("browse", "projects")).toBe("projects");
-    expect(erpActiveItem("crm")).toBe("crm");
+  });
+
+  test("parseErpItem", () => {
+    expect(parseErpItem("finance:invoices!new")).toEqual({ key: "finance:invoices!new", view: "finance", section: "invoices", action: "new" });
+    expect(parseErpItem("crm")).toEqual({ key: "crm", view: "crm", section: null, action: null });
   });
 });

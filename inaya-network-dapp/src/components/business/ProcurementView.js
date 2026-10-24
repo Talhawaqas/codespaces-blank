@@ -14,6 +14,7 @@ import EmptyState from "../EmptyState";
 import ConfirmButton from "./ConfirmButton";
 import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 import { computePoTotals } from "../../lib/purchase-order-totals.js";
+import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 
 const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
 
@@ -46,7 +47,8 @@ const PO_ACTIONS = {
 };
 
 export default function ProcurementView({ orgId, canManage }) {
-  const [tab, setTab] = useState("suppliers");
+  const [tab, setTab] = useErpSection("suppliers", ["suppliers", "requests", "orders", "reports"]);
+  const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
 
@@ -56,11 +58,13 @@ export default function ProcurementView({ orgId, canManage }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-        {[["suppliers", "Suppliers"], ["requests", "Requests"], ["orders", "Orders"], ["reports", "Reports"]].map(([key, label]) => (
-          <button key={key} data-guide-id={`procurement-tab-${key}`} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-        ))}
-      </div>
+      {!tabsHidden && (
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
+          {[["suppliers", "Suppliers"], ["requests", "Requests"], ["orders", "Orders"], ["reports", "Reports"]].map(([key, label]) => (
+            <button key={key} data-guide-id={`procurement-tab-${key}`} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+          ))}
+        </div>
+      )}
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "suppliers" && <SuppliersTab orgId={orgId} departments={departments} />}
       {tab === "requests" && <RequestsTab orgId={orgId} departments={departments} />}
@@ -77,6 +81,7 @@ function SuppliersTab({ orgId, departments }) {
   const [suppliers, setSuppliers] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("suppliers", () => setShowCreate(true));
   const [search, setSearch] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
@@ -210,6 +215,7 @@ function RequestsTab({ orgId, departments }) {
   const [requests, setRequests] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("requests", () => setShowCreate(true));
   const [acting, setActing] = useState("");
   const [search, setSearch] = useState("");
 
@@ -332,6 +338,7 @@ function OrdersTab({ orgId, departments }) {
   const [suppliers, setSuppliers] = useState([]);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("orders", () => setShowCreate(true));
   const [selectedId, setSelectedId] = useState(null);
   const [supplierFilter, setSupplierFilter] = useState("");
   const [openClosedFilter, setOpenClosedFilter] = useState("all");

@@ -27,6 +27,7 @@ import StatusBadge, { STATUS_TONE } from "./ui/StatusBadge";
 import FormField from "./ui/FormField";
 import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
 import RecordSharingPanel from "./RecordSharingPanel";
+import { useErpCreate } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -91,6 +92,7 @@ export default function TasksView({ orgId, canManage, email }) {
   const [tasks, setTasks] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("list", () => setShowCreate(true));
   const [selectedTaskId, setSelectedTaskId] = useState(null);
 
   useEffect(() => {

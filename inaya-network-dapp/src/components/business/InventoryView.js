@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -20,7 +21,8 @@ async function api(path, options) {
 }
 
 export default function InventoryView({ orgId }) {
-  const [tab, setTab] = useState("products");
+  const [tab, setTab] = useErpSection("products", ["products", "movements", "warehouses"]);
+  const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
 
@@ -30,11 +32,13 @@ export default function InventoryView({ orgId }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-        {[["products", "Products"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-        ))}
-      </div>
+      {!tabsHidden && (
+        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
+          {[["products", "Products"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+          ))}
+        </div>
+      )}
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "products" && <ProductsTab orgId={orgId} departments={departments} />}
       {tab === "movements" && <MovementsTab orgId={orgId} />}
@@ -51,6 +55,7 @@ function ProductsTab({ orgId, departments }) {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("products", () => setShowCreate(true));
   const [showTransfer, setShowTransfer] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
@@ -555,6 +560,7 @@ function WarehousesTab({ orgId, departments }) {
   const [warehouses, setWarehouses] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("warehouses", () => setShowCreate(true));
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {

@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, ICONS } from "../ui/icons";
 import { ERP_ICONS } from "./erpIcons";
 import { ERP_THEME_TOKENS, inayaOverridesFor } from "./erpThemes";
-import { erpLayout, erpModuleFor, erpActiveItem, erpLabelFor, erpIconFor } from "../../../lib/navigation/erpModules";
+import { erpLayout, erpModuleFor, erpActiveItem, erpLabelFor, erpIconFor, erpListsSections, parseErpItem } from "../../../lib/navigation/erpModules";
 import { ERP_THEMES, ERP_THEME_LABELS, ERP_THEME_DESCRIPTIONS } from "../../../lib/erpPrefs";
 import { useTheme } from "../../ThemeProvider";
 import { THEME_STORAGE_KEY, isValidTheme } from "../../../lib/theme";
@@ -153,7 +153,7 @@ function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, des
 
 export default function ErpShell({
   orgId, orgName, email, role, canManage, orgs, selectedOrgId, onSwitchOrg, onLogout,
-  activeView, browseSection, onNavigate, visibleItems, pins = [],
+  activeView, browseSection, section, screenSections, onNavigate, visibleItems, pins = [],
   title, description, prefs, onUpdatePrefs, desktop, search, notifications, children,
 }) {
   useErpDocumentTheme(prefs.theme);
@@ -166,14 +166,16 @@ export default function ErpShell({
   const modules = useMemo(() => erpLayout({ visibleKeys: visibleItems.map((i) => i.key) }), [visibleItems]);
   const activeModuleId = erpModuleFor(activeView, browseSection);
   const activeModule = modules.find((m) => m.id === activeModuleId) || modules[0];
-  const activeItem = erpActiveItem(activeView, browseSection);
+  const activeItem = erpActiveItem(activeView, browseSection, section);
+  // Opens a task-panel item: a screen, one of its sections, or its "New ..." form.
+  const open = (it) => onNavigate(it.view, it.section || it.action ? { section: it.section, action: it.action } : undefined);
 
   // Home's task panel leads with the person's own pinned shortcuts.
   const panelGroups = useMemo(() => {
     if (!activeModule) return [];
     if (activeModule.id !== "home") return activeModule.groups;
     const visible = new Set(visibleItems.map((i) => i.key));
-    const shortcuts = [...new Set(pins)].filter((k) => visible.has(k)).map((k) => ({ key: k, label: erpLabelFor(k), icon: erpIconFor(k) }));
+    const shortcuts = [...new Set(pins)].filter((k) => visible.has(k)).map((k) => ({ ...parseErpItem(k), label: erpLabelFor(k), icon: erpIconFor(k) }));
     return shortcuts.length ? [{ id: "shortcuts", label: "My shortcuts", items: shortcuts }, ...activeModule.groups] : activeModule.groups;
   }, [activeModule, pins, visibleItems]);
 
@@ -194,10 +196,11 @@ export default function ErpShell({
       const n = e.key === "0" ? 10 : Number(e.key);
       if (!Number.isInteger(n) || n < 1 || n > modules.length) return;
       e.preventDefault();
-      onNavigate(modules[n - 1].home);
+      open(modules[n - 1].home);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modules, onNavigate]);
 
   const groupOfActive = panelGroups.find((g) => g.items.some((i) => i.key === activeItem));
@@ -235,7 +238,7 @@ export default function ErpShell({
                 className={`erp-tile ${active ? "is-active" : ""}`}
                 aria-current={active ? "page" : undefined}
                 title={`${m.label}${i < 10 ? ` (Alt+${(i + 1) % 10})` : ""}`}
-                onClick={() => onNavigate(m.home)}
+                onClick={() => open(m.home)}
               >
                 <Icon path={ERP_ICONS[m.icon] || ERP_ICONS.home} className="erp-tile-icon" />
                 <span className="erp-tile-label">{m.label}</span>
@@ -290,13 +293,29 @@ export default function ErpShell({
                     {!isCollapsed && (
                       <ul className="erp-items">
                         {g.items.map((it) => {
-                          const sel = it.key === activeItem;
+                          const sel = !it.action && it.key === activeItem;
+                          // The open screen's own sections, when this panel doesn't list them itself.
+                          const subs = sel && screenSections?.list?.length && !erpListsSections(it.view) ? screenSections.list : null;
+                          const curSub = section || screenSections?.defaultSection;
                           return (
                             <li key={it.key}>
-                              <button type="button" className={`erp-item ${sel ? "is-active" : ""}`} aria-current={sel ? "page" : undefined} onClick={() => onNavigate(it.key)}>
-                                {it.icon && ICONS[it.icon] ? <Icon path={ICONS[it.icon]} className="erp-item-icon" /> : <span className="erp-item-icon" />}
+                              <button type="button" className={`erp-item ${it.action ? "erp-item-action" : ""} ${sel ? "is-active" : ""}`} aria-current={sel && !subs ? "page" : undefined} onClick={() => open(it)}>
+                                {it.action
+                                  ? <span className="erp-item-icon erp-item-plus" aria-hidden="true">+</span>
+                                  : it.icon && ICONS[it.icon] ? <Icon path={ICONS[it.icon]} className="erp-item-icon" /> : <span className="erp-item-icon" />}
                                 <span className="erp-item-label">{it.label}</span>
                               </button>
+                              {subs && (
+                                <ul className="erp-subitems">
+                                  {subs.map(([key, label]) => (
+                                    <li key={key}>
+                                      <button type="button" className={`erp-subitem ${key === curSub ? "is-active" : ""}`} aria-current={key === curSub ? "page" : undefined} onClick={() => onNavigate(it.view, { section: key })}>
+                                        {label}
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </li>
                           );
                         })}

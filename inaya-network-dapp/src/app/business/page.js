@@ -26,7 +26,7 @@
 // shown is real data through the same permission resolution the rest of
 // the app already uses, nothing here is placeholder content.
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { PricingCard } from "./PricingCard";
 import EmptyState from "../../components/EmptyState";
 import AccentGraphic from "../../components/AccentGraphic";
@@ -90,8 +90,10 @@ import { viewUrl, breadcrumbs } from "../../lib/business-nav.js";
 import { sidebarSections, labelFor, readNavPrefs, writeNavPrefs, defaultPins, EXTRA_DESCRIPTIONS } from "../../lib/navigation/launcher.js";
 import AppLauncherView from "../../components/business/AppLauncherView";
 import ErpShell from "../../components/business/erp/ErpShell";
+import ErpSplash from "../../components/business/erp/ErpSplash";
 import AppearancePanel from "../../components/business/erp/AppearancePanel";
 import { useErpLayout } from "../../components/business/erp/useErpPrefs";
+import { ErpNavContext } from "../../components/business/erp/ErpNavContext";
 import WelcomeView from "../../components/business/WelcomeView";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
@@ -183,6 +185,11 @@ async function api(path, options) {
 }
 
 export default function BusinessPage() {
+  const erpLayout = useErpLayout();
+  // The page is server-rendered: the ERP start screen only replaces "Loading…"
+  // after mount, so the first client render matches the server's HTML.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   // Business Workspace redesign: light-first for people who never picked a
   // theme. Not saved, so the rest of the site keeps its own default.
   const { preferDefaultTheme } = useTheme();
@@ -278,6 +285,8 @@ export default function BusinessPage() {
   }
 
   if (sessionLoading) {
+    // ERP mode opens like a desktop application, not a web page.
+    if (mounted && erpLayout.active) return <ErpSplash theme={erpLayout.prefs.theme} />;
     return (
       <CenteredShell>
         <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p>
@@ -981,6 +990,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     saveNavPrefs({ ...(navPrefs || {}), pins: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key], welcomed: navPrefs?.welcomed ?? true });
   }, [navPrefs, saveNavPrefs]);
   const [browseTarget, setBrowseTarget] = useState(null); // { deptId, projectId } — set when navigating in from Dashboard
+  // ERP mode (docs/erp-mode-plan.md): which of a screen's own sections is open
+  // (?section=), a pending "New ..." request from the task panel, and the
+  // sections the open screen lists for the task panel.
+  const [activeSection, setActiveSection] = useState(() => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("section")));
+  const [erpRequest, setErpRequest] = useState(null);
+  const [erpSections, setErpSections] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // AI-Powered Business Workspace SOW — one guided task at a time, lifted
@@ -1054,13 +1069,19 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       setActiveView(view);
     }
     setBrowseTarget(target || null);
+    setActiveSection(target?.section || null);
+    if (target?.action) setErpRequest({ id: `${Date.now()}-${Math.random()}`, view, section: target.section || null, action: target.action });
     setMobileNavOpen(false);
   }
 
   function navigate(view, target) {
     applyView(view, target);
     try {
-      const next = `${window.location.pathname}${viewUrl(view, window.location.search)}`;
+      const params = new URLSearchParams(viewUrl(view, window.location.search));
+      if (target?.section) params.set("section", target.section);
+      else params.delete("section");
+      const query = params.toString();
+      const next = `${window.location.pathname}${query ? `?${query}` : ""}`;
       if (next !== `${window.location.pathname}${window.location.search}`) window.history.pushState({ view }, "", next);
     } catch {
       // URL sync is a convenience; navigation itself already happened.
@@ -1068,7 +1089,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   }
 
   useEffect(() => {
-    const onPop = () => applyView(new URLSearchParams(window.location.search).get("view") || "osHome");
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search);
+      applyView(params.get("view") || "osHome", { section: params.get("section") });
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1150,9 +1174,23 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     appearance: { title: "Appearance", description: "Choose ERP mode or the standard layout, and ERP mode's theme. Only changes it for you." },
   };
 
+  // A screen switched its own section (ERP mode): keep the task panel and URL in step, without a new history entry.
+  const reportSection = useCallback((section) => {
+    setActiveSection(section);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("section", section);
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    } catch { /* URL sync is a convenience */ }
+  }, []);
+  const consumeRequest = useCallback((id) => setErpRequest((r) => (r && r.id === id ? null : r)), []);
+  const erpNav = useMemo(() => ({
+    erp: erp.active, section: activeSection, request: erpRequest, consumeRequest, reportSection, registerSections: setErpSections,
+  }), [erp.active, activeSection, erpRequest, consumeRequest, reportSection]);
+
   // Every screen, shared by both layouts: ERP mode frames exactly the same components.
   const pageContent = (
-    <>
+    <ErpNavContext.Provider value={erpNav}>
       <OfflineBanner />
       <StepUpPrompt />
       {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
@@ -1273,7 +1311,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           <TeamView orgId={orgId} email={email} />
         </div>
       )}
-    </>
+    </ErpNavContext.Provider>
   );
 
   // A bad or stale ?view= link falls back to OS Home instead of a blank page.
@@ -1321,6 +1359,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           onLogout={onLogout}
           activeView={activeView}
           browseSection={browseSection}
+          section={activeSection}
+          screenSections={erpSections}
           onNavigate={navigate}
           visibleItems={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
           pins={pins}

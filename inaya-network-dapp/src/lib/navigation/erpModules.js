@@ -11,8 +11,14 @@
 // Legal OS company therefore only ever sees the Legal OS tile, never another
 // industry's.
 //
-// Every NAV_ITEMS key appears in exactly one module, and the inventory test
-// fails if one is added to NAV_ITEMS without a home here.
+// Task-panel items are strings:
+//   "view"                 open a screen
+//   "view:section"         open one of the screen's own sections (its tabs)
+//   "view:section!new"     open that section's own "New ..." form
+// Every view belongs to exactly one module, and the inventory test fails if a
+// NAV_ITEMS key is added without a home here. Screens with sections that are
+// not listed here still get them in the task panel: the screen reports its
+// tabs at runtime (components/business/erp/ErpNavContext.js).
 
 import { NAV_ITEMS } from "./navItems.js";
 import { labelFor } from "./launcher.js";
@@ -31,33 +37,44 @@ export const ERP_MODULES = [
     ],
   },
   {
-    id: "sales", label: "Sales", icon: "sales", home: "crm",
+    id: "sales", label: "Sales", icon: "sales", home: "crm:contacts",
     groups: [
-      { id: "customers", label: "Customers and deals", items: ["crm"] },
+      { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new"] },
+      { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
   },
   {
-    id: "purchasing", label: "Purchasing", icon: "purchasing", home: "procurement",
+    id: "purchasing", label: "Purchasing", icon: "purchasing", home: "procurement:orders",
     groups: [
-      { id: "buying", label: "Buying", items: ["procurement"] },
+      { id: "tasks", label: "My tasks", items: ["procurement:requests!new", "procurement:orders!new", "procurement:suppliers!new"] },
+      { id: "buying", label: "Buying", items: ["procurement:requests", "procurement:orders", "procurement:suppliers"] },
+      { id: "reports", label: "Reports", items: ["procurement:reports"] },
       { id: "payments", label: "Supplier payments", items: ["escrow"] },
     ],
   },
   {
-    id: "inventory", label: "Inventory", icon: "inventory", home: "inventory",
-    groups: [{ id: "stock", label: "Stock", items: ["inventory"] }],
+    id: "inventory", label: "Inventory", icon: "inventory", home: "inventory:products",
+    groups: [
+      { id: "tasks", label: "My tasks", items: ["inventory:products!new", "inventory:warehouses!new"] },
+      { id: "stock", label: "Stock", items: ["inventory:products", "inventory:movements", "inventory:warehouses"] },
+    ],
   },
   {
-    id: "accounting", label: "Accounting", icon: "accounting", home: "finance",
+    id: "accounting", label: "Accounting", icon: "accounting", home: "finance:invoices",
     groups: [
-      { id: "books", label: "Books", items: ["finance", "bookkeeper"] },
+      { id: "tasks", label: "My tasks", items: ["finance:invoices!new", "finance:expenses!new", "finance:payments!new", "finance:ledger!new"] },
+      { id: "books", label: "Books", items: ["finance:invoices", "finance:expenses", "finance:payments", "finance:ledger", "bookkeeper"] },
+      { id: "reports", label: "Reports", items: ["finance:reports"] },
       { id: "paperwork", label: "Paperwork", items: ["documentAutomation", "attestations"] },
     ],
   },
   {
-    id: "people", label: "People", icon: "people", home: "hr",
-    groups: [{ id: "staff", label: "Staff", items: ["hr"] }],
+    id: "people", label: "People", icon: "people", home: "hr:employees",
+    groups: [
+      { id: "tasks", label: "My tasks", items: ["hr:employees!new", "hr:leave!new"] },
+      { id: "staff", label: "Staff", items: ["hr:employees", "hr:leave", "hr:managers", "hr:orgChart", "hr:onboarding"] },
+    ],
   },
   {
     id: "documents", label: "Documents", icon: "documents", home: "documents",
@@ -69,6 +86,7 @@ export const ERP_MODULES = [
   {
     id: "workplace", label: "Workplace", icon: "workplace", home: "tasks",
     groups: [
+      { id: "tasks", label: "My tasks", items: ["tasks:list!new"] },
       { id: "work", label: "Work", items: ["tasks", "projects", "departments"] },
       { id: "communicate", label: "Communicate", items: ["chat", "meet"] },
       { id: "assist", label: "Automation and help", items: ["workflows", "ai", "help"] },
@@ -100,37 +118,87 @@ export const ERP_MODULES = [
   },
 ];
 
-// ERP-specific wording where the standard label reads oddly inside a
-// module's task panel. Everything else uses the standard friendly label.
+// ERP wording. Keys are task-panel item strings; a plain view key also
+// covers that view's own title in the panel.
 const ERP_LABELS = {
   osHome: "Overview",
   apps: "All apps",
-  crm: "Customers and deals",
-  support: "Support desk",
-  procurement: "Purchasing",
-  finance: "Invoices and accounts",
-  hr: "Employees and leave",
-  inventory: "Products and stock",
   security: "Account security",
+  support: "Support desk",
+  "crm:contacts!new": "New customer or lead",
+  "crm:deals!new": "New deal",
+  "crm:contacts": "Customers and leads",
+  "crm:deals": "Deals and pipeline",
+  "procurement:requests!new": "New purchase request",
+  "procurement:orders!new": "New purchase order",
+  "procurement:suppliers!new": "New supplier",
+  "procurement:requests": "Purchase requests",
+  "procurement:orders": "Purchase orders",
+  "procurement:suppliers": "Suppliers",
+  "procurement:reports": "Purchasing reports",
+  "inventory:products!new": "New product",
+  "inventory:warehouses!new": "New warehouse",
+  "inventory:products": "Products and stock",
+  "inventory:movements": "Stock movements",
+  "inventory:warehouses": "Warehouses",
+  "finance:invoices!new": "New invoice",
+  "finance:expenses!new": "New expense",
+  "finance:payments!new": "Record a payment",
+  "finance:ledger!new": "Manual journal entry",
+  "finance:invoices": "Invoices",
+  "finance:expenses": "Expenses",
+  "finance:payments": "Payments",
+  "finance:ledger": "General ledger",
+  "finance:reports": "Financial statements",
+  "hr:employees!new": "New employee",
+  "hr:leave!new": "Request leave",
+  "hr:employees": "Employees",
+  "hr:leave": "Leave requests",
+  "hr:managers": "Department managers",
+  "hr:orgChart": "Org chart",
+  "hr:onboarding": "Onboarding",
+  "tasks:list!new": "New task",
+  tasks: "Tasks",
 };
 
 const NAV_BY_KEY = new Map(NAV_ITEMS.map((i) => [i.key, i]));
 
-/** Display label for a view key in ERP mode. */
+/** Splits a task-panel item string into its parts. */
+export function parseErpItem(item) {
+  const [target, action = null] = item.split("!");
+  const [view, section = null] = target.split(":");
+  return { key: item, view, section, action };
+}
+
+/** Display label for a task-panel item (or plain view key) in ERP mode. */
 export function erpLabelFor(key) {
   if (ERP_LABELS[key]) return ERP_LABELS[key];
-  const item = NAV_BY_KEY.get(key);
+  const item = NAV_BY_KEY.get(parseErpItem(key).view);
   return item ? labelFor(item) : key;
 }
 
 /** Icon key (business ui/icons.js) for a view key, or null. */
 export function erpIconFor(key) {
-  return NAV_BY_KEY.get(key)?.icon || null;
+  return NAV_BY_KEY.get(parseErpItem(key).view)?.icon || null;
 }
 
-/** Every view key ERP mode places, in module order (each appears once). */
-export function erpPlacedKeys() {
-  return ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items));
+/** Every view ERP mode places, once each, in module order. */
+export function erpPlacedViews() {
+  return [...new Set(ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items.map((i) => parseErpItem(i).view))))];
+}
+
+/** The section a view opens on when none is named: its first listed section, if it has any. */
+export function erpDefaultSection(view) {
+  for (const m of ERP_MODULES) for (const g of m.groups) for (const i of g.items) {
+    const p = parseErpItem(i);
+    if (p.view === view && p.section && !p.action) return p.section;
+  }
+  return null;
+}
+
+/** Whether ERP_MODULES lists this view's sections itself (so runtime-reported tabs are not shown again). */
+export function erpListsSections(view) {
+  return erpDefaultSection(view) !== null;
 }
 
 /**
@@ -143,13 +211,13 @@ export function erpLayout({ visibleKeys }) {
   const visible = new Set([...visibleKeys, ...ERP_EXTRA_VIEWS]);
   return ERP_MODULES.map((m) => {
     const groups = m.groups
-      .map((g) => ({ ...g, items: g.items.filter((k) => visible.has(k)).map((k) => ({ key: k, label: erpLabelFor(k), icon: erpIconFor(k) })) }))
+      .map((g) => ({ ...g, items: g.items.map(parseErpItem).filter((p) => visible.has(p.view)).map((p) => ({ ...p, label: erpLabelFor(p.key), icon: erpIconFor(p.key) })) }))
       .filter((g) => g.items.length);
     if (!groups.length) return null;
-    const first = groups[0].items[0].key;
-    const home = m.home && visible.has(m.home) ? m.home : first;
+    const firstOpen = groups.flatMap((g) => g.items).find((i) => !i.action) || groups[0].items[0];
+    const home = m.home && visible.has(parseErpItem(m.home).view) ? parseErpItem(m.home) : firstOpen;
     if (m.id === "industry") {
-      const label = erpLabelFor(first);
+      const label = erpLabelFor(firstOpen.view);
       return { ...m, label, home, groups: [{ ...groups[0], label }] };
     }
     return { ...m, home, groups };
@@ -159,11 +227,14 @@ export function erpLayout({ visibleKeys }) {
 /** The module id that owns a view. "browse" resolves through the Departments/Projects/Documents section. */
 export function erpModuleFor(view, browseSection = "documents") {
   const key = view === "browse" ? browseSection : view;
-  const found = ERP_MODULES.find((m) => m.groups.some((g) => g.items.includes(key)));
+  const found = ERP_MODULES.find((m) => m.groups.some((g) => g.items.some((i) => parseErpItem(i).view === key)));
   return found ? found.id : "home";
 }
 
-/** The task-panel item key that should show as selected for the current view. */
-export function erpActiveItem(view, browseSection = "documents") {
-  return view === "browse" ? browseSection : view;
+/** The task-panel item key that shows as selected for the current view and section. */
+export function erpActiveItem(view, browseSection = "documents", section = null) {
+  if (view === "browse") return browseSection;
+  const listed = erpDefaultSection(view);
+  if (!listed) return view;
+  return `${view}:${section || listed}`;
 }

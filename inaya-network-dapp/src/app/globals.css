@@ -352,6 +352,14 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 .erp-item-icon { width: 15px; height: 15px; flex: none; color: var(--erp-item-icon); }
 .erp-item.is-active .erp-item-icon { color: var(--erp-item-active-bar); }
 .erp-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-item-action { color: var(--erp-accent); }
+.erp-item-action:hover { background: var(--erp-accent-soft); }
+.erp-item-plus { display: grid; place-items: center; border: 1px solid currentColor; border-radius: 3px; font-size: 12px; line-height: 1; font-weight: 700; color: var(--erp-accent); }
+.erp-subitems { list-style: none; margin: 0 0 4px; padding: 0; }
+.erp-subitem { width: 100%; display: block; padding: 4px 10px 4px 38px; border: 0; background: transparent; color: var(--erp-item-fg); text-align: left; cursor: pointer; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.erp-subitem::before { content: ""; position: absolute; left: 25px; top: 50%; width: 6px; height: 1px; background: var(--erp-panel-border); }
+.erp-subitem:hover { background: var(--erp-item-hover-bg); }
+.erp-subitem.is-active { color: var(--erp-item-active-fg); font-weight: 600; background: var(--erp-item-active-bg); }
 
 .erp-content { flex: 1; min-width: 0; overflow: auto; background: var(--erp-workspace-bg); scrollbar-gutter: stable; }
 .erp-page-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: baseline; gap: 14px; padding: 9px 18px; background: var(--erp-page-header-bg); border-bottom: 1px solid var(--erp-page-header-border); }
@@ -367,6 +375,17 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 .erp-dot { width: 8px; height: 8px; border-radius: 50%; }
 .erp-dot.is-ok { background: var(--erp-ok); }
 .erp-dot.is-warn { background: var(--erp-warn); }
+
+/* Start screen while the session loads */
+.erp-splash { position: fixed; inset: 0; display: grid; place-items: center; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
+.erp-splash-card { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.erp-splash-logo { width: 44px; height: 44px; border-radius: 10px; font-size: 24px; }
+.erp-splash-title { font-size: 18px; font-weight: 600; letter-spacing: .2px; }
+.erp-splash-msg { font-size: 13px; }
+.erp-splash-bar { width: 180px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 6px; }
+.erp-splash-bar span { display: block; width: 40%; height: 100%; border-radius: 2px; animation: erp-splash-slide 1.2s ease-in-out infinite; }
+@keyframes erp-splash-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .erp-splash-bar span { animation: none; width: 100%; } }
 
 /* Screens inside: the adapter's few hard-coded teals follow the ERP accent,
    and floating buttons clear the status bar. */

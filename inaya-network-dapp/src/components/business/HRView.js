@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import ConfirmButton from "./ConfirmButton";
+import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 
 const DESTRUCTIVE_ACTIONS = new Set(["terminate", "reject", "cancel"]);
 
@@ -40,7 +41,8 @@ function StatusBadge({ status }) {
 }
 
 export default function HRView({ orgId, email }) {
-  const [tab, setTab] = useState("employees");
+  const [tab, setTab] = useErpSection("employees", ["employees", "leave", "managers", "orgChart", "onboarding"]);
+  const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
 
@@ -51,11 +53,13 @@ export default function HRView({ orgId, email }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["employees", "Employees"], ["leave", "Leave"], ["managers", "Department Managers"], ["orgChart", "Org Chart"], ["onboarding", "Onboarding"]].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-          ))}
-        </div>
+        {!tabsHidden && (
+          <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
+            {[["employees", "Employees"], ["leave", "Leave"], ["managers", "Department Managers"], ["orgChart", "Org Chart"], ["onboarding", "Onboarding"]].map(([key, label]) => (
+              <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+            ))}
+          </div>
+        )}
         <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Testnet / Beta</span>
       </div>
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
@@ -75,6 +79,7 @@ function EmployeesTab({ orgId, email, departments }) {
   const [employees, setEmployees] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("employees", () => setShowCreate(true));
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -484,6 +489,7 @@ function LeaveTab({ orgId, email }) {
   const [requests, setRequests] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("leave", () => setShowCreate(true));
   const [acting, setActing] = useState(null);
 
   const load = useCallback(async () => {

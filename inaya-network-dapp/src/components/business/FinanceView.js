@@ -20,6 +20,7 @@ import EmptyState from "../EmptyState";
 import { encryptAndShardFile } from "../../lib/clientCrypto";
 import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 import ConfirmButton from "./ConfirmButton";
+import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 
 const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
 
@@ -47,7 +48,8 @@ function StatusBadge({ status }) {
 }
 
 export default function FinanceView({ orgId, email }) {
-  const [tab, setTab] = useState("invoices");
+  const [tab, setTab] = useErpSection("invoices", ["invoices", "expenses", "payments", "reports", "ledger"]);
+  const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
 
@@ -58,11 +60,13 @@ export default function FinanceView({ orgId, email }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["invoices", "Invoices"], ["expenses", "Expenses"], ["payments", "Payments"], ["reports", "Reports"], ["ledger", "Ledger"]].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
-          ))}
-        </div>
+        {!tabsHidden && (
+          <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
+            {[["invoices", "Invoices"], ["expenses", "Expenses"], ["payments", "Payments"], ["reports", "Reports"], ["ledger", "Ledger"]].map(([key, label]) => (
+              <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
+            ))}
+          </div>
+        )}
         <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Testnet / Beta</span>
       </div>
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
@@ -82,6 +86,7 @@ function InvoicesTab({ orgId, email, departments }) {
   const [invoices, setInvoices] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("invoices", () => setShowCreate(true));
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -415,6 +420,7 @@ function ExpensesTab({ orgId, email, departments }) {
   const [expenses, setExpenses] = useState(null);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("expenses", () => setShowCreate(true));
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -622,6 +628,7 @@ function PaymentsTab({ orgId, departments }) {
   const [invoices, setInvoices] = useState([]);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  useErpCreate("payments", () => setShowCreate(true));
   const [approving, setApproving] = useState(null);
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState("all"); // all | vendor | customer
@@ -881,6 +888,7 @@ function LedgerTab({ orgId }) {
   const [sync, setSync] = useState(null);
   const [error, setError] = useState("");
   const [showEntry, setShowEntry] = useState(false);
+  useErpCreate("ledger", () => setShowEntry(true));
   const [showAccount, setShowAccount] = useState(false);
 
   const load = useCallback(async () => {
