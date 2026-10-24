@@ -242,6 +242,13 @@ export default function ErpShell({
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
   const contextFor = (item) => (e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, item }); };
 
+  // Desktop app Help > Keyboard shortcuts.
+  useEffect(() => {
+    const show = () => setShowShortcuts(true);
+    window.addEventListener("inaya:erp-shortcuts", show);
+    return () => window.removeEventListener("inaya:erp-shortcuts", show);
+  }, []);
+
   const modules = useMemo(() => erpLayout({ visibleKeys: visibleItems.map((i) => i.key) }), [visibleItems]);
   const activeModuleId = erpModuleFor(activeView, browseSection, section);
   const activeModule = modules.find((m) => m.id === activeModuleId) || modules[0];

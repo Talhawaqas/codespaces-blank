@@ -26,6 +26,25 @@ use cleaner::{CleanupResult, ScanReport};
 const APP_URL: &str = "https://www.inayanetwork.com/business";
 const TRUSTED_ORIGIN: &str = "https://www.inayanetwork.com";
 
+// ERP mode's module tiles, for the native Modules menu (ids match
+// inaya-network-dapp/src/lib/navigation/erpModules.js). The industry tile is
+// left out: its label depends on the company.
+const ERP_MENU_MODULES: [(&str, &str); 10] = [
+    ("home", "Home"),
+    ("sales", "Sales"),
+    ("purchasing", "Purchasing"),
+    ("inventory", "Inventory"),
+    ("accounting", "Accounting"),
+    ("people", "People"),
+    ("documents", "Documents"),
+    ("workplace", "Workplace"),
+    ("reports", "Reports"),
+    ("admin", "Admin"),
+];
+
+// Current page zoom of the main window (View > Zoom in/out/Actual size).
+struct ZoomState(StdMutex<f64>);
+
 // SECURITY: defense-in-depth for the commands below that touch the OS keychain or the firewall.
 // This window always loads APP_URL and never navigates anywhere else, but Tauri v2's
 // capabilities/ACL system is designed primarily around PLUGIN commands -- whether an app-level
@@ -447,7 +466,7 @@ async fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow,
 // download_and_install() replaces the running binary and restarts the
 // app -- something that shouldn't happen without the user's say-so while
 // they might be mid-task.
-fn check_for_updates(app: tauri::AppHandle) {
+fn check_for_updates(app: tauri::AppHandle, interactive: bool) {
     tauri::async_runtime::spawn(async move {
         let updater = match app.updater() {
             Ok(u) => u,
@@ -482,8 +501,24 @@ fn check_for_updates(app: tauri::AppHandle) {
                     }
                 }
             }
-            Ok(None) => {}
-            Err(e) => log::error!("update check failed: {e}"),
+            Ok(None) => {
+                if interactive {
+                    let version = app.package_info().version.to_string();
+                    app.dialog()
+                        .message(format!("You have the latest version of Inaya Business Workspace ({version})."))
+                        .title("No updates available")
+                        .show(|_| {});
+                }
+            }
+            Err(e) => {
+                log::error!("update check failed: {e}");
+                if interactive {
+                    app.dialog()
+                        .message("Couldn't check for updates right now. Check your internet connection and try again.")
+                        .title("Update check failed")
+                        .show(|_| {});
+                }
+            }
         }
     });
 }
@@ -760,6 +795,15 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                )
+                .build(),
+        )
         .manage(DriveState(StdMutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             notify_pending_approvals,
@@ -841,9 +885,16 @@ pub fn run() {
             // pending-approvals poller can be injected as an
             // initialization_script -- static window config has no
             // equivalent field for that.
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::External(APP_URL.parse().unwrap()))
+            // ERP mode (inaya-network-dapp/docs/erp-mode-plan.md, Batch 6): the window opens on
+            // the bundled start screen (dist/index.html) rather than straight on APP_URL. It
+            // checks the connection, then replaces itself with APP_URL (so it never stays in
+            // Back history), or shows an offline screen that retries on its own -- instead of a
+            // blank white window or the webview's built-in error page.
+            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
                 .title("Inaya Business Workspace")
                 .inner_size(1280.0, 800.0)
+                .min_inner_size(1024.0, 640.0)
+                .background_color(tauri::window::Color(43, 48, 53, 255))
                 .resizable(true)
                 .initialization_script(PENDING_APPROVALS_POLL_SCRIPT)
                 .initialization_script(SECURITY_FEED_POLL_SCRIPT)
@@ -856,7 +907,7 @@ pub fn run() {
                 .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Allow)
                 .build()?;
 
-            check_for_updates(app.handle().clone());
+            check_for_updates(app.handle().clone(), false);
 
             // ---- System tray ----
             // A business tool people may realistically want running in the
@@ -942,14 +993,75 @@ pub fn run() {
                     &PredefinedMenuItem::select_all(app, None)?,
                 ],
             )?;
-            let reload_item = MenuItem::with_id(app, "reload", "Reload", true, None::<&str>)?;
-            let view_menu = Submenu::with_items(app, "View", true, &[&reload_item])?;
-            let app_menu = Menu::with_items(app, &[&file_menu, &edit_menu, &view_menu])?;
+            // ERP mode (Batch 6): View, Go, Modules and Help menus. Go/Modules/Help talk to the
+            // page through window events the workspace listens for (inaya:erp-open,
+            // inaya:erp-shortcuts), so the menus follow the same permissions as the page itself:
+            // a module the person cannot see simply doesn't open.
+            let reload_item = MenuItem::with_id(app, "reload", "Reload", true, Some("F5"))?;
+            let zoom_reset = MenuItem::with_id(app, "zoom_reset", "Actual size", true, Some("CmdOrCtrl+0"))?;
+            let zoom_in = MenuItem::with_id(app, "zoom_in", "Zoom in", true, Some("CmdOrCtrl+="))?;
+            let zoom_out = MenuItem::with_id(app, "zoom_out", "Zoom out", true, Some("CmdOrCtrl+-"))?;
+            let fullscreen = MenuItem::with_id(app, "fullscreen", "Full screen", true, Some("F11"))?;
+            let view_menu = Submenu::with_items(
+                app,
+                "View",
+                true,
+                &[&reload_item, &PredefinedMenuItem::separator(app)?, &zoom_reset, &zoom_in, &zoom_out, &PredefinedMenuItem::separator(app)?, &fullscreen],
+            )?;
+            let go_back = MenuItem::with_id(app, "go_back", "Back", true, None::<&str>)?;
+            let go_forward = MenuItem::with_id(app, "go_forward", "Forward", true, None::<&str>)?;
+            let go_menu = Submenu::with_items(app, "Go", true, &[&go_back, &go_forward])?;
+            let module_items: Vec<MenuItem<tauri::Wry>> = ERP_MENU_MODULES
+                .iter()
+                .map(|(id, label)| MenuItem::with_id(app, format!("module:{id}"), *label, true, None::<&str>))
+                .collect::<Result<_, _>>()?;
+            let module_refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = module_items.iter().map(|m| m as &dyn tauri::menu::IsMenuItem<tauri::Wry>).collect();
+            let modules_menu = Submenu::with_items(app, "Modules", true, &module_refs)?;
+            let help_shortcuts = MenuItem::with_id(app, "help_shortcuts", "Keyboard shortcuts", true, Some("F1"))?;
+            let help_updates = MenuItem::with_id(app, "help_updates", "Check for updates...", true, None::<&str>)?;
+            let help_about = MenuItem::with_id(app, "help_about", "About Inaya Business Workspace", true, None::<&str>)?;
+            let help_menu = Submenu::with_items(app, "Help", true, &[&help_shortcuts, &PredefinedMenuItem::separator(app)?, &help_updates, &help_about])?;
+            let app_menu = Menu::with_items(app, &[&file_menu, &edit_menu, &view_menu, &go_menu, &modules_menu, &help_menu])?;
             app.set_menu(app_menu)?;
+            app.manage(ZoomState(StdMutex::new(1.0)));
             app.on_menu_event(move |app, event| {
-                if event.id() == "reload" {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.eval("window.location.reload()");
+                let id = event.id().as_ref().to_string();
+                let Some(window) = app.get_webview_window("main") else { return };
+                match id.as_str() {
+                    "reload" => { let _ = window.eval("window.location.reload()"); }
+                    "zoom_reset" | "zoom_in" | "zoom_out" => {
+                        let state = app.state::<ZoomState>();
+                        let mut zoom = state.0.lock().unwrap();
+                        *zoom = match id.as_str() {
+                            "zoom_in" => (*zoom + 0.1).min(2.0),
+                            "zoom_out" => (*zoom - 0.1).max(0.5),
+                            _ => 1.0,
+                        };
+                        let _ = window.set_zoom(*zoom);
+                    }
+                    "fullscreen" => {
+                        let on = window.is_fullscreen().unwrap_or(false);
+                        let _ = window.set_fullscreen(!on);
+                    }
+                    "go_back" => { let _ = window.eval("window.history.back()"); }
+                    "go_forward" => { let _ = window.eval("window.history.forward()"); }
+                    "help_shortcuts" => { let _ = window.eval("window.dispatchEvent(new CustomEvent('inaya:erp-shortcuts'))"); }
+                    "help_updates" => check_for_updates(app.clone(), true),
+                    "help_about" => {
+                        let version = app.package_info().version.to_string();
+                        app.dialog()
+                            .message(format!("Inaya Business Workspace\nVersion {version}\n\nEncrypted business workspace by Inaya Network.\ninayanetwork.com"))
+                            .title("About Inaya Business Workspace")
+                            .show(|_| {});
+                    }
+                    other => {
+                        if let Some(module) = other.strip_prefix("module:") {
+                            if ERP_MENU_MODULES.iter().any(|(id, _)| *id == module) {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                let _ = window.eval(&format!("window.dispatchEvent(new CustomEvent('inaya:erp-open', {{ detail: {{ module: '{module}' }} }}))"));
+                            }
+                        }
                     }
                 }
             });

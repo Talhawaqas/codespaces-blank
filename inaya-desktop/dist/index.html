@@ -1,1 +1,78 @@
-<!doctype html><title>placeholder</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inaya Business Workspace</title>
+<!--
+  Inaya Business Workspace desktop app: start screen (ERP mode, Batch 6).
+  Shown for the moment before the workspace loads. Checks the connection,
+  then replaces itself with the workspace (location.replace, so it never
+  sits in Back history). Without a connection it shows an offline screen
+  that retries on its own, instead of a blank window or the webview's own
+  error page. Same colours as the ERP mode start screen (ErpSplash.js).
+-->
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #2b3035; color: #f1f3f5; font-family: "Segoe UI", system-ui, sans-serif; display: grid; place-items: center; user-select: none; -webkit-user-select: none; cursor: default; }
+  .card { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 420px; padding: 0 24px; }
+  .logo { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #062033; font-weight: 800; font-size: 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+  p { margin: 0; font-size: 13px; color: #b4bac1; line-height: 1.5; }
+  .bar { width: 180px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 6px; }
+  .bar span { display: block; width: 40%; height: 100%; border-radius: 2px; background: #dbe6f3; animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @media (prefers-reduced-motion: reduce) { .bar span { animation: none; width: 100%; } }
+  button { margin-top: 8px; font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: #2f5d8a; border: 0; border-radius: 4px; padding: 7px 18px; cursor: pointer; }
+  button:hover { background: #244a6f; }
+  button:focus-visible { outline: 2px solid #dbe6f3; outline-offset: 2px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="card" role="status" aria-live="polite">
+    <div class="logo" aria-hidden="true">I</div>
+    <h1>Inaya Business Workspace</h1>
+    <p id="msg">Connecting…</p>
+    <div class="bar" id="bar" aria-hidden="true"><span></span></div>
+    <button id="retry" type="button" hidden>Try again</button>
+  </div>
+<script>
+  (function () {
+    var APP_URL = "https://www.inayanetwork.com/business";
+    var PROBE = "https://www.inayanetwork.com/favicon.ico";
+    var msg = document.getElementById("msg");
+    var bar = document.getElementById("bar");
+    var retry = document.getElementById("retry");
+    var timer = null;
+
+    function connecting() {
+      msg.textContent = "Connecting…";
+      bar.hidden = false;
+      retry.hidden = true;
+    }
+
+    function offline() {
+      msg.textContent = "You're offline. Inaya Business Workspace needs an internet connection. It will reconnect on its own as soon as one is available.";
+      bar.hidden = true;
+      retry.hidden = false;
+      clearTimeout(timer);
+      timer = setTimeout(check, 10000);
+    }
+
+    function check() {
+      connecting();
+      var ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      var giveUp = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+      fetch(PROBE + "?t=" + Date.now(), { mode: "no-cors", cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+        .then(function () { clearTimeout(giveUp); window.location.replace(APP_URL); })
+        .catch(function () { clearTimeout(giveUp); offline(); });
+    }
+
+    retry.addEventListener("click", check);
+    window.addEventListener("online", check);
+    check();
+  })();
+</script>
+</body>
+</html>

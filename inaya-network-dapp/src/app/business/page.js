@@ -96,6 +96,7 @@ import ErpModuleOverview from "../../components/business/erp/ErpModuleOverview";
 import AppearancePanel from "../../components/business/erp/AppearancePanel";
 import { useErpLayout } from "../../components/business/erp/useErpPrefs";
 import { ErpNavContext } from "../../components/business/erp/ErpNavContext";
+import { erpLayout } from "../../lib/navigation/erpModules";
 import WelcomeView from "../../components/business/WelcomeView";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
@@ -519,6 +520,9 @@ function CenteredShell({ children }) {
 // AUTH SCREEN
 // ============================================================
 function AuthScreen({ notice, onAuthed, onMfaRequired }) {
+  // Already in the desktop app: no point offering to download it. Read after mount (server-rendered page).
+  const [inDesktopApp, setInDesktopApp] = useState(false);
+  useEffect(() => { setInDesktopApp(!!window.__TAURI__); }, []);
   const [mode, setMode] = useState("signin"); // 'signin' | 'create'
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
@@ -665,12 +669,14 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
         >
           <span aria-hidden>↓</span> Download the step-by-step setup guide
         </a>
-        <a
-          href="/business/download"
-          className="mt-2 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-[var(--inaya-overlay-10)] hover:border-[#00f2fe]/30 rounded-xl py-2.5"
-        >
-          <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
-        </a>
+        {!inDesktopApp && (
+          <a
+            href="/business/download"
+            className="mt-2 flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-[var(--inaya-overlay-10)] hover:border-[#00f2fe]/30 rounded-xl py-2.5"
+          >
+            <span aria-hidden>🖥️</span> Get the Desktop App (Windows / Linux)
+          </a>
+        )}
       </div>
 
       {/* RIGHT — visual panel, hidden below md. Grounded in the real data model
@@ -1089,6 +1095,19 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       // URL sync is a convenience; navigation itself already happened.
     }
   }
+
+  // Desktop app Modules menu (inaya-desktop lib.rs): opens a module the way its tile does, and only
+  // one this person can see -- the menu never widens access.
+  useEffect(() => {
+    const onOpen = (e) => {
+      const visibleKeys = NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical })).map((i) => i.key);
+      const mod = erpLayout({ visibleKeys }).find((m) => m.id === e.detail?.module);
+      if (mod) navigate(mod.home.view, mod.home.section ? { section: mod.home.section } : undefined);
+    };
+    window.addEventListener("inaya:erp-open", onOpen);
+    return () => window.removeEventListener("inaya:erp-open", onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManage, membership, orgVertical]);
 
   useEffect(() => {
     const onPop = () => {
