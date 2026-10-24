@@ -21,7 +21,7 @@ export const LAUNCHER_GROUPS = [
   { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government"] },
   { id: "security", name: "Security & compliance", blurb: "Mostly for admins", keys: ["security", "aiActions", "adminDashboard", "governance", "complianceReadiness", "ransomware", "resilience", "resilienceTesting", "evidence", "auditTrail", "complianceEvidence", "trustRelationships", "aiSecurity", "identity"] },
   { id: "it", name: "Storage & IT", blurb: "For IT and admins", keys: ["deviceProtection", "gateway", "infrastructure", "storageManager", "nas", "cloudBackup", "storageControlPlane", "s3Compat", "dataSources", "databases", "sqlConsole", "mlStudio", "dataRooms", "integrations", "webhooks", "apiKeys", "enterpriseHardening"] },
-  { id: "settings", name: "Account & settings", blurb: "Your company’s setup", keys: ["billing", "settings"] },
+  { id: "settings", name: "Account & settings", blurb: "Your company’s setup", keys: ["billing", "settings", "appearance"] },
 ];
 
 // The first-run "What will you mainly use Inaya for?" choices and the apps

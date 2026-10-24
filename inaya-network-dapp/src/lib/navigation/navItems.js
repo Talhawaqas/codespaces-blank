@@ -89,6 +89,8 @@ export const NAV_ITEMS = [
   { key: "ai", label: "AI Assistant", icon: "aiAssistant", group: "settings" },
   { key: "billing", label: "Billing", icon: "billing", manageOnly: true, group: "settings" },
   { key: "settings", label: "Settings", icon: "settings", manageOnly: true, group: "settings" },
+  // ERP mode (docs/erp-mode-plan.md): personal layout and theme, for everyone.
+  { key: "appearance", label: "Appearance", icon: "settings", group: "settings" },
 ];
 
 export const GROUP_LABELS = {
@@ -128,6 +130,7 @@ const SEARCH_SYNONYMS = {
   nas: "nas network attached storage appliances shares",
   dataRooms: "data rooms vdr diligence investors",
   whatIf: "what if simulation digital twin scenario",
+  appearance: "appearance layout erp mode classic theme display",
 };
 
 /** Search terms for one nav item -- used by the command palette (unifiedSearch). */

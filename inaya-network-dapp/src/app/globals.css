@@ -263,3 +263,116 @@ html[data-theme="white"]:has(.bw) :is([class~="bg-red-400/5"],[class~="bg-red-40
 html[data-theme="white"]:has(.bw) :is([class~="border-emerald-400/15"],[class~="border-emerald-400/20"],[class~="border-emerald-400/30"],[class~="border-emerald-400/40"]) { border-color: #abefc6; }
 html[data-theme="white"]:has(.bw) :is([class~="border-amber-400/20"],[class~="border-amber-400/30"],[class~="border-amber-400/40"]) { border-color: #fedf89; }
 html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="border-red-400/30"],[class~="border-red-400/40"]) { border-color: #fecdca; }
+
+/* ==========================================================================
+   Business Workspace — ERP mode (docs/erp-mode-plan.md)
+
+   The classic desktop-ERP frame (components/business/erp/ErpShell.js). Its
+   colours come from the --erp-* tokens of the chosen theme (erpThemes.js),
+   set inline on .erp. The screens inside keep using the Light adapter above;
+   ErpShell re-points --inaya-accent* at the theme's accent, and the few
+   adapter rules with a hard-coded teal are re-pointed here too.
+   ========================================================================== */
+.bw.erp {
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--erp-workspace-bg);
+  color: #1f2328;
+  overflow: hidden;
+}
+.erp button { font: inherit; }
+.erp :focus-visible { outline: 2px solid var(--erp-focus); outline-offset: 1px; }
+
+/* Title bar */
+.erp-titlebar { flex: none; height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px 0 12px; background: var(--erp-titlebar-bg); color: var(--erp-titlebar-fg); user-select: none; }
+.erp-titlebar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.erp-logo { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #062033; font-weight: 800; font-size: 12px; flex: none; }
+.erp-titlebar-app { font-weight: 600; letter-spacing: .1px; white-space: nowrap; }
+.erp-titlebar-sep, .erp-titlebar-muted { color: var(--erp-titlebar-muted); }
+.erp-titlebar-org { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.erp-org-select { background-color: transparent; color: var(--erp-titlebar-fg); border: 1px solid rgba(255,255,255,.25); border-radius: 4px; padding: 2px 26px 2px 8px; font-weight: 600; max-width: 280px; }
+.erp-org-select option { color: #1f2328; }
+.erp-titlebar-btn { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; color: var(--erp-titlebar-fg); background: transparent; border: 0; cursor: pointer; }
+.erp-titlebar-btn:hover { background: rgba(255,255,255,.1); }
+.erp-titlebar-user { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* User menu */
+.erp-usermenu { position: relative; }
+.erp-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 120; width: 264px; background: #fff; color: #1f2328; border: 1px solid #b9bec4; border-radius: 6px; box-shadow: 0 10px 30px rgba(15,23,42,.18), 0 2px 6px rgba(15,23,42,.08); padding: 6px; }
+.erp-menu-head { padding: 6px 8px 8px; border-bottom: 1px solid #e3e6ea; margin-bottom: 4px; }
+.erp-menu-strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-menu-muted { color: #5b6470; font-size: 12px; }
+.erp-menu-label { padding: 8px 8px 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: #5b6470; }
+.erp-menu-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; text-align: left; color: #1f2328; background: transparent; border: 0; cursor: pointer; text-decoration: none; }
+.erp-menu-item:hover { background: var(--erp-accent-soft); }
+.erp-menu-item-plain { padding-left: 30px; }
+.erp-menu-sep { height: 1px; background: #e3e6ea; margin: 4px 0; }
+.erp-swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0,0,0,.15); }
+.erp-swatch[data-swatch="classic"] { background: linear-gradient(135deg, #2b3035 50%, #8c1d18 50%); }
+.erp-swatch[data-swatch="brand"] { background: linear-gradient(135deg, #0b1f33 50%, #0e7490 50%); }
+
+/* Module bar */
+.erp-modbar { flex: none; display: flex; align-items: stretch; gap: 10px; padding: 6px 8px; background: var(--erp-modbar-bg); border-bottom: 1px solid var(--erp-modbar-border); }
+.erp-tiles { flex: 1; min-width: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
+.erp-tile { flex: 1 1 0; min-width: 78px; max-width: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 7px 4px 6px; background: var(--erp-tile-bg); border: 1px solid var(--erp-tile-border); border-radius: 4px; color: var(--erp-tile-fg); cursor: pointer; transition: background-color .12s, border-color .12s; user-select: none; }
+.erp-tile:hover { background: var(--erp-tile-hover-bg); }
+.erp-tile.is-active { background: var(--erp-tile-active-bg); border-color: var(--erp-tile-active-border); color: var(--erp-tile-active-fg); box-shadow: inset 0 -3px 0 var(--erp-tile-active-border); }
+.erp-tile-icon { width: 22px; height: 22px; color: var(--erp-tile-icon); }
+.erp-tile.is-active .erp-tile-icon { color: var(--erp-tile-active-border); }
+.erp-tile-label { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.erp-tools { flex: none; display: flex; align-items: center; gap: 6px; }
+
+/* Notice bar */
+.erp-notice { flex: none; min-height: 26px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 3px 12px; background: var(--erp-notice-bg); color: var(--erp-notice-fg); user-select: none; }
+.erp-notice-crumbs { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--erp-notice-muted); }
+.erp-notice-crumbs strong { color: var(--erp-notice-fg); font-weight: 600; }
+.erp-notice-action { flex: none; background: rgba(255,255,255,.14); color: var(--erp-notice-fg); border: 1px solid rgba(255,255,255,.35); border-radius: 3px; padding: 1px 10px; cursor: pointer; font-weight: 600; }
+.erp-notice-action:hover { background: rgba(255,255,255,.24); }
+.erp-notice-alert { flex: none; font-weight: 600; }
+
+/* Body: task panel + content */
+.erp-body { flex: 1; min-height: 0; display: flex; }
+.erp-panel { flex: none; width: 236px; display: flex; flex-direction: column; background: var(--erp-panel-bg); border-right: 1px solid var(--erp-panel-border); user-select: none; }
+.erp-panel-title { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 8px 12px; font-size: 15px; font-weight: 700; color: var(--erp-panel-title); border-bottom: 1px solid var(--erp-panel-border); }
+.erp-panel-hide, .erp-panel-rail { display: grid; place-items: center; border: 0; background: transparent; color: var(--erp-item-icon); cursor: pointer; border-radius: 4px; }
+.erp-panel-hide { width: 24px; height: 24px; }
+.erp-panel-hide:hover, .erp-panel-rail:hover { background: var(--erp-item-hover-bg); }
+.erp-panel-rail { flex: none; width: 22px; border-right: 1px solid var(--erp-panel-border); background: var(--erp-panel-bg); border-radius: 0; }
+.erp-groups { flex: 1; overflow-y: auto; padding-bottom: 10px; scrollbar-width: thin; }
+.erp-group + .erp-group { margin-top: 2px; }
+.erp-group-head { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px 4px 12px; background: var(--erp-group-bg); color: var(--erp-group-fg); border: 0; cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: .2px; }
+.erp-items { list-style: none; margin: 0; padding: 3px 0; }
+.erp-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 12px; border: 0; border-left: 3px solid transparent; background: transparent; color: var(--erp-item-fg); text-align: left; cursor: pointer; }
+.erp-item:hover { background: var(--erp-item-hover-bg); }
+.erp-item.is-active { background: var(--erp-item-active-bg); color: var(--erp-item-active-fg); border-left-color: var(--erp-item-active-bar); font-weight: 600; }
+.erp-item-icon { width: 15px; height: 15px; flex: none; color: var(--erp-item-icon); }
+.erp-item.is-active .erp-item-icon { color: var(--erp-item-active-bar); }
+.erp-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.erp-content { flex: 1; min-width: 0; overflow: auto; background: var(--erp-workspace-bg); scrollbar-gutter: stable; }
+.erp-page-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: baseline; gap: 14px; padding: 9px 18px; background: var(--erp-page-header-bg); border-bottom: 1px solid var(--erp-page-header-border); }
+.erp-page-title { font-size: 17px; font-weight: 700; color: #111827; white-space: nowrap; }
+.erp-page-desc { color: #5b6470; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.erp-page { padding: 16px 18px 28px; }
+
+/* Status bar */
+.erp-status { flex: none; height: 24px; display: flex; align-items: center; background: var(--erp-status-bg); color: var(--erp-status-fg); font-size: 11.5px; user-select: none; }
+.erp-status-cell { display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 100%; border-right: 1px solid rgba(255,255,255,.1); white-space: nowrap; }
+.erp-status-cell:last-child { border-right: 0; }
+.erp-status-grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.erp-dot { width: 8px; height: 8px; border-radius: 50%; }
+.erp-dot.is-ok { background: var(--erp-ok); }
+.erp-dot.is-warn { background: var(--erp-warn); }
+
+/* Screens inside: the adapter's few hard-coded teals follow the ERP accent,
+   and floating buttons clear the status bar. */
+html[data-erp-theme="classic"] { --erp-accent-soft-hover: #d3e1f0; }
+html[data-erp-theme="brand"] { --erp-accent-soft-hover: #c9ebef; }
+html[data-erp-theme] [class~="from-[#00f2fe]"]:hover { background-color: var(--inaya-accent-2); }
+html[data-erp-theme] :is([class~="hover:bg-[#00f2fe]/20"],[class~="hover:bg-[#00f2fe]/25"]):hover { background-color: var(--erp-accent-soft-hover); }
+html[data-erp-theme] :is([class~="border-[#00f2fe]/20"],[class~="border-[#00f2fe]/30"],[class~="border-[#00f2fe]/40"],[class~="border-[#00f2fe]/50"],[class~="border-[#4facfe]/40"]) { border-color: color-mix(in srgb, var(--inaya-accent) 40%, transparent); }
+html[data-erp-theme] .fixed.bottom-5.right-5 { bottom: 34px; }

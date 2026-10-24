@@ -23,7 +23,7 @@ const SUGGESTIONS = [
   "Help me create a purchase order",
 ];
 
-export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskChange, voiceEnabled = false }) {
+export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskChange, voiceEnabled = false, autoOpen = true }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: "👋 Hi — I can help with your company's departments, projects, documents, and approvals. What do you need?" },
@@ -45,16 +45,17 @@ export default function AIWidget({ orgId, currentView, guidedTask, onGuidedTaskC
   // Proactively open once per browser session, a few seconds after the
   // workspace loads -- same reasoning as the dApp widget's identical
   // effect: offer help again on a fresh visit, don't re-interrupt every
-  // SPA view change within the same session.
+  // SPA view change within the same session. ERP mode passes autoOpen=false:
+  // a panel opening by itself interrupts people mid-task in a desktop ERP.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !autoOpen) return;
     if (sessionStorage.getItem("inaya_business_ai_auto_opened")) return;
     const timer = setTimeout(() => {
       setIsOpen(true);
       sessionStorage.setItem("inaya_business_ai_auto_opened", "1");
     }, 4000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [autoOpen]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

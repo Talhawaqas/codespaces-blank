@@ -89,6 +89,9 @@ import { NAV_ITEMS, GROUP_LABELS, isNavItemVisible } from "../../lib/navigation/
 import { viewUrl, breadcrumbs } from "../../lib/business-nav.js";
 import { sidebarSections, labelFor, readNavPrefs, writeNavPrefs, defaultPins, EXTRA_DESCRIPTIONS } from "../../lib/navigation/launcher.js";
 import AppLauncherView from "../../components/business/AppLauncherView";
+import ErpShell from "../../components/business/erp/ErpShell";
+import AppearancePanel from "../../components/business/erp/AppearancePanel";
+import { useErpLayout } from "../../components/business/erp/useErpPrefs";
 import WelcomeView from "../../components/business/WelcomeView";
 import DocumentList, { touchDocument } from "../../components/business/DocUx";
 import AdminDashboardView from "../../components/business/admin/AdminDashboardView";
@@ -947,6 +950,8 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
 function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
+  // ERP mode (docs/erp-mode-plan.md): on by default in the desktop app, opt-in on the web.
+  const erp = useErpLayout();
 
   // Enterprise OS SOW, Phase 9 — reads a ?view= query param on first mount
   // so a pop-out window (open_module_window, a real separate native window
@@ -1142,21 +1147,147 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     billing: { title: "Billing", description: "Plan, usage, and payment details." },
     settings: { title: "Settings", description: "Company type, AI features, team, and departments." },
     apps: { title: "All apps", description: "Everything in your workspace. Pin the ones you use to keep them in the sidebar." },
+    appearance: { title: "Appearance", description: "Choose ERP mode or the standard layout, and ERP mode's theme. Only changes it for you." },
   };
+
+  // Every screen, shared by both layouts: ERP mode frames exactly the same components.
+  const pageContent = (
+    <>
+      <OfflineBanner />
+      <StepUpPrompt />
+      {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
+      {activeView === "apps" && (
+        <AppLauncherView
+          items={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
+          describe={(key) => EXTRA_DESCRIPTIONS[key] || VIEW_TITLES[key]?.description || ""}
+          pins={pins}
+          onTogglePin={togglePin}
+          onOpen={navigate}
+        />
+      )}
+      {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
+      {activeView === "brief" && <BriefView orgId={orgId} />}
+      {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
+      {activeView === "security" && <MfaSettings />}
+      {activeView === "browse" && (
+        <OrgWorkspace
+          key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}
+          orgId={orgId}
+          departmentIds={departmentIds}
+          canManage={canManage}
+          initialDeptId={browseTarget?.deptId || null}
+          initialProjectId={browseTarget?.projectId || null}
+        />
+      )}
+      {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
+      {activeView === "meet" && <MeetView orgId={orgId} email={email} />}
+      {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
+      {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
+      {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
+      {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
+      {activeView === "complianceReadiness" && <ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} />}
+      {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
+      {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
+      {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
+      {activeView === "infrastructure" && (
+        <InfrastructureView orgId={orgId} canManage={canManage || membership?.infrastructureRole === "manager"} />
+      )}
+      {activeView === "deviceProtection" && (
+        <DeviceProtectionView
+          orgId={orgId}
+          canManage={canManage}
+          deviceAdmin={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })}
+          storageAdmin={canManage || hasAdminRole(membership, "storageAdmin", { read: true })}
+        />
+      )}
+      {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage || hasAdminRole(membership, "securityAdmin", { read: true })} />}
+      <DeviceCheckIn orgId={orgId} />
+      {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
+      {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
+      {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
+      {activeView === "inventory" && <InventoryView orgId={orgId} />}
+      {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
+      {activeView === "hr" && <HRView orgId={orgId} email={email} />}
+      {activeView === "sign" && <SignView orgId={orgId} email={email} />}
+      {activeView === "escrow" && <EscrowView orgId={orgId} />}
+      {activeView === "storageManager" && <StorageManagerView orgId={orgId} />}
+      {activeView === "attestations" && <AttestationsView orgId={orgId} />}
+      {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
+      {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
+      {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
+      {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
+      {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
+      {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
+      {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
+      {activeView === "nas" && <NasManagementView orgId={orgId} />}
+      {activeView === "documentAutomation" && <DocumentAutomationView orgId={orgId} canManage={canManage} />}
+      {activeView === "aiSecurity" && <AiSecurityView orgId={orgId} />}
+      {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
+      {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
+      {activeView === "help" && <HelpSupportView orgId={orgId} />}
+      {activeView === "docIntelligence" && <DocIntelligenceView orgId={orgId} canManage={canManage} />}
+      {activeView === "databases" && canManage && <DatabasesView orgId={orgId} />}
+      {activeView === "mlStudio" && canManage && <MlStudioView orgId={orgId} />}
+      {activeView === "identity" && <IdentityView orgId={orgId} canManage={canManage} />}
+      {activeView === "bookkeeper" && <BookkeeperView orgId={orgId} canManage={canManage} canAdmin={canManage} hasFinance={canManage || !!(membership?.financeRole)} />}
+      {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
+      {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
+      {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
+      {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
+      {activeView === "cloudBackup" && canManage && <CloudBackupSchedulerView orgId={orgId} />}
+      {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}
+      {activeView === "approvals" && canManage && (
+        <div className="space-y-4">
+          <ApprovalsView orgId={orgId} onNavigate={navigate} />
+          <PendingGeneratedDocuments orgId={orgId} onNavigate={navigate} />
+        </div>
+      )}
+      {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
+      {activeView === "evidence" && <BusinessEventsView orgId={orgId} />}
+      {activeView === "whatIf" && <WhatIfStudioView orgId={orgId} />}
+      {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
+      {activeView === "complianceEvidence" && canManage && <ComplianceEvidenceView orgId={orgId} />}
+      {activeView === "trustRelationships" && canManage && <TrustRelationshipsView orgId={orgId} />}
+      {activeView === "activity" && <ActivityView orgId={orgId} />}
+      {activeView === "ai" && (
+        <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
+      )}
+      {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
+      {activeView === "appearance" && <AppearancePanel />}
+      {activeView === "settings" && canManage && (
+        <div className="space-y-6">
+          <AppearancePanel />
+          <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
+          <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
+          <AdminRolesPanel orgId={orgId} canManage={canManage} />
+          <BrandingPanel orgId={orgId} canManage={canManage} />
+          <NotificationPrefsPanel orgId={orgId} />
+          {(canManage || hasAdminRole(membership, ["storageAdmin", "securityAdmin"], { read: true })) && <ReplicationPanel orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin")} />}
+          <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
+          <TeamView orgId={orgId} email={email} />
+        </div>
+      )}
+    </>
+  );
 
   // A bad or stale ?view= link falls back to OS Home instead of a blank page.
   if (!VIEW_TITLES[activeView] && !NAV_ITEMS.some((i) => i.key === activeView)) {
     queueMicrotask(() => setActiveView("osHome"));
   }
 
-  return (
-    <div className="bw flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
-      <GlobeBackground variant="subtle" />
-      <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
+  // Floating helpers shown over either layout.
+  const overlays = (
+    <>
       {/* Hidden on the dedicated AI Assistant tab itself -- showing the
           floating bubble/panel on top of that full page would be redundant. */}
       {activeView !== "ai" && (
-        <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
+        <AIWidget orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} autoOpen={!erp.active} />
       )}
       <GuideHintBubble
         orgId={orgId}
@@ -1171,6 +1302,47 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           onSkip={() => saveNavPrefs({ pins, useCase: null, welcomed: true })}
         />
       )}
+    </>
+  );
+
+  if (erp.active) {
+    return (
+      <>
+        {overlays}
+        <ErpShell
+          orgId={orgId}
+          orgName={membership.orgName}
+          email={email}
+          role={role}
+          canManage={canManage}
+          orgs={orgs}
+          selectedOrgId={selectedOrgId}
+          onSwitchOrg={onSwitchOrg}
+          onLogout={onLogout}
+          activeView={activeView}
+          browseSection={browseSection}
+          onNavigate={navigate}
+          visibleItems={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
+          pins={pins}
+          title={VIEW_TITLES[activeView]?.title}
+          description={VIEW_TITLES[activeView]?.description}
+          prefs={erp.prefs}
+          onUpdatePrefs={erp.update}
+          desktop={erp.desktop}
+          search={<CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} localSearch={searchLiveChat} />}
+          notifications={<NotificationsBell scope="org" orgId={membership.orgId} email={email} />}
+        >
+          {pageContent}
+        </ErpShell>
+      </>
+    );
+  }
+
+  return (
+    <div className="bw flex min-h-screen bg-[var(--inaya-bg)] text-[var(--inaya-text-primary)] relative z-0">
+      <GlobeBackground variant="subtle" />
+      <div className="pointer-events-none fixed top-0 right-0 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-[#00f2fe]/5 via-violet-500/5 to-transparent blur-3xl -z-10" aria-hidden="true" />
+      {overlays}
       <Sidebar
         orgName={membership.orgName}
         role={role}
@@ -1219,13 +1391,26 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             >
               ↓ Guide
             </a>
-            <a
-              href="/business/download"
-              className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
-              title="Get the Business Workspace desktop app"
-            >
-              🖥️ Desktop App
-            </a>
+            {erp.wide && (
+              <button
+                type="button"
+                onClick={() => erp.update({ layout: "erp" })}
+                className="hidden lg:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
+                title="Switch to ERP mode: module tiles and a task panel, like a classic desktop ERP"
+              >
+                ▦ ERP mode
+              </button>
+            )}
+            {/* Pointless inside the desktop app itself. */}
+            {!erp.desktop && (
+              <a
+                href="/business/download"
+                className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
+                title="Get the Business Workspace desktop app"
+              >
+                🖥️ Desktop App
+              </a>
+            )}
             <a
               href="/"
               className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
@@ -1251,124 +1436,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         </header>
 
         <main className="p-5 md:p-8 max-w-6xl">
-          <OfflineBanner />
-          <StepUpPrompt />
-          {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
-          {activeView === "apps" && (
-            <AppLauncherView
-              items={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
-              describe={(key) => EXTRA_DESCRIPTIONS[key] || VIEW_TITLES[key]?.description || ""}
-              pins={pins}
-              onTogglePin={togglePin}
-              onOpen={navigate}
-            />
-          )}
-          {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
-          {activeView === "brief" && <BriefView orgId={orgId} />}
-          {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
-          {activeView === "security" && <MfaSettings />}
-          {activeView === "browse" && (
-            <OrgWorkspace
-              key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}
-              orgId={orgId}
-              departmentIds={departmentIds}
-              canManage={canManage}
-              initialDeptId={browseTarget?.deptId || null}
-              initialProjectId={browseTarget?.projectId || null}
-            />
-          )}
-          {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
-          {activeView === "meet" && <MeetView orgId={orgId} email={email} />}
-          {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
-          {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
-          {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
-          {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
-          {activeView === "complianceReadiness" && <ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} />}
-          {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
-          {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
-          {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
-          {activeView === "infrastructure" && (
-            <InfrastructureView orgId={orgId} canManage={canManage || membership?.infrastructureRole === "manager"} />
-          )}
-          {activeView === "deviceProtection" && (
-            <DeviceProtectionView
-              orgId={orgId}
-              canManage={canManage}
-              deviceAdmin={canManage || hasAdminRole(membership, "deviceAdmin", { read: true })}
-              storageAdmin={canManage || hasAdminRole(membership, "storageAdmin", { read: true })}
-            />
-          )}
-          {activeView === "ransomware" && <RansomwareView orgId={orgId} canManage={canManage || hasAdminRole(membership, "securityAdmin", { read: true })} />}
-          <DeviceCheckIn orgId={orgId} />
-          {activeView === "shares" && <SharesView orgId={orgId} canManage={canManage} />}
-          {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
-          {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
-          {activeView === "inventory" && <InventoryView orgId={orgId} />}
-          {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
-          {activeView === "hr" && <HRView orgId={orgId} email={email} />}
-          {activeView === "sign" && <SignView orgId={orgId} email={email} />}
-          {activeView === "escrow" && <EscrowView orgId={orgId} />}
-          {activeView === "storageManager" && <StorageManagerView orgId={orgId} />}
-          {activeView === "attestations" && <AttestationsView orgId={orgId} />}
-          {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
-          {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
-          {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
-          {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
-          {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
-          {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
-          {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
-          {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
-          {activeView === "nas" && <NasManagementView orgId={orgId} />}
-          {activeView === "documentAutomation" && <DocumentAutomationView orgId={orgId} canManage={canManage} />}
-          {activeView === "aiSecurity" && <AiSecurityView orgId={orgId} />}
-          {activeView === "workflows" && <WorkflowsView orgId={orgId} canManage={canManage} />}
-          {activeView === "support" && <SupportView orgId={orgId} canManage={canManage} />}
-          {activeView === "help" && <HelpSupportView orgId={orgId} />}
-          {activeView === "docIntelligence" && <DocIntelligenceView orgId={orgId} canManage={canManage} />}
-          {activeView === "databases" && canManage && <DatabasesView orgId={orgId} />}
-          {activeView === "mlStudio" && canManage && <MlStudioView orgId={orgId} />}
-          {activeView === "identity" && <IdentityView orgId={orgId} canManage={canManage} />}
-          {activeView === "bookkeeper" && <BookkeeperView orgId={orgId} canManage={canManage} canAdmin={canManage} hasFinance={canManage || !!(membership?.financeRole)} />}
-          {activeView === "sqlConsole" && <SqlConsoleView orgId={orgId} />}
-          {activeView === "s3Compat" && <S3CompatView orgId={orgId} />}
-          {activeView === "executive" && <ExecutiveDashboardView orgId={orgId} email={email} />}
-          {activeView === "dataRooms" && <DataRoomsView orgId={orgId} email={email} />}
-          {activeView === "cloudBackup" && canManage && <CloudBackupSchedulerView orgId={orgId} />}
-          {activeView === "enterpriseHardening" && <EnterpriseHardeningView orgId={orgId} email={email} />}
-          {activeView === "approvals" && canManage && (
-            <div className="space-y-4">
-              <ApprovalsView orgId={orgId} onNavigate={navigate} />
-              <PendingGeneratedDocuments orgId={orgId} onNavigate={navigate} />
-            </div>
-          )}
-          {activeView === "aiActions" && <AIActionRequestsView orgId={orgId} />}
-          {activeView === "evidence" && <BusinessEventsView orgId={orgId} />}
-          {activeView === "whatIf" && <WhatIfStudioView orgId={orgId} />}
-          {activeView === "auditTrail" && canManage && <AuditTrailView orgId={orgId} />}
-          {activeView === "complianceEvidence" && canManage && <ComplianceEvidenceView orgId={orgId} />}
-          {activeView === "trustRelationships" && canManage && <TrustRelationshipsView orgId={orgId} />}
-          {activeView === "activity" && <ActivityView orgId={orgId} />}
-          {activeView === "ai" && (
-            <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
-          )}
-          {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
-          {activeView === "settings" && canManage && (
-            <div className="space-y-6">
-              <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
-              <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
-              <AdminRolesPanel orgId={orgId} canManage={canManage} />
-              <BrandingPanel orgId={orgId} canManage={canManage} />
-              <NotificationPrefsPanel orgId={orgId} />
-              {(canManage || hasAdminRole(membership, ["storageAdmin", "securityAdmin"], { read: true })) && <ReplicationPanel orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin")} />}
-              <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
-              <TeamView orgId={orgId} email={email} />
-            </div>
-          )}
+          {pageContent}
         </main>
       </div>
     </div>
