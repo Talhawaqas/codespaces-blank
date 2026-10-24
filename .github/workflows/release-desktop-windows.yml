@@ -1,0 +1,102 @@
+name: Release Desktop (Windows)
+
+# Builds the Business Workspace desktop installer on Windows, signed for the
+# auto-updater with the TAURI_SIGNING_PRIVATE_KEY secret (the key the
+# installed apps trust -- it never leaves GitHub), and keeps it as a
+# downloadable artifact. Only when started with "publish" ticked does it also
+# put the installer and latest.json on the desktop-latest release, which is
+# what every installed copy checks for updates. Run it without "publish"
+# first, install the artifact, and publish once it's confirmed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to the desktop-latest update channel (installed apps will be offered this version)"
+        type: boolean
+        default: false
+      notes:
+        description: "Release notes shown in the update prompt"
+        type: string
+        default: "ERP mode: a classic desktop ERP layout with module tiles, a task panel and two themes; native menus; remembers window size; offline screen."
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./inaya-desktop
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust (same toolchain as the Linux build)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: inaya-desktop/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build the NSIS installer, signed for the auto-updater
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: npx tauri build --bundles nsis
+
+      - name: Prepare the release files (installer + latest.json)
+        shell: pwsh
+        env:
+          NOTES: ${{ inputs.notes }}
+        run: |
+          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $version = $conf.version
+          $bundle = "src-tauri/target/release/bundle/nsis"
+          $exe = Get-ChildItem $bundle -Filter "*_x64-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "Installer not found in $bundle" }
+          $sig = Get-Content "$($exe.FullName).sig" -Raw
+          $name = "Inaya-Business-Workspace_${version}_x64-setup.exe"
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item $exe.FullName "release/$name"
+          $manifest = [ordered]@{
+            version  = $version
+            notes    = $env:NOTES
+            pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms = [ordered]@{
+              "windows-x86_64" = [ordered]@{
+                signature = $sig.Trim()
+                url       = "https://github.com/${{ github.repository }}/releases/download/desktop-latest/$name"
+              }
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8NoBOM release/latest.json
+          Get-ChildItem release
+
+      - name: Keep the installer as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inaya-desktop-windows
+          path: inaya-desktop/release/*
+          if-no-files-found: error
+
+      - name: Publish to the desktop-latest update channel
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          gh release upload desktop-latest (Get-ChildItem release/*).FullName --clobber --repo ${{ github.repository }}
+          gh release edit desktop-latest --title "Inaya Business Workspace v$($conf.version) (desktop auto-update channel)" --repo ${{ github.repository }}
