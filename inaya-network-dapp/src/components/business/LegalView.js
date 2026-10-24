@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -26,11 +27,11 @@ const STATUS_STYLES = {
 };
 
 export default function LegalView({ orgId, canManage, email }) {
-  const [tab, setTab] = useState("matters"); // 'matters' | 'clients' | 'prospects' | 'entities'
+  const [tab, setTab] = useErpSection("matters", [["matters", "Matters"], ["clients", "Clients"], ["prospects", "Prospects"], ["entities", "Entities"]]);
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap" data-erp-tabs>
         <button onClick={() => setTab("matters")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "matters" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Matters</button>
         <button onClick={() => setTab("clients")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "clients" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Clients</button>
         <button onClick={() => setTab("prospects")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "prospects" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Prospects</button>

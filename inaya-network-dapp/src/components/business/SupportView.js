@@ -14,6 +14,7 @@ import { SettingsPanel } from "./support/settings";
 import { PortalPanel } from "./support/setup";
 import { q, post } from "./support/helpers";
 import { uploadFile } from "../support/chunkedUpload";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const TABS = [["tickets", "Tickets"], ["portal", "Portal & sharing"], ["knowledge", "Knowledge base"], ["ideas", "Ideas"], ["analytics", "Analytics"], ["inbound", "Email intake"], ["incidents", "Incidents"], ["settings", "Settings"]];
 const VIEWS = [["all_open", "All open"], ["unassigned", "Unassigned"], ["assigned_to_me", "Assigned to me"], ["my_team", "My team"], ["new", "New"], ["waiting_customer", "Waiting for customer"], ["escalated", "Escalated"], ["sla_at_risk", "SLA at risk"], ["sla_breached", "SLA breached"], ["high_priority", "High priority"], ["recently_solved", "Recently solved"], ["all", "Everything"]];
@@ -22,7 +23,7 @@ const PRIO_TONE = { URGENT: "CRITICAL", HIGH: "HIGH", NORMAL: "NORMAL", LOW: "PE
 
 export default function SupportView({ orgId, canManage }) {
   const me = useLoad(`/api/orgs/support/me?${q(orgId)}`);
-  const [tab, setTab] = useState("tickets");
+  const [tab, setTab] = useErpSection("tickets", TABS);
   const [openId, setOpenId] = useState(() => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("ticket")));
   const perms = me.data?.permissions || [];
   const has = (p) => perms.includes(p);
@@ -38,7 +39,7 @@ export default function SupportView({ orgId, canManage }) {
         <p className="text-sm text-[var(--inaya-text-muted)]">Tickets from your customers, the knowledge base they read, and the portal they sign in to.
           {me.data?.portalEnabled && me.data?.portalSlug ? <> Your customer portal: <a className="underline" href={`/portal/${me.data.portalSlug}`} target="_blank" rel="noreferrer">/portal/{me.data.portalSlug} ↗</a> (see <button type="button" className="underline" onClick={() => setTab("portal")}>Portal &amp; sharing</button> to share it with customers).</> : <> The customer portal is not switched on yet: <button type="button" className="underline" onClick={() => setTab("portal")}>set it up</button>.</>}</p>
       </header>
-      <nav aria-label="Support sections" className="flex flex-wrap gap-1">
+      <nav aria-label="Support sections" data-erp-tabs className="flex flex-wrap gap-1">
         {TABS.map(([id, label]) => (
           <button key={id} type="button" onClick={() => { setTab(id); setOpenId(null); }} aria-current={tab === id ? "page" : undefined}
             className={`rounded border px-3 py-1.5 text-xs font-medium ${tab === id ? "border-[var(--inaya-accent)] text-[var(--inaya-accent)]" : "border-white/10 text-[var(--inaya-text-muted)]"}`}>{label}</button>

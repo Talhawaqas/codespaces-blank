@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -24,10 +25,10 @@ function formatBytes(bytes) {
 }
 
 export default function StorageManagerView({ orgId }) {
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useErpSection("overview", [["overview", "Overview"], ["nodes", "Enterprise Nodes"], ["policies", "Storage Policy"], ["residency", "Geographic Preference"]]);
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-xl p-1 w-fit">
+      <div className="flex bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-xl p-1 w-fit" data-erp-tabs>
         {[["overview", "Overview"], ["nodes", "Enterprise Nodes"], ["policies", "Storage Policy"], ["residency", "Geographic Preference"]].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
         ))}

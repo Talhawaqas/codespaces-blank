@@ -5,6 +5,7 @@
 // Everyone: the network folders their own permissions on the customer's system allow them to read. Nothing here shows file content: Inaya holds none.
 import { useCallback, useEffect, useState } from "react";
 import EmptyState from "../../EmptyState";
+import { useErpSection } from "../erp/ErpNavContext";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -18,12 +19,12 @@ const PILL = { ONLINE: "text-emerald-400", OFFLINE: "text-amber-300", NEVER_CONN
 const Pill = ({ s }) => <span className={`text-[10px] font-bold uppercase ${PILL[s] || muted}`}>{String(s).replace(/_/g, " ")}</span>;
 
 export default function GatewayView({ orgId, canManage, canChangeMode }) {
-  const [tab, setTab] = useState(canManage ? "gateways" : "folders"); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
-  const act = async (fn, ok) => { setErr(""); setMsg(""); try { const r = await fn(); if (ok) setMsg(typeof ok === "function" ? ok(r) : ok); return r; } catch (e) { setErr(e.message); } };
   const tabs = [["folders", "Network folders"], ...(canManage ? [["gateways", "Gateways"], ["permissions", "Permissions and mapping"], ["transfers", "Transfers"], ["audit", "Audit"], ["mode", "Deployment mode"]] : [])];
+  const [tab, setTab] = useErpSection(canManage ? "gateways" : "folders", tabs); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
+  const act = async (fn, ok) => { setErr(""); setMsg(""); try { const r = await fn(); if (ok) setMsg(typeof ok === "function" ? ok(r) : ok); return r; } catch (e) { setErr(e.message); } };
   return (
     <div className="space-y-3 text-[12px]">
-      <div className="flex flex-wrap gap-1">{tabs.map(([k, l]) => <button key={k} className={tab === k ? accent : btn} onClick={() => { setTab(k); setErr(""); setMsg(""); }}>{l}</button>)}</div>
+      <div className="flex flex-wrap gap-1" data-erp-tabs>{tabs.map(([k, l]) => <button key={k} className={tab === k ? accent : btn} onClick={() => { setTab(k); setErr(""); setMsg(""); }}>{l}</button>)}</div>
       {err && <p className="text-red-400" role="alert">{err}</p>}{msg && <p className="text-emerald-400" role="status">{msg}</p>}
       {tab === "folders" && <Folders orgId={orgId} act={act} />}
       {canManage && tab === "gateways" && <Gateways orgId={orgId} act={act} />}

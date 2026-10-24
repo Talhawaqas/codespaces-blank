@@ -91,6 +91,8 @@ import { sidebarSections, labelFor, readNavPrefs, writeNavPrefs, defaultPins, EX
 import AppLauncherView from "../../components/business/AppLauncherView";
 import ErpShell from "../../components/business/erp/ErpShell";
 import ErpSplash from "../../components/business/erp/ErpSplash";
+import ErpHomeView from "../../components/business/erp/ErpHomeView";
+import ErpModuleOverview from "../../components/business/erp/ErpModuleOverview";
 import AppearancePanel from "../../components/business/erp/AppearancePanel";
 import { useErpLayout } from "../../components/business/erp/useErpPrefs";
 import { ErpNavContext } from "../../components/business/erp/ErpNavContext";
@@ -1070,7 +1072,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     }
     setBrowseTarget(target || null);
     setActiveSection(target?.section || null);
-    if (target?.action) setErpRequest({ id: `${Date.now()}-${Math.random()}`, view, section: target.section || null, action: target.action });
+    setErpRequest(target?.action ? { id: `${Date.now()}-${Math.random()}`, view, section: target.section || null, action: target.action } : null);
     setMobileNavOpen(false);
   }
 
@@ -1172,6 +1174,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     settings: { title: "Settings", description: "Company type, AI features, team, and departments." },
     apps: { title: "All apps", description: "Everything in your workspace. Pin the ones you use to keep them in the sidebar." },
     appearance: { title: "Appearance", description: "Choose ERP mode or the standard layout, and ERP mode's theme. Only changes it for you." },
+    moduleOverview: { title: `${(activeSection || "Module").replace(/^./, (c) => c.toUpperCase())} overview`, description: "Key figures, what needs attention and the latest records." },
   };
 
   // A screen switched its own section (ERP mode): keep the task panel and URL in step, without a new history entry.
@@ -1193,7 +1196,17 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     <ErpNavContext.Provider value={erpNav}>
       <OfflineBanner />
       <StepUpPrompt />
-      {activeView === "osHome" && <OsHomeView onNavigate={navigate} />}
+      {activeView === "osHome" && (erp.active ? (
+        <ErpHomeView
+          orgId={orgId}
+          orgName={membership.orgName}
+          canManage={canManage}
+          desktop={erp.desktop}
+          visibleKeys={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical })).map((i) => i.key)}
+          onNavigate={navigate}
+        />
+      ) : <OsHomeView onNavigate={navigate} />)}
+      {activeView === "moduleOverview" && <ErpModuleOverview orgId={orgId} moduleId={activeSection} onNavigate={navigate} />}
       {activeView === "apps" && (
         <AppLauncherView
           items={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
@@ -1364,6 +1377,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           onNavigate={navigate}
           visibleItems={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
           pins={pins}
+          onTogglePin={togglePin}
           title={VIEW_TITLES[activeView]?.title}
           description={VIEW_TITLES[activeView]?.description}
           prefs={erp.prefs}

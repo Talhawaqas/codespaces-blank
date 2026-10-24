@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -33,14 +34,14 @@ const CASE_STATUS_STYLES = {
 };
 
 export default function GovernmentView({ orgId, canManage, email }) {
-  const [tab, setTab] = useState("records");
   const TABS = [
     ["records", "Citizen Records"], ["cases", "Cases"], ["policyKb", "Policy Knowledge Base"], ["dashboard", "Dashboard"],
   ];
+  const [tab, setTab] = useErpSection("records", TABS);
 
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap" data-erp-tabs>
         {TABS.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
         ))}

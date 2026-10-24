@@ -9,6 +9,7 @@
 // routes backed by real MongoDB records -- no placeholder numbers.
 
 import { useCallback, useEffect, useState } from "react";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg p-4";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -42,7 +43,7 @@ const K8S_STATUS_COLOR = { PROVISIONING_SERVER: "text-yellow-400", SERVER_READY:
 const HEALTH_COLOR = { ACTIVE: "text-green-400", PENDING: "text-yellow-400", UNAVAILABLE: "text-red-400", REVOKED: "text-red-400", UNKNOWN: "text-slate-500" };
 
 export default function InfrastructureView({ orgId, canManage }) {
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useErpSection("overview", TABS.map((t) => [t.key, t.label]));
   const [clusters, setClusters] = useState([]);
   const [selectedCluster, setSelectedCluster] = useState(null);
   const [nodes, setNodes] = useState([]);
@@ -230,7 +231,7 @@ export default function InfrastructureView({ orgId, canManage }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex gap-1 border-b border-white/5 overflow-x-auto">
+        <div className="flex gap-1 border-b border-white/5 overflow-x-auto" data-erp-tabs>
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors ${tab === t.key ? "text-[#00f2fe] border-[#00f2fe]" : `${muted} border-transparent hover:text-slate-200`}`}>
               {t.label}

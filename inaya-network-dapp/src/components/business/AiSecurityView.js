@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -295,13 +296,15 @@ function PolicyTab({ orgId }) {
   );
 }
 
+const AI_SECURITY_TABS = [["events", "Activity"], ["models", "Model Inventory"], ["policy", "Policy"]];
+
 export default function AiSecurityView({ orgId }) {
-  const [tab, setTab] = useState("events");
+  const [tab, setTab] = useErpSection("events", AI_SECURITY_TABS);
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 border-b border-white/10">
-        {[["events", "Activity"], ["models", "Model Inventory"], ["policy", "Policy"]].map(([key, label]) => (
+      <div className="flex gap-2 border-b border-white/10" data-erp-tabs>
+        {AI_SECURITY_TABS.map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}

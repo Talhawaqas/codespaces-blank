@@ -12,11 +12,12 @@ import EmptyState from "../EmptyState";
 import { api, useLoad, useAction, Card, Note, Err, Btn, Input, Select, Pill, Table, fmtTime } from "./nas/ui";
 import Editor from "./workflows/Editor";
 import { ExecutionsPanel, EvaluationsPanel, HealthPanel, CredentialsPanel, TemplatesPanel, CopilotPanel } from "./workflows/panels";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const TABS = [["workflows", "Workflows"], ["templates", "Templates"], ["executions", "Executions"], ["evaluations", "Evaluations"], ["health", "Automation health"], ["credentials", "Credentials"]];
 
 export default function WorkflowsView({ orgId, canManage }) {
-  const [tab, setTab] = useState("workflows");
+  const [tab, setTab] = useErpSection("workflows", TABS);
   const [editing, setEditing] = useState(null);
   const q = `orgId=${encodeURIComponent(orgId)}`;
   const list = useLoad(`/api/orgs/workflows?${q}`);
@@ -45,7 +46,7 @@ export default function WorkflowsView({ orgId, canManage }) {
           {sw.data.reason && <span className="block text-[var(--inaya-text-muted)]">Reason: {sw.data.reason}</span>}
         </div>
       )}
-      <nav aria-label="Automation sections" className="flex flex-wrap gap-1">
+      <nav aria-label="Automation sections" data-erp-tabs className="flex flex-wrap gap-1">
         {TABS.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setTab(id)} aria-current={tab === id ? "page" : undefined}
             className={`rounded border px-3 py-1.5 text-xs font-medium ${tab === id ? "border-[var(--inaya-accent)] text-[var(--inaya-accent)]" : "border-white/10 text-[var(--inaya-text-muted)]"}`}>{label}</button>

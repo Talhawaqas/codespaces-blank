@@ -364,6 +364,7 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 .erp-content { flex: 1; min-width: 0; overflow: auto; background: var(--erp-workspace-bg); scrollbar-gutter: stable; }
 .erp-page-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: baseline; gap: 14px; padding: 9px 18px; background: var(--erp-page-header-bg); border-bottom: 1px solid var(--erp-page-header-border); }
 .erp-page-title { font-size: 17px; font-weight: 700; color: #111827; white-space: nowrap; }
+.erp-page-section { font-weight: 600; color: var(--erp-accent); }
 .erp-page-desc { color: #5b6470; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .erp-page { padding: 16px 18px 28px; }
 
@@ -375,6 +376,89 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 .erp-dot { width: 8px; height: 8px; border-radius: 50%; }
 .erp-dot.is-ok { background: var(--erp-ok); }
 .erp-dot.is-warn { background: var(--erp-warn); }
+
+/* Dashboards: boxed panels with coloured title bars (ErpPanel) */
+.erp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; grid-auto-flow: row dense; }
+.erp-span-2 { grid-column: span 2; }
+@media (max-width: 1180px) { .erp-span-2 { grid-column: auto; } }
+.erp-box { background: #fff; border: 1px solid var(--erp-panel-border); border-radius: 4px; overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+.erp-box-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 10px; color: #fff; }
+.erp-box-head[data-tone="blue"] { background: var(--erp-h-blue); }
+.erp-box-head[data-tone="red"] { background: var(--erp-h-red); }
+.erp-box-head[data-tone="green"] { background: var(--erp-h-green); }
+.erp-box-head[data-tone="amber"] { background: var(--erp-h-amber); }
+.erp-box-head[data-tone="purple"] { background: var(--erp-h-purple); }
+.erp-box-head[data-tone="graphite"] { background: var(--erp-group-bg); }
+.erp-box-title { font-size: 12.5px; font-weight: 600; letter-spacing: .2px; }
+.erp-box-action { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 3px; padding: 0 8px; font-size: 11.5px; cursor: pointer; }
+.erp-box-action:hover { background: rgba(255,255,255,.28); }
+.erp-box-body { padding: 10px 12px; font-size: 12.5px; color: #1f2328; }
+.erp-box-flush { padding: 0; }
+.erp-box-flush > :first-child { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+/* A shared widget's own small heading repeats the panel title, so it is dropped here. */
+.erp-box-flush > div > p[class~="uppercase"]:first-child { display: none; }
+.erp-muted { color: #5b6470; }
+.erp-link { background: none; border: 0; padding: 0; color: var(--erp-accent); font-weight: 600; cursor: pointer; text-decoration: none; }
+.erp-link:hover { text-decoration: underline; }
+.erp-rows { list-style: none; margin: 0; padding: 0; }
+.erp-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #eceef1; }
+.erp-row:last-child { border-bottom: 0; }
+.erp-row-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-row-text strong { font-weight: 600; }
+.erp-row-detail { color: #5b6470; }
+.erp-row-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: #b4bac1; }
+.erp-row-dot.is-danger { background: #c0392b; }
+.erp-row-dot.is-warning { background: #d4890f; }
+.erp-row-dot.is-ok { background: #2e7d4f; }
+.erp-figures { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.erp-figure { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; background: #f6f7f9; border: 1px solid #e3e6ea; border-radius: 3px; cursor: pointer; text-align: left; min-width: 0; }
+.erp-figure:hover { border-color: var(--erp-accent); background: var(--erp-accent-soft); }
+.erp-figure-value { font-size: 18px; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-figure-label { font-size: 11.5px; color: #5b6470; }
+.erp-quick { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.erp-quick-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border: 1px solid #d5d9de; border-radius: 3px; color: #1f2328; cursor: pointer; text-align: left; }
+.erp-quick-btn span { color: var(--erp-accent); font-weight: 700; width: 12px; text-align: center; }
+.erp-quick-btn:hover { border-color: var(--erp-accent); background: var(--erp-accent-soft); }
+.erp-bullets { margin: 0; padding-left: 16px; display: grid; gap: 5px; }
+.erp-bullets li { line-height: 1.45; }
+.erp-mini-table { width: 100%; border-collapse: collapse; }
+.erp-mini-table tr { cursor: pointer; border-bottom: 1px solid #eceef1; }
+.erp-mini-table tr:last-child { border-bottom: 0; }
+.erp-mini-table tr:hover { background: var(--erp-accent-soft); }
+.erp-mini-table td { padding: 5px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+.erp-mini-name { font-weight: 600; width: 40%; }
+.erp-mini-detail { color: #5b6470; width: 40%; }
+.erp-mini-status { width: 20%; text-align: right; color: #374151; }
+.erp-home-welcome { margin-bottom: 12px; }
+.erp-home-greeting { font-size: 20px; font-weight: 700; color: #111827; }
+.erp-home-sub { color: #4b5563; font-size: 13px; margin-top: 2px; }
+.erp-home-error { color: #b42318; margin-top: 4px; }
+
+/* Right-click menu and dialogs */
+.erp-context { position: fixed; z-index: 200; width: 220px; }
+.erp-context .erp-menu-item { padding-left: 12px; }
+.erp-dialog-backdrop { position: fixed; inset: 0; z-index: 210; background: rgba(15,23,42,.35); display: grid; place-items: center; }
+.erp-dialog { width: min(520px, calc(100vw - 32px)); background: #fff; border: 1px solid #b9bec4; border-radius: 6px; box-shadow: 0 20px 50px rgba(15,23,42,.25); font-family: "Segoe UI", system-ui, sans-serif; font-size: 13px; color: #1f2328; overflow: hidden; }
+.erp-dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--erp-titlebar-bg, #2b3035); color: var(--erp-titlebar-fg, #fff); }
+.erp-dialog-head h2 { font-size: 13.5px; font-weight: 600; }
+.erp-dialog-close { background: none; border: 0; color: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+.erp-shortcuts { width: 100%; border-collapse: collapse; }
+.erp-shortcuts td { padding: 7px 12px; border-bottom: 1px solid #eceef1; vertical-align: top; }
+.erp-shortcuts tr:last-child td { border-bottom: 0; }
+.erp-shortcuts kbd { font-family: inherit; font-size: 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-bottom-width: 2px; border-radius: 3px; padding: 1px 6px; white-space: nowrap; }
+
+/* Density: inside ERP mode, the existing screens get desktop proportions -- square corners,
+   tighter padding, no decorative shadows or glows. Layout and behaviour are untouched. */
+.erp-page :is([class~="rounded-2xl"],[class~="rounded-xl"],[class~="rounded-3xl"]) { border-radius: 4px; }
+.erp-page [class~="rounded-full"]:is(button, a) { border-radius: 4px; }
+.erp-page :is([class~="p-5"],[class~="p-6"],[class~="sm:p-6"]) { padding: 12px; }
+.erp-page :is([class~="space-y-6"]) > * + * { margin-top: 12px; }
+.erp-page :is([class~="space-y-5"]) > * + * { margin-top: 10px; }
+.erp-page [class*="shadow-["] { box-shadow: none !important; }
+.erp-page :is([class~="bg-[var(--inaya-surface)]"]) { box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.erp-page [class~="inaya-input-glow"] { background: var(--erp-panel-border); animation: none; }
+.erp-page :is([class~="backdrop-blur"],[class~="backdrop-blur-xl"],[class~="backdrop-blur-sm"]) { backdrop-filter: none; }
+.erp-page :is(h2, h3) { letter-spacing: 0; }
 
 /* Start screen while the session loads */
 .erp-splash { position: fixed; inset: 0; display: grid; place-items: center; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
@@ -395,3 +479,5 @@ html[data-erp-theme] [class~="from-[#00f2fe]"]:hover { background-color: var(--i
 html[data-erp-theme] :is([class~="hover:bg-[#00f2fe]/20"],[class~="hover:bg-[#00f2fe]/25"]):hover { background-color: var(--erp-accent-soft-hover); }
 html[data-erp-theme] :is([class~="border-[#00f2fe]/20"],[class~="border-[#00f2fe]/30"],[class~="border-[#00f2fe]/40"],[class~="border-[#00f2fe]/50"],[class~="border-[#4facfe]/40"]) { border-color: color-mix(in srgb, var(--inaya-accent) 40%, transparent); }
 html[data-erp-theme] .fixed.bottom-5.right-5 { bottom: 34px; }
+/* A screen's own tab bar: in ERP mode the task panel lists those tabs instead (ErpNavContext). */
+html[data-erp-theme] [data-erp-tabs] { display: none !important; }

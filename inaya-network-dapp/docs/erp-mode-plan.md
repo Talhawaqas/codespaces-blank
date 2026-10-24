@@ -31,6 +31,25 @@ expects a classic desktop ERP layout (reference: IDS Astra G2).
    loading and offline screens, version 0.2.0 through the existing update channel. Installed and confirmed
    by a human (the assistant's sandbox installs into a hidden folder).
 
+## Status (2026-10-24)
+
+| Batch | State |
+|---|---|
+| 1. ERP shell | Live (bc9ade9) |
+| 2. Core modules connected | Live (5159d08) |
+| 3. All other tabbed screens | Built and browser-tested; 22 screens report their own tabs (`useErpSection` + `data-erp-tabs`) |
+| 4. Home and module dashboards | Built and browser-tested: `ErpHomeView` (everything the standard Home shows) and `ErpModuleOverview` for Sales, Purchasing, Inventory, Accounting, People |
+| 5. Desktop feel | Built and browser-tested: right-click menus (open in new window, pin, copy link), Ctrl+N / Ctrl+B / F1, shortcuts dialog, density pass |
+| 6. Native desktop | Code done and compiling (menus, remembered window size, start/offline screen, 0.2.0). Installer built locally; **not published to the update channel until installed and confirmed by a person** |
+
+## How it fits together
+
+- `src/lib/navigation/erpModules.js` — tiles, groups and task-panel items (`view`, `view:section`, `view:section!new`).
+- `src/components/business/erp/ErpNavContext.js` — `useErpSection`, `useErpCreate`, `useErpTabsHidden`.
+- `src/components/business/erp/ErpShell.js` — the frame; `ErpHomeView.js`, `ErpModuleOverview.js`, `ErpPanel.js` — dashboards.
+- `src/lib/erpPrefs.js` + `useErpPrefs.js` — layout/theme preference (per device), `?layout=erp|standard` override.
+- Tests: `test-ui/erpModules.test.js`, `test-ui/erpPrefs.test.js` (inventory, industry isolation, sections and forms that must exist).
+
 ## Rules carried over from earlier SOWs
 
 - View keys never change: the desktop app's `?view=` pop-out windows depend on them.

@@ -26,18 +26,25 @@ import { FundraisingTab } from "./financial/pcFundraising.js";
 import { PrivateCapitalPortfolioTab } from "./financial/pcPortfolio.js";
 import { SpvsTab } from "./financial/pcSpvs.js";
 import { ResearchTab } from "./financial/research.js";
+import { useErpSection } from "./erp/ErpNavContext";
 
 // Financial Services & Regulated Enterprise SOW, Phase 2 (Investment
 // Management) — Research/Theses/Committee/Portfolio tabs are specific to
 // running a fund's book, not to private-capital deal work, so they only
 // render for the "financial" vertical, never "private_capital".
 export default function FinancialView({ orgId, vertical }) {
-  const [tab, setTab] = useState("funds");
   const isFinancial = vertical === "financial";
   const isPrivateCapital = vertical === "private_capital";
+  const [tab, setTab] = useErpSection("funds", [
+    ["funds", "Funds"], ["entities", "Entities"], ["counterparties", "Counterparties"],
+    ...(isFinancial ? [["research", "Research"], ["theses", "Theses"]] : []),
+    ...(isFinancial || isPrivateCapital ? [["committee", "Committee"]] : []),
+    ...(isFinancial ? [["portfolio", "Portfolio"]] : []),
+    ...(isPrivateCapital ? [["deals", "Deals"], ["pcPortfolio", "Portfolio"], ["fundraising", "Fundraising"], ["exits", "Exits"], ["spvs", "SPVs"]] : []),
+  ]);
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap" data-erp-tabs>
         <button onClick={() => setTab("funds")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "funds" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Funds</button>
         <button onClick={() => setTab("entities")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "entities" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Entities</button>
         <button onClick={() => setTab("counterparties")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "counterparties" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Counterparties</button>

@@ -24,8 +24,11 @@ import { NAV_ITEMS } from "./navItems.js";
 import { labelFor } from "./launcher.js";
 
 // Views that are not NAV_ITEMS entries but are reachable in the workspace.
-// "apps" is the All apps launcher; it is always visible.
-export const ERP_EXTRA_VIEWS = ["apps"];
+// "apps" is the All apps launcher; "moduleOverview" is ERP mode's per-module
+// Overview (its section is the module id). A module whose only visible item
+// would be its Overview is dropped, so an Overview never appears on its own.
+export const ERP_EXTRA_VIEWS = ["apps", "moduleOverview"];
+const OVERVIEW = "moduleOverview";
 
 export const ERP_MODULES = [
   {
@@ -37,16 +40,18 @@ export const ERP_MODULES = [
     ],
   },
   {
-    id: "sales", label: "Sales", icon: "sales", home: "crm:contacts",
+    id: "sales", label: "Sales", icon: "sales", home: "moduleOverview:sales",
     groups: [
+      { id: "overview", label: "Overview", items: ["moduleOverview:sales"] },
       { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new"] },
       { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
   },
   {
-    id: "purchasing", label: "Purchasing", icon: "purchasing", home: "procurement:orders",
+    id: "purchasing", label: "Purchasing", icon: "purchasing", home: "moduleOverview:purchasing",
     groups: [
+      { id: "overview", label: "Overview", items: ["moduleOverview:purchasing"] },
       { id: "tasks", label: "My tasks", items: ["procurement:requests!new", "procurement:orders!new", "procurement:suppliers!new"] },
       { id: "buying", label: "Buying", items: ["procurement:requests", "procurement:orders", "procurement:suppliers"] },
       { id: "reports", label: "Reports", items: ["procurement:reports"] },
@@ -54,15 +59,17 @@ export const ERP_MODULES = [
     ],
   },
   {
-    id: "inventory", label: "Inventory", icon: "inventory", home: "inventory:products",
+    id: "inventory", label: "Inventory", icon: "inventory", home: "moduleOverview:inventory",
     groups: [
+      { id: "overview", label: "Overview", items: ["moduleOverview:inventory"] },
       { id: "tasks", label: "My tasks", items: ["inventory:products!new", "inventory:warehouses!new"] },
       { id: "stock", label: "Stock", items: ["inventory:products", "inventory:movements", "inventory:warehouses"] },
     ],
   },
   {
-    id: "accounting", label: "Accounting", icon: "accounting", home: "finance:invoices",
+    id: "accounting", label: "Accounting", icon: "accounting", home: "moduleOverview:accounting",
     groups: [
+      { id: "overview", label: "Overview", items: ["moduleOverview:accounting"] },
       { id: "tasks", label: "My tasks", items: ["finance:invoices!new", "finance:expenses!new", "finance:payments!new", "finance:ledger!new"] },
       { id: "books", label: "Books", items: ["finance:invoices", "finance:expenses", "finance:payments", "finance:ledger", "bookkeeper"] },
       { id: "reports", label: "Reports", items: ["finance:reports"] },
@@ -70,8 +77,9 @@ export const ERP_MODULES = [
     ],
   },
   {
-    id: "people", label: "People", icon: "people", home: "hr:employees",
+    id: "people", label: "People", icon: "people", home: "moduleOverview:people",
     groups: [
+      { id: "overview", label: "Overview", items: ["moduleOverview:people"] },
       { id: "tasks", label: "My tasks", items: ["hr:employees!new", "hr:leave!new"] },
       { id: "staff", label: "Staff", items: ["hr:employees", "hr:leave", "hr:managers", "hr:orgChart", "hr:onboarding"] },
     ],
@@ -122,6 +130,11 @@ export const ERP_MODULES = [
 // covers that view's own title in the panel.
 const ERP_LABELS = {
   osHome: "Overview",
+  "moduleOverview:sales": "Sales overview",
+  "moduleOverview:purchasing": "Purchasing overview",
+  "moduleOverview:inventory": "Inventory overview",
+  "moduleOverview:accounting": "Accounting overview",
+  "moduleOverview:people": "People overview",
   apps: "All apps",
   security: "Account security",
   support: "Support desk",
@@ -179,7 +192,9 @@ export function erpLabelFor(key) {
 
 /** Icon key (business ui/icons.js) for a view key, or null. */
 export function erpIconFor(key) {
-  return NAV_BY_KEY.get(parseErpItem(key).view)?.icon || null;
+  const { view } = parseErpItem(key);
+  if (view === OVERVIEW) return "dashboard";
+  return NAV_BY_KEY.get(view)?.icon || null;
 }
 
 /** Every view ERP mode places, once each, in module order. */
@@ -189,6 +204,7 @@ export function erpPlacedViews() {
 
 /** The section a view opens on when none is named: its first listed section, if it has any. */
 export function erpDefaultSection(view) {
+  if (view === OVERVIEW) return null;
   for (const m of ERP_MODULES) for (const g of m.groups) for (const i of g.items) {
     const p = parseErpItem(i);
     if (p.view === view && p.section && !p.action) return p.section;
@@ -213,7 +229,7 @@ export function erpLayout({ visibleKeys }) {
     const groups = m.groups
       .map((g) => ({ ...g, items: g.items.map(parseErpItem).filter((p) => visible.has(p.view)).map((p) => ({ ...p, label: erpLabelFor(p.key), icon: erpIconFor(p.key) })) }))
       .filter((g) => g.items.length);
-    if (!groups.length) return null;
+    if (!groups.some((g) => g.items.some((i) => i.view !== OVERVIEW))) return null;
     const firstOpen = groups.flatMap((g) => g.items).find((i) => !i.action) || groups[0].items[0];
     const home = m.home && visible.has(parseErpItem(m.home).view) ? parseErpItem(m.home) : firstOpen;
     if (m.id === "industry") {
@@ -224,8 +240,10 @@ export function erpLayout({ visibleKeys }) {
   }).filter(Boolean);
 }
 
-/** The module id that owns a view. "browse" resolves through the Departments/Projects/Documents section. */
-export function erpModuleFor(view, browseSection = "documents") {
+/** The module id that owns a view. "browse" resolves through the Departments/Projects/Documents
+ *  section, and a module Overview through its section (the module id). */
+export function erpModuleFor(view, browseSection = "documents", section = null) {
+  if (view === OVERVIEW && ERP_MODULES.some((m) => m.id === section)) return section;
   const key = view === "browse" ? browseSection : view;
   const found = ERP_MODULES.find((m) => m.groups.some((g) => g.items.some((i) => parseErpItem(i).view === key)));
   return found ? found.id : "home";
@@ -234,7 +252,18 @@ export function erpModuleFor(view, browseSection = "documents") {
 /** The task-panel item key that shows as selected for the current view and section. */
 export function erpActiveItem(view, browseSection = "documents", section = null) {
   if (view === "browse") return browseSection;
+  if (view === OVERVIEW) return `${OVERVIEW}:${section}`;
   const listed = erpDefaultSection(view);
   if (!listed) return view;
   return `${view}:${section || listed}`;
+}
+
+/** The "New ..." task-panel item for a view's section (or its default section), if ERP mode has one. */
+export function erpNewItemFor(view, section = null) {
+  const sec = section || erpDefaultSection(view);
+  for (const m of ERP_MODULES) for (const g of m.groups) for (const i of g.items) {
+    const p = parseErpItem(i);
+    if (p.view === view && p.action === "new" && (p.section === sec || (!erpListsSections(view) && p.section))) return p;
+  }
+  return null;
 }

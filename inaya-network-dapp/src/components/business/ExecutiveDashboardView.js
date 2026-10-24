@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -31,11 +32,11 @@ function StatusPill({ status }) {
 }
 
 export default function ExecutiveDashboardView({ orgId, email }) {
-  const [tab, setTab] = useState("commandcenter");
   const TABS = ["command center", "trust health", "risk & compliance", "board reports"];
+  const [tab, setTab] = useErpSection("commandcenter", [["commandcenter", "Command center"], ["trusthealth", "Trust health"], ["riskcompliance", "Risk and compliance"], ["boardreports", "Board reports"]]);
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap" data-erp-tabs>
         {TABS.map((t) => {
           const key = t.replace(/[^a-z]/gi, "").toLowerCase();
           return <button key={t} onClick={() => setTab(key)} className={`px-3.5 py-2 text-[11px] font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{t}</button>;

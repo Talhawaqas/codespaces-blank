@@ -12,11 +12,11 @@
 // as `visibleItems`), and every screen is the same component the standard
 // layout renders (passed in as `children`).
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon, ICONS } from "../ui/icons";
 import { ERP_ICONS } from "./erpIcons";
 import { ERP_THEME_TOKENS, inayaOverridesFor } from "./erpThemes";
-import { erpLayout, erpModuleFor, erpActiveItem, erpLabelFor, erpIconFor, erpListsSections, parseErpItem } from "../../../lib/navigation/erpModules";
+import { erpLayout, erpModuleFor, erpActiveItem, erpLabelFor, erpIconFor, erpListsSections, parseErpItem, erpNewItemFor } from "../../../lib/navigation/erpModules";
 import { ERP_THEMES, ERP_THEME_LABELS, ERP_THEME_DESCRIPTIONS } from "../../../lib/erpPrefs";
 import { useTheme } from "../../ThemeProvider";
 import { THEME_STORAGE_KEY, isValidTheme } from "../../../lib/theme";
@@ -95,7 +95,80 @@ function useClock() {
   return now;
 }
 
-function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, desktop }) {
+/** The workspace URL for a task-panel item. */
+const pathFor = (it) => `/business?view=${encodeURIComponent(it.view)}${it.section ? `&section=${encodeURIComponent(it.section)}` : ""}`;
+
+/** Opens a screen in its own window: a native window in the desktop app, a browser tab on the web. */
+function openInNewWindow(it) {
+  const path = pathFor(it);
+  if (window.__TAURI__?.core?.invoke) {
+    const label = `erp-${it.view}-${it.section || "main"}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+    window.__TAURI__.core.invoke("open_module_window", { label, path }).catch(() => window.open(path, "_blank", "noopener"));
+  } else {
+    window.open(path, "_blank", "noopener");
+  }
+}
+
+const SHORTCUTS = [
+  ["Alt+1 … Alt+9, Alt+0", "Open a module tile, in order"],
+  ["Ctrl+N", "New record in the screen you are on (where it has one)"],
+  ["Ctrl+K", "Search everything: records, people and screens"],
+  ["Ctrl+B", "Show or hide the task panel"],
+  ["Alt+Left / Alt+Right", "Back and forward"],
+  ["Right-click an item", "Open in a new window, pin, or copy its link"],
+  ["F1", "Show these shortcuts"],
+];
+
+function ShortcutsDialog({ onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="erp-dialog-backdrop" onMouseDown={onClose}>
+      <div className="erp-dialog" role="dialog" aria-modal="true" aria-labelledby="erp-shortcuts-title" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="erp-dialog-head">
+          <h2 id="erp-shortcuts-title">Keyboard shortcuts</h2>
+          <button type="button" className="erp-dialog-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <table className="erp-shortcuts">
+          <tbody>{SHORTCUTS.map(([k, d]) => <tr key={k}><td><kbd>{k}</kbd></td><td>{d}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/** Right-click menu for a task-panel item or module tile. */
+function ContextMenu({ menu, pins, onOpen, onTogglePin, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const close = (e) => { if (!ref.current?.contains(e.target)) onClose(); };
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("blur", onClose);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", onKey); window.removeEventListener("blur", onClose); };
+  }, [onClose]);
+  const { item } = menu;
+  const pinned = pins.includes(item.view);
+  const act = (fn) => () => { fn(); onClose(); };
+  const x = Math.min(menu.x, window.innerWidth - 230);
+  const y = Math.min(menu.y, window.innerHeight - 170);
+  return (
+    <div ref={ref} className="erp-menu erp-context" role="menu" style={{ left: x, top: y }}>
+      <button type="button" role="menuitem" className="erp-menu-item" onClick={act(() => onOpen(item))}>{item.action ? item.label : "Open"}</button>
+      {!item.action && <button type="button" role="menuitem" className="erp-menu-item" onClick={act(() => openInNewWindow(item))}>Open in a new window</button>}
+      {!item.action && onTogglePin && item.view !== "moduleOverview" && item.view !== "apps" && (
+        <button type="button" role="menuitem" className="erp-menu-item" onClick={act(() => onTogglePin(item.view))}>{pinned ? "Remove from My shortcuts" : "Add to My shortcuts"}</button>
+      )}
+      {!item.action && <button type="button" role="menuitem" className="erp-menu-item" onClick={act(() => navigator.clipboard?.writeText(window.location.origin + pathFor(item)))}>Copy link</button>}
+    </div>
+  );
+}
+
+function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, desktop, onShowShortcuts }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -140,6 +213,7 @@ function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, des
           ))}
           <div className="erp-menu-sep" />
           <button type="button" role="menuitem" className="erp-menu-item erp-menu-item-plain" onClick={() => go("security")}>Account security</button>
+          <button type="button" role="menuitem" className="erp-menu-item erp-menu-item-plain" onClick={() => { setOpen(false); onShowShortcuts(); }}>Keyboard shortcuts</button>
           <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/docs/business-workspace-guide.md" download>Download the setup guide</a>
           {!desktop && <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/business/download">Get the desktop app</a>}
           <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/">Inaya Network dApp</a>
@@ -153,7 +227,7 @@ function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, des
 
 export default function ErpShell({
   orgId, orgName, email, role, canManage, orgs, selectedOrgId, onSwitchOrg, onLogout,
-  activeView, browseSection, section, screenSections, onNavigate, visibleItems, pins = [],
+  activeView, browseSection, section, screenSections, onNavigate, visibleItems, pins = [], onTogglePin,
   title, description, prefs, onUpdatePrefs, desktop, search, notifications, children,
 }) {
   useErpDocumentTheme(prefs.theme);
@@ -162,9 +236,14 @@ export default function ErpShell({
   const version = useAppVersion(desktop);
   const now = useClock();
   const contentRef = useRef(null);
+  const [menu, setMenu] = useState(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
+  const contextFor = (item) => (e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, item }); };
 
   const modules = useMemo(() => erpLayout({ visibleKeys: visibleItems.map((i) => i.key) }), [visibleItems]);
-  const activeModuleId = erpModuleFor(activeView, browseSection);
+  const activeModuleId = erpModuleFor(activeView, browseSection, section);
   const activeModule = modules.find((m) => m.id === activeModuleId) || modules[0];
   const activeItem = erpActiveItem(activeView, browseSection, section);
   // Opens a task-panel item: a screen, one of its sections, or its "New ..." form.
@@ -189,9 +268,18 @@ export default function ErpShell({
   // Each page starts at the top, like switching screens in a desktop app.
   useEffect(() => { contentRef.current?.scrollTo?.({ top: 0 }); }, [activeView, browseSection]);
 
-  // Alt+1..9 opens the module tiles in order; Alt+0 the tenth.
+  // Alt+1..9 opens the module tiles in order; Alt+0 the tenth. Ctrl+N starts a new record where the
+  // screen has a "New ..." form, Ctrl+B toggles the task panel, F1 lists the shortcuts.
   useEffect(() => {
     const onKey = (e) => {
+      const ctrl = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
+      if (ctrl && (e.key === "n" || e.key === "N")) {
+        const it = erpNewItemFor(activeView, section);
+        if (it) { e.preventDefault(); open(it); }
+        return;
+      }
+      if (ctrl && (e.key === "b" || e.key === "B")) { e.preventDefault(); onUpdatePrefs({ panelCollapsed: !prefs.panelCollapsed }); return; }
+      if (e.key === "F1" || (ctrl && e.key === "/")) { e.preventDefault(); setShowShortcuts((v) => !v); return; }
       if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const n = e.key === "0" ? 10 : Number(e.key);
       if (!Number.isInteger(n) || n < 1 || n > modules.length) return;
@@ -201,9 +289,15 @@ export default function ErpShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modules, onNavigate]);
+  }, [modules, onNavigate, activeView, section, prefs.panelCollapsed]);
 
   const groupOfActive = panelGroups.find((g) => g.items.some((i) => i.key === activeItem));
+  // The section inside the screen, when it has one: a listed section, or one the screen reported.
+  const activeEntry = groupOfActive?.items.find((i) => i.key === activeItem);
+  const reported = screenSections?.list?.length && !erpListsSections(activeView)
+    ? screenSections.list.find(([k]) => k === (section || screenSections.defaultSection))
+    : null;
+  const sectionLabel = reported ? reported[1] : activeEntry?.section && activeView !== "moduleOverview" ? activeEntry.label : null;
   const themeVars = ERP_THEME_TOKENS[prefs.theme] || ERP_THEME_TOKENS.classic;
 
   return (
@@ -224,7 +318,7 @@ export default function ErpShell({
             <span className="erp-titlebar-org">{orgName}</span>
           )}
         </div>
-        <UserMenu email={email} role={role} prefs={prefs} onUpdatePrefs={onUpdatePrefs} onNavigate={onNavigate} onLogout={onLogout} desktop={desktop} />
+        <UserMenu email={email} role={role} prefs={prefs} onUpdatePrefs={onUpdatePrefs} onNavigate={onNavigate} onLogout={onLogout} desktop={desktop} onShowShortcuts={() => setShowShortcuts(true)} />
       </header>
 
       <div className="erp-modbar">
@@ -239,6 +333,7 @@ export default function ErpShell({
                 aria-current={active ? "page" : undefined}
                 title={`${m.label}${i < 10 ? ` (Alt+${(i + 1) % 10})` : ""}`}
                 onClick={() => open(m.home)}
+                onContextMenu={contextFor({ ...m.home, label: m.label })}
               >
                 <Icon path={ERP_ICONS[m.icon] || ERP_ICONS.home} className="erp-tile-icon" />
                 <span className="erp-tile-label">{m.label}</span>
@@ -258,6 +353,7 @@ export default function ErpShell({
           {groupOfActive && activeModule?.id !== "industry" && <><span aria-hidden="true"> › </span><span>{groupOfActive.label}</span></>}
           <span aria-hidden="true"> › </span>
           <strong>{title}</strong>
+          {sectionLabel && sectionLabel !== title && <><span aria-hidden="true"> › </span><strong>{sectionLabel}</strong></>}
         </p>
         {!online ? (
           <p className="erp-notice-alert">You&apos;re offline. Changes can&apos;t be saved until the connection is back.</p>
@@ -299,7 +395,7 @@ export default function ErpShell({
                           const curSub = section || screenSections?.defaultSection;
                           return (
                             <li key={it.key}>
-                              <button type="button" className={`erp-item ${it.action ? "erp-item-action" : ""} ${sel ? "is-active" : ""}`} aria-current={sel && !subs ? "page" : undefined} onClick={() => open(it)}>
+                              <button type="button" className={`erp-item ${it.action ? "erp-item-action" : ""} ${sel ? "is-active" : ""}`} aria-current={sel && !subs ? "page" : undefined} onClick={() => open(it)} onContextMenu={contextFor(it)}>
                                 {it.action
                                   ? <span className="erp-item-icon erp-item-plus" aria-hidden="true">+</span>
                                   : it.icon && ICONS[it.icon] ? <Icon path={ICONS[it.icon]} className="erp-item-icon" /> : <span className="erp-item-icon" />}
@@ -309,7 +405,7 @@ export default function ErpShell({
                                 <ul className="erp-subitems">
                                   {subs.map(([key, label]) => (
                                     <li key={key}>
-                                      <button type="button" className={`erp-subitem ${key === curSub ? "is-active" : ""}`} aria-current={key === curSub ? "page" : undefined} onClick={() => onNavigate(it.view, { section: key })}>
+                                      <button type="button" className={`erp-subitem ${key === curSub ? "is-active" : ""}`} aria-current={key === curSub ? "page" : undefined} onClick={() => onNavigate(it.view, { section: key })} onContextMenu={contextFor({ key: `${it.view}:${key}`, view: it.view, section: key, action: null, label })}>
                                         {label}
                                       </button>
                                     </li>
@@ -330,12 +426,15 @@ export default function ErpShell({
 
         <main className="erp-content" ref={contentRef} id="erp-content">
           <div className="erp-page-header">
-            <h1 className="erp-page-title">{title}</h1>
+            <h1 className="erp-page-title">{title}{sectionLabel && sectionLabel !== title && <span className="erp-page-section"> · {sectionLabel}</span>}</h1>
             {description && <p className="erp-page-desc">{description}</p>}
           </div>
           <div className="erp-page">{children}</div>
         </main>
       </div>
+
+      {menu && <ContextMenu menu={menu} pins={pins} onOpen={open} onTogglePin={onTogglePin} onClose={closeMenu} />}
+      {showShortcuts && <ShortcutsDialog onClose={closeShortcuts} />}
 
       <footer className="erp-status">
         <span className="erp-status-cell">

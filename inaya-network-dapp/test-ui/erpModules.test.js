@@ -29,6 +29,7 @@ describe("inventory: nothing live is left out", () => {
     const owner = new Map();
     for (const m of ERP_MODULES) for (const g of m.groups) for (const i of g.items) {
       const v = parseErpItem(i).view;
+      if (v === "moduleOverview") continue; // one Overview per module, by design
       if (owner.has(v)) expect(owner.get(v)).toBe(m.id);
       owner.set(v, m.id);
     }
@@ -79,7 +80,7 @@ describe("sections and actions point at things that really exist", () => {
   const items = ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items)).map(parseErpItem);
 
   test("every listed section is a real tab of its screen", () => {
-    for (const i of items.filter((x) => x.section && !x.action)) {
+    for (const i of items.filter((x) => x.section && !x.action && x.view !== "moduleOverview")) {
       expect(Object.keys(SOURCES)).toContain(i.view);
       expect(read(SOURCES[i.view])).toMatch(new RegExp(`useErpSection\\([^)]*"${i.section}"`));
     }
@@ -154,8 +155,53 @@ describe("module structure", () => {
     expect(erpModuleFor("unknownView")).toBe("home");
   });
 
+  test("module Overviews: one per core module, and never shown on their own", () => {
+    const { ERP_OVERVIEW_MODULES } = require("../src/components/business/erp/ErpModuleOverview");
+    const listed = ERP_MODULES.flatMap((m) => m.groups.flatMap((g) => g.items)).map(parseErpItem).filter((i) => i.view === "moduleOverview");
+    expect(listed.map((i) => i.section).sort()).toEqual([...ERP_OVERVIEW_MODULES].sort());
+    for (const i of listed) expect(erpModuleFor("moduleOverview", "documents", i.section)).toBe(i.section);
+    // Someone who can only see Home gets only Home: no Overview-only tiles.
+    expect(erpLayout({ visibleKeys: ["osHome"] }).map((m) => m.id)).toEqual(["home"]);
+  });
+
   test("parseErpItem", () => {
     expect(parseErpItem("finance:invoices!new")).toEqual({ key: "finance:invoices!new", view: "finance", section: "invoices", action: "new" });
     expect(parseErpItem("crm")).toEqual({ key: "crm", view: "crm", section: null, action: null });
+  });
+});
+
+describe("every tabbed screen gives its tabs to the task panel", () => {
+  // Every screen that switches between top-level tabs. In ERP mode its tab bar is hidden, so it
+  // must hand its tabs to the task panel (useErpSection with [key, label] pairs) and mark the bar
+  // (data-erp-tabs) -- or, for the core modules ERP_MODULES lists itself, hide the bar in code.
+  const CORE = ["FinanceView", "HRView", "InventoryView", "ProcurementView", "CRMView"];
+  const REPORTED = [
+    "admin/ComplianceReadinessView", "gateway/GatewayView", "governance/GovernanceView", "AiSecurityView", "BookkeeperView",
+    "DeviceProtectionView", "DocumentAutomationView", "EnterpriseHardeningView", "ExecutiveDashboardView", "FinancialView",
+    "GovernmentView", "HealthView", "IdentityView", "InfrastructureView", "IntegrationsView", "LegalView", "NasManagementView",
+    "RegulatedView", "SecurityResilienceView", "StorageManagerView", "SupportView", "WorkflowsView",
+  ];
+  const src = (f) => read(`src/components/business/${f}.js`);
+
+  test.each(CORE)("%s: sections from the panel, tab bar hidden in ERP mode", (f) => {
+    expect(src(f)).toMatch(/useErpSection\("/);
+    expect(src(f)).toMatch(/\{!tabsHidden && \(/);
+  });
+
+  test.each(REPORTED)("%s: reports labelled tabs and marks its tab bar", (f) => {
+    const s = src(f);
+    expect(s).toMatch(/useErpSection\(/);
+    expect(s).toContain("data-erp-tabs");
+    // Top-level tab state only; nested panels (a Legal matter's own sections) keep theirs.
+    expect(s).not.toMatch(/const \[tab, setTab\] = useState\("/);
+  });
+
+  test("no other screen still keeps top-level tab state of its own", () => {
+    // A new tabbed screen added later must join one of the lists above.
+    const dir = path.join(__dirname, "../src/components/business");
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith("View.js"));
+    const known = new Set([...CORE, ...REPORTED].map((f) => f.split("/").pop()));
+    const offenders = files.filter((f) => !known.has(f.replace(/\.js$/, "")) && /const \[tab, setTab\] = useState\("/.test(fs.readFileSync(path.join(dir, f), "utf8")));
+    expect(offenders).toEqual([]);
   });
 });

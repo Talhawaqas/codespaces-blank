@@ -100,7 +100,7 @@ function LinkTile({ label, description, onClick, popOutPath }) {
  *  getAccessibleScope() is already the one unified permission resolver;
  *  this is purely a plain-language surfacing of what useOrg() already
  *  knows about the caller's own membership. */
-function PermissionsSummary() {
+export function PermissionsSummary() {
   const { membership, role, can } = useOrg();
   const grants = [
     can.manageOrg() ? "Full organization management (owner/admin)" : null,
@@ -126,7 +126,7 @@ function PermissionsSummary() {
   );
 }
 
-function OsAssistantWidget({ orgId }) {
+export function OsAssistantWidget({ orgId }) {
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState("");
   const [asking, setAsking] = useState(false);

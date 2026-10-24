@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import EmptyState from "../../EmptyState";
+import { useErpSection } from "../erp/ErpNavContext";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -182,15 +183,17 @@ function Metadata({ orgId }) {
   );
 }
 
+const GOVERNANCE_TABS = [["policies", "Policies"], ["dlp", "Data protection (DLP)"], ["metadata", "Metadata fields"]];
+
 export default function GovernanceView({ orgId, canManage }) {
-  const [tab, setTab] = useState("policies"); const [types, setTypes] = useState(null); const [err, setErr] = useState("");
+  const [tab, setTab] = useErpSection("policies", GOVERNANCE_TABS); const [types, setTypes] = useState(null); const [err, setErr] = useState("");
   useEffect(() => { govApi(`/api/orgs/governance/policies?orgId=${orgId}`).then((r) => setTypes(r.types)).catch((e) => setErr(e.message)); }, [orgId]);
   if (!canManage) return <EmptyState title="Governance" description="Only owners and admins can manage governance policies." />;
   if (err) return <EmptyState title="Governance" description={err} />;
   if (!types) return <p className={`text-[12px] ${muted}`}>Loading…</p>;
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">{[["policies", "Policies"], ["dlp", "Data protection (DLP)"], ["metadata", "Metadata fields"]].map(([k, l]) => <button key={k} className={`${btn} ${tab === k ? "!bg-[#00f2fe]/15 !border-[#00f2fe]/40 !text-[#00f2fe]" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div className="flex flex-wrap gap-2" data-erp-tabs>{GOVERNANCE_TABS.map(([k, l]) => <button key={k} className={`${btn} ${tab === k ? "!bg-[#00f2fe]/15 !border-[#00f2fe]/40 !text-[#00f2fe]" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
       <p className={`text-[11px] ${muted}`}>Policies are versioned. A published policy never changes: edit it by creating a new version. Rules only ever restrict; they cannot grant access that permissions do not already give. Features are switched on under Settings, Beta features.</p>
       {tab === "policies" && <Policies orgId={orgId} types={types} />}
       {tab === "dlp" && <Dlp orgId={orgId} />}

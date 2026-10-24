@@ -11,6 +11,7 @@ import EmptyState from "../EmptyState";
 import { Note } from "./nas/ui";
 import { OverviewPanel, ProvidersPanel, MappingsPanel, LifecyclePanel, RevocationPanel, DriftPanel, DryRunPanel, PeoplePanel } from "./identity/panels";
 import { ReviewsPanel, TemporaryPanel, OrphansPanel, JobsPanel, MspPanel, CredentialsPanel, EventsPanel } from "./identity/panels2";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const TABS = [
   ["overview", "Overview"], ["providers", "Providers"], ["mappings", "Mappings"], ["lifecycle", "Lifecycle"], ["revocation", "Revocation"], ["people", "People"], ["drift", "Drift"],
@@ -18,7 +19,7 @@ const TABS = [
 ];
 
 export default function IdentityView({ orgId, canManage }) {
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useErpSection("overview", TABS);
   if (!canManage) return <EmptyState title="No access to Identity & Access" description="Only an organization owner or admin can manage identity integrations." />;
   return (
     <div className="space-y-4">
@@ -27,7 +28,7 @@ export default function IdentityView({ orgId, canManage }) {
         <p className="text-sm text-[var(--inaya-text-muted)]">Connect Entra ID, Active Directory (through Rewst or an RMM), HR and PSA systems. Joiners, movers and leavers change Inaya access automatically, and a leaver is cut off at once.
           Inaya stays the authority: every change is verified, audited and recorded as evidence.</p>
       </header>
-      <nav aria-label="Identity sections" className="flex flex-wrap gap-1">
+      <nav aria-label="Identity sections" data-erp-tabs className="flex flex-wrap gap-1">
         {TABS.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setTab(id)} aria-current={tab === id ? "page" : undefined}
             className={`rounded border px-3 py-1.5 text-xs font-medium ${tab === id ? "border-[var(--inaya-accent)] text-[var(--inaya-accent)]" : "border-white/10 text-[var(--inaya-text-muted)]"}`}>{label}</button>

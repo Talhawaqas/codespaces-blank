@@ -5,6 +5,7 @@
 // plainly when something is not assessed, not collected or not verified.
 import { useCallback, useEffect, useState } from "react";
 import EmptyState from "../../EmptyState";
+import { useErpSection } from "../erp/ErpNavContext";
 
 const card = "bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] rounded-lg";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -17,13 +18,13 @@ const TONE = { implemented: "text-emerald-400", partially_implemented: "text-amb
 const label = (s) => String(s).replace(/_/g, " ");
 
 export default function ComplianceReadinessView({ orgId, canManage, isOwner }) {
-  const [tab, setTab] = useState("overview"); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
-  const act = async (fn, ok) => { setErr(""); setMsg(""); try { const r = await fn(); if (ok) setMsg(ok); return r; } catch (e) { setErr(e.message); } };
   const tabs = [["overview", "Overview"], ["controls", "Controls"], ["government", "Government profile"], ["crypto", "Cryptography"], ["keys", "Encryption keys"], ["package", "Evidence package"]];
+  const [tab, setTab] = useErpSection("overview", tabs); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
+  const act = async (fn, ok) => { setErr(""); setMsg(""); try { const r = await fn(); if (ok) setMsg(ok); return r; } catch (e) { setErr(e.message); } };
   return (
     <div className="space-y-3 text-[12px]">
       <p className={muted}>Track how controls are implemented, who is responsible, and what evidence supports them. These states describe how controls are being tracked. They are not a statement of compliance, authorization or certification.</p>
-      <div className="flex flex-wrap gap-1">{tabs.map(([k, l]) => <button key={k} className={tab === k ? accent : btn} onClick={() => { setTab(k); setErr(""); setMsg(""); }}>{l}</button>)}</div>
+      <div className="flex flex-wrap gap-1" data-erp-tabs>{tabs.map(([k, l]) => <button key={k} className={tab === k ? accent : btn} onClick={() => { setTab(k); setErr(""); setMsg(""); }}>{l}</button>)}</div>
       {err && <p className="text-red-400" role="alert">{err}</p>}{msg && <p className="text-emerald-400" role="status">{msg}</p>}
       {tab === "overview" && <Overview orgId={orgId} act={act} canManage={canManage} />}
       {tab === "controls" && <Controls orgId={orgId} act={act} canManage={canManage} />}

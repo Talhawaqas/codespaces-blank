@@ -17,6 +17,7 @@ import DevicesView from "./endpoint/DevicesView";
 import EndpointBackupView from "./endpoint/EndpointBackupView";
 import DirectSyncView from "./DirectSyncView";
 import CleanerView from "./CleanerView";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const TABS = [
   { key: "backup", label: "Backup" },
@@ -26,11 +27,11 @@ const TABS = [
 ];
 
 export default function DeviceProtectionView({ orgId, canManage, deviceAdmin, storageAdmin }) {
-  const [tab, setTab] = useState("backup");
+  const [tab, setTab] = useErpSection("backup", TABS.map((t) => [t.key, t.label]));
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 border-b border-white/5 overflow-x-auto">
+      <div className="flex gap-1 border-b border-white/5 overflow-x-auto" data-erp-tabs>
         {TABS.map((t) => (
           <button
             key={t.key}

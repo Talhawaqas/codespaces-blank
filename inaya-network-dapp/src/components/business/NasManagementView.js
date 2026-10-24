@@ -14,6 +14,7 @@ import EmptyState from "../EmptyState";
 import { api, useLoad, useAction, Card, Note, Err, Btn, Input, Select, Pill } from "./nas/ui";
 import { OverviewPanel, StoragePanel, DisksPanel, PoolsPanel, SharesPanel, UsersPanel, PermissionsPanel } from "./nas/panels1";
 import { SnapshotsPanel, BackupPanel, ReplicationPanel, CloudTargetsPanel, SecurityPanel, HealthPanel, AuditPanel, EvidencePanel, TwinPanel, UpdatesPanel, SettingsPanel } from "./nas/panels2";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const SECTIONS = [
   ["overview", "Overview"], ["storage", "Storage"], ["disks", "Disks"], ["pools", "Pools"], ["shares", "Shares"], ["users", "Users & Groups"],
@@ -39,7 +40,7 @@ function RegisterApplianceForm({ orgId, onChanged }) {
 }
 
 function Console({ orgId, appliance }) {
-  const [section, setSection] = useState("overview");
+  const [section, setSection] = useErpSection("overview", SECTIONS);
   const shares = useLoad(`/api/orgs/nas/shares?orgId=${encodeURIComponent(orgId)}&applianceId=${appliance._id}`);
   const props = { orgId, appliance, shares: shares.data?.shares || [], reloadShares: shares.reload };
   const panels = {
@@ -50,7 +51,7 @@ function Console({ orgId, appliance }) {
   };
   return (
     <div className="space-y-4">
-      <nav aria-label="NAS sections" className="flex flex-wrap gap-1">
+      <nav aria-label="NAS sections" data-erp-tabs className="flex flex-wrap gap-1">
         {SECTIONS.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setSection(id)} aria-current={section === id ? "page" : undefined}
             className={`rounded border px-3 py-1.5 text-xs font-medium ${section === id ? "border-[var(--inaya-accent)] text-[var(--inaya-accent)]" : "border-white/10 text-[var(--inaya-text-muted)]"}`}>{label}</button>

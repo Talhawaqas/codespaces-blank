@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { useErpSection } from "./erp/ErpNavContext";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -20,11 +21,11 @@ async function api(path, options) {
 }
 
 export default function SecurityResilienceView({ orgId, email }) {
-  const [tab, setTab] = useState("dashboard");
   const TABS = ["dashboard", "vendors", "ict assets", "continuity", "disaster recovery", "resilience tests", "privileged access", "data residency", "sod rules"];
+  const [tab, setTab] = useErpSection("dashboard", [["dashboard", "Dashboard"], ["vendors", "Vendors"], ["ictassets", "ICT assets"], ["continuity", "Continuity"], ["disasterrecovery", "Disaster recovery"], ["resiliencetests", "Resilience tests"], ["privilegedaccess", "Privileged access"], ["dataresidency", "Data residency"], ["sodrules", "Segregation of duties"]]);
   return (
     <div className="space-y-5">
-      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit flex-wrap" data-erp-tabs>
         {TABS.map((t) => {
           const key = t.replace(/ /g, "");
           return <button key={t} onClick={() => setTab(key)} className={`px-3.5 py-2 text-[11px] font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{t}</button>;

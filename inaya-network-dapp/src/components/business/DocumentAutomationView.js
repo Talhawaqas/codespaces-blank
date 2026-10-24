@@ -14,11 +14,12 @@ import DocumentDetail from "./documents/DocumentDetail";
 import TemplatesPanel from "./documents/TemplatesPanel";
 import SettingsPanel from "./documents/SettingsPanel";
 import { VerifyPanel, HealthPanel } from "./documents/VerifyHealthPanels";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const TABS = ["Documents", "Create", "Templates", "Settings", "Verify", "Health"];
 
 export default function DocumentAutomationView({ orgId, canManage, initialDocumentId }) {
-  const [tab, setTab] = useState("Documents");
+  const [tab, setTab] = useErpSection("Documents", TABS.map((t) => [t, t]));
   const [meta, setMeta] = useState(null);
   const [docs, setDocs] = useState(null);
   const [selected, setSelected] = useState(initialDocumentId || null);
@@ -56,7 +57,7 @@ export default function DocumentAutomationView({ orgId, canManage, initialDocume
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 border-b border-white/10" role="tablist">
+      <div className="flex flex-wrap gap-1 border-b border-white/10" role="tablist" data-erp-tabs>
         {TABS.map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); if (t !== "Documents") setSelected(null); }} className={`px-3 py-2 text-sm font-semibold ${tab === t ? "border-b-2 border-cyan-400 text-cyan-300" : "text-[var(--inaya-text-muted)] hover:text-white"}`}>{t}</button>
         ))}
