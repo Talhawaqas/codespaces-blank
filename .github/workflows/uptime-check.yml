@@ -1,0 +1,40 @@
+name: Uptime check
+
+# Checks www.inayanetwork.com every 10 minutes: the site, Business Workspace
+# and the database (/api/health?deep=1). A check that fails twice, 30 seconds
+# apart, fails the run, and GitHub emails the repository owner about failed
+# scheduled runs, so an outage reaches you within about 10 to 20 minutes.
+# Free: this repository is public, so Actions minutes are not billed.
+# GitHub may delay scheduled runs by a few minutes at busy times.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check site, workspace and database
+        run: |
+          check() {
+            name="$1"; url="$2"; expect="$3"
+            for attempt in 1 2; do
+              code=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 20 "$url" || echo 000)
+              if [ "$code" = "200" ] && { [ -z "$expect" ] || grep -q "$expect" /tmp/body; }; then
+                echo "OK    $name ($code)"; return 0
+              fi
+              [ "$attempt" = 1 ] && sleep 30
+            done
+            echo "FAIL  $name: HTTP $code from $url"; head -c 300 /tmp/body; echo
+            return 1
+          }
+          failed=0
+          check "Database"           "https://www.inayanetwork.com/api/health?deep=1" '"database":"ok"' || failed=1
+          check "Business Workspace" "https://www.inayanetwork.com/business"          ""                || failed=1
+          check "Website"            "https://www.inayanetwork.com/"                  ""                || failed=1
+          exit $failed
