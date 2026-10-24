@@ -311,19 +311,34 @@ export default function ErpShell({
     <div className="bw erp" data-erp-theme={prefs.theme} style={themeVars}>
       <header className="erp-titlebar">
         <div className="erp-titlebar-left">
-          <span className="erp-logo" aria-hidden="true">I</span>
-          <span className="erp-titlebar-app">Inaya Business Workspace</span>
-          <span className="erp-titlebar-sep" aria-hidden="true">|</span>
-          {orgs.length > 1 ? (
-            <label className="erp-org">
-              <span className="sr-only">Company</span>
-              <select value={selectedOrgId || ""} onChange={(e) => onSwitchOrg(e.target.value)} className="erp-org-select">
-                {orgs.map((o) => <option key={o.orgId} value={o.orgId}>{o.orgName}</option>)}
-              </select>
-            </label>
-          ) : (
-            <span className="erp-titlebar-org">{orgName}</span>
-          )}
+          <button type="button" className="erp-brand" onClick={() => onNavigate("osHome")} title="Home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/inaya-logo.png" alt="" className="erp-brand-logo" width={38} height={38} />
+            <span className="erp-brand-text">
+              <span className="erp-brand-name">Inaya Network</span>
+              <span className="erp-brand-tagline">Business Workspace · Your encrypted business operating system</span>
+            </span>
+          </button>
+          <span className="erp-titlebar-divider" aria-hidden="true" />
+          <div className="erp-company">
+            <span className="erp-company-label">Company</span>
+            <span className="erp-company-row">
+            {orgs.length > 1 ? (
+              <label className="erp-org">
+                <span className="sr-only">Switch company</span>
+                <select value={selectedOrgId || ""} onChange={(e) => onSwitchOrg(e.target.value)} className="erp-org-select">
+                  {orgs.map((o) => <option key={o.orgId} value={o.orgId}>{o.orgName}</option>)}
+                </select>
+              </label>
+            ) : (
+              <span className="erp-titlebar-org">{orgName}</span>
+            )}
+            {/* A company saved without a real name: owners and admins get a one-click way to fix it. */}
+            {canManage && (!orgName || /not set/i.test(orgName)) && (
+              <button type="button" className="erp-company-fix" onClick={() => onNavigate("settings")}>Set company name</button>
+            )}
+            </span>
+          </div>
         </div>
         <UserMenu email={email} role={role} prefs={prefs} onUpdatePrefs={onUpdatePrefs} onNavigate={onNavigate} onLogout={onLogout} desktop={desktop} onShowShortcuts={() => setShowShortcuts(true)} />
       </header>

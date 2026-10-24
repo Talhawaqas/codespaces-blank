@@ -288,12 +288,26 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 .erp :focus-visible { outline: 2px solid var(--erp-focus); outline-offset: 1px; }
 
 /* Title bar */
-.erp-titlebar { flex: none; height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px 0 12px; background: var(--erp-titlebar-bg); color: var(--erp-titlebar-fg); user-select: none; }
+.erp-titlebar { flex: none; height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px 0 12px; background: var(--erp-titlebar-bg); color: var(--erp-titlebar-fg); user-select: none; }
 .erp-titlebar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .erp-logo { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #062033; font-weight: 800; font-size: 12px; flex: none; }
 .erp-titlebar-app { font-weight: 600; letter-spacing: .1px; white-space: nowrap; }
 .erp-titlebar-sep, .erp-titlebar-muted { color: var(--erp-titlebar-muted); }
 .erp-titlebar-org { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.erp-brand { display: flex; align-items: center; gap: 11px; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; min-width: 0; }
+.erp-brand-logo { width: 38px; height: 38px; border-radius: 8px; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 2px 6px rgba(0,0,0,.35); }
+.erp-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.erp-brand-name { font-size: 16px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
+.erp-brand-tagline { font-size: 11.5px; color: var(--erp-titlebar-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.erp-titlebar-divider { width: 1px; height: 30px; background: rgba(255,255,255,.18); margin: 0 6px; flex: none; }
+.erp-company { display: flex; flex-direction: column; justify-content: center; min-width: 0; line-height: 1.15; position: relative; }
+.erp-company-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--erp-titlebar-muted); }
+.erp-company .erp-titlebar-org { font-size: 14px; margin-top: 2px; }
+.erp-company .erp-org-select { margin-top: 2px; font-size: 13px; }
+.erp-company-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.erp-company-fix { margin-top: 2px; flex: none; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: var(--erp-titlebar-fg); border-radius: 3px; padding: 0 7px; font-size: 11px; cursor: pointer; }
+.erp-company-fix:hover { background: rgba(255,255,255,.22); }
+@media (max-width: 1240px) { .erp-brand-tagline { display: none; } }
 .erp-org-select { background-color: transparent; color: var(--erp-titlebar-fg); border: 1px solid rgba(255,255,255,.25); border-radius: 4px; padding: 2px 26px 2px 8px; font-weight: 600; max-width: 280px; }
 .erp-org-select option { color: #1f2328; }
 .erp-titlebar-btn { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; color: var(--erp-titlebar-fg); background: transparent; border: 0; cursor: pointer; }
@@ -463,7 +477,7 @@ html[data-theme="white"]:has(.bw) :is([class~="border-red-400/20"],[class~="bord
 /* Start screen while the session loads */
 .erp-splash { position: fixed; inset: 0; display: grid; place-items: center; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
 .erp-splash-card { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.erp-splash-logo { width: 44px; height: 44px; border-radius: 10px; font-size: 24px; }
+.erp-splash-logo { width: 64px; height: 64px; border-radius: 14px; box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 6px 18px rgba(0,0,0,.35); }
 .erp-splash-title { font-size: 18px; font-weight: 600; letter-spacing: .2px; }
 .erp-splash-msg { font-size: 13px; }
 .erp-splash-bar { width: 180px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 6px; }
