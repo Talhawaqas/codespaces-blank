@@ -137,7 +137,6 @@ For institutional/enterprise discussions, direct people to partners@inayanetwork
 
 ## LINKS
 - Telegram: https://t.me/inayanetwork
-- X (Twitter): https://x.com/InayaNetwork
 - YouTube: (see the Contact Us page for the current channel link)
 Official whitepaper, business model, operator manifesto, institutional/community FAQs, SDK guide, technical SOW, and company profile PDFs are all available from the "About Us" tab of the dApp.
 

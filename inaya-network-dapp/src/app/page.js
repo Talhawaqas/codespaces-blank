@@ -3427,7 +3427,6 @@ export default function Home() {
   const socialLinksList = [
     { label: "Telegram Swarm Hub", href: "https://t.me/inayanetwork", icon: "🚀" },
     { label: "YouTube Channel", href: "https://youtube.com/@inayanetworkofficial?si=GzAzY5m3PzZy8MU-", icon: "▶️" },
-    { label: "X Network Telemetry", href: "https://x.com/InayaNetwork", icon: "🐦" },
     { label: "Discord Community", href: "https://discord.gg/DS8uDAr9jV", icon: "💬" },
   ];
 
