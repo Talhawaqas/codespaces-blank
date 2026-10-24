@@ -4,7 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
-import { getOrgProfile, updateOrgProfile } from "../../../../lib/industry-config.js";
+import { getOrgProfile, updateOrgProfile, renameOrg } from "../../../../lib/industry-config.js";
 import { getOrgClassificationLevels } from "../../../../lib/classification.js";
 
 export async function GET(req) {
@@ -32,12 +32,19 @@ export async function GET(req) {
 export async function PATCH(req) {
   try {
     const body = await req.json();
-    const { orgId, ...updates } = body;
+    const { orgId, name, ...updates } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true });
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    // Renaming the company is its own, audited operation (never part of the profile fields).
+    if (name !== undefined) {
+      const renamed = await renameOrg({ orgId, name, actorEmail: auth.session.email, membership: auth.membership });
+      if (renamed.error) return NextResponse.json({ error: renamed.error }, { status: renamed.status });
+      if (Object.keys(updates).length === 0) return NextResponse.json({ name: renamed.name });
+    }
 
     const result = await updateOrgProfile({ orgId, updates, actorEmail: auth.session.email, membership: auth.membership });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

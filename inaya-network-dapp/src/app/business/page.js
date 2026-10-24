@@ -355,6 +355,7 @@ export default function BusinessPage() {
             selectedOrgId={currentMembership.orgId}
             onSwitchOrg={setSelectedOrgId}
             onLogout={handleLogout}
+            onSessionChanged={refreshSession}
           />
         </OrgProvider>
       )}
@@ -792,6 +793,64 @@ const BROWSE_SECTION_LABELS = { departments: "Departments", projects: "Projects"
 // nav items (Health OS / Legal OS) it sees, without needing to recreate
 // the company. Owner/admin only (the settings view itself is already
 // canManage-gated by its caller).
+// The company's display name (owner/admin). Saved through PATCH /api/orgs/settings, which
+// validates it and records the rename in the audit trail; the session is then refreshed so the
+// new name shows everywhere (title bar, sidebar, company switcher) straight away.
+function CompanyNameSettings({ orgId, currentName, onRenamed }) {
+  const placeholder = !currentName || /not set/i.test(currentName);
+  const [name, setName] = useState(placeholder ? "" : currentName);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const trimmed = name.replace(/\s+/g, " ").trim();
+  const unchanged = trimmed === (placeholder ? "" : currentName);
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      await api("/api/orgs/settings", { method: "PATCH", body: JSON.stringify({ orgId, name: trimmed }) });
+      setSaved(true);
+      await onRenamed?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5">
+      <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm mb-1">Company name</h3>
+      <p className="text-[var(--inaya-text-muted)] text-xs mb-3">
+        Shown to everyone in this company, on documents you generate, and in the title bar.{placeholder && " Your company doesn't have a name yet."}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="bw-company-name" className="sr-only">Company name</label>
+        <input
+          id="bw-company-name"
+          value={name}
+          onChange={(e) => { setName(e.target.value); setSaved(false); }}
+          maxLength={100}
+          placeholder="Acme Traders (Pvt) Ltd"
+          className="w-full max-w-sm bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]"
+        />
+        <button
+          type="submit"
+          disabled={saving || trimmed.length < 2 || unchanged}
+          className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2 rounded-lg disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save name"}
+        </button>
+        {saved && !error && <span className="text-emerald-400 text-xs" role="status">Saved</span>}
+      </div>
+      {error && <p className="text-red-400 text-xs mt-2" role="alert">{error}</p>}
+    </form>
+  );
+}
+
 function OrgVerticalSettings({ orgId, vertical, onChanged }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -964,7 +1023,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
   );
 }
 
-function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout }) {
+function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout, onSessionChanged }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
   // ERP mode (docs/erp-mode-plan.md): on by default in the desktop app, opt-in on the web.
@@ -1333,6 +1392,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "settings" && canManage && (
         <div className="space-y-6">
           <AppearancePanel />
+          <CompanyNameSettings key={orgId} orgId={orgId} currentName={membership.orgName} onRenamed={onSessionChanged} />
           <OrgVerticalSettings orgId={orgId} vertical={orgVertical} onChanged={setOrgVertical} />
           <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
           <AdminRolesPanel orgId={orgId} canManage={canManage} />

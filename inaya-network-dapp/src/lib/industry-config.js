@@ -50,6 +50,34 @@ export async function getOrgProfile(orgId) {
   return { ...DEFAULT_PROFILE, ...org };
 }
 
+export const ORG_NAME_MAX = 100;
+
+/** Validates a company name. Returns { name } or { error }. */
+export function validateOrgName(raw) {
+  const name = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (!name) return { error: "Company name is required." };
+  if (name.length < 2) return { error: "Company name must be at least 2 characters." };
+  if (name.length > ORG_NAME_MAX) return { error: `Company name can be at most ${ORG_NAME_MAX} characters.` };
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f<>]/.test(name)) return { error: "Company name can't contain control characters or < >." };
+  return { name };
+}
+
+/** Renames a company (owner/admin only), recorded in the org's audit trail with the old and new name. */
+export async function renameOrg({ orgId, name: rawName, actorEmail, membership }) {
+  if (!canManageOrg(membership)) return { error: "Only the owner or an admin can rename the company.", status: 403 };
+  const { name, error } = validateOrgName(rawName);
+  if (error) return { error, status: 400 };
+  const { orgs } = await getOrgCollections();
+  const before = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { name: 1 } });
+  if (!before) return { error: "Organization not found.", status: 404 };
+  if (before.name === name) return { name };
+  await orgs.updateOne({ _id: toObjectId(orgId) }, { $set: { name, updatedAt: new Date().toISOString(), updatedByEmail: actorEmail } });
+  const { logOrgActivity } = await import("./org-activity-log.js");
+  await logOrgActivity({ orgId, recordType: "ORGANIZATION", recordId: orgId, actorEmail, action: "ORG_RENAMED", previousState: before.name ?? null, newState: name, metadata: { from: before.name ?? null, to: name } }).catch(() => {});
+  return { name };
+}
+
 export async function updateOrgProfile({ orgId, updates, actorEmail, membership }) {
   if (!canManageOrg(membership)) return { error: "Only the owner or an admin can update organization settings.", status: 403 };
   if (updates.vertical && !ORG_VERTICALS.includes(updates.vertical)) {
