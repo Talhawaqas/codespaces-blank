@@ -123,7 +123,7 @@ function InvoicesTab({ orgId, email, departments }) {
                   <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">Due {new Date(inv.dueDate).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">${inv.total.toFixed(2)}</span>
+                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{inv.currency} {inv.total.toFixed(2)}</span>
                   <StatusBadge status={inv.status} />
                 </div>
               </button>
@@ -213,7 +213,7 @@ function CreateInvoiceModal({ orgId, departments, onClose, onCreated }) {
             </div>
           ))}
           <button type="button" onClick={addItem} className="text-[11px] font-bold uppercase text-[#00f2fe]">+ Add line</button>
-          <p className="text-right text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">Total: ${total.toFixed(2)}</p>
+          <p className="text-right text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">Total: {currency} {total.toFixed(2)}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 border-t border-white/5 pt-3">
