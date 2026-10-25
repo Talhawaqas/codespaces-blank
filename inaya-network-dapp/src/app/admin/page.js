@@ -143,6 +143,9 @@ export default function AdminDashboard() {
           <a href="/admin/hackathon" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Hackathon
           </a>
+          <a href="/admin/leads" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
+            Leads (outreach)
+          </a>
           <a href="/admin/billing" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             Billing requests (PKR)
           </a>

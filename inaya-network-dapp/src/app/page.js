@@ -3381,6 +3381,7 @@ export default function Home() {
   // 🎬 PRODUCT & DEMO VIDEO REGISTRY
   // ========================================================
   const productDemoVideos = [
+    { title: "Business Workspace ERP Demo (4 min)", desc: "HR, sales and CRM, invoicing, inventory, tasks and encrypted documents in the desktop-style ERP. Shareable page: inayanetwork.com/business/demo", src: "/videos/inaya-business-workspace-erp-demo.mp4" },
     { title: "Website Walkthrough (75s)", desc: "Quick tour of the Inaya Network web app — encryption, sharding, and on-chain custody in action.", src: "/videos/inaya-website-demo.mp4" },
     { title: "Mobile App Demo", desc: "The Inaya mobile app — wallet connect, upload, download, and staking on the go.", src: "/videos/inaya-mobile-demo.mp4" },
     { title: "Card Payment Flow Demo", desc: "No-wallet card checkout — Corporate Reserve and Pay-As-You-Go, powered by Stripe.", src: "/videos/inaya-card-payment-demo.mp4" },

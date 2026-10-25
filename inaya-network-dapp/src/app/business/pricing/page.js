@@ -77,6 +77,15 @@ export default function PricingPage() {
           </div>
         </div>
 
+        <a href="/business/demo" className="mb-8 flex items-center gap-4 bg-[#090d16]/80 border border-white/5 hover:border-[#00f2fe]/30 rounded-2xl p-3 pr-5 group">
+          <img src="/videos/inaya-business-workspace-erp-demo-poster.jpg" alt="" className="w-32 sm:w-40 rounded-lg border border-white/10 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-white text-sm font-bold">Watch the 4-minute demo</p>
+            <p className="text-[#94a3b8] text-xs mt-0.5">See HR, sales, invoicing, inventory, tasks and documents working together before you choose a plan.</p>
+          </div>
+          <span className="ml-auto text-[#00f2fe] text-xs font-bold uppercase shrink-0 group-hover:translate-x-0.5 transition-transform">Play →</span>
+        </a>
+
         {error && <p className="text-red-400 text-sm text-center mb-6">{error}</p>}
         {!plans && !error && <p className="text-[#94a3b8] text-sm text-center">Loading plans…</p>}
 
