@@ -1,13 +1,14 @@
 // app/api/orgs/finance/expenses/route.js
 //
 // GET  /api/orgs/finance/expenses?orgId=...&departmentId=...&status=...
-// POST /api/orgs/finance/expenses  { orgId, departmentId, vendor, category, amount, expenseDate?, description? }
+// POST /api/orgs/finance/expenses  { orgId, departmentId, vendor, category, amount, currency?, expenseDate?, description? }
 //   -> create at status DRAFT.
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { EXPENSE_STATES } from "../../../../../lib/expense-workflow.js";
+import { isSupportedCurrency } from "../../../../../lib/currency.js";
 
 function serializeExpense(e) {
   return {
@@ -52,13 +53,15 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, vendor: rawVendor, category: rawCategory, amount, expenseDate, description } = await req.json();
+    const { orgId, departmentId, vendor: rawVendor, category: rawCategory, amount, currency, expenseDate, description } = await req.json();
     const vendor = String(rawVendor || "").trim();
     const category = String(rawCategory || "").trim();
     if (!orgId || !departmentId) return NextResponse.json({ error: "orgId and departmentId are required." }, { status: 400 });
     if (!vendor) return NextResponse.json({ error: "Vendor is required." }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Category is required." }, { status: 400 });
     if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: "amount must be a positive number." }, { status: 400 });
+    const expenseCurrency = currency ? String(currency).toUpperCase() : "USD";
+    if (!isSupportedCurrency(expenseCurrency)) return NextResponse.json({ error: `Unsupported currency "${expenseCurrency}".` }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
@@ -75,14 +78,14 @@ export async function POST(req) {
 
     const now = new Date().toISOString();
     const result = await expenses.insertOne({
-      orgId: orgObjectId, departmentId: departmentObjectId, vendor, category, amount, currency: "USD",
+      orgId: orgObjectId, departmentId: departmentObjectId, vendor, category, amount, currency: expenseCurrency,
       expenseDate: expenseDate || now, description: description ? String(description).trim() : null,
       status: "DRAFT", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
     });
 
     return NextResponse.json(serializeExpense({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, vendor, category, amount,
-      currency: "USD", expenseDate: expenseDate || now, description, status: "DRAFT",
+      currency: expenseCurrency, expenseDate: expenseDate || now, description, status: "DRAFT",
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }));
   } catch (err) {

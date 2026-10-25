@@ -457,7 +457,7 @@ function ExpensesTab({ orgId, email, departments }) {
                   <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{e.category}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">${e.amount.toFixed(2)}</span>
+                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{e.currency || "USD"} {e.amount.toFixed(2)}</span>
                   <StatusBadge status={e.status} />
                 </div>
               </button>
@@ -476,6 +476,7 @@ function CreateExpenseModal({ orgId, departments, onClose, onCreated }) {
   const [vendor, setVendor] = useState("");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [expenseDate, setExpenseDate] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -489,7 +490,7 @@ function CreateExpenseModal({ orgId, departments, onClose, onCreated }) {
     try {
       await api("/api/orgs/finance/expenses", {
         method: "POST",
-        body: JSON.stringify({ orgId, departmentId, vendor: vendor.trim(), category: category.trim(), amount: Number(amount), expenseDate: expenseDate || undefined, description: description.trim() || undefined }),
+        body: JSON.stringify({ orgId, departmentId, vendor: vendor.trim(), category: category.trim(), amount: Number(amount), currency, expenseDate: expenseDate || undefined, description: description.trim() || undefined }),
       });
       onCreated();
     } catch (err) {
@@ -508,7 +509,12 @@ function CreateExpenseModal({ orgId, departments, onClose, onCreated }) {
         </select>
         <input aria-label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} required placeholder="Vendor" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="Category" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
-        <input aria-label="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <div className="flex gap-2">
+          <input aria-label={`Amount (${currency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder={`Amount (${currency})`} className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
         <input value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
         <textarea aria-label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -577,7 +583,7 @@ function ExpenseDetailModal({ orgId, expense, onClose, onChanged }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <StatusBadge status={expense.status} />
-          <span className="text-[var(--inaya-text-primary)] text-lg font-mono tabular-nums">${expense.amount.toFixed(2)}</span>
+          <span className="text-[var(--inaya-text-primary)] text-lg font-mono tabular-nums">{expense.currency || "USD"} {expense.amount.toFixed(2)}</span>
         </div>
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">{expense.category} · {new Date(expense.expenseDate).toLocaleDateString()}</p>
         {expense.description && <p className="text-[var(--inaya-text-primary)] text-xs">{expense.description}</p>}
