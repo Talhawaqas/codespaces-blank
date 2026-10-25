@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canManageOrg, toObjectId } from "../../../../lib/orgs.js";
 import { getOrgPlan, getOrgUsage, PLANS, PLAN_ORDER } from "../../../../lib/orgPlans.js";
+import { pricingRegion, toPkPlan } from "../../../../lib/pkPricing.js";
 
 const BYTES_PER_GB = 1073741824;
 
@@ -32,6 +33,10 @@ export async function GET(req) {
       db.collection("org_subscriptions").findOne({ orgId: orgObjectId }),
     ]);
 
+    // The company's price list: PKR packages for companies in Pakistan
+    // (src/lib/pkPricing.js), USD plans for everyone else.
+    const region = pricingRegion({ country: req.headers.get("x-vercel-ip-country"), orgRegion: org.billingRegion });
+
     return NextResponse.json({
       plan: {
         id: plan.id,
@@ -50,11 +55,13 @@ export async function GET(req) {
       subscription: subscription
         ? {
             status: subscription.status,
+            provider: subscription.provider || "stripe",
             billingInterval: subscription.billingInterval,
             currentPeriodEnd: subscription.currentPeriodEnd,
           }
         : null,
       canManage: canManageOrg(auth.membership),
+      region,
       availablePlans: PLAN_ORDER.map((id) => {
         const p = PLANS[id];
         return {
@@ -71,7 +78,7 @@ export async function GET(req) {
           maxFileSizeMB: p.maxFileSizeMB,
           features: p.features,
         };
-      }),
+      }).map((p) => (region === "PK" ? toPkPlan(p) : { ...p, currency: "USD", paymentMethod: "card" })),
     });
   } catch (err) {
     console.error("orgs/billing GET failed:", err);

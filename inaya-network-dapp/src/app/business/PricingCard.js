@@ -57,14 +57,20 @@ const COLOR_STYLES = {
   },
 };
 
+const pkr = (n) => `PKR ${Math.round(n).toLocaleString("en-US")}`;
+
 const PLAN_ICON_GLYPH = { starter: "🌱", professional: "💼", business: "🏢", enterprise: "🛡️" };
 
 export function PricingCard({ plan, current = false, loading = false, onSelect, ctaLabelOverride, compact = false }) {
   const c = COLOR_STYLES[plan.color] || COLOR_STYLES.cyan;
+  // PKR packages (src/lib/pkPricing.js) are paid by bank transfer, so they are requested, not bought.
+  const isPkr = plan.currency === "PKR";
   const ctaLabel =
     ctaLabelOverride ||
     (current
       ? "Current plan"
+      : isPkr
+      ? "Request activation"
       : plan.contactSalesOnly
       ? "Contact Sales"
       : plan.id === "starter"
@@ -92,13 +98,32 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       </div>
 
       <div className={`text-center ${compact ? "mb-3" : "mb-5"}`}>
-        <p className={`${compact ? "text-2xl" : "text-4xl"} font-extrabold text-white`}>
-          ${plan.priceMonthly}
-          <span className="text-[#94a3b8] text-xs font-medium">/month</span>
-        </p>
-        <p className="text-[#94a3b8] text-[12px] font-mono mt-1">
-          ${plan.priceYearly}/year · save 17% with yearly billing
-        </p>
+        {isPkr ? (
+          <>
+            <p className={`${compact ? "text-2xl" : "text-3xl"} font-extrabold text-white`}>
+              {pkr(plan.priceMonthly)}
+              <span className="text-[#94a3b8] text-xs font-medium">/month</span>
+            </p>
+            <p className="text-[#94a3b8] text-[12px] font-mono mt-1">
+              {pkr(plan.priceYearly)}/year · 2 months free
+            </p>
+            {!compact && plan.pilotMonthly && (
+              <p className="text-emerald-400 text-[12px] font-bold mt-2">
+                Pilot: {pkr(plan.pilotMonthly)}/month for {plan.pilotMonths} months ({plan.pilotDiscountPercent}% off)
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className={`${compact ? "text-2xl" : "text-4xl"} font-extrabold text-white`}>
+              ${plan.priceMonthly}
+              <span className="text-[#94a3b8] text-xs font-medium">/month</span>
+            </p>
+            <p className="text-[#94a3b8] text-[12px] font-mono mt-1">
+              ${plan.priceYearly}/year · save 17% with yearly billing
+            </p>
+          </>
+        )}
       </div>
 
       {!compact && (
@@ -112,6 +137,9 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
         </ul>
       )}
 
+      {isPkr && !compact && (
+        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by bank transfer. Setup fee {pkr(plan.setupFee)}, waived for pilot companies.</p>
+      )}
       <button
         onClick={onSelect}
         disabled={current || loading}

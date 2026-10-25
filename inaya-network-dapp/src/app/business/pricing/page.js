@@ -26,6 +26,8 @@ const PENDING_PLAN_KEY = "inaya_pending_plan";
 export default function PricingPage() {
   const [plans, setPlans] = useState(null);
   const [error, setError] = useState("");
+  // "PK" for visitors in Pakistan (PKR packages, bank transfer), otherwise "INTL" (USD).
+  const [region, setRegion] = useState(null);
 
   useEffect(() => {
     fetch("/api/orgs/billing/plans")
@@ -33,11 +35,17 @@ export default function PricingPage() {
       .then((data) => {
         if (data.error) throw new Error(data.error);
         setPlans(data.plans);
+        setRegion(data.region || "INTL");
       })
       .catch((err) => setError(err.message));
   }, []);
 
   function handleSelect(plan) {
+    if (plan.paymentMethod === "bank_transfer") {
+      localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, interval: "month", paymentMethod: "bank_transfer" }));
+      window.location.href = "/business";
+      return;
+    }
     if (plan.contactSalesOnly) {
       window.location.href = "mailto:sales@inaya.ai?subject=Inaya%20Business%20Workspace%20—%20Enterprise";
       return;
@@ -80,6 +88,26 @@ export default function PricingPage() {
           </div>
         )}
 
+        {region === "PK" ? (
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">
+          <div>
+            <p className="text-white font-bold mb-1">Additional Users</p>
+            <p>PKR 2,500 / user / month</p>
+          </div>
+          <div>
+            <p className="text-white font-bold mb-1">6-Month Pilot</p>
+            <p>30% off for pilot companies, setup fee waived</p>
+          </div>
+          <div>
+            <p className="text-white font-bold mb-1">Payment</p>
+            <p>Monthly by bank transfer, invoiced in PKR</p>
+          </div>
+          <div>
+            <p className="text-white font-bold mb-1">Support</p>
+            <p>WhatsApp and email, Mon to Sat, 10:00 to 19:00 PKT</p>
+          </div>
+        </div>
+        ) : (
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">
           <div>
             <p className="text-white font-bold mb-1">Additional Users</p>
@@ -98,6 +126,7 @@ export default function PricingPage() {
             <p>End-to-end encryption, decentralized infrastructure, 99.9% uptime.</p>
           </div>
         </div>
+        )}
 
         <p className="text-center text-[#8a96ab] text-[12px] font-mono mt-8">
           Decentralized. Private. Secure. Scalable. — Inaya puts you in control of your data, always.

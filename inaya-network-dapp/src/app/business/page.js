@@ -269,6 +269,15 @@ export default function BusinessPage() {
       return;
     }
 
+    if (pending.paymentMethod === "bank_transfer") {
+      api("/api/orgs/billing/pk-request", {
+        method: "POST",
+        body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month", pilot: true }),
+      })
+        .then(() => setNotice("Package requested. We'll email you an invoice with our bank details within one working day."))
+        .catch((err) => setNotice(err.message));
+      return;
+    }
     api("/api/orgs/billing/checkout", {
       method: "POST",
       body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month" }),
@@ -377,6 +386,9 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   const [switchingPlanId, setSwitchingPlanId] = useState(null);
   const [checkingActivation, setCheckingActivation] = useState(false);
   const [continuingWithoutPlan, setContinuingWithoutPlan] = useState(false);
+  // PKR packages (companies in Pakistan) are requested and paid by bank transfer, not card.
+  const [region, setRegion] = useState(null);
+  const [pkRequested, setPkRequested] = useState(null);
 
   async function handleContinueWithoutPlan() {
     setContinuingWithoutPlan(true);
@@ -391,11 +403,11 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   }
 
   useEffect(() => {
-    fetch("/api/orgs/billing/plans")
+    fetch(`/api/orgs/billing/plans?orgId=${membership.orgId}`)
       .then((res) => res.json())
-      .then((data) => setPlans(data.plans))
+      .then((data) => { setPlans(data.plans); setRegion(data.region || "INTL"); })
       .catch(() => setError("Could not load plans."));
-  }, []);
+  }, [membership.orgId]);
 
   // Stripe's redirect back here can beat the webhook that actually writes
   // the plan — poll briefly instead of just re-showing this same gate as
@@ -429,6 +441,19 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   }, [membership.orgId]);
 
   async function handleSelect(plan) {
+    if (plan.paymentMethod === "bank_transfer") {
+      setSwitchingPlanId(plan.id);
+      setError("");
+      try {
+        await api("/api/orgs/billing/pk-request", { method: "POST", body: JSON.stringify({ orgId: membership.orgId, planId: plan.id, interval: "month", pilot: true }) });
+        setPkRequested(plan);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setSwitchingPlanId(null);
+      }
+      return;
+    }
     if (plan.contactSalesOnly) {
       window.location.href = "mailto:sales@inaya.ai?subject=Inaya%20Business%20Workspace%20—%20Enterprise";
       return;
@@ -454,21 +479,36 @@ function PlanSelectionGate({ email, membership, onLogout }) {
           <div>
             <p className="text-[var(--inaya-text-muted)] text-xs font-mono">{email} · {membership.orgName}</p>
             <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] mt-1">Activate your workspace</h1>
-            <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
-              You signed up but haven't chosen a plan yet. Pick one to get started — every plan includes a 14-day free trial, and since this runs on Inaya's testnet, nothing is actually charged during the trial. Not ready to commit? You can also continue on limited free features below.
-            </p>
+            {region === "PK" ? (
+              <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
+                Choose the package for your company. Pilot companies pay 30% less for the first 6 months. We email you an invoice with our bank details, and your team can start working straight away while the payment arrives.
+              </p>
+            ) : (
+              <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
+                You signed up but haven't chosen a plan yet. Pick one to get started — every plan includes a 14-day free trial, and since this runs on Inaya's testnet, nothing is actually charged during the trial. Not ready to commit? You can also continue on limited free features below.
+              </p>
+            )}
           </div>
           <button onClick={onLogout} className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] shrink-0">
             Sign out
           </button>
         </div>
 
-        <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-6">
-          <span className="text-amber-400 text-sm">⚠️</span>
-          <p className="text-[12px] text-amber-300 font-bold font-mono">
-            TEST MODE — Stripe checkout won't accept a real card. Use 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
-          </p>
-        </div>
+        {region !== "PK" && (
+          <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-6">
+            <span className="text-amber-400 text-sm">⚠️</span>
+            <p className="text-[12px] text-amber-300 font-bold font-mono">
+              TEST MODE — Stripe checkout won't accept a real card. Use 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
+            </p>
+          </div>
+        )}
+        {pkRequested && (
+          <div className="bg-emerald-400/10 border border-emerald-400/30 rounded-xl p-4 mb-6">
+            <p className="text-emerald-300 text-sm font-bold">Request received: {pkRequested.name} package</p>
+            <p className="text-[var(--inaya-text-muted)] text-[13px] mt-1">We'll email you an invoice with our bank details within one working day. Your package is activated as soon as the transfer arrives.</p>
+            <button onClick={() => window.location.reload()} className="mt-3 text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2 rounded-lg">Go to my workspace</button>
+          </div>
+        )}
 
         {checkingActivation && (
           <div className="bg-[#00f2fe]/10 border border-[#00f2fe]/20 text-[#00f2fe] text-xs rounded-lg p-3 mb-6">
@@ -2654,6 +2694,7 @@ function UsageBar({ label, used, max, unit = "" }) {
 function BillingView({ orgId, canManage }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [switchingPlanId, setSwitchingPlanId] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -2671,6 +2712,21 @@ function BillingView({ orgId, canManage }) {
   }, [load]);
 
   async function handleSwitch(planId) {
+    const chosen = data?.availablePlans?.find((p) => p.id === planId);
+    if (chosen?.paymentMethod === "bank_transfer") {
+      // PKR packages are paid by bank transfer: record the request; Inaya activates it once paid.
+      setSwitchingPlanId(planId);
+      setError("");
+      try {
+        await api("/api/orgs/billing/pk-request", { method: "POST", body: JSON.stringify({ orgId, planId, interval: "month", pilot: !data?.subscription }) });
+        setNotice(`Request received for the ${chosen.name} package. We'll email you an invoice with our bank details within one working day.`);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setSwitchingPlanId(null);
+      }
+      return;
+    }
     setSwitchingPlanId(planId);
     setError("");
     try {
@@ -2717,7 +2773,7 @@ function BillingView({ orgId, canManage }) {
               </p>
             )}
           </div>
-          {subscription && (
+          {subscription && subscription.provider !== "bank_transfer" && (
             <button
               onClick={handlePortal}
               disabled={portalLoading}
@@ -2734,6 +2790,7 @@ function BillingView({ orgId, canManage }) {
       </div>
 
       {error && <p className="text-red-400 text-xs">{error}</p>}
+      {notice && <p className="text-emerald-400 text-xs" role="status">{notice}</p>}
 
       {canManage && (
         <div>

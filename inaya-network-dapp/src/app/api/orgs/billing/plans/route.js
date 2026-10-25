@@ -12,9 +12,34 @@
 
 import { NextResponse } from "next/server";
 import { PLANS, PLAN_ORDER } from "../../../../../lib/orgPlans.js";
+import { pricingRegion, toPkPlan } from "../../../../../lib/pkPricing.js";
+import { getOrgCollections, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
 
-export async function GET() {
-  const plans = PLAN_ORDER.map((id) => {
+// Plans for the visitor's region (src/lib/pkPricing.js): PKR packages paid by
+// bank transfer for companies in Pakistan, USD plans with card checkout for
+// everyone else. Only the one price list is sent, so a visitor from Pakistan
+// never receives the USD prices. With ?orgId= from a signed-in member, that
+// company's saved region wins over the visitor's country.
+// ?region=pk|intl overrides for testing.
+export const dynamic = "force-dynamic";
+
+export async function GET(req) {
+  const url = new URL(req.url);
+  const orgId = url.searchParams.get("orgId");
+  let orgRegion = null;
+  if (orgId) {
+    try {
+      const auth = await requireMembership(req, orgId);
+      if (!auth.error) {
+        const { orgs } = await getOrgCollections();
+        orgRegion = (await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { billingRegion: 1 } }))?.billingRegion || null;
+      }
+    } catch { /* fall back to the visitor's country */ }
+  }
+  const override = { pk: "PK", intl: "INTL" }[url.searchParams.get("region")] || null;
+  const region = override || pricingRegion({ country: req.headers.get("x-vercel-ip-country"), orgRegion });
+
+  const base = PLAN_ORDER.map((id) => {
     const p = PLANS[id];
     return {
       id: p.id,
@@ -31,5 +56,8 @@ export async function GET() {
       features: p.features,
     };
   });
-  return NextResponse.json({ plans });
+  const plans = region === "PK"
+    ? base.map(toPkPlan).filter(Boolean)
+    : base.map((p) => ({ ...p, currency: "USD", paymentMethod: "card" }));
+  return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
 }
