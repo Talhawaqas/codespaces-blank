@@ -1,7 +1,8 @@
 // app/api/orgs/finance/payments/route.js
 //
 // GET  /api/orgs/finance/payments?orgId=...&departmentId=...&direction=...
-// POST /api/orgs/finance/payments  { orgId, departmentId, direction, amount, method?, paymentDate?, relatedInvoiceId?, relatedExpenseId? }
+// POST /api/orgs/finance/payments  { orgId, departmentId, direction, amount, currency?, method?, paymentDate?, relatedInvoiceId?, relatedExpenseId? }
+//   currency defaults to the linked invoice/expense/purchase order's, else USD.
 //   -> records at status RECORDED. No state machine (see plan) — a
 //      separate canManageFinance-gated approve action (approve/route.js)
 //      flips it to APPROVED, matching the SOW's flat "payment approval" bullet.
@@ -10,6 +11,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { logOrgActivity } from "../../../../../lib/org-activity-log.js";
+import { isSupportedCurrency } from "../../../../../lib/currency.js";
 
 const DIRECTIONS = ["INCOMING", "OUTGOING"];
 
@@ -64,7 +66,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, direction, amount, method, paymentDate, relatedInvoiceId, relatedExpenseId, relatedPurchaseOrderId } = await req.json();
+    const { orgId, departmentId, direction, amount, currency, method, paymentDate, relatedInvoiceId, relatedExpenseId, relatedPurchaseOrderId } = await req.json();
     if (!orgId || !departmentId || !DIRECTIONS.includes(direction)) {
       return NextResponse.json({ error: "orgId, departmentId, and a valid direction (INCOMING|OUTGOING) are required." }, { status: 400 });
     }
@@ -83,30 +85,36 @@ export async function POST(req) {
     const department = await departments.findOne({ _id: departmentObjectId, orgId: orgObjectId });
     if (!department) return NextResponse.json({ error: "Department not found." }, { status: 404 });
 
+    let linkedCurrency = null;
     let relatedInvoiceObjectId = null;
     if (relatedInvoiceId) {
       const invoice = await invoices.findOne({ _id: toObjectId(relatedInvoiceId), orgId: orgObjectId });
       if (!invoice) return NextResponse.json({ error: "Related invoice not found." }, { status: 404 });
       relatedInvoiceObjectId = invoice._id;
+      linkedCurrency = invoice.currency;
     }
     let relatedExpenseObjectId = null;
     if (relatedExpenseId) {
       const expense = await expenses.findOne({ _id: toObjectId(relatedExpenseId), orgId: orgObjectId });
       if (!expense) return NextResponse.json({ error: "Related expense not found." }, { status: 404 });
       relatedExpenseObjectId = expense._id;
+      linkedCurrency = linkedCurrency || expense.currency;
     }
     let relatedPurchaseOrderObjectId = null;
     if (relatedPurchaseOrderId) {
       const po = await purchaseOrders.findOne({ _id: toObjectId(relatedPurchaseOrderId), orgId: orgObjectId, deletedAt: null });
       if (!po) return NextResponse.json({ error: "Related purchase order not found." }, { status: 404 });
       relatedPurchaseOrderObjectId = po._id;
+      linkedCurrency = linkedCurrency || po.currency;
     }
+    const paymentCurrency = String(currency || linkedCurrency || "USD").toUpperCase();
+    if (!isSupportedCurrency(paymentCurrency)) return NextResponse.json({ error: `Unsupported currency "${paymentCurrency}".` }, { status: 400 });
 
     const now = new Date().toISOString();
     const result = await payments.insertOne({
       orgId: orgObjectId, departmentId: departmentObjectId, direction, relatedInvoiceId: relatedInvoiceObjectId,
       relatedExpenseId: relatedExpenseObjectId, relatedPurchaseOrderId: relatedPurchaseOrderObjectId,
-      amount, currency: "USD", method: method ? String(method).trim() : null,
+      amount, currency: paymentCurrency, method: method ? String(method).trim() : null,
       paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now, deletedAt: null,
     });
 
@@ -118,7 +126,7 @@ export async function POST(req) {
     return NextResponse.json(serializePayment({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, direction,
       relatedInvoiceId: relatedInvoiceObjectId, relatedExpenseId: relatedExpenseObjectId, relatedPurchaseOrderId: relatedPurchaseOrderObjectId,
-      amount, currency: "USD", method, paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now,
+      amount, currency: paymentCurrency, method, paymentDate: paymentDate || now, status: "RECORDED", createdByEmail: auth.session.email, createdAt: now,
     }));
   } catch (err) {
     console.error("orgs/finance/payments POST failed:", err);

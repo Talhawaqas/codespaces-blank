@@ -304,7 +304,7 @@ function InvoiceDetailModal({ orgId, invoice, onClose, onChanged }) {
           {invoice.lineItems.map((it, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
               <span className="text-[var(--inaya-text-primary)]">{it.description} × {it.quantity}</span>
-              <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">${(it.quantity * it.unitPrice).toFixed(2)}</span>
+              <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">{invoice.currency} {(it.quantity * it.unitPrice).toFixed(2)}</span>
             </div>
           ))}
         </div>
@@ -696,8 +696,10 @@ function PaymentsTab({ orgId, departments }) {
     const map = new Map();
     for (const p of filtered) {
       const key = nameFor(p);
-      const g = map.get(key) || { name: key, total: 0, payments: [] };
+      const g = map.get(key) || { name: key, total: 0, totals: {}, payments: [] };
       g.total += p.amount;
+      const cur = p.currency || "USD";
+      g.totals[cur] = (g.totals[cur] || 0) + p.amount;
       g.payments.push(p);
       map.set(key, g);
     }
@@ -727,12 +729,12 @@ function PaymentsTab({ orgId, departments }) {
               <div key={g.name}>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-[var(--inaya-text-primary)] text-sm font-bold">{g.name}</p>
-                  <p className="text-[var(--inaya-text-muted)] text-xs font-mono tabular-nums">${g.total.toFixed(2)}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-xs font-mono tabular-nums">{Object.entries(g.totals).map(([cur, t]) => `${cur} ${t.toFixed(2)}`).join(" · ")}</p>
                 </div>
                 <div className="space-y-1.5">
                   {g.payments.map((p) => (
                     <div key={p.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-2.5">
-                      <span className={p.direction === "INCOMING" ? "text-emerald-400 text-xs" : "text-red-400 text-xs"}>{p.direction === "INCOMING" ? "+" : "−"}${p.amount.toFixed(2)}</span>
+                      <span className={p.direction === "INCOMING" ? "text-emerald-400 text-xs" : "text-red-400 text-xs"}>{p.direction === "INCOMING" ? "+" : "−"}{p.currency || "USD"} {p.amount.toFixed(2)}</span>
                       <span className="text-[var(--inaya-text-muted)] text-[11px] font-mono">{p.method || "—"} · {new Date(p.paymentDate).toLocaleDateString()}</span>
                       <StatusBadge status={p.status} />
                     </div>
@@ -746,7 +748,7 @@ function PaymentsTab({ orgId, departments }) {
             {filtered.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
                 <div className="min-w-0">
-                  <span className={p.direction === "INCOMING" ? "text-emerald-400 text-sm" : "text-red-400 text-sm"}>{p.direction === "INCOMING" ? "+" : "−"}${p.amount.toFixed(2)}</span>
+                  <span className={p.direction === "INCOMING" ? "text-emerald-400 text-sm" : "text-red-400 text-sm"}>{p.direction === "INCOMING" ? "+" : "−"}{p.currency || "USD"} {p.amount.toFixed(2)}</span>
                   <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">{p.method || "—"} · {new Date(p.paymentDate).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -771,6 +773,7 @@ function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCre
   const [departmentId, setDepartmentId] = useState("");
   const [direction, setDirection] = useState("INCOMING");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [method, setMethod] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [relatedPurchaseOrderId, setRelatedPurchaseOrderId] = useState("");
@@ -786,7 +789,7 @@ function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCre
       await api("/api/orgs/finance/payments", {
         method: "POST",
         body: JSON.stringify({
-          orgId, departmentId, direction, amount: Number(amount), method: method.trim() || undefined, paymentDate: paymentDate || undefined,
+          orgId, departmentId, direction, amount: Number(amount), currency, method: method.trim() || undefined, paymentDate: paymentDate || undefined,
           relatedPurchaseOrderId: direction === "OUTGOING" && relatedPurchaseOrderId ? relatedPurchaseOrderId : undefined,
         }),
       });
@@ -810,12 +813,17 @@ function CreatePaymentModal({ orgId, departments, purchaseOrders, onClose, onCre
           <option value="OUTGOING">Outgoing</option>
         </select>
         {direction === "OUTGOING" && (
-          <select aria-label="Link to a purchase order (optional)" value={relatedPurchaseOrderId} onChange={(e) => setRelatedPurchaseOrderId(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+          <select aria-label="Link to a purchase order (optional)" value={relatedPurchaseOrderId} onChange={(e) => { setRelatedPurchaseOrderId(e.target.value); const po = (purchaseOrders || []).find((p) => p.id === e.target.value); if (po?.currency) setCurrency(po.currency); }} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
             <option value="">Link to a purchase order (optional)…</option>
             {(purchaseOrders || []).map((po) => <option key={po.id} value={po.id}>{po.id.slice(-6)} · {po.items.length} item{po.items.length === 1 ? "" : "s"} · {po.currency}</option>)}
           </select>
         )}
-        <input aria-label="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder="Amount (USD)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+        <div className="flex gap-2">
+          <input aria-label={`Amount (${currency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min="0.01" step="0.01" required placeholder={`Amount (${currency})`} className="flex-1 min-w-0 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
+            {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
         <input aria-label="Method (e.g. bank transfer)" value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Method (e.g. bank transfer)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} type="date" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)]" />
         {error && <p className="text-red-400 text-xs">{error}</p>}
