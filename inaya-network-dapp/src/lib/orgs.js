@@ -587,9 +587,32 @@ export async function getOrgCollections() {
 }
 
 let indexesEnsured = false;
+let indexesPending = null;
 
+// Most API routes call this first, and every Vercel cold start used to send
+// all ~330 createIndex commands through the instance's 10-connection pool
+// before serving the request (2026-10-26: ~13 s from a dev machine; on
+// Vercel, a delay on the first request of each instance, several per ERP
+// screen). The index set is now fingerprinted from the source of
+// createAllOrgIndexes and recorded in _meta once applied, so a cold start
+// costs one findOne; the full set only runs again when a deploy changes it.
 export async function ensureOrgIndexes() {
   if (indexesEnsured) return;
+  indexesPending ||= (async () => {
+    const { db } = await connectToDatabase();
+    const signature = createHash("sha256").update(createAllOrgIndexes.toString()).digest("hex");
+    // One marker per fingerprint: dev (plain source) and production (minified) differ, and must not undo each other.
+    const markerId = `orgIndexes:${signature}`;
+    if (!(await db.collection("_meta").findOne({ _id: markerId }))) {
+      await createAllOrgIndexes();
+      await db.collection("_meta").updateOne({ _id: markerId }, { $set: { appliedAt: new Date().toISOString() } }, { upsert: true });
+    }
+    indexesEnsured = true;
+  })().finally(() => { indexesPending = null; });
+  return indexesPending;
+}
+
+async function createAllOrgIndexes() {
   const {
     orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity,
     projectMembers, documentPermissions, documentShares, tasks, orgActivity,
@@ -1016,8 +1039,6 @@ export async function ensureOrgIndexes() {
     documentMetrics.createIndex({ orgId: 1, metric: 1, at: -1 }),
     documentMetrics.createIndex({ atDate: 1 }, { expireAfterSeconds: 90 * 24 * 3600 }),
   ]);
-
-  indexesEnsured = true;
 }
 
 /** Extracts the raw session token from a request. Web clients send it as the
