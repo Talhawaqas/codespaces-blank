@@ -18,6 +18,7 @@
 import { randomUUID } from "node:crypto";
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
+import { planLots, applyLots } from "./inventory-lots.js";
 
 export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"];
 
@@ -32,14 +33,27 @@ export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", 
  *  concurrent issues from the same product+warehouse — the same
  *  known-and-accepted trade-off as everywhere else in this codebase that
  *  doesn't reach for a distributed lock over a low-contention path). */
-export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, note, actorEmail }) {
+//
+// Batch / lot tracking (inventory-lots.js): lotNumber + expiryDate name the
+// lot a movement touches, or `lots` lists several explicitly (a transfer's
+// IN leg reuses the OUT leg's lots). For a trackLots product a stock-out
+// without a lot is allocated earliest-expiry-first, and defaultLotNumber is
+// used for a stock-in that names none (PO receipts pass the PO's number).
+export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber }) {
   if (!MOVEMENT_TYPES.includes(type)) return { error: `Unknown movement type "${type}".`, status: 400 };
   if (!Number.isFinite(delta) || delta === 0) return { error: "delta must be a non-zero number.", status: 400 };
 
-  const { stockLevels, stockMovements } = await getOrgCollections();
+  const { stockLevels, stockMovements, stockLots, products } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   const productObjectId = toObjectId(productId);
   const warehouseObjectId = toObjectId(warehouseId);
+
+  const product = await products.findOne({ _id: productObjectId, orgId: orgObjectId }, { projection: { trackLots: 1 } });
+  const plan = await planLots({
+    stockLots, orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, delta,
+    trackLots: !!product?.trackLots, lotNumber, expiryDate, lots, defaultLotNumber,
+  });
+  if (plan.error) return plan;
 
   if (delta < 0) {
     const current = await stockLevels.findOne({ orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId });
@@ -53,6 +67,7 @@ export async function recordStockMovement({ orgId, productId, warehouseId, delta
     { $inc: { quantity: delta }, $setOnInsert: { orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId } },
     { upsert: true, returnDocument: "after" }
   );
+  if (plan.lots) await applyLots({ stockLots, orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, sign: Math.sign(delta), lots: plan.lots });
 
   const now = new Date().toISOString();
   const result = await stockMovements.insertOne({
@@ -62,12 +77,14 @@ export async function recordStockMovement({ orgId, productId, warehouseId, delta
     type,
     delta,
     relatedPurchaseOrderId: relatedPurchaseOrderId ? toObjectId(relatedPurchaseOrderId) : null,
+    ...(relatedSalesOrderId ? { relatedSalesOrderId: toObjectId(relatedSalesOrderId) } : {}),
     note: note || null,
+    lots: plan.lots,
     actorEmail,
     createdAt: now,
   });
 
-  return { movement: { _id: result.insertedId, orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, type, delta, createdAt: now }, newQuantity: updatedLevel.quantity };
+  return { movement: { _id: result.insertedId, orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, type, delta, lots: plan.lots, createdAt: now }, newQuantity: updatedLevel.quantity, lots: plan.lots };
 }
 
 export async function getStockLevel(orgId, productId, warehouseId) {
@@ -99,20 +116,21 @@ export function isLowStock(product, totalQuantity) {
  *  by the existing TRANSFER_OUT call itself (recordStockMovement's own
  *  negative-delta check), so this never invents a second stock-
  *  sufficiency check that could drift from the real one. */
-export async function transferStock({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note, actorEmail }) {
+export async function transferStock({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note, actorEmail, lotNumber }) {
   if (sourceWarehouseId === destWarehouseId) return { error: "Source and destination warehouses must be different.", status: 400 };
   if (!Number.isFinite(quantity) || quantity <= 0) return { error: "quantity must be a positive number.", status: 400 };
 
   const transferId = randomUUID();
-  const outResult = await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: -quantity, type: "TRANSFER_OUT", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail });
+  const outResult = await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: -quantity, type: "TRANSFER_OUT", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail, lotNumber });
   if (outResult.error) return outResult;
 
-  const inResult = await recordStockMovement({ orgId, productId, warehouseId: destWarehouseId, delta: quantity, type: "TRANSFER_IN", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail });
+  // The same batches (with their expiry dates) arrive at the destination.
+  const inResult = await recordStockMovement({ orgId, productId, warehouseId: destWarehouseId, delta: quantity, type: "TRANSFER_IN", note: note ? `${note} (transfer ${transferId})` : `transfer ${transferId}`, actorEmail, lots: outResult.lots || undefined });
   if (inResult.error) {
     // The OUT leg already committed -- reverse it rather than leaving
     // stock silently vanished. A real, recorded reversal movement, not a
     // silent undo, so the ledger stays a true append-only history.
-    await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: quantity, type: "ADJUSTMENT", note: `reversal of failed transfer ${transferId}: ${inResult.error}`, actorEmail });
+    await recordStockMovement({ orgId, productId, warehouseId: sourceWarehouseId, delta: quantity, type: "ADJUSTMENT", note: `reversal of failed transfer ${transferId}: ${inResult.error}`, actorEmail, lots: outResult.lots || undefined });
     return inResult;
   }
 

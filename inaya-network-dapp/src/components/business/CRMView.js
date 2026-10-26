@@ -22,6 +22,7 @@ import FormField from "./ui/FormField";
 import RecordRow, { RecordList, RecordRows } from "./ui/RecordRow";
 import RecordSharingPanel from "./RecordSharingPanel";
 import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
+import SalesOrdersTab from "./SalesOrdersTab";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -50,7 +51,7 @@ function formatMoney(v) {
 }
 
 export default function CRMView({ orgId, canManage, email }) {
-  const [tab, setTab] = useErpSection("contacts", ["contacts", "deals"]);
+  const [tab, setTab] = useErpSection("contacts", ["contacts", "deals", "orders"]);
   const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [error, setError] = useState("");
@@ -58,6 +59,9 @@ export default function CRMView({ orgId, canManage, email }) {
   // contact on mount, then the caller clears it, completing the SOW's
   // documented Customer -> Deal cross-navigation without a full router.
   const [focusContactId, setFocusContactId] = useState(null);
+  // "New sales order" from the ERP task panel opens the Orders tab's form.
+  const [newOrderSignal, setNewOrderSignal] = useState(0);
+  useErpCreate("orders", () => { setTab("orders"); setNewOrderSignal((n) => n + 1); });
 
   useEffect(() => {
     api(`/api/orgs/departments?orgId=${orgId}`).then((d) => setDepartments(d.departments)).catch((err) => setError(err.message));
@@ -69,10 +73,13 @@ export default function CRMView({ orgId, canManage, email }) {
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
           <button data-guide-id="crm-tab-contacts" onClick={() => setTab("contacts")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "contacts" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Contacts</button>
           <button data-guide-id="crm-tab-deals" onClick={() => setTab("deals")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "deals" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Deals</button>
+          <button onClick={() => setTab("orders")} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === "orders" ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>Orders</button>
         </div>
       )}
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      {tab === "contacts" ? (
+      {tab === "orders" ? (
+        <SalesOrdersTab orgId={orgId} departments={departments} openCreateSignal={newOrderSignal} />
+      ) : tab === "contacts" ? (
         <ContactsTab orgId={orgId} departments={departments} focusContactId={focusContactId} onFocusHandled={() => setFocusContactId(null)} />
       ) : (
         <DealsTab orgId={orgId} departments={departments} email={email} onViewContact={(id) => { setFocusContactId(id); setTab("contacts"); }} />

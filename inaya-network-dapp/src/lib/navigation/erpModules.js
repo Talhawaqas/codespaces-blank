@@ -43,8 +43,8 @@ export const ERP_MODULES = [
     id: "sales", label: "Sales", icon: "sales", home: "moduleOverview:sales",
     groups: [
       { id: "overview", label: "Overview", items: ["moduleOverview:sales"] },
-      { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new"] },
-      { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals"] },
+      { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new", "crm:orders!new"] },
+      { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals", "crm:orders"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
   },
@@ -63,7 +63,7 @@ export const ERP_MODULES = [
     groups: [
       { id: "overview", label: "Overview", items: ["moduleOverview:inventory"] },
       { id: "tasks", label: "My tasks", items: ["inventory:products!new", "inventory:warehouses!new"] },
-      { id: "stock", label: "Stock", items: ["inventory:products", "inventory:movements", "inventory:warehouses"] },
+      { id: "stock", label: "Stock", items: ["inventory:products", "inventory:batches", "inventory:movements", "inventory:warehouses"] },
     ],
   },
   {
@@ -142,6 +142,8 @@ const ERP_LABELS = {
   "crm:deals!new": "New deal",
   "crm:contacts": "Customers and leads",
   "crm:deals": "Deals and pipeline",
+  "crm:orders!new": "New sales order",
+  "crm:orders": "Sales orders",
   "procurement:requests!new": "New purchase request",
   "procurement:orders!new": "New purchase order",
   "procurement:suppliers!new": "New supplier",
@@ -152,6 +154,7 @@ const ERP_LABELS = {
   "inventory:products!new": "New product",
   "inventory:warehouses!new": "New warehouse",
   "inventory:products": "Products and stock",
+  "inventory:batches": "Batches & expiry",
   "inventory:movements": "Stock movements",
   "inventory:warehouses": "Warehouses",
   "finance:invoices!new": "New invoice",

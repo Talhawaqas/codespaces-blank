@@ -1,7 +1,7 @@
 // app/api/orgs/inventory/transfers/route.js
 //
 // POST /api/orgs/inventory/transfers
-// Body: { orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note? }
+// Body: { orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note?, lotNumber? }
 // Thin wrapper over inventory.js's transferStock() — see that function's
 // own header comment for the reuse rationale (recordStockMovement twice,
 // nothing new).
@@ -12,7 +12,7 @@ import { transferStock } from "../../../../../lib/inventory.js";
 
 export async function POST(req) {
   try {
-    const { orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note } = await req.json();
+    const { orgId, productId, sourceWarehouseId, destWarehouseId, quantity, note, lotNumber } = await req.json();
     if (!orgId || !productId || !sourceWarehouseId || !destWarehouseId) {
       return NextResponse.json({ error: "orgId, productId, sourceWarehouseId, and destWarehouseId are required." }, { status: 400 });
     }
@@ -33,7 +33,7 @@ export async function POST(req) {
     ]);
     if (!source || !dest) return NextResponse.json({ error: "Source or destination warehouse not found." }, { status: 404 });
 
-    const result = await transferStock({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity: Number(quantity), note, actorEmail: auth.session.email });
+    const result = await transferStock({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity: Number(quantity), note, actorEmail: auth.session.email, lotNumber });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ transferId: result.transferId, newSourceQuantity: result.from.newQuantity, newDestQuantity: result.to.newQuantity });
   } catch (err) {

@@ -1,12 +1,14 @@
 // app/api/orgs/inventory/movements/route.js
 //
-// POST /api/orgs/inventory/movements  { orgId, productId, warehouseId, type, quantity, note? }
+// POST /api/orgs/inventory/movements  { orgId, productId, warehouseId, type, quantity, note?, lotNumber?, expiryDate? }
 //   -> records a MANUAL stock movement (stock-in, stock-out, or
 //      adjustment) — the counterpart to the automatic RECEIPT movements
 //      purchase-order-workflow.js's receivePurchaseOrder() posts. `type`
 //      is "RECEIPT" (manual stock-in, delta=+quantity), "ISSUE" (stock-
 //      out, delta=-quantity), or "ADJUSTMENT" (either sign — quantity can
-//      be negative here to correct a count down).
+//      be negative here to correct a count down). lotNumber/expiryDate name
+//      the batch (required for stock coming in to a product that tracks
+//      batches; a stock-out without one is taken earliest-expiry-first).
 // GET  /api/orgs/inventory/movements?orgId=...&departmentId=...&limit=
 //   -> recent movements across every product in an accessible department,
 //      newest first — the org-wide inventory activity feed.
@@ -20,7 +22,7 @@ const MANUAL_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT"];
 
 export async function POST(req) {
   try {
-    const { orgId, productId, warehouseId, type, quantity, note } = await req.json();
+    const { orgId, productId, warehouseId, type, quantity, note, lotNumber, expiryDate } = await req.json();
     if (!orgId || !productId || !warehouseId) return NextResponse.json({ error: "orgId, productId, and warehouseId are required." }, { status: 400 });
     if (!MANUAL_TYPES.includes(type)) return NextResponse.json({ error: "type must be RECEIPT, ISSUE, or ADJUSTMENT." }, { status: 400 });
     if (!Number.isFinite(quantity) || quantity === 0) return NextResponse.json({ error: "quantity must be a non-zero number." }, { status: 400 });
@@ -45,11 +47,11 @@ export async function POST(req) {
     const delta = type === "ISSUE" ? -quantity : quantity;
     const result = await recordStockMovement({
       orgId, productId: productObjectId, warehouseId: warehouseObjectId, delta, type,
-      note: note ? String(note).trim() : null, actorEmail: auth.session.email,
+      note: note ? String(note).trim() : null, actorEmail: auth.session.email, lotNumber, expiryDate,
     });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 
-    return NextResponse.json({ newQuantity: result.newQuantity, movement: { type, delta, createdAt: result.movement.createdAt } });
+    return NextResponse.json({ newQuantity: result.newQuantity, movement: { type, delta, lots: result.lots, createdAt: result.movement.createdAt } });
   } catch (err) {
     console.error("orgs/inventory/movements POST failed:", err);
     return NextResponse.json({ error: "Could not record the stock movement." }, { status: 500 });
@@ -93,7 +95,7 @@ export async function GET(req) {
         productId: m.productId.toString(), productName: productNameById.get(m.productId.toString()) || "Unknown",
         warehouseId: m.warehouseId.toString(), warehouseName: warehouseNameById.get(m.warehouseId.toString()) || "Unknown",
         type: m.type, delta: m.delta, relatedPurchaseOrderId: m.relatedPurchaseOrderId ? m.relatedPurchaseOrderId.toString() : null,
-        note: m.note, actorEmail: m.actorEmail, createdAt: m.createdAt,
+        note: m.note, lots: m.lots || null, actorEmail: m.actorEmail, createdAt: m.createdAt,
       })),
     });
   } catch (err) {

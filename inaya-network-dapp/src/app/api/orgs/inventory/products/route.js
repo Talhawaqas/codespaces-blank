@@ -25,6 +25,7 @@ function serializeProduct(p, totalStock) {
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
+    trackLots: !!p.trackLots,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -94,7 +95,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
-    const { orgId, departmentId, sku: rawSku, name: rawName, description, unitPrice, reorderThreshold } = body;
+    const { orgId, departmentId, sku: rawSku, name: rawName, description, unitPrice, reorderThreshold, trackLots } = body;
     const sku = String(rawSku || "").trim();
     const name = String(rawName || "").trim();
     if (!orgId || !departmentId) return NextResponse.json({ error: "orgId and departmentId are required." }, { status: 400 });
@@ -133,7 +134,7 @@ export async function POST(req) {
       result = await products.insertOne({
         orgId: orgObjectId, departmentId: departmentObjectId, sku, name,
         description: description ? String(description).trim() : null,
-        unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, ...unitDoc,
+        unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, ...unitDoc, trackLots: trackLots === true,
         status: "ACTIVE", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
       });
     } catch (e) {
@@ -143,7 +144,7 @@ export async function POST(req) {
 
     return NextResponse.json(serializeProduct({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, sku, name, description,
-      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE", ...unitDoc,
+      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE", ...unitDoc, trackLots: trackLots === true,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }, 0));
   } catch (err) {

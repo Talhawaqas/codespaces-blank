@@ -8,6 +8,9 @@
 // Automatic RECEIPT movements from a received purchase order (Phase 3)
 // show up in the same per-product movement history here — this view
 // doesn't duplicate that recording path, only the manual one.
+// Batches: products can track batch / lot numbers with expiry dates
+// (lib/inventory-lots.js); the Batches tab lists what expires soon and
+// traces a batch through every movement.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import EmptyState from "../EmptyState";
@@ -21,7 +24,7 @@ async function api(path, options) {
 }
 
 export default function InventoryView({ orgId }) {
-  const [tab, setTab] = useErpSection("products", ["products", "movements", "warehouses"]);
+  const [tab, setTab] = useErpSection("products", ["products", "batches", "movements", "warehouses"]);
   const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
@@ -34,13 +37,14 @@ export default function InventoryView({ orgId }) {
     <div className="space-y-5">
       {!tabsHidden && (
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["products", "Products"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
+          {[["products", "Products"], ["batches", "Batches"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
       )}
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "products" && <ProductsTab orgId={orgId} departments={departments} />}
+      {tab === "batches" && <BatchesTab orgId={orgId} />}
       {tab === "movements" && <MovementsTab orgId={orgId} />}
       {tab === "warehouses" && <WarehousesTab orgId={orgId} departments={departments} />}
     </div>
@@ -97,7 +101,7 @@ function ProductsTab({ orgId, departments }) {
               <button key={p.id} onClick={() => setSelected(p)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
                 <div className="min-w-0">
                   <span className="text-[var(--inaya-text-primary)] text-sm">{p.name}</span>
-                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}{p.barcode ? ` · ${p.barcode}` : ""}</p>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}{p.barcode ? ` · ${p.barcode}` : ""}{p.trackLots ? " · batches" : ""}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}{p.unit && p.unit !== "each" ? ` ${p.unit}` : ""}</span>
@@ -124,6 +128,7 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
   const [destWarehouseId, setDestWarehouseId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
+  const [lotNumber, setLotNumber] = useState("");
   const [reviewing, setReviewing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -143,7 +148,7 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/inventory/transfers", { method: "POST", body: JSON.stringify({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity: Number(quantity), note: note.trim() || undefined }) });
+      await api("/api/orgs/inventory/transfers", { method: "POST", body: JSON.stringify({ orgId, productId, sourceWarehouseId, destWarehouseId, quantity: Number(quantity), note: note.trim() || undefined, lotNumber: lotNumber.trim() || undefined }) });
       onTransferred();
     } catch (err) {
       setError(err.message);
@@ -171,6 +176,7 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
           </select>
           {sourceWarehouseId && destWarehouseId && sourceWarehouseId === destWarehouseId && <p className="text-red-400 text-xs">Source and destination must be different.</p>}
           <input aria-label="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="1" placeholder="Quantity" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          {product?.trackLots && <input aria-label="Batch / lot number (optional)" value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} placeholder="Batch (blank = earliest expiry first)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />}
           <input aria-label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {error && <p className="text-red-400 text-xs">{error}</p>}
           <button disabled={!canReview} onClick={() => setReviewing(true)} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">Review transfer</button>
@@ -181,6 +187,7 @@ function TransferStockModal({ orgId, products, onClose, onTransferred }) {
           <div className="bg-black/20 border border-white/5 rounded-lg p-3 space-y-1 text-xs text-[var(--inaya-text-primary)]">
             <p><strong>{quantity}</strong> × {product?.name} ({product?.sku})</p>
             <p>{warehouseName(sourceWarehouseId)} → {warehouseName(destWarehouseId)}</p>
+            {product?.trackLots && <p className="text-[var(--inaya-text-muted)]">Batch: {lotNumber.trim() || "earliest expiry first"}</p>}
             {note && <p className="text-[var(--inaya-text-muted)]">Note: {note}</p>}
           </div>
           {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -203,6 +210,7 @@ function CreateProductModal({ orgId, departments, initialBarcode = null, onClose
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [reorderThreshold, setReorderThreshold] = useState("");
+  const [trackLots, setTrackLots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -212,7 +220,7 @@ function CreateProductModal({ orgId, departments, initialBarcode = null, onClose
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/inventory/products", { method: "POST", body: JSON.stringify({ orgId, departmentId, sku: sku.trim(), name: name.trim(), reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined, barcode: barcode.trim() || undefined, unit: unit.trim() || undefined, ...(purchaseUnit.trim() ? { purchaseUnit: purchaseUnit.trim(), unitsPerPurchaseUnit: Number(perPurchaseUnit) } : {}) }) });
+      await api("/api/orgs/inventory/products", { method: "POST", body: JSON.stringify({ orgId, departmentId, sku: sku.trim(), name: name.trim(), reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined, barcode: barcode.trim() || undefined, unit: unit.trim() || undefined, trackLots, ...(purchaseUnit.trim() ? { purchaseUnit: purchaseUnit.trim(), unitsPerPurchaseUnit: Number(perPurchaseUnit) } : {}) }) });
       onCreated();
     } catch (err) {
       setError(err.message);
@@ -232,6 +240,10 @@ function CreateProductModal({ orgId, departments, initialBarcode = null, onClose
         <input aria-label="Product name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Product name" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input aria-label="Reorder threshold (optional)" value={reorderThreshold} onChange={(e) => setReorderThreshold(e.target.value)} type="number" min="0" placeholder="Reorder threshold (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <UnitFields barcode={barcode} setBarcode={setBarcode} unit={unit} setUnit={setUnit} purchaseUnit={purchaseUnit} setPurchaseUnit={setPurchaseUnit} perPurchaseUnit={perPurchaseUnit} setPerPurchaseUnit={setPerPurchaseUnit} />
+        <label className="flex items-start gap-2 text-xs text-[var(--inaya-text-primary)]">
+          <input type="checkbox" checked={trackLots} onChange={(e) => setTrackLots(e.target.checked)} className="mt-0.5" />
+          <span>Track batches / lots with expiry dates<span className="block text-[11px] text-[var(--inaya-text-muted)]">Stock in needs a batch number; stock out uses the earliest-expiring batch first.</span></span>
+        </label>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button disabled={submitting || !departmentId || !sku.trim() || !name.trim()} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Creating…" : "Create product"}</button>
       </form>
@@ -347,8 +359,12 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
   const [type, setType] = useState("RECEIPT");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
+  const [lotNumber, setLotNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [trackLots, setTrackLots] = useState(!!product.trackLots);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const incoming = type === "RECEIPT" || (type === "ADJUSTMENT" && Number(quantity) > 0);
 
   const load = useCallback(async () => {
     try {
@@ -369,9 +385,11 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
     setSubmitting(true);
     setError("");
     try {
-      await api("/api/orgs/inventory/movements", { method: "POST", body: JSON.stringify({ orgId, productId: product.id, warehouseId, type, quantity: Number(quantity), note: note.trim() || undefined }) });
+      await api("/api/orgs/inventory/movements", { method: "POST", body: JSON.stringify({ orgId, productId: product.id, warehouseId, type, quantity: Number(quantity), note: note.trim() || undefined, lotNumber: lotNumber.trim() || undefined, expiryDate: incoming && expiryDate ? expiryDate : undefined }) });
       setQuantity("");
       setNote("");
+      setLotNumber("");
+      setExpiryDate("");
       await load();
       window.dispatchEvent(new CustomEvent("inaya:guided-movement-recorded"));
       onChanged();
@@ -387,6 +405,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
       <div className="space-y-4">
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">SKU {product.sku} · Reorder at {product.reorderThreshold}{product.barcode ? ` · Barcode ${product.barcode}` : ""} · Counted in {product.unit || "each"}{product.purchaseUnit ? ` · Bought by the ${product.purchaseUnit} of ${product.unitsPerPurchaseUnit}` : ""}</p>
         <UnitsEditor orgId={orgId} product={product} onChanged={onChanged} />
+        <BatchTrackingToggle orgId={orgId} productId={product.id} trackLots={trackLots} onChanged={(v) => { setTrackLots(v); load(); onChanged(); }} />
 
         {stock && (
           <div className="space-y-1">
@@ -395,6 +414,21 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
               <div key={l.warehouseId} className="flex items-center justify-between text-xs">
                 <span className="text-[var(--inaya-text-primary)]">{l.warehouseName}</span>
                 <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">{l.quantity}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {stock && trackLots && (
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Batches in stock (earliest expiry first)</p>
+            {stock.lots.length === 0 ? <p className="text-[#8a96ab] text-xs italic">No batches in stock.</p> : stock.lots.map((l) => (
+              <div key={`${l.warehouseId}-${l.lotNumber}`} className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-[var(--inaya-text-primary)] font-mono truncate">{l.lotNumber}<span className="text-[var(--inaya-text-muted)] font-sans"> · {l.warehouseName}</span></span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <ExpiryBadge expiryDate={l.expiryDate} days={l.daysToExpiry} />
+                  <span className="text-[var(--inaya-text-primary)] font-mono tabular-nums">{l.quantity}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -416,9 +450,20 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
             </select>
             <input aria-label="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" placeholder="Quantity" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           </div>
+          {trackLots && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input aria-label="Batch / lot number" value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} placeholder={incoming ? "Batch / lot number" : "Batch (blank = earliest expiry first)"} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+              {incoming && (
+                <label className="text-[11px] text-[var(--inaya-text-muted)] flex items-center gap-2">
+                  Expiry
+                  <input aria-label="Expiry date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="flex-1 bg-black/45 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-[var(--inaya-text-primary)]" />
+                </label>
+              )}
+            </div>
+          )}
           <input aria-label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
           {error && <p className="text-red-400 text-xs">{error}</p>}
-          <button disabled={submitting || !warehouseId || !quantity} className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Recording…" : "Record movement"}</button>
+          <button disabled={submitting || !warehouseId || !quantity || (trackLots && incoming && !lotNumber.trim())} className="w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">{submitting ? "Recording…" : "Record movement"}</button>
         </form>
 
         {stock && stock.movements.length > 0 && (
@@ -428,6 +473,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
               <div key={i} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
                 <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}>{m.delta > 0 ? "+" : ""}{m.delta}</span>
                 <span className="text-[var(--inaya-text-primary)]"> {m.type.toLowerCase()} · {m.warehouseName}</span>
+                {m.lots && <div className="text-[11px] font-mono text-[var(--inaya-text-muted)]">{lotsLabel(m.lots)}</div>}
                 <div className="text-[11px] font-mono text-[#8a96ab]">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
               </div>
             ))}
@@ -518,6 +564,127 @@ function ReorderSection({ orgId, productId, refreshKey, onChanged }) {
 }
 
 // ============================================================
+// BATCHES (lot tracking with expiry dates)
+// ============================================================
+const lotsLabel = (lots) => `Batch ${lots.map((l) => `${l.lotNumber} ×${l.quantity}`).join(", ")}`;
+
+function ExpiryBadge({ expiryDate, days }) {
+  if (!expiryDate) return <span className="text-[11px] text-[#8a96ab]">no expiry</span>;
+  const tone = days < 0 ? "bg-red-400/10 text-red-400 border-red-400/30" : days <= 30 ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-white/5 text-[var(--inaya-text-muted)] border-white/10";
+  const label = days < 0 ? `expired ${expiryDate}` : days === 0 ? "expires today" : `exp ${expiryDate}`;
+  return <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${tone}`}>{label}</span>;
+}
+
+function BatchTrackingToggle({ orgId, productId, trackLots, onChanged }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function toggle() {
+    if (!trackLots && !window.confirm("Turn on batch tracking? Stock already held becomes batch OPENING-STOCK, and stock coming in will need a batch number.")) return;
+    setBusy(true); setError("");
+    try {
+      await api(`/api/orgs/inventory/products/${productId}`, { method: "PATCH", body: JSON.stringify({ orgId, trackLots: !trackLots }) });
+      onChanged(!trackLots);
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
+  return (
+    <div className="flex items-center justify-between gap-2 text-xs">
+      <span className="text-[var(--inaya-text-primary)]">Batch / lot tracking: <strong>{trackLots ? "on" : "off"}</strong></span>
+      <button type="button" onClick={toggle} disabled={busy} className="text-[11px] font-bold uppercase text-[#00f2fe] disabled:opacity-40">{busy ? "…" : trackLots ? "Turn off" : "Turn on"}</button>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
+  );
+}
+
+function BatchesTab({ orgId }) {
+  const [days, setDays] = useState(30);
+  const [expiring, setExpiring] = useState(null);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [trace, setTrace] = useState(null);
+  const [tracing, setTracing] = useState(false);
+
+  useEffect(() => {
+    setExpiring(null);
+    api(`/api/orgs/inventory/lots?orgId=${orgId}&expiringWithinDays=${days}`).then((d) => setExpiring(d.lots)).catch((err) => setError(err.message));
+  }, [orgId, days]);
+
+  async function runTrace(e) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setTracing(true); setError("");
+    try { setTrace(await api(`/api/orgs/inventory/lots?orgId=${orgId}&lotNumber=${encodeURIComponent(query.trim())}`)); } catch (err) { setError(err.message); } finally { setTracing(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[var(--inaya-text-primary)] text-sm font-bold mr-auto">Expiring soon</p>
+          {[7, 30, 90].map((d) => (
+            <button key={d} onClick={() => setDays(d)} className={`text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-lg border ${days === d ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>{d} days</button>
+          ))}
+        </div>
+        {!expiring ? <p className="text-[var(--inaya-text-muted)] font-mono text-sm">Loading…</p> : expiring.length === 0 ? (
+          <p className="text-[var(--inaya-text-muted)] text-xs">No batches in stock expire within {days} days. Turn on batch tracking on a product to record batch numbers and expiry dates.</p>
+        ) : (
+          <div className="space-y-2">
+            {expiring.map((l) => (
+              <div key={`${l.productId}-${l.warehouseId}-${l.lotNumber}`} className="flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3">
+                <div className="min-w-0">
+                  <span className="text-[var(--inaya-text-primary)] text-sm">{l.productName}</span>
+                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">Batch {l.lotNumber} · {l.warehouseName}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <ExpiryBadge expiryDate={l.expiryDate} days={l.daysToExpiry} />
+                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{l.quantity}{l.unit && l.unit !== "each" ? ` ${l.unit}` : ""}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-[var(--inaya-surface)] border border-white/5 rounded-2xl p-5 space-y-3">
+        <p className="text-[var(--inaya-text-primary)] text-sm font-bold">Trace a batch</p>
+        <form onSubmit={runTrace} className="flex gap-2">
+          <input aria-label="Batch / lot number" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Batch / lot number" className="flex-1 bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
+          <button disabled={tracing || !query.trim()} className="text-[11px] font-bold uppercase px-3 rounded-lg bg-white/10 text-[var(--inaya-text-primary)] disabled:opacity-40">{tracing ? "…" : "Trace"}</button>
+        </form>
+        {trace && (
+          trace.movements.length === 0 && trace.lots.length === 0 ? <p className="text-[var(--inaya-text-muted)] text-xs">No batch &ldquo;{trace.lotNumber}&rdquo; found.</p> : (
+            <div className="space-y-3">
+              {trace.lots.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Where it is now</p>
+                  {trace.lots.map((l) => (
+                    <div key={`${l.productId}-${l.warehouseId}`} className="flex items-center justify-between text-xs">
+                      <span className="text-[var(--inaya-text-primary)]">{l.productName} · {l.warehouseName}</span>
+                      <span className="flex items-center gap-2"><ExpiryBadge expiryDate={l.expiryDate} days={l.daysToExpiry} /><span className="font-mono tabular-nums text-[var(--inaya-text-primary)]">{l.quantity}</span></span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">History</p>
+                {trace.movements.map((m, i) => (
+                  <div key={i} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
+                    <span className={m.quantity > 0 ? "text-emerald-400" : "text-red-400"}>{m.quantity > 0 ? "+" : ""}{m.quantity}</span>
+                    <span className="text-[var(--inaya-text-primary)]"> {m.type.toLowerCase().replace("_", " ")} · {m.productName} · {m.warehouseName}</span>
+                    {m.customerName ? <span className="text-[var(--inaya-text-primary)]"> → <strong>{m.customerName}</strong> ({m.orderNumber})</span> : m.note && <span className="text-[var(--inaya-text-muted)]"> · {m.note}</span>}
+                    <div className="text-[11px] font-mono text-[#8a96ab]">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // MOVEMENTS (org-wide feed)
 // ============================================================
 const MOVEMENTS_FEED_CAP = 100;
@@ -544,6 +711,7 @@ function MovementsTab({ orgId }) {
               <span className="text-[var(--inaya-text-primary)] font-bold">{m.productName}</span>
               <span className={m.delta > 0 ? "text-emerald-400" : "text-red-400"}> {m.delta > 0 ? "+" : ""}{m.delta}</span>
               <span className="text-[var(--inaya-text-muted)]"> · {m.type.toLowerCase()} · {m.warehouseName}</span>
+              {m.lots && <div className="text-[11px] font-mono text-[var(--inaya-text-muted)] mt-0.5">{lotsLabel(m.lots)}</div>}
               <div className="text-[12px] font-mono text-[#8a96ab] mt-0.5">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
             </div>
           ))}

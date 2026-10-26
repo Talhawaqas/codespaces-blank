@@ -9,6 +9,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { totalStockForProduct, isLowStock } from "../../../../../../lib/inventory.js";
 import { findOpenReorderRequest } from "../../../../../../lib/inventory-reorder.js";
 import { validateUnitFields, DEFAULT_UNIT } from "../../../../../../lib/inventory-units.js";
+import { openingLotsForExistingStock } from "../../../../../../lib/inventory-lots.js";
 
 const STATUSES = ["ACTIVE", "DISCONTINUED"];
 
@@ -19,6 +20,7 @@ function serializeProduct(p, totalStock) {
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
+    trackLots: !!p.trackLots,
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -59,7 +61,7 @@ export async function GET(req, { params }) {
 export async function PATCH(req, { params }) {
   try {
     const body = await req.json();
-    const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder } = body;
+    const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder, trackLots } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     const result = await loadAuthorized(req, orgId, params.productId);
@@ -96,6 +98,11 @@ export async function PATCH(req, { params }) {
       updateFields.autoReorder = autoReorder;
     }
 
+    if (trackLots !== undefined) {
+      if (typeof trackLots !== "boolean") return NextResponse.json({ error: "trackLots must be true or false." }, { status: 400 });
+      updateFields.trackLots = trackLots;
+    }
+
     const units = validateUnitFields(body, { existing: product });
     if (units.error) return NextResponse.json({ error: units.error }, { status: 400 });
     if (units.fields.barcode && await products.findOne({ orgId: product.orgId, barcode: units.fields.barcode, _id: { $ne: product._id } })) {
@@ -107,6 +114,11 @@ export async function PATCH(req, { params }) {
     } catch (e) {
       if (e?.code === 11000) return NextResponse.json({ error: "That barcode is already used by another product." }, { status: 409 });
       throw e;
+    }
+    // Turning batch tracking on: stock already held becomes an OPENING-STOCK batch.
+    if (trackLots === true && !product.trackLots) {
+      const { stockLevels, stockLots } = await getOrgCollections();
+      await openingLotsForExistingStock({ stockLevels, stockLots, orgId: product.orgId, productId: product._id });
     }
     const updated = await products.findOne({ _id: product._id });
     const total = await totalStockForProduct(orgId, product._id);

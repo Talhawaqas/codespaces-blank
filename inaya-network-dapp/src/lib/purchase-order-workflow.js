@@ -23,6 +23,7 @@
 import { getOrgCollections, canAccessDepartment, canManageOrg, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { recordStockMovement } from "./inventory.js";
+import { normalizeExpiryDate } from "./inventory-lots.js";
 import { applyPurchaseUnits, stockUnitsFor } from "./inventory-units.js";
 
 export const PURCHASE_ORDER_STATES = [
@@ -138,7 +139,7 @@ export async function transitionPurchaseOrder({ orgId, poId, action, membership,
 }
 
 /** Records partial or full receipt of a PO's line items. `receipts` is
- *  [{itemIndex, quantity}] — quantity received IN THIS CALL, added to
+ *  [{itemIndex, quantity, lotNumber?, expiryDate?}] — quantity received IN THIS CALL, added to
  *  that item's running receivedQuantity (not a replacement value, so
  *  repeated partial deliveries accumulate correctly). Only valid from
  *  ORDERED or PARTIALLY_RECEIVED. The resulting status is derived, not
@@ -165,7 +166,8 @@ export async function receivePurchaseOrder({ orgId, poId, receipts, membership, 
   }
 
   const items = po.items.map((item) => ({ ...item }));
-  for (const { itemIndex, quantity } of receipts) {
+  for (const { itemIndex, quantity, expiryDate } of receipts) {
+    if (normalizeExpiryDate(expiryDate)?.error) return { error: "Expiry date must be a date (YYYY-MM-DD).", status: 400 };
     if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= items.length) {
       return { error: `Invalid item index ${itemIndex}.`, status: 400 };
     }
@@ -202,12 +204,12 @@ export async function receivePurchaseOrder({ orgId, poId, receipts, membership, 
     return { error: "This purchase order changed since it was loaded — reload and try again.", status: 409 };
   }
 
-  for (const { itemIndex, quantity } of receipts) {
+  for (const { itemIndex, quantity, lotNumber, expiryDate } of receipts) {
     const item = items[itemIndex];
     if (item.productId && item.warehouseId) {
       await recordStockMovement({
         orgId, productId: item.productId, warehouseId: item.warehouseId, delta: stockUnitsFor(item, quantity),
-        type: "RECEIPT", relatedPurchaseOrderId: poId, note: item.unitsPerPurchaseUnit > 1 ? `PO receipt: ${item.description} (${quantity} ${item.unit} × ${item.unitsPerPurchaseUnit})` : `PO receipt: ${item.description}`, actorEmail,
+        type: "RECEIPT", relatedPurchaseOrderId: poId, lotNumber, expiryDate, defaultLotNumber: `PO-${String(poId).slice(-6).toUpperCase()}`, note: item.unitsPerPurchaseUnit > 1 ? `PO receipt: ${item.description} (${quantity} ${item.unit} × ${item.unitsPerPurchaseUnit})` : `PO receipt: ${item.description}`, actorEmail,
       });
     }
   }
