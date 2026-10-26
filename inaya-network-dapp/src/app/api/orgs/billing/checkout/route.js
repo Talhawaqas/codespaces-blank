@@ -1,6 +1,8 @@
 // app/api/orgs/billing/checkout/route.js
 //
 // POST /api/orgs/billing/checkout   { orgId, planId, interval: "month"|"year" }
+// POST body may add extraUsers (0 up to the plan's maxExtraUsers, $3/user/month).
+//   -> { url } for a new subscription, or { upgraded: true } when an existing one was changed in place
 //
 // Owner/admin only (same requireManage gate as inviting members). Starts a
 // real Stripe Checkout subscription for one of the 3 self-serve tiers —
@@ -20,15 +22,27 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
-import { PLANS } from "../../../../../lib/orgPlans.js";
+import { PLANS, planChangeError, EXTRA_USER_MONTHLY_USD } from "../../../../../lib/orgPlans.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const TRIAL_DAYS = 14; // matches "Start Free Trial" wording on the pricing cards
+
+// Extra users are a second subscription item, recognised by its product's metadata.
+const EXTRA_USERS_KIND = "extra_users";
+const extraUsersProduct = () => ({ name: "Inaya Business Workspace — extra user", metadata: { kind: EXTRA_USERS_KIND } });
+// A year costs 10 months, like the plans' yearly prices.
+const extraUsersPrice = (product, interval) => ({
+  currency: "usd",
+  product,
+  unit_amount: Math.round(EXTRA_USER_MONTHLY_USD * (interval === "year" ? 10 : 1) * 100),
+  recurring: { interval },
+});
 
 export async function POST(req) {
   try {
     let reqBody = {}; try { reqBody = await req.json(); } catch { reqBody = {}; }
     const { orgId, planId, interval = "month" } = reqBody;
+    const extraUsers = Number(reqBody.extraUsers) || 0;
 
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     const plan = PLANS[planId];
@@ -39,6 +53,8 @@ export async function POST(req) {
     if (interval !== "month" && interval !== "year") {
       return NextResponse.json({ error: "interval must be 'month' or 'year'." }, { status: 400 });
     }
+    const invalid = planChangeError({ planId, extraUsers });
+    if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId, { requireManage: true });
@@ -51,6 +67,45 @@ export async function POST(req) {
 
     const subscriptions = db.collection("org_subscriptions");
     const existing = await subscriptions.findOne({ orgId: orgObjectId });
+
+    // One subscription per company. A second Checkout would start a second
+    // Stripe subscription and bill twice, so a company that already pays by
+    // card changes its existing subscription in place instead: a larger
+    // package and/or more extra users (Stripe prorates the difference).
+    const live = existing?.stripeSubscriptionId && ["active", "trialing", "past_due"].includes(existing.status);
+    if (live) {
+      const blocked = planChangeError({ currentPlanId: org.plan, currentExtraUsers: org.extraUsers || 0, active: true, planId, extraUsers });
+      if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
+      const current = await stripe.subscriptions.retrieve(existing.stripeSubscriptionId, { expand: ["items.data.price.product"] });
+      const isExtraItem = (it) => it.price.product?.metadata?.kind === EXTRA_USERS_KIND;
+      const planItem = current.items.data.find((it) => !isExtraItem(it));
+      const extraItem = current.items.data.find(isExtraItem);
+      const keepInterval = planItem.price.recurring?.interval || "month";
+      const items = [{
+        id: planItem.id,
+        price_data: {
+          currency: "usd",
+          product: planItem.price.product.id,
+          unit_amount: Math.round((keepInterval === "year" ? plan.priceYearly : plan.priceMonthly) * 100),
+          recurring: { interval: keepInterval },
+        },
+      }];
+      if (extraUsers > 0) {
+        const product = extraItem?.price.product.id || (await stripe.products.create(extraUsersProduct())).id;
+        items.push({ ...(extraItem ? { id: extraItem.id } : {}), price_data: extraUsersPrice(product, keepInterval), quantity: extraUsers });
+      } else if (extraItem) {
+        items.push({ id: extraItem.id, deleted: true });
+      }
+      await stripe.subscriptions.update(current.id, {
+        items,
+        proration_behavior: "create_prorations",
+        metadata: { ...current.metadata, orgId: orgId.toString(), planId, extraUsers: String(extraUsers) },
+      });
+      const now = new Date().toISOString();
+      await subscriptions.updateOne({ orgId: orgObjectId }, { $set: { plan: planId, updatedAt: now } });
+      await orgs.updateOne({ _id: orgObjectId }, { $set: { plan: planId, extraUsers, planUpdatedAt: now } });
+      return NextResponse.json({ upgraded: true, planId, extraUsers });
+    }
 
     // Reuse the org's existing Stripe Customer across plan changes/renewals
     // rather than creating a new one every checkout.
@@ -88,14 +143,17 @@ export async function POST(req) {
           },
           quantity: 1,
         },
+        ...(extraUsers > 0
+          ? [{ price_data: { currency: "usd", product_data: extraUsersProduct(), unit_amount: extraUsersPrice(null, interval).unit_amount, recurring: { interval } }, quantity: extraUsers }]
+          : []),
       ],
       subscription_data: {
         trial_period_days: TRIAL_DAYS,
-        metadata: { orgId: orgId.toString(), planId },
+        metadata: { orgId: orgId.toString(), planId, extraUsers: String(extraUsers) },
       },
       // Read back by the webhook to know this is an org subscription (vs.
       // Corporate Reserve/PAYG/egress) and which org/plan/interval it belongs to.
-      metadata: { orgId: orgId.toString(), planId, interval, checkoutType: "org_subscription" },
+      metadata: { orgId: orgId.toString(), planId, interval, extraUsers: String(extraUsers), checkoutType: "org_subscription" },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/business?billing=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/business?billing=cancelled`,
     });

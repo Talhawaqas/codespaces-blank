@@ -138,7 +138,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       )}
 
       {isPkr && !compact && (
-        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by bank transfer. Setup fee {pkr(plan.setupFee)}, waived for pilot companies.</p>
+        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by bank transfer. One-time setup {pkr(plan.setupFee)} ({pkr(plan.pilotSetupFee)} for pilot companies).</p>
       )}
       <button
         onClick={onSelect}

@@ -46,8 +46,8 @@ function RequestRow({ r, onDone }) {
         <p className="text-[#8a96ab] text-[11px]">{r.requestedByEmail}</p>
       </td>
       <td className="py-3 pr-3">
-        <p className="text-white">{PLAN_NAMES[r.planId] || r.planId}</p>
-        <p className="text-[#8a96ab] text-[11px]">{pkr(r.amountPkr)} per {r.interval}{r.pilot ? " · pilot (30% off)" : ""}</p>
+        <p className="text-white">{PLAN_NAMES[r.planId] || r.planId}{r.extraUsers ? ` + ${r.extraUsers} extra users` : ""}</p>
+        <p className="text-[#8a96ab] text-[11px]">{pkr(r.amountPkr)} per {r.interval}{r.pilot ? " · pilot (30% off)" : ""}{r.setupFeePkr ? ` · setup ${pkr(r.setupFeePkr)} once` : r.setupFeeReason === "promised_in_outreach" ? " · setup free (promised in our first emails)" : r.setupFeeReason === "first_five" ? " · setup free (first 5 pilot companies)" : ""}</p>
       </td>
       <td className="py-3 pr-3 text-[#94a3b8] text-[12px]">{when(r.requestedAt)}</td>
       <td className="py-3">

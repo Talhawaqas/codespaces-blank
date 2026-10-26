@@ -39,3 +39,14 @@ test("pilot price is 30% off, rounded to 100 rupees", () => {
   assert.equal(pkPilotPrice(60000), 42000);
   assert.equal(formatPkr(20000), "PKR 20,000");
 });
+
+test("pilot setup: free for the first 5 pilot companies, then the reduced pilot fee; standard fee outside the pilot", async () => {
+  const { pkSetupFee, PK_PILOT } = await import("../src/lib/pkPricing.js");
+  assert.equal(PK_PILOT.maxCompanies, 10);
+  assert.equal(pkSetupFee("professional", { pilot: true, pilotsJoined: 0 }), 0);
+  assert.equal(pkSetupFee("starter", { pilot: true, pilotsJoined: 4 }), 0);
+  assert.equal(pkSetupFee("starter", { pilot: true, pilotsJoined: 5 }), 7500);
+  assert.equal(pkSetupFee("business", { pilot: true, pilotsJoined: 9 }), 12500);
+  assert.equal(pkSetupFee("business", { pilot: false }), 25000);
+  assert.equal(pkSetupFee("starter", { pilot: false }), 10000);
+});

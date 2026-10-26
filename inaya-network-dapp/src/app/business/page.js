@@ -283,7 +283,8 @@ export default function BusinessPage() {
       body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month" }),
     })
       .then((data) => {
-        window.location.href = data.url;
+        if (data.url) window.location.href = data.url;
+        else setNotice("Your plan has been upgraded.");
       })
       .catch((err) => setNotice(err.message));
   }, [session, selectedOrgId]);
@@ -465,7 +466,8 @@ function PlanSelectionGate({ email, membership, onLogout }) {
         method: "POST",
         body: JSON.stringify({ orgId: membership.orgId, planId: plan.id, interval: "month" }),
       });
-      window.location.href = d.url;
+      if (d.url) window.location.href = d.url;
+      else window.location.reload();
     } catch (err) {
       setError(err.message);
       setSwitchingPlanId(null);
@@ -2697,6 +2699,8 @@ function BillingView({ orgId, canManage }) {
   const [notice, setNotice] = useState("");
   const [switchingPlanId, setSwitchingPlanId] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [extraUsers, setExtraUsers] = useState(0);
+  const [requestingExtra, setRequestingExtra] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -2734,10 +2738,48 @@ function BillingView({ orgId, canManage }) {
         method: "POST",
         body: JSON.stringify({ orgId, planId, interval: "month" }),
       });
-      window.location.href = d.url;
+      if (d.url) {
+        window.location.href = d.url;
+        return;
+      }
+      setNotice(`Upgraded to ${chosen?.name || planId}. Stripe adjusts your next invoice for the difference.`);
+      setSwitchingPlanId(null);
+      load();
     } catch (err) {
       setError(err.message);
       setSwitchingPlanId(null);
+    }
+  }
+
+  async function handleExtraUsers(e) {
+    e.preventDefault();
+    const extra = Number(extraUsers);
+    setRequestingExtra(true);
+    setError("");
+    try {
+      if (data.region === "PK") {
+        await api("/api/orgs/billing/pk-request", {
+          method: "POST",
+          body: JSON.stringify({ orgId, planId: data.plan.id, interval: "month", pilot: !!data.subscription?.pilot, extraUsers: extra }),
+        });
+        setNotice(`Request received for ${extra} extra users. We'll email you an invoice with our bank details within one working day.`);
+      } else {
+        // Card: a live subscription is changed in place; without one, Checkout starts a new subscription.
+        const d = await api("/api/orgs/billing/checkout", {
+          method: "POST",
+          body: JSON.stringify({ orgId, planId: data.plan.id, interval: data.subscription?.billingInterval || "month", extraUsers: extra }),
+        });
+        if (d.url) {
+          window.location.href = d.url;
+          return;
+        }
+        setNotice(`You now have ${extra} extra users. Stripe adjusts your next invoice for the difference.`);
+        load();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRequestingExtra(false);
     }
   }
 
@@ -2788,6 +2830,35 @@ function BillingView({ orgId, canManage }) {
           <UsageBar label="Storage" used={usage.storageGB.used} max={usage.storageGB.max} unit=" GB" />
         </div>
       </div>
+
+      {canManage && plan.id && plan.maxExtraUsers > 0 && !plan.noBilling && (data.region === "PK" || subscription?.provider !== "bank_transfer") && (
+        <form onSubmit={handleExtraUsers} className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Extra users</p>
+            <p className="text-[var(--inaya-text-secondary)] text-xs mt-1">
+              {plan.name} includes {plan.includedUsers || plan.maxUsers} users{plan.extraUsers ? ` and you have ${plan.extraUsers} extra` : ""}. Add up to {plan.maxExtraUsers} extra users at {data.region === "PK" ? "PKR 2,500" : "$3"} per user per month; for more, choose a larger package.
+            </p>
+          </div>
+          <label className="text-xs text-[var(--inaya-text-secondary)]">
+            Extra users in total
+            <input
+              type="number"
+              min={(plan.extraUsers || 0) + 1}
+              max={plan.maxExtraUsers}
+              value={extraUsers || ""}
+              onChange={(e) => setExtraUsers(e.target.value)}
+              className="block mt-1 w-28 bg-[var(--inaya-input,transparent)] border border-[var(--inaya-overlay-10)] rounded-lg px-3 py-2 text-[var(--inaya-text-primary)]"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={requestingExtra || !(Number(extraUsers) > (plan.extraUsers || 0))}
+            className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
+          >
+            {requestingExtra ? "Requesting…" : "Request extra users"}
+          </button>
+        </form>
+      )}
 
       {error && <p className="text-red-400 text-xs">{error}</p>}
       {notice && <p className="text-emerald-400 text-xs" role="status">{notice}</p>}

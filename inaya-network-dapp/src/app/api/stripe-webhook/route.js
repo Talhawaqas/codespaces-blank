@@ -317,7 +317,7 @@ async function settlePaygUpload(session, customerEmail) {
 // corporate_plans upsert-by-email shape above, keyed by orgId instead.
 // ============================================================
 async function settleOrgSubscription(session) {
-  const { orgId, planId, interval } = session.metadata || {};
+  const { orgId, planId, interval, extraUsers } = session.metadata || {};
   if (!orgId || !planId) throw new Error("Missing orgId/planId in session metadata");
 
   const { db } = await connectToDatabase();
@@ -340,7 +340,7 @@ async function settleOrgSubscription(session) {
     { upsert: true }
   );
 
-  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: planId, planUpdatedAt: now } });
+  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: planId, extraUsers: Number(extraUsers) || 0, planUpdatedAt: now } });
 
   console.log(`[OK] Org subscription activated: org ${orgId} -> ${planId}`);
   return { orgId, planId };
@@ -385,7 +385,7 @@ async function handleSubscriptionDeleted(subscription) {
   const now = new Date().toISOString();
 
   await db.collection("org_subscriptions").updateOne({ orgId: orgObjectId }, { $set: { status: "canceled", updatedAt: now } });
-  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: "starter", planUpdatedAt: now } });
+  await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: "starter", extraUsers: 0, planUpdatedAt: now } });
 
   console.log(`[OK] Org subscription canceled: org ${orgId} -> starter`);
 }

@@ -101,11 +101,11 @@ export default function PricingPage() {
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">
           <div>
             <p className="text-white font-bold mb-1">Additional Users</p>
-            <p>PKR 2,500 / user / month</p>
+            <p>PKR 2,500 / user / month, up to a limit per package</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">6-Month Pilot</p>
-            <p>30% off for pilot companies, setup fee waived</p>
+            <p>30% off for 10 pilot companies; setup free for the first 5</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">Payment</p>
@@ -120,7 +120,7 @@ export default function PricingPage() {
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">
           <div>
             <p className="text-white font-bold mb-1">Additional Users</p>
-            <p>Starting at $2.49 / user / month</p>
+            <p>$3 / user / month, up to a limit per plan</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">Additional Storage</p>

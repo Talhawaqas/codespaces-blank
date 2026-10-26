@@ -10,14 +10,24 @@
 // asked for a PKR package keeps PKR pricing (org.billingRegion = "PK") even
 // when its owner signs in from abroad.
 
+// pilotSetupFee: pilot companies pay a reduced one-time setup fee (setup,
+// data import and two training sessions), set to cover the setup work.
 export const PK_PACKAGES = {
-  starter: { monthly: 8000, yearly: 80000, setupFee: 10000 },
-  professional: { monthly: 20000, yearly: 200000, setupFee: 25000 },
-  business: { monthly: 30000, yearly: 300000, setupFee: 25000 },
-  enterprise: { monthly: 60000, yearly: 600000, setupFee: 25000 },
+  starter: { monthly: 8000, yearly: 80000, setupFee: 10000, pilotSetupFee: 7500 },
+  professional: { monthly: 20000, yearly: 200000, setupFee: 25000, pilotSetupFee: 12500 },
+  business: { monthly: 30000, yearly: 300000, setupFee: 25000, pilotSetupFee: 12500 },
+  enterprise: { monthly: 60000, yearly: 600000, setupFee: 25000, pilotSetupFee: 12500 },
 };
 export const PK_EXTRA_USER_MONTHLY = 2500;
-export const PK_PILOT = { months: 6, discountPercent: 30 };
+// The pilot is open to 10 companies; the first 5 also get setup free.
+export const PK_PILOT = { months: 6, discountPercent: 30, maxCompanies: 10, freeSetupCompanies: 5 };
+
+/** The one-time setup fee for a company's first package, given how many pilot companies have already joined. */
+export function pkSetupFee(planId, { pilot, pilotsJoined = 0 } = {}) {
+  const pk = PK_PACKAGES[planId];
+  if (!pilot) return pk.setupFee;
+  return pilotsJoined < PK_PILOT.freeSetupCompanies ? 0 : pk.pilotSetupFee;
+}
 
 /** "PK" for a company in Pakistan, otherwise "INTL". An org's saved region wins over the visitor's IP country. */
 export function pricingRegion({ country, orgRegion } = {}) {
@@ -47,6 +57,7 @@ export function toPkPlan(plan) {
     priceMonthly: pk.monthly,
     priceYearly: pk.yearly,
     setupFee: pk.setupFee,
+    pilotSetupFee: pk.pilotSetupFee,
     pilotMonthly: pkPilotPrice(pk.monthly),
     pilotMonths: PK_PILOT.months,
     pilotDiscountPercent: PK_PILOT.discountPercent,

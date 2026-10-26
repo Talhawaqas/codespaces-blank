@@ -24,6 +24,7 @@ export const PLANS = {
     priceMonthly: 7.99,
     priceYearly: 79,
     maxUsers: 2,
+    maxExtraUsers: 3,
     maxStorageGB: 250,
     maxFileSizeMB: 5,
     features: [
@@ -47,6 +48,7 @@ export const PLANS = {
     priceMonthly: 28,
     priceYearly: 280,
     maxUsers: 5,
+    maxExtraUsers: 10,
     maxStorageGB: 1000,
     maxFileSizeMB: 10,
     features: [
@@ -70,6 +72,7 @@ export const PLANS = {
     priceMonthly: 49.99,
     priceYearly: 499,
     maxUsers: 10,
+    maxExtraUsers: 15,
     maxStorageGB: 5000,
     maxFileSizeMB: 25,
     features: [
@@ -97,6 +100,7 @@ export const PLANS = {
     priceMonthly: 799,
     priceYearly: 7990,
     maxUsers: 25,
+    maxExtraUsers: 20,
     maxStorageGB: 10000,
     maxFileSizeMB: 100,
     features: [
@@ -115,6 +119,9 @@ export const PLANS = {
     ],
   },
 };
+
+// Card (USD) price of one extra user; Pakistan's PKR price is in pkPricing.js.
+export const EXTRA_USER_MONTHLY_USD = 3;
 
 export const PLAN_ORDER = ["starter", "professional", "business", "enterprise"];
 
@@ -151,8 +158,40 @@ export const NO_PLAN_LIMITED = {
   noBilling: true,
 };
 
+// Extra users: a company keeps one package and can add users on top of it,
+// up to the package's maxExtraUsers; past that it upgrades. maxUsers on the
+// returned plan includes them, so every seat check (invite, SSO
+// provisioning) enforces the bought total without changes.
+export function withExtraUsers(plan, extraUsers) {
+  const extra = Math.min(Math.max(0, Math.floor(Number(extraUsers) || 0)), plan.maxExtraUsers || 0);
+  if (!extra) return plan;
+  return { ...plan, includedUsers: plan.maxUsers, extraUsers: extra, maxUsers: plan.maxUsers + extra };
+}
+
+/**
+ * Whether a company may buy `planId` with `extraUsers` given what it already
+ * has. One package per company: while the current one is paid up it can move
+ * to a larger package or add extra users, but not buy the same package again
+ * or move down. `renewalDue` lets the same package be paid again near the end
+ * of a bank-transfer period. Returns an error message, or null when allowed.
+ */
+export function planChangeError({ currentPlanId, currentExtraUsers = 0, active, renewalDue = false, planId, extraUsers = 0 }) {
+  const plan = PLANS[planId];
+  if (!plan) return `Unknown package "${planId}".`;
+  if (!Number.isInteger(extraUsers) || extraUsers < 0) return "Extra users must be a whole number, 0 or more.";
+  if (extraUsers > plan.maxExtraUsers) {
+    return `${plan.name} can add up to ${plan.maxExtraUsers} extra users (${plan.maxUsers + plan.maxExtraUsers} in total). For more, choose a larger package.`;
+  }
+  if (!active || !PLANS[currentPlanId]) return null;
+  const from = PLAN_ORDER.indexOf(currentPlanId), to = PLAN_ORDER.indexOf(planId);
+  if (to > from) return null;
+  if (to < from) return `Your company is on ${PLANS[currentPlanId].name}. To move to a smaller package, contact us at contact@inayanetwork.com.`;
+  if (extraUsers > currentExtraUsers || renewalDue) return null;
+  return `Your company already has the ${plan.name} package. Choose a larger package, or add extra users.`;
+}
+
 export function getOrgPlan(org) {
-  if (org?.plan) return PLANS[org.plan] || PLANS.starter;
+  if (org?.plan) return withExtraUsers(PLANS[org.plan] || PLANS.starter, org.extraUsers);
   if (org?.noPlanConfirmedAt) return NO_PLAN_LIMITED;
   return LEGACY_UNLIMITED;
 }
