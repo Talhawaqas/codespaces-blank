@@ -6,7 +6,9 @@
 // GET /api/orgs/inventory/lots?orgId=...&lotNumber=...
 //   -> traceability for one batch: where it is now, and every movement that
 //      touched it (received, issued, transferred, adjusted), newest first,
-//      with the customer and order number for batches dispatched on a sales order.
+//      with the customer and order number for batches dispatched on a sales order,
+//      and for production: which component batches a finished batch was made
+//      from, and which finished batch a component batch went into.
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
@@ -30,7 +32,7 @@ export async function GET(req) {
     if (productIds.length === 0) return NextResponse.json({ lots: [], movements: [] });
     const productById = new Map(scope.visibleProducts.map((p) => [p._id.toString(), p]));
 
-    const { stockLots, stockMovements, warehouses, salesOrders, crmContacts } = await getOrgCollections();
+    const { stockLots, stockMovements, warehouses, salesOrders, crmContacts, productionOrders, products } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);
     const warehouseNameById = new Map((await warehouses.find({ orgId: orgObjectId }).toArray()).map((w) => [w._id.toString(), w.name]));
     const lotView = (l) => {
@@ -52,6 +54,14 @@ export async function GET(req) {
       const contacts = orders.length ? await crmContacts.find({ orgId: orgObjectId, _id: { $in: orders.map((o) => o.contactId) } }, { projection: { name: 1, company: 1 } }).toArray() : [];
       const customerById = new Map(contacts.map((c) => [c._id.toString(), c.company || c.name]));
       const orderById = new Map(orders.map((o) => [o._id.toString(), { orderNumber: o.orderNumber, customerName: customerById.get(o.contactId.toString()) || null }]));
+      const moIds = [...new Set(movements.filter((m) => m.relatedProductionOrderId).map((m) => m.relatedProductionOrderId.toString()))].map(toObjectId);
+      const mos = moIds.length ? await productionOrders.find({ orgId: orgObjectId, _id: { $in: moIds } }).toArray() : [];
+      const moProductNames = new Map((await products.find({ orgId: orgObjectId, _id: { $in: mos.flatMap((o) => [o.productId, ...(o.consumed || []).map((c) => c.productId)]) } }, { projection: { name: 1 } }).toArray()).map((p) => [p._id.toString(), p.name]));
+      const moById = new Map(mos.map((o) => [o._id.toString(), {
+        productionOrder: o.orderNumber,
+        madeBatch: o.lotNumber ? `${moProductNames.get(o.productId.toString()) || "product"} batch ${o.lotNumber}` : moProductNames.get(o.productId.toString()) || null,
+        madeFrom: (o.consumed || []).flatMap((c) => (c.lots || []).map((l) => `${moProductNames.get(c.productId.toString()) || "component"} ${l.lotNumber} ×${l.quantity}`)),
+      }]));
       return NextResponse.json({
         lotNumber,
         lots: lots.map(lotView),
@@ -61,6 +71,7 @@ export async function GET(req) {
           type: m.type, quantity: (m.delta < 0 ? -1 : 1) * (m.lots.find((l) => l.lotNumber === lotNumber)?.quantity || 0),
           relatedPurchaseOrderId: m.relatedPurchaseOrderId ? m.relatedPurchaseOrderId.toString() : null,
           ...(m.relatedSalesOrderId ? orderById.get(m.relatedSalesOrderId.toString()) || {} : {}),
+          ...(m.relatedProductionOrderId ? moById.get(m.relatedProductionOrderId.toString()) || {} : {}),
           note: m.note, actorEmail: m.actorEmail, createdAt: m.createdAt,
         })),
       });

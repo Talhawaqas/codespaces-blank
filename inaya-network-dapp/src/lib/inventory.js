@@ -20,7 +20,8 @@ import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
 import { planLots, applyLots } from "./inventory-lots.js";
 
-export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"];
+// CONSUME / PRODUCE: components used and finished goods made by a production order (production.js).
+export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT", "CONSUME", "PRODUCE"];
 
 /** Applies a signed stock change and records the movement that caused it,
  *  in that order — insertOne's own ordering guarantee doesn't matter here
@@ -39,7 +40,7 @@ export const MOVEMENT_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER_IN", 
 // IN leg reuses the OUT leg's lots). For a trackLots product a stock-out
 // without a lot is allocated earliest-expiry-first, and defaultLotNumber is
 // used for a stock-in that names none (PO receipts pass the PO's number).
-export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber }) {
+export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, relatedProductionOrderId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber }) {
   if (!MOVEMENT_TYPES.includes(type)) return { error: `Unknown movement type "${type}".`, status: 400 };
   if (!Number.isFinite(delta) || delta === 0) return { error: "delta must be a non-zero number.", status: 400 };
 
@@ -78,6 +79,7 @@ export async function recordStockMovement({ orgId, productId, warehouseId, delta
     delta,
     relatedPurchaseOrderId: relatedPurchaseOrderId ? toObjectId(relatedPurchaseOrderId) : null,
     ...(relatedSalesOrderId ? { relatedSalesOrderId: toObjectId(relatedSalesOrderId) } : {}),
+    ...(relatedProductionOrderId ? { relatedProductionOrderId: toObjectId(relatedProductionOrderId) } : {}),
     note: note || null,
     lots: plan.lots,
     actorEmail,

@@ -62,8 +62,9 @@ export const ERP_MODULES = [
     id: "inventory", label: "Inventory", icon: "inventory", home: "moduleOverview:inventory",
     groups: [
       { id: "overview", label: "Overview", items: ["moduleOverview:inventory"] },
-      { id: "tasks", label: "My tasks", items: ["inventory:products!new", "inventory:warehouses!new"] },
+      { id: "tasks", label: "My tasks", items: ["inventory:products!new", "inventory:production!new", "inventory:warehouses!new"] },
       { id: "stock", label: "Stock", items: ["inventory:products", "inventory:batches", "inventory:movements", "inventory:warehouses"] },
+      { id: "production", label: "Production", items: ["inventory:production", "inventory:boms"] },
     ],
   },
   {
@@ -155,6 +156,9 @@ const ERP_LABELS = {
   "inventory:warehouses!new": "New warehouse",
   "inventory:products": "Products and stock",
   "inventory:batches": "Batches & expiry",
+  "inventory:production!new": "New production order",
+  "inventory:production": "Production orders",
+  "inventory:boms": "Bills of materials",
   "inventory:movements": "Stock movements",
   "inventory:warehouses": "Warehouses",
   "finance:invoices!new": "New invoice",

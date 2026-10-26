@@ -15,6 +15,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import EmptyState from "../EmptyState";
 import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
+import { BomsTab, ProductionTab } from "./ProductionViews";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -24,7 +25,12 @@ async function api(path, options) {
 }
 
 export default function InventoryView({ orgId }) {
-  const [tab, setTab] = useErpSection("products", ["products", "batches", "movements", "warehouses"]);
+  const [tab, setTab] = useErpSection("products", ["products", "batches", "boms", "production", "movements", "warehouses"]);
+  // "New production order" / "New bill of materials" from the ERP task panel open those tabs' forms.
+  const [newProductionSignal, setNewProductionSignal] = useState(0);
+  const [newBomSignal, setNewBomSignal] = useState(0);
+  useErpCreate("production", () => { setTab("production"); setNewProductionSignal((n) => n + 1); });
+  useErpCreate("boms", () => { setTab("boms"); setNewBomSignal((n) => n + 1); });
   const tabsHidden = useErpTabsHidden();
   const [departments, setDepartments] = useState([]);
   const [departmentsError, setDepartmentsError] = useState("");
@@ -37,7 +43,7 @@ export default function InventoryView({ orgId }) {
     <div className="space-y-5">
       {!tabsHidden && (
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["products", "Products"], ["batches", "Batches"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
+          {[["products", "Products"], ["batches", "Batches"], ["boms", "Bills of materials"], ["production", "Production"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
@@ -45,6 +51,8 @@ export default function InventoryView({ orgId }) {
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "products" && <ProductsTab orgId={orgId} departments={departments} />}
       {tab === "batches" && <BatchesTab orgId={orgId} />}
+      {tab === "boms" && <BomsTab orgId={orgId} openCreateSignal={newBomSignal} />}
+      {tab === "production" && <ProductionTab orgId={orgId} openCreateSignal={newProductionSignal} />}
       {tab === "movements" && <MovementsTab orgId={orgId} />}
       {tab === "warehouses" && <WarehousesTab orgId={orgId} departments={departments} />}
     </div>
@@ -671,7 +679,10 @@ function BatchesTab({ orgId }) {
                   <div key={i} className="text-xs border-b border-white/5 pb-1.5 last:border-0">
                     <span className={m.quantity > 0 ? "text-emerald-400" : "text-red-400"}>{m.quantity > 0 ? "+" : ""}{m.quantity}</span>
                     <span className="text-[var(--inaya-text-primary)]"> {m.type.toLowerCase().replace("_", " ")} · {m.productName} · {m.warehouseName}</span>
-                    {m.customerName ? <span className="text-[var(--inaya-text-primary)]"> → <strong>{m.customerName}</strong> ({m.orderNumber})</span> : m.note && <span className="text-[var(--inaya-text-muted)]"> · {m.note}</span>}
+                    {m.customerName ? <span className="text-[var(--inaya-text-primary)]"> → <strong>{m.customerName}</strong> ({m.orderNumber})</span>
+                      : m.type === "CONSUME" && m.productionOrder ? <span className="text-[var(--inaya-text-primary)]"> → used in {m.productionOrder}, made <strong>{m.madeBatch}</strong></span>
+                      : m.type === "PRODUCE" && m.productionOrder ? <span className="text-[var(--inaya-text-primary)]"> · made in {m.productionOrder}{m.madeFrom?.length ? <> from <strong>{m.madeFrom.join(", ")}</strong></> : null}</span>
+                      : m.note && <span className="text-[var(--inaya-text-muted)]"> · {m.note}</span>}
                     <div className="text-[11px] font-mono text-[#8a96ab]">{m.actorEmail} · {new Date(m.createdAt).toLocaleString()}</div>
                   </div>
                 ))}

@@ -168,6 +168,9 @@ export async function getOrgCollections() {
     stockLots: db.collection("stock_lots"),
     // Sales (wholesale) orders: sales-orders.js.
     salesOrders: db.collection("sales_orders"),
+    // Bills of materials and production orders: production.js.
+    boms: db.collection("boms"),
+    productionOrders: db.collection("production_orders"),
     // Business Operations, Phase 5 (Finance & HR) — a testnet demonstration/
     // validation layer per the SOW, not regulated banking/payroll. invoices
     // link to the existing crmContacts (Customer -> Invoice -> Payment, no
@@ -591,7 +594,7 @@ export async function ensureOrgIndexes() {
     orgMembers, departments, projects, magicLinks, sessions, orgDocuments, documentActivity,
     projectMembers, documentPermissions, documentShares, tasks, orgActivity,
     crmContacts, crmDeals, suppliers, purchaseRequests, purchaseOrders,
-    warehouses, products, stockLevels, stockMovements, stockLots, salesOrders,
+    warehouses, products, stockLevels, stockMovements, stockLots, salesOrders, boms, productionOrders,
     invoices, expenses, payments, employees, leaveRequests, attachments,
     hrOnboardingTemplates, hrOnboardingItems,
     ledgerAccounts, journalEntries, crmActivities, recordGrants, fxRates,
@@ -702,6 +705,9 @@ export async function ensureOrgIndexes() {
     stockLots.createIndex({ orgId: 1, expiryDate: 1 }),
     salesOrders.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
     salesOrders.createIndex({ orgId: 1, contactId: 1 }),
+    boms.createIndex({ orgId: 1, productId: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } }),
+    productionOrders.createIndex({ orgId: 1, status: 1, dueDate: 1 }),
+    stockMovements.createIndex({ orgId: 1, relatedProductionOrderId: 1 }),
     // Business Operations, Phase 5 (Finance & HR)
     invoices.createIndex({ orgId: 1, departmentId: 1 }),
     invoices.createIndex({ orgId: 1, contactId: 1 }),
