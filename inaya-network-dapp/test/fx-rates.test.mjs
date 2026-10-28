@@ -16,7 +16,7 @@ import mongoClientPromise from "../src/lib/mongodb.js";
 let c;
 const TEST_DATES = { $gte: "1999-01-01", $lte: "1999-12-31" };
 const reply = (body, ok = true, status = 200) => async () => ({ ok, status, json: async () => body });
-const GOOD = { result: "success", base_code: "USD", time_last_update_utc: "Mon, 04 Jan 1999 00:00:01 +0000", rates: { USD: 1, EUR: 0.85, GBP: 0.6, AED: 3.6725, PKR: 50, JPY: 113 } };
+const GOOD = { result: "success", base_code: "USD", time_last_update_utc: "Mon, 04 Jan 1999 00:00:01 +0000", rates: { USD: 1, EUR: 0.85, GBP: 0.6, AED: 3.6725, PKR: 50, INR: 45, BDT: 60, JPY: 113 } };
 
 before(async () => { await ensureOrgIndexes(); c = await getOrgCollections(); await c.fxRates.deleteMany({ date: TEST_DATES }); });
 after(async () => { await c.fxRates.deleteMany({ date: TEST_DATES }); await (await mongoClientPromise).close(); });
@@ -28,7 +28,7 @@ test("refresh stores one dated snapshot of the supported currencies; re-running 
   await refreshFxRates({ date: "1999-01-04" });
   const rows = await c.fxRates.find({ date: "1999-01-04" }).toArray();
   assert.equal(rows.length, 1);
-  assert.deepEqual(Object.keys(rows[0].rates).sort(), ["AED", "EUR", "GBP", "PKR", "USD"], "only supported currencies are kept");
+  assert.deepEqual(Object.keys(rows[0].rates).sort(), ["AED", "BDT", "EUR", "GBP", "INR", "PKR", "USD"], "only supported currencies are kept");
   assert.equal(rows[0].rates.EUR, 0.86);
 });
 

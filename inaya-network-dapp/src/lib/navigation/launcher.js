@@ -10,6 +10,27 @@
 // The everyday areas shown in the sidebar for everyone who can see them.
 export const PRIMARY_NAV_KEYS = ["osHome", "tasks", "documents", "crm", "finance", "inventory", "procurement", "hr", "insights", "chat"];
 
+// An industry OS company gets its own everyday set instead: its industry
+// module second, and only the general modules that kind of organization
+// uses daily (a school doesn't start its day in Purchasing). Nothing is
+// hidden: every other module stays in All apps and can be pinned. The
+// industry is read from which industry item is visible, so no extra
+// argument is needed.
+export const PRIMARY_NAV_KEYS_BY_INDUSTRY = {
+  health: ["osHome", "health", "tasks", "documents", "inventory", "procurement", "finance", "hr", "insights", "chat"],
+  legal: ["osHome", "legal", "tasks", "documents", "sign", "finance", "crm", "hr", "insights", "chat"],
+  regulated: ["osHome", "regulated", "tasks", "documents", "crm", "finance", "inventory", "procurement", "hr", "insights", "chat"],
+  financial: ["osHome", "financial", "crm", "documents", "dataRooms", "sign", "finance", "tasks", "insights", "chat"],
+  government: ["osHome", "government", "tasks", "documents", "procurement", "inventory", "approvals", "hr", "insights", "chat"],
+  education: ["osHome", "education", "tasks", "documents", "finance", "hr", "insights", "chat"],
+};
+
+/** The primary sidebar keys for whatever industry item is in `visible` (the general set if none). */
+export function primaryKeysFor(visible) {
+  const industry = visible.find((i) => PRIMARY_NAV_KEYS_BY_INDUSTRY[i.key]);
+  return industry ? PRIMARY_NAV_KEYS_BY_INDUSTRY[industry.key] : PRIMARY_NAV_KEYS;
+}
+
 // Friendlier sidebar/launcher wording; NAV_ITEMS labels (used by search and
 // the command palette) are unchanged.
 export const FRIENDLY_LABELS = { osHome: "Home", crm: "Customers", hr: "People", procurement: "Purchasing", chat: "Chat" };
@@ -59,7 +80,7 @@ export function defaultPins(useCaseId) {
  */
 export function sidebarSections({ visible, pins = [], activeKey = null }) {
   const byKey = new Map(visible.map((i) => [i.key, i]));
-  const primary = PRIMARY_NAV_KEYS.map((k) => byKey.get(k)).filter(Boolean);
+  const primary = primaryKeysFor(visible).map((k) => byKey.get(k)).filter(Boolean);
   const shown = new Set(primary.map((i) => i.key));
   const pinned = [...new Set(pins)].map((k) => byKey.get(k)).filter((i) => i && !shown.has(i.key));
   pinned.forEach((i) => shown.add(i.key));

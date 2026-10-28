@@ -9,13 +9,15 @@
 // exactly as entered and call convert() only when rendering a converted
 // view, never to overwrite what was stored.
 
-export const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "AED", "PKR"];
+export const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "AED", "PKR", "INR", "BDT"];
 
 // Rates expressed as "1 USD = X of this currency" — a fixed reference
 // snapshot. RATES_AS_OF is surfaced on every conversion result so a
 // caller can never mistake this for a live rate.
 export const RATES_AS_OF = "2026-01-01";
-const USD_RATES = { USD: 1, EUR: 0.92, GBP: 0.79, AED: 3.6725, PKR: 278.5 };
+// INR and BDT added 2026-10-28 for Education OS schools in India and
+// Bangladesh; the daily rate (fx-rates.js) is used whenever one is stored.
+const USD_RATES = { USD: 1, EUR: 0.92, GBP: 0.79, AED: 3.6725, PKR: 278.5, INR: 89.9, BDT: 122.3 };
 
 /** Converts amount from `from` to `to`. Returns
  *  { convertedAmount, rate, ratesAsOf } or { error } for an unsupported

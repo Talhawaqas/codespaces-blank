@@ -8,12 +8,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { NAV_ITEMS, isNavItemVisible } from "../src/lib/navigation/navItems";
 import {
-  ERP_MODULES, ERP_EXTRA_VIEWS, erpLayout, erpModuleFor, erpPlacedViews, erpLabelFor, erpActiveItem,
+  ERP_MODULES, ERP_EXTRA_VIEWS, ERP_FOCUS_BY_INDUSTRY, erpLayout, erpModuleFor, erpPlacedViews, erpLabelFor, erpActiveItem,
   parseErpItem, erpDefaultSection, erpListsSections,
 } from "../src/lib/navigation/erpModules";
 
-const INDUSTRY_KEYS = ["health", "legal", "regulated", "financial", "government"];
-const VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital", "government"];
+const INDUSTRY_KEYS = ["health", "legal", "regulated", "financial", "government", "education"];
+const VERTICALS = ["general", "healthcare", "legal", "regulated", "financial", "private_capital", "government", "education"];
 const read = (rel) => fs.readFileSync(path.join(__dirname, "..", rel), "utf8");
 
 function visibleKeys({ canManage = true, membership = { role: "owner" }, vertical = "general" } = {}) {
@@ -109,7 +109,7 @@ describe("sections and actions point at things that really exist", () => {
 });
 
 describe("industry OS isolation", () => {
-  const expectedOs = { general: [], healthcare: ["health"], legal: ["legal"], regulated: ["regulated"], financial: ["financial"], private_capital: ["financial"], government: ["government"] };
+  const expectedOs = { general: [], healthcare: ["health"], legal: ["legal"], regulated: ["regulated"], financial: ["financial"], private_capital: ["financial"], government: ["government"], education: ["education"] };
 
   test.each(VERTICALS)("a %s company sees only its own industry OS", (vertical) => {
     const layout = erpLayout({ visibleKeys: visibleKeys({ vertical }) });
@@ -203,5 +203,22 @@ describe("every tabbed screen gives its tabs to the task panel", () => {
     const known = new Set([...CORE, ...REPORTED].map((f) => f.split("/").pop()));
     const offenders = files.filter((f) => !known.has(f.replace(/\.js$/, "")) && /const \[tab, setTab\] = useState\("/.test(fs.readFileSync(path.join(dir, f), "utf8")));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("industry tile order", () => {
+  test("a general company keeps the usual module order", () => {
+    const ids = erpLayout({ visibleKeys: visibleKeys() }).map((m) => m.id);
+    expect(ids).toEqual(ERP_MODULES.map((m) => m.id).filter((id) => ids.includes(id)));
+  });
+
+  test.each(["healthcare", "legal", "regulated", "financial", "private_capital", "government", "education"])("a %s company sees Home, its industry tile, then its focus modules", (vertical) => {
+    const keys = visibleKeys({ vertical });
+    const ids = erpLayout({ visibleKeys: keys }).map((m) => m.id);
+    const industryKey = keys.find((k) => ERP_FOCUS_BY_INDUSTRY[k]);
+    const focus = ERP_FOCUS_BY_INDUSTRY[industryKey];
+    expect(ids.slice(0, focus.length + 1)).toEqual(["home", ...focus]);
+    // Order only: the same tiles as before, nothing removed.
+    expect([...ids].sort()).toEqual(erpLayout({ visibleKeys: keys.filter((k) => k !== industryKey) }).map((m) => m.id).concat("industry").sort());
   });
 });

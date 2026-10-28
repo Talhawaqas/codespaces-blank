@@ -23,7 +23,7 @@ const cleanup = { orgIds: [] };
 before(async () => { await ensureOrgIndexes(); c = await getOrgCollections(); });
 after(async () => {
   const f = { orgId: { $in: cleanup.orgIds } };
-  await Promise.all([c.invoices, c.expenses, c.payments, c.ledgerAccounts, c.journalEntries, c.orgActivity, c.auditChainEntries, c.auditChainHeads].map((x) => x.deleteMany(f)));
+  await Promise.all([c.invoices, c.expenses, c.payments, c.legalBilling, c.eduFeeInvoices, c.eduFeePayments, c.ledgerAccounts, c.journalEntries, c.orgActivity, c.auditChainEntries, c.auditChainHeads].map((x) => x.deleteMany(f)));
   await c.orgs.deleteMany({ _id: { $in: cleanup.orgIds } });
   await (await mongoClientPromise).close();
 });
@@ -152,4 +152,74 @@ test("syncAllLedgers (daily cron): syncs every org with finance records in scope
   const r = await syncAllLedgers({ orgIds: [a.id, b.id] });
   assert.deepEqual({ orgs: r.orgs, posted: r.posted, failedOrgs: r.failedOrgs }, { orgs: 2, posted: 2, failedOrgs: 0 });
   assert.equal((await syncAllLedgers({ orgIds: [a.id, b.id] })).posted, 0);
+});
+
+test("legal bills post like invoices: issued, paid, and a cancelled bill reverses", async () => {
+  const fx = await makeOrg("legal");
+  const bill = (extra) => c.legalBilling.insertOne({ orgId: fx.orgId, matterId: fx.orgId, arrangement: "fixed", lineItems: [], currency: "USD", createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-20T00:00:00.000Z", ...extra });
+  const paid = await bill({ total: 500, subtotal: 500, status: "PAID" });
+  await event(fx, paid.insertedId, "PAID", "2026-09-10T00:00:00.000Z");
+  const cancelled = await bill({ total: 80, subtotal: 80, status: "SENT" });
+  await bill({ total: 999, subtotal: 999, status: "DRAFT" });
+  let r = await syncLedger(fx.id);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.posted, 3, "500 issued, 500 paid, 80 issued; the draft is not posted");
+  assert.equal((await listEntries(fx.id)).find((e) => e.source?.type === "LEGAL_BILL" && e.source.event === "PAID").date, "2026-09-10");
+  await c.legalBilling.updateOne({ _id: cancelled.insertedId }, { $set: { status: "CANCELLED" } });
+  r = await syncLedger(fx.id);
+  assert.equal(r.posted, 1, "the cancelled bill is reversed once");
+  assert.equal((await syncLedger(fx.id)).posted, 0, "a repeat sync posts nothing");
+  const pnl = await profitAndLoss(fx.id);
+  assert.equal(pnl.totalRevenue, 500);
+  assert.equal((await trialBalance(fx.id)).balanced, true);
+});
+
+test("school fees post to Fee Income: issued, late fee, payment, reversal, cancellation, in PKR, INR and BDT", async () => {
+  const fx = await makeOrg("school");
+  const inv = (extra) => c.eduFeeInvoices.insertOne({ orgId: fx.orgId, studentId: fx.orgId, structureId: fx.orgId, invoiceNo: `F-${randomUUID().slice(0, 4)}`, studentName: "Should Not Appear", issuedAt: "2026-09-01T00:00:00.000Z", dueDate: "2026-09-10", concessionMinor: 0, paidMinor: 0, ...extra });
+  // PKR 10,000 + PKR 500 late fee, PKR 4,000 paid then reversed.
+  const pk = await inv({ period: "2026-09", currency: "PKR", totalMinor: 1_050_000, lateFeeMinor: 50_000, lateFeeAppliedAt: "2026-09-11T00:00:00.000Z", status: "unpaid" });
+  await c.eduFeePayments.insertOne({ orgId: fx.orgId, invoiceId: pk.insertedId, receiptNo: `R-${RUN_ID}-1`, amountMinor: 400_000, currency: "PKR", paidOn: "2026-09-12", status: "reversed", reversedAt: "2026-09-14T00:00:00.000Z" });
+  // INR 2,000 paid in full; BDT 3,000 issued then cancelled.
+  const inr = await inv({ period: "2026-10", currency: "INR", totalMinor: 200_000, lateFeeMinor: 0, status: "paid", paidMinor: 200_000 });
+  await c.eduFeePayments.insertOne({ orgId: fx.orgId, invoiceId: inr.insertedId, receiptNo: `R-${RUN_ID}-2`, amountMinor: 200_000, currency: "INR", paidOn: "2026-09-05", status: "posted" });
+  const bd = await inv({ period: "2026-11", currency: "BDT", totalMinor: 300_000, lateFeeMinor: 0, status: "unpaid" });
+  // A fully concessioned invoice (total 0) posts nothing.
+  await inv({ period: "2026-12", currency: "PKR", totalMinor: 0, lateFeeMinor: 0, status: "paid" });
+
+  let r = await syncLedger(fx.id);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.posted, 7, "PKR issued + late fee, PKR receipt + reversal, INR issued + receipt, BDT issued");
+  const accounts = await c.ledgerAccounts.find({ orgId: fx.orgId, code: ACCOUNTS.FEES }).toArray();
+  assert.equal(accounts.length, 1);
+  assert.equal(accounts[0].name, "Fee Income");
+  const entries = await listEntries(fx.id);
+  assert.ok(entries.every((e) => !JSON.stringify(e).includes("Should Not Appear")), "no student name in the ledger");
+  const late = entries.find((e) => e.source?.event === "LATE_FEE");
+  assert.equal(late.lines[0].originalAmount, 500);
+  assert.equal(late.lines[0].originalCurrency, "PKR");
+  assert.equal(entries.find((e) => e.source?.event === "RECEIVED" && e.lines[0].originalCurrency === "INR").date, "2026-09-05");
+
+  await c.eduFeeInvoices.updateOne({ _id: bd.insertedId }, { $set: { status: "cancelled", cancelledAt: "2026-09-20T00:00:00.000Z" } });
+  r = await syncLedger(fx.id);
+  assert.equal(r.posted, 1, "the BDT invoice is reversed");
+  assert.equal((await syncLedger(fx.id)).posted, 0, "a repeat sync posts nothing");
+
+  assert.equal((await trialBalance(fx.id)).balanced, true);
+  // Cash is the INR receipt only (the PKR one was reversed). Rates come from
+  // fx-rates.js (daily if stored, else the static table), so compare with
+  // what the INR receipt itself posted.
+  const bs = await balanceSheet(fx.id);
+  const cash = bs.assets.find((x) => x.code === ACCOUNTS.CASH)?.amount || 0;
+  const inrReceipt = entries.find((e) => e.source?.event === "RECEIVED" && e.lines[0].originalCurrency === "INR").lines[0].debit;
+  assert.ok(inrReceipt > 0);
+  assert.ok(Math.abs(cash - inrReceipt) < 0.01);
+});
+
+test("syncAllLedgers picks up an organization that only has school fees", async () => {
+  const fx = await makeOrg("fees-only");
+  await c.eduFeeInvoices.insertOne({ orgId: fx.orgId, studentId: fx.orgId, structureId: fx.orgId, period: "2026-09", invoiceNo: "F-1", issuedAt: "2026-09-01T00:00:00.000Z", currency: "PKR", totalMinor: 100_000, lateFeeMinor: 0, paidMinor: 0, status: "unpaid" });
+  const out = await syncAllLedgers({ orgIds: [fx.orgId] });
+  assert.equal(out.orgs, 1);
+  assert.equal(out.posted, 1);
 });

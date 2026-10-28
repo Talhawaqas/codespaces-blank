@@ -183,6 +183,28 @@ const ERP_LABELS = {
 
 const NAV_BY_KEY = new Map(NAV_ITEMS.map((i) => [i.key, i]));
 
+// Tile order for an industry OS company: Home, its industry tile, the
+// modules that kind of organization uses most, then everything else in the
+// usual order. Order only -- no tile is removed, so every screen stays
+// reachable. A Regulated Enterprise is a general company and keeps the
+// usual order apart from its industry tile.
+export const ERP_FOCUS_BY_INDUSTRY = {
+  health: ["industry", "inventory", "purchasing", "accounting", "people", "documents"],
+  legal: ["industry", "documents", "accounting", "people", "workplace", "sales"],
+  regulated: ["industry"],
+  financial: ["industry", "sales", "documents", "accounting", "people"],
+  government: ["industry", "purchasing", "inventory", "documents", "people", "accounting"],
+  education: ["industry", "accounting", "people", "documents", "workplace"],
+};
+
+function orderForIndustry(modules, visibleKeys) {
+  const industry = visibleKeys.find((k) => ERP_FOCUS_BY_INDUSTRY[k]);
+  if (!industry) return modules;
+  const focus = ["home", ...ERP_FOCUS_BY_INDUSTRY[industry]];
+  const rank = (m) => (focus.includes(m.id) ? focus.indexOf(m.id) : focus.length + ERP_MODULES.findIndex((x) => x.id === m.id));
+  return [...modules].sort((a, b) => rank(a) - rank(b));
+}
+
 /** Splits a task-panel item string into its parts. */
 export function parseErpItem(item) {
   const [target, action = null] = item.split("!");
@@ -228,11 +250,12 @@ export function erpListsSections(view) {
  * The modules this person can see, with groups and items filtered.
  * `visibleKeys` = keys of NAV_ITEMS already passed through isNavItemVisible.
  * A module with nothing visible is dropped. The industry tile takes the
- * label of the company's own industry OS.
+ * label of the company's own industry OS, and an industry OS company sees
+ * its own tiles first (ERP_FOCUS_BY_INDUSTRY).
  */
 export function erpLayout({ visibleKeys }) {
   const visible = new Set([...visibleKeys, ...ERP_EXTRA_VIEWS]);
-  return ERP_MODULES.map((m) => {
+  return orderForIndustry(ERP_MODULES.map((m) => {
     const groups = m.groups
       .map((g) => ({ ...g, items: g.items.map(parseErpItem).filter((p) => visible.has(p.view)).map((p) => ({ ...p, label: erpLabelFor(p.key), icon: erpIconFor(p.key) })) }))
       .filter((g) => g.items.length);
@@ -244,7 +267,7 @@ export function erpLayout({ visibleKeys }) {
       return { ...m, label, home, groups: [{ ...groups[0], label }] };
     }
     return { ...m, home, groups };
-  }).filter(Boolean);
+  }).filter(Boolean), [...visibleKeys]);
 }
 
 /** The module id that owns a view. "browse" resolves through the Departments/Projects/Documents

@@ -28,6 +28,22 @@
 // reference table (currency.js) when no daily rate exists; each line keeps
 // the original amount, currency, rate, ratesAsOf and fxSource. An
 // unsupported currency is reported, never guessed.
+//
+// Industry billing that lives outside `invoices` is posted the same way
+// (health patient invoices already use `invoices`):
+//   legal bill SENT/OVERDUE/PAID   Dr Accounts Receivable / Cr Sales Revenue
+//   legal bill PAID                Dr Cash / Cr Accounts Receivable
+//   legal bill CANCELLED after posted  reverses the first
+//   school fee invoice issued      Dr Accounts Receivable / Cr Fee Income
+//   late fee added                 Dr Accounts Receivable / Cr Fee Income
+//   fee invoice cancelled          reverses whatever of the two was posted
+//   fee payment recorded           Dr Cash / Cr Accounts Receivable (on paidOn)
+//   fee payment reversed           Dr Accounts Receivable / Cr Cash
+// Fee amounts are integer minor units (2-decimal currencies). Memos carry
+// invoice and receipt numbers only, never a student's name, so erasing a
+// student leaves nothing personal in the ledger. Fund capital events
+// (Financial OS) and legal trust money are NOT posted: they belong to the
+// fund or the client, not to the organization's own books.
 
 import { getOrgCollections, toObjectId } from "./orgs.js";
 import { logOrgActivity } from "./org-activity-log.js";
@@ -39,7 +55,10 @@ const DEBIT_NORMAL = new Set(["ASSET", "EXPENSE"]);
 export const ACCOUNTS = {
   CASH: "1000", AR: "1100", AP: "2000", EQUITY: "3000",
   SALES: "4000", OTHER_INCOME: "4900", OPEX: "5000", OTHER_EXPENSE: "5900",
+  FEES: "4100",
 };
+// Created only for organizations that bill school fees (syncLedger).
+const FEE_INCOME_ACCOUNT = { code: ACCOUNTS.FEES, name: "Fee Income", type: "REVENUE" };
 export const DEFAULT_ACCOUNTS = [
   { code: ACCOUNTS.CASH, name: "Cash", type: "ASSET" },
   { code: ACCOUNTS.AR, name: "Accounts Receivable", type: "ASSET" },
@@ -183,25 +202,35 @@ function usdLines(amount, currency, debitCode, creditCode, memo) {
 /** Posts every missing automatic entry for an org. Safe to call any time,
  *  as often as wanted. Returns { posted, skipped, errors }. */
 export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
-  const { invoices, expenses, payments, journalEntries, orgActivity } = await getOrgCollections();
+  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, ledgerAccounts, journalEntries, orgActivity } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   await ensureChartOfAccounts(orgId);
 
-  const [invList, expList, payList] = await Promise.all([
+  const [invList, expList, payList, legalList, feeInvList, feePayList] = await Promise.all([
     invoices.find({ orgId: orgObjectId, deletedAt: null, status: { $in: ["SENT", "OVERDUE", "PAID", "CANCELLED"] } }).toArray(),
     expenses.find({ orgId: orgObjectId, deletedAt: null, status: "APPROVED" }).toArray(),
     payments.find({ orgId: orgObjectId, deletedAt: null, status: "APPROVED" }).toArray(),
+    legalBilling.find({ orgId: orgObjectId, status: { $in: ["SENT", "OVERDUE", "PAID", "CANCELLED"] } }).toArray(),
+    eduFeeInvoices.find({ orgId: orgObjectId }).toArray(),
+    eduFeePayments.find({ orgId: orgObjectId }).toArray(),
   ]);
+  if (feeInvList.length || feePayList.length) {
+    await ledgerAccounts.updateOne(
+      { orgId: orgObjectId, code: FEE_INCOME_ACCOUNT.code },
+      { $setOnInsert: { orgId: orgObjectId, ...FEE_INCOME_ACCOUNT, system: true, createdAt: new Date().toISOString() } },
+      { upsert: true }
+    ).catch((err) => { if (err?.code !== 11000) throw err; });
+  }
   const posted = new Set((await journalEntries.find(
-    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT"] } },
+    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT"] } },
     { projection: { source: 1 } }
   ).toArray()).map((e) => `${e.source.type}:${e.source.id}:${e.source.event}`));
 
-  const ids = [...invList, ...expList, ...payList].map((d) => d._id);
+  const ids = [...invList, ...expList, ...payList, ...legalList].map((d) => d._id);
   const eventTimes = new Map();
   if (ids.length) {
     const events = await orgActivity.find(
-      { orgId: orgObjectId, recordId: { $in: ids }, action: { $in: ["INVOICE_SENT", "INVOICE_PAID", "INVOICE_CANCELLED", "EXPENSE_APPROVED", "PAYMENT_APPROVED"] } },
+      { orgId: orgObjectId, recordId: { $in: ids }, action: { $in: ["INVOICE_SENT", "INVOICE_PAID", "INVOICE_CANCELLED", "EXPENSE_APPROVED", "PAYMENT_APPROVED", "SENT", "PAID", "CANCELLED"] } },
       { projection: { recordId: 1, action: 1, timestamp: 1 } }
     ).toArray();
     for (const e of events) {
@@ -248,6 +277,42 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     add("PAYMENT", pay, "APPROVED", when(pay, "PAYMENT_APPROVED", pay.paymentDate), memo, usdLines(amount, pay.currency, debit, credit, memo));
   }
 
+  for (const bill of legalList) {
+    const label = `Legal bill ${bill.invoiceNumber || bill._id}`;
+    const amount = Number(bill.total) || 0;
+    if (amount <= 0) continue;
+    if (["SENT", "OVERDUE", "PAID"].includes(bill.status)) {
+      add("LEGAL_BILL", bill, "SENT", when(bill, "SENT", bill.createdAt), `${label} issued`, usdLines(amount, bill.currency, ACCOUNTS.AR, ACCOUNTS.SALES, label));
+    }
+    if (bill.status === "PAID") {
+      add("LEGAL_BILL", bill, "PAID", when(bill, "PAID", bill.updatedAt), `${label} paid`, usdLines(amount, bill.currency, ACCOUNTS.CASH, ACCOUNTS.AR, label));
+    }
+    if (bill.status === "CANCELLED" && posted.has(`LEGAL_BILL:${bill._id}:SENT`)) {
+      add("LEGAL_BILL", bill, "CANCELLED", when(bill, "CANCELLED", bill.updatedAt), `${label} cancelled`, usdLines(amount, bill.currency, ACCOUNTS.SALES, ACCOUNTS.AR, label));
+    }
+  }
+  for (const inv of feeInvList) {
+    const label = `Fee invoice ${inv.invoiceNo || inv._id}`;
+    const late = Number(inv.lateFeeMinor) || 0;
+    const base = (Number(inv.totalMinor) || 0) - late;
+    if (inv.status !== "cancelled") {
+      if (base > 0) add("EDU_FEE_INVOICE", inv, "ISSUED", inv.issuedAt, `${label} issued`, usdLines(fromCents(base), inv.currency, ACCOUNTS.AR, ACCOUNTS.FEES, label));
+      if (late > 0) add("EDU_FEE_INVOICE", inv, "LATE_FEE", inv.lateFeeAppliedAt || inv.issuedAt, `${label} late fee`, usdLines(fromCents(late), inv.currency, ACCOUNTS.AR, ACCOUNTS.FEES, `${label} late fee`));
+    } else {
+      if (base > 0 && posted.has(`EDU_FEE_INVOICE:${inv._id}:ISSUED`)) add("EDU_FEE_INVOICE", inv, "CANCELLED", inv.cancelledAt, `${label} cancelled`, usdLines(fromCents(base), inv.currency, ACCOUNTS.FEES, ACCOUNTS.AR, label));
+      if (late > 0 && posted.has(`EDU_FEE_INVOICE:${inv._id}:LATE_FEE`)) add("EDU_FEE_INVOICE", inv, "LATE_FEE_CANCELLED", inv.cancelledAt, `${label} late fee cancelled`, usdLines(fromCents(late), inv.currency, ACCOUNTS.FEES, ACCOUNTS.AR, `${label} late fee`));
+    }
+  }
+  for (const pay of feePayList) {
+    const label = `Fee receipt ${pay.receiptNo || pay._id}`;
+    const amount = fromCents(Number(pay.amountMinor) || 0);
+    if (amount <= 0) continue;
+    add("EDU_FEE_PAYMENT", pay, "RECEIVED", pay.paidOn || pay.recordedAt, label, usdLines(amount, pay.currency, ACCOUNTS.CASH, ACCOUNTS.AR, label));
+    if (pay.status === "reversed") {
+      add("EDU_FEE_PAYMENT", pay, "REVERSED", pay.reversedAt, `${label} reversed`, usdLines(amount, pay.currency, ACCOUNTS.AR, ACCOUNTS.CASH, `${label} reversed`));
+    }
+  }
+
   let count = 0;
   const errors = [];
   for (const p of plan) {
@@ -266,9 +331,9 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
 /** Daily cron: sync every org that has finance records. One org failing
  *  never stops the others. `orgIds` scopes a run (tests). */
 export async function syncAllLedgers({ orgIds } = {}) {
-  const { invoices, expenses, payments } = await getOrgCollections();
+  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments } = await getOrgCollections();
   const scope = orgIds ? { orgId: { $in: orgIds.map(toObjectId) } } : {};
-  const all = await Promise.all([invoices, expenses, payments].map((c) => c.distinct("orgId", { ...scope, deletedAt: null })));
+  const all = await Promise.all([invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments].map((c) => c.distinct("orgId", { ...scope, deletedAt: null })));
   const unique = [...new Map(all.flat().filter(Boolean).map((id) => [id.toString(), id])).keys()];
   const out = { orgs: unique.length, posted: 0, failedOrgs: 0, errors: 0 };
   for (const id of unique) {
