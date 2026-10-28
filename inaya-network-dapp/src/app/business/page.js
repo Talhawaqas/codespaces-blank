@@ -991,7 +991,7 @@ function VoiceAiSettings({ orgId, aiPolicy, onChanged }) {
   );
 }
 
-function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, mobileOpen, onCloseMobile, membership, pins = [] }) {
+function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, navLoading = false, mobileOpen, onCloseMobile, membership, pins = [] }) {
   return (
     <>
       {mobileOpen && <div onClick={onCloseMobile} className="fixed inset-0 bg-black/60 z-40 md:hidden" />}
@@ -1020,8 +1020,12 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, m
             pinned apps + the current page) instead of all ~70 modules; the
             rest live in All apps (view=apps). Visibility is still decided by
             isNavItemVisible, so role and industry gating are unchanged. */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto" aria-label="Main">
-          {(() => {
+        <nav className="flex-1 px-3 py-4 overflow-y-auto" aria-label="Main" aria-busy={navLoading || undefined}>
+          {navLoading ? (
+            <div className="space-y-1.5" aria-hidden="true">
+              {Array.from({ length: 8 }, (_, i) => <div key={i} className="h-9 rounded-lg bg-[var(--inaya-overlay-5)] animate-pulse" />)}
+            </div>
+          ) : (() => {
             const visible = NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical }));
             const { primary, pinned, current, moreCount } = sidebarSections({ visible, pins, activeKey: activeView });
             const isActive = (key) => activeView === key || (key === "documents" && activeView === "browse");
@@ -1156,17 +1160,20 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   // Healthcare & Legal Expansion SOW — Health OS / Legal OS nav items are
   // gated on the org's configured vertical, not shown unconditionally.
   // Defaults to "general" (industry-config.js's own default) until the
-  // real value loads, so there's a one-frame flash of "no health/legal
-  // nav" rather than a flash of nav items that then disappear.
+  // real value loads. The sidebar list and the ERP module tiles wait for
+  // it (verticalLoaded), because an industry org gets a different short
+  // sidebar and tile order, and showing the general one first flashes.
   const [orgVertical, setOrgVertical] = useState("general");
+  const [verticalLoaded, setVerticalLoaded] = useState(false);
   // Inaya AI Voice Assistant SOW -- the org's per-org opt-in, same fetch
   // as orgVertical above (both live on the same profile document).
   const [orgAiPolicy, setOrgAiPolicy] = useState({ enabled: true, voiceEnabled: false });
   useEffect(() => {
+    setVerticalLoaded(false);
     api(`/api/orgs/settings?orgId=${orgId}`).then((d) => {
       setOrgVertical(d.profile?.vertical || "general");
       setOrgAiPolicy(d.profile?.aiPolicy || { enabled: true, voiceEnabled: false });
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setVerticalLoaded(true));
   }, [orgId]);
 
   // Business Workspace UX/UI Makeover SOW -- which of Departments/
@@ -1510,6 +1517,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           screenSections={erpSections}
           onNavigate={navigate}
           visibleItems={NAV_ITEMS.filter((item) => isNavItemVisible(item, { canManage, membership, vertical: orgVertical }))}
+          navLoading={!verticalLoaded}
           pins={pins}
           onTogglePin={togglePin}
           title={VIEW_TITLES[activeView]?.title}
@@ -1538,6 +1546,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         onNavigate={navigate}
         canManage={canManage}
         vertical={orgVertical}
+        navLoading={!verticalLoaded}
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
         pins={pins}

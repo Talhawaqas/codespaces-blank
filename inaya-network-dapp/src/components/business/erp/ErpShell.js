@@ -227,7 +227,7 @@ function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, des
 
 export default function ErpShell({
   orgId, orgName, email, role, canManage, orgs, selectedOrgId, onSwitchOrg, onLogout,
-  activeView, browseSection, section, screenSections, onNavigate, visibleItems, pins = [], onTogglePin,
+  activeView, browseSection, section, screenSections, onNavigate, visibleItems, navLoading = false, pins = [], onTogglePin,
   title, description, prefs, onUpdatePrefs, desktop, search, notifications, children,
 }) {
   useErpDocumentTheme(prefs.theme);
@@ -344,8 +344,9 @@ export default function ErpShell({
       </header>
 
       <div className="erp-modbar">
-        <nav className="erp-tiles" aria-label="Modules">
-          {modules.map((m, i) => {
+        <nav className="erp-tiles" aria-label="Modules" aria-busy={navLoading || undefined}>
+          {/* Tiles wait for the org's industry, which sets their order. */}
+          {!navLoading && modules.map((m, i) => {
             const active = m.id === activeModule?.id;
             return (
               <button
