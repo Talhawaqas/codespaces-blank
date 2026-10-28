@@ -1015,5 +1015,14 @@ export const ecosystemOverview = {
         },
       ],
     },
+    {
+      number: "38",
+      title: "Education OS: Schools and Colleges",
+      blocks: [
+        {"type": "lead", "text": "A seventh industry mode, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs inside the ERP-style Business Workspace and is built around the three things schools need to keep safe: students' personal data, fee payments, and documents."},
+        {"type": "bullets", "items": ["Student and guardian records where phone numbers, home addresses, ID numbers and medical notes are encrypted before they are saved.", "Each staff member sees only what their job needs: the principal and admissions office see the full record, accounts staff see contact details for fee follow-up, and a teacher sees only the students in their own classes, with ID numbers masked.", "Fees in rupees, taka or dirhams: fee invoices for every student in one step, never billed twice for the same month; concessions that need a second person to approve; receipts with running numbers; payments that can be reversed with a reason but never deleted; and a list of who is overdue.", "Admissions, daily attendance, and exams with report cards. Results are locked once the principal publishes them, and any later change is recorded with a reason.", "Parent links: a read-only page for one child's fees, attendance and published results, which expires, can be withdrawn, and never shows ID numbers, medical notes or the address.", "Every opening of a student record, every payment and every mark change goes into the tamper-evident activity record. A student's data can be exported, or erased on request while the fee records are kept."]},
+        {"type": "note", "label": "What's live today vs. what's next.", "text": "Education OS is built and tested on the web app and the desktop ERP mode. Not built yet: collecting fees online through a payment gateway (fees are recorded, not collected), SMS or WhatsApp fee reminders, timetables, transport and hostel, and mobile screens. We don't claim compliance with India's DPDP Act, the UAE's PDPL, or Pakistani or Bangladeshi data law; the features help a school meet its own obligations."},
+      ],
+    },
   ],
 };

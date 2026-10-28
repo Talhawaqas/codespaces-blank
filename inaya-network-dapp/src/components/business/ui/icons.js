@@ -45,6 +45,12 @@ export const ICONS = {
       <path d="M14 6h6v6" />
     </>
   ),
+  education: (
+    <>
+      <path d="M2 9l10-5 10 5-10 5-10-5z" />
+      <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
+    </>
+  ),
   government: (
     <>
       <path d="M12 3l9 5H3l9-5z" />

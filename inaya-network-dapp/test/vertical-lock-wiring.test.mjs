@@ -155,3 +155,24 @@ for (const { file, vertical } of ALL_ROUTES) {
     }
   });
 }
+
+// Education OS uses ONE catch-all route whose exported handlers all
+// delegate to a shared handle(), so the per-handler scan above would skip
+// it (no requireMembership() inside the exported function bodies). Check
+// handle() itself: membership first, then the education lock, both on the
+// same orgId, and both before any path is dispatched.
+test("vertical lock wiring: Education OS catch-all route locks every path to the education vertical", () => {
+  const files = findRouteFiles("src/app/api/orgs/education");
+  assert.equal(files.length, 1, `expected exactly one education route file, found ${JSON.stringify(files)}`);
+  const source = fs.readFileSync(files[0], "utf8");
+  const handle = source.slice(source.indexOf("async function handle("));
+  const membershipAt = handle.search(/requireMembership\(\s*req\s*,\s*orgId\s*\)/);
+  const verticalAt = handle.search(/requireVertical\(\s*orgId\s*,\s*["']education["']\s*\)/);
+  const firstDispatchAt = handle.search(/if \(a === /);
+  assert.ok(membershipAt > 0, "handle() must call requireMembership(req, orgId)");
+  assert.ok(verticalAt > membershipAt, "handle() must call requireVertical(orgId, \"education\") after requireMembership");
+  assert.ok(firstDispatchAt > verticalAt, "the vertical lock must run before any path is dispatched");
+  for (const m of ["GET", "POST", "PUT", "PATCH", "DELETE"]) assert.match(source, new RegExp(`export async function ${m}\\(req, ctx\\) \\{ return handle\\(req, ctx\\); \\}`), `${m} must go through handle()`);
+  // Server-side identity must win over anything in the request body.
+  assert.doesNotMatch(source, /\.\.\.base,\s*\.\.\.body/, "spread body BEFORE base so a body can't override membership/actorEmail");
+});

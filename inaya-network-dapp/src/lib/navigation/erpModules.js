@@ -112,7 +112,7 @@ export const ERP_MODULES = [
     // One tile, labelled with the company's own industry OS. Only the
     // visible one survives the caller's isNavItemVisible filter.
     id: "industry", label: "Industry", icon: "industry", home: null,
-    groups: [{ id: "industry", label: "Industry", items: ["health", "legal", "regulated", "financial", "government"] }],
+    groups: [{ id: "industry", label: "Industry", items: ["health", "legal", "regulated", "financial", "government", "education"] }],
   },
   {
     id: "admin", label: "Admin", icon: "admin", home: "adminDashboard",

@@ -826,7 +826,7 @@ export const completeFeatureGuide = {
     // =====================================================================
     {
       number: "45",
-      title: "Industry-Specific Workspaces (Health, Legal, Financial, Regulated, Government OS)",
+      title: "Industry-Specific Workspaces (Health, Legal, Financial, Regulated, Government, Education OS)",
       blocks: [
         {
           type: "lead",
@@ -839,7 +839,7 @@ export const completeFeatureGuide = {
             { heading: "Legal OS.", body: "Manage clients, matters, conflict checks, legal holds, discovery, deadlines, contracts, and time/billing entries." },
             { heading: "Financial OS.", body: "Manage funds, investors, commitments, portfolios, positions, valuations, and (for private capital) deals, diligence, and cap tables." },
             { heading: "Regulated Enterprise OS.", body: "Manage compliance controls, control testing, findings, internal audit plans, policies with acknowledgement tracking, and regulatory examinations." },
-            { heading: "Government OS.", body: "Manage citizen records and government case work, with the same assignment-based access model as Health OS." },
+            { heading: "Government OS.", body: "Manage citizen records and government case work, with the same assignment-based access model as Health OS." }, { heading: "Education OS.", body: "For schools and colleges: keep student and guardian records with phone numbers, addresses, ID numbers and medical notes encrypted; run admissions, attendance and exams; bill fees, record payments with numbered receipts, approve concessions and see who is overdue; and share a read-only, expiring link with parents. Teachers see only their own classes." },
           ],
         },
         {

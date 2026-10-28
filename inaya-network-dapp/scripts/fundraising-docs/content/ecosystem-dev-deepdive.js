@@ -1318,5 +1318,13 @@ export const ecosystemDevDeepdive = {
         },
       ],
     },
+    {
+      number: "45",
+      title: "Education OS Reference (October 2026)",
+      blocks: [
+        {"type": "table", "headers": ["Function / route", "Purpose"], "rows": [["orgGates.js: canManageEducation, canKeepStudentRegister, canHandleFees, isClassTeacher", "educationRole = principal | admissions | accounts | teacher on org_members; set only by the owner/admin via setStaffRole()"], ["education/crypto.js: sealField/openField, sealJson/openJson", "AES-256-GCM field encryption, 'edu1:' prefix, EDUCATION_DATA_KEY or HKDF(INTEGRATION_ENCRYPTION_KEY, 'student-pii-v1')"], ["education/identifiers.js: validateIdentifiers, maskValue", "B-Form/CNIC, Aadhaar (last 4 only), APAAR, BD birth registration/NID, Emirates ID, passport; format checks only"], ["education/students.js: createStudent, getStudent, studentViewFor, exportStudentData, eraseStudent", "Register with duplicate detection; full / teacher / fees views; JSON export; erasure that anonymises the fee ledger and revokes parent links"], ["education/admissions.js", "APPLIED to UNDER_REVIEW to ACCEPTED to ENROLLED (or REJECTED/WITHDRAWN), conditional updates, enrolment through createStudent()"], ["education/attendance.js", "One document per class per day; teacher-only marking; 3-day teacher edit window, then principal only"], ["education/exams.js", "DRAFT to PUBLISHED; marks locked after publishing; amendPublishedMark() needs the principal and a reason and keeps history"], ["education/fees.js", "Structures, idempotent invoices, two-person concessions, conditional-$inc payments, sequential receipts, reversals, late fees, defaulters, collection summary"], ["education/guardianLinks.js + /api/education-guardian/[token] + /guardian/[token]", "Hashed, expiring, revocable, rate-limited read-only parent view"], ["/api/orgs/education/[[...path]]", "Single catch-all route: requireMembership, then requireVertical(orgId, 'education'), then dispatch; server identity always overrides request-body fields"], ["ai-education-tools.js", "6 read-only education_ tools wired into ai-os-router.js; same permission checks as the screens"], ["EducationView.js", "Overview, Students, Admissions, Attendance, Exams & results, Fees & payments, School setup; sections register with useErpSection for ERP mode"]]},
+        {"type": "note", "text": "test/education-os.test.mjs: 14 tests against the real database; test/vertical-lock-wiring.test.mjs extended with a check for the catch-all route. Not built: payment gateway, SMS/WhatsApp reminders, timetables, transport/hostel, mobile screens. No data-protection-law compliance is claimed."},
+      ],
+    },
   ],
 };

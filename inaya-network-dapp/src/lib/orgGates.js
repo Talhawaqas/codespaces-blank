@@ -208,6 +208,43 @@ export function isCitizenRecordAssignee(membership, recordId, assignments) {
 }
 
 // ============================================================
+// Education OS — role model
+//
+// educationRole is an optional field on org_members, same precedent as
+// governmentRole. principal manages the whole module; admissions keeps the
+// student register; accounts handles fees; teacher sees and marks only the
+// classes they're assigned to (isClassTeacher), never the whole school.
+// ============================================================
+
+export const EDUCATION_ROLES = ["principal", "admissions", "accounts", "teacher"];
+
+export function canManageEducation(membership) {
+  return canManageOrg(membership) || membership?.educationRole === "principal";
+}
+
+export function canAccessEducation(membership) {
+  return canManageEducation(membership) || EDUCATION_ROLES.includes(membership?.educationRole);
+}
+
+/** Principal/admissions/owner/admin: full student records. */
+export function canKeepStudentRegister(membership) {
+  return canManageEducation(membership) || membership?.educationRole === "admissions";
+}
+
+export function canHandleFees(membership) {
+  return canManageEducation(membership) || membership?.educationRole === "accounts";
+}
+
+/** Same shape as isCitizenRecordAssignee, for edu_class_teachers rows. */
+export function isClassTeacher(membership, classId, assignments) {
+  if (!membership) return false;
+  if (canManageEducation(membership)) return true;
+  return (assignments || []).some(
+    (a) => a.classId?.toString() === classId?.toString() && a.email === membership.email
+  );
+}
+
+// ============================================================
 // Four High-Impact Business Workspace Extensions SOW — role model
 //
 // signRole/storageRole/escrowRole/attestationRole are new, OPTIONAL fields

@@ -52,6 +52,7 @@ const LegalView = dynamic(() => import("../../components/business/LegalView"), {
 const RegulatedView = dynamic(() => import("../../components/business/RegulatedView"), { ssr: false, loading: ScreenLoading });
 const FinancialView = dynamic(() => import("../../components/business/FinancialView"), { ssr: false, loading: ScreenLoading });
 const GovernmentView = dynamic(() => import("../../components/business/GovernmentView"), { ssr: false, loading: ScreenLoading });
+const EducationView = dynamic(() => import("../../components/business/EducationView"), { ssr: false, loading: ScreenLoading });
 import GlobeBackground from "../../components/GlobeBackground";
 const SecurityResilienceView = dynamic(() => import("../../components/business/SecurityResilienceView"), { ssr: false, loading: ScreenLoading });
 const IntegrationsView = dynamic(() => import("../../components/business/IntegrationsView"), { ssr: false, loading: ScreenLoading });
@@ -694,6 +695,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
                 <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
                 <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
                 <option value="government">Government / public sector (Government OS)</option>
+                <option value="education">School / college (Education OS)</option>
               </select>
             </>
           )}
@@ -808,6 +810,7 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
           <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
           <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
           <option value="government">Government / public sector (Government OS)</option>
+          <option value="education">School / college (Education OS)</option>
         </select>
         <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
           {submitting ? "Creating…" : "Create company"}
@@ -934,6 +937,7 @@ function OrgVerticalSettings({ orgId, vertical, onChanged }) {
         <option value="financial">Hedge fund / asset manager (Financial Services OS)</option>
         <option value="private_capital">Private equity / venture capital (Private Capital OS)</option>
         <option value="government">Government / public sector (Government OS)</option>
+        <option value="education">School / college (Education OS)</option>
       </select>
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
     </div>
@@ -1270,6 +1274,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     regulated: { title: "Regulated OS", description: "Compliance controls for regulated enterprises." },
     financial: { title: "Financial OS", description: "Fund, investor, and portfolio management." },
     government: { title: "Government OS", description: "Citizen records and case management." },
+    education: { title: "Education OS", description: "Students, fees, attendance, exams and parent links, with student personal data encrypted." },
     resilience: { title: "Security & Resilience Controls", description: "Vendors, ICT assets, privileged access, and resilience policy." },
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
@@ -1396,6 +1401,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "education" && <EducationView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
       {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
       {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}

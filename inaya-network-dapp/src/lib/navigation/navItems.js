@@ -56,6 +56,7 @@ export const NAV_ITEMS = [
   { key: "regulated", label: "Regulated OS", icon: "regulated", verticalOnly: "regulated", group: "industry" },
   { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"], group: "industry" },
   { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
+  { key: "education", label: "Education OS", icon: "education", verticalOnly: "education", group: "industry" },
   { key: "security", label: "Account Security", icon: "activity", group: "trust" },
   { key: "resilience", label: "Security & Resilience Controls", icon: "resilience", manageOnly: true, group: "trust" },
   { key: "resilienceTesting", label: "Resilience Testing", icon: "resilience", manageOnly: true, group: "trust" },
@@ -119,6 +120,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 // from its label + group — this map only improves matching, it's never
 // required for an item to be findable.
 const SEARCH_SYNONYMS = {
+  education: "education school college students fees attendance exams admissions results guardians parents",
   crm: "crm customers leads deals pipeline sales contacts",
   hr: "hr employees staff leave payroll",
   procurement: "procurement purchase orders rfq suppliers vendors",

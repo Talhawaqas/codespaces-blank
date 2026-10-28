@@ -89,7 +89,7 @@ entries.push({
       ["Sovereign NAS", "A managed on-premises file server (SMB/NFS) with snapshots, WORM, ransomware response and backup.", "Local speed and data residency with cloud-grade protection.", R("Sovereign NAS", "Sovereign NAS — Deployment")],
       ["Mainframe & Legacy Data Access", "Query old databases with standard SQL, JDBC and ODBC, read-only and audited.", "Use legacy data in modern tools without moving it.", R("Mainframe & Legacy", "The Inaya ODBC")],
       ["Developer tools", "The SDK, React components, CLI, node daemon, scaffolding tool, bridge SDK, public API, Terraform provider.", "Build on Inaya, automate it, or run a node.", "45, 46, " + R("The Custody SDK: Quick Start", "IP Protection")],
-      ["Industry workspaces", "Health, Legal, Financial, Private Capital, Regulated and Government OS.", "Vertical features and controls for regulated work.", "37, " + R("Health OS and Legal OS", "Enterprise OS")],
+      ["Industry workspaces", "Health, Legal, Financial, Private Capital, Regulated, Government and Education OS.", "Vertical features and controls for regulated work.", "37, " + R("Health OS and Legal OS", "Enterprise OS")],
       ["Cross-chain bridge and interoperability", "Move value between chains.", "Use Inaya across networks.", "43, " + R("Cross-Chain, Interoperability")],
       ["Roadmap and quality review", "What each stage delivers and how the codebase is being hardened.", "Know what is real today and what is coming.", R("The Roadmap", "Glossary")],
     ] },

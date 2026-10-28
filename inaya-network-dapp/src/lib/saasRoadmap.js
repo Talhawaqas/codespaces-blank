@@ -806,6 +806,51 @@ export const ROADMAP_STAGES = [
     notes:
       "Built in two rounds and tested against real hardware throughout, not just written and assumed to work — a real VM, a real disk, a real VPC, a real `aws` CLI call, a real HAProxy round-trip, and a real k3s cluster were each exercised end to end on a real QEMU/KVM host. 82+ automated tests pass (30 Rust, 52 Node.js). Real hardware testing caught and fixed 7 genuine bugs a code review alone would have missed, including a pre-existing camelCase/snake_case wire-format mismatch in the node scheduler's capacity comparison (fixed at the customer's own request) and an SSH protocol ordering bug that silently truncated longer guest responses. Explicitly not built: GPU passthrough, full AWS coverage (S3/IAM/autoscaling), HTTP-aware load balancing, and TPM-backed identity or real SEV/TDX execution — each deferred for a stated, concrete reason, not silently skipped.",
   },
+  {
+    number: 31,
+    title: "Education OS — Schools and Colleges",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "The seventh industry vertical of the Business Workspace, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs in ERP mode alongside the existing Finance, HR and Documents modules, and is built around the three things schools asked to keep safe: students' personal data, fee payments, and documents.",
+    securityStatement:
+      "Guardian contact details, home addresses, national ID numbers and medical notes are encrypted before they are stored, and a teacher can only open the records of students in the classes they are assigned to, with ID numbers masked.",
+    groups: [
+      {
+        title: "Student and guardian data",
+        items: [
+          "Student register with guardians, encrypted at the field level (AES-256-GCM); name, admission number and class stay searchable",
+          "Role-based views: principal and admissions see the full record, accounts see contact details only, a class teacher sees masked ID numbers and no address; anyone else is refused",
+          "ID formats for B-Form/CNIC, Aadhaar (last 4 digits only, never the full number), APAAR, Bangladesh birth registration/NID, Emirates ID and passport",
+          "Every opening of a student record, every mark change and every payment is written to the tamper-evident audit chain",
+          "Student data export (JSON) and erasure on request; erasure removes personal data and keeps the fee ledger under an anonymised name",
+          "Document checklist per student, linked to files in Documents, which are encrypted on the uploader's device",
+        ],
+      },
+      {
+        title: "Fees and payments",
+        items: [
+          "Fee structures with fee heads, in PKR, INR, BDT or AED, stored as whole minor units",
+          "Fee invoices generated per period without ever billing a student twice for the same period",
+          "Concessions (sibling, merit, staff child, need-based, scholarship) that need a second person to approve",
+          "Payment recording that can't overpay an invoice, sequential receipt numbers, printable receipts, and reversals with a reason instead of deletions",
+          "Late fees, an overdue list with days overdue, and collection totals by payment method",
+        ],
+      },
+      {
+        title: "School operations",
+        items: [
+          "Academic years, classes and sections, subjects, and teacher assignments",
+          "Admissions pipeline from application to enrolment",
+          "Daily attendance registers; teachers can correct a register for 3 days, after that only the principal",
+          "Exams and report cards: results are locked once published, and a change needs the principal and a reason, with the old mark kept",
+          "Read-only parent links (30 days by default, 90 at most) showing fees, attendance and published results only; revocable, logged, and dead on erasure",
+          "Education AI assistant with 6 read-only tools that see only what the person asking could see",
+        ],
+      },
+    ],
+    notes:
+      "Verified with 14 automated tests against the real database (encryption at rest, per-role views, duplicate billing, overpayment, self-approval, publish lock, parent-link contents, revocation and erasure) plus a static check that every Education OS API path is locked to the education vertical; the screens and the parent page were checked in a running app. Not yet built: online fee collection through a payment gateway (fees are recorded, not collected online), SMS/WhatsApp fee reminders, timetables, transport and hostel, and mobile screens. No claim is made of compliance with India's DPDP Act, the UAE PDPL, or Pakistani or Bangladeshi data-protection law; the features help a school meet its own obligations.",
+  },
 ];
 
 export const VISION = {

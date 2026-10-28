@@ -2061,5 +2061,17 @@ export const ecosystemArchitecture = {
         },
       ],
     },
+    {
+      number: "62",
+      title: "Education OS: Schools and Colleges (October 2026)",
+      blocks: [
+        {"type": "lead", "text": "The seventh vertical, built the way every earlier one was: reuse the vertical lock, the role-gate pattern, the audit chain and the Documents module, and build only what schools genuinely lack: a student register, fees, attendance, exams and parent access."},
+        {"type": "subsection", "heading": "Personal data sealed at the field level", "body": "education/crypto.js encrypts guardian contacts, addresses, national identifiers and medical notes with AES-256-GCM under EDUCATION_DATA_KEY (or an HKDF-derived key under its own label when that isn't set) before they reach MongoDB. Name, date of birth, admission number and class stay plaintext so the register stays searchable and duplicates can be found. A test reads the raw stored document and fails if any of those values appears in it."},
+        {"type": "subsection", "heading": "Per-request views, not per-role screens", "body": "studentViewFor() decides on every request whether the caller gets the full record, the teacher view (identifiers masked to the last 4 digits, no address) or the fees view (contact details only), or a 403. A teacher's access comes only from edu_class_teachers assignment rows, mirroring isCitizenRecordAssignee and isCareTeamMember; the educationRole alone grants nothing. The AI tools call the same functions with the caller's membership, so the assistant can't see more than the person."},
+        {"type": "subsection", "heading": "Money that can't drift", "body": "Amounts are integer minor units. Invoice generation is idempotent through a unique (student, period, structure) index. A payment moves the invoice's paid amount with a conditional $inc that only succeeds if it doesn't exceed the total, so concurrent clerks can't overpay. Receipt numbers come from an atomic per-school, per-year counter. Payments are reversed, never deleted, and concessions can't be approved by the person who requested them."},
+        {"type": "subsection", "heading": "Parent access without an account", "body": "A parent link is a 256-bit random token; only its SHA-256 hash is stored. The public route is rate-limited, answers every failure with the same 404, and re-checks expiry, revocation, the school's vertical and the student's erasure status on every view, returning only fees, attendance and published results."},
+        {"type": "note", "text": "14 automated tests against the real database cover encryption at rest, per-role views, duplicate billing, overpayment, self-approval, the publish lock, parent-link contents, revocation and erasure, plus a static test that the single catch-all Education OS route locks every path to the education vertical before dispatching. Not built: online fee collection, SMS/WhatsApp reminders, timetables, transport/hostel, mobile screens. No data-protection-law compliance is claimed."},
+      ],
+    },
   ],
 };
