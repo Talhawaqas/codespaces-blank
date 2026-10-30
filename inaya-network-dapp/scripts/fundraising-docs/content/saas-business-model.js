@@ -20,6 +20,12 @@
 // (flag-gated)" stage entries. Factual only, hedged the same way the
 // underlying ledgers hedge them — no new financial projections, doesn't
 // touch Section 09's illustrative-only framing.
+//
+// EDIT (29 October 2026) — Section 03 and Section 10 gained the six industry
+// editions and ERP mode (live in production; Education OS shipped e2bc7ca,
+// ledger posting f1bec0e). Section 08's regional-partnership bullet was
+// removed at founder request (not current), and schools were added to the
+// target segments.
 
 export const saasBusinessModel = {
   cover: {
@@ -86,7 +92,7 @@ export const saasBusinessModel = {
         },
         {
           type: "lead",
-          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization.",
+          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization. As of late October 2026: six industry editions (Health, Legal, Regulated Enterprise, Financial, Government and Education), each with its own sidebar of the modules that kind of organization uses every day, and an optional ERP-style layout with module tiles and a task panel for teams used to desktop ERP software.",
         },
       ],
     },
@@ -189,8 +195,7 @@ export const saasBusinessModel = {
           items: [
             "Product-led growth. The 14-day free trial on every self-serve tier lets a company's own owner/admin activate and evaluate the product directly, without a sales conversation.",
             "Cross-promotion from the existing DePIN dApp. Wallet-connected users of Inaya's core network are shown Business Workspace directly inside the dApp, converting an already-engaged audience into a second product line.",
-            "Regional partnership channel. A distribution relationship with a regional technology consultancy is in active development, including introductions to their existing enterprise client base — consistent with the channel strategy already outlined in the GTM Strategy document.",
-            "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, managed service providers (as direct multi-tenant buyers, not just distribution partners, via Identity Integration's MSP support), and any organization whose documents carry real confidentiality requirements.",
+            "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, schools and colleges, managed service providers (as direct multi-tenant buyers, not just distribution partners, via Identity Integration's MSP support), and any organization whose documents carry real confidentiality requirements.",
           ],
         },
       ],
@@ -244,6 +249,7 @@ export const saasBusinessModel = {
             { heading: "AI Bookkeeper — LIVE.", body: "AI-assisted transaction categorization, reconciliation, and reporting on top of the existing Finance & HR layer, with every suggested entry reviewed and confirmed by a person before it posts." },
             { heading: "Managed Database, Document Intelligence & AI/ML Studio — LIVE.", body: "A provisioned PostgreSQL database managed from inside the Business Workspace, a document-understanding studio for invoices, purchase orders, receipts and contracts, and an AI workbench for data cataloguing, model registration, and running one governed script at a time in an isolated, disposable sandbox." },
             { heading: "Sovereign Infrastructure — LIVE.", body: "Bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. A structurally distinct revenue line from the SaaS seat/storage tiers above — the customer's own hardware, managed through Business Workspace." },
+            { heading: "Industry Editions & ERP Mode — LIVE.", body: "Six industry operating systems on the same workspace and permission model: Health, Legal, Regulated Enterprise, Financial / Private Capital, Government, and Education for schools and colleges (student ID numbers, addresses, phone numbers and medical notes encrypted before they are stored; fees in PKR, INR, BDT or AED, recorded rather than collected online). Legal bills and school fees post to the same general ledger as the Finance module. An optional ERP-style layout puts each industry's own modules first." },
           ],
         },
       ],

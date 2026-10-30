@@ -170,7 +170,7 @@ export const whitepaper = {
       blocks: [
         {
           type: "lead",
-          text: "Corrected from the prior edition of this document, against the real transaction flow in the dApp's checkout code.",
+          text: "How a corporate payment moves through the deployed contracts today.",
         },
         {
           type: "numbered",
@@ -182,8 +182,8 @@ export const whitepaper = {
         },
         {
           type: "note",
-          label: "Correction, stated plainly.",
-          text: "An earlier version of this material described the router→escrow handoff as happening \"atomically within the same blockchain transaction\" with RevenueRouter \"automatically\" calling createEscrow(). That is not what the deployed contracts do — it's two separate transactions, both client-initiated. The revenue-split percentages themselves (39% node / 51% treasury / 10% team) are not a marketing estimate: the 39% node-operator share is hardcoded in production settlement code (src/app/api/stripe-webhook/route.js: cogsAmountWei = (invoiceAmountWei * 39n) / 100n), and the remaining 61% splits 51%/10% between Treasury and Team, reconciling exactly with the protocol's own published EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin/legal/marketing = 51%).",
+          label: "How the split works.",
+          text: "The router and the escrow are two separate transactions, both started from the customer's checkout; the router does not call the escrow itself. The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
         },
       ],
     },

@@ -53,11 +53,6 @@ export const institutionalFaqs = {
             ["Egress / retrieval ($INAYA)", "Not yet active", "Activates at mainnet, by design — not a testnet gap"],
           ],
         },
-        {
-          type: "note",
-          label: "Correction from prior edition.",
-          text: "An earlier version of this document stated a fixed \"0.1 USDT + 0.1 INAYA per GB\" dual-asset ingress model. That figure was stale — confirmed against a live on-chain read of the deployed contract's usdtFeePerGB() and inayaFeePerGB() view functions, and directly confirmed by the founder.",
-        },
       ],
     },
     {
@@ -76,11 +71,6 @@ export const institutionalFaqs = {
             ["500 TB / Year", "27,000", "1,000 USDT-eq."],
             ["1000 TB / Year", "54,000", "2,000 USDT-eq."],
           ],
-        },
-        {
-          type: "note",
-          label: "Correction from prior edition.",
-          text: "An earlier version of this document described three API-request-volume subscription tiers (\"Scale Matrix,\" \"Established Swarm,\" \"Institutional Node\" at $999–$35,000/month). Those names and pricing do not exist anywhere in the codebase — confirmed against the custody-sdk's own corrected developer guide, which explicitly flags them as incorrect. The table above is what a corporate customer actually purchases today, verified against the live checkout flow.",
         },
       ],
     },
@@ -125,8 +115,8 @@ export const institutionalFaqs = {
         },
         {
           type: "note",
-          label: "Correction from prior edition.",
-          text: "An earlier version described the router-to-escrow handoff as a single atomic transaction with the router \"automatically\" invoking escrow creation. The deployed checkout flow is two separate, client-initiated transactions — that part was corrected. The 39% figure itself is not a marketing estimate: it's hardcoded in the live settlement route (src/app/api/stripe-webhook/route.js — cogsAmountWei = (invoiceAmountWei * 39n) / 100n). The remaining 61% split into 51% Treasury / 10% Team reconciles exactly with the Financial Model's own gross-margin math (Q6).",
+          label: "How the split works.",
+          text: "Payment and escrow are two separate transactions started from the customer's checkout. The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
         },
       ],
     },

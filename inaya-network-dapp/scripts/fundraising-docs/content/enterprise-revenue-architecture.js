@@ -45,8 +45,8 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          label: "What changed from the prior edition.",
-          text: "The 39% node-operator share is not a marketing estimate: it's hardcoded in production settlement code (src/app/api/stripe-webhook/route.js: cogsAmountWei = (invoiceAmountWei * 39n) / 100n). The remaining 61% splits 51%/10% between Treasury and Team, reconciling exactly with the protocol's own published EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin/legal/marketing = 51%).",
+          label: "How the split works.",
+          text: "The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
         },
       ],
     },
@@ -68,8 +68,8 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          label: "Correction from prior edition.",
-          text: "Earlier material described escrow creation as automatic — \"no manual approval step,\" happening as part of the same settlement flow as the router transaction. It is, in fact, a second explicit transaction in the client's checkout code. The distinction matters for anyone reasoning about transaction atomicity or failure modes (e.g. what happens if a user's wallet rejects the second approval after the first transaction already succeeded).",
+          label: "Two transactions, not one.",
+          text: "Escrow creation is a second, explicit transaction in the customer's checkout, not an automatic step of the router transaction. This matters for failure handling: if a wallet rejects the second approval after the first transaction has succeeded, the escrow is not created until it is retried.",
         },
       ],
     },

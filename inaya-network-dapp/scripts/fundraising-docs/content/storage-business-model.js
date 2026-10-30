@@ -21,6 +21,11 @@
 // the Filen/FileCloud-inspired Secure Collaboration suite and the
 // Internxt-inspired Device Protection suite. No new numeric claims; hedged
 // the same way the underlying verification ledgers hedge them.
+//
+// EDIT (29 October 2026) — Section 04's note rewritten without internal
+// code paths or "correction from prior edition" wording (same figures);
+// Section 05 now says egress-fee demand starts at mainnet, matching
+// Section 02; Section 08 names the industry editions and ERP mode.
 
 export const storageBusinessModel = {
   cover: {
@@ -120,8 +125,8 @@ export const storageBusinessModel = {
         },
         {
           type: "note",
-          label: "Correction from prior edition.",
-          text: "This is two client-initiated transactions, not one atomic router-to-escrow cascade — corrected against the actual checkout code (page.js's handleCorporateCheckout). The 39% split is not an estimate: it's hardcoded in production (src/app/api/stripe-webhook/route.js), and the remaining 61% splits 51%/10% between Treasury and Team, reconciling exactly with the protocol's own published EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin/legal/marketing = 51%).",
+          label: "How the split works.",
+          text: "Payment and escrow are two separate transactions started from the customer's checkout, not one automatic on-chain cascade. The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
         },
       ],
     },
@@ -133,7 +138,7 @@ export const storageBusinessModel = {
           type: "columns",
           items: [
             { heading: "Staking Multiplier Loop", body: "Node operators locking earned rewards back into staking generate a secondary passive income stream instead of immediately liquidating." },
-            { heading: "Reduced Sell Pressure", body: "As operators favor accumulation over liquidation, circulating supply available for sale drops, while ongoing egress-fee demand continues absorbing it." },
+            { heading: "Reduced Sell Pressure", body: "As operators favor accumulation over liquidation, circulating supply available for sale drops, while egress fees, once they activate at mainnet, create ongoing demand that absorbs it." },
           ],
         },
         {
@@ -183,7 +188,7 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), Identity Integration with MSP multi-tenancy, an AI Bookkeeper, and a Managed Database/Document Intelligence/AI-ML Studio.",
+          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), Identity Integration with MSP multi-tenancy, an AI Bookkeeper, and a Managed Database/Document Intelligence/AI-ML Studio — and, as of October 2026, six industry editions of Business Workspace (Health, Legal, Regulated Enterprise, Financial, Government and Education) with an optional ERP-style layout.",
         },
         {
           type: "note",

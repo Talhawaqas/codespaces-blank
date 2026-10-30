@@ -27,7 +27,7 @@ export const executiveSummary = {
       {
         heading: "Product & Traction — Current Stage",
         bullets: [
-          "Live on BNB Chain Testnet (~50 days since inception)",
+          "Live on BNB Chain Testnet (founded July 2026)",
           "Working web dApp + mobile application",
           "Custody SDK v1.0 complete (encryption, sharding, file/folder ops, sharing, events, retries)",
           "Open-source: React package, CLI, create-inaya-dapp, Storybook, templates",
@@ -53,7 +53,7 @@ export const executiveSummary = {
       },
       {
         heading: "Team",
-        body: "Talha Waqas (Founder & CTO), Yakub Adnan (Co-Founder & Growth Lead), Fibha Urooj (CFO). Founder-led with AI-assisted development driving extremely high execution velocity — a full product surface and developer platform shipped in under two months. Expanding the broader team is a core use of proceeds.",
+        body: "Talha Waqas (Founder & CTO), Yakub Adnan (Co-Founder & Growth Lead), Fibha Urooj (CFO). Founder-led with AI-assisted development driving extremely high execution velocity — a full product surface and developer platform shipped within four months of founding. Expanding the broader team is a core use of proceeds.",
       },
       {
         heading: "Fundraising Objective",
@@ -62,7 +62,7 @@ export const executiveSummary = {
       {
         heading: "Key Milestones",
         milestones: [
-          { label: "Near-term:", text: "Mobile public launch, directory listings, first design partners, continued content engine." },
+          { label: "Near-term:", text: "Android app live; iOS next, directory listings, first design partners, continued content engine." },
           { label: "Mid-term:", text: "Security audits, full Proof-of-Storage, mainnet preparation, early case studies." },
           { label: "Longer-term:", text: "Mainnet launch, node operator growth, measurable network effects, broader enterprise motion." },
         ],
@@ -70,7 +70,7 @@ export const executiveSummary = {
     ],
   ],
   footer: {
-    contact: "Contact Talha Waqas, Founder & CTO · talhawaqas92@gmail.com · inayanetwork.com",
+    contact: "Contact Talha Waqas, Founder & CTO · investors@inayanetwork.com · inayanetwork.com",
     note: "Materials: deck, technical docs, and live demo available on request. All claims refer to testnet status unless otherwise noted.",
   },
 };

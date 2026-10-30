@@ -2,6 +2,11 @@
 // public/documents/inaya-investment-memorandum.pdf. Edit this file, then run
 // `node scripts/fundraising-docs/generate.mjs`. See README.md.
 //
+// 29 Oct 2026, founder-approved in chat: round renamed pre-seed; mainnet
+// wording now audit-first; gross margin aligned to the 61% storage target;
+// slashing and buybacks marked planned; hype wording removed; Business
+// Workspace pricing and industry editions added.
+//
 // PROTECTED — do not edit without explicit founder sign-off (per the
 // fundraising-docs SOW, August 2026): Section 05's "Roadmap highlight"
 // paragraph and Section 11's mainnet-readiness language, Section 13's
@@ -23,7 +28,7 @@ export const investmentMemorandum = {
     kicker: "INVESTMENT MEMORANDUM — VC EDITION",
     title: "Building the Sovereign Storage Layer",
     subtitle:
-      "A DePIN protocol bridging Web2 enterprise infrastructure with Web3 sovereign storage — raising a Seed round to scale developer adoption and enterprise revenue.",
+      "A DePIN protocol bridging Web2 enterprise infrastructure with Web3 sovereign storage — raising a pre-seed round to scale developer adoption and enterprise revenue.",
     docLine: "Document INAYA-IM-2026-V1 · Classification Strictly Confidential · October 2026",
   },
   docId: "INAYA-IM-2026-V1",
@@ -36,8 +41,8 @@ export const investmentMemorandum = {
           type: "paragraphs",
           text: [
             "Inaya Network represents the next evolution in decentralized physical infrastructure networks (DePIN), targeting the $100B+ cloud storage sector. By bridging traditional Web2 enterprise environments and Web3 storage protocols, Inaya solves the critical bottlenecks of data sovereignty, vendor lock-in, and infrastructure vulnerability that plague centralized cloud providers.",
-            "We are raising Seed capital to aggressively expand our go-to-market strategy, secure enterprise partnerships, and scale our developer ecosystem. With our open-source framework and file management components fully active on testnet and a growing enterprise SaaS layer already live, Inaya is positioned to capture significant market share — offering a hybrid model that pairs BNB Chain's high-throughput execution with proprietary binary sharding and client-side encryption to guarantee zero-knowledge data persistence.",
-            "The transition from legacy architectures to distributed, resilient DePIN solutions is accelerating. Inaya leads by prioritizing developer experience and enterprise-grade billing logic — a suite of APIs, React components, and SDKs that make decentralized storage as intuitive as AWS S3, with unmatched security and economic efficiency.",
+            "We are raising pre-seed capital to expand our go-to-market strategy, secure enterprise partnerships, and scale our developer ecosystem. With our open-source framework and file management components fully active on testnet and a growing enterprise SaaS layer already live, Inaya offers a hybrid model that pairs BNB Chain's high-throughput execution with binary sharding and client-side encryption, so no node or provider ever holds a readable copy of a customer's data.",
+            "The transition from legacy architectures to distributed, resilient DePIN solutions is accelerating. Inaya leads by prioritizing developer experience and enterprise-grade billing logic — a suite of APIs, React components, and SDKs that make decentralized storage as intuitive as AWS S3, with client-side security and lower storage costs.",
           ],
         },
       ],
@@ -94,11 +99,11 @@ export const investmentMemorandum = {
           items: [
             {
               heading: "Client-Side Encryption & Sharding",
-              body: "Military-grade AES-256 encryption before data ever leaves the device, followed by binary sharding across our global node network — no single participant ever holds a complete, decryptable file.",
+              body: "AES-256-GCM client-side encryption before data ever leaves the device, followed by binary sharding across independent storage nodes (testnet today) — no single participant ever holds a complete, decryptable file.",
             },
             {
               heading: "DePIN & Smart Contracts",
-              body: "Coordinated via optimized smart contracts on BNB Chain for rapid consensus, minimal fees, and transparent orchestration of storage proofs and node slashing.",
+              body: "Coordinated via optimized smart contracts on BNB Chain for rapid consensus, minimal fees, and transparent orchestration of storage proofs, with node slashing planned for after mainnet.",
             },
             {
               heading: "Enterprise Payments & Tooling",
@@ -131,7 +136,7 @@ export const investmentMemorandum = {
             "Templates & Knowledge Base — quick-start boilerplates and a technical wiki accelerating enterprise onboarding.",
             "Open Source Ecosystem — core file management components are publicly verifiable, ensuring trust and community-driven security review.",
             // Approved addition. See fundraising docs SOW §5.
-            "Business Workspace — a B2B SaaS layer for companies: organizations, departments, projects, and documents with server-enforced approval workflows, VIEW/EDIT/MANAGE permissions, secure external sharing, full audit history, and a permission-aware AI assistant. Email-based sign-in, no wallet required — available on web and mobile.",
+            "Business Workspace — a B2B SaaS layer for companies: organizations, departments, projects, and documents with server-enforced approval workflows, VIEW/EDIT/MANAGE permissions, secure external sharing, full audit history, and a permission-aware AI assistant. Email-based sign-in, no wallet required — available on web, Android and desktop, with published plans from $7.99 to $799 per month. Six industry editions run on the same workspace (Health, Legal, Regulated Enterprise, Financial, Government and Education), with an optional ERP-style layout. The founding team is based in Pakistan.",
             // New addition, ecosystem-doc audit pass, August 2026 — factual,
             // no financial claims, mirrors the same additive pattern as the
             // Business Workspace line above.
@@ -182,7 +187,7 @@ export const investmentMemorandum = {
           // PROTECTED — do not edit this paragraph without founder sign-off.
           type: "note",
           label: "Roadmap highlight.",
-          text: "Inaya is executing the final stages of mainnet deployment. Having resolved front-end issues during testnet, the immediate focus is scaling the node operator network and rolling out enterprise-tier SLAs.",
+          text: "Mainnet follows an independent security audit, which this round funds. Until then the protocol runs on testnets, and the immediate focus is growing the node operator network and preparing enterprise-tier SLAs.",
         },
       ],
     },
@@ -247,7 +252,7 @@ export const investmentMemorandum = {
           type: "bullets",
           items: [
             "Architecture & metadata. A dual-layer system: file names, permissions, and shard maps are managed via a state-channel-like layer anchored to BNB Chain for rapid retrieval without burdening the L1; physical storage is distributed across independent nodes.",
-            "Security & encryption. Client-side AES-GCM encryption before sharding guarantees node operators remain entirely blind to the data they host — true zero-knowledge storage.",
+            "Security & encryption. Client-side AES-GCM encryption before sharding means node operators never see the data they host — zero-knowledge storage by design.",
             "BNB Chain integration. Low transaction costs and high throughput; a 2-shard midpoint-bisection scheme splits storage and metadata load across the network's current shard topology.",
           ],
         },
@@ -270,7 +275,7 @@ export const investmentMemorandum = {
             },
             {
               heading: "Margins",
-              body: "Decentralized hardware means significantly higher gross margins — projected 75%+ — versus centralized hyperscalers maintaining physical data centers.",
+              body: "Decentralized hardware means a lighter cost base than hyperscalers maintaining physical data centers. Target gross margin on storage revenue is 61%, after the 39% node-operator share.",
             },
           ],
         },
@@ -312,9 +317,9 @@ export const investmentMemorandum = {
         {
           type: "bullets",
           items: [
-            "Technical foundation. Open-source framework, core file management components, and integration docs fully active and production-ready.",
+            "Technical foundation. Open-source framework, core file management components, and integration docs fully active on testnet.",
             "Deployment & CI/CD. Robust GitHub workflows, secure identity verification, and seamless Vercel production pipelines.",
-            "Mainnet readiness. Exhaustive testnet phases executed; deployment parameters reviewed and blocking front-end issues resolved.",
+            "Path to mainnet. Testnet phases executed across BNB Chain and four bridge testnets; an independent security audit comes before any mainnet launch.",
             "Financial structuring. Liquidity pool allocations evaluated and interval-selling strategy formulated ahead of token launch.",
             "Institutional outreach. Investor communications drafted detailing technical milestones, pricing, and go-to-market plans.",
           ],
@@ -332,7 +337,7 @@ export const investmentMemorandum = {
             { heading: "Supply", body: "Fixed at 30,000,000 tokens." },
             {
               heading: "Buybacks",
-              body: "A share of Enterprise Reserve fiat revenue is algorithmically used for market buybacks, creating deflationary pressure aligned with usage.",
+              body: "Planned after mainnet, not built today: a share of Enterprise Reserve fiat revenue used for market buybacks, tying token demand to real usage.",
             },
             {
               heading: "Staking",
@@ -363,7 +368,7 @@ export const investmentMemorandum = {
         },
         {
           type: "note",
-          text: "Projections assume successful execution of the Seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs.",
+          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs.",
         },
       ],
     },
@@ -378,9 +383,9 @@ export const investmentMemorandum = {
             ["Technical\nSmart contract vulnerabilities", "Multiple audits from top-tier security firms prior to mainnet launch."],
             [
               "Execution & Competition\nGetting squeezed by AWS or outpaced by Filecoin",
-              "Laser focus on UX/DX and React ecosystems where Web3 protocols traditionally fail. Enterprise Reserve structured so B2B clients never touch the token directly, isolating them from regulatory ambiguity.",
+              "Laser focus on UX/DX and React ecosystems where Web3 protocols traditionally fail.",
             ],
-            ["Regulation\nShifting crypto regulatory frameworks", "Strict vesting schedules, interval selling strategies, and robust staking requirements for node operators."],
+            ["Regulation\nShifting crypto regulatory frameworks", "Enterprise Reserve structured so B2B clients never touch the token directly, isolating them from regulatory ambiguity."],
             ["Token Dynamics\nPost-launch dump risk", "Strict vesting schedules, interval selling strategies, and robust staking requirements for node operators."],
           ],
         },
@@ -415,7 +420,7 @@ export const investmentMemorandum = {
             // assisted development remains real and load-bearing to the
             // velocity described below, it's just no longer attributed to
             // one person working solo.
-            "AI-assisted development remains a core part of Inaya's execution model — not a supplementary tool, but a genuine mechanism behind shipping a full product surface (web dApp, mobile app, SDK ecosystem, a complete B2B Business Workspace, a decentralized Security Layer, and more) at this pace with a small founding team. This velocity is a genuine, current differentiator, and expanding the broader team is an explicit, funded use of Seed proceeds.",
+            "AI-assisted development remains a core part of Inaya's execution model — not a supplementary tool, but a genuine mechanism behind shipping a full product surface (web dApp, mobile app, SDK ecosystem, a complete B2B Business Workspace, a decentralized Security Layer, and more) at this pace with a small founding team. This velocity is a genuine, current differentiator, and expanding the broader team is an explicit, funded use of pre-seed proceeds.",
           ],
         },
         {
@@ -439,7 +444,7 @@ export const investmentMemorandum = {
       title: "Funding Ask",
       // PROTECTED — round size, use-of-funds split, milestones, do not edit without founder sign-off.
       blocks: [
-        { type: "lead", text: "We are raising a $2,000,000 Seed Round." },
+        { type: "lead", text: "We are raising a $2,000,000 pre-seed round." },
         {
           type: "columns",
           items: [

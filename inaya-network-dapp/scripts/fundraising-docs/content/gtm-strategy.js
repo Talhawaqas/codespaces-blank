@@ -20,6 +20,8 @@
 //      active development with a regional technology consultancy,
 //      including introductions to their existing enterprise client base."
 //      No company name, no terms — not finalized.
+//      29 Oct 2026: that consultancy sentence was removed at founder
+//      request (not current); the subsection keeps the generic partner list.
 //   4. NEW Section 15 "Business Workspace Competitive Landscape" — a
 //      wholly separate section (SharePoint/Box/Notion/etc.), inserted
 //      after the existing Section 14 (DePIN storage competitors —
@@ -1126,7 +1128,7 @@ export const gtmStrategy = {
           type: "subsection",
           heading: "Enterprise Partners",
           body:
-            "A channel partnership of this kind is already in active development with a regional technology consultancy, including introductions to their existing enterprise client base. Beyond this, the broader category of enterprise consulting firms, digital transformation consultancies, cloud migration specialists, cybersecurity firms, and managed service providers remains a target class of partner — organizations that become force multipliers for enterprise adoption.",
+            "Enterprise consulting firms, digital transformation consultancies, cloud migration specialists, cybersecurity firms, and managed service providers remains a target class of partner — organizations that become force multipliers for enterprise adoption.",
         },
         {
           type: "subsection",
