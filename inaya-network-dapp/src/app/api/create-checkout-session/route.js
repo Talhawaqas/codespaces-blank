@@ -7,15 +7,14 @@
 
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { CORPORATE_RESERVE_TIERS } from "../../../lib/dappPricing.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Mirrors the existing tier pricing already live in page.js (selectedB2BTier).
-const TIER_PRICES_USD = {
-  "250 TB / Year": 13500,
-  "500 TB / Year": 27000,
-  "1000 TB / Year": 54000,
-};
+// The same tier prices page.js charges a connected wallet (selectedB2BTier).
+const TIER_PRICES_USD = Object.fromEntries(
+  Object.entries(CORPORATE_RESERVE_TIERS).map(([tier, t]) => [tier, t.usdtPerYear])
+);
 
 export async function POST(req) {
   try {

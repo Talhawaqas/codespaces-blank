@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title InayaCorporateEscrow
-/// @notice Holds the node-operator COGS share (39% per your Financial Matrix) of a Corporate
+/// @notice Holds the node-operator share (35% of the invoice, set by the caller) of a Corporate
 ///         Reserve annual invoice and drips it out over 12 monthly releases instead of paying
 ///         it out in full on day one.
 ///

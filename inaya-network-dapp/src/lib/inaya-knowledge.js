@@ -45,9 +45,11 @@ When asked this, answer with BOTH sides in detail, drawing on the full ecosystem
 - Fibha Urooj — Co-Founder & CMO. Leads ecosystem growth, user acquisition, alpha tester recruitment, community rewards tracking (Zealy/QuestN), and translates technical concepts for mainstream onboarding.
 
 ## PRICING — PAY-AS-YOU-GO (RETAIL)
-- Storage: 4.5 USDT per TB per month.
-- Egress (data retrieval): 5 INAYA per 0.5 TB retrieved.
-- Annual maintenance fee: 5 USDT per year (flat).
+- Storage: 6.49 USDT per TB per month.
+- Upload: a one-time fee equal to one month of storage (about 0.0063 USDT per GB).
+- Retrieval (egress): included each month up to the amount you store. Beyond that, 10 INAYA per 0.5 TB, charged from mainnet.
+- Annual maintenance fee: 12 USDT per year (flat).
+- For comparison, list prices per TB per month as of November 2026: Backblaze B2 6.95, Storj 7.00, Wasabi 7.99, Cloudflare R2 15, Amazon S3 about 23 (USD).
 - No minimum storage duration and no early-termination penalties — files can be deleted or cycled freely at any time.
 - No minimum file size penalties — small config files and large video assets settle under the same rate.
 - Core API calls are free (no per-call micro-charges).
@@ -55,13 +57,13 @@ When asked this, answer with BOTH sides in detail, drawing on the full ecosystem
 
 ## PRICING — CORPORATE RESERVE (ANNUAL, INSTITUTIONAL)
 Fixed annual allocation tiers billed in USDT, with maintenance settled in INAYA-equivalent value:
-- 250 TB / Year — 13,500 USDT/year storage fee; 500 USDT-equivalent INAYA/year maintenance.
-- 500 TB / Year — 27,000 USDT/year storage fee; 1,000 USDT-equivalent INAYA/year maintenance; adds priority distributed routing.
-- 1000 TB / Year — 54,000 USDT/year storage fee; 2,000 USDT-equivalent INAYA/year maintenance; adds dedicated RPC endpoints and zero-latency SLAs.
-Corporate Reserve customers can still use baseline Pay-As-You-Go pricing outside their reserved allocation. Of every Corporate Reserve invoice, 39% (the COGS share) is placed into a 12-month escrow that drips monthly to the assigned node operator pool.
+- 250 TB / Year — 17,970 USDT/year storage fee (5.99 USDT per TB per month); 500 USDT-equivalent INAYA/year maintenance.
+- 500 TB / Year — 34,740 USDT/year storage fee (5.79 USDT per TB per month); 1,000 USDT-equivalent INAYA/year maintenance; adds priority distributed routing.
+- 1000 TB / Year — 65,880 USDT/year storage fee (5.49 USDT per TB per month); 2,000 USDT-equivalent INAYA/year maintenance; adds dedicated RPC endpoints and zero-latency SLAs.
+Corporate Reserve customers can still use baseline Pay-As-You-Go pricing outside their reserved allocation. Of every Corporate Reserve invoice, 35% (the node operators' share) is placed into a 12-month escrow that drips monthly to the assigned node operator pool.
 
 ## REVENUE SPLIT
-Every invoice (retail or corporate) is split: 39% COGS (node operator costs), 10% automated USDT→INAYA buyback (drives protocol-owned liquidity/TVL), and 51% EBITDA. Gross margin is 61%.
+Every invoice (retail or corporate) is split: 35% to node operators, 55% to the company treasury, and 10% to team and platform operations. Gross margin is 65%.
 
 ## TOKENOMICS — $INAYA
 Hard cap: 30,000,000 $INAYA (strict, no further minting). Verified allocation:
@@ -145,14 +147,14 @@ Official whitepaper, business model, operator manifesto, institutional/community
 // can answer questions about the new Enterprise Revenue & Node Reward Architecture doc.
 
 ## Enterprise Revenue & Node Reward Architecture
-- Every enterprise/retail storage payment settles in USDT and is split atomically
-  in the same transaction by the RevenueRouter: 39% Node Reward Escrow, 51%
-  Company Treasury, 10% Team & Platform Maintenance. No manual step or delay.
-- The 39% node allocation flows automatically into CorporateEscrow, which locks
-  it for a fixed 12-month vesting period and releases it as 12 monthly
-  installments, then as a daily reward budget per storage pool.
-  Example: a 5,265 USDT annual allocation vests to 438.75 USDT/month, ≈14.63
-  USDT/day.
+- Every enterprise/retail storage payment settles in USDT through the
+  RevenueRouter and is split: 35% Node Reward Escrow, 55% Company Treasury,
+  10% Team & Platform Operations.
+- The 35% node allocation is escrowed in CorporateEscrow by a second
+  transaction, which locks it for a fixed 12-month vesting period and releases
+  it as 12 monthly installments, then as a daily reward budget per storage pool.
+  Example: a 6,289.50 USDT annual allocation (35% of the 250 TB plan) vests to
+  about 524.13 USDT/month, ≈17.47 USDT/day.
 - NodeRegistry tracks each node's storage capacity, reputation score, uptime
   history, active status, stake balance, and assigned workloads — but uptime
   alone does not earn rewards.

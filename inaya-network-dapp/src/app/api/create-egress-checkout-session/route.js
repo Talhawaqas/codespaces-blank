@@ -3,8 +3,12 @@
 // POST /api/create-egress-checkout-session
 // Body: { fileHash, filename, sizeBytes }
 //
-// Card-based egress unlock — the whitepaper's "5 INAYA per 0.5TB" rate,
-// converted to USD using the LIVE spot price read directly from your
+// Card-based egress unlock for retrieval BEYOND the included monthly
+// allowance (retrieval up to the customer's stored volume is included each
+// month — see src/lib/egressAllowance.js; page.js only sends a customer here
+// once that allowance is used up). Charged at the published
+// "10 INAYA per 0.5TB" rate (EGRESS_INAYA_PER_HALF_TB, the PAYG contract's
+// egressPricePerHalfTB), converted to USD using the LIVE spot price read directly from your
 // PancakeSwap testnet pool (the pair contract IS the LP token address —
 // no separate lookup needed). No on-chain gate exists for egress on the
 // Custody contract itself (confirmed: retrieval is a public read), so
@@ -17,6 +21,7 @@
 import Stripe from "stripe";
 import { ethers } from "ethers";
 import { NextResponse } from "next/server";
+import { EGRESS_INAYA_PER_HALF_TB } from "../../../lib/dappPricing.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -31,8 +36,8 @@ const PAIR_ABI = [
   "function token1() view returns (address)",
 ];
 
-const EGRESS_INAYA_PER_UNIT = 5;
-const EGRESS_UNIT_BYTES = 549755813888n; // 0.5 TB, matching the whitepaper's "5 INAYA per 0.5TB" rate
+const EGRESS_INAYA_PER_UNIT = EGRESS_INAYA_PER_HALF_TB;
+const EGRESS_UNIT_BYTES = 549755813888n; // 0.5 TB, the unit the published rate is quoted in
 const MIN_CHARGE_CENTS = 50; // Stripe's practical USD minimum
 
 /** Reads the pool's current reserves and returns the live INAYA price in USDT. */

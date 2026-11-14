@@ -49,7 +49,7 @@ export const executiveSummary = {
     [
       {
         heading: "Business Model",
-        body: "Pay-As-You-Go (USDT-denominated storage + egress) for developers and smaller users. Corporate Reserve annual capacity plans for institutional customers. On-chain revenue routing with transparent splits. Future node rewards and network effects at mainnet.",
+        body: "Pay-As-You-Go storage at 6.49 USDT per TB per month, with retrieval included up to the stored volume, for developers and smaller users. Corporate Reserve annual capacity plans for institutional customers. On-chain revenue routing with transparent splits. Future node rewards and network effects at mainnet.",
       },
       {
         heading: "Team",

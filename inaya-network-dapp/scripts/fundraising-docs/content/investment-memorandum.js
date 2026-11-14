@@ -7,6 +7,11 @@
 // slashing and buybacks marked planned; hype wording removed; Business
 // Workspace pricing and industry editions added.
 //
+// 13 Nov 2026, founder-approved in chat (Dapp repricing): storage 6.49 USDT/TB/month,
+// node share 35% so target gross margin 65%; Section 13 Enterprise ARR recalculated at
+// the 1,000 TB Corporate Reserve rate (65.88 USDT per TB per year) on the same storage
+// volumes, Net Income = ARR - Burn as before; retrieval described as included, not zero.
+//
 // PROTECTED — do not edit without explicit founder sign-off (per the
 // fundraising-docs SOW, August 2026): Section 05's "Roadmap highlight"
 // paragraph and Section 11's mainnet-readiness language, Section 13's
@@ -203,7 +208,7 @@ export const investmentMemorandum = {
           type: "table",
           headers: ["Segment", "Estimated Value", "Inaya's Approach"],
           rows: [
-            ["TAM", "$100B+\nGlobal cloud storage", "Disrupting legacy providers by offering lower baseline costs and eliminating egress fees."],
+            ["TAM", "$100B+\nGlobal cloud storage", "Disrupting legacy providers by offering lower baseline costs and including retrieval up to the stored volume."],
             ["SAM", "$10B\nWeb3 & AI data storage", "Targeting dApps, NFT platforms, and AI datasets requiring immutable, cryptographically secure storage."],
             ["SOM", "$150M\nYear 1-3 target", "Capturing early adopters in DePIN, migrating projects from less developer-friendly decentralized alternatives."],
           ],
@@ -224,7 +229,7 @@ export const investmentMemorandum = {
           items: [
             {
               heading: "Incumbents",
-              body: "AWS, Google Cloud, Azure — unmatched ecosystem lock-in. Inaya wins on zero vendor lock-in, zero egress fees, cryptographic sovereignty, and immunity to centralized outages.",
+              body: "AWS, Google Cloud, Azure — unmatched ecosystem lock-in. Inaya wins on zero vendor lock-in, retrieval included up to the stored volume, cryptographic sovereignty, and immunity to centralized outages.",
             },
             {
               heading: "DePIN Pioneers",
@@ -275,7 +280,7 @@ export const investmentMemorandum = {
             },
             {
               heading: "Margins",
-              body: "Decentralized hardware means a lighter cost base than hyperscalers maintaining physical data centers. Target gross margin on storage revenue is 61%, after the 39% node-operator share.",
+              body: "Decentralized hardware means a lighter cost base than hyperscalers maintaining physical data centers. Target gross margin on storage revenue is 65%, after the 35% node-operator share.",
             },
           ],
         },
@@ -361,14 +366,14 @@ export const investmentMemorandum = {
           headers: ["Metric", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5"],
           rows: [
             ["Active Storage (PB)", "15", "60", "200", "650", "1,500"],
-            ["Enterprise ARR", "$0.8M", "$3.2M", "$11.5M", "$35.0M", "$85.0M"],
+            ["Enterprise ARR", "$1.0M", "$4.0M", "$13.2M", "$42.8M", "$98.8M"],
             ["Burn Rate", "$1.5M", "$2.0M", "$2.5M", "$3.5M", "$4.5M"],
-            ["Net Income", "($0.7M)", "$1.2M", "$9.0M", "$31.5M", "$80.5M"],
+            ["Net Income", "($0.5M)", "$2.0M", "$10.7M", "$39.3M", "$94.3M"],
           ],
         },
         {
           type: "note",
-          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs.",
+          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs. Enterprise ARR is the stored volume billed at the 1,000 TB Corporate Reserve rate (5.49 USDT per TB per month, 65.88 per TB per year).",
         },
       ],
     },

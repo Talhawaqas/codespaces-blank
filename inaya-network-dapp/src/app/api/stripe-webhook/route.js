@@ -24,6 +24,7 @@ import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/mongodb";
 import { claimSettlement, completeSettlement, failSettlement, getProgress, recordProgress } from "../../../lib/stripeSettlement.js";
+import { NODE_SHARE_PERCENT } from "../../../lib/dappPricing.js";
 
 // Both settlement paths can involve multiple on-chain transactions with
 // confirmations â€” this can easily exceed Vercel's default function timeout.
@@ -178,8 +179,8 @@ async function settleCorporateReserve(session, customerEmail) {
     await recordProgress(session.id, { routerTxHash });
   }
 
-  // 2. Escrow the 39% COGS share for the standard 12-month vesting schedule.
-  const cogsAmountWei = (invoiceAmountWei * 39n) / 100n;
+  // 2. Escrow the node operators' share (NODE_SHARE_PERCENT) for the standard 12-month vesting schedule.
+  const cogsAmountWei = (invoiceAmountWei * BigInt(NODE_SHARE_PERCENT)) / 100n;
   let escrowTxHash = done.escrowTxHash;
   if (!escrowTxHash) {
     const escrowAllowance = await usdt.allowance(treasuryWallet.address, CORPORATE_ESCROW_ADDRESS);

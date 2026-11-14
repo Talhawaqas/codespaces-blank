@@ -28,7 +28,7 @@ export const faqs = [
   {
     icon: "💰",
     q: "How much does storage actually cost?",
-    a: "The current live rate, read directly from the deployed contract, is 0.0044 USDT per GB stored — roughly 4.50 USDT per TB. Storage ingress currently has no $INAYA fee at all; $INAYA fees for egress (retrieval) are planned to activate at mainnet, not before.",
+    a: "Storage is 6.49 USDT per TB per month (about 0.0063 USDT per GB), set on the deployed contracts. Downloading up to the amount you store is included each month. Beyond that, a $INAYA retrieval fee is planned to activate at mainnet, not before.",
   },
   {
     icon: "📅",

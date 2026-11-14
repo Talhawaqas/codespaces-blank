@@ -135,7 +135,8 @@ export const whitepaper = {
           items: [
             "Storage is billed in stablecoin (USDT) to remove multi-token friction for developers and retail users.",
             "Fee rates are read live from the deployed contract (usdtFeePerGB / inayaFeePerGB) rather than hardcoded — the protocol can adjust pricing over time without a client update.",
-            "Current live rate, read directly from the deployed contract: 0.0044 USDT/GB (~4.50 USDT/TB) for storage ingress. $INAYA carries zero ingress fee today; $INAYA egress/retrieval fees activate at mainnet, not before — confirmed directly by the founding team, not a testnet limitation.",
+            "Current rate, set on the deployed contracts: 6.49 USDT per TB per month (about 0.0063 USDT/GB), with a one-time upload fee equal to one month of storage and a flat account fee of 12 USDT a year. $INAYA carries zero ingress fee.",
+            "Retrieval up to the customer's stored volume is included every month. Beyond that, a fee of 10 $INAYA per 0.5 TB applies from mainnet, not before — confirmed directly by the founding team, not a testnet limitation.",
             "Staking $INAYA unlocks priority bandwidth routing and a share of network fee yield (Section 09).",
           ],
         },
@@ -151,11 +152,11 @@ export const whitepaper = {
         },
         {
           type: "table",
-          headers: ["Allocation", "Reserve Fee (USDT/yr)", "Annual Maintenance (INAYA-eq/yr)"],
+          headers: ["Allocation", "Reserve Fee (USDT/yr)", "Per TB per month (USDT)", "Annual Maintenance (INAYA-eq/yr)"],
           rows: [
-            ["250 TB / Year", "13,500", "500"],
-            ["500 TB / Year", "27,000", "1,000"],
-            ["1000 TB / Year", "54,000", "2,000"],
+            ["250 TB / Year", "17,970", "5.99", "500"],
+            ["500 TB / Year", "34,740", "5.79", "1,000"],
+            ["1000 TB / Year", "65,880", "5.49", "2,000"],
           ],
         },
         {
@@ -183,7 +184,7 @@ export const whitepaper = {
         {
           type: "note",
           label: "How the split works.",
-          text: "The router and the escrow are two separate transactions, both started from the customer's checkout; the router does not call the escrow itself. The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
+          text: "The router and the escrow are two separate transactions, both started from the customer's checkout; the router does not call the escrow itself. The 35% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 65% splits 55% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (65% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 55%).",
         },
       ],
     },

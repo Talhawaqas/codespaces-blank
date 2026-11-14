@@ -57,7 +57,7 @@ export const communityFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "The current live testnet rate, read directly from the deployed contract, is 0.0044 USDT per Gigabyte (GB) stored — roughly 4.50 USDT per TB. Storage ingress currently has no $INAYA fee at all: $INAYA fees for egress (retrieval) are planned to activate at mainnet, not before. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
+          text: "The current testnet rate, set on the deployed contracts, is 6.49 USDT per TB per month — about 0.0063 USDT per Gigabyte (GB) — plus a flat account fee of 12 USDT a year. Storage has no $INAYA fee at all. Downloading up to the amount you store is included every month; a $INAYA fee for retrieval beyond that is planned to activate at mainnet, not before. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
         },
       ],
     },

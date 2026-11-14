@@ -15,6 +15,7 @@
 import Stripe from "stripe";
 import { ethers } from "ethers";
 import { NextResponse } from "next/server";
+import { STORAGE_USDT_PER_TB_MONTH } from "../../../lib/dappPricing.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -24,7 +25,7 @@ const CUSTODY_READ_ABI = ["function usdtFeePerGB() public view returns (uint256)
 
 const GB = 1073741824n;
 const TB = GB * 1024n;
-const MIN_CHARGE_CENTS = 450; // flat $4.50 covers anything up to 1TB — card customers only, see note below
+const MIN_CHARGE_CENTS = Math.round(STORAGE_USDT_PER_TB_MONTH * 100); // one TB-month ($6.49) covers anything up to 1TB — card customers only, see note below
 
 export async function POST(req) {
   try {
@@ -50,12 +51,12 @@ export async function POST(req) {
 
     // Billing rule (card customers only — see note in stripe-webhook.js):
     //   < 1 GB   → flat $0.50 (testnet-era test fee, keeps repeated small-file
-    //              testing cheap instead of paying the full $4.50 minimum)
-    //   1GB–1TB  → flat $4.50
-    //   > 1TB    → scales at the same $4.50/TB rate
+    //              testing cheap instead of paying the full one-TB minimum)
+    //   1GB–1TB  → flat $6.49 (STORAGE_USDT_PER_TB_MONTH)
+    //   > 1TB    → scales at the same $6.49/TB rate
     // None of this changes what the contract actually charges the treasury
-    // wallet on-chain (that's the real linear per-GB fee, correctly set via
-    // setFees to ~4.5 USDT/TB) — this only changes what Stripe charges the
+    // wallet on-chain (that's the real linear per-GB fee, set via setFees to
+    // 6.49 USDT/TB, i.e. 6.49/1024 per GB) — this only changes what Stripe charges the
     // customer, so these tiers are a billing decision, not an on-chain rule.
     const sizeGB = Number(sizeBytes) / Number(GB);
     const sizeTB = Number(sizeBytes) / Number(TB);

@@ -46,7 +46,8 @@ export async function GET(req) {
     corporateByTier[plan.tier] = (corporateByTier[plan.tier] || 0) + plan.amountUsd;
   }
 
-  const egressUnlocks = await db.collection("egress_unlocks").find({}).toArray();
+  // Paid unlocks only: the same collection also holds each customer's monthly included-retrieval counter (src/lib/egressAllowance.js).
+  const egressUnlocks = await db.collection("egress_unlocks").find({ kind: { $ne: "included_allowance" } }).toArray();
   let egressTotalUsd = 0;
   let egressUnavailableCount = 0;
   for (const unlock of egressUnlocks) {

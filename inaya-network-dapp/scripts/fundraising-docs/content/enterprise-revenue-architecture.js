@@ -38,15 +38,15 @@ export const enterpriseRevenueArchitecture = {
           type: "table",
           headers: ["Allocation", "Purpose"],
           rows: [
-            ["39%", "Node Reward Escrow"],
-            ["51%", "Company Treasury"],
+            ["35%", "Node Reward Escrow"],
+            ["55%", "Company Treasury"],
             ["10%", "Team & Platform Maintenance"],
           ],
         },
         {
           type: "note",
           label: "How the split works.",
-          text: "The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
+          text: "The 35% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 65% splits 55% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (65% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 55%).",
         },
       ],
     },
@@ -91,7 +91,7 @@ export const enterpriseRevenueArchitecture = {
         },
         {
           type: "note",
-          text: "Worked example, real tier: a 250 TB / Year Corporate Reserve customer pays 13,500 USDT/yr. At the 39% node-operator commission, that's 5,265 USDT/yr escrowed for the operator — 438.75 USDT/month across the 12 fixed releases, or roughly 14.63 USDT/day under a 30-day-month convention (438.75 ÷ 30).",
+          text: "Worked example, real tier: a 250 TB / Year Corporate Reserve customer pays 17,970 USDT/yr. At the 35% node-operator commission, that's 6,289.50 USDT/yr escrowed for the operator — about 524.13 USDT/month across the 12 fixed releases, or roughly 17.47 USDT/day under a 30-day-month convention (524.13 ÷ 30).",
         },
       ],
     },
@@ -191,7 +191,7 @@ export const enterpriseRevenueArchitecture = {
         {
           type: "note",
           label: "Scope note, October 2026 — Sovereign Infrastructure.",
-          text: "Sovereign Infrastructure (bring-your-own-hardware virtual machines, storage, networking, AWS CLI compatibility, load balancing, and Kubernetes) also does not route through the 39% node-reward escrow this document describes: it runs on a customer's own hardware, not Inaya's storage node network, so there is no node operator to compensate for it. See the companion Storage Business Model document's October 2026 scope note for where this revenue line sits instead.",
+          text: "Sovereign Infrastructure (bring-your-own-hardware virtual machines, storage, networking, AWS CLI compatibility, load balancing, and Kubernetes) also does not route through the 35% node-reward escrow this document describes: it runs on a customer's own hardware, not Inaya's storage node network, so there is no node operator to compensate for it. See the companion Storage Business Model document's October 2026 scope note for where this revenue line sits instead.",
         },
       ],
     },

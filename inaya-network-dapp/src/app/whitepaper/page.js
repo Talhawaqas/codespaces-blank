@@ -22,8 +22,8 @@ const allocations = [
 ];
 
 const revenueSplit = [
-  { label: "Node Reward Escrow", pct: "39%", note: "Hardcoded in production settlement code" },
-  { label: "Company Treasury", pct: "51%", note: "Reconciles with published EBITDA math" },
+  { label: "Node Reward Escrow", pct: "35%", note: "Fixed in production settlement code" },
+  { label: "Company Treasury", pct: "55%", note: "" },
   { label: "Team & Platform Operations", pct: "10%", note: "" },
 ];
 
@@ -51,7 +51,7 @@ export default function WhitepaperPage() {
           <h2 className="text-xl font-bold text-white mb-4">Storage Pricing</h2>
           <div className="bg-[#090d16]/80 border border-white/5 rounded-xl p-6">
             <p className="text-[#94a3b8] text-sm leading-relaxed">
-              Storage ingress is <span className="text-white font-bold">0.0044 USDT/GB (~4.50 USDT/TB)</span>, read live from the deployed InayaCustody contract. $INAYA carries zero ingress fee today — $INAYA egress/retrieval fees activate at mainnet, not before.
+              Storage is <span className="text-white font-bold">6.49 USDT per TB per month</span> (about 0.0063 USDT/GB), set on the deployed contracts. Retrieval up to your stored volume is included each month; beyond that, a $INAYA retrieval fee applies from mainnet, not before.
             </p>
           </div>
         </section>
@@ -102,7 +102,7 @@ export default function WhitepaperPage() {
             </table>
           </div>
           <p className="text-[#8a96ab] text-xs leading-relaxed">
-            The 39% node-operator share is not a marketing estimate — it's hardcoded in production settlement code. Corporate invoices settle via RevenueRouter, then a second transaction escrows the node-operator share over a 12-month vesting schedule.
+            The 35% node-operator share is not an estimate — it's a fixed value in production settlement code. Corporate invoices settle via RevenueRouter, then a second transaction escrows the node-operator share over a 12-month vesting schedule.
           </p>
         </section>
 

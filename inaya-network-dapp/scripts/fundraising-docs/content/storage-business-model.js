@@ -26,6 +26,14 @@
 // code paths or "correction from prior edition" wording (same figures);
 // Section 05 now says egress-fee demand starts at mainnet, matching
 // Section 02; Section 08 names the industry editions and ERP mode.
+//
+// REPRICING (13 November 2026, founder-approved) — pay-as-you-go storage
+// 4.50 -> 6.49 USDT/TB/month; Corporate Reserve 13,500/27,000/54,000 ->
+// 17,970/34,740/65,880 USDT/yr (a volume discount off pay-as-you-go);
+// account fee 5 -> 12 USDT/yr; retrieval included up to the stored volume
+// each month, $INAYA fee beyond that from mainnet; node-operator share
+// 39% -> 35% (treasury 55%, team 10%). Competitor table refreshed to
+// November 2026 list prices. Source of truth in code: src/lib/dappPricing.js.
 
 export const storageBusinessModel = {
   cover: {
@@ -63,23 +71,32 @@ export const storageBusinessModel = {
           type: "bullets",
           items: [
             "Billed in stablecoin (USDT), no multi-token friction for developers and retail users.",
-            "Storage ingress is 0.0044 USDT/GB (~4.50 USDT/TB), read live from the deployed contract. $INAYA carries zero ingress fee today — $INAYA egress/retrieval fees are planned to activate at mainnet.",
+            "Storage is 6.49 USDT per TB per month (about 0.0063 USDT/GB), set on the deployed contracts. A one-time upload fee equals one month of storage, and a flat account fee of 12 USDT a year applies.",
+            "Retrieval up to the customer's stored volume is included every month. Beyond that, a fee of 10 $INAYA per 0.5 TB applies from mainnet, not before.",
             "Staking $INAYA unlocks priority bandwidth routing.",
           ],
         },
         {
           type: "table",
-          headers: ["Provider", "Storage (1TB/mo)", "Egress (1TB)", "Min. duration"],
+          headers: ["Provider", "Storage (1 TB / month)", "Egress (1 TB)", "Minimums"],
           rows: [
-            ["Amazon S3 (Standard)", "~23.00 USDT", "~90.00 USDT", "30 days"],
-            ["Google Cloud Storage", "~20.00 USDT", "~80.00 USDT", "30 days"],
-            ["Legacy Web2 (B2)", "~6.00 USDT", "~10.00 USDT", "None"],
-            ["Inaya Network (DePIN)", "~4.50 USDT", "$INAYA fee at mainnet", "Zero constraints"],
+            ["Amazon S3 (Standard)", "~23.00 USDT", "~90 USDT", "None"],
+            ["Google Cloud Storage", "~20.00 USDT", "~120 USDT", "None"],
+            ["Cloudflare R2", "15.00 USDT", "Free", "None"],
+            ["Wasabi", "~7.99 USDT", "Free within limits", "1 TB, 90 days"],
+            ["Storj", "7.00 USDT", "7 USDT", "5 USDT / month"],
+            ["Backblaze B2", "6.95 USDT", "Free to 3x stored, then 10 USDT", "None"],
+            ["Inaya Network (DePIN)", "6.49 USDT", "Included to 1x stored, then $INAYA fee at mainnet", "None"],
           ],
         },
         {
           type: "note",
-          text: "Competitor pricing above is indicative market reference. Inaya's own figures are read live from the deployed contract as of this writing.",
+          text: "Competitor figures are list prices in USD as of November 2026: Backblaze B2, Storj and Cloudflare R2 are from their own pricing pages; figures marked ~ are widely reported list prices. Inaya's figures are the values set on the deployed contracts.",
+        },
+        {
+          type: "note",
+          label: "Pricing headroom.",
+          text: "Inaya's pay-as-you-go rate moved from 4.50 to 6.49 USDT per TB per month in November 2026 and is still the lowest list price in this table: about 7% under Backblaze B2 and Storj, 19% under Wasabi, 57% under Cloudflare R2 and 72% under Amazon S3. Storj's current prices took effect on 1 July 2026, and Backblaze and Wasabi are also reported to have raised prices during 2026. Prices are owner-settable on the deployed contracts, so they can be reviewed as the market moves.",
         },
       ],
     },
@@ -89,16 +106,16 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "table",
-          headers: ["Allocation", "Inaya Fee (USDT/yr)", "Annual Maintenance"],
+          headers: ["Allocation", "Inaya Fee (USDT/yr)", "Per TB per month", "Annual Maintenance"],
           rows: [
-            ["250 TB / Year", "13,500", "500 USDT-eq."],
-            ["500 TB / Year", "27,000", "1,000 USDT-eq."],
-            ["1000 TB / Year", "54,000", "2,000 USDT-eq."],
+            ["250 TB / Year", "17,970", "5.99 USDT", "500 USDT-eq."],
+            ["500 TB / Year", "34,740", "5.79 USDT", "1,000 USDT-eq."],
+            ["1000 TB / Year", "65,880", "5.49 USDT", "2,000 USDT-eq."],
           ],
         },
         {
           type: "note",
-          text: "This is the real, live tier structure in the dApp's Business Model tab and checkout flow.",
+          text: "This is the real, live tier structure in the dApp's Business Model tab and checkout flow. Larger allocations carry a volume discount off the 6.49 USDT pay-as-you-go rate.",
         },
       ],
     },
@@ -118,15 +135,15 @@ export const storageBusinessModel = {
           type: "table",
           headers: ["Allocation", "Purpose"],
           rows: [
-            ["39%", "Node Reward Escrow"],
-            ["51%", "Company Treasury"],
+            ["35%", "Node Reward Escrow"],
+            ["55%", "Company Treasury"],
             ["10%", "Team & Platform Operations"],
           ],
         },
         {
           type: "note",
           label: "How the split works.",
-          text: "Payment and escrow are two separate transactions started from the customer's checkout, not one automatic on-chain cascade. The 39% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 61% splits 51% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (61% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 51%).",
+          text: "Payment and escrow are two separate transactions started from the customer's checkout, not one automatic on-chain cascade. The 35% node-operator share is a fixed value in the production payment code, not an estimate. The remaining 65% splits 55% to the company treasury and 10% to team and platform operations, which matches the protocol's EBITDA math (65% gross margin − 3% grants − 5% R&D − 2% admin, legal and marketing = 55%). At 6.49 USDT per TB per month, node operators receive about 2.27 USDT and Inaya retains about 4.22 USDT per TB per month.",
         },
       ],
     },

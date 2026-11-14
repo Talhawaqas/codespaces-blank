@@ -22,6 +22,7 @@ import AccentGraphic from '../components/AccentGraphic';
 import Skeleton from '../components/Skeleton';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import { CHAIN_IDS, ensureChain } from '../lib/chains';
+import { STORAGE_USDT_PER_TB_MONTH, ACCOUNT_FEE_USDT_PER_YEAR, EGRESS_INAYA_PER_HALF_TB, CORPORATE_RESERVE_TIERS, NODE_SHARE_PERCENT, COMPETITOR_PRICES, competitorAnnualCost, formatUsdt } from '../lib/dappPricing';
 import { track } from '@vercel/analytics';
 
 // Styling for assistant chat replies rendered via react-markdown — kept
@@ -1129,7 +1130,7 @@ Your files remain completely safe and accessible. Decentralized networks use Era
 
 4. How does decentralized storage reduce cloud costs so dramatically?
 
-Decentralized networks eliminate the massive overhead costs of building and maintaining multi-billion-dollar corporate data centers. By leveraging globally distributed idle hardware and eliminating artificial egress bandwidth markups, storage costs are reduced by .
+Decentralized networks eliminate the massive overhead costs of building and maintaining multi-billion-dollar corporate data centers. By leveraging globally distributed idle hardware and eliminating artificial egress bandwidth markups, storage costs are reduced.
 
 5. Can I use decentralized storage without owning cryptocurrency or crypto wallets?
 
@@ -2940,7 +2941,7 @@ export default function Home() {
   const [paygTbUnits, setPaygTbUnits] = useState(1);
   const [paygEgressUnits, setPaygEgressUnits] = useState(1);
   const [paygStatus, setPaygStatus] = useState({ tbCommitted: 0, storagePaidThrough: 0, lastMaintenancePaidAt: 0, storageActive: false, maintenanceCurrent: false });
-  const [paygPricing, setPaygPricing] = useState({ storagePerTB: "4.5", egressPerHalfTB: "5", maintenanceFee: "5" });
+  const [paygPricing, setPaygPricing] = useState({ storagePerTB: String(STORAGE_USDT_PER_TB_MONTH), egressPerHalfTB: String(EGRESS_INAYA_PER_HALF_TB), maintenanceFee: String(ACCOUNT_FEE_USDT_PER_YEAR) });
   const [paygHistory, setPaygHistory] = useState([]);
   const [paygLog, setPaygLog] = useState('');
   const [isPaygStorageBusy, setIsPaygStorageBusy] = useState(false);
@@ -2951,25 +2952,29 @@ export default function Home() {
 
   // 💎 CORPORATE RESERVE (ANNUAL) SUBSCRIPTION SUBSYSTEM STATE
   const [selectedB2BTier, setSelectedB2BTier] = useState('250 TB / Year');
-  const [b2bTierData, setB2BTierData] = useState({
-    price: "13,500 USDT / Year",
-    maintenance: "500 USDT-equivalent INAYA / Year",
-    inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate",
-    maxFileMB: 262144000, 
-    maxTotalMB: 262144000,
-    displayLimit: "250 TB Annual Allocation"
-  });
+  const reserveTierData = (tier, extras, maxMB) => {
+    const t = CORPORATE_RESERVE_TIERS[tier];
+    return {
+      price: `${formatUsdt(t.usdtPerYear)} USDT / Year`,
+      maintenance: `${formatUsdt(t.maintenanceUsdtEq)} USDT-equivalent INAYA / Year`,
+      inclusions: `Corporate Reserve allocation billed annually in USDT; storage locked at ${t.usdtPerTbMonth} USDT/TB/month for the year${extras ? `; ${extras}` : ''}`,
+      maxFileMB: maxMB,
+      maxTotalMB: maxMB,
+      displayLimit: `${t.tb} TB Annual Allocation`,
+    };
+  };
+  const [b2bTierData, setB2BTierData] = useState(() => reserveTierData('250 TB / Year', '', 262144000));
 
   const [activeCorporatePlan, setActiveCorporatePlan] = useState(null);
 
   // Dynamic Tier Allocation Listeners — Corporate Reserve (Annual) Plans
   useEffect(() => {
     if (selectedB2BTier === '250 TB / Year') {
-      setB2BTierData({ price: "13,500 USDT / Year", maintenance: "500 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; baseline storage locked at the 4.5 USDT/TB/month rate", maxFileMB: 262144000, maxTotalMB: 262144000, displayLimit: "250 TB Annual Allocation" });
+      setB2BTierData(reserveTierData('250 TB / Year', '', 262144000));
     } else if (selectedB2BTier === '500 TB / Year') {
-      setB2BTierData({ price: "27,000 USDT / Year", maintenance: "1,000 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; priority distributed routing", maxFileMB: 524288000, maxTotalMB: 524288000, displayLimit: "500 TB Annual Allocation" });
+      setB2BTierData(reserveTierData('500 TB / Year', 'priority distributed routing', 524288000));
     } else if (selectedB2BTier === '1000 TB / Year') {
-      setB2BTierData({ price: "54,000 USDT / Year", maintenance: "2,000 USDT-equivalent INAYA / Year", inclusions: "Corporate Reserve allocation billed annually in USDT; dedicated RPC endpoints, zero-latency SLAs", maxFileMB: 1048576000, maxTotalMB: 1048576000, displayLimit: "1000 TB Annual Allocation" });
+      setB2BTierData(reserveTierData('1000 TB / Year', 'dedicated RPC endpoints, zero-latency SLAs', 1048576000));
     }
   }, [selectedB2BTier]);
 
@@ -3930,9 +3935,7 @@ export default function Home() {
       return;
     }
 
-    let rawPrice = "13500"; 
-    if (selectedB2BTier === '500 TB / Year') rawPrice = "27000";
-    if (selectedB2BTier === '1000 TB / Year') rawPrice = "54000";
+    const rawPrice = String(CORPORATE_RESERVE_TIERS[selectedB2BTier].usdtPerYear);
 
     try {
       const provider = new ethers.BrowserProvider(getActiveProvider());
@@ -3978,11 +3981,11 @@ export default function Home() {
       setStatusLog(`🎯 CORPORATE TIER ACTIVE: 3-Way revenue splitting fully settled.`);
 
       // ============================================================
-      // 🔒 ESCROW LOGIC START (39% COGS)
+      // 🔒 ESCROW LOGIC START (node operators' share of the invoice)
       // ============================================================
       setStatusLog("🔒 Escrowing node-operator commission for monthly release...");
 
-      const cogsAmountWei = (invoiceAmountWei * 39n) / 100n;
+      const cogsAmountWei = (invoiceAmountWei * BigInt(NODE_SHARE_PERCENT)) / 100n;
 
       const escrowAllowance = await usdtContract.allowance(walletAddress, corporateEscrowAddress);
       if (escrowAllowance < cogsAmountWei) {
@@ -4341,13 +4344,24 @@ export default function Home() {
   // the wallet sidebar's shared state.
   // ========================================================
   const handleCardReconstruct = async (fileHash, filename, sizeBytes) => {
-    // Check whether egress has already been paid for this file before
-    // prompting for a passkey — no point asking for it just to block on payment after.
+    // Retrieval up to the customer's stored volume is included each month.
+    // A file already paid for stays unlocked; otherwise claim it against this
+    // month's allowance, and only send the customer to checkout once the
+    // allowance is used up. Done before prompting for a passkey — no point
+    // asking for it just to block on payment after.
     try {
       const statusRes = await fetch(`/api/egress-unlock-status?fileHash=${encodeURIComponent(fileHash)}`);
-      const statusData = await statusRes.json();
+      let statusData = await statusRes.json();
       if (!statusData.unlocked) {
-        setCardUploadStatus('Egress not yet paid — redirecting to checkout...');
+        const claimRes = await fetch('/api/egress-unlock-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileHash }),
+        });
+        statusData = await claimRes.json();
+      }
+      if (!statusData.unlocked) {
+        setCardUploadStatus("This month's included retrieval is used up — redirecting to checkout...");
         const checkoutRes = await fetch('/api/create-egress-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -5563,9 +5577,9 @@ export default function Home() {
             <div>
               <span className="text-slate-400 block mb-1">Select Active Annual Plan:</span>
               <select value={selectedB2BTier} onChange={(e) => setSelectedB2BTier(e.target.value)} className="w-full bg-[#060913] border border-white/10 rounded px-2 py-1 text-white font-bold text-xs cursor-pointer focus:outline-none">
-                <option value="250 TB / Year">250 TB / Year (13,500 USDT/yr)</option>
-                <option value="500 TB / Year">500 TB / Year (27,000 USDT/yr)</option>
-                <option value="1000 TB / Year">1000 TB / Year (54,000 USDT/yr)</option>
+                {Object.entries(CORPORATE_RESERVE_TIERS).map(([tier, t]) => (
+                  <option key={tier} value={tier}>{tier} ({formatUsdt(t.usdtPerYear)} USDT/yr)</option>
+                ))}
               </select>
             </div>
             <div className="pt-1 text-slate-300 space-y-1">
@@ -5575,7 +5589,7 @@ export default function Home() {
               <div className="text-[12px] text-slate-500 italic pt-1">{b2bTierData.inclusions}</div>
             </div>
             <div className="text-[9.5px] text-slate-500 pt-1 border-t border-white/5">
-              Retail / pay-as-you-go storage remains available at the baseline <span className="text-[#00f2fe] font-bold">4.5 USDT / TB / month</span> rate outside of a Corporate Reserve plan.
+              Retail / pay-as-you-go storage remains available at the baseline <span className="text-[#00f2fe] font-bold">{paygPricing.storagePerTB} USDT / TB / month</span> rate outside of a Corporate Reserve plan.
             </div>
           </div>
 
@@ -6009,7 +6023,7 @@ export default function Home() {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 font-mono">
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-                        <div className="text-white font-bold text-sm">4.5 USDT</div>
+                        <div className="text-white font-bold text-sm">{paygPricing.storagePerTB} USDT</div>
                         <div className="text-[11px] uppercase text-[#8a96ab] mt-0.5">Storage / TB / Month</div>
                       </div>
                       <div className="bg-black/30 border border-white/5 rounded-xl p-3">
@@ -6635,15 +6649,15 @@ export default function Home() {
               {/* PAY-AS-YOU-GO SUMMARY CARDS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                  <div className="text-[#00f2fe] font-bold text-lg">4.5 USDT</div>
+                  <div className="text-[#00f2fe] font-bold text-lg">{paygPricing.storagePerTB} USDT</div>
                   <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Baseline Storage / TB / Month</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                  <div className="text-emerald-400 font-bold text-lg">5 INAYA</div>
-                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Egress / 0.5 TB Retrieved</div>
+                  <div className="text-emerald-400 font-bold text-lg">Included</div>
+                  <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Retrieval up to stored volume / month</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                  <div className="text-amber-400 font-bold text-lg">5 USDT</div>
+                  <div className="text-amber-400 font-bold text-lg">{paygPricing.maintenanceFee} USDT</div>
                   <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider mt-1">Flat Annual Maintenance</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-xl p-4">
@@ -6690,8 +6704,9 @@ export default function Home() {
 
                   {/* EGRESS FEE */}
                   <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3 font-mono">
-                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider">Egress / Retrieval Fee</div>
+                    <div className="text-[12px] text-[#8a96ab] uppercase tracking-wider">Retrieval Beyond Monthly Allowance</div>
                     <div className="text-white font-bold text-sm">{paygPricing.egressPerHalfTB} INAYA / 0.5 TB</div>
+                    <div className="text-[11px] text-slate-500">Retrieval up to your stored volume is included each month. This fee applies only beyond that, from mainnet.</div>
                     <input
                       type="number"
                       min="1"
@@ -6747,16 +6762,19 @@ export default function Home() {
                       <th className="p-4 font-bold">Provider</th>
                       <th className="p-4 font-bold">Storage (1 TB / Month)</th>
                       <th className="p-4 font-bold">Egress (1 TB Download)</th>
-                      <th className="p-4 font-bold">Minimum Duration</th>
+                      <th className="p-4 font-bold">Minimums</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-slate-300">
-                    <tr><td className="p-4">Amazon S3 (Standard)</td><td className="p-4">~23.00 USDT</td><td className="p-4">~90.00 USDT</td><td className="p-4">30 Days</td></tr>
-                    <tr><td className="p-4">Google Cloud Storage</td><td className="p-4">~20.00 USDT</td><td className="p-4">~80.00 USDT</td><td className="p-4">30 Days</td></tr>
-                    <tr><td className="p-4">Legacy Web2 (B2)</td><td className="p-4">~6.00 USDT</td><td className="p-4">~10.00 USDT</td><td className="p-4">None</td></tr>
-                    <tr className="bg-cyan-500/[0.06]"><td className="p-4 text-white font-bold">Inaya Network (DePIN)</td><td className="p-4 text-emerald-400 font-bold">4.50 USDT</td><td className="p-4 text-emerald-400 font-bold">10 INAYA</td><td className="p-4 text-emerald-400 font-bold">Zero Constraints</td></tr>
+                    {COMPETITOR_PRICES.map((c) => (
+                      <tr key={c.name}><td className="p-4">{c.name}</td><td className="p-4">{c.verified ? '' : '~'}{c.storagePerTb.toFixed(2)} USDT</td><td className="p-4">{c.egress}</td><td className="p-4">{c.minimum}</td></tr>
+                    ))}
+                    <tr className="bg-cyan-500/[0.06]"><td className="p-4 text-white font-bold">Inaya Network (DePIN)</td><td className="p-4 text-emerald-400 font-bold">{Number(paygPricing.storagePerTB).toFixed(2)} USDT</td><td className="p-4 text-emerald-400 font-bold">Included to 1x stored, then {paygPricing.egressPerHalfTB} INAYA / 0.5 TB</td><td className="p-4 text-emerald-400 font-bold">None</td></tr>
                   </tbody>
                 </table>
+                <p className="text-[11px] text-slate-500 font-mono mt-3">
+                  Competitor figures are list prices in USD as of November 2026: Backblaze B2, Storj and Cloudflare R2 are from their own pricing pages; figures marked ~ are widely reported list prices. Inaya&apos;s figures are read from the deployed contracts; the retrieval fee beyond the included allowance applies from mainnet.
+                </p>
               </div>
 
               {activeCorporatePlan && (
@@ -6778,8 +6796,8 @@ export default function Home() {
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[12px] uppercase">
                       <th className="p-4 font-bold">Total Allocated Data</th>
-                      <th className="p-4 font-bold">Legacy AWS S3 Cost</th>
-                      <th className="p-4 font-bold">Competitor B2 Reserve</th>
+                      <th className="p-4 font-bold">AWS S3 Standard (Storage Only)</th>
+                      <th className="p-4 font-bold">Backblaze B2 (Storage Only)</th>
                       <th className="p-4 font-bold">Inaya Corporate Storage Fee</th>
                       <th className="p-4 font-bold">Annual Maintenance (INAYA)</th>
                     </tr>
@@ -6787,24 +6805,24 @@ export default function Home() {
                   <tbody className="divide-y divide-white/5 text-slate-300">
                     <tr className={selectedB2BTier === '250 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
                       <td className="p-4 text-white font-bold">250 TB / Year</td>
-                      <td className="p-4">76,680 USDT / yr</td>
-                      <td className="p-4">19,500 USDT / yr</td>
-                      <td className="p-4 text-amber-400 font-bold">13,500 USDT / Year</td>
-                      <td className="p-4">500 USDT-equivalent / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(250).s3)} USDT / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(250).b2)} USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">{formatUsdt(CORPORATE_RESERVE_TIERS['250 TB / Year'].usdtPerYear)} USDT / Year</td>
+                      <td className="p-4">{formatUsdt(CORPORATE_RESERVE_TIERS['250 TB / Year'].maintenanceUsdtEq)} USDT-equivalent / yr</td>
                     </tr>
                     <tr className={selectedB2BTier === '500 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
                       <td className="p-4 text-white font-bold">500 TB / Year</td>
-                      <td className="p-4">151,680 USDT / yr</td>
-                      <td className="p-4">39,000 USDT / yr</td>
-                      <td className="p-4 text-amber-400 font-bold">27,000 USDT / Year</td>
-                      <td className="p-4">1,000 USDT-equivalent / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(500).s3)} USDT / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(500).b2)} USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">{formatUsdt(CORPORATE_RESERVE_TIERS['500 TB / Year'].usdtPerYear)} USDT / Year</td>
+                      <td className="p-4">{formatUsdt(CORPORATE_RESERVE_TIERS['500 TB / Year'].maintenanceUsdtEq)} USDT-equivalent / yr</td>
                     </tr>
                     <tr className={selectedB2BTier === '1000 TB / Year' ? 'bg-cyan-500/[0.04]' : ''}>
                       <td className="p-4 text-white font-bold">1000 TB / Year</td>
-                      <td className="p-4">295,680 USDT / yr</td>
-                      <td className="p-4">78,000 USDT / yr</td>
-                      <td className="p-4 text-amber-400 font-bold">54,000 USDT / Year</td>
-                      <td className="p-4">2,000 USDT-equivalent / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(1000).s3)} USDT / yr</td>
+                      <td className="p-4">{formatUsdt(competitorAnnualCost(1000).b2)} USDT / yr</td>
+                      <td className="p-4 text-amber-400 font-bold">{formatUsdt(CORPORATE_RESERVE_TIERS['1000 TB / Year'].usdtPerYear)} USDT / Year</td>
+                      <td className="p-4">{formatUsdt(CORPORATE_RESERVE_TIERS['1000 TB / Year'].maintenanceUsdtEq)} USDT-equivalent / yr</td>
                     </tr>
                   </tbody>
                 </table>
