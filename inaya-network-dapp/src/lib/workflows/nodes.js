@@ -10,7 +10,7 @@
 // consequential goes through action.propose -> the existing guarded-action
 // approval system (ai-action-requests.js), never around it.
 
-import { canAccessFinance, canManageOrg } from "../orgGates.js";
+import { canAccessFinance, canManageOrg, canEditCampaigns } from "../orgGates.js";
 import { isSupportStaff } from "../support/access.js";
 import { validateExpression, EXPRESSION_FUNCTIONS } from "./expr.js";
 import { validateSchedule } from "./schedule.js";
@@ -21,7 +21,7 @@ export const CATEGORIES = ["trigger", "data", "transformation", "ai", "condition
 
 /** Data scopes a workflow must declare (settings.dataScopes) for the nodes it uses,
  *  and that the EXECUTING identity must hold. HR is intentionally not offered. */
-export const DATA_SCOPES = ["crm", "tasks", "finance", "procurement", "inventory", "projects", "documents", "security", "backup", "trust", "insights", "evidence", "twin", "ai", "notify", "external_http", "propose", "support"];
+export const DATA_SCOPES = ["crm", "tasks", "finance", "procurement", "inventory", "projects", "documents", "security", "backup", "trust", "insights", "evidence", "twin", "ai", "notify", "external_http", "propose", "support", "engagement"];
 
 /** Does this membership hold the scope? (Live membership; never the definition's claim.) */
 export function scopeHeld(membership, scope) {
@@ -30,6 +30,7 @@ export function scopeHeld(membership, scope) {
     case "finance": return canAccessFinance(membership);
     case "security": case "backup": case "external_http": return canManageOrg(membership);
     case "support": return isSupportStaff(membership);
+    case "engagement": return canEditCampaigns(membership);
     case "propose": return true; // per-action permission is enforced by the propose tool itself
     default: return DATA_SCOPES.includes(scope);
   }
@@ -188,6 +189,15 @@ export const NODE_TYPES = {
       if (c.operation === "set_retention" && !["standard", "extended", "permanent", "short"].includes(c.retentionClass)) e.push("retentionClass must be standard, extended, permanent or short.");
       if (!c.documentId) e.push("documentId is required (it may use a {{ }} template such as {{trigger.payload.file.documentId}}).");
       if (c.operation === "set_metadata" && !isObj(c.values)) e.push("values must map metadata field keys to values.");
+    },
+  },
+  // Appointments & Campaigns SOW: put a person into an approved follow-up email sequence (step 8 of the
+  // enquiry -> booking -> meeting -> follow-up workflow). Suppressed addresses and people already in it are skipped.
+  "action.marketing_enroll": {
+    category: "action", label: "Add to follow-up email sequence (Inaya)", ports: ["out"], risk: "low", scope: "engagement",
+    validate: (c, e) => {
+      if (!/^[0-9a-f]{24}$/.test(String(c.sequenceId || ""))) e.push("sequenceId is required (choose a follow-up sequence).");
+      if (!c.email) e.push("email is required (it may use a {{ }} template such as {{trigger.payload.appointment.customer.email}}).");
     },
   },
   "action.report": {

@@ -358,3 +358,34 @@ export function canManageInfrastructure(membership) {
 export function canAccessInfrastructure(membership) {
   return canManageInfrastructure(membership) || membership?.infrastructureRole === "staff";
 }
+
+// ============================================================
+// Appointments & Campaigns SOW (2026-11-13) -- optional calendarRole /
+// marketingRole on org_members, same additive pattern as financeRole/hrRole.
+//   calendarRole : "manager" (all calendars, types, pages, settings) | "staff"
+//                  (any active member already keeps their own calendar)
+//   marketingRole: "manager" | "editor" (create, edit, submit) | "approver" (approve/reject)
+// ============================================================
+
+export const CALENDAR_ROLES = ["manager", "staff"];
+export const MARKETING_ROLES = ["manager", "editor", "approver"];
+
+export function canManageCalendar(membership) {
+  return canManageOrg(membership) || membership?.calendarRole === "manager";
+}
+
+export function canManageMarketing(membership) {
+  return canManageOrg(membership) || membership?.marketingRole === "manager";
+}
+
+export function canEditCampaigns(membership) {
+  return canManageMarketing(membership) || membership?.marketingRole === "editor";
+}
+
+export function canApproveCampaigns(membership) {
+  return canManageMarketing(membership) || membership?.marketingRole === "approver";
+}
+
+export function canViewCampaigns(membership) {
+  return canEditCampaigns(membership) || canApproveCampaigns(membership);
+}

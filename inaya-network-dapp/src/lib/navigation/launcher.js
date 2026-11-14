@@ -37,7 +37,7 @@ export const FRIENDLY_LABELS = { osHome: "Home", crm: "Customers", hr: "People",
 
 export const LAUNCHER_GROUPS = [
   { id: "work", name: "Everyday work", blurb: "Your team’s day-to-day", keys: ["tasks", "documents", "projects", "departments", "notes", "chat", "meet", "approvals", "sign", "fileRequests", "shares", "office", "ai", "help"] },
-  { id: "money", name: "Money", blurb: "Sales, billing and books", keys: ["finance", "crm", "inventory", "procurement", "bookkeeper", "documentAutomation", "escrow", "attestations", "support", "portalRequests"] },
+  { id: "money", name: "Money", blurb: "Sales, billing and books", keys: ["finance", "crm", "appointments", "campaigns", "inventory", "procurement", "bookkeeper", "documentAutomation", "escrow", "attestations", "support", "portalRequests"] },
   { id: "people", name: "People & insight", blurb: "Team, reports and automation", keys: ["hr", "insights", "brief", "whatChanged", "activity", "workflows", "whatIf", "executive", "docIntelligence"] },
   { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government", "education"] },
   { id: "security", name: "Security & compliance", blurb: "Mostly for admins", keys: ["security", "aiActions", "adminDashboard", "governance", "complianceReadiness", "ransomware", "resilience", "resilienceTesting", "evidence", "auditTrail", "complianceEvidence", "trustRelationships", "aiSecurity", "identity"] },
@@ -66,6 +66,8 @@ export const EXTRA_DESCRIPTIONS = {
   databases: "Managed databases for your own applications.",
   mlStudio: "Run and evaluate AI and machine-learning models.",
   identity: "Connect Entra ID, Active Directory or SCIM and control who has access.",
+  appointments: "Online booking page, team calendars, reminders and Google/Outlook sync.",
+  campaigns: "Newsletters, offers and follow-up emails to your CRM contacts, with approvals and reports.",
 };
 
 /** Pins for a use case, or the default for people who skipped the question. */

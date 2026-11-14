@@ -3116,6 +3116,592 @@
           }
         ]
       }
+    },
+    "/api/public/v1/appointments": {
+      "get": {
+        "summary": "List the organization's appointments, or book one. Booking runs the same availability and double-booking checks as the public booking page and sends the customer a confirmation with a calendar invite. Business and Enterprise plans.",
+        "operationId": "get_appointments-list-book",
+        "tags": [
+          "/api/public/v1/appointments"
+        ],
+        "parameters": [
+          {
+            "name": "from, to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Date range (ISO). Default: 31 days back to 62 days ahead; 400 days at most."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: PENDING, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW."
+          },
+          {
+            "name": "staffEmail, contactId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only one team member's appointments, or one CRM contact's."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { appointments[], from, to }. POST: { appointment, manageUrl }; 409 when the time is no longer free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "List the organization's appointments, or book one. Booking runs the same availability and double-booking checks as the public booking page and sends the customer a confirmation with a calendar invite. Business and Enterprise plans.",
+        "operationId": "post_appointments-list-book",
+        "tags": [
+          "/api/public/v1/appointments"
+        ],
+        "responses": {
+          "200": {
+            "description": "GET: { appointments[], from, to }. POST: { appointment, manageUrl }; 409 when the time is no longer free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "typeId": {
+                    "description": "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers."
+                  },
+                  "start": {
+                    "description": "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers."
+                  },
+                  "customer { name": {
+                    "description": "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers."
+                  },
+                  "email": {
+                    "description": "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers."
+                  },
+                  "phone }": {
+                    "description": "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/appointments/{appointmentId}": {
+      "get": {
+        "summary": "Read one appointment, change its status (CONFIRMED, COMPLETED, NO_SHOW, CANCELLED) or move it to a new free time. Completing it logs the meeting on the CRM record.",
+        "operationId": "get_appointments-item",
+        "tags": [
+          "/api/public/v1/appointments"
+        ],
+        "parameters": [
+          {
+            "name": "appointmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The appointmentId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ appointment } with notes, attachments, reminders and history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Read one appointment, change its status (CONFIRMED, COMPLETED, NO_SHOW, CANCELLED) or move it to a new free time. Completing it logs the meeting on the CRM record.",
+        "operationId": "patch_appointments-item",
+        "tags": [
+          "/api/public/v1/appointments"
+        ],
+        "parameters": [
+          {
+            "name": "appointmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The appointmentId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ appointment } with notes, attachments, reminders and history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "description": "A status change; reason is sent to the customer on cancellation, outcome goes on the CRM record."
+                  },
+                  "reason": {
+                    "description": "A status change; reason is sent to the customer on cancellation, outcome goes on the CRM record."
+                  },
+                  "outcome": {
+                    "description": "A status change; reason is sent to the customer on cancellation, outcome goes on the CRM record."
+                  },
+                  "start": {
+                    "description": "Reschedule instead: the new start time (ISO)."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/appointment-types": {
+      "get": {
+        "summary": "Active appointment types: length, buffers, notice, location, who takes them.",
+        "operationId": "get_appointment-types",
+        "tags": [
+          "/api/public/v1/appointment-types"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ types[] }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/appointment-types/{typeId}/slots": {
+      "get": {
+        "summary": "Free start times for an appointment type, after working hours, time off, buffers, existing bookings and the staff member's own connected calendar.",
+        "operationId": "get_appointment-type-slots",
+        "tags": [
+          "/api/public/v1/appointment-types"
+        ],
+        "parameters": [
+          {
+            "name": "typeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The typeId."
+          },
+          {
+            "name": "from, to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Range (ISO), 62 days at most. Default: the next 14 days."
+          },
+          {
+            "name": "staffEmail",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this team member."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ slots: [{ start, staffEmails[] }], from, to }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/campaigns": {
+      "get": {
+        "summary": "Email campaigns with delivery numbers and open, click, bounce and unsubscribe rates. Business and Enterprise plans.",
+        "operationId": "get_campaigns-list",
+        "tags": [
+          "/api/public/v1/campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: DRAFT, PENDING_APPROVAL, SCHEDULED, SENDING, SENT, CANCELLED."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ campaigns[] }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/campaigns/{campaignId}/report": {
+      "get": {
+        "summary": "One campaign's results: totals, rates, top links and opens/clicks by hour.",
+        "operationId": "get_campaign-report",
+        "tags": [
+          "/api/public/v1/campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "campaignId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The campaignId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ campaign, deliveryStatus, links[], timeline, note }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/public/v1/marketing/sequences/{sequenceId}/enroll": {
+      "post": {
+        "summary": "Add a person to a follow-up email sequence. Unsubscribed, bounced and already-enrolled addresses are skipped; nothing sends until the sequence is approved and active.",
+        "operationId": "post_marketing-sequence-enroll",
+        "tags": [
+          "/api/public/v1/marketing"
+        ],
+        "parameters": [
+          {
+            "name": "sequenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The sequenceId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ enrolled, skipped, sequenceStatus }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "description": "The person's email address. Optional: name, company."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/marketing/suppressions": {
+      "post": {
+        "summary": "Add an address to the organization's do-not-email list (for example an unsubscribe recorded in another system).",
+        "operationId": "post_marketing-suppressions-add",
+        "tags": [
+          "/api/public/v1/marketing"
+        ],
+        "responses": {
+          "200": {
+            "description": "{ ok, email, reason }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "description": "The address."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/v1/marketing/enquiries": {
+      "get": {
+        "summary": "Enquiries sent through booking-page enquiry forms. Each one is already a CRM lead.",
+        "operationId": "get_marketing-enquiries",
+        "tags": [
+          "/api/public/v1/marketing"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "NEW, CONTACTED, BOOKED or CLOSED."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ enquiries[] }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key."
+          },
+          "403": {
+            "description": "The API key's organization does not have access to this capability."
+          },
+          "404": {
+            "description": "The requested resource does not exist, or does not belong to this API key's organization."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   }
 }

@@ -41,6 +41,8 @@ export const NAV_ITEMS = [
   { key: "documents", label: "Documents", icon: "documents", group: "operations" },
   { key: "tasks", label: "Tasks", icon: "tasks", group: "operations" },
   { key: "crm", label: "CRM", icon: "crm", group: "operations" },
+  { key: "appointments", label: "Appointments", icon: "tasks", group: "operations" },
+  { key: "campaigns", label: "Email Campaigns", icon: "crm", group: "operations" },
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
@@ -122,6 +124,8 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   crm: "crm customers leads deals pipeline sales contacts",
+  appointments: "appointments calendar booking bookings schedule meetings availability reminders consultations",
+  campaigns: "email campaigns marketing newsletter mass email mailing promotions sequences unsubscribe",
   hr: "hr employees staff leave payroll",
   procurement: "procurement purchase orders rfq suppliers vendors",
   finance: "finance invoices expenses payments accounting",

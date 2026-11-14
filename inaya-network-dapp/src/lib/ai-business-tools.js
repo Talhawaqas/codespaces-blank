@@ -1411,6 +1411,24 @@ export const BUSINESS_TOOL_DECLARATIONS = [
     },
   },
   {
+    name: "get_appointments_and_campaigns",
+    description: "Appointments and email campaigns (read-only). Topics: schedule (appointments in a date range, the person's own calendar, or the whole team for calendar managers when team=true), appointment_stats (totals, completed, upcoming today, customers engaged, booking completion and no-show rates), enquiries (from the booking page enquiry form), campaigns (list with sent/open/click stats), campaign_report (one campaign's results, by campaignId or a search on its name), marketing_overview (open rate, click-through rate, bounce rate, monthly email allowance). Use for \"what's on my calendar tomorrow\", \"how many bookings this month\", \"any new enquiries\", \"how did the newsletter do\".",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        topic: { type: Type.STRING, enum: ["schedule", "appointment_stats", "enquiries", "campaigns", "campaign_report", "marketing_overview"], description: "What to look up. Default schedule." },
+        from: { type: Type.STRING, description: "For schedule: start (ISO date/time). Default now." },
+        to: { type: Type.STRING, description: "For schedule: end (ISO date/time). Default 7 days after from." },
+        team: { type: Type.BOOLEAN, description: "For schedule: the whole team's appointments (calendar managers only)." },
+        period: { type: Type.STRING, enum: ["week", "month", "quarter"], description: "For appointment_stats." },
+        status: { type: Type.STRING, description: "For enquiries (NEW, CONTACTED, BOOKED, CLOSED) or campaigns (DRAFT, PENDING_APPROVAL, SCHEDULED, SENDING, SENT)." },
+        campaignId: { type: Type.STRING, description: "For campaign_report." },
+        search: { type: Type.STRING, description: "For campaign_report: part of the campaign name." },
+        days: { type: Type.INTEGER, description: "For marketing_overview: window in days, default 30." },
+      },
+    },
+  },
+  {
     name: "get_business_brief",
     description: "Get a Daily, Weekly, Monthly, or Yearly business brief — real highlights (revenue, expenses, tasks completed, deals won, all compared to the equivalent previous period) plus current alerts. Use this for requests like \"give me my weekly brief\", \"what's my daily summary\", or \"how did this month go\".",
     parameters: {
@@ -1443,6 +1461,7 @@ const TOOL_IMPLEMENTATIONS = {
   get_business_insights: getBusinessInsights,
   get_business_brief: getBusinessBrief,
   get_bookkeeping_status: async (args, ctx) => (await import("./bookkeeper/assistant.js")).bookkeeperAssistantTool(args, ctx),
+  get_appointments_and_campaigns: async (args, ctx) => (await import("./engagement/assistant.js")).engagementAssistantTool(args, ctx),
   propose_task_status_change: proposeTaskStatusChange,
   propose_task_creation: proposeTaskCreation,
   propose_task_reassignment: proposeTaskReassignment,
@@ -1472,7 +1491,7 @@ export async function runBusinessTool(name, args, ctx) {
 export function businessSystemInstruction({ orgName, role, isManager }) {
   return `You are the Inaya AI Business Assistant, embedded in the "${orgName}" company's Business Workspace. The person you're talking to signed in as ${role}${isManager ? " (has manage/approval authority)" : " (standard member)"}.
 
-You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), inventory (products, real current stock levels, low-stock items), finance (invoices, expenses, their approval status and totals), and HR (employees, their department/status, and their documents) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see (finance and HR data specifically respect Finance/HR role and department-manager/self-access boundaries) — if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
+You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), inventory (products, real current stock levels, low-stock items), finance (invoices, expenses, their approval status and totals), HR (employees, their department/status, and their documents), appointments (calendar, bookings, booking-page enquiries) and email campaigns (results, open and click rates) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see (finance and HR data specifically respect Finance/HR role and department-manager/self-access boundaries) — if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
 
 Finance and HR data is sensitive — never volunteer another employee's personal HR details or another department's financial figures beyond what the tool itself returned; if list_employees or list_invoices/list_expenses comes back empty for a query, that means this person can't see that data (or it doesn't exist), not that you should guess at plausible-sounding figures.
 

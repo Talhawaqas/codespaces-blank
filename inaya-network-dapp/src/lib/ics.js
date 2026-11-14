@@ -5,13 +5,13 @@
 // and lines are folded at 75 octets as the RFC requires.
 
 const pad = (n) => String(n).padStart(2, "0");
-const stamp = (d) => {
+export const stamp = (d) => {
   const x = new Date(d);
   return `${x.getUTCFullYear()}${pad(x.getUTCMonth() + 1)}${pad(x.getUTCDate())}T${pad(x.getUTCHours())}${pad(x.getUTCMinutes())}${pad(x.getUTCSeconds())}Z`;
 };
 export const escapeIcsText = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 
-function fold(line) {
+export function fold(line) {
   const bytes = Buffer.from(line, "utf8");
   if (bytes.length <= 75) return line;
   const parts = [];
@@ -29,7 +29,7 @@ function fold(line) {
 }
 
 /** Builds an invite. start: Date|ISO; durationMinutes: 5..1440. */
-export function buildInvite({ uid, start, durationMinutes = 30, summary, description, location, organizerEmail, organizerName, attendees = [], now = new Date() }) {
+export function buildInvite({ uid, start, durationMinutes = 30, summary, description, location, organizerEmail, organizerName, attendees = [], now = new Date(), method = "REQUEST", sequence = 0, status = "CONFIRMED", url = null }) {
   const begin = new Date(start);
   if (Number.isNaN(begin.getTime())) throw new Error("Invalid meeting start time.");
   const end = new Date(begin.getTime() + durationMinutes * 60000);
@@ -38,7 +38,7 @@ export function buildInvite({ uid, start, durationMinutes = 30, summary, descrip
     "VERSION:2.0",
     "PRODID:-//Inaya Network//Business Workspace//EN",
     "CALSCALE:GREGORIAN",
-    "METHOD:REQUEST",
+    `METHOD:${method}`,
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${stamp(now)}`,
@@ -49,8 +49,9 @@ export function buildInvite({ uid, start, durationMinutes = 30, summary, descrip
     ...(location ? [`LOCATION:${escapeIcsText(location)}`] : []),
     ...(organizerEmail ? [`ORGANIZER;CN=${escapeIcsText(organizerName || organizerEmail)}:mailto:${organizerEmail}`] : []),
     ...attendees.map((a) => `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=${escapeIcsText(a.name || a.email)}:mailto:${a.email}`),
-    "STATUS:CONFIRMED",
-    "SEQUENCE:0",
+    ...(url ? [`URL:${url}`] : []),
+    `STATUS:${status}`,
+    `SEQUENCE:${sequence}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ];

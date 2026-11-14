@@ -100,6 +100,33 @@ function supportEscalation() {
   };
 }
 
+// Appointments & Campaigns SOW: the integrated workflow. Steps 1-7 (enquiry -> CRM lead -> welcome email ->
+// booking -> staff notified -> reminders -> CRM updated after the meeting) run inside the Appointments module
+// itself; these two templates add the follow-ups. The sequence step ships DISABLED until a sequence is chosen.
+function enquiryNurture() {
+  return {
+    nodes: [
+      n("trigger", "trigger.event", "New enquiry received", 40, 160, { eventType: "enquiry.received" }),
+      n("notify", "notify.inaya", "Tell the team", 300, 80, { title: "New enquiry: {{ trigger.payload.enquiry.name }}", body: "{{ trigger.payload.enquiry.name }} ({{ trigger.payload.enquiry.email }}) sent an enquiry from the {{ trigger.payload.enquiry.pageSlug }} booking page. The CRM lead and welcome email are done; reply or book them in.", severity: "info", audience: "managers", alertType: "enquiry" }),
+      n("enroll", "action.marketing_enroll", "Start the nurture emails", 300, 240, { sequenceId: "", email: "{{ trigger.payload.enquiry.email }}", name: "{{ trigger.payload.enquiry.name }}" }, { disabled: true, note: "Choose an approved follow-up sequence (Campaigns -> Sequences) and enable this step. People leave the sequence automatically when they book." }),
+    ],
+    edges: [e("trigger", "notify"), e("trigger", "enroll")],
+    settings: SETTINGS(["notify", "engagement"]),
+  };
+}
+
+function afterMeetingFollowUp() {
+  return {
+    nodes: [
+      n("trigger", "trigger.event", "Appointment completed", 40, 160, { eventType: "appointment.completed" }),
+      n("enroll", "action.marketing_enroll", "Launch follow-up campaign", 300, 100, { sequenceId: "", email: "{{ trigger.payload.appointment.customer.email }}", name: "{{ trigger.payload.appointment.customer.name }}" }, { disabled: true, note: "Choose an approved follow-up sequence (Campaigns -> Sequences) and enable this step." }),
+      n("evidence", "evidence.record", "Record", 300, 240, { note: "Follow-up started after {{ trigger.payload.appointment.typeName }} with {{ trigger.payload.appointment.customer.email }}" }),
+    ],
+    edges: [e("trigger", "enroll"), e("trigger", "evidence")],
+    settings: SETTINGS(["engagement", "evidence"]),
+  };
+}
+
 function inventoryRisk() {
   return {
     nodes: [
@@ -188,6 +215,8 @@ const T = [
   { id: "finance-exception-monitor", name: "Finance Exception Monitor", category: "Finance", description: "Watch overdue invoices against thresholds, classify with AI, alert managers when urgent.", requiredIntegrations: [], build: financeExceptionMonitor },
   { id: "finance-operations-manager", name: "Finance Operations Manager", category: "Finance", description: "Every morning: run the AI Bookkeeper pass (categorize, match, reconcile, queue exceptions), summarize, and tell finance what needs a person. Nothing is posted or paid automatically.", requiredIntegrations: [], build: financeOperationsManager },
   { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check Inaya Customer Support every hour for tickets that breached or are about to breach their SLA, or are urgent, and alert managers. (To read an external helpdesk instead, use the Get Support Tickets (helpdesk via HTTP) node.)", requiredIntegrations: [], build: supportEscalation },
+  { id: "enquiry-nurture", name: "Enquiry -> Nurture Emails", category: "Sales & marketing", description: "When someone sends an enquiry from your booking page (the CRM lead and welcome email are automatic), alert the team and start a follow-up email sequence that stops as soon as they book.", requiredIntegrations: ["an approved follow-up sequence"], build: enquiryNurture },
+  { id: "after-meeting-follow-up", name: "After-Meeting Follow-up Campaign", category: "Sales & marketing", description: "When an appointment is marked completed (which also logs the meeting on the CRM record), launch a follow-up email sequence to the customer.", requiredIntegrations: ["an approved follow-up sequence"], build: afterMeetingFollowUp },
   { id: "inventory-risk", name: "Inventory Risk", category: "Supply chain", description: "Combine inventory, procurement and sales demand and warn about stock-out risk.", requiredIntegrations: [], build: inventoryRisk },
   { id: "trust-security-operations", name: "Trust / Security Operations", category: "Security", description: "Daily trust health, security events and backup integrity summary with alerts.", requiredIntegrations: [], build: trustSecurityOps },
   { id: "notification-test", name: "Notification Delivery Test", category: "Setup", description: "Sends one test message to the in-app inbox, Slack and Gmail so you can confirm delivery before relying on an alert. Slack and Gmail steps start disabled until you attach a credential.", requiredIntegrations: ["Slack webhook (optional)", "Gmail (optional)"], build: notificationTest },

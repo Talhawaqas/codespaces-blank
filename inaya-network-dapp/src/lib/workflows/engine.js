@@ -278,6 +278,27 @@ async function executeNode(node, env) {
     }
   }
 
+  if (type === "action.marketing_enroll") {
+    const cfg = {};
+    for (const [k, v] of Object.entries(cfgRaw)) cfg[k] = typeof v === "string" ? renderTemplate(v, scope) : v;
+    if (mode !== "production") return { output: { simulated: true, wouldDo: { sequenceId: cfg.sequenceId, email: cfg.email }, note: `In ${mode} mode nobody was enrolled.` }, meta: { actionClass: "low", simulated: true } };
+    const key = effectKey("marketing_enroll", exec._id, node.key);
+    const claim = await claimEffect({ orgId: exec.orgId, key, kind: "action.marketing_enroll", executionId: exec._id, nodeKey: node.key, meta: { sequenceId: cfg.sequenceId } });
+    if (!claim.claimed) {
+      if (claim.effect?.result) return { output: { ...claim.effect.result, reused: true }, meta: { actionClass: "low" } };
+      throw Object.assign(new Error("A previous attempt started this enrolment but did not record the result; refusing to repeat it."), { retryable: false, code: "EFFECT_UNCERTAIN" });
+    }
+    try {
+      const { runMarketingEnrollAction } = await import("../engagement/workflowAction.js");
+      const r = await runMarketingEnrollAction({ orgId: exec.orgId, membership: dataCtx.membership, cfg });
+      await completeEffect({ orgId: exec.orgId, key, state: "DONE", result: r });
+      return { output: r, meta: { actionClass: "low" } };
+    } catch (err) {
+      await completeEffect({ orgId: exec.orgId, key, state: "FAILED", result: { error: err.message } });
+      throw err;
+    }
+  }
+
   if (type === "action.file_governance") {
     const cfg = {};
     for (const [k, v] of Object.entries(cfgRaw)) cfg[k] = typeof v === "string" ? renderTemplate(v, scope) : v;

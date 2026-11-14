@@ -53,6 +53,8 @@ const RegulatedView = dynamic(() => import("../../components/business/RegulatedV
 const FinancialView = dynamic(() => import("../../components/business/FinancialView"), { ssr: false, loading: ScreenLoading });
 const GovernmentView = dynamic(() => import("../../components/business/GovernmentView"), { ssr: false, loading: ScreenLoading });
 const EducationView = dynamic(() => import("../../components/business/EducationView"), { ssr: false, loading: ScreenLoading });
+const AppointmentsView = dynamic(() => import("../../components/business/AppointmentsView"), { ssr: false, loading: ScreenLoading });
+const CampaignsView = dynamic(() => import("../../components/business/CampaignsView"), { ssr: false, loading: ScreenLoading });
 import GlobeBackground from "../../components/GlobeBackground";
 const SecurityResilienceView = dynamic(() => import("../../components/business/SecurityResilienceView"), { ssr: false, loading: ScreenLoading });
 const IntegrationsView = dynamic(() => import("../../components/business/IntegrationsView"), { ssr: false, loading: ScreenLoading });
@@ -1268,6 +1270,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     browse: { title: BROWSE_SECTION_LABELS[browseSection], description: "Company → Department → Project → Document." },
     tasks: { title: "Tasks", description: "Track and assign work across departments and projects." },
     crm: { title: "CRM", description: "Customers, leads, deals, and the sales pipeline." },
+    appointments: { title: "Appointments", description: "Your booking page, team calendars, reminders and Google/Outlook sync." },
+    campaigns: { title: "Email Campaigns", description: "Newsletters, offers and follow-up emails to your CRM contacts, with approvals and open/click reports." },
     procurement: { title: "Procurement", description: "Purchase requests, purchase orders, and suppliers." },
     inventory: { title: "Inventory", description: "Products, stock levels, warehouses, and transfers." },
     finance: { title: "Finance", description: "Invoices, expenses, payments, and accounting." },
@@ -1396,6 +1400,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "fileRequests" && <FileRequestsView orgId={orgId} canManage={canManage} />}
       {activeView === "tasks" && <TasksView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "crm" && <CRMView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "appointments" && <AppointmentsView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "campaigns" && <CampaignsView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
       {activeView === "inventory" && <InventoryView orgId={orgId} />}
       {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}

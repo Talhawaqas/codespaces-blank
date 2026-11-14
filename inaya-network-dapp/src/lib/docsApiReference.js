@@ -467,4 +467,109 @@ export const API_ENDPOINTS = [
     response: "{ controls[] } with implementation, responsibility, owner, evidence state and exceptions.",
     status: "beta",
   },
+  {
+    slug: "appointments-list-book",
+    method: "GET, POST",
+    path: "/api/public/v1/appointments",
+    summary: "List the organization's appointments, or book one. Booking runs the same availability and double-booking checks as the public booking page and sends the customer a confirmation with a calendar invite. Business and Enterprise plans.",
+    params: [
+      { name: "from, to", in: "query", required: false, description: "Date range (ISO). Default: 31 days back to 62 days ahead; 400 days at most." },
+      { name: "status", in: "query", required: false, description: "Comma-separated: PENDING, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW." },
+      { name: "staffEmail, contactId", in: "query", required: false, description: "Only one team member's appointments, or one CRM contact's." },
+      { name: "typeId, start, customer { name, email, phone }", in: "body (POST)", required: true, description: "Appointment type, start time (ISO, must be a free slot) and the customer. Optional: staffEmail, note, timeZone, answers." }
+    ],
+    response: "GET: { appointments[], from, to }. POST: { appointment, manageUrl }; 409 when the time is no longer free.",
+    status: "beta",
+  },
+  {
+    slug: "appointments-item",
+    method: "GET, PATCH",
+    path: "/api/public/v1/appointments/{appointmentId}",
+    summary: "Read one appointment, change its status (CONFIRMED, COMPLETED, NO_SHOW, CANCELLED) or move it to a new free time. Completing it logs the meeting on the CRM record.",
+    params: [
+      { name: "appointmentId", in: "path", required: true, description: "The appointment id." },
+      { name: "status, reason, outcome", in: "body (PATCH)", required: false, description: "A status change; reason is sent to the customer on cancellation, outcome goes on the CRM record." },
+      { name: "start", in: "body (PATCH)", required: false, description: "Reschedule instead: the new start time (ISO)." }
+    ],
+    response: "{ appointment } with notes, attachments, reminders and history.",
+    status: "beta",
+  },
+  {
+    slug: "appointment-types",
+    method: "GET",
+    path: "/api/public/v1/appointment-types",
+    summary: "Active appointment types: length, buffers, notice, location, who takes them.",
+    params: [],
+    response: "{ types[] }",
+    status: "beta",
+  },
+  {
+    slug: "appointment-type-slots",
+    method: "GET",
+    path: "/api/public/v1/appointment-types/{typeId}/slots",
+    summary: "Free start times for an appointment type, after working hours, time off, buffers, existing bookings and the staff member's own connected calendar.",
+    params: [
+      { name: "typeId", in: "path", required: true, description: "The appointment type id." },
+      { name: "from, to", in: "query", required: false, description: "Range (ISO), 62 days at most. Default: the next 14 days." },
+      { name: "staffEmail", in: "query", required: false, description: "Only this team member." }
+    ],
+    response: "{ slots: [{ start, staffEmails[] }], from, to }",
+    status: "beta",
+  },
+  {
+    slug: "campaigns-list",
+    method: "GET",
+    path: "/api/public/v1/campaigns",
+    summary: "Email campaigns with delivery numbers and open, click, bounce and unsubscribe rates. Business and Enterprise plans.",
+    params: [
+      { name: "status", in: "query", required: false, description: "Comma-separated: DRAFT, PENDING_APPROVAL, SCHEDULED, SENDING, SENT, CANCELLED." }
+    ],
+    response: "{ campaigns[] }",
+    status: "beta",
+  },
+  {
+    slug: "campaign-report",
+    method: "GET",
+    path: "/api/public/v1/campaigns/{campaignId}/report",
+    summary: "One campaign's results: totals, rates, top links and opens/clicks by hour.",
+    params: [
+      { name: "campaignId", in: "path", required: true, description: "The campaign id." }
+    ],
+    response: "{ campaign, deliveryStatus, links[], timeline, note }",
+    status: "beta",
+  },
+  {
+    slug: "marketing-sequence-enroll",
+    method: "POST",
+    path: "/api/public/v1/marketing/sequences/{sequenceId}/enroll",
+    summary: "Add a person to a follow-up email sequence. Unsubscribed, bounced and already-enrolled addresses are skipped; nothing sends until the sequence is approved and active.",
+    params: [
+      { name: "sequenceId", in: "path", required: true, description: "The sequence id." },
+      { name: "email", in: "body", required: true, description: "The person's email address. Optional: name, company." }
+    ],
+    response: "{ enrolled, skipped, sequenceStatus }",
+    status: "beta",
+  },
+  {
+    slug: "marketing-suppressions-add",
+    method: "POST",
+    path: "/api/public/v1/marketing/suppressions",
+    summary: "Add an address to the organization's do-not-email list (for example an unsubscribe recorded in another system).",
+    params: [
+      { name: "email", in: "body", required: true, description: "The address." }
+    ],
+    response: "{ ok, email, reason }",
+    status: "beta",
+  },
+  {
+    slug: "marketing-enquiries",
+    method: "GET",
+    path: "/api/public/v1/marketing/enquiries",
+    summary: "Enquiries sent through booking-page enquiry forms. Each one is already a CRM lead.",
+    params: [
+      { name: "status", in: "query", required: false, description: "NEW, CONTACTED, BOOKED or CLOSED." }
+    ],
+    response: "{ enquiries[] }",
+    status: "beta",
+  },
 ];
