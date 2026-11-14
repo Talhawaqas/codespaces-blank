@@ -16,6 +16,7 @@ import { ecosystemOverview } from "./content/ecosystem-overview.js";
 import { ecosystemArchitecture } from "./content/ecosystem-architecture.js";
 import { ecosystemDevDeepdive } from "./content/ecosystem-dev-deepdive.js";
 import { companyProfile } from "./content/company-profile.js";
+import { saasBusinessModel } from "./content/saas-business-model.js";
 import { buildInvestmentMemorandumHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ const REGISTRY = {
   "ecosystem-architecture": { name: "inaya-ecosystem-architecture.pdf", html: buildInvestmentMemorandumHTML(ecosystemArchitecture) },
   "ecosystem-dev-deepdive": { name: "inaya-ecosystem-dev-deepdive.pdf", html: buildInvestmentMemorandumHTML(ecosystemDevDeepdive) },
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
+  "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
 };
 
 const CANDIDATE_CHROME_PATHS = [

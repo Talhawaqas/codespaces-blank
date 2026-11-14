@@ -1153,5 +1153,38 @@ export const completeFeatureGuide = {
         },
       ],
     },
+    {
+      number: "61",
+      title: "Appointments & Email Marketing (November 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "Let customers book time with your team online, and keep in touch with them by email, all connected to the CRM. Available on the Business and Enterprise packages: open Appointments or Email Campaigns from the Business Workspace sidebar or All apps.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Set your working hours.", body: "Appointments → My availability: choose your time zone, add hours for each weekday and any time off. Everyone keeps their own calendar; calendar managers can set hours for the team." },
+            { heading: "Create an appointment type.", body: "Appointments → Setup → Appointment types → New type. Start from a use case (patient visit, legal consultation, financial advisory, parent meeting, sales meeting), then set the length, gaps, minimum notice, location (Inaya Meet, another video link, phone or in person), who takes it and any questions for the customer." },
+            { heading: "Publish a booking page.", body: "Setup → Booking pages → New page: pick an address, the types to offer and whether to show an enquiry form. Share the link. Customers get a confirmation with a calendar invite and a private link to reschedule or cancel." },
+            { heading: "Sync with Google Calendar or Outlook.", body: "My availability → Create calendar address, then add it in Google Calendar (Other calendars → From URL) or Outlook (Subscribe from web). To stop customers booking when you're busy elsewhere, paste your own calendar's secret iCal address under 'Block times when I'm busy'." },
+            { heading: "Run your day.", body: "The Overview shows today's numbers and the upcoming list with Join buttons; the Calendar has day, week and month views for you, the team or a department. Open an appointment to confirm, reschedule, cancel, add encrypted notes and attachments, or mark it completed, which writes the meeting and its outcome to the customer's CRM record." },
+            { heading: "Set up email marketing.", body: "Email Campaigns → Settings: add the sender name, your postal address and whether a second person must approve. Owners and admins give people the editor, approver or manager role." },
+            { heading: "Build and send a campaign.", body: "Campaigns → New campaign: design it from a template, choose the audience from the CRM, review the checklist and preview, send yourself a test, then submit. Once a second person approves it, it goes out straight away, at a set time or on a repeating schedule." },
+            { heading: "Follow up automatically.", body: "Follow-up sequences send a series of emails after an enquiry, a meeting or a campaign, and stop when someone unsubscribes, bounces or books. Each campaign's report shows opens, clicks, bounces and unsubscribes." },
+          ],
+        },
+        {
+          type: "note",
+          label: "What's real and tested, stated plainly.",
+          text: "Booking, double-booking refusal, encrypted notes and phone numbers, reschedule and cancel links, reminders, CRM logging, the calendar feed, two-person approval, delivery, bounce and complaint suppression, tracking, unsubscribe and follow-up sequences are covered by automated tests against the real database, and the booking page and screens were checked in a running app.",
+        },
+        {
+          type: "note",
+          label: "Honest limits.",
+          text: "Campaign sending starts once the separate marketing sending domain is connected. SMS reminders are built but off until an SMS provider is connected, so reminders go by email. Calendar apps refresh subscribed calendars on their own schedule, so a new booking can take a few hours to appear in Google Calendar.",
+        },
+      ],
+    },
   ],
 };

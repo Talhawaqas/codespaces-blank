@@ -48,6 +48,21 @@ export default function ReleaseNotesPage() {
               </div>
             )}
 
+            {stage.groups?.length > 0 && (
+              <div className="mt-3 space-y-3">
+                {stage.groups.map((g) => (
+                  <div key={g.title}>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1.5">Added — {g.title}</div>
+                    <ul className="list-disc list-outside ml-5 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                      {g.items.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {stage.securityStatement && (
               <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Security: </span>

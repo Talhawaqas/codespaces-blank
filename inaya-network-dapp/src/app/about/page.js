@@ -39,15 +39,18 @@ const founderStory = [
   "I'm not doing this alone. Yakub Adnan drives our growth and community presence. Fibha Urooj keeps our financial decisions disciplined, not just ambitious.",
 ];
 
+// Same five phases as the full roadmap in the dApp's About Us tab (src/app/page.js, roadmapPhases).
 const roadmap = [
-  { phase: "Phase 01 — Deployment & Audit Proof", desc: "EVM contract deployment across BNB Chain scaling infrastructure, block-range scanning, and third-party security audits ahead of mainnet." },
-  { phase: "Phase 02 — Incentivized Alpha & Sybil Resistance", desc: "Anti-sybil validation for edge-node operators, hardware identity verification, and active transaction-tracking pipelines." },
-  { phase: "Phase 03 — TGE & Cross-Chain Expansion", desc: "Token Generation Event for $INAYA, cross-chain bridge deployment, and global expansion of the storage node network." },
+  { phase: "Phase 1 — Foundation", status: "Completed", desc: "Client-side encryption and sharding, smart contracts, the testnet, the official website, the AI documentation assistant and the BNB Chain DappBay listing." },
+  { phase: "Phase 2 — Ecosystem Growth", status: "Completed", desc: "Open-source packages and SDK, Storybook and examples, Windows and Linux desktop apps for the dApp and Business Workspace, Inaya Learn, the Investor Data Room, referrals and the Watcher Pioneer program." },
+  { phase: "Phase 3 — Mainnet Readiness", status: "In progress", desc: "Done: node software, staking, storage analytics, the Business Workspace and its industry editions (Health, Legal, Regulated, Financial, Government, Education), the Security Layer, the Oracle & Automation Layer, the cross-chain bridge, Appointments & Email Marketing, and the launch price book (6.49 USDT per TB per month). Still open: the security audit, the explorer, on-chain governance and production infrastructure." },
+  { phase: "Phase 4 — Mainnet Launch", status: "Planned", desc: "Mainnet deployment, node reward activation, enterprise storage onboarding, decentralized governance, ecosystem grants and community incentives." },
+  { phase: "Phase 5 — Beyond Mainnet", status: "Planned", desc: "AI-powered storage intelligence, decentralized identity, global node expansion, developer grants and DAO governance." },
 ];
 
 const products = [
   { icon: "🔐", name: "Sovereign Storage", desc: "Client-side encryption, sharding, and decentralized custody — no single node ever holds a complete, readable copy of your data." },
-  { icon: "🏢", name: "Business Workspace", desc: "Encrypted document management for companies — departments, projects, permissions, workflows, and secure sharing." },
+  { icon: "🏢", name: "Business Workspace", desc: "Encrypted documents plus everyday business operations — CRM, finance, HR, inventory, appointments and email marketing, automations, and industry editions for healthcare, legal, finance, government and education." },
   { icon: "🛡️", name: "Inaya Firewall", desc: "Decentralized threat intelligence, reputation-weighted node reporting, and on-chain confirmed threat records." },
   { icon: "🎓", name: "Inaya Learn", desc: "Web3, AI, and programming education with an integrated AI tutor for every video." },
   { icon: "📁", name: "Investor Data Room", desc: "NDA-gated, per-visitor-tracked document viewing for investors." },
@@ -138,7 +141,10 @@ export default function AboutPage() {
           <div className="space-y-3">
             {roadmap.map((r) => (
               <div key={r.phase} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
-                <div className="text-white font-bold text-sm">{r.phase}</div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-white font-bold text-sm">{r.phase}</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${r.status === "Completed" ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" : r.status === "In progress" ? "text-amber-400 border-amber-400/30 bg-amber-400/10" : "text-violet-400 border-violet-400/30 bg-violet-400/10"}`}>{r.status}</span>
+                </div>
                 <p className="text-[#8a96ab] text-xs leading-relaxed mt-1.5">{r.desc}</p>
               </div>
             ))}

@@ -851,6 +851,49 @@ export const ROADMAP_STAGES = [
     notes:
       "Verified with 14 automated tests against the real database (encryption at rest, per-role views, duplicate billing, overpayment, self-approval, publish lock, parent-link contents, revocation and erasure) plus a static check that every Education OS API path is locked to the education vertical; the screens and the parent page were checked in a running app. Not yet built: online fee collection through a payment gateway (fees are recorded, not collected online), SMS/WhatsApp fee reminders, timetables, transport and hostel, and mobile screens. No claim is made of compliance with India's DPDP Act, the UAE PDPL, or Pakistani or Bangladeshi data-protection law; the features help a school meet its own obligations.",
   },
+  {
+    number: 32,
+    title: "Appointments & Email Marketing — Online Booking, Team Calendars, Campaigns and Follow-ups",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "An online booking calendar and a mass email marketing tool inside the Business Workspace, both connected to the CRM, so an enquiry becomes a lead, a booking, a meeting on the customer's record and a follow-up campaign without leaving Inaya. Included in the Business and Enterprise packages.",
+    securityStatement:
+      "Customer phone numbers, meeting notes and calendar addresses are encrypted before they are stored, staff email addresses never appear on public booking pages, and every marketing email carries a one-click unsubscribe that is honoured for good.",
+    groups: [
+      {
+        title: "Appointment calendar",
+        items: [
+          "A public booking page per company: service, optional choice of person, and a time shown in the visitor's own time zone, plus an enquiry form",
+          "Confirmation with a calendar invite and a private link to reschedule or cancel; the link changes whenever the appointment moves",
+          "Staff working hours, time off, buffers, notice, booking window, daily limits and round-robin assignment; double bookings refused",
+          "Day, week and month views for yourself, the team or a department, with total, completed, upcoming-today and customers-engaged cards",
+          "Google Calendar and Outlook sync without a paid API: a private calendar address out, busy times read from the person's own calendar in",
+          "Email reminders, encrypted notes and attachments, Inaya Meet links, and the meeting outcome written to the CRM record",
+        ],
+      },
+      {
+        title: "Email marketing",
+        items: [
+          "A four-step builder (design, audience, review, send) with five starter templates and personalisation",
+          "CRM segments, including inactive customers for re-engagement and people who have or haven't booked",
+          "Two-person approval, one-off or repeating schedules, and test sends to colleagues",
+          "Follow-up sequences after an enquiry, a meeting or a campaign that stop on unsubscribe, bounce or booking",
+          "Opens, clicks, bounces, unsubscribes and top links per campaign, against open-rate and click-through targets",
+          "A separate sending domain, one-click unsubscribe, the sender's postal address, and automatic suppression of bounces and complaints",
+        ],
+      },
+      {
+        title: "Everywhere",
+        items: [
+          "Web, mobile app (agenda and approvals) and public API endpoints",
+          "Workflow node and ready-made automations for enquiry nurture and after-meeting follow-up",
+          "The AI Business Assistant can answer calendar, enquiry and campaign questions",
+        ],
+      },
+    ],
+    notes:
+      "Verified with automated tests against the real database (booking, double-booking refusal, encryption at rest, reschedule and cancel links, reminders, CRM logging, the calendar feed, two-person approval, delivery, bounce and complaint suppression, tracking, unsubscribe and sequences) and checked in a running app. Campaign sending starts once the separate marketing sending domain is connected. SMS reminders are built but off because no SMS provider is connected, so reminders go by email.",
+  },
 ];
 
 export const VISION = {

@@ -1024,5 +1024,14 @@ export const ecosystemOverview = {
         {"type": "note", "label": "What's live today vs. what's next.", "text": "Education OS is built and tested on the web app and the desktop ERP mode. Not built yet: collecting fees online through a payment gateway (fees are recorded, not collected), SMS or WhatsApp fee reminders, timetables, transport and hostel, and mobile screens. We don't claim compliance with India's DPDP Act, the UAE's PDPL, or Pakistani or Bangladeshi data law; the features help a school meet its own obligations."},
       ],
     },
+    {
+      number: "39",
+      title: "Appointments & Email Marketing (November 2026)",
+      blocks: [
+        {"type": "lead", "text": "An online booking calendar and a mass email marketing tool inside the Business Workspace, both connected to the CRM, for companies on the Business and Enterprise packages."},
+        {"type": "bullets", "items": ["A public booking page for each company: customers choose a service, a person if they like, and a time shown in their own time zone, then get a confirmation with a calendar invite and a private link to reschedule or cancel.", "Staff working hours, time off, buffers, notice and daily limits; round-robin assignment; double bookings refused even when two people click the same time at once.", "Day, week and month calendars for yourself, the whole team or a department, and an overview of total appointments, completed, upcoming today and customers engaged.", "Google Calendar and Outlook sync without any paid API or app approval: each person gets a private calendar address for their appointments, and Inaya reads only the busy times from their own calendar.", "Email reminders, encrypted meeting notes, Inaya Meet links, and the meeting outcome written to the customer's CRM record when it is marked completed.", "Email campaigns built in four steps (design, audience, review, send) from five starter templates, sent to CRM segments once a second person approves, once or on a repeating schedule, with opens, clicks, bounces and unsubscribes reported.", "Follow-up email sequences that start after an enquiry, a meeting or a campaign, and stop when someone unsubscribes, bounces or books.", "Every marketing email has a one-click unsubscribe and the sender's postal address and goes out from a separate sending domain; unsubscribes, bounces and spam complaints are never emailed again."]},
+        {"type": "note", "label": "What's live today vs. what's next.", "text": "Built, tested against the real database and live on the website and mobile app. Campaign sending starts once the separate marketing sending domain is connected; SMS reminders are built but switched off because no SMS provider is connected, so reminders go by email. Packages include 50,000 marketing emails a month on Business and 250,000 on Enterprise."},
+      ],
+    },
   ],
 };
