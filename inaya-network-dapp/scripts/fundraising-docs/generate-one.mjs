@@ -10,6 +10,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { ecosystemOverview } from "./content/ecosystem-overview.js";
@@ -31,7 +32,8 @@ const REGISTRY = {
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
   "investment-memorandum": { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
-  "combined-business-model": { name: "inaya-combined-business-model.pdf", html: buildInvestmentMemorandumHTML(combinedBusinessModel) },
+  // Confidential: written to the founder's Downloads folder, never to public/documents.
+  "combined-business-model": { name: "Inaya-Combined-Business-Model.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(combinedBusinessModel) },
 };
 
 const CANDIDATE_CHROME_PATHS = [
@@ -75,7 +77,7 @@ async function main() {
       const page = await browser.newPage();
       const fullHtml = await inlineBrandCss(target.html);
       await page.setContent(fullHtml, { waitUntil: "domcontentloaded", timeout: 30000 });
-      const outputPath = path.join(OUTPUT_DIR, target.name);
+      const outputPath = path.join(target.dir || OUTPUT_DIR, target.name);
       await page.pdf({ path: outputPath, format: "A4", printBackground: true, preferCSSPageSize: true });
       await page.close();
       console.log(`Generated ${outputPath}`);
