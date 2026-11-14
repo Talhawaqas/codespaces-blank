@@ -17,6 +17,8 @@ import { ecosystemArchitecture } from "./content/ecosystem-architecture.js";
 import { ecosystemDevDeepdive } from "./content/ecosystem-dev-deepdive.js";
 import { companyProfile } from "./content/company-profile.js";
 import { saasBusinessModel } from "./content/saas-business-model.js";
+import { investmentMemorandum } from "./content/investment-memorandum.js";
+import { combinedBusinessModel } from "./content/combined-business-model.js";
 import { buildInvestmentMemorandumHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +30,8 @@ const REGISTRY = {
   "ecosystem-dev-deepdive": { name: "inaya-ecosystem-dev-deepdive.pdf", html: buildInvestmentMemorandumHTML(ecosystemDevDeepdive) },
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
+  "investment-memorandum": { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
+  "combined-business-model": { name: "inaya-combined-business-model.pdf", html: buildInvestmentMemorandumHTML(combinedBusinessModel) },
 };
 
 const CANDIDATE_CHROME_PATHS = [

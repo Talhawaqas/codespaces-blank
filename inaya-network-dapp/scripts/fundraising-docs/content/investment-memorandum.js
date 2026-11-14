@@ -10,7 +10,8 @@
 // 13 Nov 2026, founder-approved in chat (Dapp repricing): storage 6.49 USDT/TB/month,
 // node share 35% so target gross margin 65%; Section 13 Enterprise ARR recalculated at
 // the 1,000 TB Corporate Reserve rate (65.88 USDT per TB per year) on the same storage
-// volumes, Net Income = ARR - Burn as before; retrieval described as included, not zero.
+// volumes; retrieval described as included, not zero. Net Income corrected 2026-11-14 (founder-approved)
+// to ARR less the 35% node-operator share, less Burn: the earlier ARR - Burn ignored node payouts.
 //
 // PROTECTED — do not edit without explicit founder sign-off (per the
 // fundraising-docs SOW, August 2026): Section 05's "Roadmap highlight"
@@ -368,12 +369,13 @@ export const investmentMemorandum = {
             ["Active Storage (PB)", "15", "60", "200", "650", "1,500"],
             ["Enterprise ARR", "$1.0M", "$4.0M", "$13.2M", "$42.8M", "$98.8M"],
             ["Burn Rate", "$1.5M", "$2.0M", "$2.5M", "$3.5M", "$4.5M"],
-            ["Net Income", "($0.5M)", "$2.0M", "$10.7M", "$39.3M", "$94.3M"],
+            ["Node-Operator Share (35%)", "($0.3M)", "($1.4M)", "($4.6M)", "($15.0M)", "($34.6M)"],
+            ["Net Income", "($0.9M)", "$0.6M", "$6.1M", "$24.3M", "$59.7M"],
           ],
         },
         {
           type: "note",
-          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs. Enterprise ARR is the stored volume billed at the 1,000 TB Corporate Reserve rate (5.49 USDT per TB per month, 65.88 per TB per year).",
+          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs. Enterprise ARR is the stored volume billed at the 1,000 TB Corporate Reserve rate (5.49 USDT per TB per month, 65.88 per TB per year). Net Income is ARR less the 35% paid to node operators, less the burn rate. Business Workspace subscriptions are not included here; the combined financial model adds them.",
         },
       ],
     },
