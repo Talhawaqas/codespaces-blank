@@ -35,6 +35,8 @@ const CHAPTERS = [
 export default async function BusinessDemoPage() {
   const country = (await headers()).get("x-vercel-ip-country");
   const isPk = String(country || "").toUpperCase() === "PK";
+  // Asia pilot (USD): India, Bangladesh, Sri Lanka, UAE, Saudi Arabia, Malaysia, Indonesia, Singapore, Philippines.
+  const isAsiaPilot = ["IN", "BD", "LK", "AE", "SA", "MY", "ID", "SG", "PH"].includes(String(country || "").toUpperCase());
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
@@ -76,6 +78,11 @@ export default async function BusinessDemoPage() {
               <>
                 <p className="text-[#94a3b8] text-[13px]">6-month pilot for Pakistani companies: 30% off, setup and data import free, paid in rupees by bank transfer.</p>
                 <a href="/documents/inaya-erp-pilot-programme-pakistan.pdf" target="_blank" rel="noreferrer" className="text-center text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2.5 rounded-lg">Read the pilot programme (PDF)</a>
+              </>
+            ) : isAsiaPilot ? (
+              <>
+                <p className="text-[#94a3b8] text-[13px]">6-month pilot for companies in Asia: 30% off, priced in US dollars, with setup, data import and training from $29.</p>
+                <a href="/documents/inaya-pilot-programme-asia.pdf" target="_blank" rel="noreferrer" className="text-center text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2.5 rounded-lg">Read the pilot programme (PDF)</a>
               </>
             ) : (
               <p className="text-[#94a3b8] text-[13px]">Every plan starts with a free trial. Pilot companies get hands-on setup and a say in what we build next.</p>
