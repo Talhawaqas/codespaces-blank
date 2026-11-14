@@ -108,7 +108,7 @@ export async function publicPage(slug, { countView = true } = {}) {
   const members = p.showStaffChoice ? new Map((await listOrgMembers(String(p.orgId))).map((m) => [String(m.email).toLowerCase(), m.name || String(m.email).split("@")[0]])) : null;
   if (countView) await bump(p, "views");
   return {
-    page: { slug: p.slug, title: p.title, intro: p.intro, brandColor: p.brandColor, enquiryEnabled: p.enquiryEnabled, privacyNote: p.privacyNote, businessName: settings.businessName },
+    page: { slug: p.slug, title: p.title, intro: p.intro, brandColor: p.brandColor, enquiryEnabled: p.enquiryEnabled, privacyNote: p.privacyNote, businessName: settings.businessName, smsReminders: settings.smsReminders === true && (await import("../smsProviders/twilio.js")).isConfigured() },
     types: types.map((t) => ({
       id: String(t._id), name: t.name, description: t.description, durationMinutes: t.durationMinutes, location: t.location,
       locationDetail: t.location === "in_person" ? t.locationDetail : "", collectPhone: t.collectPhone !== false, questions: t.questions || [],

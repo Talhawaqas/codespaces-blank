@@ -175,7 +175,7 @@ export default function BookingPage() {
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Full name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
                 <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-                {type.collectPhone && <Field label="Mobile, for a text reminder (optional)" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />}
+                {type.collectPhone && <Field label={p.smsReminders ? "Mobile, for a text reminder (optional)" : "Phone (optional)"} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />}
               </div>
               {type.questions.map((q) => <Field key={q.id} label={`${q.label}${q.required ? "" : " (optional)"}`} value={form.answers[q.id] || ""} onChange={(v) => setForm({ ...form, answers: { ...form.answers, [q.id]: v } })} />)}
               <label className="block"><span className="text-sm text-[#344054]">Anything we should know? (optional)</span><textarea rows={3} className="mt-1 w-full border border-[#d0d5dd] rounded-lg px-3 py-2" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
