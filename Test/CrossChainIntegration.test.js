@@ -265,7 +265,7 @@ describe("Cross-chain integration (bridge + staking, full stack)", function () {
       expect(ok).to.equal(true);
     });
 
-    it("cross-chain claim: home claimRewardTo zeroes rewards and produces a correctly-signed outbound mint request", async function () {
+    it("cross-chain claim: home claimRewardTo pays out up to the lifetime reward cap and produces a correctly-signed outbound mint request", async function () {
       const amount = 1000n * ONE_INAYA;
       await bridgeOutToSpoke(owner, alice.address, amount);
       const stakeTx = await stakingGatewaySpoke.connect(alice).stakeCrossChain(amount, 0);
@@ -276,14 +276,20 @@ describe("Cross-chain integration (bridge + staking, full stack)", function () {
       const earned = await staking.earned(alice.address);
       expect(earned).to.be.gt(0);
 
+      const cap = await staking.LIFETIME_REWARD_CAP();
+      // This fixture's reward rate accrues far more than the lifetime cap over 30 days, so the
+      // forwarded payout is capped -- same cap enforcement as claimReward()/claimRewardTo().
+      expect(earned).to.be.gt(cap);
+
       const destRecipient = ethers.zeroPadValue(bob.address, 32);
       const claimTx = await staking.connect(alice).claimRewardTo(ARBITRARY_DEST_LABEL, destRecipient);
       const { message } = await captureSentMessage(messengerHome, claimTx);
 
-      expect(await staking.rewards(alice.address)).to.equal(0);
+      expect(await staking.rewards(alice.address)).to.be.gt(0);
+      expect(await staking.lifetimeRewardsClaimed(alice.address)).to.equal(cap);
       const decoded = ethers.AbiCoder.defaultAbiCoder().decode(["bytes32", "uint256"], message.payload);
       expect(decoded[0]).to.equal(destRecipient);
-      expect(decoded[1]).to.be.gte(earned);
+      expect(decoded[1]).to.equal(cap);
     });
   });
 

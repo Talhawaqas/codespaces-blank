@@ -181,7 +181,7 @@ describe("InayaStaking", function () {
       expect(bobEarned).to.be.gt(aliceEarned);
     });
 
-    it("lets a user claim earned rewards", async function () {
+    it("lets a user claim earned rewards, capped at the lifetime reward cap", async function () {
       const amount = ethers.parseUnits("10000", 18);
       await inaya.connect(alice).approve(await staking.getAddress(), amount);
       await staking.connect(alice).stake(amount, 0);
@@ -192,8 +192,11 @@ describe("InayaStaking", function () {
       await expect(staking.connect(alice).claimReward()).to.emit(staking, "RewardPaid");
       const after = await inaya.balanceOf(alice.address);
 
-      expect(after).to.be.gt(before);
-      expect(await staking.rewards(alice.address)).to.equal(0);
+      // This fixture's reward rate accrues far more than LIFETIME_REWARD_CAP over 30 days, so
+      // the payout is capped and the excess stays stuck in rewards() rather than paid out.
+      expect(after - before).to.equal(await staking.LIFETIME_REWARD_CAP());
+      expect(await staking.lifetimeRewardsClaimed(alice.address)).to.equal(await staking.LIFETIME_REWARD_CAP());
+      expect(await staking.rewards(alice.address)).to.be.gt(0);
     });
 
     it("rejects claiming with zero pending rewards", async function () {
@@ -238,6 +241,54 @@ describe("InayaStaking", function () {
 
       expect(await staking.userStakedBalance(alice.address)).to.equal(0);
       expect(after).to.be.gt(before);
+    });
+  });
+
+  describe("Testnet anti-whale guards", function () {
+    it("allows free staking below the 3,000 INAYA cooldown threshold", async function () {
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("3000", 18));
+      await staking.connect(alice).stake(ethers.parseUnits("1000", 18), 0);
+      await staking.connect(alice).stake(ethers.parseUnits("1500", 18), 0);
+      expect(await staking.lifetimeStaked(alice.address)).to.equal(ethers.parseUnits("2500", 18));
+    });
+
+    it("never blocks the stake that crosses the 3,000 INAYA threshold itself", async function () {
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("4000", 18));
+      await staking.connect(alice).stake(ethers.parseUnits("2000", 18), 0);
+      await expect(staking.connect(alice).stake(ethers.parseUnits("1500", 18), 0)).to.emit(staking, "Staked");
+      expect(await staking.lifetimeStaked(alice.address)).to.equal(ethers.parseUnits("3500", 18));
+    });
+
+    it("blocks a further stake within 90 days once lifetime stake is past 3,000 INAYA", async function () {
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("3200", 18));
+      await staking.connect(alice).stake(ethers.parseUnits("3100", 18), 0);
+
+      await expect(staking.connect(alice).stake(ethers.parseUnits("100", 18), 0)).to.be.revertedWith(
+        "Staking cooldown active: wait 3 months between stakes past 3,000 INAYA lifetime"
+      );
+    });
+
+    it("allows staking again once the 90-day cooldown has elapsed", async function () {
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("3200", 18));
+      await staking.connect(alice).stake(ethers.parseUnits("3100", 18), 0);
+
+      await increaseTime(90 * ONE_DAY);
+
+      await expect(staking.connect(alice).stake(ethers.parseUnits("100", 18), 0)).to.emit(staking, "Staked");
+    });
+
+    it("keeps the cooldown active even after withdrawing -- lifetimeStaked never decrements", async function () {
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("3200", 18));
+      await staking.connect(alice).stake(ethers.parseUnits("3100", 18), 0);
+      await staking.connect(alice).withdraw(ethers.parseUnits("3100", 18));
+
+      expect(await staking.userStakedBalance(alice.address)).to.equal(0);
+      expect(await staking.lifetimeStaked(alice.address)).to.equal(ethers.parseUnits("3100", 18));
+
+      await inaya.connect(alice).approve(await staking.getAddress(), ethers.parseUnits("100", 18));
+      await expect(staking.connect(alice).stake(ethers.parseUnits("100", 18), 0)).to.be.revertedWith(
+        "Staking cooldown active: wait 3 months between stakes past 3,000 INAYA lifetime"
+      );
     });
   });
 

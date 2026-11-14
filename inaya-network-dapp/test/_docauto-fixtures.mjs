@@ -120,4 +120,6 @@ export function installMemoryProviders() {
   });
   PROVIDERS.pinata = make("pinata");
   PROVIDERS.filebase = make("filebase");
+  // the opt-in local fallback provider (INAYA_LOCAL_PIN_DIR, SQA-025) is part of the fallback chain too, so "storage is down" must take it down as well
+  PROVIDERS.local = make("local");
 }

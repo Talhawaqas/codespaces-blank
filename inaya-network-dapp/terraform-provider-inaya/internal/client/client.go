@@ -268,3 +268,140 @@ func (c *Client) GetBackupPlan(ctx context.Context, id string) (*BackupPlan, err
 func (c *Client) DeleteBackupPlan(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/public/v1/storage/backup-plans/"+id, nil, nil)
 }
+
+// --- Sovereign Infrastructure Fabric: compute, block, network -------------
+//
+// Unlike storage resources above, creation here is asynchronous: the node
+// daemon executes the real QEMU/qcow2/bridge work on its own poll cycle
+// (see src/lib/infrastructure/operations.js), so Create's response is the
+// resource's initial transient state (CREATING/PROVISIONING), not its
+// final one. Create immediately follows up with a real Get so Terraform's
+// state always reflects what the control plane actually has on file,
+// never a value invented client-side.
+
+type ComputeInstance struct {
+	InstanceID string `json:"instanceId"`
+	ClusterID  string `json:"clusterId"`
+	NodeID     string `json:"nodeId"`
+	Name       string `json:"name"`
+	Vcpu       int64  `json:"vcpu"`
+	MemoryMiB  int64  `json:"memoryMib"`
+	VolumeID   string `json:"volumeId"`
+	VpcID      string `json:"vpcId"`
+	State      string `json:"state"`
+	CreatedAt  string `json:"createdAt"`
+}
+
+type CreateComputeInstanceInput struct {
+	ClusterID string `json:"clusterId"`
+	NodeID    string `json:"nodeId"`
+	Name      string `json:"name"`
+	Vcpu      int64  `json:"vcpu"`
+	MemoryMiB int64  `json:"memoryMib"`
+	VolumeID  string `json:"volumeId,omitempty"`
+	VpcID     string `json:"vpcId,omitempty"`
+}
+
+func (c *Client) CreateComputeInstance(ctx context.Context, in CreateComputeInstanceInput) (*ComputeInstance, error) {
+	var created struct {
+		InstanceID string `json:"instanceId"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/api/public/v1/infrastructure/compute/instances", in, &created); err != nil {
+		return nil, err
+	}
+	return c.GetComputeInstance(ctx, created.InstanceID)
+}
+
+func (c *Client) GetComputeInstance(ctx context.Context, id string) (*ComputeInstance, error) {
+	var out ComputeInstance
+	if err := c.do(ctx, http.MethodGet, "/api/public/v1/infrastructure/compute/instances/"+id, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) TerminateComputeInstance(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/public/v1/infrastructure/compute/instances/"+id, nil, nil)
+}
+
+type Volume struct {
+	VolumeID  string `json:"volumeId"`
+	ClusterID string `json:"clusterId"`
+	NodeID    string `json:"nodeId"`
+	SizeGiB   int64  `json:"sizeGib"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type CreateVolumeInput struct {
+	ClusterID string `json:"clusterId"`
+	NodeID    string `json:"nodeId"`
+	SizeGiB   int64  `json:"sizeGib"`
+}
+
+func (c *Client) CreateVolume(ctx context.Context, in CreateVolumeInput) (*Volume, error) {
+	var created struct {
+		VolumeID string `json:"volumeId"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/api/public/v1/infrastructure/volumes", in, &created); err != nil {
+		return nil, err
+	}
+	return c.GetVolume(ctx, created.VolumeID)
+}
+
+func (c *Client) GetVolume(ctx context.Context, id string) (*Volume, error) {
+	var out Volume
+	if err := c.do(ctx, http.MethodGet, "/api/public/v1/infrastructure/volumes/"+id, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) DeleteVolume(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/public/v1/infrastructure/volumes/"+id, nil, nil)
+}
+
+type SecurityGroupRuleInput struct {
+	Protocol string `json:"protocol"`
+	FromPort *int64 `json:"fromPort,omitempty"`
+	ToPort   *int64 `json:"toPort,omitempty"`
+	Source   string `json:"source,omitempty"`
+}
+
+type Vpc struct {
+	VpcID     string `json:"vpcId"`
+	ClusterID string `json:"clusterId"`
+	NodeID    string `json:"nodeId"`
+	Cidr      string `json:"cidr"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type CreateVpcInput struct {
+	ClusterID          string                   `json:"clusterId"`
+	NodeID             string                   `json:"nodeId"`
+	Cidr               string                   `json:"cidr"`
+	SecurityGroupRules []SecurityGroupRuleInput `json:"securityGroupRules,omitempty"`
+}
+
+func (c *Client) CreateVpc(ctx context.Context, in CreateVpcInput) (*Vpc, error) {
+	var created struct {
+		VpcID string `json:"vpcId"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/api/public/v1/infrastructure/networks", in, &created); err != nil {
+		return nil, err
+	}
+	return c.GetVpc(ctx, created.VpcID)
+}
+
+func (c *Client) GetVpc(ctx context.Context, id string) (*Vpc, error) {
+	var out Vpc
+	if err := c.do(ctx, http.MethodGet, "/api/public/v1/infrastructure/networks/"+id, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) DeleteVpc(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/public/v1/infrastructure/networks/"+id, nil, nil)
+}

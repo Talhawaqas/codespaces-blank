@@ -42,6 +42,18 @@ contract InayaStaking is ReentrancyGuard, Ownable, Pausable {
     mapping(address => uint256) public lockExpiry;      // 0 = no active lock
     mapping(address => uint256) public lockMultiplierBps; // multiplier locked in at first stake, reset on full exit
 
+    // ---------------- Testnet anti-whale guards ----------------
+    // Increment-only, chain-agnostic totals -- gated on these rather than the live
+    // userStakedBalance/rewards balances so withdrawing (or claiming) can never be used to
+    // reset a user's progress toward either threshold.
+    mapping(address => uint256) public lifetimeStaked;          // sum of every stake()/stakeFor() amount ever
+    mapping(address => uint256) public lastStakeTimestamp;
+    mapping(address => uint256) public lifetimeRewardsClaimed;  // sum of every claimReward()/claimRewardTo() payout ever
+
+    uint256 public constant STAKE_COOLDOWN_THRESHOLD = 3_000 * 1e18; // lifetime-staked level that activates the cooldown
+    uint256 public constant STAKE_COOLDOWN_PERIOD = 90 days;         // ~3 months
+    uint256 public constant LIFETIME_REWARD_CAP = 4_000 * 1e18;      // max $INAYA a single address may ever claim
+
     // ---------------- Tier configuration ----------------
     uint256 public constant FLEXIBLE_MULTIPLIER_BPS = 10000; // 1.00x
     uint256 public constant TIER30_MULTIPLIER_BPS = 12500;   // 1.25x
@@ -151,6 +163,19 @@ contract InayaStaking is ReentrancyGuard, Ownable, Pausable {
             "Invalid lock period: use 0, 30, or 90"
         );
 
+        // Testnet anti-whale cooldown: once an address's lifetime stake reaches
+        // STAKE_COOLDOWN_THRESHOLD (3,000 INAYA), every further stake must wait
+        // STAKE_COOLDOWN_PERIOD (90 days) since that address's last stake action. The stake
+        // that crosses the threshold itself is never blocked -- only ones after it are.
+        if (lifetimeStaked[user] >= STAKE_COOLDOWN_THRESHOLD) {
+            require(
+                block.timestamp >= lastStakeTimestamp[user] + STAKE_COOLDOWN_PERIOD,
+                "Staking cooldown active: wait 3 months between stakes past 3,000 INAYA lifetime"
+            );
+        }
+        lifetimeStaked[user] += amount;
+        lastStakeTimestamp[user] = block.timestamp;
+
         uint256 requestedMultiplier = lockPeriodDays == 90
             ? TIER90_MULTIPLIER_BPS
             : (lockPeriodDays == 30 ? TIER30_MULTIPLIER_BPS : FLEXIBLE_MULTIPLIER_BPS);
@@ -228,9 +253,17 @@ contract InayaStaking is ReentrancyGuard, Ownable, Pausable {
     function claimReward() public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         require(reward > 0, "No rewards to claim");
+
+        uint256 remainingCap = LIFETIME_REWARD_CAP > lifetimeRewardsClaimed[msg.sender]
+            ? LIFETIME_REWARD_CAP - lifetimeRewardsClaimed[msg.sender]
+            : 0;
+        require(remainingCap > 0, "Lifetime reward cap reached (4,000 INAYA)");
+        if (reward > remainingCap) reward = remainingCap;
+
         require(reward <= rewardPoolBalance, "Reward pool underfunded - ask admin to fundRewardPool()");
 
-        rewards[msg.sender] = 0;
+        rewards[msg.sender] -= reward;
+        lifetimeRewardsClaimed[msg.sender] += reward;
         rewardPoolBalance -= reward;
 
         rewardToken.safeTransfer(msg.sender, reward);
@@ -305,9 +338,17 @@ contract InayaStaking is ReentrancyGuard, Ownable, Pausable {
         require(destChainId != block.chainid, "Use claimReward() for the home chain");
         uint256 reward = rewards[msg.sender];
         require(reward > 0, "No rewards to claim");
+
+        uint256 remainingCap = LIFETIME_REWARD_CAP > lifetimeRewardsClaimed[msg.sender]
+            ? LIFETIME_REWARD_CAP - lifetimeRewardsClaimed[msg.sender]
+            : 0;
+        require(remainingCap > 0, "Lifetime reward cap reached (4,000 INAYA)");
+        if (reward > remainingCap) reward = remainingCap;
+
         require(reward <= rewardPoolBalance, "Reward pool underfunded - ask admin to fundRewardPool()");
 
-        rewards[msg.sender] = 0;
+        rewards[msg.sender] -= reward;
+        lifetimeRewardsClaimed[msg.sender] += reward;
         rewardPoolBalance -= reward;
 
         address bridgeAddr = IInayaStakingGatewayHome(crossChainGateway).bridge();

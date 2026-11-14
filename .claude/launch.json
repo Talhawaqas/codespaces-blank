@@ -4,9 +4,25 @@
     {
       "name": "inaya-network-dapp-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "cwd": "inaya-network-dapp",
       "port": 3000
+    },
+    {
+      "name": "inaya-dapp-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3005"
+      ],
+      "port": 3005,
+      "cwd": "inaya-network-dapp"
     }
   ]
 }

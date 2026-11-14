@@ -201,20 +201,32 @@ describe("InayaStaking -- cross-chain extensions", function () {
       );
     });
 
-    it("zeroes the reward before forwarding, so it can never double-pay", async function () {
+    it("deducts exactly what it pays before forwarding, so it can never double-pay", async function () {
       const destRecipient = ethers.zeroPadValue(bob.address, 32);
       const earnedBefore = await staking.earned(alice.address);
       expect(earnedBefore).to.be.gt(0);
 
+      const cap = await staking.LIFETIME_REWARD_CAP();
+      // This fixture's reward rate accrues far more than the lifetime cap over 30 days, so the
+      // forwarded payout is capped -- same cap enforcement as claimReward().
+      expect(earnedBefore).to.be.gt(cap);
+
       await expect(staking.connect(alice).claimRewardTo(SEPOLIA, destRecipient)).to.emit(staking, "RewardPaidCrossChain");
 
-      // rewards[] is zeroed in the same call, before the cross-chain forward -- proof a retried/
-      // replayed message can never see this same reward again. (A follow-up claim can still
-      // succeed for whatever NEW reward has accrued in the meantime; that's not a double-pay.)
-      expect(await staking.rewards(alice.address)).to.equal(0);
+      // rewards[] is decremented by exactly the capped payout in the same call, before the
+      // cross-chain forward -- proof a retried/replayed message can never see this same reward
+      // again, and a follow-up claim is further blocked once lifetimeRewardsClaimed hits the cap.
+      // (Not asserting an exact leftover: one more block accrues between reading earnedBefore and
+      // the claim tx landing, so the true pre-claim reward is slightly above earnedBefore.)
+      expect(await staking.rewards(alice.address)).to.be.gt(0);
+      expect(await staking.lifetimeRewardsClaimed(alice.address)).to.equal(cap);
       expect(await gatewayMock.forwardClaimCallCount()).to.equal(1);
       expect(await gatewayMock.lastDestChainId()).to.equal(SEPOLIA);
-      expect(await gatewayMock.lastAmount()).to.be.gte(earnedBefore);
+      expect(await gatewayMock.lastAmount()).to.equal(cap);
+
+      await expect(staking.connect(alice).claimRewardTo(SEPOLIA, destRecipient)).to.be.revertedWith(
+        "Lifetime reward cap reached (4,000 INAYA)"
+      );
     });
 
     it("rejects when the tracked reward pool is underfunded, same guard as claimReward()", async function () {

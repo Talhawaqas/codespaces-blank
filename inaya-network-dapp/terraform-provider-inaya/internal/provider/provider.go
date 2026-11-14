@@ -98,6 +98,10 @@ func (p *inayaProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewSnapshotResource,
 		NewBackupPolicyResource,
 		NewBackupPlanResource,
+		// Sovereign Infrastructure Fabric SOW, Phase 8.
+		NewComputeInstanceResource,
+		NewComputeVolumeResource,
+		NewVpcResource,
 	}
 }
 
