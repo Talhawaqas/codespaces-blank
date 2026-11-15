@@ -265,19 +265,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Node-operator share (35% of storage)",
-              "($0.17M)",
-              "($0.87M)",
-              "($3.03M)",
-              "($9.87M)",
-              "($24.9M)"
+              "-$0.17M",
+              "-$0.87M",
+              "-$3.03M",
+              "-$9.87M",
+              "-$24.9M"
             ],
             [
               "Payment, hosting and platform costs",
-              "($4K)",
-              "($10K)",
-              "($23K)",
-              "($49K)",
-              "($86K)"
+              "-$4K",
+              "-$10K",
+              "-$23K",
+              "-$49K",
+              "-$86K"
             ],
             [
               "Gross profit",
@@ -297,23 +297,23 @@ export const combinedBusinessModel = {
             ],
             [
               "Team and office (Pakistan)",
-              "($0.30M)",
-              "($0.35M)",
-              "($0.40M)",
-              "($0.45M)",
-              "($0.50M)"
+              "-$0.30M",
+              "-$0.35M",
+              "-$0.40M",
+              "-$0.45M",
+              "-$0.50M"
             ],
             [
               "File storage infrastructure",
-              "($0.40M)",
-              "($0.50M)",
-              "($0.60M)",
-              "($0.70M)",
-              "($0.80M)"
+              "-$0.40M",
+              "-$0.50M",
+              "-$0.60M",
+              "-$0.70M",
+              "-$0.80M"
             ],
             [
               "One-time: legal, security audits, launch marketing",
-              "($0.30M)",
+              "-$0.30M",
               "-",
               "-",
               "-",
@@ -321,15 +321,15 @@ export const combinedBusinessModel = {
             ],
             [
               "Total operating costs",
-              "($1.00M)",
-              "($0.85M)",
-              "($1.00M)",
-              "($1.15M)",
-              "($1.30M)"
+              "-$1.00M",
+              "-$0.85M",
+              "-$1.00M",
+              "-$1.15M",
+              "-$1.30M"
             ],
             [
               "Net income (Year 1 loss funded by the pre-seed)",
-              "($0.67M)",
+              "-$0.67M",
               "$0.80M",
               "$4.72M",
               "$17.4M",
@@ -381,8 +381,8 @@ export const combinedBusinessModel = {
             ],
             [
               "Conservative — net income",
-              "($0.92M)",
-              "($0.43M)",
+              "-$0.92M",
+              "-$0.43M",
               "$0.45M",
               "$3.53M",
               "$10.5M"
@@ -405,7 +405,7 @@ export const combinedBusinessModel = {
             ],
             [
               "Base — net income",
-              "($0.67M)",
+              "-$0.67M",
               "$0.80M",
               "$4.72M",
               "$17.4M",
@@ -429,7 +429,7 @@ export const combinedBusinessModel = {
             ],
             [
               "Optimistic — net income",
-              "($0.51M)",
+              "-$0.51M",
               "$1.63M",
               "$7.58M",
               "$26.7M",

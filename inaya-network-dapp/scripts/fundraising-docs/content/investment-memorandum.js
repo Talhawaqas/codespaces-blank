@@ -372,8 +372,8 @@ export const investmentMemorandum = {
             ["Active Storage (PB)", "15", "60", "200", "650", "1,500"],
             ["Enterprise ARR", "$1.0M", "$4.0M", "$13.2M", "$42.8M", "$98.8M"],
             ["Operating Costs", "$1.0M", "$0.85M", "$1.0M", "$1.15M", "$1.3M"],
-            ["Node-Operator Share (35%)", "($0.3M)", "($1.4M)", "($4.6M)", "($15.0M)", "($34.6M)"],
-            ["Net Income (Year 1 loss funded by the pre-seed)", "($0.4M)", "$1.7M", "$7.6M", "$26.7M", "$62.9M"],
+            ["Node-Operator Share (35%)", "-$0.3M", "-$1.4M", "-$4.6M", "-$15.0M", "-$34.6M"],
+            ["Net Income (Year 1 loss funded by the pre-seed)", "-$0.4M", "$1.7M", "$7.6M", "$26.7M", "$62.9M"],
           ],
         },
         {
