@@ -20,6 +20,7 @@ import { companyProfile } from "./content/company-profile.js";
 import { saasBusinessModel } from "./content/saas-business-model.js";
 import { investmentMemorandum } from "./content/investment-memorandum.js";
 import { combinedBusinessModel } from "./content/combined-business-model.js";
+import { hospitalitySummary } from "./content/hospitality-summary.js";
 import { buildInvestmentMemorandumHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -33,6 +34,7 @@ const REGISTRY = {
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
   "investment-memorandum": { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
   // Confidential: written to the founder's Downloads folder, never to public/documents.
+  "hospitality-summary": { name: "Inaya-Hospitality-OS-Summary.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(hospitalitySummary) },
   "combined-business-model": { name: "Inaya-Combined-Business-Model.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(combinedBusinessModel) },
 };
 
