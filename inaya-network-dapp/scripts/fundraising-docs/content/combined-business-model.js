@@ -206,7 +206,7 @@ export const combinedBusinessModel = {
           "type": "bullets",
           "items": [
             "Cost of revenue: node-operator payouts (35% of storage revenue), payment processing, per-company hosting and platform services.",
-            "Operating costs: the team, product development, security audits, marketing and overheads — the yearly burn from the Investment Memorandum ($1.5M rising to $4.5M by Year 5).",
+            "Operating costs (founder figures): the team and office in Pakistan, $300K in Year 1 rising by $50K a year; Inaya's own file storage infrastructure, $400K rising by $100K a year; and $300K of one-time Year 1 costs (international legal and compliance $40K, security audits $80K, infrastructure and launch marketing $180K). That is $1.0M in Year 1, $0.85M in Year 2 and $1.3M by Year 5.",
             "Funding: the $2M pre-seed round. Later rounds are not modelled, so the cash line shows plainly when more funding would be needed."
           ]
         }
@@ -218,7 +218,7 @@ export const combinedBusinessModel = {
       "blocks": [
         {
           "type": "lead",
-          "text": "Base uses the Investment Memorandum's Corporate Reserve volumes (15 PB in Year 1 to 1,500 PB in Year 5) and its burn rates, plus conservative placeholders for everything else."
+          "text": "Base uses the Investment Memorandum's Corporate Reserve volumes (15 PB in Year 1 to 1,500 PB in Year 5), the founder's operating-cost figures, and conservative placeholders for everything else."
         },
         {
           "type": "table",
@@ -296,35 +296,59 @@ export const combinedBusinessModel = {
               "65%"
             ],
             [
-              "Operating burn",
-              "($1.50M)",
-              "($2.00M)",
-              "($2.50M)",
-              "($3.50M)",
-              "($4.50M)"
+              "Team and office (Pakistan)",
+              "($0.30M)",
+              "($0.35M)",
+              "($0.40M)",
+              "($0.45M)",
+              "($0.50M)"
             ],
             [
-              "Net income",
-              "($1.17M)",
-              "($0.35M)",
-              "$3.22M",
-              "$15.1M",
-              "$42.2M"
+              "File storage infrastructure",
+              "($0.40M)",
+              "($0.50M)",
+              "($0.60M)",
+              "($0.70M)",
+              "($0.80M)"
+            ],
+            [
+              "One-time: legal, security audits, launch marketing",
+              "($0.30M)",
+              "-",
+              "-",
+              "-",
+              "-"
+            ],
+            [
+              "Total operating costs",
+              "($1.00M)",
+              "($0.85M)",
+              "($1.00M)",
+              "($1.15M)",
+              "($1.30M)"
+            ],
+            [
+              "Net income (Year 1 loss funded by the pre-seed)",
+              "($0.67M)",
+              "$0.80M",
+              "$4.72M",
+              "$17.4M",
+              "$45.4M"
             ],
             [
               "Cash at year-end (after the $2M pre-seed)",
-              "$0.83M",
-              "$0.48M",
-              "$3.69M",
-              "$18.8M",
-              "$61.0M"
+              "$1.33M",
+              "$2.13M",
+              "$6.84M",
+              "$24.3M",
+              "$69.7M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "Reading the table.",
-          "text": "Revenue is billed on the average amount stored during each year, so Year 1 storage revenue is about half of the year-end run rate the Investment Memorandum shows. Inaya breaks even in Year 3. Business Workspace is 1.3% of revenue in Year 1 and 0.7% in Year 5, because the customer counts are deliberately cautious placeholders (27 paying companies at the end of Year 1, 1,095 by Year 5); every 100 extra Business-package companies adds about $57,000 a year."
+          "text": "Revenue is billed on the average amount stored during each year, so Year 1 storage revenue is about half of the year-end run rate the Investment Memorandum shows. Inaya is profitable from Year 2; the Year 1 loss is covered by the pre-seed, and cash never falls below $1.33M. Business Workspace is 1.3% of revenue in Year 1 and 0.7% in Year 5, because the customer counts are deliberately cautious placeholders (27 paying companies at the end of Year 1, 1,095 by Year 5); every 100 extra Business-package companies adds about $57,000 a year."
         }
       ]
     },
@@ -357,19 +381,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Conservative — net income",
-              "($1.42M)",
-              "($1.58M)",
-              "($1.05M)",
-              "$1.18M",
-              "$7.27M"
+              "($0.92M)",
+              "($0.43M)",
+              "$0.45M",
+              "$3.53M",
+              "$10.5M"
             ],
             [
               "Conservative — cash at year-end",
-              "$0.58M",
-              "($1.00M)",
-              "($2.06M)",
-              "($0.87M)",
-              "$6.40M"
+              "$1.08M",
+              "$0.65M",
+              "$1.09M",
+              "$4.63M",
+              "$15.1M"
             ],
             [
               "Base — revenue",
@@ -381,19 +405,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Base — net income",
-              "($1.17M)",
-              "($0.35M)",
-              "$3.22M",
-              "$15.1M",
-              "$42.2M"
+              "($0.67M)",
+              "$0.80M",
+              "$4.72M",
+              "$17.4M",
+              "$45.4M"
             ],
             [
               "Base — cash at year-end",
-              "$0.83M",
-              "$0.48M",
-              "$3.69M",
-              "$18.8M",
-              "$61.0M"
+              "$1.33M",
+              "$2.13M",
+              "$6.84M",
+              "$24.3M",
+              "$69.7M"
             ],
             [
               "Optimistic — revenue",
@@ -405,26 +429,26 @@ export const combinedBusinessModel = {
             ],
             [
               "Optimistic — net income",
-              "($1.01M)",
-              "$0.48M",
-              "$6.08M",
-              "$24.3M",
-              "$65.6M"
+              "($0.51M)",
+              "$1.63M",
+              "$7.58M",
+              "$26.7M",
+              "$68.8M"
             ],
             [
               "Optimistic — cash at year-end",
-              "$0.99M",
-              "$1.47M",
-              "$7.55M",
-              "$31.9M",
-              "$97.5M"
+              "$1.49M",
+              "$3.12M",
+              "$10.7M",
+              "$37.4M",
+              "$106.2M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "What the scenarios say.",
-          "text": "Base and Optimistic stay cash-positive on the $2M pre-seed (Optimistic breaks even in Year 2, Base in Year 3). Conservative breaks even in Year 4 and needs roughly $2.06M more funding by Year 3, so the next raise should be planned for the end of Year 1 unless storage volume tracks Base."
+          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are both profitable from Year 2; Conservative, with a quarter of the storage volume, is profitable from Year 3 and its cash never falls below $0.65M. Operating costs are the same in every scenario; no recurring marketing budget is modelled after Year 1."
         }
       ]
     },
@@ -456,9 +480,9 @@ export const combinedBusinessModel = {
               "Investment Memorandum (founder figures)"
             ],
             [
-              "Operating burn",
-              "$1.5M / 2.0M / 2.5M / 3.5M / 4.5M",
-              "Investment Memorandum (founder figures)"
+              "Operating costs",
+              "$1.0M / 0.85M / 1.0M / 1.15M / 1.3M",
+              "Founder figures, 15 Nov 2026: team and office, storage infrastructure, one-time Year 1 costs"
             ],
             [
               "Business Workspace prices",
