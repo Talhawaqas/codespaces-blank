@@ -112,7 +112,7 @@ export const ERP_MODULES = [
     // One tile, labelled with the company's own industry OS. Only the
     // visible one survives the caller's isNavItemVisible filter.
     id: "industry", label: "Industry", icon: "industry", home: null,
-    groups: [{ id: "industry", label: "Industry", items: ["health", "legal", "regulated", "financial", "government", "education"] }],
+    groups: [{ id: "industry", label: "Industry", items: ["health", "legal", "regulated", "financial", "government", "education", "hospitality"] }],
   },
   {
     id: "admin", label: "Admin", icon: "admin", home: "adminDashboard",
@@ -195,6 +195,7 @@ export const ERP_FOCUS_BY_INDUSTRY = {
   financial: ["industry", "sales", "documents", "accounting", "people"],
   government: ["industry", "purchasing", "inventory", "documents", "people", "accounting"],
   education: ["industry", "accounting", "people", "documents", "workplace"],
+  hospitality: ["industry", "inventory", "purchasing", "sales", "people", "accounting"],
 };
 
 function orderForIndustry(modules, visibleKeys) {

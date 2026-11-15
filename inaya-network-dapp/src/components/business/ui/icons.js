@@ -45,6 +45,12 @@ export const ICONS = {
       <path d="M14 6h6v6" />
     </>
   ),
+  hospitality: (
+    <>
+      <path d="M7 3v8M4 3v5a3 3 0 006 0V3M7 11v10" />
+      <path d="M17 3c-2 2-3 4.5-3 8h4v10M18 3v8" />
+    </>
+  ),
   education: (
     <>
       <path d="M2 9l10-5 10 5-10 5-10-5z" />

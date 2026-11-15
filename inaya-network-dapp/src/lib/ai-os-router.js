@@ -41,6 +41,7 @@ import { buildAuditContext, runAuditTool, AUDIT_TOOL_DECLARATIONS, auditSystemIn
 import { buildRegulatoryContext, runRegulatoryTool, REGULATORY_TOOL_DECLARATIONS, regulatorySystemInstruction } from "./ai-regulatory-tools.js";
 import { buildGovernmentContext, runGovernmentTool, GOVERNMENT_TOOL_DECLARATIONS, governmentSystemInstruction } from "./ai-government-tools.js";
 import { buildEducationContext, runEducationTool, EDUCATION_TOOL_DECLARATIONS, educationSystemInstruction } from "./ai-education-tools.js";
+import { buildHospitalityContext, runHospitalityTool, HOSPITALITY_TOOL_DECLARATIONS, hospitalitySystemInstruction } from "./ai-hospitality-tools.js";
 import { buildResilienceContext, runResilienceTool, RESILIENCE_TOOL_DECLARATIONS, resilienceSystemInstruction } from "./ai-resilience-tools.js";
 import { retrieveContext, formatAttribution } from "./rag/retrieve.js";
 import { getAttentionItems } from "./institutional-attention.js";
@@ -97,7 +98,7 @@ function withPrefix(declarations, prefix) {
 export async function buildOsContext(input) {
   if (input?.scope === "org") {
     const { orgId, membership, email } = input;
-    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx, resilienceCtx, governanceCtx, educationCtx] = await Promise.all([
+    const [businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx, resilienceCtx, governanceCtx, educationCtx, hospitalityCtx] = await Promise.all([
       buildBusinessContext({ orgId, membership, email }),
       buildSecurityContext({ identityId: email }).catch(() => null),
       // Healthcare & Legal Expansion SOW, Phase 5/9 — built unconditionally
@@ -128,8 +129,10 @@ export async function buildOsContext(input) {
       // Education OS: same unconditional-build reasoning; every education_
       // tool re-checks the caller's education role itself.
       buildEducationContext({ orgId, membership, email }).catch(() => null),
+      // Hospitality OS: every hospitality_ tool re-checks the caller's role and location scope itself.
+      buildHospitalityContext({ orgId, membership, email }).catch(() => null),
     ]);
-    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx, resilienceCtx, governanceCtx, educationCtx };
+    return { scope: "org", businessCtx, securityCtx, healthCtx, legalCtx, complianceCtx, investmentCtx, privateCapitalCtx, auditCtx, regulatoryCtx, governmentCtx, resilienceCtx, governanceCtx, educationCtx, hospitalityCtx };
   }
   if (input?.scope === "wallet") {
     const { walletAddress } = input;
@@ -156,6 +159,7 @@ export function getOsToolDeclarations(scope) {
       ...withPrefix(RESILIENCE_TOOL_DECLARATIONS, "resilience"),
       ...withPrefix(GOVERNANCE_TOOL_DECLARATIONS, "governance"),
       ...withPrefix(EDUCATION_TOOL_DECLARATIONS, "education"),
+      ...withPrefix(HOSPITALITY_TOOL_DECLARATIONS, "hospitality"),
     ];
   }
   if (scope === "wallet") {
@@ -183,6 +187,7 @@ export async function runOsTool(name, args, ctx) {
   if (name.startsWith("government_") && ctx.governmentCtx) return runGovernmentTool(name.slice("government_".length), args, ctx.governmentCtx);
   if (name.startsWith("resilience_") && ctx.resilienceCtx) return runResilienceTool(name.slice("resilience_".length), args, ctx.resilienceCtx);
   if (name.startsWith("education_") && ctx.educationCtx) return runEducationTool(name.slice("education_".length), args, ctx.educationCtx);
+  if (name.startsWith("hospitality_") && ctx.hospitalityCtx) return runHospitalityTool(name.slice("hospitality_".length), args, ctx.hospitalityCtx);
   if (name.startsWith("governance_") && ctx.governanceCtx) return runGovernanceTool(name.slice("governance_".length), args, ctx.governanceCtx);
   return { error: `Unknown or unavailable tool: ${name}` };
 }
@@ -208,7 +213,8 @@ export function osSystemInstruction({ scope, orgName, role, isManager }) {
       `\n\nYou ALSO have Government OS tools (prefixed government_), for organizations running the Government vertical. ${governmentSystemInstruction()}` +
       `\n\nYou ALSO have Autonomous Resilience Layer tools (prefixed resilience_). ${resilienceSystemInstruction()}` +
       `\n\nYou ALSO have read-only governance tools (prefixed governance_). ${governanceSystemInstruction()}` +
-      `\n\nYou ALSO have Education OS tools (prefixed education_), for schools and colleges. ${educationSystemInstruction()}`;
+      `\n\nYou ALSO have Education OS tools (prefixed education_), for schools and colleges. ${educationSystemInstruction()}` +
+      `\n\nYou ALSO have Hospitality OS tools (prefixed hospitality_), for restaurants, cafes and caterers. ${hospitalitySystemInstruction()}`;
   }
   return `You are the Inaya OS Assistant for a connected wallet — you help with general questions about how Inaya works (via search_docs, Inaya's indexed documentation) and this wallet's own security status (via the security_ tools: recent events, threat lookups, reputation detail).
 

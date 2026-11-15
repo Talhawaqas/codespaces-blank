@@ -31,6 +31,11 @@ export function normalizeRules(input = {}) {
     r.appointment = input.appointment;
     if (r.appointment === "completed_recently" && !r.completedWithinDays) r.completedWithinDays = 30;
   }
+  if (input.guestVisit !== undefined && input.guestVisit !== null && input.guestVisit !== "") {
+    if (!["visited_recently", "not_visited_recently", "never_visited"].includes(input.guestVisit)) return { error: "guestVisit must be visited_recently, not_visited_recently or never_visited." };
+    r.guestVisit = input.guestVisit;
+    if (r.guestVisit !== "never_visited") { const n = input.visitDays === undefined || input.visitDays === "" || input.visitDays === null ? 60 : Number(input.visitDays); if (!Number.isInteger(n) || n < 1 || n > 3650) return { error: "visitDays must be a whole number of days between 1 and 3650." }; r.visitDays = n; }
+  }
   if (input.consentedOnly === true) r.consentedOnly = true;
   return { rules: r };
 }
@@ -47,6 +52,9 @@ export function describeRules(r = {}) {
   if (r.appointment === "booked_any") parts.push("who have booked an appointment");
   if (r.appointment === "never_booked") parts.push("who have never booked");
   if (r.appointment === "completed_recently") parts.push(`who had a meeting in the last ${r.completedWithinDays} days`);
+  if (r.guestVisit === "visited_recently") parts.push(`who visited in the last ${r.visitDays} days`);
+  if (r.guestVisit === "not_visited_recently") parts.push(`who have visited before but not in the last ${r.visitDays} days`);
+  if (r.guestVisit === "never_visited") parts.push("who have never completed a visit");
   if (r.consentedOnly) parts.push("who opted in to emails");
   return `${parts.join(", ")}. Unsubscribed, bounced and complained addresses are always left out.`;
 }
@@ -61,6 +69,13 @@ export async function resolveAudience(orgId, rules = {}, { limit = MAX_AUDIENCE 
   if (rules.companyContains) q.company = { $regex: rules.companyContains.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
   if (rules.emailDomain) q.email = { $regex: `@${rules.emailDomain.replace(/\./g, "\\.")}$`, $options: "i" };
   if (rules.createdWithinDays) q.createdAt = { $gte: new Date(Date.now() - rules.createdWithinDays * 86400000).toISOString() };
+  // Guest visits come from the Hospitality workspace, which stamps hospitality.lastVisitAt on the CRM contact.
+  if (rules.guestVisit) {
+    const cutoff = new Date(Date.now() - (rules.visitDays || 0) * 86400000).toISOString();
+    if (rules.guestVisit === "visited_recently") q["hospitality.lastVisitAt"] = { $gte: cutoff };
+    else if (rules.guestVisit === "not_visited_recently") q["hospitality.lastVisitAt"] = { $lt: cutoff };
+    else q["hospitality.lastVisitAt"] = { $exists: false };
+  }
   let contacts = await crmContacts.find(q).project({ email: 1, name: 1, company: 1, type: 1, createdAt: 1 }).limit(limit + 1000).toArray();
 
   if (rules.inactiveDays) {

@@ -23,6 +23,7 @@ export const PRIMARY_NAV_KEYS_BY_INDUSTRY = {
   financial: ["osHome", "financial", "crm", "documents", "dataRooms", "sign", "finance", "tasks", "insights", "chat"],
   government: ["osHome", "government", "tasks", "documents", "procurement", "inventory", "approvals", "hr", "insights", "chat"],
   education: ["osHome", "education", "tasks", "documents", "finance", "hr", "insights", "chat"],
+  hospitality: ["osHome", "hospitality", "crm", "inventory", "procurement", "campaigns", "tasks", "hr", "finance", "insights"],
 };
 
 /** The primary sidebar keys for whatever industry item is in `visible` (the general set if none). */
@@ -39,7 +40,7 @@ export const LAUNCHER_GROUPS = [
   { id: "work", name: "Everyday work", blurb: "Your team’s day-to-day", keys: ["tasks", "documents", "projects", "departments", "notes", "chat", "meet", "approvals", "sign", "fileRequests", "shares", "office", "ai", "help"] },
   { id: "money", name: "Money", blurb: "Sales, billing and books", keys: ["finance", "crm", "appointments", "campaigns", "inventory", "procurement", "bookkeeper", "documentAutomation", "escrow", "attestations", "support", "portalRequests"] },
   { id: "people", name: "People & insight", blurb: "Team, reports and automation", keys: ["hr", "insights", "brief", "whatChanged", "activity", "workflows", "whatIf", "executive", "docIntelligence"] },
-  { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government", "education"] },
+  { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government", "education", "hospitality"] },
   { id: "security", name: "Security & compliance", blurb: "Mostly for admins", keys: ["security", "aiActions", "adminDashboard", "governance", "complianceReadiness", "ransomware", "resilience", "resilienceTesting", "evidence", "auditTrail", "complianceEvidence", "trustRelationships", "aiSecurity", "identity"] },
   { id: "it", name: "Storage & IT", blurb: "For IT and admins", keys: ["deviceProtection", "gateway", "infrastructure", "storageManager", "nas", "cloudBackup", "storageControlPlane", "s3Compat", "dataSources", "databases", "sqlConsole", "mlStudio", "dataRooms", "integrations", "webhooks", "apiKeys", "enterpriseHardening"] },
   { id: "settings", name: "Account & settings", blurb: "Your company’s setup", keys: ["billing", "settings", "appearance"] },

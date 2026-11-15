@@ -894,6 +894,55 @@ export const ROADMAP_STAGES = [
     notes:
       "Verified with automated tests against the real database (booking, double-booking refusal, encryption at rest, reschedule and cancel links, reminders, CRM logging, the calendar feed, two-person approval, delivery, bounce and complaint suppression, tracking, unsubscribe and sequences) and checked in a running app. Campaign sending starts once the separate marketing sending domain is connected. SMS reminders are built but off because no SMS provider is connected, so reminders go by email.",
   },
+  {
+    number: 33,
+    title: "Hospitality OS — Reservations, Tables, Menu, Stock and Daily Operations for Restaurants",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app.",
+    securityStatement:
+      "Every action is checked on the server by role and by location, guest contact details and staff notes are hidden from service staff, the public booking page shows only free times, and reservations, price and allergen changes, wastage and stock counts are written to the tamper-evident audit chain.",
+    groups: [
+      {
+        title: "Front of house",
+        items: [
+          "Locations with opening hours, closures, time zone, currency and a reservation policy",
+          "Seating areas and tables, combinable tables and temporary closures",
+          "Reservations by phone, in person, walk-in or an online booking page, with a table chosen automatically and double bookings refused",
+          "A guest limit per time slot, a live floor view and a waitlist that suggests the next party that fits",
+          "Confirmation, change, cancellation and reminder emails, and a private link for guests to view or cancel",
+        ],
+      },
+      {
+        title: "Guests",
+        items: [
+          "Guests are CRM contacts: completed visits, feedback and preferences on the customer record",
+          "Phone-only matches are reviewed by a manager, never merged automatically",
+          "Marketing opt-in recorded separately from the booking, and a 'guest visits' audience in Campaigns",
+          "Export and erase a guest's data",
+        ],
+      },
+      {
+        title: "Kitchen and stock",
+        items: [
+          "Menus, categories, items, options, dietary labels and allergens, reviewed and published by a manager",
+          "Recipes from Inventory ingredients with versions, stock coverage and an estimated cost only when every price is known",
+          "Wastage with reasons and approval, stock counts, reorder suggestions that draft purchase requests, and delivery checks",
+        ],
+      },
+      {
+        title: "Daily operations",
+        items: [
+          "Weekly roster with publishing, unavailability, approved leave from HR and shift swaps",
+          "Opening and closing checklists with due times and required evidence",
+          "Guest complaints and operational incidents with assignment and escalation",
+          "Reports with metric definitions, read-only AI assistant tools and four automation templates",
+        ],
+      },
+    ],
+    notes:
+      "Verified with automated tests against the real database, including simultaneous booking attempts, capacity limits, role and location access, other-company isolation and the public booking page. No point-of-sale, payments, kitchen display or payroll: stock isn't deducted from sales and no sales or food-cost figures are shown.",
+  },
 ];
 
 export const VISION = {

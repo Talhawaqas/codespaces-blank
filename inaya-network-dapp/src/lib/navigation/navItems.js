@@ -59,6 +59,7 @@ export const NAV_ITEMS = [
   { key: "financial", label: "Financial OS", icon: "financial", verticalOnly: ["financial", "private_capital"], group: "industry" },
   { key: "government", label: "Government OS", icon: "government", verticalOnly: "government", group: "industry" },
   { key: "education", label: "Education OS", icon: "education", verticalOnly: "education", group: "industry" },
+  { key: "hospitality", label: "Hospitality OS", icon: "hospitality", verticalOnly: "hospitality", group: "industry" },
   { key: "security", label: "Account Security", icon: "activity", group: "trust" },
   { key: "resilience", label: "Security & Resilience Controls", icon: "resilience", manageOnly: true, group: "trust" },
   { key: "resilienceTesting", label: "Resilience Testing", icon: "resilience", manageOnly: true, group: "trust" },
@@ -123,6 +124,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 // required for an item to be findable.
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
+  hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
   crm: "crm customers leads deals pipeline sales contacts",
   appointments: "appointments calendar booking bookings schedule meetings availability reminders consultations",
   campaigns: "email campaigns marketing newsletter mass email mailing promotions sequences unsubscribe",

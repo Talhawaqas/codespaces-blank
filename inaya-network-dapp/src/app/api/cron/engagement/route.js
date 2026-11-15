@@ -10,6 +10,8 @@ import { processDueReminders } from "../../../../lib/engagement/reminders.js";
 import { syncDueImports } from "../../../../lib/engagement/feeds.js";
 import { processCampaigns } from "../../../../lib/engagement/sender.js";
 import { processDueEnrollments } from "../../../../lib/engagement/sequences.js";
+import { processReservationReminders } from "../../../../lib/hospitality/reservations.js";
+import { processOverdueChecklists } from "../../../../lib/hospitality/operations.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -21,7 +23,7 @@ export async function GET(request) {
       name: "engagement", retries: 0,
       fn: async () => {
         const out = {};
-        for (const [k, f] of [["reminders", () => processDueReminders()], ["campaigns", () => processCampaigns()], ["sequences", () => processDueEnrollments()], ["calendarImports", () => syncDueImports()]]) {
+        for (const [k, f] of [["reminders", () => processDueReminders()], ["campaigns", () => processCampaigns()], ["sequences", () => processDueEnrollments()], ["calendarImports", () => syncDueImports()], ["reservationReminders", () => processReservationReminders()], ["overdueChecklists", () => processOverdueChecklists()]]) {
           try { out[k] = await f(); } catch (e) { console.error(`cron/engagement ${k} failed:`, e?.message); out[k] = { error: String(e?.message || e).slice(0, 200) }; }
         }
         return out;

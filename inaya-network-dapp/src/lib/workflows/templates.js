@@ -127,6 +127,55 @@ function afterMeetingFollowUp() {
   };
 }
 
+// ---- Hospitality SOW 16: events raised by src/lib/hospitality/* start these. Nothing here books, orders or sends marketing. ----
+function hospitalityPendingReservation() {
+  return {
+    nodes: [
+      n("trigger", "trigger.event", "Reservation needs confirmation", 40, 160, { eventType: "reservation.created" }),
+      n("notify", "notify.inaya", "Tell the hosts", 300, 160, { title: "Reservation {{ trigger.payload.reservation.ref }}: {{ trigger.payload.reservation.status }}", body: "Party of {{ trigger.payload.reservation.partySize }} on {{ trigger.payload.reservation.date }} at {{ trigger.payload.reservation.time }}, booked by {{ trigger.payload.reservation.source }}. Open Hospitality > Reservations to confirm or decline.", severity: "info", audience: "managers", alertType: "reservation" }),
+      n("evidence", "evidence.record", "Record", 560, 160, { note: "Hosts alerted about reservation {{ trigger.payload.reservation.ref }}" }),
+    ],
+    edges: [e("trigger", "notify"), e("notify", "evidence")],
+    settings: SETTINGS(["notify", "evidence"]),
+  };
+}
+
+function hospitalityNoShowFollowUp() {
+  return {
+    nodes: [
+      n("trigger", "trigger.event", "Guest marked as a no-show", 40, 160, { eventType: "reservation.no_show" }),
+      n("notify", "notify.inaya", "Tell the manager", 300, 160, { title: "No-show: reservation {{ trigger.payload.reservation.ref }}", body: "Party of {{ trigger.payload.reservation.partySize }} on {{ trigger.payload.reservation.date }} at {{ trigger.payload.reservation.time }} did not arrive. Decide whether to contact the guest; nothing is sent automatically.", severity: "warning", audience: "managers", alertType: "no_show" }),
+      n("evidence", "evidence.record", "Record", 560, 160, { note: "No-show recorded for reservation {{ trigger.payload.reservation.ref }}" }),
+    ],
+    edges: [e("trigger", "notify"), e("notify", "evidence")],
+    settings: SETTINGS(["notify", "evidence"]),
+  };
+}
+
+function hospitalityOperationsAlert() {
+  return {
+    nodes: [
+      n("delivery", "trigger.event", "Delivery discrepancy recorded", 40, 260, { eventType: "delivery.discrepancy" }),
+      n("notify", "notify.inaya", "Alert the managers", 340, 260, { title: "Hospitality alert: {{ trigger.payload.eventType }}", body: "Something needs a manager at one of your locations ({{ trigger.payload.eventType }}). Open Hospitality to see the record and decide what to do. Purchase requests, stock changes and guest messages still need a person.", severity: "warning", audience: "managers", alertType: "hospitality" }),
+      n("evidence", "evidence.record", "Record", 620, 260, { note: "Managers alerted: {{ trigger.payload.eventType }}" }),
+    ],
+    edges: [e("delivery", "notify"), e("notify", "evidence")],
+    settings: SETTINGS(["notify", "evidence"]),
+  };
+}
+
+function hospitalityGuestFollowUp() {
+  return {
+    nodes: [
+      n("trigger", "trigger.event", "Guest feedback submitted", 40, 160, { eventType: "feedback.submitted" }),
+      n("notify", "notify.inaya", "Share with the manager", 300, 100, { title: "Guest feedback: {{ trigger.payload.rating }}/5 on {{ trigger.payload.reservation.ref }}", body: "A guest left feedback on reservation {{ trigger.payload.reservation.ref }}. Open the reservation to read it and decide on a follow-up.", severity: "info", audience: "managers", alertType: "feedback" }),
+      n("evidence", "evidence.record", "Record", 560, 100, { note: "Guest feedback on {{ trigger.payload.reservation.ref }} shared with the manager" }),
+    ],
+    edges: [e("trigger", "notify"), e("notify", "evidence")],
+    settings: SETTINGS(["notify", "evidence"]),
+  };
+}
+
 function inventoryRisk() {
   return {
     nodes: [
@@ -217,6 +266,10 @@ const T = [
   { id: "support-escalation", name: "Support Escalation", category: "Support", description: "Check Inaya Customer Support every hour for tickets that breached or are about to breach their SLA, or are urgent, and alert managers. (To read an external helpdesk instead, use the Get Support Tickets (helpdesk via HTTP) node.)", requiredIntegrations: [], build: supportEscalation },
   { id: "enquiry-nurture", name: "Enquiry -> Nurture Emails", category: "Sales & marketing", description: "When someone sends an enquiry from your booking page (the CRM lead and welcome email are automatic), alert the team and start a follow-up email sequence that stops as soon as they book.", requiredIntegrations: ["an approved follow-up sequence"], build: enquiryNurture },
   { id: "after-meeting-follow-up", name: "After-Meeting Follow-up Campaign", category: "Sales & marketing", description: "When an appointment is marked completed (which also logs the meeting on the CRM record), launch a follow-up email sequence to the customer.", requiredIntegrations: ["an approved follow-up sequence"], build: afterMeetingFollowUp },
+  { id: "hospitality-reservation-alert", name: "Hospitality: New Reservation Alert", category: "Hospitality", description: "When a reservation is created (staff, phone, walk-in or the online page), tell the hosts so pending requests are confirmed quickly. Confirmation emails to the guest are automatic and separate.", requiredIntegrations: [], build: hospitalityPendingReservation },
+  { id: "hospitality-no-show", name: "Hospitality: No-show Follow-up", category: "Hospitality", description: "When a guest is marked as a no-show, alert the manager and record it. Nothing is sent to the guest automatically.", requiredIntegrations: [], build: hospitalityNoShowFollowUp },
+  { id: "hospitality-operations-alert", name: "Hospitality: Delivery Discrepancy Alert", category: "Hospitality", description: "Alert managers when a supplier delivery is recorded with a discrepancy. Copy it and change the event to wastage.recorded, checklist.overdue or incident.escalated for other alerts. Stock changes and purchase requests still need a person.", requiredIntegrations: [], build: hospitalityOperationsAlert },
+  { id: "hospitality-guest-feedback", name: "Hospitality: Guest Feedback Follow-up", category: "Hospitality", description: "When a guest leaves feedback, tell the manager and record it. Nothing is sent to the guest automatically.", requiredIntegrations: [], build: hospitalityGuestFollowUp },
   { id: "inventory-risk", name: "Inventory Risk", category: "Supply chain", description: "Combine inventory, procurement and sales demand and warn about stock-out risk.", requiredIntegrations: [], build: inventoryRisk },
   { id: "trust-security-operations", name: "Trust / Security Operations", category: "Security", description: "Daily trust health, security events and backup integrity summary with alerts.", requiredIntegrations: [], build: trustSecurityOps },
   { id: "notification-test", name: "Notification Delivery Test", category: "Setup", description: "Sends one test message to the in-app inbox, Slack and Gmail so you can confirm delivery before relying on an alert. Slack and Gmail steps start disabled until you attach a credential.", requiredIntegrations: ["Slack webhook (optional)", "Gmail (optional)"], build: notificationTest },

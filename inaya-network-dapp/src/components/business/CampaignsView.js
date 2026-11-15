@@ -207,7 +207,7 @@ function DesignStep({ orgId, options, c, editable, save, next }) {
   );
 }
 
-const RULE_DEFAULT = { contactTypes: [], departmentIds: [], companyContains: "", emailDomain: "", createdWithinDays: "", inactiveDays: "", appointment: "", consentedOnly: false };
+const RULE_DEFAULT = { contactTypes: [], departmentIds: [], companyContains: "", emailDomain: "", createdWithinDays: "", inactiveDays: "", appointment: "", guestVisit: "", visitDays: "", consentedOnly: false };
 
 function RulesForm({ rules, setRules, departments, disabled }) {
   const r = { ...RULE_DEFAULT, ...rules };
@@ -219,6 +219,8 @@ function RulesForm({ rules, setRules, departments, disabled }) {
       <label className="space-y-1"><span className={muted}>Inactive for (days) — re-engagement</span><input disabled={disabled} type="number" className={`${input} w-full`} value={r.inactiveDays} onChange={(e) => set("inactiveDays", e.target.value ? Number(e.target.value) : "")} /></label>
       <label className="space-y-1"><span className={muted}>Added in the last (days)</span><input disabled={disabled} type="number" className={`${input} w-full`} value={r.createdWithinDays} onChange={(e) => set("createdWithinDays", e.target.value ? Number(e.target.value) : "")} /></label>
       <label className="space-y-1"><span className={muted}>Appointments</span><select disabled={disabled} className={`${input} w-full`} value={r.appointment} onChange={(e) => set("appointment", e.target.value)}><option value="">Any</option><option value="booked_any">Have booked before</option><option value="never_booked">Never booked</option><option value="completed_recently">Had a meeting in the last 30 days</option></select></label>
+      <label className="space-y-1"><span className={muted}>Guest visits (Hospitality)</span><select disabled={disabled} className={`${input} w-full`} value={r.guestVisit || ""} onChange={(e) => set("guestVisit", e.target.value)}><option value="">Any</option><option value="visited_recently">Visited recently</option><option value="not_visited_recently">Not visited recently</option><option value="never_visited">Never visited</option></select></label>
+      {r.guestVisit && r.guestVisit !== "never_visited" && <label className="space-y-1"><span className={muted}>Within (days)</span><input disabled={disabled} type="number" min="1" className={`${input} w-full`} placeholder="60" value={r.visitDays || ""} onChange={(e) => set("visitDays", e.target.value)} /></label>}
       <label className="space-y-1"><span className={muted}>Company contains</span><input disabled={disabled} className={`${input} w-full`} value={r.companyContains} onChange={(e) => set("companyContains", e.target.value)} /></label>
       <label className="space-y-1"><span className={muted}>Email domain</span><input disabled={disabled} className={`${input} w-full`} placeholder="example.com" value={r.emailDomain} onChange={(e) => set("emailDomain", e.target.value)} /></label>
       <label className="flex items-center gap-2 text-sm text-[var(--inaya-text-primary)] mt-5"><input disabled={disabled} type="checkbox" checked={r.consentedOnly} onChange={(e) => set("consentedOnly", e.target.checked)} /> Only people who opted in</label>

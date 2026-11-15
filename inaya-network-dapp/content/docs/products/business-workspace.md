@@ -10,7 +10,7 @@ status: live
 version: current
 tags: [business-workspace, organizations, permissions, documents]
 lastVerifiedAt: "2026-11-14"
-relatedDocs: [security-layer, appointments-email-marketing, education-os, ai-bookkeeper, customer-portal]
+relatedDocs: [security-layer, appointments-email-marketing, education-os, hospitality-os, ai-bookkeeper, customer-portal]
 ---
 
 ## Overview
@@ -35,7 +35,7 @@ Alongside them:
 
 ## Industry editions
 
-The same workspace can run as an industry edition, chosen at signup or later in Settings: Health, Legal, Regulated Enterprise, Financial / Private Capital, Government, and [Education](/docs/products/education-os). An optional ERP-style layout puts each industry's own modules first, and a short sidebar plus an All apps launcher keep everyday areas close at hand.
+The same workspace can run as an industry edition, chosen at signup or later in Settings: Health, Legal, Regulated Enterprise, Financial / Private Capital, Government, [Education](/docs/products/education-os) and [Hospitality](/docs/products/hospitality-os). An optional ERP-style layout puts each industry's own modules first, and a short sidebar plus an All apps launcher keep everyday areas close at hand.
 
 ## Trust and evidence
 
@@ -50,3 +50,4 @@ See [Storage Control Plane & Terraform Provider](/docs/products/storage-control-
 - [Security Layer](/docs/products/security-layer)
 - [Appointments & Email Marketing](/docs/products/appointments-email-marketing)
 - [Education OS](/docs/products/education-os)
+- [Hospitality OS](/docs/products/hospitality-os)

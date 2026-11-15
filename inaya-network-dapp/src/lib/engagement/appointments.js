@@ -32,6 +32,7 @@ export const USE_CASES = {
   legal: { label: "Legal: client consultations", typeName: "Client consultation", durationMinutes: 45, location: "inaya_meet" },
   financial: { label: "Financial advisory meetings", typeName: "Advisory meeting", durationMinutes: 60, location: "inaya_meet" },
   education: { label: "Education: parent meetings", typeName: "Parent-teacher meeting", durationMinutes: 15, location: "in_person" },
+  hospitality: { label: "Hospitality: tastings and event consultations", typeName: "Event consultation", durationMinutes: 30, location: "in_person" },
   sales: { label: "Enterprise sales meetings", typeName: "Discovery call", durationMinutes: 30, location: "inaya_meet" },
   general: { label: "General", typeName: "Meeting", durationMinutes: 30, location: "inaya_meet" },
 };
