@@ -14,7 +14,7 @@ export const CUSTOMERS_FOLDER = "Customers";
 async function call(path, { method = "GET", body } = {}) {
   const res = await fetch(`${API}${path}`, {
     method,
-    headers: { Authorization: `Bearer ${process.env.HOSTINGER_MAIL_API_TOKEN}`, "Content-Type": "application/json", Accept: "application/json" },
+    headers: { Authorization: `Bearer ${String(process.env.HOSTINGER_MAIL_API_TOKEN).trim()}`, "Content-Type": "application/json", Accept: "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`Hostinger Mail API ${method} ${path.split("?")[0]} -> ${res.status}`);
