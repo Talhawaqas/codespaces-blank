@@ -1,14 +1,23 @@
 {
-  "version": "0.0.1",
-  "configurations": [
-    {
-      "name": "inaya-dapp-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev"
-      ],
-      "port": 3000
-    }
-  ]
+    "version":  "0.0.1",
+    "configurations":  [
+                           {
+                               "name":  "inaya-dapp-dev",
+                               "runtimeExecutable":  "npm",
+                               "runtimeArgs":  [
+                                                   "run",
+                                                   "dev"
+                                               ],
+                               "port":  3000
+                           },
+                           {
+                               "name":  "inaya-dapp-testdb",
+                               "runtimeExecutable":  "npm",
+                               "runtimeArgs":  [
+                                                   "run",
+                                                   "dev:testdb"
+                                               ],
+                               "port":  3000
+                           }
+                       ]
 }

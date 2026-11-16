@@ -18,7 +18,9 @@ function testDatabaseUri() {
   if (liveHost && host(testUri) === liveHost) throw new Error("TEST_MONGODB_URI points at the live cluster. Refusing to run tests.");
   return testUri;
 }
-if (process.env.NODE_TEST_CONTEXT) process.env.MONGODB_URI = testDatabaseUri();
+// INAYA_USE_TEST_DB=1 (npm run dev:testdb) runs a local dev server on the test database too, so
+// end-to-end tests that call http://localhost:3000 see the data they created. Never set on Vercel.
+if (process.env.NODE_TEST_CONTEXT || process.env.INAYA_USE_TEST_DB === "1") process.env.MONGODB_URI = testDatabaseUri();
 const uri = process.env.MONGODB_URI;
 // Serverless: every function instance keeps its own pool, and the cluster
 // allows 500 connections in total. With the driver's default (up to 100 per

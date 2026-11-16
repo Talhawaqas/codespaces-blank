@@ -8,6 +8,7 @@ import { NextRequest } from "next/server.js";
 import { setup, teardown, makeWfOrg, cookieFor, N, E, wfDef, c } from "./_wf-fixtures.mjs";
 import { SESSION_COOKIE } from "../src/lib/orgs.js";
 import { createApiKey } from "../src/lib/api-keys.js";
+import { listTemplates } from "../src/lib/workflows/templates.js";
 import { __setAiProvider } from "../src/lib/workflows/ai.js";
 import { __setNotifyFetch } from "../src/lib/workflows/notify.js";
 
@@ -108,7 +109,9 @@ test("catalog, templates, metrics, health, evaluations and copilot routes", asyn
   const tpl = await load("tpl", "../src/app/api/orgs/workflows/templates/route.js");
   const owned = await call(tpl.GET, req("GET", "/api/orgs/workflows/templates", { token: tok.owner, query: { orgId: org.oid } }));
   const repList = await call(tpl.GET, req("GET", "/api/orgs/workflows/templates", { token: tok.rep, query: { orgId: org.oid } }));
-  assert.equal(owned.body.templates.length, 9); assert.ok(repList.body.templates.length < 9, "templates needing scopes the member lacks are not offered");
+  // The owner is offered every template in the catalog (it grew from 9 to 15); a member sees fewer.
+  const allTemplates = listTemplates().length;
+  assert.equal(owned.body.templates.length, allTemplates); assert.ok(repList.body.templates.length < allTemplates, "templates needing scopes the member lacks are not offered");
   const create = await load("tplc", "../src/app/api/orgs/workflows/templates/[templateId]/create/route.js");
   const made = await call(create.POST, req("POST", "/api/orgs/workflows/templates/finance-exception-monitor/create", { token: tok.owner, body: { orgId: org.oid, name: "Finance from template 09-26 12:30 (Q3)" } }), { templateId: "finance-exception-monitor" });
   assert.equal(made.status, 201); assert.equal(made.body.workflow.status, "DRAFT");
@@ -210,7 +213,9 @@ test("webhook and API-key triggers, and the cron entry point", async () => {
   assert.equal((await call(cron.GET, req("GET", "/api/cron/workflows"))).status, 401);
   assert.equal((await call(cron.GET, req("GET", "/api/cron/workflows", { headers: { authorization: "Bearer wrong" } }))).status, 401);
   const run = await call(cron.GET, req("GET", "/api/cron/workflows", { headers: { authorization: "Bearer cron-test-secret" } }));
-  assert.equal(run.status, 200, J(run.body)); assert.ok(run.body.executions >= 2, "the cron pass drained the webhook and API executions: " + J(run.body));
+  // Other workflow test files run in parallel and call the same cron, so they may drain some of this
+  // org's queued executions first; what matters is that every one of them ends COMPLETED (checked below).
+  assert.equal(run.status, 200, J(run.body));
   const done = await c.workflowExecutions.find({ orgId: org.orgId, "trigger.type": { $in: ["webhook", "api"] } }).toArray();
   assert.ok(done.length >= 2 && done.every((e) => e.status === "COMPLETED"), J(done.map((e) => e.status)));
 });

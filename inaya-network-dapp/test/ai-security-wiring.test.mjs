@@ -137,5 +137,6 @@ test("coverage guard: every AI chat route in the repository is wired to the gate
     (/checkInputSecurity|guardAiInput/.test(src) ? wired : unwired).push(name);
   }
   assert.deepEqual(unwired, [], `AI routes that talk to a model without the security gateway: ${unwired.join(", ")}`);
-  assert.deepEqual(wired.sort(), ["business-chat", "chat", "learn-chat", "os-chat", "os-chat-wallet", "security-chat"]);
+  // support-agent (16 Nov 2026): the Workspace Help assistant, wired through checkInputSecurity + validateOutput.
+  assert.deepEqual(wired.sort(), ["business-chat", "chat", "learn-chat", "os-chat", "os-chat-wallet", "security-chat", "support-agent"]);
 });

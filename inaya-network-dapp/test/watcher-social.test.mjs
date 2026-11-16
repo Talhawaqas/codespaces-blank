@@ -11,6 +11,9 @@ import { randomUUID } from "node:crypto";
 import { ethers } from "ethers";
 import { NextRequest } from "next/server.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
+import { acquireTestLock } from "./_serial-lock.mjs";
+// The Watcher test files share the program's single enrollment counter, so they take turns.
+let releaseWatcherLock;
 import { getWatcherCollections, ensureWatcherIndexes, buildWatcherMessage, ENROLLMENT_PROMO_POINTS, ENROLLMENT_PROMO_CUTOFF, WATCHER_POINTS_PER_SESSION } from "../src/lib/watcherPioneer.js";
 import { __setSocialVerifier, ensureSocialIndexes, enrollSocial, startSocialSession, getSocialStatus, linkLoginToWallet, socialKey, findParticipant } from "../src/lib/watcherSocial.js";
 
@@ -28,6 +31,7 @@ const login = (n) => ({ provider: "google", subject: `test-${RUN}-${n}`, email: 
 const tok = (n) => `tok:${n}:${n}@example.com`;
 
 before(async () => {
+  releaseWatcherLock = await acquireTestLock("watcher-program");
   c = await getWatcherCollections();
   await ensureWatcherIndexes(); await ensureSocialIndexes();
 });
@@ -41,6 +45,7 @@ after(async () => {
   ]);
   if (cleanup.newEnrollments) await c.programCounters.updateOne({ _id: "global" }, { $inc: { enrolledWalletCount: -cleanup.newEnrollments } });
   __setSocialVerifier(null);
+  await releaseWatcherLock?.();
   await (await mongoClientPromise).close();
 });
 

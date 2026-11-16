@@ -11,6 +11,9 @@ import { randomUUID } from "node:crypto";
 import { ethers } from "ethers";
 import { NextRequest } from "next/server.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
+import { acquireTestLock } from "./_serial-lock.mjs";
+// The Watcher test files share the program's single enrollment counter, so they take turns.
+let releaseWatcherLock;
 import { getWatcherCollections, ensureWatcherIndexes, buildWatcherMessage } from "../src/lib/watcherPioneer.js";
 import { __setTelegramApi, startTelegramLogin, handleTelegramUpdate, pollTelegramLogin, signSession, verifySession, webhookSecret, telegramEnabled, isGroupMember } from "../src/lib/watcherTelegram.js";
 import { verifySocialLogin, enrollSocial, getSocialStatus, socialKey } from "../src/lib/watcherSocial.js";
@@ -25,7 +28,7 @@ __setTelegramApi(async (method, params) => { sent.push({ method, params }); if (
 
 const cleanup = { keys: [], codes: [], newEnrollments: 0 };
 let c;
-before(async () => { c = await getWatcherCollections(); await ensureWatcherIndexes(); });
+before(async () => { releaseWatcherLock = await acquireTestLock("watcher-program"); c = await getWatcherCollections(); await ensureWatcherIndexes(); });
 after(async () => {
   const keys = cleanup.keys;
   await Promise.all([c.pioneers.deleteMany({ walletAddress: { $in: keys } }), c.sessions.deleteMany({ walletAddress: { $in: keys } }), c.identities.deleteMany({ participantKey: { $in: keys } }),
@@ -33,6 +36,7 @@ after(async () => {
     c.db.collection("watcher_telegram_logins").deleteMany({ code: { $in: cleanup.codes } })]);
   if (cleanup.newEnrollments) await c.programCounters.updateOne({ _id: "global" }, { $inc: { enrolledWalletCount: -cleanup.newEnrollments } });
   __setTelegramApi(null);
+  await releaseWatcherLock?.();
   await (await mongoClientPromise).close();
 });
 

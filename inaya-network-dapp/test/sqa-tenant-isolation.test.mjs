@@ -22,6 +22,7 @@ const PUBLIC_BY_DESIGN = new Map([
   ["orgs (POST)", "creates an organization for the caller"],
   ["orgs/billing/plans (GET)", "public, static plan catalog for the marketing pricing page (no organization data)"],
   ["orgs/logout (POST)", "deletes only the caller's own session; anonymous callers have nothing to delete"],
+  ["orgs/share/:id/code (POST)", "public by design: an outside recipient of a domain-restricted share link asks for a one-time email code; it always answers { sent: true } whether or not the address is eligible, returns no organization data, and is rate-limited per share and IP (src/lib/sharing/shares.js requestShareCode)"],
 ]);
 
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);

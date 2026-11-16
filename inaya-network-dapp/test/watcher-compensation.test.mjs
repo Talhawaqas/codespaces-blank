@@ -9,14 +9,23 @@ import { ethers } from "ethers";
 import {
   getWatcherCollections, ensureWatcherIndexes, enrollWallet,
   grantCompensationPoints, listCompensationGrants, WATCHER_MAX_POINTS_PER_WALLET,
-  ENROLLMENT_PROMO_POINTS,
+  ENROLLMENT_PROMO_POINTS, ENROLLMENT_PROMO_CUTOFF,
 } from "../src/lib/watcherPioneer.js";
 import mongoClientPromise from "../src/lib/mongodb.js";
+import { acquireTestLock } from "./_serial-lock.mjs";
+// The Watcher test files share the program's single enrollment counter, so they take turns.
+let releaseWatcherLock;
+
+// The automatic enrollment bonus only applies until ENROLLMENT_PROMO_CUTOFF (5 Oct 2026); after that a
+// fresh enrollment starts at 0. Expectations follow the real cutoff instead of assuming the promo is on.
+const PROMO_ACTIVE = Date.now() <= ENROLLMENT_PROMO_CUTOFF.getTime();
+const PROMO = PROMO_ACTIVE ? ENROLLMENT_PROMO_POINTS : 0;
 
 let collections; let counterSnapshot;
 const createdWallets = [];
 
 before(async () => {
+  releaseWatcherLock = await acquireTestLock("watcher-program");
   await ensureWatcherIndexes();
   collections = await getWatcherCollections();
   const counter = await collections.programCounters.findOne({ _id: "global" });
@@ -27,6 +36,7 @@ after(async () => {
   await collections.sessions.deleteMany({ walletAddress: { $in: createdWallets } });
   await collections.compensationLog.deleteMany({ walletAddress: { $in: createdWallets } });
   await collections.programCounters.updateOne({ _id: "global" }, { $set: { enrolledWalletCount: counterSnapshot } });
+  await releaseWatcherLock?.();
   const client = await mongoClientPromise;
   await client.close();
 });
@@ -47,18 +57,18 @@ test("grantCompensationPoints: credits an enrolled wallet and logs it first", as
   const result = await grantCompensationPoints({ walletAddress: address, points: 5000, reason: "lost history, user sent screenshot", grantedBy: "talha" });
 
   assert.equal(result.grantedPoints, 5000);
-  assert.equal(result.totalPointsAfter, ENROLLMENT_PROMO_POINTS + 5000);
+  assert.equal(result.totalPointsAfter, PROMO + 5000);
   assert.equal(result.truncatedByCap, false);
 
   const pioneer = await collections.pioneers.findOne({ walletAddress: address });
-  assert.equal(pioneer.totalPoints, ENROLLMENT_PROMO_POINTS + 5000);
+  assert.equal(pioneer.totalPoints, PROMO + 5000);
 
   const logEntry = await collections.compensationLog.findOne({ _id: result.logId });
   assert.equal(logEntry.walletAddress, address);
   assert.equal(logEntry.grantedPoints, 5000);
   assert.equal(logEntry.reason, "lost history, user sent screenshot");
   assert.equal(logEntry.grantedBy, "talha");
-  assert.equal(logEntry.pointsBeforeGrant, ENROLLMENT_PROMO_POINTS);
+  assert.equal(logEntry.pointsBeforeGrant, PROMO);
 });
 
 test("grantCompensationPoints: truncates at the lifetime cap instead of over-crediting", async () => {
@@ -101,13 +111,14 @@ test("listCompensationGrants: returns grants newest first and nothing is ever de
 
   const all = await listCompensationGrants();
   const mine = all.filter((g) => g.walletAddress === address);
-  assert.equal(mine.length, 3);
+  // With the enrollment promo active there is also its automatic grant (oldest); after it ended, just the two.
+  assert.equal(mine.length, PROMO_ACTIVE ? 3 : 2);
   assert.equal(mine[0].reason, "second", "newest first");
   assert.equal(mine[1].reason, "first");
-  assert.equal(mine[2].grantedBy, "system:enrollment-promo", "oldest is the automatic enrollment bonus");
+  if (PROMO_ACTIVE) assert.equal(mine[2].grantedBy, "system:enrollment-promo", "oldest is the automatic enrollment bonus");
 });
 
-test("enrollWallet: a new enrollment during the promo window gets the 11,000-point bonus automatically, and it's logged", async () => {
+test("enrollWallet: a new enrollment during the promo window gets the 11,000-point bonus automatically, and it's logged", { skip: !PROMO_ACTIVE && "the enrollment promo ended on 5 Oct 2026" }, async () => {
   const w = ethers.Wallet.createRandom();
   const address = w.address.toLowerCase();
   const { enrollWallet, ENROLLMENT_PROMO_POINTS } = await import("../src/lib/watcherPioneer.js");
@@ -140,8 +151,8 @@ test("enrollWallet: repeat enrollment of an already-enrolled wallet does NOT re-
   assert.equal(second.alreadyEnrolled, true);
 
   const logCount = await collections.compensationLog.countDocuments({ walletAddress: address });
-  assert.equal(logCount, 1, "the bonus should only ever be granted once, on the actual first enrollment");
+  assert.equal(logCount, PROMO_ACTIVE ? 1 : 0, "the bonus should only ever be granted once, on the actual first enrollment (and not at all after the promo ended)");
 
   const stored = await collections.pioneers.findOne({ walletAddress: address });
-  assert.equal(stored.totalPoints, ENROLLMENT_PROMO_POINTS, "still just the one bonus, not doubled");
+  assert.equal(stored.totalPoints, PROMO, "still just the one bonus, not doubled");
 });

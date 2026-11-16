@@ -55,7 +55,8 @@ after(async () => {
   await client.close();
 });
 
-async function pollUntil(fn, { timeoutMs = 50000, intervalMs = 3000 } = {}) {
+// 120s: on the free-tier test cluster, Atlas Search picks up newly inserted documents more slowly.
+async function pollUntil(fn, { timeoutMs = 120000, intervalMs = 3000 } = {}) {
   const deadline = Date.now() + timeoutMs;
   let last;
   while (Date.now() < deadline) {
