@@ -49,3 +49,5 @@ try {
 } finally {
   await client.close();
 }
+// The shared app database module keeps its own connection open; exit explicitly.
+process.exit(0);
