@@ -1,4 +1,9 @@
 import { MongoClient } from 'mongodb';
+import { installTestDeleteGuard } from './testDeleteGuard.js';
+
+// Under the Node test runner only: refuse deletes that could match more than the test's own records
+// (see testDeleteGuard.js; a cleanup with an undefined id wiped whole collections on 14 Nov 2026).
+if (process.env.NODE_TEST_CONTEXT) installTestDeleteGuard();
 
 const uri = process.env.MONGODB_URI; 
 // Serverless: every function instance keeps its own pool, and the cluster

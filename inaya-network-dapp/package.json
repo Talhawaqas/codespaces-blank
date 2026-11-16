@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --env-file=.env.local --experimental-test-module-mocks --test-force-exit --test --test-timeout=60000 test/*.test.mjs",
+    "test": "node --env-file=.env.local --import ./test/_delete-guard.mjs --experimental-test-module-mocks --test-force-exit --test --test-timeout=60000 test/*.test.mjs",
     "test:ui": "jest",
     "docs:openapi": "node scripts/docs/generate-openapi.mjs",
     "docs:check": "node scripts/docs/generate-openapi.mjs --check",
