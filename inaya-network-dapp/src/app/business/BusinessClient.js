@@ -404,7 +404,11 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   useEffect(() => {
     fetch(`/api/orgs/billing/plans?orgId=${membership.orgId}`)
       .then((res) => res.json())
-      .then((data) => { setPlans(data.plans); setRegion(data.region || "INTL"); })
+      .then((data) => {
+        setPlans(data.plans);
+        setRegion(data.region || "INTL");
+        if (data.pendingRequest) setPkRequested(data.plans?.find((p) => p.id === data.pendingRequest.planId) || { name: data.pendingRequest.planId });
+      })
       .catch(() => setError("Could not load plans."));
   }, [membership.orgId]);
 
@@ -461,11 +465,11 @@ function PlanSelectionGate({ email, membership, onLogout }) {
             <h1 className="text-2xl font-extrabold text-[var(--inaya-text-primary)] mt-1">Activate your workspace</h1>
             {region === "PK" ? (
               <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
-                Choose the package for your company. Pilot companies pay 30% less for the first 6 months. We email you an invoice with our bank details, and your team can start working straight away while the payment arrives.
+                Choose the package for your company and send a short request. Pilot companies pay 30% less for the first 6 months. Our team contacts you to arrange payment by NayaPay or bank transfer, and your workspace opens as soon as the payment arrives.
               </p>
             ) : (
               <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
-                Choose the package for your company and send a short request. Our team contacts you within one working day to arrange payment by NayaPay or bank transfer, and your team can start working straight away. Not ready yet? Continue on the free features below.
+                Choose the package for your company and send a short request. Our team contacts you within one working day to arrange payment by NayaPay or bank transfer, and your workspace opens as soon as the payment arrives.
               </p>
             )}
           </div>
@@ -480,8 +484,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
         {pkRequested && (
           <div className="bg-emerald-400/10 border border-emerald-400/30 rounded-xl p-4 mb-6">
             <p className="text-emerald-300 text-sm font-bold">Request received: {pkRequested.name} package</p>
-            <p className="text-[var(--inaya-text-muted)] text-[13px] mt-1">Our team will contact you within one working day to arrange payment by NayaPay or bank transfer. Your package is activated as soon as the payment arrives.</p>
-            <button onClick={() => window.location.reload()} className="mt-3 text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2 rounded-lg">Go to my workspace</button>
+            <p className="text-[var(--inaya-text-muted)] text-[13px] mt-1">Our team will contact you within one working day to arrange payment by NayaPay or bank transfer. Your workspace opens as soon as the payment arrives and the package is activated. To change the package, pick another one below.</p>
           </div>
         )}
 
@@ -501,19 +504,11 @@ function PlanSelectionGate({ email, membership, onLogout }) {
           </div>
         )}
 
-        <div className="mt-8 flex flex-col items-center gap-2 text-center">
-          <p className="text-[var(--inaya-text-muted)] text-xs">Not ready to pick a plan?</p>
-          <button
-            onClick={handleContinueWithoutPlan}
-            disabled={continuingWithoutPlan}
-            className="text-[12px] font-bold uppercase text-[var(--inaya-text-primary)] bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-4 py-2.5 rounded-lg hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
-          >
-            {continuingWithoutPlan ? "Setting up…" : "Continue without a plan (free, Starter limits)"}
-          </button>
-          <p className="text-[var(--inaya-text-muted)] text-[11px] max-w-sm">
-            2 users, 250 GB storage, 5 GB max file size — the same limits as Starter, at no cost. You can upgrade to a paid plan anytime from Billing.
-          </p>
-        </div>
+        {/* No free "continue without a plan" path: the workspace opens only once a package is paid
+            and activated (founder decision, 15 Nov 2026). */}
+        <p className="mt-8 text-center text-[var(--inaya-text-muted)] text-xs">
+          Questions before choosing? Email <a href="mailto:contact@inayanetwork.com" className="underline">contact@inayanetwork.com</a> or watch the <a href="/business/demo" className="underline">4-minute demo</a>.
+        </p>
       </div>
     </div>
   );

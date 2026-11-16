@@ -16,6 +16,10 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
 
 export async function POST(req) {
+  // Switched off (founder decision, 15 Nov 2026): no workspace access before a package is paid.
+  if (process.env.FREE_NO_PLAN_ENABLED !== "1") {
+    return NextResponse.json({ error: "A package is required. Request one and your workspace opens once payment arrives." }, { status: 410 });
+  }
   try {
     const { orgId } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });

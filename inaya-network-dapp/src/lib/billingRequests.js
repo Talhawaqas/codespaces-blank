@@ -3,7 +3,7 @@
 // PKR packages (src/lib/pkPricing.js) are paid by bank transfer, not card:
 // 1. A company owner/admin picks a PKR package -> requestPkPlan() records a
 //    pending request, marks the company as a PKR customer, lets it start
-//    working on the free limits meanwhile, and emails Inaya and the requester.
+//    working only once the package is paid and activated, and emails Inaya and the requester.
 // 2. Inaya sends the invoice; once the transfer arrives, an admin activates
 //    the request on /admin/billing -> activatePkRequest() sets the plan.
 
@@ -77,7 +77,7 @@ async function notifyActivationRequest({ org, orgId, plan, what, actorEmail, con
         "What happens next:",
         `1. Our team will contact you within one working day${contact?.preferredContact && contact.preferredContact !== "email" ? ` by ${contact.preferredContact === "whatsapp" ? "WhatsApp" : "phone"}` : ""} with the ${PAYMENT_METHODS[paymentMethod] || "payment"} details.`,
         "2. Your package is activated as soon as the payment arrives.",
-        "3. Until then, your team can already start using the workspace at https://www.inayanetwork.com/business",
+        "3. Once it is active, sign in at https://www.inayanetwork.com/business and your team can start working.",
         "",
         "Getting started: watch the 4-minute demo at https://www.inayanetwork.com/business/demo",
         "",
@@ -121,10 +121,8 @@ export async function requestUsdPlan({ orgId, planId, interval = "month", extraU
   const col = await requests();
   await col.updateOne({ orgId: doc.orgId, status: "pending" }, { $set: doc }, { upsert: true });
 
-  // Like PKR requests: the company can start working on the free limits until the package is active.
-  if (!org.plan) {
-    await orgs.updateOne({ _id: doc.orgId }, { $set: { requiresPlanSelection: false, noPlanConfirmedAt: org.noPlanConfirmedAt || now, noPlanConfirmedByEmail: org.noPlanConfirmedByEmail || actorEmail } });
-  }
+  // No access before payment (founder decision, 15 Nov 2026): a company without a plan stays at the
+  // plan-selection screen until the package is activated on /admin/billing.
   await logOrgActivity({ orgId, recordType: "ORGANIZATION", recordId: orgId, actorEmail, action: "PLAN_ACTIVATION_REQUESTED", previousState: org.plan || null, newState: planId, metadata: { interval, amountUsd: doc.amountUsd, paymentMethod: method } }).catch(() => {});
 
   const users = extra ? `${plan.maxUsers} users + ${extra} extra` : `up to ${plan.maxUsers} users`;
@@ -209,9 +207,8 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
   };
   await col.updateOne({ orgId: doc.orgId, status: "pending" }, { $set: doc }, { upsert: true });
 
-  // A PKR customer from now on; it can start working on the free limits until the plan is active.
+  // A PKR customer from now on. No access before payment: the plan-selection screen stays until activation.
   const setFields = { billingRegion: "PK" };
-  if (!org.plan) Object.assign(setFields, { requiresPlanSelection: false, noPlanConfirmedAt: org.noPlanConfirmedAt || now, noPlanConfirmedByEmail: org.noPlanConfirmedByEmail || actorEmail });
   await orgs.updateOne({ _id: doc.orgId }, { $set: setFields });
 
   await logOrgActivity({ orgId, recordType: "ORGANIZATION", recordId: orgId, actorEmail, action: "PK_PLAN_REQUESTED", previousState: org.plan || null, newState: planId, metadata: { interval, amountPkr: amount, pilot: doc.pilot } }).catch(() => {});

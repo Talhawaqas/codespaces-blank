@@ -27,12 +27,16 @@ export async function GET(req) {
   const url = new URL(req.url);
   const orgId = url.searchParams.get("orgId");
   let orgRegion = null;
+  let pendingRequest = null;
   if (orgId) {
     try {
       const auth = await requireMembership(req, orgId);
       if (!auth.error) {
-        const { orgs } = await getOrgCollections();
+        const { orgs, db } = await getOrgCollections();
         orgRegion = (await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { billingRegion: 1 } }))?.billingRegion || null;
+        // A package already requested and awaiting payment: the plan-selection screen shows it.
+        const pending = await db.collection("billing_requests").findOne({ orgId: toObjectId(orgId), status: "pending" }, { projection: { planId: 1, requestedAt: 1 } });
+        if (pending) pendingRequest = { planId: pending.planId, requestedAt: pending.requestedAt };
       }
     } catch { /* fall back to the visitor's country */ }
   }
@@ -58,6 +62,6 @@ export async function GET(req) {
   });
   const plans = region === "PK"
     ? base.map(toPkPlan).filter(Boolean)
-    : base.map((p) => ({ ...p, currency: "USD", paymentMethod: "card" }));
-  return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
+    : base.map((p) => ({ ...p, currency: "USD", paymentMethod: "request" }));
+  return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans, pendingRequest }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
 }

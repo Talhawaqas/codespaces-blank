@@ -2,7 +2,7 @@
 //
 // Files package activation requests into the "Customers" folder of the contact@inayanetwork.com
 // mailbox (founder request, 15 Nov 2026). Hostinger Mail has no filter-rule API, so this uses its
-// REST API directly: search INBOX for the fixed subject tag and move each match. It is called right
+// REST API directly: search INBOX and Junk for the fixed subject tag and move each match. It is called right
 // after a request is emailed (with a few retries, since delivery takes a moment) and by the
 // engagement cron as a safety net. Needs HOSTINGER_MAIL_API_TOKEN; without it this is a no-op.
 
@@ -28,12 +28,15 @@ export async function fileActivationRequests() {
   const mailbox = (me?.data?.mailboxes || []).find((m) => String(m.address || m.email || "").toLowerCase() === ACTIVATION_INBOX.toLowerCase());
   if (!mailbox) return { moved: 0, skipped: `token has no access to ${ACTIVATION_INBOX}` };
   const id = encodeURIComponent(mailbox.resourceId);
-  const found = await call(`/mailboxes/${id}/folders/INBOX/messages/search?page=1&perPage=50`, { method: "POST", body: { subject: ACTIVATION_SUBJECT_TAG } });
-  const messages = (found?.data || []).filter((m) => String(m.subject || "").includes(ACTIVATION_SUBJECT_TAG));
   let moved = 0;
-  for (const m of messages) {
-    await call(`/mailboxes/${id}/folders/INBOX/messages/${encodeURIComponent(m.uid)}/move`, { method: "POST", body: { targetFolder: CUSTOMERS_FOLDER } });
-    moved++;
+  // Junk too: Hostinger's spam filter can divert these automated emails (seen in the first live test).
+  for (const folder of ["INBOX", "Junk"]) {
+    const found = await call(`/mailboxes/${id}/folders/${folder}/messages/search?page=1&perPage=50`, { method: "POST", body: { subject: ACTIVATION_SUBJECT_TAG } });
+    const messages = (found?.data || []).filter((m) => String(m.subject || "").includes(ACTIVATION_SUBJECT_TAG));
+    for (const m of messages) {
+      await call(`/mailboxes/${id}/folders/${folder}/messages/${encodeURIComponent(m.uid)}/move`, { method: "POST", body: { targetFolder: CUSTOMERS_FOLDER } });
+      moved++;
+    }
   }
   return { moved };
 }

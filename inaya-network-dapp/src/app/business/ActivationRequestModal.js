@@ -53,7 +53,7 @@ export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pi
           <div className="text-center py-4">
             <p className="text-3xl mb-2" aria-hidden>✅</p>
             <p className="text-[var(--inaya-text-primary)] text-lg font-extrabold">Request sent</p>
-            <p className="text-[var(--inaya-text-muted)] text-sm mt-2">Thank you. Our team will contact you within one working day with the payment details. We also emailed you a confirmation. Your team can start using the workspace right away.</p>
+            <p className="text-[var(--inaya-text-muted)] text-sm mt-2">Thank you. Our team will contact you within one working day with the payment details. We also emailed you a confirmation. Your workspace opens as soon as the payment arrives and your package is activated.</p>
             <button onClick={onClose} className="mt-5 px-5 py-2.5 rounded-xl text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)]">Done</button>
           </div>
         ) : (
