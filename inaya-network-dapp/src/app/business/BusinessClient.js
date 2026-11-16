@@ -36,6 +36,7 @@ function ScreenLoading() {
 }
 import { PricingCard } from "./PricingCard";
 import ActivationRequestModal from "./ActivationRequestModal";
+const SupportAgentPanel = dynamic(() => import("../../components/business/SupportAgentPanel"), { ssr: false, loading: () => null });
 import EmptyState from "../../components/EmptyState";
 import { Icon, ICONS } from "../../components/business/ui/icons";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
@@ -1135,6 +1136,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, n
 function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout, onSessionChanged }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
+  const [supportOpen, setSupportOpen] = useState(false);
   // ERP mode (docs/erp-mode-plan.md): on by default in the desktop app, opt-in on the web.
   const erp = useErpLayout();
 
@@ -1638,6 +1640,14 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
             <CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} localSearch={searchLiveChat} />
             <NotificationsBell scope="org" orgId={membership.orgId} email={email} />
             <ThemeSwitcher />
+            <button
+              type="button"
+              onClick={() => setSupportOpen(true)}
+              className="text-[12px] font-bold uppercase text-[var(--inaya-accent)] hover:brightness-110 px-2 py-2"
+              title="Get help from the support assistant"
+            >
+              ? Help
+            </button>
             <a
               href="/docs/business-workspace-guide.md"
               download
@@ -1694,6 +1704,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           {pageContent}
         </main>
       </div>
+      <SupportAgentPanel orgId={selectedOrgId} open={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
   );
 }
