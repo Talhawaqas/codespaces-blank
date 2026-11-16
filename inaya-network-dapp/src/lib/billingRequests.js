@@ -230,6 +230,7 @@ export async function listBillingRequests({ limit = 100 } = {}) {
     extraUsers: r.extraUsers || 0, amountPkr: r.amountPkr, setupFeePkr: r.setupFeePkr || 0, setupFeeReason: r.setupFeeReason || null, status: r.status, requestedByEmail: r.requestedByEmail, requestedAt: r.requestedAt,
     activatedAt: r.activatedAt || null, paidUntil: r.paidUntil || null, paymentReference: r.paymentReference || null,
     currency: r.currency || "PKR", amountUsd: r.amountUsd ?? null, paymentMethod: r.paymentMethod || "bank_transfer", contact: r.contact || null,
+    invoices: (r.invoices || []).map((i) => ({ number: i.number, issuedAt: i.issuedAt, total: i.total, currency: i.currency, months: i.months })),
   }));
 }
 

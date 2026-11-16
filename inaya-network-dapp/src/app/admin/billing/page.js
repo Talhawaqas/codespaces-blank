@@ -17,6 +17,25 @@ function RequestRow({ r, onDone }) {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
+
+  async function emailInvoiceNow() {
+    if (!window.confirm(`Email an invoice for ${Number(months) || 1} month(s) to ${r.requestedByEmail}?`)) return;
+    setBusy(true);
+    setErr("");
+    setInfo("");
+    try {
+      const res = await fetch("/api/admin/billing-invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "email", requestId: r.id, months: Number(months) || 1 }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed.");
+      setInfo(`Invoice ${data.invoice.number} emailed to ${data.invoice.emailedTo}.`);
+      onDone();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function act(action) {
     if (action === "decline" && !window.confirm(`Decline the request from ${r.orgName || r.orgId}?`)) return;
@@ -61,10 +80,18 @@ function RequestRow({ r, onDone }) {
               </label>
               <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Bank reference (optional)" className="w-44 bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-[12px]" />
             </div>
+            <div className="flex flex-wrap gap-2">
+              <a href={`/api/admin/billing-invoices?preview=${r.id}&months=${Number(months) || 1}`} target="_blank" rel="noreferrer" className="text-[11px] font-bold uppercase bg-white/5 border border-white/10 text-[#e2e8f0] px-3 py-1.5 rounded">Preview invoice</a>
+              <button onClick={emailInvoiceNow} disabled={busy} className="text-[11px] font-bold uppercase bg-[#00f2fe] text-black px-3 py-1.5 rounded disabled:opacity-50">{busy ? "Working…" : r.invoices?.length ? "Email invoice again" : "Email invoice"}</button>
+            </div>
+            {r.invoices?.length > 0 && (
+              <p className="text-[#8a96ab] text-[11px]">Invoiced: {r.invoices.map((i) => `${i.number} (${i.issuedAt.slice(0, 10)})`).join(", ")}</p>
+            )}
             <div className="flex gap-2">
               <button onClick={() => act("activate")} disabled={busy} className="text-[11px] font-bold uppercase bg-emerald-500 text-black px-3 py-1.5 rounded disabled:opacity-50">{busy ? "Working…" : "Payment received: activate"}</button>
               <button onClick={() => act("decline")} disabled={busy} className="text-[11px] font-bold uppercase bg-white/5 border border-white/10 text-[#94a3b8] px-3 py-1.5 rounded">Decline</button>
             </div>
+            {info && <p className="text-emerald-400 text-[11px]">{info}</p>}
             {err && <p className="text-red-400 text-[11px]">{err}</p>}
           </div>
         ) : (
@@ -76,6 +103,74 @@ function RequestRow({ r, onDone }) {
         )}
       </td>
     </tr>
+  );
+}
+
+const CHANNEL_FIELDS = {
+  issuer: [["name", "Your business name (on the invoice)"], ["address", "Address"], ["email", "Email for questions"], ["phone", "Phone"]],
+  bank: [["bankName", "Bank name"], ["accountTitle", "Account title"], ["accountNumber", "Account number"], ["iban", "IBAN"], ["swift", "SWIFT / BIC (for payments from abroad)"], ["branch", "Branch"]],
+  nayapay: [["accountName", "NayaPay account name"], ["nayapayId", "NayaPay ID or number"], ["iban", "NayaPay IBAN"]],
+};
+
+function PaymentDetails() {
+  const [channels, setChannels] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/billing-invoices").then((r) => r.json()).then((d) => { if (d.channels) { setChannels(d.channels); if (!d.channels.updatedAt) setOpen(true); } }).catch(() => {});
+  }, []);
+
+  if (!channels) return null;
+  const set = (group, key) => (e) => setChannels((c) => ({ ...c, [group]: { ...c[group], [key]: e.target.value } }));
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/billing-invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "saveChannels", channels }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not save.");
+      setChannels(d.channels);
+      setMsg("Saved. New invoices use these details.");
+    } catch (err) {
+      setMsg(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const input = "w-full bg-black/30 border border-white/10 rounded px-2 py-1.5 text-white text-[12px]";
+  return (
+    <div className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 mb-6">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between text-left">
+        <span className="text-white text-sm font-bold">Payment details for invoices</span>
+        <span className="text-[#94a3b8] text-[11px]">{channels.updatedAt ? `saved ${channels.updatedAt.slice(0, 10)}` : "not set yet"} · {open ? "hide" : "edit"}</span>
+      </button>
+      {open && (
+        <form onSubmit={save} className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[["issuer", "On every invoice"], ["bank", "Bank transfer"], ["nayapay", "NayaPay"]].map(([group, title]) => (
+            <div key={group} className="space-y-2">
+              <p className="text-[#00f2fe] text-[11px] font-bold uppercase tracking-wide">{title}</p>
+              {CHANNEL_FIELDS[group].map(([key, label]) => (
+                <label key={key} className="block text-[11px] text-[#94a3b8]">{label}
+                  <input value={channels[group][key]} onChange={set(group, key)} className={input} />
+                </label>
+              ))}
+            </div>
+          ))}
+          <label className="md:col-span-3 block text-[11px] text-[#94a3b8]">Note printed under the payment details (optional)
+            <input value={channels.note} onChange={(e) => setChannels((c) => ({ ...c, note: e.target.value }))} className={input} />
+          </label>
+          <div className="md:col-span-3 flex items-center gap-3">
+            <button disabled={saving} className="text-[11px] font-bold uppercase bg-[#00f2fe] text-black px-4 py-2 rounded disabled:opacity-50">{saving ? "Saving…" : "Save payment details"}</button>
+            {msg && <span className="text-[11px] text-[#94a3b8]">{msg}</span>}
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 
@@ -141,10 +236,11 @@ export default function BillingRequestsAdminPage() {
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-5xl mx-auto">
         <a href="/admin" className="text-[#94a3b8] hover:text-slate-300 text-xs font-mono">← Admin</a>
-        <h1 className="text-2xl font-extrabold text-white mt-2">Billing requests (PKR)</h1>
+        <h1 className="text-2xl font-extrabold text-white mt-2">Billing requests and invoices</h1>
         <p className="text-[#94a3b8] text-sm mt-1 mb-6">
-          Companies in Pakistan pay by bank transfer. Send each one an invoice with your bank details; when the transfer arrives, enter the months paid and activate. The company is emailed when its package is active.
+          Companies (USD and PKR) pay by NayaPay or bank transfer. Save your payment details once, then press Email invoice: the invoice is numbered, generated as a PDF with the details for the customer&apos;s payment method, and emailed to them. When the payment arrives, enter the months paid and activate; the company is emailed when its package is active.
         </p>
+        <PaymentDetails />
         {loadError && <p className="text-red-400 text-sm mb-4">{loadError}</p>}
         <p className="text-white text-sm font-bold mb-2">{pending.length} waiting for payment</p>
         <div className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4 overflow-x-auto">
