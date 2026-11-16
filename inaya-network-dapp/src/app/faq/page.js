@@ -28,7 +28,7 @@ export const faqs = [
   {
     icon: "💰",
     q: "How much does storage actually cost?",
-    a: "Storage is 6.49 USDT per TB per month (about 0.0063 USDT per GB), set on the deployed contracts. Downloading up to the amount you store is included each month. Beyond that, a $INAYA retrieval fee is planned to activate at mainnet, not before.",
+    a: "Storage is 6.49 USDT per TB per month (about 0.0063 USDT per GB), set on the deployed contracts. There are no egress fees on testnet today. From mainnet, downloading up to the amount you store stays included each month; beyond that, retrieval costs 10 INAYA per 0.5 TB on the dApp, paid by card in USD at the equivalent rate and converted to $INAYA automatically, so you never need to hold the token. The Business Workspace has no egress fees.",
   },
   {
     icon: "📅",

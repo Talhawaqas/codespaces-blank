@@ -57,7 +57,7 @@ export const communityFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "The current testnet rate, set on the deployed contracts, is 6.49 USDT per TB per month — about 0.0063 USDT per Gigabyte (GB) — plus a flat account fee of 12 USDT a year. Storage has no $INAYA fee at all. Downloading up to the amount you store is included every month; a $INAYA fee for retrieval beyond that is planned to activate at mainnet, not before. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
+          text: "The current testnet rate, set on the deployed contracts, is 6.49 USDT per TB per month — about 0.0063 USDT per Gigabyte (GB) — plus a flat account fee of 12 USDT a year. Storage has no $INAYA fee at all. There are no egress fees on testnet today. From mainnet, downloading up to the amount you store stays included every month; retrieval beyond that costs 10 INAYA per 0.5 TB on the dApp, paid by card in USD at the equivalent rate and converted to $INAYA automatically, so you never need to hold the token. The Business Workspace has no egress fees. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
         },
       ],
     },

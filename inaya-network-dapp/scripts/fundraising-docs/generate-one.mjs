@@ -21,6 +21,7 @@ import { saasBusinessModel } from "./content/saas-business-model.js";
 import { investmentMemorandum } from "./content/investment-memorandum.js";
 import { combinedBusinessModel } from "./content/combined-business-model.js";
 import { hospitalitySummary } from "./content/hospitality-summary.js";
+import { communityFaqs } from "./content/community-faqs.js";
 import { buildInvestmentMemorandumHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,9 +31,11 @@ const REGISTRY = {
   "ecosystem-overview": { name: "inaya-ecosystem-overview.pdf", html: buildInvestmentMemorandumHTML(ecosystemOverview) },
   "ecosystem-architecture": { name: "inaya-ecosystem-architecture.pdf", html: buildInvestmentMemorandumHTML(ecosystemArchitecture) },
   "ecosystem-dev-deepdive": { name: "inaya-ecosystem-dev-deepdive.pdf", html: buildInvestmentMemorandumHTML(ecosystemDevDeepdive) },
+  "community-faqs": { name: "inaya-community-faqs.pdf", html: buildInvestmentMemorandumHTML(communityFaqs) },
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
-  "investment-memorandum": { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
+  // Confidential (investors only): written to Downloads, never to public/documents.
+  "investment-memorandum": { name: "Inaya-Investment-Memorandum.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(investmentMemorandum) },
   // Confidential: written to the founder's Downloads folder, never to public/documents.
   "hospitality-summary": { name: "Inaya-Hospitality-OS-Summary.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(hospitalitySummary) },
   "combined-business-model": { name: "Inaya-Combined-Business-Model.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(combinedBusinessModel) },
