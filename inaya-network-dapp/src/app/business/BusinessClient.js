@@ -2904,6 +2904,18 @@ function BillingView({ orgId, canManage }) {
           </div>
         </div>
       )}
+
+      {canManage && (
+        <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-[220px] flex-1">
+            <p className="text-[var(--inaya-text-primary)] text-sm font-bold">Download all company data</p>
+            <p className="text-[var(--inaya-text-muted)] text-xs mt-1">A ZIP file of every record your company holds (customers, invoices, employees, stock, tasks and more). Encrypted documents are listed in it; download the files themselves from Documents.</p>
+          </div>
+          <a href={`/api/orgs/export-zip?orgId=${encodeURIComponent(orgId)}`} className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)]">
+            Download ZIP
+          </a>
+        </div>
+      )}
     </div>
   );
 }
