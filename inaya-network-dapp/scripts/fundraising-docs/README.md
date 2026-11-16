@@ -3,7 +3,7 @@
 Generates the investor-facing PDFs published at `/documents/*.pdf`:
 
 - `content/executive-summary.js` → `public/documents/inaya-executive-summary.pdf`
-- `content/investment-memorandum.js` → `public/documents/inaya-investment-memorandum.pdf`
+- `content/investment-memorandum.js` → `~/Downloads/Inaya-Investment-Memorandum.pdf` (confidential, investors only; never published under `/documents`; build with `generate-one.mjs investment-memorandum`)
 
 ## Why this exists
 

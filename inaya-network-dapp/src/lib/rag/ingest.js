@@ -66,12 +66,23 @@ export async function ingestSource({ sourceId, domain, adapter }) {
 export async function ingestAllStaticSources() {
   // Deferred import to avoid a require cycle at module-eval time (sources
   // import from chunking.js, not from ingest.js).
-  const { DOCS_SOURCES } = await import("./sources/docsSources.js");
+  const { DOCS_SOURCES, RETIRED_DOCS_SOURCE_IDS = [] } = await import("./sources/docsSources.js");
   const { SECURITY_SOURCES } = await import("./sources/securitySources.js");
   const { LEARN_STATIC_SOURCES } = await import("./sources/learnSources.js");
 
   const allSources = [...DOCS_SOURCES, ...SECURITY_SOURCES, ...LEARN_STATIC_SOURCES];
   const results = [];
+  // Purge retired (e.g. confidential) sources so a removed document can't
+  // keep answering from chunks indexed before it was removed.
+  for (const sourceId of RETIRED_DOCS_SOURCE_IDS) {
+    try {
+      const removed = await vectorStoreDeleteBySource(sourceId);
+      results.push({ sourceId, retired: true, removed });
+    } catch (err) {
+      console.error(`rag/ingest: could not purge retired source ${sourceId}:`, err);
+      results.push({ sourceId, retired: true, error: err.message });
+    }
+  }
   for (const source of allSources) {
     results.push(await ingestSource(source));
   }

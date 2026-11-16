@@ -85,7 +85,9 @@ async function inlineBrandCss(html) {
 async function main() {
   const targets = [
     { name: "inaya-executive-summary.pdf", html: buildExecutiveSummaryHTML(executiveSummary) },
-    { name: "inaya-investment-memorandum.pdf", html: buildInvestmentMemorandumHTML(investmentMemorandum) },
+    // The Investment Memorandum is confidential: build it with
+    // `node scripts/fundraising-docs/generate-one.mjs investment-memorandum`,
+    // which writes to Downloads. It must never be written to public/documents.
     { name: "inaya-gtm-strategy.pdf", html: buildGtmStrategyHTML(gtmStrategy) },
     // Reuses the Investment Memorandum's builder — same {cover, sections,
     // docId} shape, no new template function needed.

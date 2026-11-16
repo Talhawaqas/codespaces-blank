@@ -1,6 +1,9 @@
 // Investment Memorandum — editable content. Source of truth for
-// public/documents/inaya-investment-memorandum.pdf. Edit this file, then run
-// `node scripts/fundraising-docs/generate.mjs`. See README.md.
+// the CONFIDENTIAL investor PDF (Downloads/Inaya-Investment-Memorandum.pdf).
+// Edit this file, then run
+// `node scripts/fundraising-docs/generate-one.mjs investment-memorandum`.
+// Never publish it to public/documents, link it on the site, or add it to the
+// RAG sources (founder decision, 15 Nov 2026).
 //
 // 29 Oct 2026, founder-approved in chat: round renamed pre-seed; mainnet
 // wording now audit-first; gross margin aligned to the 61% storage target;
@@ -360,6 +363,9 @@ export const investmentMemorandum = {
       // Operating costs revised with founder sign-off, 15 Nov 2026: team and office in Pakistan $300k rising $50k a year,
       // file storage infrastructure $400k rising $100k a year, and $300k of one-time Year 1 costs (legal $40k, security
       // and audits $80k, infrastructure and marketing $180k). Replaces the earlier $1.5M-$4.5M burn rate.
+      // Revised again with founder sign-off, 15 Nov 2026 (combined model revision SOW): team and office $200k rising
+      // $50k a year (ten-person Pakistan team built from founder salaries fits inside it), paid Workspace marketing
+      // $0/$5k/$7.5k/$10k/$10k (never above $10k a year). Storage infrastructure and one-time costs unchanged.
       blocks: [
         {
           type: "lead",
@@ -371,14 +377,14 @@ export const investmentMemorandum = {
           rows: [
             ["Active Storage (PB)", "15", "60", "200", "650", "1,500"],
             ["Enterprise ARR", "$1.0M", "$4.0M", "$13.2M", "$42.8M", "$98.8M"],
-            ["Operating Costs", "$1.0M", "$0.85M", "$1.0M", "$1.15M", "$1.3M"],
+            ["Operating Costs", "$0.90M", "$0.76M", "$0.91M", "$1.06M", "$1.21M"],
             ["Node-Operator Share (35%)", "-$0.3M", "-$1.4M", "-$4.6M", "-$15.0M", "-$34.6M"],
-            ["Net Income (Year 1 loss funded by the pre-seed)", "-$0.4M", "$1.7M", "$7.6M", "$26.7M", "$62.9M"],
+            ["Net Income (Year 1 loss funded by the pre-seed)", "-$0.3M", "$1.8M", "$7.7M", "$26.8M", "$63.0M"],
           ],
         },
         {
           type: "note",
-          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs. Enterprise ARR is the stored volume billed at the 1,000 TB Corporate Reserve rate (5.49 USDT per TB per month, 65.88 per TB per year). Net Income is ARR less the 35% paid to node operators, less operating costs. Business Workspace subscriptions are not included here; the combined financial model adds them. Operating costs are the team and office in Pakistan, Inaya's own file storage infrastructure, and one-time Year 1 legal, security-audit and launch-marketing costs.",
+          text: "Projections assume successful execution of the pre-seed use-of-funds and rapid onboarding of targeted Web2 enterprise pilot programs. Enterprise ARR is the stored volume billed at the 1,000 TB Corporate Reserve rate (5.49 USDT per TB per month, 65.88 per TB per year). Net Income is ARR less the 35% paid to node operators, less operating costs. Business Workspace subscriptions are not included here; the combined financial model adds them. Operating costs are the team and office in Pakistan ($200K in Year 1, rising $50K a year, covering a planned ten-person team), Inaya's own file storage infrastructure ($400K rising $100K a year), paid Workspace marketing capped at $10K a year, and $300K of one-time Year 1 legal, security-audit and launch-marketing costs.",
         },
       ],
     },
