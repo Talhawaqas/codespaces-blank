@@ -23,9 +23,20 @@ test("refuses an empty filter, except on scratch collections", () => {
   allows("drm_sessions", {});
 });
 
-test("refuses a null id and an empty id list", () => {
+test("refuses a filter whose only condition is a null or empty id", () => {
   refuses("org_members", { orgId: null });
-  refuses("orgs", { _id: { $in: [] } });
+  refuses("orgs", { _id: { $in: [null] } });
+  refuses("orgs", { $or: [{ orgId: new ObjectId() }, { orgId: undefined }] });
+});
+
+test("refuses an id list that mixes empty values with real ids", () => {
+  refuses("org_members", { orgId: { $in: [new ObjectId(), undefined] } });
+});
+
+test("allows real app filters: null next to a real condition, and an empty id list (matches nothing)", () => {
+  allows("supportChatSessions", { orgId: new ObjectId(), updatedAt: { $lt: new Date() }, handedOffTicketId: null });
+  allows("chat_messages", { conversationId: { $in: [] } });
+  allows("file_prefs", { orgId: new ObjectId(), email: "a@example.com", documentId: new ObjectId() });
 });
 
 test("allows deletes by the exact ids a test created", () => {
