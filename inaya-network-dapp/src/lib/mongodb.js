@@ -5,7 +5,21 @@ import { installTestDeleteGuard } from './testDeleteGuard.js';
 // (see testDeleteGuard.js; a cleanup with an undefined id wiped whole collections on 14 Nov 2026).
 if (process.env.NODE_TEST_CONTEXT) installTestDeleteGuard();
 
-const uri = process.env.MONGODB_URI; 
+// Under the Node test runner, tests use the separate TEST database (TEST_MONGODB_URI, its own Atlas
+// project) and never the live one: on 14 Nov 2026 a test cleanup wiped live collections. A test run
+// without TEST_MONGODB_URI, or with it pointing at the live cluster, stops here instead.
+function testDatabaseUri() {
+  const testUri = process.env.TEST_MONGODB_URI;
+  if (!testUri) throw new Error("Tests need TEST_MONGODB_URI in .env.local (the separate test database). Refusing to run tests against the live database.");
+  const host = (u) => { try { return new URL(String(u).replace(/^mongodb\+srv/, "http")).host; } catch { return ""; } };
+  // The live cluster's host is remembered before MONGODB_URI is switched (child test processes inherit it).
+  const liveHost = process.env.INAYA_LIVE_DB_HOST || (process.env.MONGODB_URI !== testUri ? host(process.env.MONGODB_URI) : "");
+  if (liveHost) process.env.INAYA_LIVE_DB_HOST = liveHost;
+  if (liveHost && host(testUri) === liveHost) throw new Error("TEST_MONGODB_URI points at the live cluster. Refusing to run tests.");
+  return testUri;
+}
+if (process.env.NODE_TEST_CONTEXT) process.env.MONGODB_URI = testDatabaseUri();
+const uri = process.env.MONGODB_URI;
 // Serverless: every function instance keeps its own pool, and the cluster
 // allows 500 connections in total. With the driver's default (up to 100 per
 // instance, idle ones kept open) a burst of parallel requests -- one Business
