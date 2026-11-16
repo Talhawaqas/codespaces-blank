@@ -15,8 +15,8 @@ import { Instrument_Sans } from "next/font/google";
 const workspaceFont = Instrument_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-workspace", display: "swap" });
 
 export const metadata = {
-  title: "Business Workspace — Encrypted Document Management for Teams | Inaya Network",
-  description: "Zero-knowledge encrypted document management for companies: departments, projects, approval workflows, granular permissions, and secure external sharing — built on the same client-side encryption as the core Inaya protocol.",
+  title: "Business Workspace — Run Your Whole Business on One Secure Workspace | Inaya Network",
+  description: "An ERP-style business workspace: documents, finance, CRM, HR, inventory and procurement in one place, with every file encrypted on your own device before upload. Sign in with email and pay in USD, no wallet needed.",
 };
 
 export default function BusinessLayout({ children }) {
