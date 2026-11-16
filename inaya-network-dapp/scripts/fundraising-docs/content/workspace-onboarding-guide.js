@@ -1,0 +1,182 @@
+// scripts/fundraising-docs/content/workspace-onboarding-guide.js
+//
+// Business Workspace onboarding guide (16 Nov 2026), written for new customers ahead of the
+// 1 January 2027 launch. One source for two outputs:
+//   - PDF:      node scripts/fundraising-docs/generate-one.mjs workspace-onboarding-guide
+//   - Markdown: node scripts/fundraising-docs/onboarding-guide-to-md.mjs  (public/docs/business-workspace-guide.md,
+//               the "Download the step-by-step setup guide" link and an AI assistant source)
+// Menu names match the Workspace sidebar (src/lib/navigation/launcher.js FRIENDLY_LABELS).
+
+export const workspaceOnboardingGuide = {
+  cover: {
+    company: "INAYA NETWORK",
+    classification: "CUSTOMER GUIDE",
+    kicker: "GETTING STARTED",
+    title: "Inaya Business Workspace Onboarding Guide",
+    subtitle: "From creating your company to running daily work: documents, customers, finance, people, stock and purchasing in one encrypted workspace.",
+    docLine: "Document INAYA-WORKSPACE-ONBOARDING-2026 · For customers · November 2026",
+  },
+  docId: "INAYA-WORKSPACE-ONBOARDING-2026",
+  sections: [
+    {
+      number: "01",
+      title: "Welcome",
+      blocks: [
+        { type: "lead", text: "Inaya Business Workspace is an ERP-style workspace for running your company day to day: documents and approvals, customers and sales, finance, people, stock, purchasing, tasks, insights and team chat, in one place. Every file is encrypted on your own device before it is uploaded." },
+        {
+          type: "bullets",
+          items: [
+            "No wallet, token or technical setup: everyone signs in with their work email.",
+            "Works on the web, as a desktop app for Windows and Linux, and on Android.",
+            "Packages are paid in USD (or PKR in Pakistan) by NayaPay or bank transfer. No card needed.",
+            "Help is built in: press \"? Help\" at the top of the Workspace at any time.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "02",
+      title: "Create Your Company",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            "Go to inayanetwork.com/business.",
+            "Press \"Create a company\".",
+            "Enter your company name and choose your business type. The business type (general, healthcare, legal, regulated enterprise, financial services, private capital, government, education or hospitality) decides which industry modules you see. You can change it later in Settings.",
+            "Enter your work email and press \"Create company\", or use \"Continue with Google\".",
+            "Open the sign-in link we email you (check spam if it has not arrived within a few minutes).",
+          ],
+        },
+      ],
+    },
+    {
+      number: "03",
+      title: "Choose Your Package",
+      blocks: [
+        { type: "lead", text: "A new company starts on the package screen. Your workspace opens once your package is paid and activated." },
+        {
+          type: "table",
+          headers: ["Package", "USD per month", "PKR per month (Pakistan)"],
+          rows: [["Starter", "$7.99", "PKR 8,000"], ["Professional", "$28", "PKR 20,000"], ["Business", "$49.99", "PKR 30,000"], ["Enterprise", "$799", "PKR 60,000"]],
+        },
+        {
+          type: "numbered",
+          items: [
+            "Press \"Request activation\" on the package you want.",
+            "Fill in your name, phone or WhatsApp number, company size, how you would like to be contacted, and whether you will pay by NayaPay or bank transfer.",
+            "Press \"Send request\". You receive a confirmation email straight away.",
+            "Our team contacts you within one working day and emails an invoice with the payment details.",
+            "Pay using the invoice number as the reference. We activate your package as soon as the payment arrives and email you when it is active.",
+          ],
+        },
+        { type: "note", text: "Later you can add extra users or change package from Settings, then Billing. Owners and admins can also download all of the company's data as a ZIP file there." },
+      ],
+    },
+    {
+      number: "04",
+      title: "Find Your Way Around",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Where", "What it is for"],
+          rows: [
+            ["Home", "What needs your attention today and a snapshot of the business"],
+            ["Sidebar", "Your everyday areas: Tasks, Documents, Customers, Finance, Inventory, Purchasing, People, Insights and Chat"],
+            ["All apps", "Every module your company has, with search; pin the ones you use most to the sidebar"],
+            ["Search (Ctrl+K)", "Jump to any screen or record by typing"],
+            ["Light / Dark / Neon", "Choose the look you prefer"],
+            ["ERP mode", "A classic desktop-ERP layout with module tiles and a task panel, for larger screens"],
+            ["? Help", "The support assistant: it checks your account and fixes common problems, or passes them to our team"],
+          ],
+        },
+      ],
+    },
+    {
+      number: "05",
+      title: "Set Up Your Company",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            "Settings: check your company name and business type.",
+            "Departments: create departments that match how your company works, for example Finance, Sales, Operations and HR.",
+            "Projects: create projects inside departments. Projects are where related documents live.",
+            "Settings, Team: invite colleagues by email, choose their role (Member or Admin) and their departments. They show as Pending until they accept.",
+          ],
+        },
+        { type: "paragraphs", text: ["Owners and admins manage the whole company; members work within the departments they are given. Each package includes a number of users, and you can add extra users from Billing."] },
+      ],
+    },
+    {
+      number: "06",
+      title: "Documents and Approvals",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            "Open Documents, choose the department and project, and upload a file.",
+            "Choose who can see it: only you and the people you add, the whole department, or the project team.",
+            "Set a passkey. The file is encrypted on your device with it before upload; keep it safe, because it cannot be recovered and nobody at Inaya can read your files.",
+            "Submit the document for review. Owners and admins approve or reject it from Approvals; every step is recorded in Activity.",
+            "To share a document outside the company, create a secure share link with an expiry and an optional use limit, and revoke it at any time.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "07",
+      title: "Run the Business",
+      blocks: [
+        {
+          type: "table",
+          headers: ["Area", "Start with"],
+          rows: [
+            ["Customers", "Add your contacts and deals; book appointments and send email campaigns"],
+            ["Finance", "Create your first invoice, record expenses and see revenue and what is outstanding"],
+            ["People", "Add employees, manage leave requests and keep staff documents in one place"],
+            ["Inventory", "Add products, warehouses and stock levels, and record stock movements"],
+            ["Purchasing", "Add suppliers, raise purchase requests and turn approved ones into purchase orders"],
+            ["Tasks", "Assign work with due dates and follow progress"],
+            ["Insights", "Dashboards and reports across the company"],
+            ["Chat", "Encrypted team messaging next to the work"],
+          ],
+        },
+        { type: "note", text: "Industry editions add their own modules, for example patients and appointments for healthcare, classes and fees for education, or reservations and tables for hospitality." },
+      ],
+    },
+    {
+      number: "08",
+      title: "Your First Week",
+      blocks: [
+        {
+          type: "numbered",
+          items: [
+            "Day 1: create your company, request your package, set your company name and business type.",
+            "Day 2: create departments and projects, and invite two or three colleagues.",
+            "Day 3: add your customers and products.",
+            "Day 4: send your first invoice and assign your first tasks.",
+            "Day 5: upload key documents and run one through approval.",
+            "Day 6: install the desktop or Android app for your team.",
+            "Day 7: open Insights and Home to see the week at a glance.",
+          ],
+        },
+      ],
+    },
+    {
+      number: "09",
+      title: "Help and Security",
+      blocks: [
+        {
+          type: "bullets",
+          items: [
+            "Press \"? Help\" in the Workspace: the support assistant can set a missing company name, change your business type, re-send a lost invitation and answer how-to questions. Anything else goes to our team.",
+            "Email contact@inayanetwork.com. We reply within one working day.",
+            "Your files are encrypted on your own device, and your company's records are backed up every day.",
+            "Owners and admins can download all company data as a ZIP file at any time from Settings, then Billing.",
+          ],
+        },
+      ],
+    },
+  ],
+};

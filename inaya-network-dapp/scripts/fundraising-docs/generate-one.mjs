@@ -22,6 +22,7 @@ import { investmentMemorandum } from "./content/investment-memorandum.js";
 import { combinedBusinessModel } from "./content/combined-business-model.js";
 import { hospitalitySummary } from "./content/hospitality-summary.js";
 import { communityFaqs } from "./content/community-faqs.js";
+import { workspaceOnboardingGuide } from "./content/workspace-onboarding-guide.js";
 import { buildInvestmentMemorandumHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,8 @@ const REGISTRY = {
   "ecosystem-overview": { name: "inaya-ecosystem-overview.pdf", html: buildInvestmentMemorandumHTML(ecosystemOverview) },
   "ecosystem-architecture": { name: "inaya-ecosystem-architecture.pdf", html: buildInvestmentMemorandumHTML(ecosystemArchitecture) },
   "ecosystem-dev-deepdive": { name: "inaya-ecosystem-dev-deepdive.pdf", html: buildInvestmentMemorandumHTML(ecosystemDevDeepdive) },
+  // Customer guide: written to Downloads to share with customers; the site's copy is the Markdown version.
+  "workspace-onboarding-guide": { name: "Inaya-Business-Workspace-Onboarding-Guide.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(workspaceOnboardingGuide) },
   "community-faqs": { name: "inaya-community-faqs.pdf", html: buildInvestmentMemorandumHTML(communityFaqs) },
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },

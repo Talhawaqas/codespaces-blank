@@ -1,198 +1,100 @@
-# Inaya Business Workspace — Step-by-Step Guide
+# Inaya Business Workspace Onboarding Guide
 
-*A getting-started guide for businesses using Inaya's Business Workspace.*
+*From creating your company to running daily work: documents, customers, finance, people, stock and purchasing in one encrypted workspace.*
 
-## Who this guide is for
+## 1. Welcome
 
-Any business that wants to organize its teams, projects, and documents in
-Inaya's Business Workspace — a secure, encrypted document and workflow
-system built on top of Inaya's decentralized storage infrastructure.
+Inaya Business Workspace is an ERP-style workspace for running your company day to day: documents and approvals, customers and sales, finance, people, stock, purchasing, tasks, insights and team chat, in one place. Every file is encrypted on your own device before it is uploaded.
 
-**No cryptocurrency wallet, token, or blockchain knowledge is required.**
-Everyone on your team signs in with just a work email address.
+- No wallet, token or technical setup: everyone signs in with their work email.
+- Works on the web, as a desktop app for Windows and Linux, and on Android.
+- Packages are paid in USD (or PKR in Pakistan) by NayaPay or bank transfer. No card needed.
+- Help is built in: press "? Help" at the top of the Workspace at any time.
 
----
+## 2. Create Your Company
 
-## 1. Open the Business Workspace
+1. Go to inayanetwork.com/business.
+2. Press "Create a company".
+3. Enter your company name and choose your business type. The business type (general, healthcare, legal, regulated enterprise, financial services, private capital, government, education or hospitality) decides which industry modules you see. You can change it later in Settings.
+4. Enter your work email and press "Create company", or use "Continue with Google".
+5. Open the sign-in link we email you (check spam if it has not arrived within a few minutes).
 
-1. Open the Inaya Network web app.
-2. Select **Business Workspace** in the navigation — it opens in a new
-   browser tab, so your original tab isn't lost.
-3. The **Business Records** sign-in page opens.
-4. Choose **Sign In** (you already have a company) or **Create a Company**
-   (you're setting one up for the first time).
+## 3. Choose Your Package
 
-## 2. Create your company
+A new company starts on the package screen. Your workspace opens once your package is paid and activated.
 
-1. Select **Create a Company**.
-2. Enter your company name and your own email address.
-3. Submit — your organization is created immediately, and it becomes your
-   security boundary. No one outside your company can see anything inside
-   it.
-4. Check your email for a sign-in link.
+| Package | USD per month | PKR per month (Pakistan) |
+| --- | --- | --- |
+| Starter | $7.99 | PKR 8,000 |
+| Professional | $28 | PKR 20,000 |
+| Business | $49.99 | PKR 30,000 |
+| Enterprise | $799 | PKR 60,000 |
 
-## 3. Sign in
+1. Press "Request activation" on the package you want.
+2. Fill in your name, phone or WhatsApp number, company size, how you would like to be contacted, and whether you will pay by NayaPay or bank transfer.
+3. Press "Send request". You receive a confirmation email straight away.
+4. Our team contacts you within one working day and emails an invoice with the payment details.
+5. Pay using the invoice number as the reference. We activate your package as soon as the payment arrives and email you when it is active.
 
-1. Select **Sign In**.
-2. Enter your work email address.
-3. Select **Send Sign-In Link**.
-4. Open the email from Inaya (check spam if it doesn't arrive within a
-   minute or two).
-5. Click the link — you're signed in.
+> Later you can add extra users or change package from Settings, then Billing. Owners and admins can also download all of the company's data as a ZIP file there.
 
-No password to remember, no wallet to connect.
+## 4. Find Your Way Around
 
-## 4. Your Dashboard
+| Where | What it is for |
+| --- | --- |
+| Home | What needs your attention today and a snapshot of the business |
+| Sidebar | Your everyday areas: Tasks, Documents, Customers, Finance, Inventory, Purchasing, People, Insights and Chat |
+| All apps | Every module your company has, with search; pin the ones you use most to the sidebar |
+| Search (Ctrl+K) | Jump to any screen or record by typing |
+| Light / Dark / Neon | Choose the look you prefer |
+| ERP mode | A classic desktop-ERP layout with module tiles and a task panel, for larger screens |
+| ? Help | The support assistant: it checks your account and fixes common problems, or passes them to our team |
 
-Signing in takes you straight to the **Dashboard** — a live overview of
-your company:
+## 5. Set Up Your Company
 
-- Department, project, and document counts
-- Anything currently waiting on your approval
-- Your most recently created departments and projects
-- Your most recently updated documents, with their status
+1. Settings: check your company name and business type.
+2. Departments: create departments that match how your company works, for example Finance, Sales, Operations and HR.
+3. Projects: create projects inside departments. Projects are where related documents live.
+4. Settings, Team: invite colleagues by email, choose their role (Member or Admin) and their departments. They show as Pending until they accept.
 
-Tapping any item on the Dashboard jumps straight to it, so you rarely need
-to browse the full hierarchy just to find something recent.
+Owners and admins manage the whole company; members work within the departments they are given. Each package includes a number of users, and you can add extra users from Billing.
 
-## 5. Set up departments
+## 6. Documents and Approvals
 
-1. Select **Departments** in the sidebar.
-2. Create departments that match how your company is actually organized —
-   Finance, HR, Sales, Operations, Marketing, IT, or whatever fits.
-3. Team members you invite later will be assigned to one or more of these.
+1. Open Documents, choose the department and project, and upload a file.
+2. Choose who can see it: only you and the people you add, the whole department, or the project team.
+3. Set a passkey. The file is encrypted on your device with it before upload; keep it safe, because it cannot be recovered and nobody at Inaya can read your files.
+4. Submit the document for review. Owners and admins approve or reject it from Approvals; every step is recorded in Activity.
+5. To share a document outside the company, create a secure share link with an expiry and an optional use limit, and revoke it at any time.
 
-## 6. Create projects
+## 7. Run the Business
 
-1. Select **Projects** (or open a department and go to its projects).
-2. Select **Create Project**, name it, and save.
-3. Projects are where related documents actually live — a department can
-   have several projects underway at once.
+| Area | Start with |
+| --- | --- |
+| Customers | Add your contacts and deals; book appointments and send email campaigns |
+| Finance | Create your first invoice, record expenses and see revenue and what is outstanding |
+| People | Add employees, manage leave requests and keep staff documents in one place |
+| Inventory | Add products, warehouses and stock levels, and record stock movements |
+| Purchasing | Add suppliers, raise purchase requests and turn approved ones into purchase orders |
+| Tasks | Assign work with due dates and follow progress |
+| Insights | Dashboards and reports across the company |
+| Chat | Encrypted team messaging next to the work |
 
-## 7. Invite your team
+> Industry editions add their own modules, for example patients and appointments for healthcare, classes and fees for education, or reservations and tables for hospitality.
 
-1. Select **Settings**.
-2. Enter a colleague's email address, choose their role (Member or Admin),
-   and select which department(s) they belong to.
-3. Send the invite. They'll show as **Pending** until they accept.
-4. Owners and Admins can manage the whole company; Members work within the
-   departments they're assigned to.
+## 8. Your First Week
 
-## 8. Upload documents
+1. Day 1: create your company, request your package, set your company name and business type.
+2. Day 2: create departments and projects, and invite two or three colleagues.
+3. Day 3: add your customers and products.
+4. Day 4: send your first invoice and assign your first tasks.
+5. Day 5: upload key documents and run one through approval.
+6. Day 6: install the desktop or Android app for your team.
+7. Day 7: open Insights and Home to see the week at a glance.
 
-1. Open the relevant department and project.
-2. Choose **Upload document**, select a file, and set a passkey — this is
-   what encrypts the file before it ever leaves your device.
-3. Choose who should be able to see it: your whole department, just this
-   project's team, or keep it private to specific people you'll grant
-   access to individually.
-4. Upload. The document is now encrypted, pinned to decentralized storage,
-   and tracked under your organization's structure.
+## 9. Help and Security
 
-**Keep your passkey safe** — Inaya never stores it, and it can't be
-recovered if lost. That's what keeps the document unreadable to anyone
-without it, including Inaya itself.
-
-## 9. Move a document through review
-
-Every document follows a clear, enforced approval path:
-
-```
-DRAFT → PENDING → UNDER REVIEW → APPROVED
-                        ↓
-                    REJECTED → (revise) → DRAFT
-```
-
-Approved documents can be **Archived**, and archived documents can be
-**Restored** back to Approved at any time. Every step is enforced by the
-server — not just a label in the interface — so a document can't skip
-straight from Draft to Approved, and only Owners/Admins can approve or
-reject.
-
-## 10. Review what needs your attention
-
-If you're an Owner or Admin, select **Approvals** to see every document
-across the company currently waiting on a review decision, with one-tap
-buttons to start a review, approve, or reject — no need to hunt through
-each project individually.
-
-## 11. Control who can see what
-
-Every document has one of three access levels when it's uploaded:
-
-- **Private** — only you and anyone you explicitly add
-- **Department** — everyone in that department
-- **Project** — everyone added to that specific project
-
-On top of that, you can grant any individual person **View**, **Edit**, or
-**Manage** access to a specific document, regardless of their department.
-Document permissions never grant approval authority — approving or
-rejecting documents is always controlled separately, by company role.
-
-## 12. Share a document outside your company
-
-Need to send a document to someone who isn't part of your company —a
-client, auditor, or partner? Generate a **secure share link**:
-
-- Choose how long it stays valid (1 hour, 24 hours, 7 days, or 30 days)
-- Optionally cap how many times it can be used
-- Revoke it instantly, any time, from the document's Sharing panel
-
-The person opening the link never sees your company's internal structure —
-just the document itself, and only if they have the passkey to decrypt it.
-
-## 13. See what's happened
-
-Select **Activity** for a running feed of everything that's happened across
-every document you have access to — created, submitted, reviewed, approved,
-rejected, archived, shared — each with who did it and when. Nothing in this
-history can be edited or deleted after the fact.
-
-## 14. Ask the AI Business Assistant
-
-Select **AI Assistant** and ask questions in plain English instead of
-clicking through menus:
-
-- "Which documents are waiting for approval?"
-- "Show me the latest rejected documents."
-- "Which projects currently have pending documents?"
-- "Show me our recently approved documents."
-- "Who has access to this document?"
-
-**The assistant only ever shows you what you're already allowed to see.**
-It uses your exact company permissions — nothing more — so a team member
-gets different answers than an Owner would, exactly as expected. It can
-look things up and summarize; it doesn't take actions like approving
-documents or changing permissions on your behalf.
-
-## 15. On your phone
-
-The Business Workspace is also available in the Inaya mobile app: sign in,
-browse your departments/projects/documents, open and decrypt documents
-you're authorized for, manage secure share links, and ask the same AI
-Business Assistant — all from your phone.
-
-## 16. Try it yourself — a suggested first run
-
-1. Create a company.
-2. Create 2–3 departments.
-3. Create a project in one of them.
-4. Invite 2–5 teammates.
-5. Upload a couple of test documents at different access levels.
-6. Grant, then revoke, an explicit permission on one document.
-7. Submit a document for review, then approve one and reject another.
-8. Revise and resubmit the rejected one.
-9. Archive an approved document, then restore it.
-10. Generate a secure share link and test it in a private/incognito window.
-11. Ask the AI Assistant a couple of the example questions above.
-12. Check the Activity feed — you should see every one of these steps.
-
----
-
-> **A note on where things stand:** this is Inaya's Business Workspace
-> foundation — document management, workflow, permissions, secure sharing,
-> and an AI assistant, all working today. It is not yet a complete ERP.
-> Capabilities like tasks, CRM, procurement, inventory, finance, and HR are
-> on the roadmap, not available yet — see the **Business SaaS Roadmap**
-> (linked from the main Inaya app) for the honest, up-to-date picture of
-> what's shipped versus what's planned.
+- Press "? Help" in the Workspace: the support assistant can set a missing company name, change your business type, re-send a lost invitation and answer how-to questions. Anything else goes to our team.
+- Email contact@inayanetwork.com. We reply within one working day.
+- Your files are encrypted on your own device, and your company's records are backed up every day.
+- Owners and admins can download all company data as a ZIP file at any time from Settings, then Billing.
