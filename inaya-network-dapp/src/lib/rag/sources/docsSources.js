@@ -49,6 +49,7 @@ function walkContentDocs(dir) {
 
 function docsPlatformSources() {
   const dir = path.join(process.cwd(), "content", "docs");
+  if (!fs.existsSync(dir)) console.error(`rag/docsSources: ${dir} is missing -- docs-platform sources skipped (check outputFileTracingIncludes).`);
   return walkContentDocs(dir).map((file) => {
     const { data, content } = matter(fs.readFileSync(file, "utf8"));
     const url = data.product === "Developer Platform" ? `/docs/developer/${data.slug}` : `/docs/products/${data.slug}`;
@@ -71,6 +72,11 @@ function readPublicFile(relativePath) {
   }
 }
 
+// Sources that were indexed once and must never be served again. The
+// Investment Memorandum is confidential (investors only, founder decision
+// 15 Nov 2026), so the reingest job deletes its chunks on every run.
+export const RETIRED_DOCS_SOURCE_IDS = ["fundraising:investment-memorandum.js"];
+
 const FUNDRAISING_DOCS = [
   { file: "whitepaper.js", exportName: "whitepaper", title: "Inaya Whitepaper" },
   { file: "community-faqs.js", exportName: "communityFaqs", title: "Inaya Community FAQs" },
@@ -82,7 +88,6 @@ const FUNDRAISING_DOCS = [
   { file: "ecosystem-overview.js", exportName: "ecosystemOverview", title: "Inaya Ecosystem Overview" },
   { file: "enterprise-revenue-architecture.js", exportName: "enterpriseRevenueArchitecture", title: "Inaya Enterprise Revenue & Node Reward Architecture" },
   { file: "gtm-strategy.js", exportName: "gtmStrategy", title: "Inaya Go-To-Market Strategy" },
-  { file: "investment-memorandum.js", exportName: "investmentMemorandum", title: "Inaya Investment Memorandum" },
   { file: "operator-manifesto.js", exportName: "operatorManifesto", title: "Inaya Operator Manifesto" },
   { file: "saas-business-model.js", exportName: "saasBusinessModel", title: "Inaya SaaS Business Model" },
   { file: "sdk-guide.js", exportName: "sdkGuide", title: "Inaya SDK Guide" },
@@ -111,7 +116,9 @@ export const DOCS_SOURCES = [
     domain: "docs",
     adapter: () => {
       const markdown = readPublicFile("docs/business-workspace-guide.md");
-      if (!markdown) return [];
+      // Throw rather than return []: an empty result makes ingestSource delete every stored
+      // chunk for this source, so a missing file must fail the run, not wipe the index.
+      if (!markdown) throw new Error("public/docs/business-workspace-guide.md is not readable in this runtime");
       return chunkMarkdownByHeading(markdown, {
         sourceId: "business-workspace-guide", domain: "docs", category: "business-workspace", url: "/docs/business-workspace-guide.md",
       });

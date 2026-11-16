@@ -85,6 +85,11 @@ const nextConfig = {
     "/api/orgs/finance/invoices/**/*": ["./src/lib/documentAutomation/fonts/**/*"],
     "/api/cron/document-automation": ["./src/lib/documentAutomation/fonts/**/*"],
     "/api/cron/execute-approved-ai-actions": ["./src/lib/documentAutomation/fonts/**/*"],
+    // RAG ingestion reads these with fs at runtime (rag/sources/docsSources.js). Without them the
+    // function has no content/docs folder and no public/ files, so 38 docs sources silently
+    // produced zero chunks in production (found 15 Nov 2026).
+    "/api/cron/rag-reingest": ["./content/docs/**/*", "./public/docs/business-workspace-guide.md"],
+    "/api/admin/rag/reingest": ["./content/docs/**/*", "./public/docs/business-workspace-guide.md"],
   },
   // Secure Chat (Competitive Expansion SOW): ts-mls lazily imports optional crypto suites (ChaCha20, X448, ML-KEM, X-Wing, ML-DSA,
   // P-curves). Inaya uses ONLY MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519, which runs on WebCrypto, so those packages are not
