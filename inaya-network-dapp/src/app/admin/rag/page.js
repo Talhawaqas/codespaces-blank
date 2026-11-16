@@ -10,7 +10,7 @@
 // re-ingest trigger. Honest-null convention throughout — a stat that
 // couldn't be computed shows "Unavailable", never a fabricated 0.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 function formatDate(iso) {
   if (!iso) return "Never";
@@ -24,7 +24,8 @@ function formatPct(value) {
 
 export default function RagAdminPage() {
   const [passphrase, setPassphrase] = useState("");
-  const [authed, setAuthed] = useState(false);
+  // The admin layout (app/admin/layout.js) only renders this page once the session is valid.
+  const [authed, setAuthed] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +44,9 @@ export default function RagAdminPage() {
       setLoadError(err.message);
     }
   }, []);
+
+  // Signed in via the admin layout: load the stats when the page opens.
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   async function handleLogin(e) {
     e.preventDefault();

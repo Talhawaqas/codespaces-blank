@@ -13,7 +13,7 @@
 // No websockets/polling — loads current data on request, per the SOW's
 // explicit "don't add real-time infrastructure that wasn't asked for."
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function formatUsd(value) {
   if (value === null || value === undefined) return "Unavailable";
@@ -35,7 +35,8 @@ function formatDate(ms) {
 
 export default function AdminDashboard() {
   const [passphrase, setPassphrase] = useState("");
-  const [authed, setAuthed] = useState(false);
+  // The admin layout (app/admin/layout.js) only renders this page once the session is valid.
+  const [authed, setAuthed] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
   const [revenue, setRevenue] = useState(null);
@@ -67,6 +68,9 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   }
+
+  // Signed in via the admin layout: load the dashboard when the page opens.
+  useEffect(() => { loadDashboardData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -134,36 +138,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-bold text-xl">Enterprise Dashboard</h1>
         <div className="flex items-center gap-3">
-          <a href="/admin/dataroom" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Data Room
-          </a>
-          <a href="/admin/security" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Security Layer
-          </a>
-          <a href="/admin/hackathon" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Hackathon
-          </a>
-          <a href="/admin/leads" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Leads (outreach)
-          </a>
-          <a href="/admin/billing" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Billing requests (PKR)
-          </a>
-          <a href="/admin/fraud" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Fraud &amp; Abuse
-          </a>
-          <a href="/admin/audit" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Audit Trail
-          </a>
-          <a href="/admin/nodes" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Storage Nodes
-          </a>
-          <a href="/admin/faucet" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            Faucet
-          </a>
-          <a href="/admin/rag" className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
-            RAG
-          </a>
+          {/* Admin sections moved into the hamburger menu (app/admin/layout.js). */}
           <button onClick={loadDashboardData} disabled={loading} className="text-xs px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10">
             {loading ? "Refreshing..." : "Refresh"}
           </button>

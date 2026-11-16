@@ -39,7 +39,8 @@ function shortAddr(addr) {
 
 export default function SecurityAdminPage() {
   const [passphrase, setPassphrase] = useState("");
-  const [authed, setAuthed] = useState(false);
+  // The admin layout (app/admin/layout.js) only renders this page once the session is valid.
+  const [authed, setAuthed] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
 

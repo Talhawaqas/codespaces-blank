@@ -95,7 +95,8 @@ function AddLead({ batch, onAdded }) {
 
 export default function LeadsAdminPage() {
   const [passphrase, setPassphrase] = useState("");
-  const [authed, setAuthed] = useState(false);
+  // The admin layout (app/admin/layout.js) only renders this page once the session is valid.
+  const [authed, setAuthed] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [batch, setBatch] = useState("PK");
   const [status, setStatus] = useState("");

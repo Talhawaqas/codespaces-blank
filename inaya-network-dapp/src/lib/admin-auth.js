@@ -19,7 +19,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export const ADMIN_SESSION_COOKIE = "inaya_admin_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
+// 30 minutes, renewed on activity by GET /api/admin/session (app/admin/layout.js), so an admin is
+// signed out 30 minutes after their last activity (founder request, 16 Nov 2026).
+const SESSION_MAX_AGE_SECONDS = 30 * 60;
 
 function sha256Hex(value) {
   return createHash("sha256").update(value, "utf8").digest("hex");

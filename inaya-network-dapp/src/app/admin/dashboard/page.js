@@ -189,7 +189,8 @@ const SUBSCRIPTION_STATUS_COLORS = {
 
 export default function AdminDashboardPage() {
   const [passphrase, setPassphrase] = useState("");
-  const [authed, setAuthed] = useState(false);
+  // The admin layout (app/admin/layout.js) only renders this page once the session is valid.
+  const [authed, setAuthed] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
 
