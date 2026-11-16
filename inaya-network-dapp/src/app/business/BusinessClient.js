@@ -35,6 +35,7 @@ function ScreenLoading() {
   return <p className="text-[var(--inaya-text-muted)] text-sm p-4">Loading…</p>;
 }
 import { PricingCard } from "./PricingCard";
+import ActivationRequestModal from "./ActivationRequestModal";
 import EmptyState from "../../components/EmptyState";
 import { Icon, ICONS } from "../../components/business/ui/icons";
 import WorkflowVisualization from "../../components/business/WorkflowVisualization";
@@ -156,6 +157,19 @@ const AttestationsView = dynamic(() => import("../../components/business/Attesta
 // comment for why this is localStorage and not a query param.
 const PENDING_PLAN_KEY = "inaya_pending_plan";
 
+// A package picked on the public pricing page or the landing page before signing in: returns its
+// planId once (and clears it), so the screen showing plans can open the activation form for it.
+function takePendingPlanId() {
+  try {
+    const raw = localStorage.getItem(PENDING_PLAN_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(PENDING_PLAN_KEY);
+    return JSON.parse(raw)?.planId || null;
+  } catch {
+    return null;
+  }
+}
+
 const ROLE_LABELS = { owner: "Owner", admin: "Admin", member: "Member" };
 
 // ============================================================
@@ -262,44 +276,15 @@ export default function BusinessPage({ initialSignedOut = false }) {
   // (see PricingPage's header comment) — fire that checkout automatically
   // instead of making them find and re-click "Change plan" themselves.
   useEffect(() => {
+    // No card checkout any more (15 Nov 2026): the stashed choice stays in localStorage and the
+    // plan-selection screen / Billing page open the activation request form for it (usePendingPlan).
     if (!session?.authenticated) return;
-    const raw = localStorage.getItem(PENDING_PLAN_KEY);
-    if (!raw) return;
-    localStorage.removeItem(PENDING_PLAN_KEY);
-
-    let pending;
-    try {
-      pending = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!pending?.planId) return;
-
     const membership = session.orgs.find((o) => o.orgId === selectedOrgId) || session.orgs[0];
-    if (!membership) return;
+    if (!membership || !localStorage.getItem(PENDING_PLAN_KEY)) return;
     if (membership.role !== "owner" && membership.role !== "admin") {
-      setNotice("Ask your company's owner or admin to upgrade the plan.");
-      return;
+      localStorage.removeItem(PENDING_PLAN_KEY);
+      setNotice("Ask your company's owner or admin to request a package.");
     }
-
-    if (pending.paymentMethod === "bank_transfer") {
-      api("/api/orgs/billing/pk-request", {
-        method: "POST",
-        body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month", pilot: true }),
-      })
-        .then(() => setNotice("Package requested. We'll email you an invoice with our bank details within one working day."))
-        .catch((err) => setNotice(err.message));
-      return;
-    }
-    api("/api/orgs/billing/checkout", {
-      method: "POST",
-      body: JSON.stringify({ orgId: membership.orgId, planId: pending.planId, interval: pending.interval || "month" }),
-    })
-      .then((data) => {
-        if (data.url) window.location.href = data.url;
-        else setNotice("Your plan has been upgraded.");
-      })
-      .catch((err) => setNotice(err.message));
   }, [session, selectedOrgId]);
 
   async function handleLogout() {
@@ -454,38 +439,18 @@ function PlanSelectionGate({ email, membership, onLogout }) {
     return () => clearInterval(interval);
   }, [membership.orgId]);
 
-  async function handleSelect(plan) {
-    if (plan.paymentMethod === "bank_transfer") {
-      setSwitchingPlanId(plan.id);
-      setError("");
-      try {
-        await api("/api/orgs/billing/pk-request", { method: "POST", body: JSON.stringify({ orgId: membership.orgId, planId: plan.id, interval: "month", pilot: true }) });
-        setPkRequested(plan);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setSwitchingPlanId(null);
-      }
-      return;
-    }
-    if (plan.contactSalesOnly) {
-      window.location.href = "mailto:sales@inaya.ai?subject=Inaya%20Business%20Workspace%20—%20Enterprise";
-      return;
-    }
-    setSwitchingPlanId(plan.id);
+  // Every package (USD or PKR, Enterprise included) is requested through the activation form.
+  const [requestPlan, setRequestPlan] = useState(null);
+  function handleSelect(plan) {
     setError("");
-    try {
-      const d = await api("/api/orgs/billing/checkout", {
-        method: "POST",
-        body: JSON.stringify({ orgId: membership.orgId, planId: plan.id, interval: "month" }),
-      });
-      if (d.url) window.location.href = d.url;
-      else window.location.reload();
-    } catch (err) {
-      setError(err.message);
-      setSwitchingPlanId(null);
-    }
+    setRequestPlan(plan);
   }
+  useEffect(() => {
+    if (!plans) return;
+    const pendingId = takePendingPlanId();
+    const p = pendingId && plans.find((x) => x.id === pendingId);
+    if (p) setRequestPlan(p);
+  }, [plans]);
 
   return (
     <div className="bw min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
@@ -500,7 +465,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
               </p>
             ) : (
               <p className="text-[var(--inaya-text-muted)] text-sm mt-1 max-w-xl">
-                You signed up but haven't chosen a plan yet. Pick one to get started — every plan includes a 14-day free trial, and since this runs on Inaya's testnet, nothing is actually charged during the trial. Not ready to commit? You can also continue on limited free features below.
+                Choose the package for your company and send a short request. Our team contacts you within one working day to arrange payment by NayaPay or bank transfer, and your team can start working straight away. Not ready yet? Continue on the free features below.
               </p>
             )}
           </div>
@@ -509,18 +474,13 @@ function PlanSelectionGate({ email, membership, onLogout }) {
           </button>
         </div>
 
-        {region !== "PK" && (
-          <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-6">
-            <span className="text-amber-400 text-sm">⚠️</span>
-            <p className="text-[12px] text-amber-300 font-bold font-mono">
-              TEST MODE — Stripe checkout won't accept a real card. Use 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
-            </p>
-          </div>
+        {requestPlan && (
+          <ActivationRequestModal orgId={membership.orgId} plan={requestPlan} pilot={region === "PK"} onClose={() => setRequestPlan(null)} onDone={(p) => setPkRequested(p)} />
         )}
         {pkRequested && (
           <div className="bg-emerald-400/10 border border-emerald-400/30 rounded-xl p-4 mb-6">
             <p className="text-emerald-300 text-sm font-bold">Request received: {pkRequested.name} package</p>
-            <p className="text-[var(--inaya-text-muted)] text-[13px] mt-1">We'll email you an invoice with our bank details within one working day. Your package is activated as soon as the transfer arrives.</p>
+            <p className="text-[var(--inaya-text-muted)] text-[13px] mt-1">Our team will contact you within one working day to arrange payment by NayaPay or bank transfer. Your package is activated as soon as the payment arrives.</p>
             <button onClick={() => window.location.reload()} className="mt-3 text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-4 py-2 rounded-lg">Go to my workspace</button>
           </div>
         )}
@@ -596,6 +556,10 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const [googleError, setGoogleError] = useState("");
   const googleButtonRef = useRef(null);
   const signInCardRef = useRef(null);
+  const [landingPlans, setLandingPlans] = useState(null);
+  useEffect(() => {
+    fetch("/api/orgs/billing/plans").then((r) => r.json()).then((d) => { if (Array.isArray(d.plans)) setLandingPlans(d.plans); }).catch(() => {});
+  }, []);
 
   // Google Identity Services renders its own button into this ref via a
   // dynamically-loaded script — kept optional (silently absent) when
@@ -792,6 +756,27 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
           ))}
         </div>
       </div>
+
+      {/* PACKAGES — same plans and region-aware prices as /business/pricing. Picking one remembers
+          it and opens "Create a company"; the activation form opens once the company exists. */}
+      {landingPlans && (
+        <div className="mt-14" id="packages">
+          <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">Packages</h2>
+          <p className="text-[var(--inaya-text-muted)] text-sm mb-5">Pay by NayaPay or bank transfer. Request a package and our team contacts you within one working day.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {landingPlans.map((p) => (
+              <PricingCard
+                key={p.id}
+                plan={p}
+                onSelect={() => {
+                  try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: p.id, interval: "month" })); } catch { /* storage blocked */ }
+                  openForm("create");
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* INDUSTRY EDITIONS */}
       <div className="mt-6 bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5">
@@ -2815,85 +2800,29 @@ function BillingView({ orgId, canManage }) {
     load();
   }, [load]);
 
-  async function handleSwitch(planId) {
+  // No card checkout (15 Nov 2026): package changes and extra users are requested through the
+  // activation form; the team arranges NayaPay or bank transfer and activates on /admin/billing.
+  const [requestFor, setRequestFor] = useState(null); // { plan, extraUsers, pilot }
+  function handleSwitch(planId) {
     const chosen = data?.availablePlans?.find((p) => p.id === planId);
-    if (chosen?.paymentMethod === "bank_transfer") {
-      // PKR packages are paid by bank transfer: record the request; Inaya activates it once paid.
-      setSwitchingPlanId(planId);
-      setError("");
-      try {
-        await api("/api/orgs/billing/pk-request", { method: "POST", body: JSON.stringify({ orgId, planId, interval: "month", pilot: !data?.subscription }) });
-        setNotice(`Request received for the ${chosen.name} package. We'll email you an invoice with our bank details within one working day.`);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setSwitchingPlanId(null);
-      }
-      return;
-    }
-    setSwitchingPlanId(planId);
+    if (!chosen) return;
     setError("");
-    try {
-      const d = await api("/api/orgs/billing/checkout", {
-        method: "POST",
-        body: JSON.stringify({ orgId, planId, interval: "month" }),
-      });
-      if (d.url) {
-        window.location.href = d.url;
-        return;
-      }
-      setNotice(`Upgraded to ${chosen?.name || planId}. Stripe adjusts your next invoice for the difference.`);
-      setSwitchingPlanId(null);
-      load();
-    } catch (err) {
-      setError(err.message);
-      setSwitchingPlanId(null);
-    }
+    setRequestFor({ plan: chosen, extraUsers: 0, pilot: data.region === "PK" && !data?.subscription });
   }
 
-  async function handleExtraUsers(e) {
+  function handleExtraUsers(e) {
     e.preventDefault();
-    const extra = Number(extraUsers);
-    setRequestingExtra(true);
+    const current = data?.availablePlans?.find((p) => p.id === data.plan.id) || { ...data.plan, currency: data.region === "PK" ? "PKR" : "USD" };
     setError("");
-    try {
-      if (data.region === "PK") {
-        await api("/api/orgs/billing/pk-request", {
-          method: "POST",
-          body: JSON.stringify({ orgId, planId: data.plan.id, interval: "month", pilot: !!data.subscription?.pilot, extraUsers: extra }),
-        });
-        setNotice(`Request received for ${extra} extra users. We'll email you an invoice with our bank details within one working day.`);
-      } else {
-        // Card: a live subscription is changed in place; without one, Checkout starts a new subscription.
-        const d = await api("/api/orgs/billing/checkout", {
-          method: "POST",
-          body: JSON.stringify({ orgId, planId: data.plan.id, interval: data.subscription?.billingInterval || "month", extraUsers: extra }),
-        });
-        if (d.url) {
-          window.location.href = d.url;
-          return;
-        }
-        setNotice(`You now have ${extra} extra users. Stripe adjusts your next invoice for the difference.`);
-        load();
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setRequestingExtra(false);
-    }
+    setRequestFor({ plan: current, extraUsers: Number(extraUsers), pilot: !!data.subscription?.pilot });
   }
 
-  async function handlePortal() {
-    setPortalLoading(true);
-    setError("");
-    try {
-      const d = await api("/api/orgs/billing/portal", { method: "POST", body: JSON.stringify({ orgId }) });
-      window.location.href = d.url;
-    } catch (err) {
-      setError(err.message);
-      setPortalLoading(false);
-    }
-  }
+  useEffect(() => {
+    if (!data?.availablePlans) return;
+    const pendingId = takePendingPlanId();
+    const p = pendingId && data.availablePlans.find((x) => x.id === pendingId);
+    if (p) setRequestFor({ plan: p, extraUsers: 0, pilot: data.region === "PK" && !data.subscription });
+  }, [data]);
 
   if (!data) {
     return <p className="text-[var(--inaya-text-muted)] text-sm">{error || "Loading…"}</p>;
@@ -2915,15 +2844,6 @@ function BillingView({ orgId, canManage }) {
               </p>
             )}
           </div>
-          {subscription && subscription.provider !== "bank_transfer" && (
-            <button
-              onClick={handlePortal}
-              disabled={portalLoading}
-              className="text-[12px] font-bold uppercase bg-[var(--inaya-overlay-5)] border border-[var(--inaya-overlay-10)] px-3 py-2 rounded-lg text-[var(--inaya-text-primary)] hover:bg-[var(--inaya-overlay-10)] disabled:opacity-40"
-            >
-              {portalLoading ? "Opening…" : "Manage billing"}
-            </button>
-          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UsageBar label="Users" used={usage.users.used} max={usage.users.max} />
@@ -2931,7 +2851,11 @@ function BillingView({ orgId, canManage }) {
         </div>
       </div>
 
-      {canManage && plan.id && plan.maxExtraUsers > 0 && !plan.noBilling && (data.region === "PK" || subscription?.provider !== "bank_transfer") && (
+      {requestFor && (
+        <ActivationRequestModal orgId={orgId} plan={requestFor.plan} extraUsers={requestFor.extraUsers} pilot={requestFor.pilot} onClose={() => setRequestFor(null)} onDone={() => setNotice("Request sent. Our team will contact you within one working day to arrange payment by NayaPay or bank transfer.")} />
+      )}
+
+      {canManage && plan.id && plan.maxExtraUsers > 0 && !plan.noBilling && (
         <form onSubmit={handleExtraUsers} className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[220px]">
             <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Extra users</p>
@@ -2971,12 +2895,7 @@ function BillingView({ orgId, canManage }) {
               Full pricing page ↗
             </a>
           </div>
-          <div className="bg-amber-400/10 border border-amber-400/40 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-4">
-            <span className="text-amber-400 text-sm">⚠️</span>
-            <p className="text-[12px] text-amber-300 font-bold font-mono">
-              TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC/ZIP.
-            </p>
-          </div>
+          <p className="text-[var(--inaya-text-muted)] text-xs mb-4">Pick a package and send a short request. Payment is by NayaPay or bank transfer; our team contacts you to arrange it.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {availablePlans.map((p) => (
               <PricingCard
@@ -2984,7 +2903,7 @@ function BillingView({ orgId, canManage }) {
                 plan={p}
                 current={plan.id === p.id}
                 loading={switchingPlanId === p.id}
-                onSelect={() => (p.contactSalesOnly ? (window.location.href = "mailto:sales@inaya.ai") : handleSwitch(p.id))}
+                onSelect={() => handleSwitch(p.id)}
               />
             ))}
           </div>

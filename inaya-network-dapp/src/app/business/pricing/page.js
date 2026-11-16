@@ -40,17 +40,10 @@ export default function PricingPage() {
       .catch((err) => setError(err.message));
   }, []);
 
+  // Every package (Enterprise included) goes through the activation request form, which opens in the
+  // workspace once the visitor has signed in / created their company (15 Nov 2026: no card checkout).
   function handleSelect(plan) {
-    if (plan.paymentMethod === "bank_transfer") {
-      localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, interval: "month", paymentMethod: "bank_transfer" }));
-      window.location.href = "/business";
-      return;
-    }
-    if (plan.contactSalesOnly) {
-      window.location.href = "mailto:sales@inaya.ai?subject=Inaya%20Business%20Workspace%20—%20Enterprise";
-      return;
-    }
-    localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, interval: "month" }));
+    try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, interval: "month" })); } catch { /* storage blocked */ }
     window.location.href = "/business";
   }
 
@@ -109,7 +102,7 @@ export default function PricingPage() {
           </div>
           <div>
             <p className="text-white font-bold mb-1">Payment</p>
-            <p>Monthly by bank transfer, invoiced in PKR</p>
+            <p>Monthly by NayaPay or bank transfer, invoiced in PKR</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">Support</p>
@@ -127,8 +120,8 @@ export default function PricingPage() {
             <p>$3.99 / TB / month</p>
           </div>
           <div>
-            <p className="text-white font-bold mb-1">Extra Features</p>
-            <p>API, integrations &amp; more</p>
+            <p className="text-white font-bold mb-1">Payment</p>
+            <p>NayaPay or bank transfer, invoiced in USD. No card needed.</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">All Plans Include</p>

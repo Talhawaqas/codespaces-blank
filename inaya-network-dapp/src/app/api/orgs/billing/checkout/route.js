@@ -38,7 +38,13 @@ const extraUsersPrice = (product, interval) => ({
   recurring: { interval },
 });
 
+// Card checkout is switched off (founder decision, 15 Nov 2026): packages are paid by NayaPay or
+// bank transfer and requested via POST /api/orgs/billing/activation-request. The Stripe code below
+// is kept, unused, in case card payments return; set CARD_CHECKOUT_ENABLED=1 to turn it back on.
 export async function POST(req) {
+  if (process.env.CARD_CHECKOUT_ENABLED !== "1") {
+    return NextResponse.json({ error: "Card checkout is not offered. Request your package from Billing; payment is by NayaPay or bank transfer." }, { status: 410 });
+  }
   try {
     let reqBody = {}; try { reqBody = await req.json(); } catch { reqBody = {}; }
     const { orgId, planId, interval = "month" } = reqBody;

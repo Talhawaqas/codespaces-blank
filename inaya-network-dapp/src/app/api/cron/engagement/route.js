@@ -12,6 +12,8 @@ import { processCampaigns } from "../../../../lib/engagement/sender.js";
 import { processDueEnrollments } from "../../../../lib/engagement/sequences.js";
 import { processReservationReminders } from "../../../../lib/hospitality/reservations.js";
 import { processOverdueChecklists } from "../../../../lib/hospitality/operations.js";
+// Safety net for package activation requests that arrived after the request route stopped retrying.
+import { fileActivationRequests } from "../../../../lib/mailboxFiling.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,7 +25,7 @@ export async function GET(request) {
       name: "engagement", retries: 0,
       fn: async () => {
         const out = {};
-        for (const [k, f] of [["reminders", () => processDueReminders()], ["campaigns", () => processCampaigns()], ["sequences", () => processDueEnrollments()], ["calendarImports", () => syncDueImports()], ["reservationReminders", () => processReservationReminders()], ["overdueChecklists", () => processOverdueChecklists()]]) {
+        for (const [k, f] of [["reminders", () => processDueReminders()], ["campaigns", () => processCampaigns()], ["sequences", () => processDueEnrollments()], ["calendarImports", () => syncDueImports()], ["reservationReminders", () => processReservationReminders()], ["overdueChecklists", () => processOverdueChecklists()], ["activationRequestFiling", () => fileActivationRequests()]]) {
           try { out[k] = await f(); } catch (e) { console.error(`cron/engagement ${k} failed:`, e?.message); out[k] = { error: String(e?.message || e).slice(0, 200) }; }
         }
         return out;

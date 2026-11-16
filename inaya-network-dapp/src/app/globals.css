@@ -211,6 +211,10 @@ select:focus {
 html[data-theme="white"]:has(.bw) body { background: var(--inaya-bg); }
 .bw { font-family: var(--font-workspace), system-ui, -apple-system, "Segoe UI", sans-serif; }
 html[data-theme="white"]:has(.bw) [data-globe-bg] { display: none; }
+/* Package cards (PricingCard.js) inside the workspace and its landing page: the price and feature
+   lines are white/light-grey for the dark public pricing page, so recolour them on light cards. */
+html[data-theme="white"]:has(.bw) .bw .pricing-price { color: var(--inaya-text-primary); }
+html[data-theme="white"]:has(.bw) .bw .pricing-feature { color: var(--inaya-text-muted); }
 
 /* Surfaces and inputs */
 html[data-theme="white"]:has(.bw) :is([class~="bg-black/20"],[class~="bg-black/25"],[class~="bg-black/30"],[class~="bg-black/40"]) { background-color: #f8fafb; }

@@ -9,9 +9,129 @@
 
 import { getOrgCollections, toObjectId, canManageOrg } from "./orgs.js";
 import { PK_PACKAGES, PK_EXTRA_USER_MONTHLY, PK_PILOT, formatPkr, pkPilotPrice, pkSetupFee } from "./pkPricing.js";
-import { PLANS, planChangeError } from "./orgPlans.js";
+import { PLANS, planChangeError, EXTRA_USER_MONTHLY_USD } from "./orgPlans.js";
 import { sendEmail } from "./email.js";
 import { logOrgActivity } from "./org-activity-log.js";
+
+// Activation requests (founder decision, 15 Nov 2026): no self-serve card checkout. Every package,
+// USD or PKR, is requested through a form; the team contacts the company and activates it on
+// /admin/billing. Requests are emailed to this inbox with a fixed subject tag, so a mailbox filter
+// can file them (the founder's "Customers" folder).
+export const ACTIVATION_INBOX = process.env.ACTIVATION_REQUEST_EMAIL || "contact@inayanetwork.com";
+export const ACTIVATION_SUBJECT_TAG = "[Inaya activation request]";
+const CONTACT_METHODS = ["email", "phone", "whatsapp"];
+const COMPANY_SIZES = ["1-5", "6-20", "21-50", "51-200", "200+"];
+
+/** Cleans the request form's contact details. Name and phone are required. */
+export function cleanActivationContact(input = {}) {
+  const s = (v, max) => String(v ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
+  const contact = {
+    name: s(input.name, 120),
+    phone: s(input.phone, 40),
+    companySize: COMPANY_SIZES.includes(input.companySize) ? input.companySize : null,
+    preferredContact: CONTACT_METHODS.includes(input.preferredContact) ? input.preferredContact : "email",
+    message: String(input.message ?? "").trim().slice(0, 2000),
+  };
+  if (!contact.name) return { error: "Please enter your name." };
+  if (!/^[+()\d\s-]{6,40}$/.test(contact.phone)) return { error: "Please enter a phone or WhatsApp number." };
+  return { contact };
+}
+
+function contactLines(contact, actorEmail) {
+  if (!contact) return `Requested by: ${actorEmail}`;
+  return [
+    `Contact: ${contact.name}`,
+    `Email: ${actorEmail}`,
+    `Phone / WhatsApp: ${contact.phone}`,
+    `Preferred contact: ${contact.preferredContact}`,
+    contact.companySize ? `Company size: ${contact.companySize} people` : null,
+    contact.message ? `Message: ${contact.message}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+// The only accepted payment methods, for USD and PKR alike (founder decision, 15 Nov 2026).
+export const PAYMENT_METHODS = { nayapay: "NayaPay", bank_transfer: "Bank transfer" };
+
+/** Emails the request to the activation inbox (reply goes to the requester) and confirms it to the requester. */
+async function notifyActivationRequest({ org, orgId, plan, what, actorEmail, contact, paymentMethod, currency }) {
+  const company = org.name && org.name !== "(Company name not set)" ? org.name : `Company ${orgId}`;
+  await Promise.all([
+    sendEmail({
+      to: ACTIVATION_INBOX,
+      replyTo: actorEmail,
+      subject: `${ACTIVATION_SUBJECT_TAG} ${company}: ${plan.name} (${currency})`,
+      text: `${company} asked for ${what}.\n\n${contactLines(contact, actorEmail)}\nPayment method: ${PAYMENT_METHODS[paymentMethod] || paymentMethod}\nCompany id: ${orgId}\n\nContact them, send the payment details, then activate the package at https://www.inayanetwork.com/admin/billing once payment arrives.`,
+    }),
+    // Welcome + automatic acknowledgement in one email. Replies go to the activation inbox.
+    sendEmail({
+      to: actorEmail,
+      replyTo: ACTIVATION_INBOX,
+      subject: "Welcome to Inaya Business Workspace: we received your request",
+      text: [
+        `Hi${contact?.name ? ` ${contact.name}` : ""},`,
+        "",
+        "Welcome to Inaya Business Workspace, and thank you for choosing us.",
+        "",
+        `This is an automatic confirmation that we received your request for ${what}, paid by ${PAYMENT_METHODS[paymentMethod] || paymentMethod}.`,
+        "",
+        "What happens next:",
+        `1. Our team will contact you within one working day${contact?.preferredContact && contact.preferredContact !== "email" ? ` by ${contact.preferredContact === "whatsapp" ? "WhatsApp" : "phone"}` : ""} with the ${PAYMENT_METHODS[paymentMethod] || "payment"} details.`,
+        "2. Your package is activated as soon as the payment arrives.",
+        "3. Until then, your team can already start using the workspace at https://www.inayanetwork.com/business",
+        "",
+        "Getting started: watch the 4-minute demo at https://www.inayanetwork.com/business/demo",
+        "",
+        "Questions? Just reply to this email and it reaches our team.",
+        "",
+        "Inaya Network",
+        "contact@inayanetwork.com",
+      ].join("\n"),
+    }),
+  ]).catch(() => {});
+}
+
+/** Records a USD package request (paid by NayaPay or bank transfer). Same one-package rules as PKR. */
+export async function requestUsdPlan({ orgId, planId, interval = "month", extraUsers = 0, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
+  if (!canManageOrg(membership)) return { error: "Only the owner or an admin can choose the company's package.", status: 403 };
+  const plan = PLANS[planId];
+  if (!plan || plan.noBilling) return { error: `Unknown package "${planId}".`, status: 400 };
+  if (!INTERVALS.includes(interval)) return { error: "interval must be 'month' or 'year'.", status: 400 };
+
+  const { orgs, db } = await getOrgCollections();
+  const org = await orgs.findOne({ _id: toObjectId(orgId) });
+  if (!org) return { error: "Company not found.", status: 404 };
+  const sub = await db.collection("org_subscriptions").findOne({ orgId: toObjectId(orgId) });
+  const periodEnd = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() : 0;
+  const active = !!org.plan && ["active", "trialing", "past_due"].includes(sub?.status) && periodEnd > Date.now();
+  const extra = Number(extraUsers) || 0;
+  const blocked = planChangeError({
+    currentPlanId: org.plan, currentExtraUsers: org.extraUsers || 0, active,
+    renewalDue: active && periodEnd - Date.now() <= RENEWAL_WINDOW_DAYS * 86400000, planId, extraUsers: extra,
+  });
+  if (blocked) return { error: blocked, status: 409 };
+
+  const method = PAYMENT_METHODS[paymentMethod] ? paymentMethod : "bank_transfer";
+  const amountUsd = interval === "year" ? plan.priceYearly + extra * EXTRA_USER_MONTHLY_USD * 10 : plan.priceMonthly + extra * EXTRA_USER_MONTHLY_USD;
+  const now = new Date().toISOString();
+  const doc = {
+    orgId: toObjectId(orgId), orgName: org.name || null, planId, interval, pilot: false, extraUsers: extra,
+    currency: "USD", amountUsd: Math.round(amountUsd * 100) / 100, paymentMethod: method, contact,
+    status: "pending", requestedByEmail: actorEmail, requestedAt: now,
+  };
+  const col = await requests();
+  await col.updateOne({ orgId: doc.orgId, status: "pending" }, { $set: doc }, { upsert: true });
+
+  // Like PKR requests: the company can start working on the free limits until the package is active.
+  if (!org.plan) {
+    await orgs.updateOne({ _id: doc.orgId }, { $set: { requiresPlanSelection: false, noPlanConfirmedAt: org.noPlanConfirmedAt || now, noPlanConfirmedByEmail: org.noPlanConfirmedByEmail || actorEmail } });
+  }
+  await logOrgActivity({ orgId, recordType: "ORGANIZATION", recordId: orgId, actorEmail, action: "PLAN_ACTIVATION_REQUESTED", previousState: org.plan || null, newState: planId, metadata: { interval, amountUsd: doc.amountUsd, paymentMethod: method } }).catch(() => {});
+
+  const users = extra ? `${plan.maxUsers} users + ${extra} extra` : `up to ${plan.maxUsers} users`;
+  const what = `${plan.name} (${users}), $${doc.amountUsd.toLocaleString("en-US")} per ${interval}`;
+  await notifyActivationRequest({ org, orgId, plan, what, actorEmail, contact, paymentMethod: method, currency: "USD" });
+  return { request: { planId, interval, extraUsers: extra, amountUsd: doc.amountUsd, paymentMethod: method, status: "pending" } };
+}
 
 const INTERVALS = ["month", "year"];
 const MAX_MONTHS = 24;
@@ -42,7 +162,7 @@ async function setupPromisedTo(emails) {
 }
 
 /** Records a PKR package request for a company. One pending request per company; a new one replaces it. */
-export async function requestPkPlan({ orgId, planId, interval = "month", pilot = false, extraUsers = 0, actorEmail, membership }) {
+export async function requestPkPlan({ orgId, planId, interval = "month", pilot = false, extraUsers = 0, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
   if (!canManageOrg(membership)) return { error: "Only the owner or an admin can choose the company's package.", status: 403 };
   if (!PK_PACKAGES[planId]) return { error: `Unknown package "${planId}".`, status: 400 };
   if (!INTERVALS.includes(interval)) return { error: "interval must be 'month' or 'year'.", status: 400 };
@@ -85,6 +205,7 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
   const doc = {
     orgId: toObjectId(orgId), orgName: org.name || null, planId, interval, pilot: isPilot,
     extraUsers: extra, amountPkr: amount, setupFeePkr, setupFeeReason, status: "pending", requestedByEmail: actorEmail, requestedAt: now,
+    currency: "PKR", paymentMethod: PAYMENT_METHODS[paymentMethod] ? paymentMethod : "bank_transfer", contact,
   };
   await col.updateOne({ orgId: doc.orgId, status: "pending" }, { $set: doc }, { upsert: true });
 
@@ -98,19 +219,7 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
   const plan = PLANS[planId];
   const users = extra ? `${plan.maxUsers} users + ${extra} extra` : `up to ${plan.maxUsers} users`;
   const what = `${plan.name} (${users}), ${formatPkr(amount)} per ${interval}${doc.pilot ? " (pilot price, 30% off)" : ""}${setupFeePkr ? `, plus a one-time setup fee of ${formatPkr(setupFeePkr)}` : ""}`;
-  const notify = process.env.BILLING_NOTIFY_EMAIL || process.env.HEALTH_REPORT_EMAIL;
-  await Promise.all([
-    notify && sendEmail({
-      to: notify,
-      subject: `New PKR package request: ${org.name || orgId}, ${plan.name}`,
-      text: `${org.name || "A company"} asked for ${what}.\nRequested by: ${actorEmail}\nCompany id: ${orgId}\n\nSend the invoice with your bank details, then activate it at https://www.inayanetwork.com/admin/billing once the transfer arrives.`,
-    }),
-    sendEmail({
-      to: actorEmail,
-      subject: "Your Inaya package request",
-      text: `Thank you. We received your request for ${what}.\n\nWithin one working day we will email you an invoice with our bank details. Your package is activated as soon as the transfer arrives. Until then your team can already start using Inaya.\n\nQuestions: reply to this email.\n\nInaya Network`,
-    }),
-  ].filter(Boolean)).catch(() => {});
+  await notifyActivationRequest({ org, orgId, plan, what, actorEmail, contact, paymentMethod: doc.paymentMethod, currency: "PKR" });
 
   return { request: { planId, interval, extraUsers: extra, amountPkr: amount, setupFeePkr, pilot: doc.pilot, pilotFull: !!pilot && pilotFull, status: "pending" } };
 }
@@ -123,6 +232,7 @@ export async function listBillingRequests({ limit = 100 } = {}) {
     id: String(r._id), orgId: String(r.orgId), orgName: r.orgName, planId: r.planId, interval: r.interval, pilot: !!r.pilot,
     extraUsers: r.extraUsers || 0, amountPkr: r.amountPkr, setupFeePkr: r.setupFeePkr || 0, setupFeeReason: r.setupFeeReason || null, status: r.status, requestedByEmail: r.requestedByEmail, requestedAt: r.requestedAt,
     activatedAt: r.activatedAt || null, paidUntil: r.paidUntil || null, paymentReference: r.paymentReference || null,
+    currency: r.currency || "PKR", amountUsd: r.amountUsd ?? null, paymentMethod: r.paymentMethod || "bank_transfer", contact: r.contact || null,
   }));
 }
 
@@ -139,10 +249,11 @@ export async function activatePkRequest({ requestId, months, paymentReference, a
   const paidUntil = new Date(now);
   paidUntil.setMonth(paidUntil.getMonth() + m);
   const { orgs, db } = await getOrgCollections();
-  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { plan: reqDoc.planId, extraUsers: reqDoc.extraUsers || 0, planUpdatedAt: now.toISOString(), billingRegion: "PK", requiresPlanSelection: false } });
+  const currency = reqDoc.currency || "PKR";
+  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { plan: reqDoc.planId, extraUsers: reqDoc.extraUsers || 0, planUpdatedAt: now.toISOString(), billingRegion: currency === "PKR" ? "PK" : "INTL", requiresPlanSelection: false } });
   await db.collection("org_subscriptions").updateOne(
     { orgId: reqDoc.orgId },
-    { $set: { orgId: reqDoc.orgId, plan: reqDoc.planId, status: "active", provider: "bank_transfer", currency: "PKR", billingInterval: reqDoc.interval, pilot: !!reqDoc.pilot, currentPeriodEnd: paidUntil.toISOString(), updatedAt: now.toISOString() } },
+    { $set: { orgId: reqDoc.orgId, plan: reqDoc.planId, status: "active", provider: reqDoc.paymentMethod || "bank_transfer", currency, billingInterval: reqDoc.interval, pilot: !!reqDoc.pilot, currentPeriodEnd: paidUntil.toISOString(), updatedAt: now.toISOString() } },
     { upsert: true }
   );
   await col.updateOne({ _id: reqDoc._id }, { $set: { status: "active", activatedAt: now.toISOString(), paidUntil: paidUntil.toISOString(), paymentReference: String(paymentReference || "").slice(0, 120) || null, activatedBy: adminLabel } });

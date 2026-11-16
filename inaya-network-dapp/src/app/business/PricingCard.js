@@ -65,17 +65,8 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
   const c = COLOR_STYLES[plan.color] || COLOR_STYLES.cyan;
   // PKR packages (src/lib/pkPricing.js) are paid by bank transfer, so they are requested, not bought.
   const isPkr = plan.currency === "PKR";
-  const ctaLabel =
-    ctaLabelOverride ||
-    (current
-      ? "Current plan"
-      : isPkr
-      ? "Request activation"
-      : plan.contactSalesOnly
-      ? "Contact Sales"
-      : plan.id === "starter"
-      ? "Get Started"
-      : "Start Free Trial");
+  // Every package is requested (NayaPay or bank transfer), never bought by card (15 Nov 2026).
+  const ctaLabel = ctaLabelOverride || (current ? "Current plan" : "Request activation");
 
   return (
     <div
@@ -100,7 +91,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       <div className={`text-center ${compact ? "mb-3" : "mb-5"}`}>
         {isPkr ? (
           <>
-            <p className={`${compact ? "text-2xl" : "text-3xl"} font-extrabold text-white`}>
+            <p className={`${compact ? "text-2xl" : "text-3xl"} font-extrabold text-white pricing-price`}>
               {pkr(plan.priceMonthly)}
               <span className="text-[#94a3b8] text-xs font-medium">/month</span>
             </p>
@@ -115,7 +106,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
           </>
         ) : (
           <>
-            <p className={`${compact ? "text-2xl" : "text-4xl"} font-extrabold text-white`}>
+            <p className={`${compact ? "text-2xl" : "text-4xl"} font-extrabold text-white pricing-price`}>
               ${plan.priceMonthly}
               <span className="text-[#94a3b8] text-xs font-medium">/month</span>
             </p>
@@ -129,7 +120,7 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       {!compact && (
         <ul className="space-y-2 mb-6 flex-1">
           {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-xs text-slate-300">
+            <li key={f} className="flex items-start gap-2 text-xs text-slate-300 pricing-feature">
               <span className={`${c.check} mt-0.5`}>✓</span>
               <span>{f}</span>
             </li>
@@ -138,7 +129,10 @@ export function PricingCard({ plan, current = false, loading = false, onSelect, 
       )}
 
       {isPkr && !compact && (
-        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by bank transfer. One-time setup {pkr(plan.setupFee)} ({pkr(plan.pilotSetupFee)} for pilot companies).</p>
+        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by NayaPay or bank transfer. One-time setup {pkr(plan.setupFee)} ({pkr(plan.pilotSetupFee)} for pilot companies).</p>
+      )}
+      {!isPkr && !compact && (
+        <p className="text-[#94a3b8] text-[11px] mb-3 text-center">Paid by NayaPay or bank transfer. No card needed.</p>
       )}
       <button
         onClick={onSelect}

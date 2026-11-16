@@ -47,7 +47,9 @@ function RequestRow({ r, onDone }) {
       </td>
       <td className="py-3 pr-3">
         <p className="text-white">{PLAN_NAMES[r.planId] || r.planId}{r.extraUsers ? ` + ${r.extraUsers} extra users` : ""}</p>
-        <p className="text-[#8a96ab] text-[11px]">{pkr(r.amountPkr)} per {r.interval}{r.pilot ? " · pilot (30% off)" : ""}{r.setupFeePkr ? ` · setup ${pkr(r.setupFeePkr)} once` : r.setupFeeReason === "promised_in_outreach" ? " · setup free (promised in our first emails)" : r.setupFeeReason === "first_five" ? " · setup free (first 5 pilot companies)" : ""}</p>
+        {r.contact && <p className="text-[#8a96ab] text-[11px]">{r.contact.name} · {r.contact.phone} · prefers {r.contact.preferredContact}{r.contact.companySize ? ` · ${r.contact.companySize} people` : ""}</p>}
+        <p className="text-[#8a96ab] text-[11px]">{r.paymentMethod === "nayapay" ? "NayaPay" : "Bank transfer"}</p>
+        <p className="text-[#8a96ab] text-[11px]">{r.currency === "USD" ? `$${Number(r.amountUsd || 0).toLocaleString("en-US")}` : pkr(r.amountPkr)} per {r.interval}{r.pilot ? " · pilot (30% off)" : ""}{r.setupFeePkr ? ` · setup ${pkr(r.setupFeePkr)} once` : r.setupFeeReason === "promised_in_outreach" ? " · setup free (promised in our first emails)" : r.setupFeeReason === "first_five" ? " · setup free (first 5 pilot companies)" : ""}</p>
       </td>
       <td className="py-3 pr-3 text-[#94a3b8] text-[12px]">{when(r.requestedAt)}</td>
       <td className="py-3">
