@@ -4,6 +4,7 @@ import Breadcrumbs from "../../../components/docs/Breadcrumbs.js";
 import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
+  alternates: { canonical: "/docs/sdk" },
   title: "SDK Reference",
   description: "Every published Inaya SDK package, documented from its real exports and README content.",
 };

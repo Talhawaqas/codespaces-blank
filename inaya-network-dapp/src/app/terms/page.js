@@ -3,6 +3,7 @@
 // before treating as final).
 
 export const metadata = {
+  alternates: { canonical: "/terms" },
   title: "Terms of Service — Inaya Network",
   description: "The terms governing use of the Inaya Network dApp, Business Workspace, and mobile app.",
 };

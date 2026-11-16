@@ -4,6 +4,7 @@ import Breadcrumbs from "../../../components/docs/Breadcrumbs.js";
 import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
+  alternates: { canonical: "/docs/cli" },
   title: "CLI Reference",
   description: "Every real command across Inaya's published CLI tools.",
 };

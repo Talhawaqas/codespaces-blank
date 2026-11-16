@@ -5,6 +5,7 @@ import { CLI_TOOLS } from "../../lib/docsCliReference.js";
 import StatusBadge from "../../components/docs/StatusBadge.js";
 
 export const metadata = {
+  alternates: { canonical: "/docs" },
   title: "Inaya Documentation",
   description: "Search Inaya documentation — product guides, API reference, SDK reference, and CLI reference for the whole Inaya Network platform.",
 };

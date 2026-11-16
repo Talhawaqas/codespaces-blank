@@ -8,6 +8,7 @@
 // published tokenomics, not restated from memory.
 
 export const metadata = {
+  alternates: { canonical: "/whitepaper" },
   title: "Whitepaper & Tokenomics — Inaya Network",
   description: "Inaya Network's technical & economic whitepaper summary — $INAYA tokenomics, storage pricing, and the RevenueRouter settlement flow, with a link to the full PDF.",
 };

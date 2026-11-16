@@ -25,7 +25,8 @@ export const metadata = {
   openGraph: {
     title: "Inaya Network — Ahead of Its Time",
     description: "Sovereign storage, business infrastructure, decentralized security, and AI — built on BNB Chain Testnet.",
-    url: "https://www.inayanetwork.com",
+    // No og:url here: every page without its own openGraph inherits this block, and a fixed
+    // homepage URL made shared links to /about, /faq, /docs... all claim to be the homepage.
     siteName: "Inaya Network",
     images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
     type: "website",

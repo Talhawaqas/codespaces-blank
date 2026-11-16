@@ -9,6 +9,7 @@
 // company-profile.js) — same facts, not invented separately.
 
 export const metadata = {
+  alternates: { canonical: "/about" },
   title: "About Inaya Network — Mission, Leadership & Roadmap",
   description: "Inaya Network is building sovereign data storage, business infrastructure, decentralized security, and AI into one ecosystem. Meet the team and see the roadmap.",
 };

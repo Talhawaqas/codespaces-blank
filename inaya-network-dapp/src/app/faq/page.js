@@ -7,6 +7,7 @@
 // institutional-faqs.js (same live contract reads, same figures).
 
 export const metadata = {
+  alternates: { canonical: "/faq" },
   title: "Frequently Asked Questions — Inaya Network",
   description: "Answers about Inaya Network's storage pricing, encryption, wallet support, KYC, and the Genesis Airdrop.",
 };

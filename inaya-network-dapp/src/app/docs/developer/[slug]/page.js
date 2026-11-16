@@ -16,7 +16,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const doc = getDocBySlug(slug);
   if (!doc) return {};
-  return { title: doc.title, description: doc.description };
+  return { title: doc.title, description: doc.description, alternates: { canonical: `/docs/developer/${slug}` }, openGraph: { title: doc.title, description: doc.description, url: `https://www.inayanetwork.com/docs/developer/${slug}`, type: "article" } };
 }
 
 export default async function DeveloperDocPage({ params }) {

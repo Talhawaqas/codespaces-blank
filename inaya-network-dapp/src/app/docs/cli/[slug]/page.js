@@ -11,7 +11,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const tool = CLI_TOOLS.find((t) => t.slug === slug);
   if (!tool) return {};
-  return { title: tool.packageName, description: tool.tagline };
+  return { title: tool.packageName, description: tool.tagline, alternates: { canonical: `/docs/cli/${slug}` } };
 }
 
 export default async function CliToolPage({ params }) {

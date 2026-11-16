@@ -2,6 +2,7 @@
 // pattern (server layout carrying metadata for a client page.js) exists.
 
 export const metadata = {
+  alternates: { canonical: "/security" },
   title: "Inaya Firewall — Decentralized Threat Intelligence | Inaya Network",
   description: "Check any domain or IP against Inaya's decentralized, reputation-weighted threat intelligence network — every confirmation is anchored on-chain so the record can't quietly change later.",
 };

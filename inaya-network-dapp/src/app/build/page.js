@@ -12,6 +12,7 @@
 // /faq and /business/roadmap (nothing to fetch, nothing to react to).
 
 export const metadata = {
+  alternates: { canonical: "/build" },
   title: "Build on Inaya — Developer Platform | Inaya Network",
   description:
     "A client-side cryptographic sovereignty SDK for developers — encrypt, shard, anchor, and reconstruct files against a live chain. TypeScript-first, live on npm, ships with React components, a CLI, and project scaffolding.",

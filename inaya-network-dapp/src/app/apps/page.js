@@ -27,6 +27,12 @@ import { listApprovedListings } from "../../lib/appStoreListings";
 // never appear until the next deploy. Caught during verification.
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Inaya App Store — Apps Built on Inaya Network",
+  description: "A curated directory of Inaya Network's own applications and reviewed community apps built on its encrypted storage, Business Workspace and SDKs.",
+  alternates: { canonical: "/apps" },
+};
+
 const CATEGORY_COLORS = {
   Storage: "#00f2fe",
   Business: "#c084fc",

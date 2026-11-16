@@ -3,6 +3,7 @@ import Breadcrumbs from "../../../components/docs/Breadcrumbs.js";
 import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
+  alternates: { canonical: "/docs/release-notes" },
   title: "Release Notes",
   description: "What shipped, stage by stage — sourced directly from the Business SaaS Roadmap, the same data src/lib/saasRoadmap.js already tracks.",
 };

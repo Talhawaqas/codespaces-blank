@@ -42,7 +42,8 @@ When asked this, answer with BOTH sides in detail, drawing on the full ecosystem
 
 ## LEADERSHIP
 - Talha Waqas — Founder & CTO. Core system architect, smart contract architect, and lead Web3 full-stack engineer. Builds the cryptographic engineering, EVM contracts, encrypted storage protocols, and node telemetry systems.
-- Fibha Urooj — Co-Founder & CMO. Leads ecosystem growth, user acquisition, alpha tester recruitment, community rewards tracking (Zealy/QuestN), and translates technical concepts for mainstream onboarding.
+- Yakub Adnan — Co-Founder & Growth Lead. Web3 growth and community: DePIN user acquisition, campaigns and ecosystem partnerships.
+- Fibha Urooj — CFO. B.Com in Accounting & Finance. Financial planning, budgeting and compliance.
 
 ## PRICING — PAY-AS-YOU-GO (RETAIL)
 - Storage: 6.49 USDT per TB per month.

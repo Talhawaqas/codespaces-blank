@@ -4,7 +4,16 @@
 
 export const metadata = {
   title: "Download Business Workspace — Inaya Network",
-  description: "Get the Inaya Business Workspace desktop app — encrypted document management for teams, native on Windows and Linux with auto-updates.",
+  description: "Get the Inaya Business Workspace desktop app — the ERP-style workspace for documents, finance, CRM, HR and inventory, native on Windows and Linux with auto-updates.",
+  alternates: { canonical: "/business/download" },
+  openGraph: {
+    title: "Download Inaya Business Workspace for Windows and Linux",
+    description: "The ERP-style business workspace as a native desktop app, with auto-updates.",
+    url: "https://www.inayanetwork.com/business/download",
+    siteName: "Inaya Network",
+    images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
+    type: "website",
+  },
 };
 
 export default function BusinessDownloadLayout({ children }) {

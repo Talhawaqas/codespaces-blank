@@ -11,7 +11,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const pkg = SDK_PACKAGES.find((p) => p.slug === slug);
   if (!pkg) return {};
-  return { title: pkg.name, description: pkg.tagline };
+  return { title: pkg.name, description: pkg.tagline, alternates: { canonical: `/docs/sdk/${slug}` } };
 }
 
 export default async function SdkPackagePage({ params }) {

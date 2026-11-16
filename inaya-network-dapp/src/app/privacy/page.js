@@ -9,6 +9,7 @@
 // same as any early-stage product's first policy.
 
 export const metadata = {
+  alternates: { canonical: "/privacy" },
   title: "Privacy Policy — Inaya Network",
   description: "How Inaya Network collects, uses, and protects data across the dApp, Business Workspace, and mobile app.",
 };

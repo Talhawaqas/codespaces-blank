@@ -12,6 +12,7 @@ import Breadcrumbs from "../../../components/docs/Breadcrumbs.js";
 import StatusBadge from "../../../components/docs/StatusBadge.js";
 
 export const metadata = {
+  alternates: { canonical: "/docs/products" },
   title: "Product Guides",
   description: "Every Inaya product guide, organized by product.",
 };

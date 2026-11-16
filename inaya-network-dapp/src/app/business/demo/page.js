@@ -16,8 +16,11 @@ export const metadata = {
   openGraph: {
     title: "Inaya Business Workspace — 4-minute demo",
     description: "HR, sales, invoicing, inventory, tasks and encrypted documents in one desktop-style ERP.",
+    url: "https://www.inayanetwork.com/business/demo",
     images: ["/videos/inaya-business-workspace-erp-demo-poster.jpg"],
+    videos: [{ url: "https://www.inayanetwork.com/videos/inaya-business-workspace-erp-demo.mp4", width: 1920, height: 1030, type: "video/mp4" }],
   },
+  alternates: { canonical: "/business/demo" },
 };
 
 const CHAPTERS = [
@@ -32,6 +35,28 @@ const CHAPTERS = [
   ["3:49", "Back to the dashboard"],
 ];
 
+// VideoObject structured data with chapter clips, so Google can show the demo (and its key moments)
+// in search results. Duration is the real file length (4:00).
+const toSeconds = (t) => t.split(":").reduce((a, n) => a * 60 + Number(n), 0);
+const videoJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "Inaya Business Workspace in 4 minutes",
+  description: "A walkthrough of Inaya Business Workspace, an ERP-style system for people, sales, accounting, purchasing, stock and encrypted documents.",
+  thumbnailUrl: "https://www.inayanetwork.com/videos/inaya-business-workspace-erp-demo-poster.jpg",
+  contentUrl: "https://www.inayanetwork.com/videos/inaya-business-workspace-erp-demo.mp4",
+  uploadDate: "2026-10-25T00:00:00Z",
+  duration: "PT4M0S",
+  publisher: { "@type": "Organization", name: "Inaya Network", logo: { "@type": "ImageObject", url: "https://www.inayanetwork.com/inaya-logo.png" } },
+  hasPart: CHAPTERS.map(([time, label], i) => ({
+    "@type": "Clip",
+    name: label,
+    startOffset: toSeconds(time),
+    endOffset: i + 1 < CHAPTERS.length ? toSeconds(CHAPTERS[i + 1][0]) : 240,
+    url: `https://www.inayanetwork.com/business/demo#t=${toSeconds(time)}`,
+  })),
+};
+
 export default async function BusinessDemoPage() {
   const country = (await headers()).get("x-vercel-ip-country");
   const isPk = String(country || "").toUpperCase() === "PK";
@@ -40,6 +65,7 @@ export default async function BusinessDemoPage() {
 
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }} />
       <div className="max-w-5xl mx-auto">
         <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business Workspace</a>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white">

@@ -2,6 +2,7 @@
 // (server layout carrying metadata for a client page.js) exists.
 
 export const metadata = {
+  alternates: { canonical: "/stats" },
   title: "Network Stats — Inaya Network",
   description: "Live, public network statistics for Inaya Network — active users, decentralized security metrics, and community growth.",
 };

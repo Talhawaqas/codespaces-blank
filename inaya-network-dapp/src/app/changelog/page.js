@@ -7,6 +7,7 @@
 // drawn from the actual roadmapPhases content already on the site.
 
 export const metadata = {
+  alternates: { canonical: "/changelog" },
   title: "Changelog — Inaya Network",
   description: "What's shipped on Inaya Network — the storage protocol, Business Workspace, Security Layer, Inaya Learn, and the desktop and mobile apps.",
 };
