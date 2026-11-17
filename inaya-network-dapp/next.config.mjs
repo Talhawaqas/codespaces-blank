@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildContentSecurityPolicy } from "./csp.config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -152,7 +153,8 @@ const nextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self';" },
+          // Full policy since SQA 17 Nov 2026 (was frame-ancestors only); see csp.config.mjs for what it allows and why.
+          { key: "Content-Security-Policy", value: buildContentSecurityPolicy() },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -167,7 +169,7 @@ const nextConfig = {
         source: "/outlook/:path*",
         headers: [
           { key: "X-Frame-Options", value: "ALLOWALL" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://*.office.com https://*.office365.com https://*.outlook.com https://outlook.live.com https://*.microsoft.com;" },
+          { key: "Content-Security-Policy", value: buildContentSecurityPolicy({ frameAncestors: ["'self'", "https://*.office.com", "https://*.office365.com", "https://*.outlook.com", "https://outlook.live.com", "https://*.microsoft.com"], extraScriptHosts: ["https://appsforoffice.microsoft.com"] }) }, // office.js
         ],
       },
     ];

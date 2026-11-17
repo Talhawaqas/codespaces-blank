@@ -16,7 +16,7 @@
 import { createHmac, hkdfSync, randomBytes, timingSafeEqual } from "node:crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { FORMAT, FORMAT_VERSION, PIECE_SIZE, pieceCount, isChunkedManifest } from "./chunkedFile.js";
+import { FORMAT, FORMAT_VERSION, PIECE_SIZE, pieceCount, isChunkedManifest, uploadChunkedFile, openChunkedFile } from "./chunkedFile.js";
 import { realStorageAllowed } from "./pinningProviders/testGuard.js";
 
 export const STORAGE_FORMAT = `${FORMAT}-v${FORMAT_VERSION}`;
@@ -165,4 +165,73 @@ export async function deletePrefix(prefix) {
     ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
   } while (ContinuationToken);
   return { deleted };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Server-side use of the same format (17 Nov 2026): S3-compatible storage -- and everything built on it (NAS backups,
+// the S3 / Azure / GCS tools, bookkeeping, support attachments, document automation) -- stores objects this way, so
+// an object costs about 1 byte of storage per byte instead of the original format's 1.78. Here the server encrypts
+// with the org's server-managed S3 passphrase and writes the pieces straight to the bucket (no signed links needed).
+
+let objectBackendForTests = null;
+/** Tests only: an in-memory stand-in for the bucket ({ put(key, bytes, type) -> cid, get(key) -> bytes, deletePrefix(prefix) }). */
+export function setChunkedObjectBackendForTests(backend) { objectBackendForTests = backend; }
+
+function objectBackend() {
+  if (objectBackendForTests) return objectBackendForTests;
+  return {
+    put: async (Key, bytes, ContentType) => {
+      await s3().send(new PutObjectCommand({ Bucket: bucket(), Key, Body: bytes, ContentType }));
+      const head = await s3().send(new HeadObjectCommand({ Bucket: bucket(), Key }));
+      if (!head.Metadata?.cid) throw new ChunkedError(502, "Storage did not confirm a piece.");
+      return head.Metadata.cid;
+    },
+    get: async (Key) => new Uint8Array(await (await s3().send(new GetObjectCommand({ Bucket: bucket(), Key }))).Body.transformToByteArray()),
+    deletePrefix,
+  };
+}
+
+/** Deletes one upload's pieces and manifests wherever they are stored (purges of S3 objects and documents). */
+export async function deleteStoredPrefix(prefix) {
+  if (!/^ws\/[^/]+\/[0-9a-f]{24}\/$/.test(String(prefix))) throw new ChunkedError(400, "Refusing to delete outside one upload.");
+  return objectBackend().deletePrefix(prefix);
+}
+
+/** True when the server can store objects in this format (the bucket is configured and, in tests, opted in). */
+export function serverChunkedAvailable() {
+  if (objectBackendForTests) return true;
+  try { s3(); tokenKey(); return true; } catch { return false; }
+}
+
+/** Encrypts and stores bytes; returns { cidAlpha, cidBeta, storage } for the object record. Cleans up on failure. */
+export async function storeBytesChunked({ orgId, email, bytes, contentType, passkey }) {
+  const backend = objectBackend();
+  const started = startUpload({ orgId, email: email || "s3-compat", sizeBytes: bytes.length });
+  const prefix = prefixFor(String(orgId), started.uploadId);
+  const link = (key) => ({ key, url: key }); // the server writes by key; "url" is just the key here
+  try {
+    const out = await uploadChunkedFile(new Blob([bytes], { type: contentType || "application/octet-stream" }), passkey, {
+      start: async () => started,
+      sign: async (_token, from, count) => Array.from({ length: count }, (_, k) => ({ index: from + k, alpha: link(pieceKey(prefix, "alpha", from + k)), beta: link(pieceKey(prefix, "beta", from + k)) })),
+      signManifests: async () => ({ alpha: link(manifestKey(prefix, "alpha")), beta: link(manifestKey(prefix, "beta")) }),
+      put: (key, data, type) => backend.put(key, data, type),
+    });
+    return { cidAlpha: out.cidAlpha, cidBeta: out.cidBeta, storage: { format: STORAGE_FORMAT, provider: "filebase", prefix, uploadId: started.uploadId, pieces: started.count } };
+  } catch (err) {
+    await backend.deletePrefix(prefix).catch(() => {});
+    throw err;
+  }
+}
+
+/** Reads and decrypts an object stored by storeBytesChunked (or any chunked record whose passkey the server holds). */
+export async function readBytesChunked(doc, passkey) {
+  const prefix = doc?.storage?.prefix;
+  if (!prefix || doc.storage.format !== STORAGE_FORMAT) throw new ChunkedError(400, "This object is not stored in pieces.");
+  const backend = objectBackend();
+  const dec = new TextDecoder();
+  const [alpha, beta] = await Promise.all(["alpha", "beta"].map(async (role) => JSON.parse(dec.decode(await backend.get(manifestKey(prefix, role))))));
+  if ([...alpha.pieces, ...beta.pieces].some((p) => typeof p.key !== "string" || !p.key.startsWith(prefix))) throw new ChunkedError(422, "This object's storage record is damaged.");
+  const parts = [];
+  await openChunkedFile(alpha, beta, passkey, { getBytes: (piece) => backend.get(piece.key), onPiece: (plain) => { parts.push(Buffer.from(plain)); } });
+  return Buffer.concat(parts);
 }

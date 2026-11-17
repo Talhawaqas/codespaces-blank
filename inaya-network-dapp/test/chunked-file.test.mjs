@@ -102,6 +102,22 @@ test("upload tokens: bound to org and member, tamper-proof, and expiring", () =>
   assert.ok(body);
 });
 
+test("small files (17 Nov 2026: every Workspace upload is chunked) round-trip and store about 1 byte per byte", async () => {
+  for (const size of [1, 900, 64 * 1024, 1024 * 1024 + 7]) {
+    const t = memoryTransport();
+    const original = randomBytes(size);
+    const out = await uploadChunkedFile(fileOf(original, "text/plain"), "small passkey", t);
+    assert.equal(out.sizeBytes, size);
+    const [alpha, beta] = manifests(t);
+    const { bytes, meta } = await readBack(t, alpha, beta, "small passkey");
+    assert.equal(sha(bytes), sha(original), `size ${size} comes back byte-for-byte`);
+    assert.equal(meta.type, "text/plain");
+    // Encrypted pieces add only the IV and the GCM tag per piece -- no base64. (The original format stored ~1.8x.)
+    const pieceBytes = [...t.store.entries()].filter(([k]) => !k.endsWith(".json")).reduce((n, [, v]) => n + v.length, 0);
+    assert.ok(pieceBytes <= size + 64, `size ${size}: pieces hold ${pieceBytes} bytes`);
+  }
+});
+
 test("clean-up refuses anything that is not exactly one upload's prefix", async () => {
   await assert.rejects(storage.deletePrefix("ws/"), /Refusing/);
   await assert.rejects(storage.deletePrefix("ws/org/"), /Refusing/);

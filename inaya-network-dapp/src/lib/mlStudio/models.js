@@ -10,7 +10,7 @@
 import { toObjectId, canManageOrg } from "../orgs.js";
 import { getS3ObjectBody, putS3Object } from "../s3-compat/store.js";
 import { ensureOwnerS3Passphrase } from "../s3-compat/credentials.js";
-import { listAvailableProviders } from "../pinningProviders/index.js";
+import { listAvailableProviders, workspaceProviderOrder } from "../pinningProviders/index.js";
 import { getMlStudioCollections, ensureMlStudioIndexes } from "./db.js";
 import { getCatalogEntry } from "./catalog.js";
 import { fail, nowIso, sha256, safeFilename, ANALYZER_STATUSES, ANALYZER_TRANSITIONS } from "../docIntelligence/common.js";
@@ -27,8 +27,8 @@ const MAX_REGISTRATIONS_PER_HOUR = 20;
 
 async function storeArtifact({ orgId, key, buffer, contentType, actor }) {
   await ensureOwnerS3Passphrase({ type: "org", orgId: String(orgId) });
-  const configured = listAvailableProviders();
-  const attempts = configured.length ? [...configured].sort((a, b) => (a === "pinata" ? -1 : b === "pinata" ? 1 : 0)) : [undefined];
+  const configured = workspaceProviderOrder(); // Filebase first, Pinata as fallback
+  const attempts = configured.length ? configured : [undefined];
   let last;
   for (const providerName of attempts) {
     try { return await putS3Object({ orgId: String(orgId), bucket: BUCKET, key, bodyBuffer: buffer, contentType, actorEmail: actor || "ml-studio", providerName }); }

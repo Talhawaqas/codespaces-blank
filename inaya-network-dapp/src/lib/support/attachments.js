@@ -22,7 +22,7 @@ import { mutate, loadTicket, agentCanSee, customerAccessFilter, oidOf } from "./
 import { putS3Object, getS3ObjectBody } from "../s3-compat/store.js";
 import { scanBuffer, scanRefusal } from "./scanner.js";
 import { ensureOwnerS3Passphrase } from "../s3-compat/credentials.js";
-import { listAvailableProviders } from "../pinningProviders/index.js";
+import { listAvailableProviders, workspaceProviderOrder } from "../pinningProviders/index.js";
 
 export const BUCKET = "support-attachments";
 const ALLOWED = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", txt: "text/plain", csv: "text/csv", log: "text/plain", json: "application/json", md: "text/plain",
@@ -38,8 +38,8 @@ export const FILE_TYPES = ALLOWED;
  */
 export async function storeSupportObject({ orgId, key, buffer, contentType, actorEmail }) {
   await ensureOwnerS3Passphrase({ type: "org", orgId: String(orgId) });
-  const configured = listAvailableProviders();
-  const attempts = configured.length ? [...configured].sort((a, b) => (a === "pinata" ? -1 : b === "pinata" ? 1 : 0)) : [undefined];
+  const configured = workspaceProviderOrder(); // Filebase first, Pinata as fallback
+  const attempts = configured.length ? configured : [undefined];
   let lastError;
   for (const providerName of attempts) {
     try { return await putS3Object({ orgId: String(orgId), bucket: BUCKET, key, bodyBuffer: buffer, contentType, actorEmail: actorEmail || "support", providerName }); }

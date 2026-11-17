@@ -10,7 +10,8 @@
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessHR, isSelfEmployeeRecord, toObjectId } from "../../../../../../../lib/orgs.js";
-import { createAttachment, listAttachmentsForRecord, serializeAttachment } from "../../../../../../../lib/attachments.js";
+import { createAttachment, attachmentStorage, listAttachmentsForRecord, serializeAttachment } from "../../../../../../../lib/attachments.js";
+import { ChunkedError } from "../../../../../../../lib/chunkedStorage.js";
 
 async function loadEmployee(req, orgId, employeeId) {
   await ensureOrgIndexes();
@@ -47,20 +48,22 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
-    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
+    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken = null } = await req.json();
     if (!orgId || !filename || !fileHash || !cidAlpha || !cidBeta) {
       return NextResponse.json({ error: "orgId, filename, fileHash, cidAlpha, and cidBeta are required." }, { status: 400 });
     }
     const result = await loadEmployee(req, orgId, params.employeeId);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     if (!result.hasHR) return NextResponse.json({ error: "Only HR can upload employee documents." }, { status: 403 });
+    const storage = await attachmentStorage({ chunkedUploadToken, orgId, email: result.auth.session.email, cidAlpha, cidBeta, sizeBytes });
 
     const attachment = await createAttachment({
       orgId, departmentId: result.employee.departmentId, relatedRecordType: "EMPLOYEE", relatedRecordId: params.employeeId,
-      filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail: result.auth.session.email,
+      filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail: result.auth.session.email, storage,
     });
     return NextResponse.json(serializeAttachment(attachment));
   } catch (err) {
+    if (err instanceof ChunkedError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("orgs/hr/employees/[employeeId]/attachments POST failed:", err);
     return NextResponse.json({ error: "Could not upload the document." }, { status: 500 });
   }

@@ -26,13 +26,14 @@ import { ObjectId } from "mongodb";
 import { createHash } from "node:crypto";
 import { InayaKernel } from "@inaya-network/custody-sdk";
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { getProvider, listAvailableProviders } from "../pinningProviders/index.js";
+import { getProvider, listAvailableProviders, workspaceProviderOrder } from "../pinningProviders/index.js";
 import { completeOnce } from "./multipartCompletion.js";
 import { etagOf, md5Hex, multipartEtag } from "./etag.js";
 import { cachedObjectBody } from "./objectBodyCache.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { getOwnerS3Passphrase } from "./credentials.js";
 import { replicateShard, getBackupStatus } from "../backupEngine.js";
+import { serverChunkedAvailable, storeBytesChunked, readBytesChunked } from "../chunkedStorage.js";
 
 import { purgeObjectStorage } from "./purge.js";
 import { claimId, releaseClaim } from "./namespaceClaim.js";
@@ -58,12 +59,15 @@ function getOrgS3Passphrase(orgId) {
 
 const S3_SYSTEM_DEPARTMENT_NAME = "S3/Azure Compatible Storage (System)";
 
+// Filebase is the main Workspace store and Pinata the fallback (owner decision, 17 Nov 2026; see workspaceProviderOrder).
 function primaryProviderName() {
-  const available = listAvailableProviders();
-  if (available.includes("pinata")) return "pinata";
+  const available = workspaceProviderOrder();
   if (available.length > 0) return available[0];
   throw new Error("No pinning provider is configured (PINATA_JWT / Filebase credentials missing) -- the S3-compatibility layer cannot store objects.");
 }
+// Rows written before pinProvider was recorded were all pinned to Pinata, the store at the time. They must keep
+// reading from Pinata now that new writes go to Filebase first.
+const LEGACY_ROW_PROVIDER = "pinata";
 
 /** One hidden department per org holds every S3/Azure "bucket" as a project
  *  underneath it -- same ensure-once-then-reuse pattern as
@@ -333,13 +337,30 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   if (!versioningEnabled) { assertNotProtected(existing, "overwrite this object"); await assertGovernanceAllows(orgId, existing, "overwrite this object"); }
   await assertNotLocked(existing, actorEmail, "overwrite this object");
 
-  const salt = InayaKernel.generateSecureSalt();
-  const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: passphrase, salt });
-  const file = bufferToFile(bodyBuffer, { key, contentType });
-  const { shardAlpha, shardBeta } = await InayaKernel.disperseAndSlice({ file, encryptionKey });
-
   const now = new Date().toISOString();
   const documentId = new ObjectId();
+
+  // Storage format (17 Nov 2026): objects are stored in the chunked format (chunkedStorage.js storeBytesChunked) --
+  // about 1 byte stored per byte, where the original two-base64-shard format below takes 1.78. NAS backups, the
+  // S3 / Azure / GCS tools, bookkeeping, support attachments and document automation all write through here.
+  // The original format is still used, exactly as before, for empty objects (folder markers), when a caller has
+  // fallen back to Pinata (putS3ObjectWithFallback's second attempt), and as the fallback when the Filebase bucket can't take the write -- so an outage
+  // there still can't stop a write. Reads follow each object's own record, so both formats keep working.
+  let chunked = null;
+  if (bodyBuffer.length > 0 && providerName !== "pinata" && serverChunkedAvailable()) {
+    try {
+      chunked = await storeBytesChunked({ orgId, email: actorEmail, bytes: bodyBuffer, contentType, passkey: passphrase });
+    } catch (err) {
+      console.error(`s3-compat putS3Object: chunked store failed (${String(err.message).slice(0, 100)}); using the original format`);
+    }
+  }
+  let shardAlpha; let shardBeta;
+  if (!chunked) {
+    const salt = InayaKernel.generateSecureSalt();
+    const encryptionKey = await InayaKernel.deriveVaultKey({ passkey: passphrase, salt });
+    const file = bufferToFile(bodyBuffer, { key, contentType });
+    ({ shardAlpha, shardBeta } = await InayaKernel.disperseAndSlice({ file, encryptionKey }));
+  }
 
   // REAL BUG found via Versioning testing (Storj-Inspired Storage Capability
   // Expansion SOW): the pin `name` must be unique PER VERSION, not just per
@@ -361,9 +382,9 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // Before, an exhausted or blocked provider (Pinata HTTP 403 "plan usage limit") made every S3/Azure write return 500 even though a second
   // working provider was configured. Pinning happens BEFORE any database row is written, so a failed attempt leaves no record behind. Reads
   // use the pinProvider stored on the object, so an object pinned through a fallback is read back from the provider that holds it.
-  const providerOrder = providerName ? [providerName] : [primaryProviderName(), ...listAvailableProviders().filter((p) => p !== primaryProviderName())];
+  const providerOrder = providerName ? [providerName] : workspaceProviderOrder(); // Filebase first, Pinata as fallback
   let alphaResult; let betaResult; let pinError;
-  for (const candidate of providerOrder) {
+  for (const candidate of chunked ? [] : providerOrder) {
     try {
       const provider = getProvider(candidate);
       [alphaResult, betaResult] = await Promise.all([
@@ -376,7 +397,7 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
       console.error(`s3-compat putS3Object: provider "${candidate}" refused the pin (${String(err.message).slice(0, 100)})${providerOrder.length > 1 ? "; trying the next configured provider" : ""}`);
     }
   }
-  if (!alphaResult || !betaResult) throw pinError;
+  if (!chunked && (!alphaResult || !betaResult)) throw pinError;
 
   // org_documents.fileHash has a UNIQUE index (from the existing wallet/
   // treasury upload path, where re-uploading identical bytes is deliberately
@@ -426,9 +447,10 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
     etag: etagOverride || md5Hex(bodyBuffer), // SQA-023: the real S3 ETag (content MD5, or md5-of-part-md5s-N for multipart), see etag.js
     contentType: contentType || "application/octet-stream",
     sizeBytes: bodyBuffer.length,
-    cidAlpha: alphaResult.providerRef,
-    cidBeta: betaResult.providerRef,
-    pinProvider: alphaResult.provider,
+    cidAlpha: chunked ? chunked.cidAlpha : alphaResult.providerRef,
+    cidBeta: chunked ? chunked.cidBeta : betaResult.providerRef,
+    pinProvider: chunked ? "filebase" : alphaResult.provider,
+    ...(chunked ? { storage: chunked.storage } : {}), // where the pieces live; read by getS3ObjectBody and purge.js
     encryptionMode: "server-managed", // see crypto.js header -- distinct from every other Inaya document's client-managed model
     uploadedByEmail: actorEmail || "s3-compat",
     txHash: null, // see module header -- not synchronously anchored on-chain for this compatibility layer
@@ -462,7 +484,8 @@ export async function putS3Object({ orgId, bucket, key, bodyBuffer, contentType,
   // itself (matching upload/route.js's own "best-effort" framing) -- the
   // check-pins cron is the real safety net for anything that doesn't
   // complete inline.
-  await Promise.all([
+  // Chunked objects live in the Filebase bucket only (no second-provider replica), the same as large Documents files.
+  if (!chunked) await Promise.all([
     replicateShard({ fileHash, shardId: "alpha", content: shardAlpha, primaryProvider: alphaResult.provider, primaryCid: alphaResult.cid, primaryProviderRef: alphaResult.providerRef }).catch((err) =>
       console.error("s3-compat putS3Object: backupEngine registration (alpha) failed (non-fatal):", err.message)
     ),
@@ -532,7 +555,8 @@ export async function getS3ObjectBody({ orgId, bucket, key, versionId, governanc
   // SQA-020: concurrent and repeated reads of this immutable version share one fetch-and-decrypt (see objectBodyCache.js)
   const { buffer } = await cachedObjectBody(`org:${orgId}:${doc._id}`, async () => {
     const passphrase = await getOrgS3Passphrase(orgId);
-    const provider = getProvider(doc.pinProvider || primaryProviderName());
+    if (doc.storage?.prefix) return { buffer: await readBytesChunked(doc, passphrase) }; // chunked format (since 17 Nov 2026)
+    const provider = getProvider(doc.pinProvider || LEGACY_ROW_PROVIDER);
     const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
     const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
     const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);

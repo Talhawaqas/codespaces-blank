@@ -11,11 +11,11 @@
 // copying it. It adds no new storage path -- only ordering and retry.
 
 import { putS3Object } from "./store.js";
-import { listAvailableProviders } from "../pinningProviders/index.js";
+import { listAvailableProviders, workspaceProviderOrder } from "../pinningProviders/index.js";
 
 export async function putS3ObjectWithFallback(args) {
-  const configured = listAvailableProviders();
-  const attempts = configured.length ? [...configured].sort((a, b) => (a === "pinata" ? -1 : b === "pinata" ? 1 : 0)) : [undefined];
+  const configured = workspaceProviderOrder(); // Filebase first, Pinata as fallback
+  const attempts = configured.length ? configured : [undefined];
   let lastError;
   for (const providerName of attempts) {
     try {

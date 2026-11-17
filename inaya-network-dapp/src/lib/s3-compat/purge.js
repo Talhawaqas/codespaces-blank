@@ -23,8 +23,8 @@ export async function purgeObjectStorage(doc) {
   // Chunked large files keep every piece and both manifests under one prefix: delete them all.
   if (doc.storage?.prefix) {
     try {
-      const { deletePrefix } = await import("../chunkedStorage.js");
-      const r = await deletePrefix(doc.storage.prefix);
+      const { deleteStoredPrefix } = await import("../chunkedStorage.js");
+      const r = await deleteStoredPrefix(doc.storage.prefix);
       const { orgDocuments } = await getOrgCollections();
       await orgDocuments.updateOne({ _id: doc._id }, { $set: { storagePurgedAt: new Date().toISOString() }, $unset: { purgePending: "" } });
       return { purged: r.deleted, failed: 0 };

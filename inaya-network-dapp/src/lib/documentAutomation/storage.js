@@ -17,7 +17,7 @@
 
 import { putS3Object, getS3ObjectBody, putBucketVersioning, enableBucketObjectLock, putObjectRetention, getS3Bucket } from "../s3-compat/store.js";
 import { ensureOwnerS3Passphrase } from "../s3-compat/credentials.js";
-import { listAvailableProviders } from "../pinningProviders/index.js";
+import { listAvailableProviders, workspaceProviderOrder } from "../pinningProviders/index.js";
 import { hashDocumentBytes } from "./manifest.js";
 
 const BUCKET_PREFIX = "generated-documents";
@@ -62,10 +62,10 @@ export async function storeDocumentBytes({ orgId, key, bytes, actorEmail, tags }
   // environment), fall back to every other configured provider in turn
   // before declaring the storage step failed. putS3Object pins BEFORE it
   // writes any database row, so a failed attempt leaves nothing behind.
-  // Same preference as the storage layer's own default (Pinata first), then
+  // Same preference as the storage layer's own default (Filebase first, Pinata as fallback), then
   // every other configured provider.
-  const configured = listAvailableProviders();
-  const attempts = configured.length ? [...configured].sort((a, b) => (a === "pinata" ? -1 : b === "pinata" ? 1 : 0)) : [undefined];
+  const configured = workspaceProviderOrder(); // Filebase first, Pinata as fallback
+  const attempts = configured.length ? configured : [undefined];
   let lastError;
   for (const providerName of attempts) {
     const label = providerName || "default";

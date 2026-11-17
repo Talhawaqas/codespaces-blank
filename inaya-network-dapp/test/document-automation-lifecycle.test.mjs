@@ -150,7 +150,10 @@ test("provider fallback: a rejected primary provider is transparent -- the docum
   const g = await createDocument({ ...a(), documentType: "invoice", sourceId: inv });
   assert.ok(!g.error, g.error);
   const stored = await fx.collections.orgDocuments.findOne({ orgId: ctx.orgId, _id: new ObjectId((await raw(g.document.id)).storageReference.objectId) });
-  assert.equal(stored.pinProvider, "filebase", "pinata (first choice) failed, filebase held the object");
+  // Workspace storage order since 17 Nov 2026: Filebase first, Pinata as the fallback (pinningProviders.workspaceProviderOrder).
+  const order = (await import("../src/lib/pinningProviders/index.js")).workspaceProviderOrder();
+  assert.equal(order[0], "filebase");
+  assert.equal(stored.pinProvider, order[1], "filebase (first choice) failed, the next provider in the order held the object");
   const dl = await resolveDeliveryAccess((await createDelivery({ ...a(), documentId: (await finalizeDocument({ ...a(), documentId: g.document.id })).document.id, mode: "link", notify: false })).token);
   assert.ok(dl.buffer, "and it reads back through the fallback provider");
 });

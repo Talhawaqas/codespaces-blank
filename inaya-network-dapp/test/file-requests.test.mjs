@@ -161,14 +161,16 @@ test("part and completion rules: wrong key, wrong index, duplicates, incomplete,
   assert.equal((await code(R.completeUpload({ token, uploadId: up.uploadId, uploadKey: "bad" }))).status, 404);
 });
 
-test("limits hold under concurrency: maxFiles=2 accepts exactly two of five simultaneous completions", T, async () => {
-  const { token, requestId } = await mk({ maxFiles: 2 });
+// maxFiles=3 (SQA 17 Nov 2026): with 2, the in-flight cap (maxFiles x 2 = 4) could refuse the fifth *start* depending on database
+// timing, so the test failed intermittently before it reached what it checks -- that simultaneous *completions* never exceed the limit.
+test("limits hold under concurrency: maxFiles=3 accepts exactly three of five simultaneous completions", T, async () => {
+  const { token, requestId } = await mk({ maxFiles: 3 });
   const ups = await Promise.all([1, 2, 3, 4, 5].map((i) => send(token, requestId, new Uint8Array(randomBytes(300)), { ip: `198.51.100.${i}`, uploader: { name: `P${i}`, email: `p${i}@example.org` } })));
   const rs = await Promise.allSettled(ups.map((u) => u.complete()));
-  assert.equal(rs.filter((r) => r.status === "fulfilled").length, 2);
+  assert.equal(rs.filter((r) => r.status === "fulfilled").length, 3);
   assert.ok(rs.filter((r) => r.status === "rejected").every((r) => r.reason.status === 410));
-  assert.equal((await db.collection("file_requests").findOne({ _id: new (await import("mongodb")).ObjectId(requestId) })).received, 2, "never exceeds the limit");
-  assert.equal(await db.collection("file_request_parts").countDocuments({ uploadId: { $in: ups.map((u) => u.uploadId) } }) <= 2 * 1 + 0, true, "the losers' parts were discarded");
+  assert.equal((await db.collection("file_requests").findOne({ _id: new (await import("mongodb")).ObjectId(requestId) })).received, 3, "never exceeds the limit");
+  assert.equal(await db.collection("file_request_parts").countDocuments({ uploadId: { $in: ups.map((u) => u.uploadId) } }) <= 3 * 1 + 0, true, "the losers' parts were discarded");
   assert.equal((await R.publicInfo(token)).status, "full");
   assert.equal((await code(R.beginUpload({ token, uploader: ident, ext: "pdf", size: 10, partCount: 1, keyEnvelope: ups[0].enc.keyEnvelope, ip: "1.1.1.1" }))).status, 410);
 });

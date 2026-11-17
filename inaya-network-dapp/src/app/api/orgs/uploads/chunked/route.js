@@ -1,6 +1,6 @@
 // app/api/orgs/uploads/chunked/route.js
 //
-// POST /api/orgs/uploads/chunked  — large Business Workspace documents (src/lib/chunkedFile.js).
+// POST /api/orgs/uploads/chunked  — Business Workspace documents of any size (src/lib/chunkedFile.js; small files too since 17 Nov 2026).
 //   { action: "start", orgId, sizeBytes }              -> { uploadId, token, pieceSize, count }   (plan limits checked here)
 //   { action: "sign", orgId, token, from, count }      -> { pieces: [{ index, alpha: {key,url}, beta: {key,url} }] }
 //   { action: "manifests", orgId, token }              -> { alpha: {key,url}, beta: {key,url} }
@@ -12,7 +12,6 @@ import { NextResponse } from "next/server";
 import { ensureOrgIndexes, getOrgCollections, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
 import { checkUploadAgainstPlan } from "../../../../../lib/orgPlans.js";
 import { ChunkedError, startUpload, readUploadToken, signPieces, signManifests, deletePrefix, prefixFor } from "../../../../../lib/chunkedStorage.js";
-import { CHUNKED_THRESHOLD_BYTES } from "../../../../../lib/chunkedFile.js";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +27,7 @@ export async function POST(req) {
 
     if (action === "start") {
       const size = Number(body.sizeBytes);
-      if (!Number.isFinite(size) || size <= CHUNKED_THRESHOLD_BYTES) return NextResponse.json({ error: "Only large files use this upload." }, { status: 400 });
+      if (!Number.isFinite(size) || size <= 0) return NextResponse.json({ error: "sizeBytes must be a positive number." }, { status: 400 });
       const { orgs } = await getOrgCollections();
       const org = await orgs.findOne({ _id: toObjectId(orgId) });
       if (!org) return NextResponse.json({ error: "Company not found." }, { status: 404 });
@@ -42,9 +41,10 @@ export async function POST(req) {
     if (action === "manifests") return NextResponse.json(await signManifests(claims));
     if (action === "abort") {
       // Never delete an upload that became a document.
-      const { orgDocuments } = await getOrgCollections();
+      const { orgDocuments, attachments } = await getOrgCollections();
       const prefix = prefixFor(claims.orgId, claims.uploadId);
       if (await orgDocuments.findOne({ "storage.prefix": prefix }, { projection: { _id: 1 } })) return NextResponse.json({ deleted: 0 });
+      if (await attachments.findOne({ "storage.prefix": prefix }, { projection: { _id: 1 } })) return NextResponse.json({ deleted: 0 }); // HR / Finance attachments
       return NextResponse.json(await deletePrefix(prefix));
     }
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });

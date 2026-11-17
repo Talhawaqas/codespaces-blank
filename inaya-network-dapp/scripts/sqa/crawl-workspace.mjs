@@ -26,7 +26,7 @@ const page = await browser.newPage();
 await page.setViewport(MOBILE ? { width: 390, height: 844, isMobile: true, hasTouch: true } : { width: 1440, height: 900 });
 await page.setCookie({ name: "inaya_org_session", value: COOKIE, url: BASE });
 // Skip the first-run welcome so it doesn't cover every screen.
-await page.evaluateOnNewDocument(() => { try { for (let i = 0; i < localStorage.length; i++) { /* noop */ } } catch {} });
+await page.evaluateOnNewDocument(() => { try { for (let i = 0; i < localStorage.length; i++) { /* noop */ } } catch {} document.addEventListener("securitypolicyviolation", (e) => console.error(`CSP-VIOLATION ${e.violatedDirective} ${e.blockedURI || "(inline)"}`)); });
 
 let current = null;
 const findings = {};

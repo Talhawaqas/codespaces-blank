@@ -35,3 +35,14 @@ export function listAvailableProviders() {
     .filter(([, provider]) => provider.isConfigured())
     .map(([name]) => name);
 }
+
+// Business Workspace storage order (17 Nov 2026, owner decision): Filebase is the main upload store and Pinata is
+// the fallback. Every Workspace write path takes its order from here, so the preference lives in one place.
+// Reads never use this order: each stored object keeps the provider that actually holds it (pinProvider).
+export const WORKSPACE_PRIMARY_PROVIDER = "filebase";
+
+/** Configured providers for a Business Workspace write, Filebase first, Pinata last. */
+export function workspaceProviderOrder() {
+  const rank = (p) => (p === WORKSPACE_PRIMARY_PROVIDER ? 0 : p === "pinata" ? 2 : 1);
+  return listAvailableProviders().sort((a, b) => rank(a) - rank(b));
+}

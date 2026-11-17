@@ -11,7 +11,7 @@ import { getOrgCollections, ensureOrgIndexes } from "../src/lib/orgs.js";
 import { ensureOwnerS3Passphrase } from "../src/lib/s3-compat/credentials.js";
 import { putS3Object, getS3ObjectBody, deleteS3Object, createMultipartUpload, uploadPart, completeMultipartUpload } from "../src/lib/s3-compat/store.js";
 import { clearObjectBodyCache } from "../src/lib/s3-compat/objectBodyCache.js";
-import { PROVIDERS, listAvailableProviders } from "../src/lib/pinningProviders/index.js";
+import { PROVIDERS, listAvailableProviders, workspaceProviderOrder } from "../src/lib/pinningProviders/index.js";
 import clientPromise from "../src/lib/mongodb.js";
 
 if (!process.env.INTEGRATION_ENCRYPTION_KEY) process.env.INTEGRATION_ENCRYPTION_KEY = randomBytes(32).toString("base64");
@@ -40,7 +40,7 @@ after(async () => {
 
 test("017: a provider that refuses the pin does not fail the write; the object is pinned elsewhere and reads back intact", { skip: !enough && "needs two configured pinning providers", timeout: 180000 }, async () => {
   await setup();
-  const primary = available.includes("pinata") ? "pinata" : available[0];
+  const primary = workspaceProviderOrder()[0]; // Filebase when configured (Workspace order, 17 Nov 2026)
   let refused = 0;
   PROVIDERS[primary] = { ...originalProviders[primary], pin: async () => { refused++; throw new Error("pin failed (HTTP 403): Account blocked due to plan usage limit"); } };
   const body = randomBytes(20000);

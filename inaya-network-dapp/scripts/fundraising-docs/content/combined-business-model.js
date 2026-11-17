@@ -10,7 +10,7 @@ export const combinedBusinessModel = {
     "kicker": "COMBINED BUSINESS MODEL",
     "title": "How Inaya Makes Money",
     "subtitle": "One consolidated model for the DePIN storage network and the Business Workspace, revised for the planned international sales team and the Pakistan-based team, with five-year projections in three scenarios.",
-    "docLine": "Document INAYA-COMBINED-BM-2026-V2 · Classification Confidential · November 2026 (revised 17 Nov: Workspace price book)"
+    "docLine": "Document INAYA-COMBINED-BM-2026-V2 · Classification Confidential · November 2026 (revised 17 Nov: Workspace price book and extra-storage add-on)"
   },
   "docId": "INAYA-COMBINED-BM-2026-V2",
   "sections": [
@@ -87,6 +87,12 @@ export const combinedBusinessModel = {
               "Growing companies",
               "$3 or PKR 2,500 per user per month",
               "Live"
+            ],
+            [
+              "Extra storage",
+              "Companies needing more space",
+              "$19.99 per TB per month (international)",
+              "Live on the website"
             ],
             [
               "Setup and installation",
@@ -357,12 +363,12 @@ export const combinedBusinessModel = {
               "598"
             ],
             [
-              "Recognised revenue (subscriptions + extra users)",
+              "Recognised revenue (subscriptions, extra users, extra storage)",
               "$42K",
-              "$203K",
-              "$424K",
-              "$670K",
-              "$940K"
+              "$204K",
+              "$426K",
+              "$675K",
+              "$946K"
             ],
             [
               "MRR at year-end",
@@ -681,10 +687,10 @@ export const combinedBusinessModel = {
             [
               "Business Workspace — international",
               "$42K",
-              "$203K",
-              "$424K",
-              "$670K",
-              "$940K"
+              "$204K",
+              "$426K",
+              "$675K",
+              "$946K"
             ],
             [
               "Business Workspace — Pakistan (not revised)",
@@ -745,7 +751,7 @@ export const combinedBusinessModel = {
             [
               "Net income",
               "-$534K",
-              "$1.07M",
+              "$1.08M",
               "$5.16M",
               "$18.0M",
               "$46.2M"
@@ -762,7 +768,7 @@ export const combinedBusinessModel = {
               "Cash at year-end",
               "$1.47M",
               "$2.54M",
-              "$7.70M",
+              "$7.71M",
               "$25.7M",
               "$71.9M"
             ]
@@ -771,7 +777,7 @@ export const combinedBusinessModel = {
         {
           "type": "note",
           "label": "Reading the table.",
-          "text": "Profitability is measured for the whole company, after DePIN infrastructure, team, office, legal, security and marketing. Inaya is profitable from Year 2; the Year 1 loss is covered by the pre-seed, which is funding, not income. DePIN storage is 92% of revenue in Year 1 and 98% in Year 5."
+          "text": "Profitability is measured for the whole company, after DePIN infrastructure, team, office, legal, security and marketing. Inaya is profitable from Year 2; the Year 1 loss is covered by the pre-seed, which is funding, not income. DePIN storage is 91% of revenue in Year 1 and 98% in Year 5."
         },
         {
           "type": "table",
@@ -908,16 +914,16 @@ export const combinedBusinessModel = {
               "Conservative — international Workspace revenue",
               "$21K",
               "$93K",
-              "$198K",
-              "$316K",
-              "$445K"
+              "$199K",
+              "$318K",
+              "$449K"
             ],
             [
               "Conservative — total revenue",
               "$148K",
               "$728K",
               "$2.39M",
-              "$7.43M",
+              "$7.44M",
               "$18.4M"
             ],
             [
@@ -932,16 +938,16 @@ export const combinedBusinessModel = {
               "Conservative — net income",
               "-$800K",
               "-$257K",
-              "$702K",
+              "$703K",
               "$3.86M",
               "$10.9M"
             ],
             [
               "Conservative — cash at year-end",
               "$1.20M",
-              "$942K",
-              "$1.64M",
-              "$5.50M",
+              "$943K",
+              "$1.65M",
+              "$5.51M",
               "$16.4M"
             ],
             [
@@ -955,10 +961,10 @@ export const combinedBusinessModel = {
             [
               "Base — international Workspace revenue",
               "$42K",
-              "$203K",
-              "$424K",
-              "$670K",
-              "$940K"
+              "$204K",
+              "$426K",
+              "$675K",
+              "$946K"
             ],
             [
               "Base — total revenue",
@@ -979,7 +985,7 @@ export const combinedBusinessModel = {
             [
               "Base — net income",
               "-$534K",
-              "$1.07M",
+              "$1.08M",
               "$5.16M",
               "$18.0M",
               "$46.2M"
@@ -988,7 +994,7 @@ export const combinedBusinessModel = {
               "Base — cash at year-end",
               "$1.47M",
               "$2.54M",
-              "$7.70M",
+              "$7.71M",
               "$25.7M",
               "$71.9M"
             ],
@@ -1003,18 +1009,18 @@ export const combinedBusinessModel = {
             [
               "Optimistic — international Workspace revenue",
               "$84K",
-              "$363K",
-              "$732K",
-              "$1.14M",
-              "$1.59M"
+              "$365K",
+              "$735K",
+              "$1.15M",
+              "$1.60M"
             ],
             [
               "Optimistic — total revenue",
-              "$839K",
+              "$840K",
               "$4.14M",
               "$13.8M",
               "$43.7M",
-              "$108.8M"
+              "$108.9M"
             ],
             [
               "Optimistic — gross margin",
@@ -1045,7 +1051,7 @@ export const combinedBusinessModel = {
         {
           "type": "note",
           "label": "What the scenarios say.",
-          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $942K."
+          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $943K."
         },
         {
           "type": "table",
@@ -1062,15 +1068,15 @@ export const combinedBusinessModel = {
               "Plan (Base, no levers)",
               "$42K",
               "-$534K",
-              "$940K",
+              "$946K",
               "$46.2M",
               "$1.47M"
             ],
             [
               "25% fewer new international customers",
-              "$31K",
+              "$32K",
               "-$544K",
-              "$705K",
+              "$710K",
               "$46.0M",
               "$1.46M"
             ],
@@ -1078,7 +1084,7 @@ export const combinedBusinessModel = {
               "Slower ramp: half the new customers in months 1-6",
               "$31K",
               "-$545K",
-              "$930K",
+              "$937K",
               "$46.2M",
               "$1.45M"
             ],
@@ -1086,7 +1092,7 @@ export const combinedBusinessModel = {
               "Longer sales cycle: customers start paying 2 months later",
               "$26K",
               "-$549K",
-              "$891K",
+              "$897K",
               "$46.1M",
               "$1.45M"
             ],
@@ -1094,7 +1100,7 @@ export const combinedBusinessModel = {
               "Lower average subscription value: prices 20% lower",
               "$34K",
               "-$542K",
-              "$756K",
+              "$761K",
               "$46.0M",
               "$1.46M"
             ],
@@ -1102,15 +1108,15 @@ export const combinedBusinessModel = {
               "Half the Enterprise share (moves to Business)",
               "$28K",
               "-$548K",
-              "$626K",
+              "$634K",
               "$45.9M",
               "$1.45M"
             ],
             [
               "Higher churn: 2% a month instead of 1%",
               "$41K",
-              "-$536K",
-              "$782K",
+              "-$535K",
+              "$788K",
               "$46.0M",
               "$1.46M"
             ],
@@ -1118,7 +1124,7 @@ export const combinedBusinessModel = {
               "No paid marketing",
               "$42K",
               "-$534K",
-              "$800K",
+              "$805K",
               "$46.1M",
               "$1.47M"
             ],
@@ -1126,7 +1132,7 @@ export const combinedBusinessModel = {
               "Payroll and office 20% higher",
               "$42K",
               "-$574K",
-              "$940K",
+              "$946K",
               "$46.1M",
               "$1.43M"
             ],
@@ -1134,24 +1140,24 @@ export const combinedBusinessModel = {
               "Hosting and platform costs 50% higher",
               "$42K",
               "-$536K",
-              "$940K",
-              "$46.1M",
+              "$946K",
+              "$46.2M",
               "$1.46M"
             ],
             [
               "Combined downside: 25% fewer customers, half Enterprise, 2% churn",
-              "$20K",
+              "$21K",
               "-$555K",
-              "$391K",
+              "$395K",
               "$45.7M",
-              "$1.44M"
+              "$1.45M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "25% fewer customers.",
-          "text": "Cutting new international customers by 25% lowers Year 1 international revenue from $42K to $31K and Year 5 from $940K to $705K. Company cash barely moves, because consolidated results are driven by Corporate Reserve storage: the storage volume and the mainnet date matter far more to the company than any Workspace assumption."
+          "text": "Cutting new international customers by 25% lowers Year 1 international revenue from $42K to $32K and Year 5 from $946K to $710K. Company cash barely moves, because consolidated results are driven by Corporate Reserve storage: the storage volume and the mainnet date matter far more to the company than any Workspace assumption."
         }
       ]
     },
@@ -1196,6 +1202,11 @@ export const combinedBusinessModel = {
               "Churn; yearly billing; extra users",
               "1% a month; 30%; 1 per company",
               "Founder figures"
+            ],
+            [
+              "Extra storage add-on uptake",
+              "10% of Professional and Business customers buy 1 TB at $19.99 a month",
+              "Placeholder to validate"
             ],
             [
               "Years 2–5 productivity, cost per customer, funnel rates",

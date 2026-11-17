@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
-import { encryptAndShardFile } from "../../lib/clientCrypto";
+import { uploadDocumentFile, abandonChunkedUpload } from "../viewer/documentFiles";
 import ConfirmButton from "./ConfirmButton";
 import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 
@@ -219,8 +219,11 @@ function EmployeeDetailModal({ orgId, email, employee, employees = [], onClose, 
     setUploading(true);
     setError("");
     try {
-      const { fileHash, sizeBytes, cidAlpha, cidBeta } = await encryptAndShardFile(file, passkey);
-      await api(`/api/orgs/hr/employees/${employee.id}/attachments`, { method: "POST", body: JSON.stringify({ orgId, filename: file.name, fileHash, sizeBytes, cidAlpha, cidBeta }) });
+      // Same encrypted upload as Documents (chunked format; documentFiles.js). If recording it fails, the stored pieces are removed.
+      const { fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken } = await uploadDocumentFile(file, passkey, { orgId });
+      try {
+        await api(`/api/orgs/hr/employees/${employee.id}/attachments`, { method: "POST", body: JSON.stringify({ orgId, filename: file.name, fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken }) });
+      } catch (err) { abandonChunkedUpload(orgId, chunkedUploadToken); throw err; }
       setFile(null);
       setPasskey("");
       await loadExtras();

@@ -2305,7 +2305,7 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
     setProgress(null);
     let uploaded = null;
     try {
-      // Small files keep the original format; large ones go to storage in encrypted pieces (documentFiles.js).
+      // Every file goes to storage in encrypted pieces (documentFiles.js); a small file falls back to the original format only if that storage is down.
       uploaded = await uploadDocumentFile(file, passkey, { orgId, onProgress: setProgress });
       const { fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken } = uploaded;
 

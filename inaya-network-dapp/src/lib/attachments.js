@@ -24,13 +24,21 @@ export function serializeAttachment(a) {
   };
 }
 
-export async function createAttachment({ orgId, departmentId, relatedRecordType, relatedRecordId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail }) {
+/** For an attachment route: checks a chunked upload token against what is being registered (null when absent). */
+export async function attachmentStorage({ chunkedUploadToken, orgId, email, cidAlpha, cidBeta, sizeBytes }) {
+  if (!chunkedUploadToken) return null;
+  const { verifyChunkedRegistration } = await import("./chunkedStorage.js");
+  return verifyChunkedRegistration({ token: chunkedUploadToken, orgId, email, cidAlpha, cidBeta, sizeBytes: Number(sizeBytes) });
+}
+// `storage` is set for files uploaded in the chunked format (src/lib/chunkedFile.js; every upload since 17 Nov 2026),
+// exactly as on a document: { format, provider, prefix, ... } from verifyChunkedRegistration.
+export async function createAttachment({ orgId, departmentId, relatedRecordType, relatedRecordId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail, storage = null }) {
   const { attachments } = await getOrgCollections();
   const now = new Date().toISOString();
   const result = await attachments.insertOne({
     orgId: toObjectId(orgId), departmentId: toObjectId(departmentId), relatedRecordType,
     relatedRecordId: toObjectId(relatedRecordId), filename, fileHash, sizeBytes, cidAlpha, cidBeta,
-    uploadedByEmail, createdAt: now, deletedAt: null,
+    ...(storage ? { storage } : {}), uploadedByEmail, createdAt: now, deletedAt: null,
   });
   return { _id: result.insertedId, orgId: toObjectId(orgId), departmentId: toObjectId(departmentId), relatedRecordType, relatedRecordId: toObjectId(relatedRecordId), filename, sizeBytes, uploadedByEmail, createdAt: now };
 }

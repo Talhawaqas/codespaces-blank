@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { replicateShard } from '@/lib/backupEngine';
 import { getRawSessionToken, getSession } from '@/lib/orgs';
 import { randomBytes } from 'node:crypto';
-import { getProvider, listAvailableProviders } from '@/lib/pinningProviders/index.js';
+import { getProvider, listAvailableProviders, workspaceProviderOrder } from '@/lib/pinningProviders/index.js';
 import { realStorageAllowed } from '@/lib/pinningProviders/testGuard.js';
 
 // Backup & Recovery Mechanism (docs/backup-redundancy-architecture.md) — best-effort fan-out to a
@@ -33,6 +33,48 @@ const MAX_ENCODED_SHARD_LENGTH = 8 * 1024 * 1024;
 // plan filled up and, with no fallback, every Workspace upload failed; its error text (which can echo
 // credentials) was also passed straight back to the browser. Now a refusal falls through to the next provider,
 // and provider responses are only ever logged by status.
+// Business Workspace callers (session, no wallet) go Filebase first and fall back to Pinata (owner decision, 17 Nov
+// 2026); the wallet dApp flow keeps Pinata first. The shard body is the same JSON either way, and the returned CID is a
+// real IPFS CID, so every reader resolves it through the same gateways.
+async function pinShardWorkspace(content, name) {
+  const unique = `${name}_${Date.now()}_${randomBytes(4).toString("hex")}`;
+  for (const providerName of workspaceProviderOrder()) {
+    if (providerName === "pinata") {
+      const r = await pinToPinata(content, name);
+      if (r) return r;
+      continue;
+    }
+    try {
+      const r = await getProvider(providerName).pin(JSON.stringify(content), { name: unique });
+      return { provider: r.provider, cid: r.cid, providerRef: r.providerRef };
+    } catch (err) {
+      console.error(`upload: provider ${providerName} refused the pin -`, String(err?.message || "").slice(0, 80));
+    }
+  }
+  return null;
+}
+
+// Pinata pin through the same pinJSONToIPFS call the dApp has always used; null when refused or unreachable.
+async function pinToPinata(content, name) {
+  const jwt = (process.env.PINATA_JWT || "").trim();
+  if (!jwt || !realStorageAllowed()) return null;
+  try {
+    const response = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ pinataContent: content, pinataMetadata: { name } }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { provider: "pinata", cid: data.IpfsHash, providerRef: data.IpfsHash };
+    }
+    console.error("upload: Pinata refused the pin, status", response.status, "- trying the next provider");
+  } catch (err) {
+    console.error("upload: Pinata unreachable -", err?.name || "error", "- trying the next provider");
+  }
+  return null;
+}
+
 async function pinShardWithFallback(content, name) {
   const jwt = (process.env.PINATA_JWT || "").trim();
   if (jwt && realStorageAllowed()) {
@@ -138,7 +180,9 @@ export async function POST(request) {
       );
     }
 
-    const pinned = await pinShardWithFallback({ shard: encryptedShard, element: elementTag }, `inaya_next_${elementTag}_${filename}`);
+    const pinContent = { shard: encryptedShard, element: elementTag };
+    const pinName = `inaya_next_${elementTag}_${filename}`;
+    const pinned = hasWalletAddress ? await pinShardWithFallback(pinContent, pinName) : await pinShardWorkspace(pinContent, pinName);
     if (!pinned) {
       return NextResponse.json({ error: "Storage is temporarily unavailable. Please try again in a few minutes." }, { status: 503 });
     }

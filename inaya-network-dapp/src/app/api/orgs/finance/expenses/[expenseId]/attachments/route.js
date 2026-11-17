@@ -10,7 +10,8 @@
 
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, canAccessFinance, toObjectId } from "../../../../../../../lib/orgs.js";
-import { createAttachment, listAttachmentsForRecord, serializeAttachment } from "../../../../../../../lib/attachments.js";
+import { createAttachment, attachmentStorage, listAttachmentsForRecord, serializeAttachment } from "../../../../../../../lib/attachments.js";
+import { ChunkedError } from "../../../../../../../lib/chunkedStorage.js";
 
 async function loadExpense(req, orgId, expenseId) {
   await ensureOrgIndexes();
@@ -45,19 +46,21 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
-    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
+    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken = null } = await req.json();
     if (!orgId || !filename || !fileHash || !cidAlpha || !cidBeta) {
       return NextResponse.json({ error: "orgId, filename, fileHash, cidAlpha, and cidBeta are required." }, { status: 400 });
     }
     const result = await loadExpense(req, orgId, params.expenseId);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+    const storage = await attachmentStorage({ chunkedUploadToken, orgId, email: result.auth.session.email, cidAlpha, cidBeta, sizeBytes });
 
     const attachment = await createAttachment({
       orgId, departmentId: result.expense.departmentId, relatedRecordType: "EXPENSE", relatedRecordId: params.expenseId,
-      filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail: result.auth.session.email,
+      filename, fileHash, sizeBytes, cidAlpha, cidBeta, uploadedByEmail: result.auth.session.email, storage,
     });
     return NextResponse.json(serializeAttachment(attachment));
   } catch (err) {
+    if (err instanceof ChunkedError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("orgs/finance/expenses/[expenseId]/attachments POST failed:", err);
     return NextResponse.json({ error: "Could not attach the receipt." }, { status: 500 });
   }
