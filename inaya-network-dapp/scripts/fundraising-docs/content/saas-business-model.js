@@ -35,7 +35,7 @@ export const saasBusinessModel = {
     title: "Business Workspace: The SaaS Engine",
     subtitle:
       "A zero-knowledge, encrypted business collaboration platform — built on the same client-side encryption and decentralized storage infrastructure as Inaya's DePIN network, packaged as a recurring-revenue SaaS product for companies of every size.",
-    docLine: "Document INAYA-SAAS-BM-2026-V1 · Classification Confidential · October 2026",
+    docLine: "Document INAYA-SAAS-BM-2026-V1 · Classification Confidential · November 2026",
   },
   docId: "INAYA-SAAS-BM-2026-V1",
   sections: [
@@ -92,7 +92,7 @@ export const saasBusinessModel = {
         },
         {
           type: "lead",
-          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization. As of late October 2026: six industry editions (Health, Legal, Regulated Enterprise, Financial, Government and Education), each with its own sidebar of the modules that kind of organization uses every day, and an optional ERP-style layout with module tiles and a task panel for teams used to desktop ERP software.",
+          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization. As of late October 2026: six industry editions (Health, Legal, Regulated Enterprise, Financial, Government and Education), each with its own sidebar of the modules that kind of organization uses every day, and an optional ERP-style layout with module tiles and a task panel for teams used to desktop ERP software. As of November 2026: a seventh edition, Hospitality, for restaurants, cafes and caterers; online appointment booking and email campaigns for the Business and Enterprise packages; a support assistant in the Workspace Help panel that diagnoses and fixes common account problems; a one-click download of all company data as a ZIP file; and a daily encrypted backup of company records. The Business Workspace launches publicly on 1 January 2027.",
         },
       ],
     },
@@ -125,7 +125,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Three self-serve checkout tiers — Starter, Professional, and Business — priced monthly or annually (17% discount on annual billing), each with a 14-day free trial. Enterprise is shown at a published reference price below but is contact-sales only, not self-serve checkout.",
+          text: "Four packages, priced monthly or annually (about 17% less on annual billing). Since 15 November 2026 every package, Enterprise included, is requested from inside the Workspace and paid by NayaPay or bank transfer against an emailed invoice; the workspace opens when the payment arrives. There is no card checkout and no free trial.",
         },
         {
           type: "table",
@@ -141,9 +141,27 @@ export const saasBusinessModel = {
           type: "bullets",
           lead: "Add-ons available on every plan:",
           items: [
-            "Additional users — starting at $2.49/user/month",
+            "Additional users — $3/user/month (PKR 2,500 in Pakistan), up to 3 on Starter, 10 on Professional, 15 on Business and 20 on Enterprise; beyond that a company moves to the next package",
             "Additional storage — $3.99/TB/month",
-            "Beyond Enterprise's own listed capacity (25+ users or 10+ TB) — fully custom pricing via direct sales engagement",
+            "Beyond Enterprise's own listed capacity (45+ users or 10+ TB) — custom pricing via direct sales engagement",
+          ],
+        },
+        {
+          type: "table",
+          headers: ["Package", "PKR a month (Pakistan)", "PKR a year", "One-time setup (Pakistan)"],
+          rows: [
+            ["Starter", "PKR 8,000", "PKR 80,000", "PKR 10,000"],
+            ["Professional", "PKR 20,000", "PKR 200,000", "PKR 25,000"],
+            ["Business", "PKR 30,000", "PKR 300,000", "PKR 25,000"],
+            ["Enterprise", "PKR 60,000", "PKR 600,000", "PKR 25,000"],
+          ],
+        },
+        {
+          type: "bullets",
+          lead: "Pilot programmes (current terms):",
+          items: [
+            "Pakistan — 10 pilot companies pay 30% less for the first 6 months (extra users PKR 1,750). The first 5 get setup free; pilot companies 6–10 pay PKR 7,500 (Starter) or 12,500 (other packages).",
+            "Asia (India, Bangladesh, Sri Lanka, UAE, Saudi Arabia, Malaysia, Indonesia, Singapore, Philippines) — priced in USD, 10 pilot places per country, 30% off the package and extra users ($2.10) for 6 months. Setup is always charged: $29 (Starter) or $49 for pilot companies, $39 or $89 otherwise.",
           ],
         },
       ],
@@ -155,9 +173,10 @@ export const saasBusinessModel = {
         {
           type: "bullets",
           items: [
-            "Recurring subscription revenue. Monthly or annual per-company billing across four tiers, collected via Stripe.",
-            "Seat and storage expansion revenue. Companies that outgrow their tier's limits pay incrementally for additional users or storage rather than being forced into a full tier jump.",
-            "Enterprise contracts. Larger organizations (25+ users or 10+ TB) are handled as direct sales engagements with custom pricing, not self-serve checkout.",
+            "Recurring subscription revenue. Monthly or annual per-company billing across four packages, invoiced and paid by NayaPay or bank transfer before the workspace opens (prepaid, so no unpaid usage).",
+            "One-time setup fees. Charged per company in Pakistan (PKR 10,000 or 25,000) and in the Asia programme ($39 or $89; $29 or $49 for pilots), covering onboarding time.",
+            "Seat and storage expansion revenue. Companies that outgrow their package's limits pay incrementally for additional users or storage rather than being forced into a full package jump.",
+            "Enterprise contracts. Organizations beyond Enterprise's listed capacity are handled as direct sales engagements with custom pricing.",
             "Shared infrastructure economics. Business Workspace runs on the same encrypted storage backend as Inaya's core DePIN product — SaaS subscription revenue and DePIN storage/staking revenue draw on shared infrastructure investment rather than requiring a separate cost base.",
           ],
         },
@@ -193,7 +212,8 @@ export const saasBusinessModel = {
         {
           type: "bullets",
           items: [
-            "Product-led growth. The 14-day free trial on every self-serve tier lets a company's own owner/admin activate and evaluate the product directly, without a sales conversation.",
+            "Assisted activation. A company is created self-serve; its owner requests a package from inside the Workspace, our team contacts them within one working day, emails an invoice, and activates the package when payment arrives. A public demo video, a customer onboarding guide and the in-app support assistant carry the rest of onboarding.",
+            "Pilot outreach. Direct email outreach to mid-size companies in Pakistan, the UK and nine Asian countries (manufacturers and pharma, traders and distributors, clinics, schools), each offered a limited number of discounted pilot places. Public launch: 1 January 2027.",
             "Cross-promotion from the existing DePIN dApp. Wallet-connected users of Inaya's core network are shown Business Workspace directly inside the dApp, converting an already-engaged audience into a second product line.",
             "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, schools and colleges, managed service providers (as direct multi-tenant buyers, not just distribution partners, via Identity Integration's MSP support), and any organization whose documents carry real confidentiality requirements.",
           ],
@@ -251,6 +271,8 @@ export const saasBusinessModel = {
             { heading: "Sovereign Infrastructure — LIVE.", body: "Bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. A structurally distinct revenue line from the SaaS seat/storage tiers above — the customer's own hardware, managed through Business Workspace." },
             { heading: "Industry Editions & ERP Mode — LIVE.", body: "Six industry operating systems on the same workspace and permission model: Health, Legal, Regulated Enterprise, Financial / Private Capital, Government, and Education for schools and colleges (student ID numbers, addresses, phone numbers and medical notes encrypted before they are stored; fees in PKR, INR, BDT or AED, recorded rather than collected online). Legal bills and school fees post to the same general ledger as the Finance module. An optional ERP-style layout puts each industry's own modules first." },
             { heading: "Appointments & Email Marketing — LIVE (Business and Enterprise).", body: "A self-service booking page with team calendars, email reminders, Google/Outlook calendar sync and CRM logging of every meeting, plus email campaigns with templates, CRM segments, two-person approval, scheduling and open/click reporting, and automatic follow-up sequences. Business includes 50,000 marketing emails a month and Enterprise 250,000, so neither package needs a separate marketing subscription." },
+            { heading: "Hospitality OS — LIVE.", body: "An industry edition for restaurants, cafes, caterers and cloud kitchens: locations, tables, reservations with double bookings refused, an online booking page, a waitlist, guests as CRM contacts, menus with allergens, recipes from Inventory, wastage and stock counts, rosters and daily checklists. No point-of-sale, payments or kitchen display." },
+            { heading: "Launch Readiness — LIVE.", body: "Package activation by NayaPay or bank transfer with numbered PDF invoices, no workspace access before payment, a one-click ZIP download of all company data, a daily encrypted backup of company records, and a support assistant in the Help panel that checks a user's account and fixes common problems or hands them to the team." },
           ],
         },
       ],

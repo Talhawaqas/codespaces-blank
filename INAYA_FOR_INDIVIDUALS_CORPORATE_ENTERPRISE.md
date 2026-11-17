@@ -52,8 +52,8 @@ before mainnet — no real funds are at risk yet.*
   financial-institution integrations.
 - **AI Action Requests**: AI-proposed actions route through a real human-approval queue before
   anything executes — nothing happens automatically that a person hasn't signed off on.
-- **Billing that's actually wired up**: real plan/usage tracking with Stripe-backed checkout for
-  upgrades, not a placeholder pricing page.
+- **Billing that's actually wired up**: real plan/usage tracking; packages and upgrades are requested in the
+  Workspace and paid by NayaPay or bank transfer against numbered invoices, not a placeholder pricing page.
 - **Desktop app**: the whole Business Workspace runs in your system tray on Windows or Linux,
   notifies you the moment something needs your approval, and updates itself.
 

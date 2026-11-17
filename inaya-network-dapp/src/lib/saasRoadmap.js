@@ -943,6 +943,44 @@ export const ROADMAP_STAGES = [
     notes:
       "Verified with automated tests against the real database, including simultaneous booking attempts, capacity limits, role and location access, other-company isolation and the public booking page. No point-of-sale, payments, kitchen display or payroll: stock isn't deducted from sales and no sales or food-cost figures are shown.",
   },
+  {
+    number: 34,
+    title: "Launch Readiness — Package Activation, Invoices, Data Export, Daily Backups and Built-in Help",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "Everything a paying company needs before the public launch on 1 January 2027: a clear way to request and pay for a package without a card, invoices from our side, a copy of all its data on demand, daily backups, and help inside the Workspace that can fix common problems on the spot.",
+    securityStatement:
+      "A company's workspace stays closed until its package is paid and activated. The data download is limited to owners and admins, backups are encrypted before they are stored, and the support assistant can only make a short list of safe account fixes, each recorded in the activity log; anything else goes to a person.",
+    groups: [
+      {
+        title: "Packages and billing",
+        items: [
+          "Request a package from inside the Workspace with your contact details and NayaPay or bank transfer as the payment method; a confirmation email arrives straight away",
+          "Prices in USD, or in PKR for companies in Pakistan, with the pilot discount and setup fee shown before you send",
+          "Numbered PDF invoices with the payment details, emailed in one click by the Inaya team",
+          "The workspace opens as soon as the payment is confirmed, and the company is emailed when its package is active",
+          "Extra users on top of a package, up to each package's limit, and upgrades to a larger package",
+        ],
+      },
+      {
+        title: "Your data",
+        items: [
+          "Owners and admins can download all of the company's records and documents as one ZIP file from Billing",
+          "Company records are backed up every day, encrypted, with a restore that only adds missing records and never overwrites",
+        ],
+      },
+      {
+        title: "Help",
+        items: [
+          "A support assistant in the Workspace Help panel that checks your account, explains what is wrong in plain words and, once an owner or admin says yes, fixes common problems such as a missing company name, the wrong business type or a lost invitation",
+          "Problems it cannot fix are emailed to the support team with the details, and the team replies within one working day",
+          "A step-by-step setup guide, downloadable from the Workspace and the website",
+        ],
+      },
+    ],
+    notes:
+      "Verified with automated tests and in a running app. Payment is confirmed by the Inaya team when the transfer arrives, not by an automatic payment gateway.",
+  },
 ];
 
 export const VISION = {

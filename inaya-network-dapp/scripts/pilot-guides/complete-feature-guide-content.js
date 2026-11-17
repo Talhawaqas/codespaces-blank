@@ -1186,5 +1186,62 @@ export const completeFeatureGuide = {
         },
       ],
     },
+    {
+      number: "62",
+      title: "Hospitality OS — Restaurants, Cafes and Caterers (November 2026)",
+      blocks: [
+        {
+          type: "lead",
+          text: "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. Choose \"Restaurant / cafe / catering (Hospitality OS)\" as the business type when you create the company, or later in Settings. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to Campaigns.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Add a location.", body: "Hospitality → Settings: name, time zone, currency, opening hours and your reservation policy." },
+            { heading: "Add seating areas and tables.", body: "Give each table its smallest and largest party, and mark tables that can be pushed together." },
+            { heading: "Give your team roles.", body: "Settings → Roles & access: Manager, Host, Service, Kitchen or Stock. With more than one location, tick the locations each person works at." },
+            { heading: "Take reservations.", body: "By phone, in person or as a walk-in; the system picks the smallest free table that fits. Two bookings can never hold the same table at the same time. The Floor view shows every table as free, reserved or seated." },
+            { heading: "Turn on the online booking page.", body: "Per location in Settings: guests pick a party size, date and free time and get a link to view or cancel. The page never takes card details." },
+            { heading: "Set up the menu and recipes.", body: "Kitchen staff draft items with options, dietary labels and allergens; a manager reviews the allergen information and publishes. Recipes use Inventory ingredients and show how many servings the stock covers." },
+            { heading: "Run stock and the day.", body: "Record wastage with reasons, enter stock counts, draft purchase requests from reorder suggestions, check deliveries, publish the weekly roster and work through opening and closing checklists." },
+          ],
+        },
+        {
+          type: "note",
+          label: "What's real and tested, stated plainly.",
+          text: "Covered by automated tests against the real database, including simultaneous booking attempts, capacity limits, role and location access, other-company isolation and the public booking page, and checked in a running app.",
+        },
+        {
+          type: "note",
+          label: "Honest limits.",
+          text: "Not a point-of-sale system: it doesn't take payments, run a kitchen display or connect to delivery apps, so stock isn't reduced when dishes are sold. No payroll and no mobile screens yet. Allergen information is entered by the restaurant, which stays responsible for its accuracy.",
+        },
+      ],
+    },
+    {
+      number: "63",
+      title: "Getting Started with a Business Workspace Package (Launch, 1 January 2027)",
+      blocks: [
+        {
+          type: "lead",
+          text: "The Business Workspace launches publicly on 1 January 2027. A new company starts on the package screen; its workspace opens once a package is paid and activated. Packages: Starter $7.99 a month (2 users, 250 GB), Professional $28 (5 users, 1 TB), Business $49.99 (10 users, 5 TB) and Enterprise $799 (25 users, 10 TB); in Pakistan PKR 8,000, 20,000, 30,000 and 60,000.",
+        },
+        {
+          type: "numbered",
+          items: [
+            { heading: "Request a package.", body: "Press \"Request activation\" on the package you want, add your name, phone or WhatsApp number and how you will pay (NayaPay or bank transfer), and press \"Send request\". A confirmation email arrives straight away." },
+            { heading: "Pay the invoice.", body: "The Inaya team contacts you within one working day and emails a numbered invoice with the payment details. Pay using the invoice number as the reference." },
+            { heading: "Start working.", body: "The package is activated as soon as the payment arrives, and you are emailed when it is active. Extra users and package changes are in Settings → Billing." },
+            { heading: "Keep a copy of your data.", body: "Owners and admins can download all of the company's records and documents as one ZIP file from Settings → Billing. Company records are also backed up every day, encrypted." },
+            { heading: "Get help in the Workspace.", body: "Press \"? Help\": the support assistant checks your account and, once an owner or admin agrees, fixes common problems such as a missing company name, the wrong business type or a lost invitation. Anything else is emailed to the support team." },
+          ],
+        },
+        {
+          type: "note",
+          label: "Honest limits.",
+          text: "There is no card checkout or automatic payment gateway for the Business Workspace: payments are confirmed by the Inaya team when the transfer arrives.",
+        },
+      ],
+    },
   ],
 };

@@ -77,17 +77,64 @@
 // elsewhere. Factual only, hedged, no numbers, no superlative claims —
 // doesn't touch anything PROTECTED above.
 
+// NOVEMBER 2026 EDITION (v1.1, 16 Nov 2026) — redesigned layout (buildStrategyBookHTML: cover with
+// headline figures, an "at a glance" page, full-bleed Part dividers, page numbers) and a factual
+// refresh: the Business Workspace launch on 1 January 2027, the real price books of both engines
+// (storage: src/lib/dappPricing.js; Workspace: src/lib/orgPlans.js + pkPricing.js), the 35% node
+// share, the seventh industry edition (Hospitality), Appointments & Email Marketing, launch
+// readiness, and the pilot programmes actually running. Every figure here comes from the code or a
+// recorded founder decision; nothing is projected. Sections and their arguments are unchanged.
+
 export const gtmStrategy = {
   cover: {
     company: "INAYA NETWORK",
     classification: "CONFIDENTIAL — INVESTOR EDITION",
-    kicker: "GO-TO-MARKET STRATEGY · VERSION 1.0",
+    kicker: "GO-TO-MARKET STRATEGY · NOVEMBER 2026 EDITION",
     title: "The Inaya GTM Blueprint",
     subtitle:
-      "How a DePIN sovereign storage protocol converts developer-led adoption into enterprise revenue and durable network effects.",
-    docLine: "Document INAYA-GTM-2026-V1 · Classification Confidential · Prepared for Strategic Investors · October 2026",
+      "How one encrypted infrastructure powers two engines: a DePIN storage network that grows through developers and node operators, and a Business Workspace that companies adopt as everyday software.",
+    stats: [
+      { value: "1 Jan 2027", label: "Business Workspace public launch" },
+      { value: "$7.99", label: "a month, entry Workspace package (PKR 8,000 in Pakistan)" },
+      { value: "6.49 USDT", label: "per TB a month, storage network list price" },
+      { value: "35%", label: "of storage revenue shared with node operators" },
+    ],
+    docLine: "Document INAYA-GTM-2026-V1.1 · Classification Confidential · Prepared for Strategic Investors · November 2026",
   },
-  docId: "INAYA-GTM-2026-V1",
+  docId: "INAYA-GTM-2026-V1.1",
+  glance: {
+    title: "Two Engines, One Infrastructure",
+    blocks: [
+      { type: "lead", text: "Inaya Network builds client-side encrypted infrastructure and sells it two ways. Both run on the same encryption, sharding and audit layer, so every improvement serves both." },
+      {
+        type: "columns",
+        items: [
+          { heading: "Engine 1 — Storage network (DePIN)", body: "Buyer: developers, Web3 and AI teams, enterprises with storage-cost or sovereignty problems.\nProduct: encrypted, sharded storage on BNB Chain, SDKs, S3 and Azure Blob compatible APIs.\nPrice: 6.49 USDT per TB a month; Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year.\nStatus: live on testnet; mainnet follows the security audit." },
+          { heading: "Engine 2 — Business Workspace (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $28 / $49.99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027." },
+        ],
+      },
+      {
+        type: "stats",
+        items: [
+          { value: "8", label: "Workspace editions: general business plus seven industries" },
+          { value: "29", label: "of 34 Business Workspace roadmap stages live (5 in progress)" },
+          { value: "3", label: "pilot programmes: Pakistan, Asia (9 countries), UK" },
+          { value: "3", label: "ways to use it: web, desktop (Windows, Linux) and Android" },
+        ],
+      },
+      {
+        type: "table",
+        headers: ["Near-term milestone", "Status"],
+        rows: [
+          ["Business Workspace public launch", "1 January 2027"],
+          ["Workspace packages paid by NayaPay or bank transfer, invoices, data export, daily backups, built-in support assistant", "Done (November 2026)"],
+          ["Pilot outreach: Pakistan (10 places), nine Asian countries (10 places each), UK", "Running"],
+          ["Storage network price book for launch (6.49 USDT/TB, 35% node share)", "Set on testnet (November 2026)"],
+          ["Security audit, then storage network mainnet", "Open"],
+        ],
+      },
+    ],
+  },
   entries: [
     {
       type: "divider",
@@ -145,6 +192,8 @@ export const gtmStrategy = {
             "Secure Collaboration suite (Filen/FileCloud-inspired, October 2026): end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, enterprise Governance, device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization. Device Protection suite (Internxt-inspired, October 2026): a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls",
             "September 2026: Identity Integration & MSP multi-tenancy (Entra ID/Active Directory sign-in, SCIM, Rewst), an AI Bookkeeper, a Managed Database/Document Intelligence/AI-ML Studio, Document & Invoice Automation, an AI Business Operations Manager (Automations), and a Customer Portal with ticketing and a knowledge base",
             "October 2026: Sovereign Infrastructure — bring-your-own-hardware compute: real virtual machines, block storage, and private networking on a customer's own server, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s)",
+            "October–November 2026: an ERP-style layout for the Business Workspace, and industry editions for Education (schools and colleges) and Hospitality (restaurants, cafes, caterers), alongside Health, Legal, Regulated Enterprise, Financial / Private Capital and Government",
+            "November 2026: Appointments & Email Marketing (online booking, team calendars, email campaigns and follow-up sequences), the storage network's launch price book (6.49 USDT per TB a month, 35% node-operator share), and launch readiness for the Business Workspace: packages paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, daily encrypted backups and a built-in support assistant. Public launch: 1 January 2027",
           ],
         },
         {
@@ -195,8 +244,8 @@ export const gtmStrategy = {
           heading: "Revenue Strategy",
           body: "Inaya combines multiple complementary revenue streams designed to scale with network adoption:",
           bullets: [
-            "Pay-As-You-Go storage", "Enterprise storage plans", "Corporate Reserve subscriptions",
-            "API consumption", "Developer integrations", "Future premium enterprise services",
+            "Pay-As-You-Go storage (6.49 USDT per TB a month)", "Corporate Reserve subscriptions (17,970 / 34,740 / 65,880 USDT a year)", "Business Workspace packages ($7.99 to $799 a month, or PKR 8,000 to 60,000 in Pakistan)",
+            "Extra users and one-time setup fees", "Enterprise storage plans and API consumption", "Future premium enterprise services",
           ],
         },
         {
@@ -612,6 +661,20 @@ export const gtmStrategy = {
             "Why they adopt Inaya's Business Workspace — organizations, departments, projects, and documents with server-enforced approval workflows; VIEW/EDIT/MANAGE permissions and three document access levels; secure external sharing with expiring, revocable links; a full, immutable audit history; a permission-aware AI assistant that answers questions instead of requiring a search through folders; email-based sign-in, no wallet or blockchain literacy required.",
             "What makes this different from Phase Three — a Phase Three (storage) buyer is trying to solve a cost or ownership problem with their existing infrastructure. A Phase Five buyer doesn't have an infrastructure problem in mind at all — they have a document-and-workflow problem, and the DePIN storage underneath is invisible to their buying decision.",
           ],
+        },
+        {
+          type: "table",
+          headers: ["Pilot programme (November 2026)", "Who", "Terms"],
+          rows: [
+            ["Pakistan", "Mid-size manufacturers and pharma, traders and distributors, clinics, schools", "Priced in PKR. 10 pilot places at 30% off for 6 months; setup free for the first 5, then PKR 7,500 or 12,500"],
+            ["Asia — India, Bangladesh, Sri Lanka, UAE, Saudi Arabia, Malaysia, Indonesia, Singapore, Philippines", "The same four industries", "Priced in USD. 10 pilot places per country at 30% off for 6 months; setup always charged ($29 or $49)"],
+            ["United Kingdom", "Food and drink producers, cosmetics, food supplements, trade wholesale", "Direct email outreach to company role addresses"],
+          ],
+        },
+        {
+          type: "note",
+          label: "Why industries, not a generic pitch.",
+          text: "Each pilot email speaks to one industry's daily work (batches and production for manufacturers, fees and attendance for schools, appointments for clinics) and links to that industry's edition, a demo video and a proposal in the reader's currency. Leads, replies and follow-ups are tracked in a simple CRM, and every send is approved by the founder.",
         },
         {
           type: "table",
@@ -1104,6 +1167,11 @@ export const gtmStrategy = {
           type: "note",
           text: "Target Enterprise Accounts: AI Companies, SaaS Platforms, Healthcare Technology, FinTech, Legal Technology, Digital Media, Cybersecurity, Enterprise Software Vendors — industries that generate substantial storage demand while placing high value on privacy and ownership.",
         },
+        {
+          type: "subsection",
+          heading: "The Business Workspace Sales Motion (live since November 2026)",
+          body: "The Workspace is sold differently from storage: outbound and assisted rather than developer-led. A company is created self-serve; its owner requests a package inside the Workspace; the team contacts them within one working day, emails a numbered invoice, and activates the package when the NayaPay or bank transfer arrives. Onboarding is carried by a public demo video, a customer onboarding guide, and a support assistant in the Help panel that fixes common account problems. Payments are confirmed by the team, not an automatic gateway, which suits markets where bank transfer is the norm.",
+        },
       ],
     },
     {
@@ -1163,8 +1231,37 @@ export const gtmStrategy = {
           ],
         },
         {
+          type: "subsection",
+          heading: "Storage Network Price Book (set November 2026)",
+          body: "Pay-As-You-Go storage is 6.49 USDT per TB a month, with a 12 USDT yearly account fee. Downloading up to the amount you store is included every month; retrieval beyond that costs 10 INAYA per 0.5 TB once mainnet is live, and card customers never need to hold the token. The price was raised from 4.5 USDT in November 2026 and still sits below the published list prices of Backblaze B2 (6.95 per TB) and Storj (7 per TB), both checked against their own pricing pages; it is reviewed again after mainnet.",
+        },
+        {
+          type: "table",
+          headers: ["Corporate Reserve", "Capacity", "Price a year", "Effective price per TB a month"],
+          rows: [
+            ["Tier 1", "250 TB", "17,970 USDT", "5.99 USDT"],
+            ["Tier 2", "500 TB", "34,740 USDT", "5.79 USDT"],
+            ["Tier 3", "1,000 TB", "65,880 USDT", "5.49 USDT"],
+          ],
+        },
+        {
+          type: "subsection",
+          heading: "Business Workspace Packages (live; public launch 1 January 2027)",
+          body: "Four packages, priced monthly or yearly (about 17% less). Requested inside the Workspace and paid by NayaPay or bank transfer before the workspace opens. Extra users cost $3 a month (PKR 2,500) up to each package's limit; above it, a company moves up a package.",
+        },
+        {
+          type: "table",
+          headers: ["Package", "Users", "Storage", "USD a month", "USD a year", "PKR a month", "Setup (Pakistan)"],
+          rows: [
+            ["Starter", "2", "250 GB", "$7.99", "$79", "8,000", "10,000"],
+            ["Professional", "5", "1 TB", "$28", "$280", "20,000", "25,000"],
+            ["Business", "10", "5 TB", "$49.99", "$499", "30,000", "25,000"],
+            ["Enterprise", "25", "10 TB", "$799", "$7,990", "60,000", "25,000"],
+          ],
+        },
+        {
           type: "note",
-          text: "Pricing Principles: transparent, predictable, scalable, enterprise-friendly, and easy to understand. Complex pricing discourages adoption; simple pricing accelerates purchasing decisions.",
+          text: "Pricing Principles: transparent, predictable, scalable, enterprise-friendly, and easy to understand. Complex pricing discourages adoption; simple pricing accelerates purchasing decisions. Both price books are published on the website and enforced in code, so the price a customer sees is the price the system charges.",
         },
       ],
     },
@@ -1189,6 +1286,20 @@ export const gtmStrategy = {
           type: "subsection",
           heading: "Revenue Stream Three — Corporate Reserve",
           body: "Reserved storage capacity provides predictable enterprise income while strengthening customer retention.",
+        },
+        {
+          type: "subsection",
+          heading: "Revenue Stream Four — Business Workspace Subscriptions",
+          body: "Monthly or yearly package fees from companies, paid before the workspace opens, plus extra users and one-time setup fees (PKR 10,000 or 25,000 in Pakistan; $39 or $89 in the Asia programme). This stream does not depend on the token, the mainnet date or crypto adoption.",
+        },
+        {
+          type: "table",
+          headers: ["How storage revenue is shared", "Share"],
+          rows: [
+            ["Node operators", "35%"],
+            ["Treasury", "55%"],
+            ["Team", "10%"],
+          ],
         },
         {
           type: "bullets",
@@ -1347,6 +1458,19 @@ export const gtmStrategy = {
           type: "note",
           label: "Milestone Dashboard.",
           text: "Technical/Commercial: production web platform, mobile application, SDK ecosystem, CLI, React package, Storybook, Knowledge Base — all shipped. First 1,000 developers, first 100 applications, first enterprise pilot & contract, first ARR, international partnerships — in progress. Network: growth in storage usage, node participation, geographic coverage, infrastructure reliability — in progress.",
+        },
+        {
+          type: "table",
+          headers: ["Dated milestones (as of 16 November 2026)", "Status"],
+          rows: [
+            ["Business Workspace: 29 of 34 roadmap stages live, eight editions, ERP mode, desktop and Android apps", "Shipped"],
+            ["Workspace billing, invoices, data export, daily backups, built-in support assistant", "Shipped, November 2026"],
+            ["Pilot outreach in Pakistan, nine Asian countries and the UK", "Running"],
+            ["Business Workspace public launch", "1 January 2027"],
+            ["Storage network launch price book on the testnet contracts", "Set, November 2026"],
+            ["Third-party security audit", "Open"],
+            ["Storage network mainnet, node rewards, explorer, on-chain governance", "After the audit"],
+          ],
         },
       ],
     },

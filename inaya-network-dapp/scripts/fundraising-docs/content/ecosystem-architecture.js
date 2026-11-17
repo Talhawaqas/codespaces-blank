@@ -21,7 +21,7 @@ export const ecosystemArchitecture = {
     title: "How Inaya Actually Works",
     subtitle:
       "Every contract, app, backend, and data flow across the ecosystem — written from the real code, not the pitch. For the founding team.",
-    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · October 2026",
+    docLine: "Document INAYA-ARCH-2026-V1 · Classification Internal · November 2026",
   },
   docId: "INAYA-ARCH-2026-V1",
   sections: [
@@ -302,7 +302,7 @@ export const ecosystemArchitecture = {
             "Workflow: documents move through a real state machine (DRAFT → PENDING → etc.) with an atomic transition function and a persisted activity log — not just a status field that gets overwritten.",
             "Sharing: explicit per-person grants (document-permissions.js) plus tokenized public share links (hash-and-compare, atomic single-consume where applicable) — same pattern conventions as the Data Room's magic-link/session tokens, implemented independently for each feature.",
             "Storage model: documents here are encrypted client-side before upload using the same passkey-based flow as the Sovereign Vault, then pinned as JSON-shard blobs — NOT the same storage path as the Data Room, which stores plain, unencrypted PDFs for inline viewing (see Section 11 for why that's a deliberate, different choice).",
-            "Billing: Stripe subscription plans (orgPlans.js), seat limits enforced server-side on invite, storage-size limits enforced server-side on document upload.",
+            "Billing: four packages (orgPlans.js; PKR prices in pkPricing.js), requested in the Workspace and paid by NayaPay or bank transfer (billing_requests, activated by the team at /admin/billing with numbered PDF invoices; no access before payment since 15 Nov 2026). Seat limits enforced server-side on invite, storage-size limits enforced server-side on document upload.",
             "AI: a permission-aware Business Assistant (Section 12) that only ever sees data the requesting user is actually authorized to see.",
             "Beyond documents: the workspace now covers real business operations on the same org/department/permission foundation — Tasks, CRM, Procurement, Inventory (Section 23), and a Finance & HR layer (Section 24, testnet demonstration scope). None of this required touching the base document/permission model; every module is additive.",
           ],

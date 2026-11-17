@@ -17,7 +17,7 @@ export const companyProfile = {
     kicker: "CORPORATE PROFILE",
     title: "Inaya Network",
     subtitle: "Re-establishing absolute client-side data sovereignty — Web3 infrastructure and DePIN, built on BNB Chain.",
-    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · October 2026",
+    docLine: "Document INAYA-PROFILE-2026-V2 · Classification Public · November 2026",
   },
   docId: "INAYA-PROFILE-2026-V2",
   sections: [
@@ -92,6 +92,8 @@ export const companyProfile = {
             "Vertical Sovereign OS products — purpose-built editions of the same Business Workspace foundation for Healthcare & Legal, Financial Services & Regulated Enterprise, and Government & Public Sector customers, each adding the compliance workflows and record types that vertical actually needs rather than a generic one-size-fits-all SaaS layer.",
             "Sovereign Infrastructure — bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it from the Business Workspace, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates — each verified against real hardware. GPU passthrough, full AWS coverage, and TPM-backed execution remain explicitly out of scope today.",
             "Appointments & Email Marketing — a public booking page with team calendars, email reminders, Google/Outlook sync without a paid API, and CRM logging of every meeting; plus approved email campaigns and follow-up sequences to CRM segments with one-click unsubscribe and automatic suppression of bounces and complaints.",
+            "Hospitality OS — an industry edition for restaurants, cafes and caterers: tables, reservations that refuse double bookings, an online booking page, guests as CRM contacts, menus with allergens, recipes from Inventory, wastage, stock counts, rosters and daily checklists. No point-of-sale or payments yet.",
+            "Business Workspace public launch on 1 January 2027 — packages paid by NayaPay or bank transfer against numbered invoices, a one-click ZIP download of all company data, daily encrypted backups, and a support assistant in the Help panel that fixes common account problems.",
           ],
         },
       ],

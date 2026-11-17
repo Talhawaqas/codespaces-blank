@@ -44,14 +44,14 @@ const founderStory = [
 const roadmap = [
   { phase: "Phase 1 — Foundation", status: "Completed", desc: "Client-side encryption and sharding, smart contracts, the testnet, the official website, the AI documentation assistant and the BNB Chain DappBay listing." },
   { phase: "Phase 2 — Ecosystem Growth", status: "Completed", desc: "Open-source packages and SDK, Storybook and examples, Windows and Linux desktop apps for the dApp and Business Workspace, Inaya Learn, the Investor Data Room, referrals and the Watcher Pioneer program." },
-  { phase: "Phase 3 — Mainnet Readiness", status: "In progress", desc: "Done: node software, staking, storage analytics, the Business Workspace and its industry editions (Health, Legal, Regulated, Financial, Government, Education), the Security Layer, the Oracle & Automation Layer, the cross-chain bridge, Appointments & Email Marketing, and the launch price book (6.49 USDT per TB per month). Still open: the security audit, the explorer, on-chain governance and production infrastructure." },
+  { phase: "Phase 3 — Mainnet Readiness", status: "In progress", desc: "Done: node software, staking, storage analytics, the Business Workspace and its industry editions (Health, Legal, Regulated, Financial, Government, Education, Hospitality), the Security Layer, the Oracle & Automation Layer, the cross-chain bridge, Appointments & Email Marketing, the launch price book (6.49 USDT per TB per month), and launch readiness for the Business Workspace's public launch on 1 January 2027 (package activation by NayaPay or bank transfer, data export, daily encrypted backups and a built-in support assistant). Still open: the security audit, the explorer, on-chain governance and production infrastructure." },
   { phase: "Phase 4 — Mainnet Launch", status: "Planned", desc: "Mainnet deployment, node reward activation, enterprise storage onboarding, decentralized governance, ecosystem grants and community incentives." },
   { phase: "Phase 5 — Beyond Mainnet", status: "Planned", desc: "AI-powered storage intelligence, decentralized identity, global node expansion, developer grants and DAO governance." },
 ];
 
 const products = [
   { icon: "🔐", name: "Sovereign Storage", desc: "Client-side encryption, sharding, and decentralized custody — no single node ever holds a complete, readable copy of your data." },
-  { icon: "🏢", name: "Business Workspace", desc: "Encrypted documents plus everyday business operations — CRM, finance, HR, inventory, appointments and email marketing, automations, and industry editions for healthcare, legal, finance, government and education." },
+  { icon: "🏢", name: "Business Workspace", desc: "Encrypted documents plus everyday business operations — CRM, finance, HR, inventory, appointments and email marketing, automations, and industry editions for healthcare, legal, finance, government, education and hospitality." },
   { icon: "🛡️", name: "Inaya Firewall", desc: "Decentralized threat intelligence, reputation-weighted node reporting, and on-chain confirmed threat records." },
   { icon: "🎓", name: "Inaya Learn", desc: "Web3, AI, and programming education with an integrated AI tutor for every video." },
   { icon: "📁", name: "Investor Data Room", desc: "NDA-gated, per-visitor-tracked document viewing for investors." },

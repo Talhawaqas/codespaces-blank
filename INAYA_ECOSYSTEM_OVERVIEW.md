@@ -140,7 +140,7 @@ The team/company product built on top of the same core storage.
   no AI dependency) plus a best-effort one-paragraph AI narrative on top, generated only from those
   same real numbers. Available both as a dedicated Workspace view and conversationally through the
   AI Business Assistant ("give me my weekly brief").
-- **Billing** — real plan/usage tracking, Stripe-backed checkout for plan changes.
+- **Billing** — real plan/usage tracking; packages requested in the Workspace and paid by NayaPay or bank transfer against numbered invoices (no card checkout, no access before payment).
 - **NDA-gated Data Room** — separate, access-controlled space for sharing with investors/partners.
 
 ## 6. Node Operator Network
@@ -190,7 +190,7 @@ run on real Linux hardware). Not code-signed yet — deferred to mainnet.
 
 ## 10. Payments, Billing, Referrals, CRM
 
-Real backend routes, Stripe-backed where money moves: card/PAYG checkout, egress-unlock checkout,
+Real backend routes, Stripe-backed for the storage dApp's card/PAYG checkout and egress-unlock checkout (Business Workspace packages are paid by NayaPay or bank transfer),
 org billing/plan management, and a full referral lifecycle (initiate → activate → history →
 leaderboard → redeem), including a real incoming webhook.
 

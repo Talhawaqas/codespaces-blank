@@ -34,7 +34,7 @@
 - Granular per-document access grants (VIEW/EDIT/MANAGE) plus expiring, revocable external share links.
 - Email magic-link or Google Sign-In — no wallet or blockchain literacy required.
 - Client-side encrypted document storage using the same encryption pipeline as the core storage protocol.
-- Stripe-billed subscription plans with server-enforced seat and storage limits.
+- Four packages paid by NayaPay or bank transfer against numbered invoices, with server-enforced seat and storage limits.
 - Full web and mobile parity.
 
 ### Business Operations (Tasks, CRM, Procurement, Inventory)

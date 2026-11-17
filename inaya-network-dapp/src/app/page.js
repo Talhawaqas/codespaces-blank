@@ -3346,6 +3346,9 @@ export default function Home() {
         // Added November 2026: the storage network's launch price book, and Appointments & Email Marketing in the Business Workspace.
         { text: "Storage network price book set for launch: 6.49 USDT per TB per month (still below every major provider's list price), retrieval included up to the amount stored, Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year, and a 35% node-operator share; set on the testnet contracts, the website, the mobile app and the investor documents", done: true },
         { text: "Appointments & Email Marketing (Business and Enterprise packages): a public booking page with team calendars, email reminders, Google/Outlook sync without a paid API and CRM logging of every meeting; email campaigns with templates, CRM segments, two-person approval, scheduling and open/click reports; automatic follow-up sequences with one-click unsubscribe and bounce/complaint suppression. Tested against the real database and in a running app; campaign sending starts once the marketing sending domain is connected, and SMS reminders stay off until an SMS provider is connected", done: true },
+        // Added 16 November 2026: Hospitality OS (stage 33) and launch readiness (stage 34) in the Business Workspace.
+        { text: "Hospitality OS: an industry edition for restaurants, cafes and caterers with locations, tables, reservations that refuse double bookings, an online booking page, a waitlist, guests as CRM contacts, menus with allergens, recipes from Inventory, wastage, stock counts, rosters and daily checklists. No point-of-sale or payments yet", done: true },
+        { text: "Business Workspace launch readiness for 1 January 2027: packages requested in the Workspace and paid by NayaPay or bank transfer against numbered invoices, no access before payment, a ZIP download of all company data, a daily encrypted backup, and a support assistant in the Help panel that fixes common account problems", done: true },
       ],
     },
     {
@@ -3366,8 +3369,7 @@ export default function Home() {
       items: [
         "AI-powered storage intelligence",
         "Decentralized Identity (DID)",
-        "Enterprise APIs",
-        "Mobile applications",
+        // "Enterprise APIs" and "Mobile applications" removed 16 Nov 2026: both already exist (public v1 API, Android app).
         "Global node expansion",
         "Developer ecosystem grants",
         "DAO governance evolution",

@@ -9,7 +9,7 @@ audience: [enterprise-it, business-workspace-admin]
 status: live
 version: current
 tags: [business-workspace, organizations, permissions, documents]
-lastVerifiedAt: "2026-11-14"
+lastVerifiedAt: "2026-11-16"
 relatedDocs: [security-layer, appointments-email-marketing, education-os, hospitality-os, ai-bookkeeper, customer-portal]
 ---
 
@@ -19,10 +19,29 @@ Business Workspace is Inaya's SaaS-style layer on top of the core storage/encryp
 
 ## Core structure
 
-- **Organizations** — the top-level tenant. Sign-in is ordinary email/magic-link, independent of crypto wallets; a wallet is never required to use Business Workspace.
+- **Organizations** — the top-level tenant. Sign-in is an emailed sign-in link or Google, independent of crypto wallets; a wallet is never required to use Business Workspace.
 - **Departments and Projects** — the scoping unit most permissions are checked against (`canAccessDepartment`).
 - **Documents** — org-wide file storage with per-document ACL/versioning, distinct from (but built on the same underlying pipeline as) the S3-compatible storage layer.
 - **Roles** — owner, admin, and per-domain roles (e.g. a `storageRole` of manager/staff) layered on top of basic membership.
+
+## Packages and getting started
+
+The Business Workspace launches publicly on 1 January 2027. A new company starts on the package screen and its workspace opens once a package is paid and activated:
+
+| Package | Users included | Storage | USD a month | PKR a month (Pakistan) |
+| --- | --- | --- | --- | --- |
+| Starter | 2 | 250 GB | $7.99 | PKR 8,000 |
+| Professional | 5 | 1 TB | $28 | PKR 20,000 |
+| Business | 10 | 5 TB | $49.99 | PKR 30,000 |
+| Enterprise | 25 | 10 TB | $799 | PKR 60,000 |
+
+Packages are requested from inside the Workspace ("Request activation") and paid by NayaPay or bank transfer against an emailed invoice; there is no card checkout. Annual billing costs about 17% less. Extra users cost $3 a month (PKR 2,500), up to 3 on Starter, 10 on Professional, 15 on Business and 20 on Enterprise. Companies in Pakistan pay a one-time setup fee (PKR 10,000 for Starter, 25,000 otherwise). The [step-by-step setup guide](/docs/business-workspace-guide.md) walks through creating a company, choosing a package and the first week.
+
+## Your data and help
+
+- Owners and admins can download all of the company's records and documents as one ZIP file from Settings, then Billing.
+- Company records are backed up every day, encrypted.
+- "? Help" opens the support assistant: it checks your account, fixes common problems (a missing company name, the wrong business type, a lost invitation) after an owner or admin confirms, and emails anything else to the support team, who reply within one working day.
 
 ## Business Operations modules
 

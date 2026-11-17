@@ -453,6 +453,86 @@ table.data tr {
   font-size: 9.8pt;
 }
 
+/* ---------- Customer guides (buildCustomerGuideHTML): flowing sections ---------- */
+body.guide { background: #ffffff; }
+.guide .page { background: #ffffff; }
+.guide-cover { height: 297mm; overflow: hidden; }
+.guide-cover .cover-title-block { padding: 22mm 20mm 0; }
+.guide-body { padding: 0; }
+.keep-together { break-inside: avoid; page-break-inside: avoid; }
+.guide-cover { width: 210mm; }
+.guide-section { padding-top: 4mm; margin-bottom: 9mm; }
+.guide-section + .guide-section { border-top: 0.6pt solid var(--rule); padding-top: 8mm; }
+.guide .section-title { break-after: avoid; page-break-after: avoid; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin: 10mm 0 8mm; }
+.stat { background: var(--cream); border-top: 2pt solid var(--gold); padding: 4mm 4mm 3.5mm; }
+.stat-value { font-size: 15pt; font-weight: 800; color: var(--navy); line-height: 1.1; }
+.stat-label { font-size: 8.2pt; color: var(--ink-muted); margin-top: 1.5mm; line-height: 1.35; }
+
+.guide-toc { margin-top: 2mm; }
+.guide-toc-title { color: var(--gold); font-weight: 700; font-size: 8.5pt; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3mm; }
+.guide-toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 10mm; }
+.guide-toc li { font-size: 10pt; padding: 1.6mm 0; border-bottom: 0.4pt solid var(--rule); break-inside: avoid; }
+.toc-num { display: inline-block; width: 9mm; color: var(--gold); font-weight: 700; }
+
+ol.steps { list-style: none; margin: 0 0 5mm; padding: 0; }
+ol.steps li.step { display: flex; gap: 4mm; align-items: flex-start; padding: 3mm 0; border-bottom: 0.4pt solid var(--rule); break-inside: avoid; page-break-inside: avoid; }
+ol.steps li.step:last-child { border-bottom: 0; }
+.step-num { flex: 0 0 7mm; height: 7mm; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 700; font-size: 9pt; display: flex; align-items: center; justify-content: center; margin-top: 0.3mm; }
+.step-text { font-size: 10pt; line-height: 1.5; padding-top: 0.6mm; }
+.step-text strong { color: var(--navy); }
+
+/* ---------- Strategy books (buildStrategyBookHTML) ---------- */
+body.book { background: #ffffff; font-size: 10pt; }
+.book .lead, .book ul.bullets li, .book .subsection .lead { font-size: 9.8pt; line-height: 1.5; }
+.bk-bleed { page: bleed; break-before: page; break-after: page; width: 210mm; height: 297mm; overflow: hidden; background: var(--navy); color: #fff; position: relative; }
+.bk-cover { display: flex; flex-direction: column; padding: 16mm 18mm 14mm; background: radial-gradient(120% 70% at 100% 0%, #1b2536 0%, var(--navy) 60%); }
+.bk-cover-top { display: flex; justify-content: space-between; align-items: center; }
+.bk-brand { font-weight: 800; font-size: 14pt; letter-spacing: 0.08em; }
+.bk-badge { color: var(--gold-bright); font-size: 8pt; font-weight: 700; letter-spacing: 0.12em; border: 0.6pt solid var(--gold); padding: 1.5mm 3mm; }
+.bk-cover-main { margin-top: 48mm; }
+.bk-kicker { color: var(--gold-bright); font-size: 9pt; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.bk-title { font-size: 38pt; line-height: 1.08; margin: 6mm 0 7mm; font-weight: 800; }
+.bk-subtitle { font-size: 12.5pt; line-height: 1.55; color: #c9d0dc; max-width: 150mm; margin: 0; }
+.bk-cover-stats { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5mm; border-top: 0.8pt solid var(--gold); padding-top: 6mm; }
+.bk-cs-value { font-size: 18pt; font-weight: 800; color: #fff; line-height: 1.1; }
+.bk-cs-label { font-size: 8pt; color: #aab1c0; margin-top: 1.5mm; line-height: 1.35; }
+.bk-cover-foot { margin-top: 8mm; font-size: 7.5pt; color: #8a93a6; letter-spacing: 0.04em; }
+
+.bk-divider { display: flex; flex-direction: column; justify-content: center; padding: 0 24mm; background: linear-gradient(160deg, #141b28 0%, var(--navy) 55%); }
+.bk-divider-title { font-size: 34pt; margin: 5mm 0 10mm; font-weight: 800; line-height: 1.1; }
+.bk-divider-list { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 10mm; border-top: 0.6pt solid var(--gold); padding-top: 6mm; }
+.bk-divider-list li { font-size: 10pt; color: #c9d0dc; padding: 1.6mm 0; break-inside: avoid; }
+.bk-divider-list li span { display: inline-block; width: 9mm; color: var(--gold-bright); font-weight: 700; }
+
+.bk-section { break-before: page; }
+.bk-sec-head { display: flex; align-items: baseline; gap: 4mm; border-bottom: 0.8pt solid var(--gold); padding-bottom: 2mm; margin-bottom: 4mm; }
+.bk-sec-num { font-size: 26pt; font-weight: 800; color: var(--gold); line-height: 1; }
+.bk-sec-part { font-size: 8pt; font-weight: 700; letter-spacing: 0.14em; color: var(--ink-muted); }
+.book .section-title { font-size: 21pt; break-after: avoid; }
+/* Long subsections may split across pages (a never-split box left half-empty pages); the heading stays with its text. */
+.book .subsection { background: #fbfaf6; border-left: 2pt solid var(--rule); padding: 3mm 4mm; break-inside: auto; page-break-inside: auto; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.book .subsection-heading { color: var(--navy); break-after: avoid; page-break-after: avoid; }
+.book .subsection .lead { orphans: 3; widows: 3; margin: 0; }
+.book .subsection { margin-bottom: 3mm; padding: 2.5mm 4mm; }
+.book .subsection ul.bullets { margin: 1.5mm 0 0; }
+.book ul.bullets li { margin-bottom: 1.6mm; }
+.book ul.bullets.short { columns: 2; column-gap: 8mm; }
+.book .note { margin-bottom: 3mm; padding: 3mm 4.5mm; }
+.book .lead { margin: 0 0 3mm; }
+.book .quote { background: var(--navy); color: #fff; border-left: 3pt solid var(--gold); padding: 5mm 6mm; font-size: 11.5pt; }
+.book .card { background: #fbfaf6; border-top: 2pt solid var(--gold); padding: 4mm; }
+.book table.data th { background: var(--navy); color: #fff; border-bottom: 0; }
+.book table.data tr:nth-child(even) td { background: #fbfaf6; }
+.book .stats { margin: 4mm 0 6mm; }
+
+.bk-toc-group { margin-bottom: 5mm; break-inside: avoid; }
+.bk-toc-part { color: var(--gold); font-weight: 700; font-size: 8.5pt; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.5mm; }
+.bk-toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 10mm; }
+.bk-toc li { font-size: 9.5pt; padding: 1.3mm 0; border-bottom: 0.4pt solid var(--rule); break-inside: avoid; }
+.bk-toc-num { display: inline-block; width: 8mm; color: var(--gold); font-weight: 700; }
+
 .footer-panel {
   border-top: 0.8pt solid var(--gold);
   padding: 6mm 16mm 12mm;

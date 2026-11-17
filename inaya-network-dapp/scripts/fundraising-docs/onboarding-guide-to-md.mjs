@@ -14,7 +14,12 @@ for (const s of g.sections) {
     if (b.type === "lead" || b.type === "note") out.push(b.type === "note" ? `> ${b.text}` : b.text, "");
     else if (b.type === "paragraphs") out.push(...b.text.flatMap((t) => [t, ""]));
     else if (b.type === "bullets") out.push(...b.items.map((i) => `- ${i}`), "");
-    else if (b.type === "numbered") out.push(...b.items.map((i, n) => `${n + 1}. ${i}`), "");
+    else if (b.type === "numbered" || b.type === "steps") {
+      if (b.lead) out.push(b.lead, "");
+      out.push(...b.items.map((i, n) => `${n + 1}. ${typeof i === "string" ? i : `**${i.heading}** ${i.body}`}`), "");
+    }
+    else if (b.type === "heading") out.push(`### ${b.text}`, "");
+    else if (b.type === "stats") out.push(...b.items.map((s) => `- **${s.value}**: ${s.label}`), "");
     else if (b.type === "table") out.push(`| ${b.headers.join(" | ")} |`, `| ${b.headers.map(() => "---").join(" | ")} |`, ...b.rows.map((r) => `| ${r.join(" | ")} |`), "");
   }
 }

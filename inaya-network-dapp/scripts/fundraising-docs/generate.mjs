@@ -32,7 +32,7 @@ import { institutionalFaqs } from "./content/institutional-faqs.js";
 import { storageBusinessModel } from "./content/storage-business-model.js";
 import { enterpriseRevenueArchitecture } from "./content/enterprise-revenue-architecture.js";
 import { sdkGuide } from "./content/sdk-guide.js";
-import { buildExecutiveSummaryHTML, buildInvestmentMemorandumHTML, buildGtmStrategyHTML, buildOperatorManifestoHTML } from "./template.js";
+import { buildExecutiveSummaryHTML, buildInvestmentMemorandumHTML, buildOperatorManifestoHTML, buildStrategyBookHTML } from "./template.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.resolve(__dirname, "../../public/documents");
@@ -88,7 +88,7 @@ async function main() {
     // The Investment Memorandum is confidential: build it with
     // `node scripts/fundraising-docs/generate-one.mjs investment-memorandum`,
     // which writes to Downloads. It must never be written to public/documents.
-    { name: "inaya-gtm-strategy.pdf", html: buildGtmStrategyHTML(gtmStrategy) },
+    { name: "inaya-gtm-strategy.pdf", html: buildStrategyBookHTML(gtmStrategy) },
     // Reuses the Investment Memorandum's builder — same {cover, sections,
     // docId} shape, no new template function needed.
     { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },

@@ -6,6 +6,7 @@
 //   - Markdown: node scripts/fundraising-docs/onboarding-guide-to-md.mjs  (public/docs/business-workspace-guide.md,
 //               the "Download the step-by-step setup guide" link and an AI assistant source)
 // Menu names match the Workspace sidebar (src/lib/navigation/launcher.js FRIENDLY_LABELS).
+// Prices, users and storage come from src/lib/orgPlans.js and src/lib/pkPricing.js: change them there first.
 
 export const workspaceOnboardingGuide = {
   cover: {
@@ -14,6 +15,12 @@ export const workspaceOnboardingGuide = {
     kicker: "GETTING STARTED",
     title: "Inaya Business Workspace Onboarding Guide",
     subtitle: "From creating your company to running daily work: documents, customers, finance, people, stock and purchasing in one encrypted workspace.",
+    stats: [
+      { value: "1 day", label: "for our team to contact you after your package request" },
+      { value: "$7.99", label: "a month for Starter (PKR 8,000 in Pakistan)" },
+      { value: "3 ways", label: "to work: web, desktop (Windows, Linux) and Android" },
+      { value: "9", label: "industry editions, from healthcare to hospitality" },
+    ],
     docLine: "Document INAYA-WORKSPACE-ONBOARDING-2026 · For customers · November 2026",
   },
   docId: "INAYA-WORKSPACE-ONBOARDING-2026",
@@ -26,7 +33,7 @@ export const workspaceOnboardingGuide = {
         {
           type: "bullets",
           items: [
-            "No wallet, token or technical setup: everyone signs in with their work email.",
+            "No wallet, token or technical setup: everyone signs in with their work email or Google account.",
             "Works on the web, as a desktop app for Windows and Linux, and on Android.",
             "Packages are paid in USD (or PKR in Pakistan) by NayaPay or bank transfer. No card needed.",
             "Help is built in: press \"? Help\" at the top of the Workspace at any time.",
@@ -39,13 +46,13 @@ export const workspaceOnboardingGuide = {
       title: "Create Your Company",
       blocks: [
         {
-          type: "numbered",
+          type: "steps",
           items: [
             "Go to inayanetwork.com/business.",
             "Press \"Create a company\".",
-            "Enter your company name and choose your business type. The business type (general, healthcare, legal, regulated enterprise, financial services, private capital, government, education or hospitality) decides which industry modules you see. You can change it later in Settings.",
-            "Enter your work email and press \"Create company\", or use \"Continue with Google\".",
-            "Open the sign-in link we email you (check spam if it has not arrived within a few minutes).",
+            { heading: "Name and business type.", body: "Enter your company name and choose your business type: general business, healthcare, legal, regulated enterprise, financial services, private capital, government, education or hospitality. The type decides which industry modules you see, and you can change it later in Settings." },
+            { heading: "Your email.", body: "Enter your work email and press \"Create company\", or use \"Continue with Google\"." },
+            { heading: "Sign in.", body: "Open the sign-in link we email you. If it has not arrived within a few minutes, check your spam folder." },
           ],
         },
       ],
@@ -57,26 +64,33 @@ export const workspaceOnboardingGuide = {
         { type: "lead", text: "A new company starts on the package screen. Your workspace opens once your package is paid and activated." },
         {
           type: "table",
-          headers: ["Package", "USD per month", "PKR per month (Pakistan)"],
-          rows: [["Starter", "$7.99", "PKR 8,000"], ["Professional", "$28", "PKR 20,000"], ["Business", "$49.99", "PKR 30,000"], ["Enterprise", "$799", "PKR 60,000"]],
-        },
-        {
-          type: "numbered",
-          items: [
-            "Press \"Request activation\" on the package you want.",
-            "Fill in your name, phone or WhatsApp number, company size, how you would like to be contacted, and whether you will pay by NayaPay or bank transfer.",
-            "Press \"Send request\". You receive a confirmation email straight away.",
-            "Our team contacts you within one working day and emails an invoice with the payment details.",
-            "Pay using the invoice number as the reference. We activate your package as soon as the payment arrives and email you when it is active.",
+          headers: ["Package", "Users included", "Storage", "USD a month", "USD a year", "PKR a month (Pakistan)"],
+          rows: [
+            ["Starter", "2", "250 GB", "$7.99", "$79", "PKR 8,000"],
+            ["Professional", "5", "1 TB", "$28", "$280", "PKR 20,000"],
+            ["Business", "10", "5 TB", "$49.99", "$499", "PKR 30,000"],
+            ["Enterprise", "25", "10 TB", "$799", "$7,990", "PKR 60,000"],
           ],
         },
-        { type: "note", text: "Later you can add extra users or change package from Settings, then Billing. Owners and admins can also download all of the company's data as a ZIP file there." },
+        {
+          type: "steps",
+          items: [
+            "Press \"Request activation\" on the package you want.",
+            { heading: "Tell us how to reach you.", body: "Your name, phone or WhatsApp number, company size (optional), how you would like to be contacted, and whether you will pay by NayaPay or bank transfer." },
+            "Press \"Send request\". A confirmation email arrives straight away.",
+            "Our team contacts you within one working day and emails an invoice with the payment details.",
+            { heading: "Pay and start.", body: "Pay using the invoice number as the reference. We activate your package as soon as the payment arrives and email you when it is active." },
+          ],
+        },
+        { type: "note", label: "Pakistan:", text: "packages are invoiced in PKR, with a one-time setup fee of PKR 10,000 for Starter and PKR 25,000 for the other packages. Pilot companies pay 30% less for the first 6 months and a lower setup fee (PKR 7,500 or 12,500)." },
+        { type: "note", label: "Later:", text: "add extra users (up to 3 on Starter, 10 on Professional, 15 on Business, 20 on Enterprise) or change package from Settings, then Billing. Owners and admins can also download all of the company's data as a ZIP file there." },
       ],
     },
     {
       number: "04",
       title: "Find Your Way Around",
       blocks: [
+        { type: "lead", text: "The first time you open the Workspace, it asks what you will mainly use Inaya for (running the business, finance and invoicing, secure files, or IT and security) and pins the matching apps to your sidebar. You can skip it and change your pins at any time." },
         {
           type: "table",
           headers: ["Where", "What it is for"],
@@ -97,15 +111,15 @@ export const workspaceOnboardingGuide = {
       title: "Set Up Your Company",
       blocks: [
         {
-          type: "numbered",
+          type: "steps",
           items: [
-            "Settings: check your company name and business type.",
-            "Departments: create departments that match how your company works, for example Finance, Sales, Operations and HR.",
-            "Projects: create projects inside departments. Projects are where related documents live.",
-            "Settings, Team: invite colleagues by email, choose their role (Member or Admin) and their departments. They show as Pending until they accept.",
+            { heading: "Settings:", body: "check your company name and business type." },
+            { heading: "Departments:", body: "create departments that match how your company works, for example Finance, Sales, Operations and HR." },
+            { heading: "Projects:", body: "create projects inside departments. Projects are where related documents live." },
+            { heading: "Settings, Team:", body: "invite colleagues by email and choose their role (Member or Admin) and departments. They show as Pending until they accept." },
           ],
         },
-        { type: "paragraphs", text: ["Owners and admins manage the whole company; members work within the departments they are given. Each package includes a number of users, and you can add extra users from Billing."] },
+        { type: "note", text: "Owners and admins manage the whole company; members work within the departments they are given. Each package includes a number of users, and you can add extra users from Billing." },
       ],
     },
     {
@@ -113,13 +127,13 @@ export const workspaceOnboardingGuide = {
       title: "Documents and Approvals",
       blocks: [
         {
-          type: "numbered",
+          type: "steps",
           items: [
             "Open Documents, choose the department and project, and upload a file.",
             "Choose who can see it: only you and the people you add, the whole department, or the project team.",
-            "Set a passkey. The file is encrypted on your device with it before upload; keep it safe, because it cannot be recovered and nobody at Inaya can read your files.",
+            { heading: "Set a passkey.", body: "The file is encrypted on your device with it before upload. Keep it safe: it cannot be recovered, and nobody at Inaya can read your files." },
             "Submit the document for review. Owners and admins approve or reject it from Approvals; every step is recorded in Activity.",
-            "To share a document outside the company, create a secure share link with an expiry and an optional use limit, and revoke it at any time.",
+            "To share a document outside the company, create a secure share link with an expiry and an optional use limit. You can revoke it at any time.",
           ],
         },
       ],
@@ -150,15 +164,15 @@ export const workspaceOnboardingGuide = {
       title: "Your First Week",
       blocks: [
         {
-          type: "numbered",
+          type: "steps",
           items: [
-            "Day 1: create your company, request your package, set your company name and business type.",
-            "Day 2: create departments and projects, and invite two or three colleagues.",
-            "Day 3: add your customers and products.",
-            "Day 4: send your first invoice and assign your first tasks.",
-            "Day 5: upload key documents and run one through approval.",
-            "Day 6: install the desktop or Android app for your team.",
-            "Day 7: open Insights and Home to see the week at a glance.",
+            { heading: "Day 1:", body: "create your company, request your package, and set your company name and business type." },
+            { heading: "Day 2:", body: "create departments and projects, and invite two or three colleagues." },
+            { heading: "Day 3:", body: "add your customers and products." },
+            { heading: "Day 4:", body: "send your first invoice and assign your first tasks." },
+            { heading: "Day 5:", body: "upload key documents and run one through approval." },
+            { heading: "Day 6:", body: "install the desktop or Android app for your team." },
+            { heading: "Day 7:", body: "open Insights and Home to see the week at a glance." },
           ],
         },
       ],
@@ -171,7 +185,7 @@ export const workspaceOnboardingGuide = {
           type: "bullets",
           items: [
             "Press \"? Help\" in the Workspace: the support assistant can set a missing company name, change your business type, re-send a lost invitation and answer how-to questions. Anything else goes to our team.",
-            "Email contact@inayanetwork.com. We reply within one working day.",
+            "Email contact@inayanetwork.com. We reply within one working day. In Pakistan we also answer on WhatsApp, Monday to Saturday, 10:00 to 19:00 PKT.",
             "Your files are encrypted on your own device, and your company's records are backed up every day.",
             "Owners and admins can download all company data as a ZIP file at any time from Settings, then Billing.",
           ],

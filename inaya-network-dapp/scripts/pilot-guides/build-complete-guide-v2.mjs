@@ -37,7 +37,9 @@ const lead = (what, why) => [{ type: "paragraphs", text: [`WHAT IT IS. ${what}`,
 // (2026-09-29, nine real completed SOWs added) -- this counter must track
 // its actual current section count, or this script's own appended
 // sections collide/renumber incorrectly.
-let counter = 56;
+// Derived, not hard-coded: a fixed 56 went stale when sections 57-63 were added (16 Nov 2026), so
+// appended sections reused those numbers.
+let counter = Math.max(...completeFeatureGuide.sections.map((s) => Number(s.number)));
 const entries = [];
 const PLACEHOLDERS = [];
 const R = (from, to) => { const token = `@@REF${PLACEHOLDERS.length}@@`; PLACEHOLDERS.push({ token, from, to }); return token; };
@@ -52,11 +54,11 @@ const cover = {
   kicker: "STEP-BY-STEP · SECOND EDITION",
   title: "The Complete Inaya Ecosystem Guide",
   subtitle: "What every product is, why you would use it, and exactly how to use it, with every command and instruction. The wallet dApp, Business Workspace, storage and edge products, AI and automation, identity, developer tools and the roadmap.",
-  docLine: "Document INAYA-GUIDE-2026-V2 · Edition of 27 September 2026",
+  docLine: "Document INAYA-GUIDE-2026-V2 · Edition of 16 November 2026",
 };
 
 // ---------------------------------------------------------------- PART 0/I: how to read + product map + the original 47 sections
-divider("PART I", "Start here, the wallet dApp and the Business Workspace", "The original step-by-step guide (sections 01 to 47), plus a product map of the whole ecosystem.");
+divider("PART I", "Start here, the wallet dApp and the Business Workspace", "The step-by-step guide (sections 01 to 63), plus a product map of the whole ecosystem.");
 entries.push({
   number: "00", part: "I", title: "How to Use This Guide, and the Product Map",
   blocks: [
@@ -89,7 +91,7 @@ entries.push({
       ["Sovereign NAS", "A managed on-premises file server (SMB/NFS) with snapshots, WORM, ransomware response and backup.", "Local speed and data residency with cloud-grade protection.", R("Sovereign NAS", "Sovereign NAS — Deployment")],
       ["Mainframe & Legacy Data Access", "Query old databases with standard SQL, JDBC and ODBC, read-only and audited.", "Use legacy data in modern tools without moving it.", R("Mainframe & Legacy", "The Inaya ODBC")],
       ["Developer tools", "The SDK, React components, CLI, node daemon, scaffolding tool, bridge SDK, public API, Terraform provider.", "Build on Inaya, automate it, or run a node.", "45, 46, " + R("The Custody SDK: Quick Start", "IP Protection")],
-      ["Industry workspaces", "Health, Legal, Financial, Private Capital, Regulated, Government and Education OS.", "Vertical features and controls for regulated work.", "37, " + R("Health OS and Legal OS", "Enterprise OS")],
+      ["Industry workspaces", "Health, Legal, Financial, Private Capital, Regulated, Government, Education and Hospitality OS.", "Vertical features and controls for regulated work.", "37, " + R("Health OS and Legal OS", "Enterprise OS")],
       ["Cross-chain bridge and interoperability", "Move value between chains.", "Use Inaya across networks.", "43, " + R("Cross-Chain, Interoperability")],
       ["Roadmap and quality review", "What each stage delivers and how the codebase is being hardened.", "Know what is real today and what is coming.", R("The Roadmap", "Glossary")],
     ] },
@@ -161,7 +163,7 @@ section("Contributing to the Documentation", fromMd("content/docs/developer/cont
 section("IP Protection and Ownership", fromMd("../docs/ip-protection/README.md"));
 
 // ---------------------------------------------------------------- PART V: verticals and reference
-divider("PART V", "Industry workspaces, roadmap and reference", "Health, Legal, Financial, Government and Enterprise OS, the cross-chain layers, the roadmap and the quality review.");
+divider("PART V", "Industry workspaces, roadmap and reference", "Health, Legal, Financial, Government, Education, Hospitality and Enterprise OS, the cross-chain layers, the roadmap and the quality review.");
 currentPart = "V";
 for (const [t, f] of [["Health OS and Legal OS", "HEALTH_LEGAL_OS_USER_SUMMARY.md"], ["Financial Services, Private Capital and Regulated Enterprise OS", "FINANCIAL_REGULATED_SOW_USER_SUMMARY.md"], ["Government and Public Sector OS", "GOVERNMENT_OS_USER_SUMMARY.md"], ["Enterprise OS", "ENTERPRISE_OS_USER_SUMMARY.md"], ["Business Workspace: Four Extensions (Data Room Templates, What-If Studio and more)", "Business Workspace - Four New Features Update.md"], ["The Hackathon", "Hackathon_Announcement_Summary.md"]]) { const p = path.join(EXTRA, f); section(t, existsSync(p) ? fromMd(p) : (missing.push(f), [])); }
 {

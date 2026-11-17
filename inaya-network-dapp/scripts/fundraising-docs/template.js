@@ -41,15 +41,38 @@ function renderBlock(block) {
     case "bullets": {
       const lead = block.lead ? `<p class="lead">${escMultiline(block.lead)}</p>` : "";
       const items = block.items.map((i) => `<li>${escMultiline(i)}</li>`).join("\n");
-      return `${lead}<ul class="bullets">${items}</ul>`;
+      // "short": every item is a few words, so layouts that want to can set it in columns.
+      const short = block.items.length >= 4 && block.items.every((i) => String(i).length <= 45) ? " short" : "";
+      return `${lead}<ul class="bullets${short}">${items}</ul>`;
     }
 
+    // Items are either { heading, body } or plain strings (a plain string used to render as an empty
+    // "<strong></strong> " line: the onboarding guide's steps all came out blank, 16 Nov 2026).
     case "numbered": {
       const items = block.items
-        .map((i) => `<li><strong>${esc(i.heading)}</strong> ${escMultiline(i.body)}</li>`)
+        .map((i) => (typeof i === "string" ? `<li>${escMultiline(i)}</li>` : `<li><strong>${esc(i.heading)}</strong> ${escMultiline(i.body)}</li>`))
         .join("\n");
       return `<ol class="numbered">${items}</ol>`;
     }
+
+    // Customer-guide step cards: a numbered circle per step, an optional bold label, then the text.
+    case "steps": {
+      const items = block.items
+        .map((i, n) => {
+          const label = typeof i === "string" ? "" : `<strong>${esc(i.heading)}</strong> `;
+          const text = typeof i === "string" ? i : i.body;
+          return `<li class="step"><span class="step-num">${n + 1}</span><div class="step-text">${label}${escMultiline(text)}</div></li>`;
+        })
+        .join("\n");
+      return `${block.lead ? `<p class="lead">${escMultiline(block.lead)}</p>` : ""}<ol class="steps">${items}</ol>`;
+    }
+
+    // A row of headline figures: [{ value, label }].
+    case "stats":
+      return `<div class="stats">${block.items.map((s) => `<div class="stat"><div class="stat-value">${esc(s.value)}</div><div class="stat-label">${escMultiline(s.label)}</div></div>`).join("")}</div>`;
+
+    case "heading":
+      return `<h2 class="block-heading">${esc(block.text)}</h2>`;
 
     case "table": {
       const head = block.headers.map((h) => `<th>${esc(h)}</th>`).join("");
@@ -76,8 +99,9 @@ function renderBlock(block) {
     // Section 13's "Principle One-Five") — GTM's dominant structural pattern.
     case "subsection": {
       const paraHtml = block.body ? `<p class="lead">${escMultiline(block.body)}</p>` : "";
+      const shortList = block.bullets && block.bullets.length >= 4 && block.bullets.every((b) => String(b).length <= 45) ? " short" : "";
       const bulletsHtml = block.bullets
-        ? `<ul class="bullets">${block.bullets.map((b) => `<li>${escMultiline(b)}</li>`).join("")}</ul>`
+        ? `<ul class="bullets${shortList}">${block.bullets.map((b) => `<li>${escMultiline(b)}</li>`).join("")}</ul>`
         : "";
       return `<div class="subsection"><h3 class="subsection-heading">${esc(block.heading)}</h3>${paraHtml}${bulletsHtml}</div>`;
     }
@@ -197,6 +221,135 @@ export function buildInvestmentMemorandumHTML(content) {
     .join("\n");
 
   return `<!doctype html><html><head><meta charset="utf-8"/></head><body>${coverPage}${sectionPages}</body></html>`;
+}
+
+// Customer guides: a cover, then sections that FLOW one after another (no half-empty page per short
+// section). Page numbers and the running line come from the PDF header/footer (see generate-one.mjs).
+export function buildCustomerGuideHTML(content) {
+  const { cover, sections } = content;
+  const contents = sections.map((s) => `<li><span class="toc-num">${esc(s.number)}</span>${esc(s.title)}</li>`).join("");
+  const coverPage = `
+    <div class="page guide-cover">
+      <div class="header-band">
+        <div><div class="brand">${esc(cover.company)}</div></div>
+        <div class="meta"><div class="badge">${esc(cover.classification)}</div></div>
+      </div>
+      <div class="cover-title-block">
+        <div class="cover-kicker">${esc(cover.kicker)}</div>
+        <h1>${esc(cover.title)}</h1>
+        <p class="subtitle">${esc(cover.subtitle)}</p>
+        ${cover.stats ? renderBlock({ type: "stats", items: cover.stats }) : ""}
+        <div class="guide-toc"><div class="guide-toc-title">In this guide</div><ol>${contents}</ol></div>
+        <div class="doc-line">${esc(cover.docLine)}</div>
+      </div>
+    </div>`;
+  const body = sections
+    // The title is kept on the same page as the section's first block, so it is never stranded at a page bottom.
+    // A short intro line stays with the block it introduces too.
+    .map((s) => {
+      const kept = s.blocks[0]?.type === "lead" && s.blocks.length > 1 ? 2 : 1;
+      return `
+      <section class="guide-section">
+        <div class="keep-together">
+          <div class="section-number">SECTION ${esc(s.number)}</div>
+          <h1 class="section-title">${esc(s.title)}</h1>
+          ${s.blocks.slice(0, kept).map(renderBlock).join("\n")}
+        </div>
+        ${s.blocks.slice(kept).map(renderBlock).join("\n")}
+      </section>`;
+    })
+    .join("\n");
+  // Content pages get real margins (room for the page-number header/footer); the cover stays full-bleed.
+  // CSS page-margin boxes (Chrome 131+), so the cover can switch them off.
+  const box = "font-family: Segoe UI, Arial, sans-serif; font-size: 7.5pt; color: #5b6270; letter-spacing: 0.06em;";
+  const pageRules = `<style>
+    @page { size: A4; margin: 18mm 18mm 16mm;
+      @top-left { content: "INAYA NETWORK"; ${box} font-weight: 700; color: #1f2430; }
+      @top-right { content: "${esc(content.docId)}"; ${box} }
+      @bottom-left { content: "inayanetwork.com"; ${box} }
+      @bottom-right { content: "Page " counter(page) " of " counter(pages); ${box} } }
+    @page :first { margin: 0; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+  </style>`;
+  return `<!doctype html><html><head><meta charset="utf-8"/></head><body class="guide">${pageRules}${coverPage}<div class="guide-body">${body}</div></body></html>`;
+}
+
+// Long strategy documents (the GTM Strategy): a full-bleed navy cover with headline figures, an
+// optional "at a glance" page, a contents page, full-bleed Part dividers, and every section starting
+// on a new page with real page margins, a running line and page numbers (CSS page-margin boxes).
+export function buildStrategyBookHTML(content) {
+  const { cover, entries, docId, glance } = content;
+  const box = "font-family: Segoe UI, Arial, sans-serif; font-size: 7.5pt; color: #5b6270; letter-spacing: 0.06em;";
+  const pageRules = `<style>
+    @page { size: A4; margin: 20mm 18mm 18mm;
+      @top-left { content: "INAYA NETWORK  ·  GO-TO-MARKET STRATEGY"; ${box} font-weight: 700; color: #1f2430; }
+      @top-right { content: "${esc(docId)}"; ${box} }
+      @bottom-left { content: "Confidential  ·  inayanetwork.com"; ${box} }
+      @bottom-right { content: counter(page) " / " counter(pages); ${box} } }
+    @page bleed { margin: 0; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+  </style>`;
+
+  const coverHtml = `
+    <div class="bk-bleed bk-cover">
+      <div class="bk-cover-top"><span class="bk-brand">${esc(cover.company)}</span><span class="bk-badge">${esc(cover.classification)}</span></div>
+      <div class="bk-cover-main">
+        <div class="bk-kicker">${esc(cover.kicker)}</div>
+        <h1 class="bk-title">${esc(cover.title)}</h1>
+        <p class="bk-subtitle">${escMultiline(cover.subtitle)}</p>
+      </div>
+      ${cover.stats ? `<div class="bk-cover-stats">${cover.stats.map((s) => `<div><div class="bk-cs-value">${esc(s.value)}</div><div class="bk-cs-label">${escMultiline(s.label)}</div></div>`).join("")}</div>` : ""}
+      <div class="bk-cover-foot">${esc(cover.docLine)}</div>
+    </div>`;
+
+  const glanceHtml = glance
+    ? `<section class="bk-section bk-glance">
+        <div class="section-number">AT A GLANCE</div>
+        <h1 class="section-title">${esc(glance.title)}</h1>
+        ${glance.blocks.map(renderBlock).join("\n")}
+      </section>`
+    : "";
+
+  // Contents derived from entries, so it can never drift from the real numbering.
+  const groups = [];
+  for (const e of entries) {
+    if (e.type === "divider") groups.push({ kicker: e.kicker, title: e.title, items: [] });
+    else if (groups.length) groups[groups.length - 1].items.push(e);
+  }
+  const tocHtml = `
+    <section class="bk-section bk-toc">
+      <div class="section-number">CONTENTS</div>
+      <h1 class="section-title">Table of Contents</h1>
+      ${groups.map((g) => `
+        <div class="bk-toc-group">
+          <div class="bk-toc-part">${esc(g.kicker)}</div>
+          <ol>${g.items.map((i) => `<li><span class="bk-toc-num">${esc(i.number)}</span>${esc(i.title)}</li>`).join("")}</ol>
+        </div>`).join("")}
+    </section>`;
+
+  const body = entries
+    .map((e) => {
+      if (e.type === "divider") {
+        const list = groups.find((g) => g.title === e.title)?.items || [];
+        return `
+          <div class="bk-bleed bk-divider">
+            <div class="bk-kicker">${esc(e.kicker)}</div>
+            <h1 class="bk-divider-title">${esc(e.title)}</h1>
+            <ol class="bk-divider-list">${list.map((i) => `<li><span>${esc(i.number)}</span>${esc(i.title)}</li>`).join("")}</ol>
+          </div>`;
+      }
+      const kept = e.blocks[0]?.type === "lead" && e.blocks.length > 1 ? 2 : 1;
+      return `
+        <section class="bk-section">
+          <div class="keep-together">
+            <div class="bk-sec-head"><span class="bk-sec-num">${esc(e.number)}</span><span class="bk-sec-part">PART ${esc(e.part)}</span></div>
+            <h1 class="section-title">${esc(e.title)}</h1>
+            ${e.blocks.slice(0, kept).map(renderBlock).join("\n")}
+          </div>
+          ${e.blocks.slice(kept).map(renderBlock).join("\n")}
+        </section>`;
+    })
+    .join("\n");
+
+  return `<!doctype html><html><head><meta charset="utf-8"/></head><body class="book">${pageRules}${coverHtml}${glanceHtml}${tocHtml}${body}</body></html>`;
 }
 
 export function buildOperatorManifestoHTML(content) {

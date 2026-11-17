@@ -23,17 +23,26 @@ import { combinedBusinessModel } from "./content/combined-business-model.js";
 import { hospitalitySummary } from "./content/hospitality-summary.js";
 import { communityFaqs } from "./content/community-faqs.js";
 import { workspaceOnboardingGuide } from "./content/workspace-onboarding-guide.js";
-import { buildInvestmentMemorandumHTML } from "./template.js";
+import { buildInvestmentMemorandumHTML, buildCustomerGuideHTML, buildStrategyBookHTML } from "./template.js";
+import { gtmStrategy } from "./content/gtm-strategy.js";
+
+// Running line + "page X of Y" for flowing documents (drawn in the page margins, so not on the full-bleed cover).
+const headerFooter = (docId) => ({
+  displayHeaderFooter: true,
+  headerTemplate: `<div style="width:100%;font-size:7.5px;letter-spacing:.08em;color:#5b6270;padding:0 18mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><b style="color:#1f2430">INAYA NETWORK</b><span>${docId}</span></div>`,
+  footerTemplate: `<div style="width:100%;font-size:7.5px;color:#5b6270;padding:0 18mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><span>inayanetwork.com</span><span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span></div>`,
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.resolve(__dirname, "../../public/documents");
 
 const REGISTRY = {
+  "gtm-strategy": { name: "inaya-gtm-strategy.pdf", html: buildStrategyBookHTML(gtmStrategy) },
   "ecosystem-overview": { name: "inaya-ecosystem-overview.pdf", html: buildInvestmentMemorandumHTML(ecosystemOverview) },
   "ecosystem-architecture": { name: "inaya-ecosystem-architecture.pdf", html: buildInvestmentMemorandumHTML(ecosystemArchitecture) },
   "ecosystem-dev-deepdive": { name: "inaya-ecosystem-dev-deepdive.pdf", html: buildInvestmentMemorandumHTML(ecosystemDevDeepdive) },
   // Customer guide: written to Downloads to share with customers; the site's copy is the Markdown version.
-  "workspace-onboarding-guide": { name: "Inaya-Business-Workspace-Onboarding-Guide.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildInvestmentMemorandumHTML(workspaceOnboardingGuide) },
+  "workspace-onboarding-guide": { name: "Inaya-Business-Workspace-Onboarding-Guide.pdf", dir: path.join(os.homedir(), "Downloads"), html: buildCustomerGuideHTML(workspaceOnboardingGuide) },
   "community-faqs": { name: "inaya-community-faqs.pdf", html: buildInvestmentMemorandumHTML(communityFaqs) },
   "company-profile": { name: "inaya-company-profile.pdf", html: buildInvestmentMemorandumHTML(companyProfile) },
   "saas-business-model": { name: "inaya-saas-business-model.pdf", html: buildInvestmentMemorandumHTML(saasBusinessModel) },
@@ -86,7 +95,7 @@ async function main() {
       const fullHtml = await inlineBrandCss(target.html);
       await page.setContent(fullHtml, { waitUntil: "domcontentloaded", timeout: 30000 });
       const outputPath = path.join(target.dir || OUTPUT_DIR, target.name);
-      await page.pdf({ path: outputPath, format: "A4", printBackground: true, preferCSSPageSize: true });
+      await page.pdf({ path: outputPath, format: "A4", printBackground: true, preferCSSPageSize: true, ...(target.pageNumbers ? headerFooter(target.pageNumbers) : {}) });
       await page.close();
       console.log(`Generated ${outputPath}`);
     }

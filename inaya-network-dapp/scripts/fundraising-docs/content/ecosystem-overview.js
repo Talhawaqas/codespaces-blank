@@ -23,7 +23,7 @@ export const ecosystemOverview = {
     title: "The Inaya Ecosystem, End to End",
     subtitle:
       "How the storage protocol, the applications built on it, and the AI layer all fit together — the shape of the system, without the code.",
-    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · October 2026",
+    docLine: "Document INAYA-OV-2026-V1 · Classification Internal · November 2026",
   },
   docId: "INAYA-OV-2026-V1",
   sections: [
@@ -1031,6 +1031,24 @@ export const ecosystemOverview = {
         {"type": "lead", "text": "An online booking calendar and a mass email marketing tool inside the Business Workspace, both connected to the CRM, for companies on the Business and Enterprise packages."},
         {"type": "bullets", "items": ["A public booking page for each company: customers choose a service, a person if they like, and a time shown in their own time zone, then get a confirmation with a calendar invite and a private link to reschedule or cancel.", "Staff working hours, time off, buffers, notice and daily limits; round-robin assignment; double bookings refused even when two people click the same time at once.", "Day, week and month calendars for yourself, the whole team or a department, and an overview of total appointments, completed, upcoming today and customers engaged.", "Google Calendar and Outlook sync without any paid API or app approval: each person gets a private calendar address for their appointments, and Inaya reads only the busy times from their own calendar.", "Email reminders, encrypted meeting notes, Inaya Meet links, and the meeting outcome written to the customer's CRM record when it is marked completed.", "Email campaigns built in four steps (design, audience, review, send) from five starter templates, sent to CRM segments once a second person approves, once or on a repeating schedule, with opens, clicks, bounces and unsubscribes reported.", "Follow-up email sequences that start after an enquiry, a meeting or a campaign, and stop when someone unsubscribes, bounces or books.", "Every marketing email has a one-click unsubscribe and the sender's postal address and goes out from a separate sending domain; unsubscribes, bounces and spam complaints are never emailed again."]},
         {"type": "note", "label": "What's live today vs. what's next.", "text": "Built, tested against the real database and live on the website and mobile app. Campaign sending starts once the separate marketing sending domain is connected; SMS reminders are built but switched off because no SMS provider is connected, so reminders go by email. Packages include 50,000 marketing emails a month on Business and 250,000 on Enterprise."},
+      ],
+    },
+    {
+      number: "40",
+      title: "Hospitality OS: Restaurants, Cafes and Caterers (November 2026)",
+      blocks: [
+        {"type": "lead", "text": "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Purchasing, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app."},
+        {"type": "bullets", "items": ["Locations with opening hours, closures, time zone and currency; seating areas and tables, including combinable tables.", "Reservations by phone, in person, walk-in or an online booking page, with a table chosen automatically, double bookings refused, a guest limit per time slot, a live floor view and a waitlist.", "Guests are CRM contacts, with visits, feedback and preferences on the customer record; marketing opt-in is recorded separately from the booking.", "Menus with dietary labels and allergens, reviewed and published by a manager; recipes built from Inventory ingredients; wastage with reasons and approval, stock counts and reorder suggestions that draft purchase requests.", "Weekly rosters with approved leave from HR, opening and closing checklists with required evidence, and guest complaints and incidents with escalation.", "Every action is checked on the server by role and by location, and reservations, price and allergen changes, wastage and stock counts are written to the tamper-evident activity record."]},
+        {"type": "note", "label": "What's live today vs. what's next.", "text": "Built and tested against the real database on the web app, including simultaneous booking attempts and other-company isolation. Not built: point-of-sale, payments, a kitchen display, payroll and mobile screens, so stock is not deducted from sales and no sales or food-cost figures are shown."},
+      ],
+    },
+    {
+      number: "41",
+      title: "Launch Readiness: 1 January 2027",
+      blocks: [
+        {"type": "lead", "text": "The Business Workspace launches publicly on 1 January 2027. The work in November 2026 made it ready for paying companies."},
+        {"type": "bullets", "items": ["Packages are requested from inside the Workspace and paid by NayaPay or bank transfer against numbered PDF invoices; the workspace stays closed until the payment is confirmed. Prices are in USD, or PKR for companies in Pakistan.", "Owners and admins can download all of the company's records and documents as one ZIP file at any time.", "Company records are backed up every day, encrypted, with a restore that only adds missing records.", "A support assistant in the Workspace Help panel checks a user's account, fixes common problems once an owner or admin agrees, and emails anything else to the support team.", "A customer onboarding guide (PDF and a downloadable guide on the website) covers creating a company, choosing a package and the first week."]},
+        {"type": "note", "label": "How payment works today.", "text": "Payments are confirmed by the Inaya team when the transfer arrives; there is no automatic payment gateway for the Business Workspace."},
       ],
     },
   ],
