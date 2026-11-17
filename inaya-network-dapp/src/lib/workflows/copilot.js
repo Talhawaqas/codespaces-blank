@@ -68,6 +68,22 @@ export function reviewSummary(def, validation, membership) {
   };
 }
 
+/** The model sometimes names a connection's output "default" / "output" / "next" for a step that has only one
+ *  output (SQA 17 Nov 2026: a live Gemini draft failed validation with `Node "triggerSchedule" has no output
+ *  "default"`). When the source step has exactly one output, an unknown output name can only mean that one, so it is
+ *  corrected. Steps with several outputs (e.g. a condition's true/false) are left alone: a wrong branch is never guessed. */
+export function normalizeEdgePorts(def) {
+  if (!def?.nodes || !def?.edges) return def;
+  const typeOf = new Map(def.nodes.map((n) => [n.key, n.type]));
+  for (const e of def.edges) {
+    const ports = NODE_TYPES[typeOf.get(e?.from)]?.ports;
+    if (!ports || ports.length !== 1) continue;
+    const port = e.fromPort || "out";
+    if (!ports.includes(port)) e.fromPort = ports[0];
+  }
+  return def;
+}
+
 /** prompt -> saved DRAFT workflow + a review summary. Never publishes. */
 export async function draftWorkflowFromPrompt({ orgId, membership, actorEmail, prompt, name = null }) {
   const text = String(prompt || "").trim();
@@ -80,11 +96,11 @@ export async function draftWorkflowFromPrompt({ orgId, membership, actorEmail, p
     return extractJson(r.text);
   };
   let raw = await tryOnce();
-  let def = raw ? cleanDefinition({ nodes: raw.nodes, edges: raw.edges, settings: raw.settings }) : null;
+  let def = raw ? normalizeEdgePorts(cleanDefinition({ nodes: raw.nodes, edges: raw.edges, settings: raw.settings })) : null;
   let validation = def ? validateWorkflowDefinition(def) : null;
   if (def && !validation.valid) { // one repair attempt, listing exactly what was wrong
     const again = await tryOnce(`\nYour previous attempt failed validation: ${validation.errors.slice(0, 8).map((x) => x.message).join(" | ")}. Fix these and return the full JSON.`);
-    if (again) { def = cleanDefinition({ nodes: again.nodes, edges: again.edges, settings: again.settings }); validation = validateWorkflowDefinition(def); raw = again; }
+    if (again) { def = normalizeEdgePorts(cleanDefinition({ nodes: again.nodes, edges: again.edges, settings: again.settings })); validation = validateWorkflowDefinition(def); raw = again; }
   }
   if (!def) return fail("The copilot could not produce a workflow from that description. Try adding more detail.", 502);
   autoLayout(def);

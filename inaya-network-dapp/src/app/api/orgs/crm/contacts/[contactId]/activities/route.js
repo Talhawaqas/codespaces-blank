@@ -6,6 +6,7 @@ import { listActivities, logActivity, scoreContact } from "../../../../../../../
 import { loadContact, serializeActivity } from "../_contact.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { contactId } = await params;
     const loaded = await loadContact(req, new URL(req.url).searchParams.get("orgId"), contactId);
@@ -20,6 +21,7 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { contactId } = await params;
     let body = {}; try { body = await req.json(); } catch { body = {}; }

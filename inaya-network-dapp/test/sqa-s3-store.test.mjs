@@ -3,7 +3,7 @@
 //   016 multipart parts are ordered by part number, not by the database
 //   018 CompleteMultipartUpload is claimed once: parallel retries all get the SAME object, nothing is written twice, later parts are refused
 //   020 concurrent reads of one immutable version share one fetch-and-decrypt, and a deleted object is refused even while cached
-import test, { after } from "node:test";
+import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
@@ -21,10 +21,12 @@ const available = listAvailableProviders();
 const enough = available.length >= 2; // fallback needs a second configured provider
 
 async function setup() {
+  if (orgId) return; // idempotent: the before() hook runs it, so tests that follow a skipped one still have a company
   await ensureOrgIndexes(); const c = await getOrgCollections();
   orgOid = (await c.orgs.insertOne({ name: `sqa-store-${RUN}`, createdAt: new Date().toISOString() })).insertedId; orgId = String(orgOid);
   await ensureOwnerS3Passphrase({ type: "org", orgId });
 }
+before(() => setup());
 after(async () => {
   Object.assign(PROVIDERS, originalProviders);
   try {

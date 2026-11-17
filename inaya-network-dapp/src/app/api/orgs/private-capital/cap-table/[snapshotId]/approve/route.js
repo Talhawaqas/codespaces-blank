@@ -7,6 +7,7 @@ import { requireVertical } from "../../../../../../../lib/industry-config.js";
 import { approveCapTableSnapshot } from "../../../../../../../lib/cap-table.js";
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { snapshotId } = await params;
     const { orgId } = await req.json();

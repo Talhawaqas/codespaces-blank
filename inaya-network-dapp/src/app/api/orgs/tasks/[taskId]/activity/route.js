@@ -10,6 +10,7 @@ import { listOrgActivityForRecord } from "../../../../../../lib/org-activity-log
 import { canAccessRecord } from "../../../../../../lib/record-grants.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { taskId } = params;
     const { searchParams } = new URL(req.url);

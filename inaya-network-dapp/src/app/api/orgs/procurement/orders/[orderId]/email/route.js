@@ -15,6 +15,7 @@ import { computePoTotals } from "../../../../../../../lib/purchase-order-totals.
 const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { orderId } = params;
     const { orgId, to } = await req.json();

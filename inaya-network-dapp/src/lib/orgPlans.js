@@ -45,8 +45,8 @@ export const PLANS = {
     tagline: "For growing teams and professional businesses.",
     color: "blue",
     popular: true,
-    priceMonthly: 28,
-    priceYearly: 280,
+    priceMonthly: 39, // 17 Nov 2026 (was 28)
+    priceYearly: 390,
     maxUsers: 5,
     maxExtraUsers: 10,
     maxStorageGB: 1000,
@@ -69,8 +69,8 @@ export const PLANS = {
     name: "Business",
     tagline: "For organizations managing sensitive data.",
     color: "purple",
-    priceMonthly: 49.99,
-    priceYearly: 499,
+    priceMonthly: 99, // 17 Nov 2026 (was 49.99): covers a full 5 TB of storage
+    priceYearly: 990,
     maxUsers: 10,
     maxExtraUsers: 15,
     maxStorageGB: 5000,

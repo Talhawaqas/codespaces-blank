@@ -13,6 +13,7 @@ import { getFeedbackCollections, FEEDBACK_STATUSES } from "../../../../../lib/fe
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     if (!isAdminAuthenticated(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,6 +53,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     if (!isAdminAuthenticated(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

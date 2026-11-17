@@ -8,6 +8,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.
 import { addBusinessEventRelationship } from "../../../../../../lib/businessEvents.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { eventId } = await params;
     const { orgId, type, targetType, targetId, note } = await req.json();

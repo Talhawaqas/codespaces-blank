@@ -7,6 +7,7 @@ import { requireVertical } from "../../../../../../../lib/industry-config.js";
 import { recordBid } from "../../../../../../../lib/exit-management.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { exitId } = await params;
     const body = await req.json();

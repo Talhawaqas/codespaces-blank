@@ -17,6 +17,7 @@ import { getDataroomVisitor, getDataroomCollections, toObjectId, recordViewOpene
 export const dynamic = "force-dynamic";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const visitor = await getDataroomVisitor(req);
     if (!visitor) return NextResponse.json({ error: "Not signed in." }, { status: 401 });

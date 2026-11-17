@@ -1,4 +1,5 @@
 "use client";
+import { fetchShardFromIPFS } from "../lib/ipfsGateways";
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { buildProofOfStoragePayload } from '../lib/merkle'; // adjust path if lib/merkle.js lives elsewhere in your project
@@ -4317,15 +4318,7 @@ export default function Home() {
 
       setStatusLog("🌐 Pulling synchronized multi-shard byte streams concurrently over edge proxies...");
 
-      const fetchFastShard = async (cid) => {
-        try {
-          const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
-          const json = await res.json(); return json.shard;
-        } catch {
-          const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-          const json = await res.json(); return json.shard;
-        }
-      };
+      const fetchFastShard = fetchShardFromIPFS; // shared gateway list (src/lib/ipfsGateways.js)
 
       const [shardA, shardB] = await Promise.all([
         fetchFastShard(cidAlpha),
@@ -4401,15 +4394,7 @@ export default function Home() {
         return;
       }
 
-      const fetchFastShard = async (cid) => {
-        try {
-          const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
-          const json = await res.json(); return json.shard;
-        } catch {
-          const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-          const json = await res.json(); return json.shard;
-        }
-      };
+      const fetchFastShard = fetchShardFromIPFS; // shared gateway list (src/lib/ipfsGateways.js)
 
       const [shardA, shardB] = await Promise.all([fetchFastShard(cidAlpha), fetchFastShard(cidBeta)]);
       const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha: shardA, shardBeta: shardB, passkey });

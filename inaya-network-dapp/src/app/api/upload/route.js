@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { replicateShard } from '@/lib/backupEngine';
 import { getRawSessionToken, getSession } from '@/lib/orgs';
+import { randomBytes } from 'node:crypto';
+import { getProvider, listAvailableProviders } from '@/lib/pinningProviders/index.js';
+import { realStorageAllowed } from '@/lib/pinningProviders/testGuard.js';
 
 // Backup & Recovery Mechanism (docs/backup-redundancy-architecture.md) — best-effort fan-out to a
 // second pinning provider after THIS route's own primary Pinata pin succeeds, bounded by a soft
@@ -25,11 +28,48 @@ const REPLICATE_SOFT_TIMEOUT_MS = 8000;
 // what a single pin request should reasonably need.
 const MAX_ENCODED_SHARD_LENGTH = 8 * 1024 * 1024;
 
-async function replicateShardBestEffort({ fileHash, shardId, content, primaryProvider, primaryCid }) {
+// Pins one shard: Pinata first (the established primary), then every other configured provider (Filebase in
+// production; the local store during test runs, see pinningProviders/testGuard.js). SQA 17 Nov 2026: Pinata's
+// plan filled up and, with no fallback, every Workspace upload failed; its error text (which can echo
+// credentials) was also passed straight back to the browser. Now a refusal falls through to the next provider,
+// and provider responses are only ever logged by status.
+async function pinShardWithFallback(content, name) {
+  const jwt = (process.env.PINATA_JWT || "").trim();
+  if (jwt && realStorageAllowed()) {
+    try {
+      const response = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({ pinataContent: content, pinataMetadata: { name } }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { provider: "pinata", cid: data.IpfsHash, providerRef: data.IpfsHash };
+      }
+      console.error("upload: Pinata refused the pin, status", response.status, "- trying the next provider");
+    } catch (err) {
+      console.error("upload: Pinata unreachable -", err?.name || "error", "- trying the next provider");
+    }
+  }
+  // Same JSON body Pinata stores, so every reader's `.shard` lookup works unchanged. Unique object names: two
+  // uploads of files with the same name must never overwrite each other at an S3-style provider.
+  const unique = `${name}_${Date.now()}_${randomBytes(4).toString("hex")}`;
+  for (const providerName of listAvailableProviders().filter((p) => p !== "pinata")) {
+    try {
+      const r = await getProvider(providerName).pin(JSON.stringify(content), { name: unique });
+      return { provider: r.provider, cid: r.cid, providerRef: r.providerRef };
+    } catch (err) {
+      console.error(`upload: provider ${providerName} refused the pin -`, String(err?.message || "").slice(0, 80));
+    }
+  }
+  return null;
+}
+
+async function replicateShardBestEffort({ fileHash, shardId, content, primaryProvider, primaryCid, primaryProviderRef = primaryCid }) {
   if (!fileHash || !shardId) return; // caller (below) only has a real fileHash/shardId once the client sends them — see the request body change
   const timeout = new Promise((resolve) => setTimeout(resolve, REPLICATE_SOFT_TIMEOUT_MS));
   try {
-    await Promise.race([replicateShard({ fileHash, shardId, content, primaryProvider, primaryCid }), timeout]);
+    await Promise.race([replicateShard({ fileHash, shardId, content, primaryProvider, primaryCid, primaryProviderRef }), timeout]);
   } catch (err) {
     console.error('backup replicateShard (best-effort) failed:', err.message);
   }
@@ -55,12 +95,6 @@ export async function POST(request) {
       return NextResponse.json({ error: "encryptedShard is missing or exceeds the size limit." }, { status: 413 });
     }
 
-    // 🔑 Updated to use Pinata JWT (Modern Method)
-    const pinataJWT = process.env.PINATA_JWT;
-
-    if (!pinataJWT) {
-      return NextResponse.json({ error: "System Error: Server missing PINATA_JWT environment token." }, { status: 500 });
-    }
 
     // 🔒 MONGO-BACKED B2B SUBSCRIPTION CHECK SYSTEM -- only applies to the wallet-identified
     // path; a session-authenticated Business Workspace caller has no wallet to key this on.
@@ -104,41 +138,14 @@ export async function POST(request) {
       );
     }
 
-    const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-    const payload = {
-      pinataContent: { shard: encryptedShard, element: elementTag },
-      pinataMetadata: { name: `inaya_next_${elementTag}_${filename}` }
-    };
-
-    // Authenticating using Bearer JWT Token
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${pinataJWT.trim()}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
-      console.error("Pinata Error:", response.status, errorText);
-
-      return NextResponse.json(
-        {
-          status: response.status,
-          pinata: errorText,
-        },
-        { status: response.status }
-      );
+    const pinned = await pinShardWithFallback({ shard: encryptedShard, element: elementTag }, `inaya_next_${elementTag}_${filename}`);
+    if (!pinned) {
+      return NextResponse.json({ error: "Storage is temporarily unavailable. Please try again in a few minutes." }, { status: 503 });
     }
 
-    const data = await response.json();
+    await replicateShardBestEffort({ fileHash, shardId, content: encryptedShard, primaryProvider: pinned.provider, primaryCid: pinned.cid, primaryProviderRef: pinned.providerRef });
 
-    await replicateShardBestEffort({ fileHash, shardId, content: encryptedShard, primaryProvider: 'pinata', primaryCid: data.IpfsHash });
-
-    return NextResponse.json({ IpfsHash: data.IpfsHash });
+    return NextResponse.json({ IpfsHash: pinned.cid });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

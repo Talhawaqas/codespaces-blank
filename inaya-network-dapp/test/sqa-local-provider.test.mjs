@@ -22,7 +22,16 @@ test("pin, fetch, status and unpin round-trip; unpin is idempotent", async () =>
 });
 
 test("it is never configured without a directory or on Vercel, and only then appears among the available providers", () => {
-  delete process.env.INAYA_LOCAL_PIN_DIR; assert.equal(local.isConfigured(), false); assert.equal(listAvailableProviders().includes("local"), false);
+  // Outside a test run (as in production) there is no directory to fall back on. During test runs testGuard.js deliberately
+  // gives the local provider a temp directory so tests never pin to real accounts, so the test markers are removed here.
+  const markers = { ctx: process.env.NODE_TEST_CONTEXT, testDb: process.env.INAYA_USE_TEST_DB };
+  delete process.env.NODE_TEST_CONTEXT; delete process.env.INAYA_USE_TEST_DB;
+  try {
+    delete process.env.INAYA_LOCAL_PIN_DIR; assert.equal(local.isConfigured(), false); assert.equal(listAvailableProviders().includes("local"), false);
+  } finally {
+    if (markers.ctx !== undefined) process.env.NODE_TEST_CONTEXT = markers.ctx;
+    if (markers.testDb !== undefined) process.env.INAYA_USE_TEST_DB = markers.testDb;
+  }
   process.env.INAYA_LOCAL_PIN_DIR = dir; process.env.VERCEL = "1"; assert.equal(local.isConfigured(), false, "no durable disk on Vercel");
   delete process.env.VERCEL; assert.equal(listAvailableProviders().includes("local"), true);
   assert.equal(listAvailableProviders().at(-1), "local", "it is last, so it is only a fallback");

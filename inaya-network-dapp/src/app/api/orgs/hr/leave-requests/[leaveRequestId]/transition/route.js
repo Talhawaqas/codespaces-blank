@@ -11,6 +11,7 @@ import { transitionLeaveRequest } from "../../../../../../../lib/leave-workflow.
 import { notifyDecision } from "../../../../../../../lib/business-notify.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { leaveRequestId } = params;
     const { orgId, action, note } = await req.json();

@@ -10,6 +10,7 @@ import { requireApiKey } from "../../../../../../../lib/api-keys.js";
 import { getStorageResource, expandStorageResourceCapacity, deleteStorageResource } from "../../../../../../../lib/storageResources.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { resourceId } = await params;
     await ensureOrgIndexes();
@@ -26,6 +27,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { resourceId } = await params;
     await ensureOrgIndexes();
@@ -46,6 +48,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { resourceId } = await params;
     await ensureOrgIndexes();

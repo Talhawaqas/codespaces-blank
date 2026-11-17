@@ -42,11 +42,14 @@ resource "aws_s3_object" "greeting" {
   key          = "config/greeting.txt"
   content      = "${content}"
   content_type = "text/plain"
+  # Inaya serves every object as private and uncached (a deliberate privacy choice), so declare it to keep plans clean.
+  cache_control = "private, no-store"
 }
 resource "aws_s3_object" "second" {
   bucket  = aws_s3_bucket.b.bucket
   key     = "config/second.json"
   content = jsonencode({ run = "${RUN}", ok = true })
+  cache_control = "private, no-store"
 }
 data "aws_s3_object" "read_back" {
   bucket     = aws_s3_bucket.b.bucket

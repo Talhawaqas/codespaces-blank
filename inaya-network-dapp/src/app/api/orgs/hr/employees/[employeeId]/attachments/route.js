@@ -29,6 +29,7 @@ async function loadEmployee(req, orgId, employeeId) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const orgId = new URL(req.url).searchParams.get("orgId");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
@@ -44,6 +45,7 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
     if (!orgId || !filename || !fileHash || !cidAlpha || !cidBeta) {

@@ -10,7 +10,7 @@ export const combinedBusinessModel = {
     "kicker": "COMBINED BUSINESS MODEL",
     "title": "How Inaya Makes Money",
     "subtitle": "One consolidated model for the DePIN storage network and the Business Workspace, revised for the planned international sales team and the Pakistan-based team, with five-year projections in three scenarios.",
-    "docLine": "Document INAYA-COMBINED-BM-2026-V2 · Classification Confidential · November 2026 (revised 15 Nov)"
+    "docLine": "Document INAYA-COMBINED-BM-2026-V2 · Classification Confidential · November 2026 (revised 17 Nov: Workspace price book)"
   },
   "docId": "INAYA-COMBINED-BM-2026-V2",
   "sections": [
@@ -23,7 +23,7 @@ export const combinedBusinessModel = {
           "text": [
             "Inaya earns money from two products on one encrypted storage foundation, reported as one company. The DePIN storage network charges by the terabyte and through yearly Corporate Reserve contracts. The Business Workspace sells monthly or yearly subscriptions, in US dollars internationally and in rupees in Pakistan.",
             "This revision replaces the old $2K placeholder for international Workspace revenue with a month-by-month customer forecast driven by two dedicated salespeople, adds the planned ten-person Pakistan team with founder salaries, and sets team and office at $200K in Year 1. DePIN storage revenue, node-operator payouts, the $400K–$800K storage infrastructure and the $300K of one-time Year 1 costs are unchanged.",
-            "In the Base scenario the company loses $538K in Year 1, which the $2M pre-seed covers, is profitable from Year 2, and never has less than $1.46M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
+            "In the Base scenario the company loses $534K in Year 1, which the $2M pre-seed covers, is profitable from Year 2, and never has less than $1.47M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
           ]
         },
         {
@@ -73,7 +73,7 @@ export const combinedBusinessModel = {
             [
               "Business Workspace (international)",
               "Companies",
-              "$7.99 / $28 / $49.99 / $799 a month",
+              "$7.99 / $39 / $99 / $799 a month",
               "Live on the website"
             ],
             [
@@ -172,14 +172,14 @@ export const combinedBusinessModel = {
             ],
             [
               "Professional",
-              "$28 a month",
+              "$39 a month",
               "PKR 20,000 a month",
               "5",
               "1 TB"
             ],
             [
               "Business",
-              "$49.99 a month",
+              "$99 a month",
               "PKR 30,000 a month",
               "10",
               "5 TB"
@@ -196,7 +196,7 @@ export const combinedBusinessModel = {
         {
           "type": "paragraphs",
           "text": [
-            "Revenue per paying international customer comes from the package mix, not a single price: in the Base mix it is $136.98 a month including one extra user, of which Enterprise contributes most. 30% of customers are assumed to pay yearly, at the yearly price, recognised evenly over twelve months.",
+            "Revenue per paying international customer comes from the package mix, not a single price: in the Base mix it is $149.43 a month including one extra user, of which Enterprise contributes most. 30% of customers are assumed to pay yearly, at the yearly price, recognised evenly over twelve months.",
             "Cost of revenue on the Workspace is $3 of hosting per company a month, 3% payment processing, and the shared platform cost ($3K rising to $40K a year). Gross margin excludes the customer-service team, salespeople and office, which are operating costs in Section 07, so a high gross margin does not mean the Workspace is profitable on its own."
           ]
         }
@@ -257,9 +257,9 @@ export const combinedBusinessModel = {
             ],
             [
               "Revenue per paying customer a month (incl. 1 extra user)",
-              "$120.75",
-              "$136.98",
-              "$189.58"
+              "$131.81",
+              "$149.43",
+              "$202.03"
             ]
           ]
         },
@@ -280,15 +280,15 @@ export const combinedBusinessModel = {
             ],
             [
               "Modelled Year 1 cohort revenue",
-              "$19K",
-              "$38K",
-              "$79K"
+              "$21K",
+              "$42K",
+              "$84K"
             ],
             [
               "Difference from target",
-              "-$1.0K",
-              "-$1.5K",
-              "-$1.4K"
+              "$699",
+              "$2.0K",
+              "$3.8K"
             ],
             [
               "New customers signed in Year 1",
@@ -304,15 +304,15 @@ export const combinedBusinessModel = {
             ],
             [
               "Year-end MRR",
-              "$3.5K",
-              "$7.9K",
-              "$15K"
+              "$3.8K",
+              "$8.6K",
+              "$17K"
             ],
             [
               "Year-end ARR (run rate, not earned)",
-              "$42K",
-              "$95K",
-              "$186K"
+              "$45K",
+              "$104K",
+              "$198K"
             ]
           ]
         },
@@ -358,27 +358,27 @@ export const combinedBusinessModel = {
             ],
             [
               "Recognised revenue (subscriptions + extra users)",
-              "$38K",
-              "$186K",
-              "$388K",
-              "$614K",
-              "$862K"
+              "$42K",
+              "$203K",
+              "$424K",
+              "$670K",
+              "$940K"
             ],
             [
               "MRR at year-end",
-              "$7.9K",
-              "$22K",
-              "$41K",
-              "$59K",
-              "$82K"
+              "$8.6K",
+              "$24K",
+              "$45K",
+              "$65K",
+              "$89K"
             ],
             [
               "ARR at year-end (run rate)",
-              "$95K",
-              "$260K",
-              "$493K",
-              "$713K",
-              "$983K"
+              "$104K",
+              "$283K",
+              "$538K",
+              "$778K",
+              "$1.07M"
             ],
             [
               "International salespeople",
@@ -519,11 +519,11 @@ export const combinedBusinessModel = {
             ],
             [
               "Sales commission and bonuses",
-              "$5.6K",
-              "$9.9K",
-              "$15K",
-              "$15K",
-              "$20K"
+              "$6.1K",
+              "$11K",
+              "$16K",
+              "$17K",
+              "$21K"
             ],
             [
               "Employer costs; co-founder pay",
@@ -552,10 +552,10 @@ export const combinedBusinessModel = {
             [
               "Detailed build-up",
               "$84K",
-              "$88K",
-              "$110K",
-              "$128K",
-              "$162K"
+              "$89K",
+              "$112K",
+              "$130K",
+              "$164K"
             ],
             [
               "Founder planning figure (used in the P&L)",
@@ -568,10 +568,10 @@ export const combinedBusinessModel = {
             [
               "Headroom inside the planning figure",
               "$116K",
-              "$162K",
-              "$190K",
-              "$222K",
-              "$238K"
+              "$161K",
+              "$188K",
+              "$220K",
+              "$236K"
             ],
             [
               "Employees at year-end",
@@ -680,11 +680,11 @@ export const combinedBusinessModel = {
             ],
             [
               "Business Workspace — international",
-              "$38K",
-              "$186K",
-              "$388K",
-              "$614K",
-              "$862K"
+              "$42K",
+              "$203K",
+              "$424K",
+              "$670K",
+              "$940K"
             ],
             [
               "Business Workspace — Pakistan (not revised)",
@@ -696,9 +696,9 @@ export const combinedBusinessModel = {
             ],
             [
               "Total revenue",
-              "$542K",
-              "$2.70M",
-              "$9.10M",
+              "$546K",
+              "$2.72M",
+              "$9.13M",
               "$29.0M",
               "$72.4M"
             ],
@@ -712,19 +712,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Payment, hosting and platform costs",
-              "-$5.3K",
-              "-$17K",
-              "-$37K",
-              "-$65K",
-              "-$101K"
+              "-$5.4K",
+              "-$18K",
+              "-$38K",
+              "-$67K",
+              "-$103K"
             ],
             [
               "Gross profit",
-              "$362K",
-              "$1.81M",
-              "$6.03M",
-              "$19.0M",
-              "$47.3M"
+              "$366K",
+              "$1.83M",
+              "$6.07M",
+              "$19.1M",
+              "$47.4M"
             ],
             [
               "Gross margin",
@@ -744,11 +744,11 @@ export const combinedBusinessModel = {
             ],
             [
               "Net income",
-              "-$538K",
-              "$1.06M",
-              "$5.13M",
+              "-$534K",
+              "$1.07M",
+              "$5.16M",
               "$18.0M",
-              "$46.1M"
+              "$46.2M"
             ],
             [
               "Funding received",
@@ -760,11 +760,11 @@ export const combinedBusinessModel = {
             ],
             [
               "Cash at year-end",
-              "$1.46M",
-              "$2.52M",
-              "$7.65M",
-              "$25.6M",
-              "$71.7M"
+              "$1.47M",
+              "$2.54M",
+              "$7.70M",
+              "$25.7M",
+              "$71.9M"
             ]
           ]
         },
@@ -784,7 +784,7 @@ export const combinedBusinessModel = {
             [
               "International Workspace revenue",
               "$2.1K",
-              "$38K"
+              "$42K"
             ],
             [
               "Team and office",
@@ -814,22 +814,22 @@ export const combinedBusinessModel = {
             [
               "Total revenue",
               "$506K",
-              "$542K"
+              "$546K"
             ],
             [
               "Gross profit",
               "$327K",
-              "$362K"
+              "$366K"
             ],
             [
               "Net income",
               "-$673K",
-              "-$538K"
+              "-$534K"
             ],
             [
               "Cash at year-end",
               "$1.33M",
-              "$1.46M"
+              "$1.47M"
             ]
           ]
         },
@@ -846,7 +846,7 @@ export const combinedBusinessModel = {
             ],
             [
               "1. Higher international Workspace revenue",
-              "+$36K"
+              "+$40K"
             ],
             [
               "2. Lower team-and-office expense ($300K → $200K)",
@@ -854,7 +854,7 @@ export const combinedBusinessModel = {
             ],
             [
               "3. Payment processing and hosting on the new revenue",
-              "-$1.6K"
+              "-$1.7K"
             ],
             [
               "4. Paid marketing (new line; $0 in Year 1)",
@@ -866,7 +866,7 @@ export const combinedBusinessModel = {
             ],
             [
               "Revised Year 1 net income",
-              "-$538K"
+              "-$534K"
             ]
           ]
         },
@@ -906,23 +906,23 @@ export const combinedBusinessModel = {
             ],
             [
               "Conservative — international Workspace revenue",
-              "$19K",
-              "$85K",
-              "$181K",
-              "$290K",
-              "$408K"
+              "$21K",
+              "$93K",
+              "$198K",
+              "$316K",
+              "$445K"
             ],
             [
               "Conservative — total revenue",
-              "$146K",
-              "$720K",
-              "$2.37M",
-              "$7.41M",
-              "$18.3M"
+              "$148K",
+              "$728K",
+              "$2.39M",
+              "$7.43M",
+              "$18.4M"
             ],
             [
               "Conservative — gross margin",
-              "67%",
+              "68%",
               "68%",
               "67%",
               "66%",
@@ -930,19 +930,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Conservative — net income",
-              "-$802K",
-              "-$265K",
-              "$685K",
-              "$3.83M",
-              "$10.8M"
+              "-$800K",
+              "-$257K",
+              "$702K",
+              "$3.86M",
+              "$10.9M"
             ],
             [
               "Conservative — cash at year-end",
               "$1.20M",
-              "$933K",
-              "$1.62M",
-              "$5.45M",
-              "$16.3M"
+              "$942K",
+              "$1.64M",
+              "$5.50M",
+              "$16.4M"
             ],
             [
               "Base — international customers at year-end",
@@ -954,17 +954,17 @@ export const combinedBusinessModel = {
             ],
             [
               "Base — international Workspace revenue",
-              "$38K",
-              "$186K",
-              "$388K",
-              "$614K",
-              "$862K"
+              "$42K",
+              "$203K",
+              "$424K",
+              "$670K",
+              "$940K"
             ],
             [
               "Base — total revenue",
-              "$542K",
-              "$2.70M",
-              "$9.10M",
+              "$546K",
+              "$2.72M",
+              "$9.13M",
               "$29.0M",
               "$72.4M"
             ],
@@ -978,19 +978,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Base — net income",
-              "-$538K",
-              "$1.06M",
-              "$5.13M",
+              "-$534K",
+              "$1.07M",
+              "$5.16M",
               "$18.0M",
-              "$46.1M"
+              "$46.2M"
             ],
             [
               "Base — cash at year-end",
-              "$1.46M",
-              "$2.52M",
-              "$7.65M",
-              "$25.6M",
-              "$71.7M"
+              "$1.47M",
+              "$2.54M",
+              "$7.70M",
+              "$25.7M",
+              "$71.9M"
             ],
             [
               "Optimistic — international customers at year-end",
@@ -1002,19 +1002,19 @@ export const combinedBusinessModel = {
             ],
             [
               "Optimistic — international Workspace revenue",
-              "$79K",
-              "$341K",
-              "$687K",
-              "$1.07M",
-              "$1.50M"
+              "$84K",
+              "$363K",
+              "$732K",
+              "$1.14M",
+              "$1.59M"
             ],
             [
               "Optimistic — total revenue",
-              "$834K",
-              "$4.12M",
-              "$13.7M",
-              "$43.6M",
-              "$108.7M"
+              "$839K",
+              "$4.14M",
+              "$13.8M",
+              "$43.7M",
+              "$108.8M"
             ],
             [
               "Optimistic — gross margin",
@@ -1026,26 +1026,26 @@ export const combinedBusinessModel = {
             ],
             [
               "Optimistic — net income",
-              "-$335K",
-              "$2.03M",
-              "$8.25M",
-              "$27.6M",
-              "$70.0M"
+              "-$330K",
+              "$2.05M",
+              "$8.30M",
+              "$27.7M",
+              "$70.1M"
             ],
             [
               "Optimistic — cash at year-end",
               "$1.67M",
-              "$3.69M",
-              "$11.9M",
-              "$39.6M",
-              "$109.6M"
+              "$3.72M",
+              "$12.0M",
+              "$39.7M",
+              "$109.8M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "What the scenarios say.",
-          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $933K."
+          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $942K."
         },
         {
           "type": "table",
@@ -1060,90 +1060,90 @@ export const combinedBusinessModel = {
           "rows": [
             [
               "Plan (Base, no levers)",
-              "$38K",
-              "-$538K",
-              "$862K",
-              "$46.1M",
-              "$1.46M"
+              "$42K",
+              "-$534K",
+              "$940K",
+              "$46.2M",
+              "$1.47M"
             ],
             [
               "25% fewer new international customers",
-              "$29K",
-              "-$547K",
-              "$646K",
-              "$45.9M",
-              "$1.45M"
+              "$31K",
+              "-$544K",
+              "$705K",
+              "$46.0M",
+              "$1.46M"
             ],
             [
               "Slower ramp: half the new customers in months 1-6",
-              "$28K",
-              "-$548K",
-              "$853K",
-              "$46.1M",
+              "$31K",
+              "-$545K",
+              "$930K",
+              "$46.2M",
               "$1.45M"
             ],
             [
               "Longer sales cycle: customers start paying 2 months later",
-              "$24K",
-              "-$552K",
-              "$817K",
+              "$26K",
+              "-$549K",
+              "$891K",
               "$46.1M",
               "$1.45M"
             ],
             [
               "Lower average subscription value: prices 20% lower",
-              "$31K",
-              "-$545K",
-              "$693K",
+              "$34K",
+              "-$542K",
+              "$756K",
+              "$46.0M",
+              "$1.46M"
+            ],
+            [
+              "Half the Enterprise share (moves to Business)",
+              "$28K",
+              "-$548K",
+              "$626K",
               "$45.9M",
               "$1.45M"
             ],
             [
-              "Half the Enterprise share (moves to Business)",
-              "$23K",
-              "-$552K",
-              "$526K",
-              "$45.8M",
-              "$1.45M"
-            ],
-            [
               "Higher churn: 2% a month instead of 1%",
-              "$37K",
-              "-$539K",
-              "$717K",
+              "$41K",
+              "-$536K",
+              "$782K",
               "$46.0M",
               "$1.46M"
             ],
             [
               "No paid marketing",
-              "$38K",
-              "-$538K",
-              "$733K",
-              "$46.0M",
-              "$1.46M"
+              "$42K",
+              "-$534K",
+              "$800K",
+              "$46.1M",
+              "$1.47M"
             ],
             [
               "Payroll and office 20% higher",
-              "$38K",
-              "-$578K",
-              "$862K",
-              "$46.0M",
-              "$1.42M"
+              "$42K",
+              "-$574K",
+              "$940K",
+              "$46.1M",
+              "$1.43M"
             ],
             [
               "Hosting and platform costs 50% higher",
-              "$38K",
-              "-$540K",
-              "$862K",
+              "$42K",
+              "-$536K",
+              "$940K",
               "$46.1M",
               "$1.46M"
             ],
             [
               "Combined downside: 25% fewer customers, half Enterprise, 2% churn",
-              "$17K",
-              "-$558K",
-              "$328K",
-              "$45.6M",
+              "$20K",
+              "-$555K",
+              "$391K",
+              "$45.7M",
               "$1.44M"
             ]
           ]
@@ -1151,7 +1151,7 @@ export const combinedBusinessModel = {
         {
           "type": "note",
           "label": "25% fewer customers.",
-          "text": "Cutting new international customers by 25% lowers Year 1 international revenue from $38K to $29K and Year 5 from $862K to $646K. Company cash barely moves, because consolidated results are driven by Corporate Reserve storage: the storage volume and the mainnet date matter far more to the company than any Workspace assumption."
+          "text": "Cutting new international customers by 25% lowers Year 1 international revenue from $42K to $31K and Year 5 from $940K to $705K. Company cash barely moves, because consolidated results are driven by Corporate Reserve storage: the storage volume and the mainnet date matter far more to the company than any Workspace assumption."
         }
       ]
     },
@@ -1218,7 +1218,7 @@ export const combinedBusinessModel = {
           "type": "bullets",
           "items": [
             "Storage revenue depends on the mainnet launch, which depends on independent security audits.",
-            "The Workspace targets depend on Enterprise adoption; with half the assumed Enterprise share, Base Year 1 international revenue falls to about $23K.",
+            "The Workspace targets depend on Enterprise adoption; with half the assumed Enterprise share, Base Year 1 international revenue falls to about $28K.",
             "Not included: INAYA retrieval and maintenance fees, token sales, Sovereign Infrastructure fees, taxes, interest, depreciation, working-capital timing and later funding rounds.",
             "Every figure reconciles to Inaya-Combined-Financial-Model.xlsx, whose Checks sheet shows all formula and reconciliation checks passing."
           ]

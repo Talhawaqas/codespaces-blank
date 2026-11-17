@@ -11,6 +11,7 @@ function serialize(m) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { migrationId } = await params;
     const { searchParams } = new URL(req.url);
@@ -31,6 +32,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { migrationId } = await params;
     let body = {}; try { body = await req.json(); } catch { body = {}; }

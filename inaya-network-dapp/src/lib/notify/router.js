@@ -87,7 +87,9 @@ const pushConfigured = () => !!(process.env.EXPO_ACCESS_TOKEN || process.env.FCM
 export async function notifyEvent({ orgId, event, targetEmail = null, audience = "all", title, body, link = null, sourceId = null, dedupeKey, protectedContent = true, orgName = "Inaya", sender = sendEmail }) {
   const ev = EVENTS[event]; if (!ev) throw new Error(`Unknown notification event "${event}".`);
   const { c, prefs, deliveries } = await cols(); const recipients = targetEmail ? [norm(targetEmail)] : (await c.orgMembers.find({ orgId: toObjectId(orgId), status: "active", ...(audience === "admins" ? { role: { $in: ["owner", "admin"] } } : {}) }).project({ email: 1 }).toArray()).map((m) => norm(m.email));
-  if (orgName === "Inaya") { try { orgName = (await c.orgs.findOne({ _id: toObjectId(orgId) }, { projection: { name: 1 } }))?.name || "Inaya"; } catch { /* keep default */ } }
+  // The company name is only needed for e-mail, so it is looked up alongside the preference reads below rather than before them
+  // (SQA 17 Nov 2026: one fewer sequential database round trip on every in-app notification, e.g. each chat message).
+  const orgNameP = orgName !== "Inaya" ? Promise.resolve(orgName) : c.orgs.findOne({ _id: toObjectId(orgId) }, { projection: { name: 1 } }).then((d) => d?.name || "Inaya", () => "Inaya");
   const results = [];
   for (const email of recipients) {
     const row = await prefs.findOne({ orgId: toObjectId(orgId), email }); const ch = resolveChannels(event, row?.events);
@@ -95,7 +97,7 @@ export async function notifyEvent({ orgId, event, targetEmail = null, audience =
     const rec = (channel, state, extra = {}) => results.push({ email, channel, state, ...extra });
     if (ch.inApp || ch.desktop) { try { await createNotification({ scope: "org", orgId, targetEmail: email, category: ev.category || event.split(".")[0], severity: ev.severity, type: event, title: title || ev.generic, body: body || "", sourceModule: "notify", sourceId, actionUrl: link, metadata: { channels: [ch.inApp && "inApp", ch.desktop && "desktop"].filter(Boolean) }, dedupeKey: `${dedupeKey}:${email}` }); if (ch.inApp) rec("inApp", "DELIVERED"); if (ch.desktop) rec("desktop", "DELIVERED_TO_FEED"); } catch (e) { rec("inApp", "FAILED", { error: String(e.message).slice(0, 80) }); } }
     if (ch.email) {
-      try { const m = await brandedEmail({ orgId, orgName, title: safeTitle, lines: safeBody ? [safeBody] : [], ctaUrl: link ? new URL(link, process.env.NEXT_PUBLIC_APP_URL || "https://inaya.network").href : null, ctaLabel: "Open in Inaya" }); const r = await sender({ to: email, subject: safeTitle, html: m.html, text: m.text }); rec("email", r?.sent === false ? "NOT_CONFIGURED" : "SENT", r?.sent === false ? { reason: r.reason } : {}); } catch (e) { rec("email", "FAILED", { error: String(e.message).slice(0, 80) }); }
+      try { const m = await brandedEmail({ orgId, orgName: await orgNameP, title: safeTitle, lines: safeBody ? [safeBody] : [], ctaUrl: link ? new URL(link, process.env.NEXT_PUBLIC_APP_URL || "https://inaya.network").href : null, ctaLabel: "Open in Inaya" }); const r = await sender({ to: email, subject: safeTitle, html: m.html, text: m.text }); rec("email", r?.sent === false ? "NOT_CONFIGURED" : "SENT", r?.sent === false ? { reason: r.reason } : {}); } catch (e) { rec("email", "FAILED", { error: String(e.message).slice(0, 80) }); }
     }
     if (ch.push) rec("push", pushConfigured() ? "QUEUED" : "NOT_CONFIGURED", { note: pushConfigured() ? "A generic text would be sent." : "No push credentials are configured for this deployment." });
     if (ch.webhook && ev.webhook) { import("../webhooks/registry.js").then((m) => m.emitWebhookEvent({ orgId, type: ev.webhook, eventId: `notify:${dedupeKey}`, data: { event, recipient: email, generic: ev.generic } })).catch(() => {}); rec("webhook", "QUEUED"); }

@@ -34,6 +34,7 @@ function progress(items) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const orgId = new URL(req.url).searchParams.get("orgId");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
@@ -49,6 +50,7 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, title } = body;
@@ -66,6 +68,7 @@ export async function POST(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId, itemId, done } = body;

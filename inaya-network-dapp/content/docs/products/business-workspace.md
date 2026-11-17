@@ -31,8 +31,8 @@ The Business Workspace launches publicly on 1 January 2027. A new company starts
 | Package | Users included | Storage | USD a month | PKR a month (Pakistan) |
 | --- | --- | --- | --- | --- |
 | Starter | 2 | 250 GB | $7.99 | PKR 8,000 |
-| Professional | 5 | 1 TB | $28 | PKR 20,000 |
-| Business | 10 | 5 TB | $49.99 | PKR 30,000 |
+| Professional | 5 | 1 TB | $39 | PKR 20,000 |
+| Business | 10 | 5 TB | $99 | PKR 30,000 |
 | Enterprise | 25 | 10 TB | $799 | PKR 60,000 |
 
 Packages are requested from inside the Workspace ("Request activation") and paid by NayaPay or bank transfer against an emailed invoice; there is no card checkout. Annual billing costs about 17% less. Extra users cost $3 a month (PKR 2,500), up to 3 on Starter, 10 on Professional, 15 on Business and 20 on Enterprise. Companies in Pakistan pay a one-time setup fee (PKR 10,000 for Starter, 25,000 otherwise). The [step-by-step setup guide](/docs/business-workspace-guide.md) walks through creating a company, choosing a package and the first week.

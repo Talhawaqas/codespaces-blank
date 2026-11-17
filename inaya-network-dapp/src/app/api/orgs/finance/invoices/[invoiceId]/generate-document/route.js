@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { invoiceId } = await params;
     const j = await readJson(req);
@@ -31,6 +32,7 @@ export async function POST(req, { params }) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { invoiceId } = await params;
     const orgId = new URL(req.url).searchParams.get("orgId");

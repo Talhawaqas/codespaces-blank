@@ -84,6 +84,7 @@ function checksumHeaders(doc) {
 }
 
 export async function PUT(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
     const key = joinKey(params.key);
@@ -150,6 +151,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
     const key = joinKey(params.key);
@@ -197,6 +199,7 @@ export async function POST(req, { params }) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const key = joinKey(params.key);
     const { owner, accessKeyId } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
@@ -325,6 +328,7 @@ export async function GET(req, { params }) {
 }
 
 export async function HEAD(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const key = joinKey(params.key);
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
@@ -353,6 +357,7 @@ export async function HEAD(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const key = joinKey(params.key);
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });

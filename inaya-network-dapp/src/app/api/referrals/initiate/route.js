@@ -13,7 +13,7 @@
 // self-referral, cap headroom) that are worth failing fast on.
 
 import { NextResponse } from "next/server";
-import { createDiditSession } from "../../../../lib/didit.js";
+import { createDiditSession, DiditOutOfCreditsError } from "../../../../lib/didit.js";
 import { sendMagicLinkEmail } from "../../../../lib/email.js";
 import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 import {
@@ -110,6 +110,7 @@ export async function POST(req) {
 
     return NextResponse.json({ status: "pending", url: session.url, referralCode: referrer.referralCode, referralId: referralDoc._id.toString(), emailSent: sent });
   } catch (err) {
+    if (err instanceof DiditOutOfCreditsError) return NextResponse.json({ error: err.message }, { status: 503 });
     console.error("referrals/initiate failed:", err);
     return NextResponse.json({ error: "Could not start the referral. Please try again." }, { status: 500 });
   }

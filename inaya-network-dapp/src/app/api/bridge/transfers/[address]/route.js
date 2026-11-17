@@ -12,6 +12,7 @@ import { slidingWindowCheck, getClientIp } from "@/lib/rateLimit";
 const PUBLIC_LIMIT = 20;
 
 export async function GET(request, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   const { address } = params;
   if (!ethers.isAddress(address)) {
     return NextResponse.json({ success: false, error: "Invalid address" }, { status: 400 });

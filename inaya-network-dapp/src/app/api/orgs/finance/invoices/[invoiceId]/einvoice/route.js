@@ -14,6 +14,7 @@ import { getDocumentSettings } from "../../../../../../../lib/documentAutomation
 import { buildUblInvoice, partiesFrom } from "../../../../../../../lib/einvoice/ubl.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { invoiceId } = await params;
     const { searchParams } = new URL(req.url);

@@ -6,6 +6,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.
 import { publishBoardReport } from "../../../../../../lib/board-reporting.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { reportId } = await params;
     const { orgId } = await req.json();

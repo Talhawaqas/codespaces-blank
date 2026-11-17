@@ -14,6 +14,7 @@ export const maxDuration = 60;
 const COOKIE = "inaya_data_room_session";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { objectId } = await params;
     const rl = await limited(req, { action: "room-download", max: 60 });

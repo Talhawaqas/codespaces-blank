@@ -7,6 +7,7 @@ import { revokeDelivery } from "../../../../../../../../lib/documentAutomation/d
 export const dynamic = "force-dynamic";
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId, deliveryId } = await params;
     const sp = new URL(req.url).searchParams;

@@ -10,6 +10,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/or
 import { transitionInvoice } from "../../../../../../../lib/invoice-workflow.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { invoiceId } = params;
     const { orgId, action, note } = await req.json();

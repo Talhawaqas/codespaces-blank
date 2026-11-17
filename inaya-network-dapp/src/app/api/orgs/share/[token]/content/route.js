@@ -14,6 +14,7 @@ import { readShareContent } from "../../../../../../lib/sharing/shares.js";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params; await ensureOrgIndexes();
     const part = new URL(req.url).searchParams.get("part");

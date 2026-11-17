@@ -14,6 +14,7 @@ import { verifyMetadataAuth } from "../../../../../../lib/metadata-auth.js";
 import { markRead } from "../../../../../../lib/notifications.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { address, message, signature, timestamp } = await req.json();
     verifyMetadataAuth({ action: "markNotificationRead", resourceId: params.id, address, message, signature, timestamp });

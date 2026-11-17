@@ -12,6 +12,7 @@ import { getDataroomCollections, toObjectId, deleteDocumentFile, deleteVideoFile
 export const dynamic = "force-dynamic";
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   if (!isAdminAuthenticated(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }

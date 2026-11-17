@@ -323,7 +323,7 @@ export async function openShare({ token, password, email, code, ip, deviceId, us
   return { sessionToken, expiresAt: expiresAt.toISOString(), filename: doc.filename, sizeBytes: doc.sizeBytes, permission: taken.permission, watermark: wm, label: taken.label, note: taken.note, parts: ["alpha", "beta"] };
 }
 
-const GATEWAYS = ["https://gateway.pinata.cloud/ipfs/", "https://ipfs.filebase.io/ipfs/", "https://cloudflare-ipfs.com/ipfs/"];
+const GATEWAYS = ["https://ipfs.filebase.io/ipfs/", "https://gateway.pinata.cloud/ipfs/"]; // fastest first; cloudflare-ipfs.com no longer exists (SQA 17 Nov 2026)
 let shardFetcher = async (cid) => {
   if (!/^[A-Za-z0-9]{40,100}$/.test(String(cid))) throw new Error("bad cid");
   let last;

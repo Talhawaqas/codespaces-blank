@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { getTransferStatus } from "@/lib/bridge";
 
 export async function GET(request, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   const { id } = params;
   const doc = await getTransferStatus(id);
   if (!doc) {

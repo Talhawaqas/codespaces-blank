@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.
 import { transitionVendorOnboarding } from "../../../../../../lib/vendor-management.js";
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { vendorId } = await params;
     const { orgId, action } = await req.json();

@@ -110,6 +110,8 @@ test("clean-up refuses anything that is not exactly one upload's prefix", async 
 
 const live = process.env.FILEBASE_ACCESS_KEY && process.env.FILEBASE_SECRET_KEY && process.env.FILEBASE_BUCKET;
 test("real Filebase: ~20 MB uploaded through signed links, registered, read back through signed links, cleaned up", { skip: !live && "Filebase is not configured", timeout: 600_000 }, async () => {
+  // Deliberately uses the real bucket (opt-in, see pinningProviders/testGuard.js); every object is deleted in `finally`.
+  process.env.INAYA_TESTS_USE_REAL_STORAGE = "1";
   const orgId = `testorg${Date.now()}`;
   const email = "chunked-test@example.com";
   const original = randomBytes(20 * 1024 * 1024 + 12345);

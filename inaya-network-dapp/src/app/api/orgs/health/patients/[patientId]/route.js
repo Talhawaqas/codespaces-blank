@@ -21,6 +21,7 @@ import { listConsentsForPatient } from "../../../../../../lib/health-consent-wor
 import { listPatientAccessEvents, logPatientAccess } from "../../../../../../lib/health-audit.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { patientId } = await params;
     const { searchParams } = new URL(req.url);

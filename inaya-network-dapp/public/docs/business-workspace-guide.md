@@ -26,8 +26,8 @@ A new company starts on the package screen. Your workspace opens once your packa
 | Package | Users included | Storage | USD a month | USD a year | PKR a month (Pakistan) |
 | --- | --- | --- | --- | --- | --- |
 | Starter | 2 | 250 GB | $7.99 | $79 | PKR 8,000 |
-| Professional | 5 | 1 TB | $28 | $280 | PKR 20,000 |
-| Business | 10 | 5 TB | $49.99 | $499 | PKR 30,000 |
+| Professional | 5 | 1 TB | $39 | $390 | PKR 20,000 |
+| Business | 10 | 5 TB | $99 | $990 | PKR 30,000 |
 | Enterprise | 25 | 10 TB | $799 | $7,990 | PKR 60,000 |
 
 1. Press "Request activation" on the package you want.

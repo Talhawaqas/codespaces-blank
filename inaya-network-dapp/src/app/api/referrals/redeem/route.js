@@ -12,7 +12,7 @@
 // submitting the invite directly).
 
 import { NextResponse } from "next/server";
-import { createDiditSession } from "../../../../lib/didit.js";
+import { createDiditSession, DiditOutOfCreditsError } from "../../../../lib/didit.js";
 import { enforceRiskGate, RISK_GATE_REJECTION } from "../../../../lib/riskGate.js";
 import {
   getReferralCollections,
@@ -95,6 +95,7 @@ export async function POST(req) {
 
     return NextResponse.json({ status: "pending", url: session.url, referralId: referralDoc._id.toString() });
   } catch (err) {
+    if (err instanceof DiditOutOfCreditsError) return NextResponse.json({ error: err.message }, { status: 503 });
     console.error("referrals/redeem failed:", err);
     return NextResponse.json({ error: "Could not start verification. Please try again." }, { status: 500 });
   }

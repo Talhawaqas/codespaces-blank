@@ -18,6 +18,15 @@
                                                    "dev:testdb"
                                                ],
                                "port":  3000
+                           },
+                           {
+                               "name":  "inaya-dapp-prod-testdb",
+                               "runtimeExecutable":  "npm",
+                               "runtimeArgs":  [
+                                                   "run",
+                                                   "start:testdb"
+                                               ],
+                               "port":  3001
                            }
                        ]
 }

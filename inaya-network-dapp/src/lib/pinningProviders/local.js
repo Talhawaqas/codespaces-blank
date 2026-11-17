@@ -12,13 +12,15 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { sha256Hex } from "./hash.js";
+import { localPinDir } from "./testGuard.js";
 
+// Also on automatically during test runs (testGuard.js), so tests never write to the real providers.
 export function isConfigured() {
-  return Boolean(process.env.INAYA_LOCAL_PIN_DIR) && !process.env.VERCEL;
+  return Boolean(localPinDir()) && !process.env.VERCEL;
 }
 
 function fileFor(providerRef) {
-  const dir = process.env.INAYA_LOCAL_PIN_DIR;
+  const dir = localPinDir();
   if (!dir) throw new Error("pinningProviders/local: INAYA_LOCAL_PIN_DIR is not configured.");
   return path.join(dir, createHash("sha256").update(String(providerRef)).digest("hex"));
 }

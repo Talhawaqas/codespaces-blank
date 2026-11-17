@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { getInteropTransferStatus } from "@/lib/interopTransfers";
 
 export async function GET(request, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   const { transferId } = params;
   const transfer = await getInteropTransferStatus(transferId);
   if (!transfer) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });

@@ -624,8 +624,12 @@ async function notifyChat({ conv, toEmail, type, title, dedupe }) {
 async function notifyNewMessage({ conv, fromEmail, seq }) {
   try {
     const { participants, readStates, deliveries } = await chatDb();
-    const people = await participants.find({ conversationId: conv._id, status: "active", email: { $ne: fromEmail }, muted: { $ne: true } }).limit(LIMITS.maxParticipants).toArray();
-    const reads = await readStates.find({ conversationId: conv._id, email: { $in: people.map((p) => p.email) } }).toArray();
+    // Both reads in one round trip (SQA 17 Nov 2026): the read states are only a lookup map, so this conversation's markers
+    // are fetched alongside the participant list instead of after it, and matched by email in memory.
+    const [people, reads] = await Promise.all([
+      participants.find({ conversationId: conv._id, status: "active", email: { $ne: fromEmail }, muted: { $ne: true } }).limit(LIMITS.maxParticipants).toArray(),
+      readStates.find({ conversationId: conv._id, email: { $ne: fromEmail } }, { projection: { email: 1, readSeq: 1 } }).toArray(),
+    ]);
     const readBy = new Map(reads.map((r) => [r.email, r.readSeq]));
     await Promise.all(people.map(async (p) => {
       const marker = readBy.get(p.email) || 0;

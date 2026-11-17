@@ -8,6 +8,7 @@
 // left exactly as-is (this is additive, not a refactor of the existing upload path).
 
 import { sha256Hex } from "./hash.js";
+import { realStorageAllowed } from "./testGuard.js";
 
 const PIN_URL = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 const GATEWAY_URL = "https://gateway.pinata.cloud/ipfs";
@@ -46,8 +47,9 @@ function authHeaders() {
   throw new Error("pinningProviders/pinata: no usable Pinata credential found (checked PINATA_JWT, a JWT-shaped PINATA_API_KEY, and PINATA_API_KEY+PINATA_SECRET_API_KEY as a classic pair).");
 }
 
+// Off during test runs unless a test opts in (testGuard.js): tests filled the real account's plan (Nov 2026).
 export function isConfigured() {
-  return Boolean(resolveJwt()) || Boolean(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_API_KEY);
+  return realStorageAllowed() && (Boolean(resolveJwt()) || Boolean(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_API_KEY));
 }
 
 /** Pins `content` (a shard's ciphertext string) under Pinata's existing JSON-wrapper convention.

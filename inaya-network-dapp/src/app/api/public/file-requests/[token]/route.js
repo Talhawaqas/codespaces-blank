@@ -17,9 +17,11 @@ const fail = (err) => {
   return json({ error: "Something went wrong. Please try again." }, 500);
 };
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try { const { token } = await params; await ensureOrgIndexes(); return json(await publicInfo(token)); } catch (err) { return fail(err); }
 }
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params; await ensureOrgIndexes();
     let b = {}; try { b = await req.json(); } catch { b = {}; }

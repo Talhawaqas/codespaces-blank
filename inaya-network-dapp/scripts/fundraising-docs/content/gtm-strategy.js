@@ -110,7 +110,7 @@ export const gtmStrategy = {
         type: "columns",
         items: [
           { heading: "Engine 1 — Storage network (DePIN)", body: "Buyer: developers, Web3 and AI teams, enterprises with storage-cost or sovereignty problems.\nProduct: encrypted, sharded storage on BNB Chain, SDKs, S3 and Azure Blob compatible APIs.\nPrice: 6.49 USDT per TB a month; Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year.\nStatus: live on testnet; mainnet follows the security audit." },
-          { heading: "Engine 2 — Business Workspace (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $28 / $49.99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027." },
+          { heading: "Engine 2 — Business Workspace (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027." },
         ],
       },
       {
@@ -1254,8 +1254,8 @@ export const gtmStrategy = {
           headers: ["Package", "Users", "Storage", "USD a month", "USD a year", "PKR a month", "Setup (Pakistan)"],
           rows: [
             ["Starter", "2", "250 GB", "$7.99", "$79", "8,000", "10,000"],
-            ["Professional", "5", "1 TB", "$28", "$280", "20,000", "25,000"],
-            ["Business", "10", "5 TB", "$49.99", "$499", "30,000", "25,000"],
+            ["Professional", "5", "1 TB", "$39", "$390", "20,000", "25,000"],
+            ["Business", "10", "5 TB", "$99", "$990", "30,000", "25,000"],
             ["Enterprise", "25", "10 TB", "$799", "$7,990", "60,000", "25,000"],
           ],
         },

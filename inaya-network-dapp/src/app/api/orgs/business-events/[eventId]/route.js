@@ -8,6 +8,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { getBusinessEvent, getBusinessEventTimeline } from "../../../../../lib/businessEvents.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { eventId } = await params;
     const { searchParams } = new URL(req.url);

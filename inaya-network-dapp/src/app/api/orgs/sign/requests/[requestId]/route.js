@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.
 import { getSigningRequest } from "../../../../../../lib/signing-workflow.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { requestId } = params;
     const orgId = req.nextUrl.searchParams.get("orgId");

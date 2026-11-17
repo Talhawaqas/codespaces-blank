@@ -8,6 +8,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { updateDataRoomTemplate } from "../../../../../lib/dataRoomTemplates.js";
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { templateId } = await params;
     const body = await req.json();

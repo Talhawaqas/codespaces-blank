@@ -36,6 +36,9 @@ const buildId = `${gitSha}-sdk${sdkVersion}`;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Local quality checks only: a production build in its own folder (NEXT_DIST_DIR=.next-prod) can be served by
+  // `npm run start:testdb` next to a running dev server, which owns `.next`. Unset everywhere else (Vercel included).
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Enterprise Adoption SOW, Workstream B -- a real bug found via live
   // Terraform testing: @aws-sdk/client-s3 (and other real S3 SDKs) build
   // bucket-only requests (CreateBucket, DeleteBucket -- no object key)

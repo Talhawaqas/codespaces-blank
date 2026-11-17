@@ -75,6 +75,7 @@ const MfaSettings = dynamic(() => import("../../components/business/MfaSettings"
 import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { useTheme } from "../../components/ThemeProvider";
 import { uploadDocumentFile, abandonChunkedUpload, decryptToFile, saveDocument } from "../../components/viewer/documentFiles";
+import { fetchShardFromIPFS } from "../../lib/ipfsGateways";
 import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
@@ -176,19 +177,7 @@ const ROLE_LABELS = { owner: "Owner", admin: "Admin", member: "Member" };
 // Client-side crypto + pinning — see module comment above.
 // ============================================================
 // Decryption of both storage formats lives in components/viewer/documentFiles.js.
-// Same two-gateway fallback the wallet-connected flow uses (page.js) —
-// Cloudflare's IPFS gateway first, Pinata's as a fallback.
-async function fetchShardFromIPFS(cid) {
-  try {
-    const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
-    const json = await res.json();
-    return json.shard;
-  } catch {
-    const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-    const json = await res.json();
-    return json.shard;
-  }
-}
+// Shards are read through the shared gateway list (src/lib/ipfsGateways.js).
 
 // ============================================================
 async function api(path, options) {
@@ -1119,6 +1108,17 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, n
   );
 }
 
+// SQA 17 Nov 2026: a beta module that is switched off showed a raw "not enabled" error beside a stuck "Loading…" or a live
+// form. Once the organization's flags have loaded and this one is off, show the same "turn it on" card the other beta modules use.
+// Until the flags load (or if they cannot be read) the module renders as before, so nothing is hidden by mistake.
+function BetaGate({ orgId, flag, title, canManage, onSettings, children }) {
+  const flags = useOrgFeatureFlags(orgId);
+  if (!Object.keys(flags).length || flags[flag] !== false) return children;
+  return (
+    <EmptyState icon="🧪" title={`${title} is not enabled`} description={canManage ? `Turn on “${title}” under Settings, Beta features.` : "Your organization has not turned this on yet. An owner or admin can turn it on under Settings."} ctaLabel={canManage ? "Open Settings" : undefined} onCta={canManage ? onSettings : undefined} />
+  );
+}
+
 function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout, onSessionChanged }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
@@ -1215,6 +1215,11 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       setOrgAiPolicy(d.profile?.aiPolicy || { enabled: true, voiceEnabled: false });
     }).catch(() => {}).finally(() => setVerticalLoaded(true));
   }, [orgId]);
+  // Industry modules (verticalOnly) render only once the org profile has loaded and the business type matches.
+  const activeNavItem = NAV_ITEMS.find((i) => i.key === activeView);
+  const industryMatches = !activeNavItem?.verticalOnly || (Array.isArray(activeNavItem.verticalOnly) ? activeNavItem.verticalOnly.includes(orgVertical) : activeNavItem.verticalOnly === orgVertical);
+  const industryOpen = verticalLoaded && industryMatches;
+  const industryBlocked = verticalLoaded && !industryMatches;
 
   // Business Workspace UX/UI Makeover SOW -- which of Departments/
   // Projects/Documents was actually clicked, so the header can show the
@@ -1418,12 +1423,12 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
       {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
       {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
-      {activeView === "complianceReadiness" && <ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} />}
-      {activeView === "gateway" && <GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} />}
+      {activeView === "complianceReadiness" && <BetaGate orgId={orgId} flag="FEATURE_COMPLIANCE_READINESS" title="Compliance readiness" canManage={canManage} onSettings={() => navigate("settings")}><ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} /></BetaGate>}
+      {activeView === "gateway" && <BetaGate orgId={orgId} flag="FEATURE_SOVEREIGN_GATEWAY" title="Sovereign Gateway" canManage={canManage} onSettings={() => navigate("settings")}><GatewayView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["integrationAdmin", "storageAdmin", "securityAdmin"], { read: true })} canChangeMode={canManage} /></BetaGate>}
       {activeView === "portalRequests" && <PortalRequestsView orgId={orgId} canManage={canManage || hasAdminRole(membership, "helpdeskAdmin", { read: true }) || membership?.supportRole === "agent" || membership?.supportRole === "manager"} />}
       {activeView === "office" && <OfficeIntegrationView orgId={orgId} canSeeAll={canManage} />}
       {activeView === "infrastructure" && (
-        <InfrastructureView orgId={orgId} canManage={canManage || membership?.infrastructureRole === "manager"} />
+        <BetaGate orgId={orgId} flag="FEATURE_INFRASTRUCTURE" title="Infrastructure" canManage={canManage} onSettings={() => navigate("settings")}><InfrastructureView orgId={orgId} canManage={canManage || membership?.infrastructureRole === "manager"} /></BetaGate>
       )}
       {activeView === "deviceProtection" && (
         <DeviceProtectionView
@@ -1449,13 +1454,18 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "escrow" && <EscrowView orgId={orgId} />}
       {activeView === "storageManager" && <StorageManagerView orgId={orgId} />}
       {activeView === "attestations" && <AttestationsView orgId={orgId} />}
-      {activeView === "health" && <HealthView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "legal" && <LegalView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "regulated" && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "government" && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "education" && <EducationView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "hospitality" && <HospitalityView orgId={orgId} canManage={canManage} email={email} />}
-      {activeView === "financial" && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
+      {/* SQA 17 Nov 2026: industry modules are hidden from the menu for other business types, but a direct link
+          used to open a half-working page (error line, stuck "Loading…", live "+ New" button). Show one clear notice instead. */}
+      {industryBlocked && (
+        <EmptyState icon="🏷️" title={`${activeNavItem?.label || "This module"} is for a different business type`} description={canManage ? "Change your business type under Settings to use it." : "An owner or admin can change the business type under Settings."} ctaLabel={canManage ? "Open Settings" : undefined} onCta={canManage ? () => navigate("settings") : undefined} />
+      )}
+      {activeView === "health" && industryOpen && <HealthView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "legal" && industryOpen && <LegalView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "regulated" && industryOpen && <RegulatedView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "government" && industryOpen && <GovernmentView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "education" && industryOpen && <EducationView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "hospitality" && industryOpen && <HospitalityView orgId={orgId} canManage={canManage} email={email} />}
+      {activeView === "financial" && industryOpen && <FinancialView orgId={orgId} canManage={canManage} email={email} vertical={orgVertical} />}
       {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
       {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
       {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}

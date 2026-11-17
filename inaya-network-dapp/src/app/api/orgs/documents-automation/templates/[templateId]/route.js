@@ -9,6 +9,7 @@ import { getTemplate, updateTemplateDraft, archiveTemplate } from "../../../../.
 export const dynamic = "force-dynamic";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const templateId = decodeURIComponent((await params).templateId);
     const sp = new URL(req.url).searchParams;
@@ -21,6 +22,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const templateId = decodeURIComponent((await params).templateId);
     const j = await readJson(req);
@@ -34,6 +36,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const templateId = decodeURIComponent((await params).templateId);
     const sp = new URL(req.url).searchParams;

@@ -6,6 +6,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { revokeBackupCredential } from "../../../../../lib/backupCryptoAndCredentials.js";
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { credentialId } = await params;
     const body = await req.json().catch(() => ({}));

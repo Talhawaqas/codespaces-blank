@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex" };
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const limit = await slidingWindowCheck({ action: "education-guardian-view", key: getClientIp(req), max: 60, windowMs: 10 * 60 * 1000 });
     if (!limit.allowed) return NextResponse.json({ error: "Too many requests. Please wait a few minutes." }, { status: 429, headers: { ...headers, "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) } });

@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { getIntegrationHealth, disableIntegration, retrySync } from "../../../../../lib/integrations.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { providerId } = await params;
     const { searchParams } = new URL(req.url);
@@ -26,6 +27,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { providerId } = await params;
     const { orgId, action } = await req.json();

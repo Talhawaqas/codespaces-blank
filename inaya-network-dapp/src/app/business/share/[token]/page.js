@@ -17,18 +17,7 @@
 import { useState, useEffect, use } from "react";
 import V2Viewer from "../../../../components/shares/V2Viewer";
 import { saveDocument } from "../../../../components/viewer/documentFiles";
-
-async function fetchShardFromIPFS(cid) {
-  try {
-    const res = await fetch(`https://cloudflare-ipfs.com/ipfs/${cid}`);
-    const json = await res.json();
-    return json.shard;
-  } catch {
-    const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-    const json = await res.json();
-    return json.shard;
-  }
-}
+import { fetchShardFromIPFS } from "../../../../lib/ipfsGateways";
 
 import BrandHeader from "../../../../components/BrandHeader";
 export default function SharePage({ params }) {

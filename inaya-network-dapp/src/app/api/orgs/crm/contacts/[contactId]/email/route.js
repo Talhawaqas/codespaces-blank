@@ -7,6 +7,7 @@ import { sendContactEmail } from "../../../../../../../lib/crm-activity.js";
 import { loadContact, serializeActivity } from "../_contact.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { contactId } = await params;
     let body = {}; try { body = await req.json(); } catch { body = {}; }

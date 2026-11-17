@@ -16,7 +16,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isDiditSessionStillUsable } from "../src/lib/referrals.js";
-import { createDiditSession } from "../src/lib/didit.js";
+import { createDiditSession, DiditOutOfCreditsError } from "../src/lib/didit.js";
+
+test("createDiditSession: an account with no credits is reported as its own error, not a bare HTTP 400", async () => {
+  const realFetch = globalThis.fetch;
+  process.env.DIDIT_API_KEY ||= "test-key"; process.env.DIDIT_WORKFLOW_ID ||= "00000000-0000-0000-0000-000000000000";
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "You don't have enough credits to perform this request. Please top up at https://business.didit.me" }), { status: 400 });
+  try {
+    await assert.rejects(createDiditSession({ vendorData: "x" }), (e) => e instanceof DiditOutOfCreditsError && e.status === 503 && !/HTTP 400/.test(e.message));
+    globalThis.fetch = async () => new Response("{}", { status: 400 });
+    await assert.rejects(createDiditSession({ vendorData: "x" }), /HTTP 400/, "any other 400 keeps the status-only message");
+  } finally { globalThis.fetch = realFetch; }
+});
 
 test("isDiditSessionStillUsable: a nonexistent/expired session is correctly reported as dead", async () => {
   const usable = await isDiditSessionStillUsable("00000000-0000-0000-0000-000000000000");
@@ -29,8 +40,15 @@ test("isDiditSessionStillUsable: null/missing sessionId is dead, not 'assume usa
   assert.equal(await isDiditSessionStillUsable(""), false);
 });
 
-test("isDiditSessionStillUsable: a freshly-created real session is reported as usable", async () => {
-  const session = await createDiditSession({ vendorData: "test:didit-session-resume" });
+test("isDiditSessionStillUsable: a freshly-created real session is reported as usable", async (t) => {
+  let session;
+  try {
+    session = await createDiditSession({ vendorData: "test:didit-session-resume" });
+  } catch (err) {
+    // A billing state of the Didit account, not a code defect: say so instead of failing with "HTTP 400".
+    if (err instanceof DiditOutOfCreditsError) return t.skip("the Didit account has no verification credits left (top up at business.didit.me)");
+    throw err;
+  }
   assert.ok(session.sessionId, "expected a real session to be created");
 
   const usable = await isDiditSessionStillUsable(session.sessionId);

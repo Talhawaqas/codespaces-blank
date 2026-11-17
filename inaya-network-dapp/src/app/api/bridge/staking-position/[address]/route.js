@@ -21,6 +21,7 @@ const STAKING_ABI = [
 const BREAKDOWN_CHAIN_IDS = [CHAIN_IDS.BSC_TESTNET, CHAIN_IDS.SEPOLIA, CHAIN_IDS.AMOY, CHAIN_IDS.FUJI, SOLANA_DEVNET_CHAIN_ID];
 
 export async function GET(request, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   const { address } = params;
   if (!ethers.isAddress(address)) {
     return NextResponse.json({ success: false, error: "Invalid address" }, { status: 400 });

@@ -23,6 +23,7 @@ function ownerArgs(owner) {
 }
 
 export async function PUT(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { owner, accessKeyId } = await authenticateAzureRequest(req, Buffer.alloc(0));
     const store = storeFor(owner);
@@ -38,6 +39,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { owner } = await authenticateAzureRequest(req, Buffer.alloc(0));
     const store = storeFor(owner);
@@ -55,6 +57,7 @@ export async function GET(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { owner } = await authenticateAzureRequest(req, Buffer.alloc(0));
     const store = storeFor(owner);

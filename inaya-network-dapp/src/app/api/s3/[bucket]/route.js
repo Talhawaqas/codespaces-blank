@@ -25,6 +25,7 @@ function parseVersioningStatus(xmlBody) {
 }
 
 export async function PUT(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
     const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
@@ -76,6 +77,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key: null });
     const store = storeFor(owner);
@@ -176,6 +178,7 @@ function escXml(s) {
 
 // POST /:bucket?delete -> DeleteObjects (real S3 batch-delete API).
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
     const { owner } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
@@ -207,6 +210,7 @@ export async function POST(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key: null });
     const store = storeFor(owner);

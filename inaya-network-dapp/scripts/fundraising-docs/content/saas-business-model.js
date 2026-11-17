@@ -132,8 +132,8 @@ export const saasBusinessModel = {
           headers: ["Plan", "Price", "Users", "Storage", "Max File Size"],
           rows: [
             ["Starter", "$7.99/mo · $79/yr", "2", "250 GB", "5 GB"],
-            ["Professional (Most Popular)", "$28/mo · $280/yr", "5", "1 TB", "10 GB"],
-            ["Business", "$49.99/mo · $499/yr", "10", "5 TB", "25 GB"],
+            ["Professional (Most Popular)", "$39/mo · $390/yr", "5", "1 TB", "10 GB"],
+            ["Business", "$99/mo · $990/yr", "10", "5 TB", "25 GB"],
             ["Enterprise", "$799/mo · $7,990/yr", "Up to 25", "10 TB", "100 GB"],
           ],
         },
@@ -142,7 +142,7 @@ export const saasBusinessModel = {
           lead: "Add-ons available on every plan:",
           items: [
             "Additional users — $3/user/month (PKR 2,500 in Pakistan), up to 3 on Starter, 10 on Professional, 15 on Business and 20 on Enterprise; beyond that a company moves to the next package",
-            "Additional storage — $3.99/TB/month",
+            "Additional storage — $19.99/TB/month",
             "Beyond Enterprise's own listed capacity (45+ users or 10+ TB) — custom pricing via direct sales engagement",
           ],
         },
@@ -234,9 +234,9 @@ export const saasBusinessModel = {
           headers: ["Scenario", "Mix", "Monthly Recurring Revenue"],
           rows: [
             ["Early traction", "100 Starter", "$799"],
-            ["Modest adoption", "200 Starter + 100 Professional", "$4,398"],
-            ["Established base", "300 Starter + 200 Professional + 50 Business", "$10,497"],
-            ["Broader base", "500 Starter + 400 Professional + 150 Business + 10 Enterprise", "$30,684"],
+            ["Modest adoption", "200 Starter + 100 Professional", "$5,498"],
+            ["Established base", "300 Starter + 200 Professional + 50 Business", "$15,147"],
+            ["Broader base", "500 Starter + 400 Professional + 150 Business + 10 Enterprise", "$42,435"],
           ],
         },
       ],

@@ -10,6 +10,7 @@ import { ensureOrgIndexes } from "../../../../../../../lib/orgs.js";
 import { completeOauthFlow } from "../../../../../../../lib/integrationOauth.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   const { providerId } = await params;
   const { searchParams, origin } = new URL(req.url);
   const state = searchParams.get("state");

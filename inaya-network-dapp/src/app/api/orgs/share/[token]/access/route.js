@@ -14,6 +14,7 @@ const fail = (err) => {
 import { openShare } from "../../../../../../lib/sharing/shares.js";
 export const dynamic = "force-dynamic";
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params; await ensureOrgIndexes();
     let body = {}; try { body = await req.json(); } catch { body = {}; }

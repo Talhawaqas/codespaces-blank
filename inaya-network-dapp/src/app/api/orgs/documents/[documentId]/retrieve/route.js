@@ -26,6 +26,7 @@ import { logGovernmentDocumentRead } from "../../../../../../lib/government-audi
 import { chunkedForReader } from "../../../../../../lib/chunkedStorage.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const orgId = new URL(req.url).searchParams.get("orgId");

@@ -17,6 +17,7 @@ import { createHmac, hkdfSync, randomBytes, timingSafeEqual } from "node:crypto"
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { FORMAT, FORMAT_VERSION, PIECE_SIZE, pieceCount, isChunkedManifest } from "./chunkedFile.js";
+import { realStorageAllowed } from "./pinningProviders/testGuard.js";
 
 export const STORAGE_FORMAT = `${FORMAT}-v${FORMAT_VERSION}`;
 const UPLOAD_TTL_MS = 12 * 60 * 60 * 1000; // a very large file on a slow line can take hours
@@ -26,6 +27,8 @@ const MAX_SIGN_BATCH = 64;
 
 let client;
 function s3() {
+  // Test runs never touch the real bucket unless a test opts in and cleans up (pinningProviders/testGuard.js).
+  if (!realStorageAllowed()) throw new ChunkedError(503, "Large-file storage is off during test runs (set INAYA_TESTS_USE_REAL_STORAGE=1 to use the real bucket).");
   if (!process.env.FILEBASE_ACCESS_KEY || !process.env.FILEBASE_SECRET_KEY || !process.env.FILEBASE_BUCKET) {
     throw new ChunkedError(503, "Large-file storage is not configured.");
   }

@@ -1224,7 +1224,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "The Business Workspace launches publicly on 1 January 2027. A new company starts on the package screen; its workspace opens once a package is paid and activated. Packages: Starter $7.99 a month (2 users, 250 GB), Professional $28 (5 users, 1 TB), Business $49.99 (10 users, 5 TB) and Enterprise $799 (25 users, 10 TB); in Pakistan PKR 8,000, 20,000, 30,000 and 60,000.",
+          text: "The Business Workspace launches publicly on 1 January 2027. A new company starts on the package screen; its workspace opens once a package is paid and activated. Packages: Starter $7.99 a month (2 users, 250 GB), Professional $39 (5 users, 1 TB), Business $99 (10 users, 5 TB) and Enterprise $799 (25 users, 10 TB); in Pakistan PKR 8,000, 20,000, 30,000 and 60,000.",
         },
         {
           type: "numbered",

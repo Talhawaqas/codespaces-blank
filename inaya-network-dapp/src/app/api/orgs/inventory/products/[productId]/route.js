@@ -40,6 +40,7 @@ async function loadAuthorized(req, orgId, productId) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const orgId = new URL(req.url).searchParams.get("orgId");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
@@ -59,6 +60,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const body = await req.json();
     const { orgId, name, description, unitPrice, reorderThreshold, status, reorderQuantity, autoReorder, trackLots } = body;
@@ -130,6 +132,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const orgId = new URL(req.url).searchParams.get("orgId");
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });

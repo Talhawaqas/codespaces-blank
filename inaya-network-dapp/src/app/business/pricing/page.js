@@ -117,7 +117,7 @@ export default function PricingPage() {
           </div>
           <div>
             <p className="text-white font-bold mb-1">Additional Storage</p>
-            <p>$3.99 / TB / month</p>
+            <p>$19.99 / TB / month</p>
           </div>
           <div>
             <p className="text-white font-bold mb-1">Payment</p>

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const json = (d, s = 200) => NextResponse.json(d, { status: s, headers: { "Cache-Control": "no-store" } });
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params;
     const info = await getRoomByToken({ joinToken: token });

@@ -42,7 +42,15 @@ export async function createDiditSession({ vendorData, callback } = {}) {
 
   if (!res.ok) {
     // Per project policy: never surface a raw response body from a call that
-    // carried a credential. Status only.
+    // carried a credential. Status only -- except one recognised case: the Didit
+    // account has run out of verification credits (SQA 17 Nov 2026: every new
+    // session failed with an unexplained "HTTP 400" because of this). That is an
+    // operator/billing problem, so it gets its own error type and log line.
+    const text = await res.text().catch(() => "");
+    if ((res.status === 400 || res.status === 402) && /enough credits|top up/i.test(text)) {
+      console.error("Didit: the account has no verification credits left. Top up at business.didit.me; new identity checks fail until then.");
+      throw new DiditOutOfCreditsError();
+    }
     throw new Error(`Didit session creation failed (HTTP ${res.status}).`);
   }
 
@@ -54,6 +62,16 @@ export async function createDiditSession({ vendorData, callback } = {}) {
     sessionKind: data.session_kind,
     status: data.status,
   };
+}
+
+/** The Didit account has no verification credits left (a billing problem for the operator, not the user).
+ *  Callers should tell the user identity verification is temporarily unavailable and try again later. */
+export class DiditOutOfCreditsError extends Error {
+  constructor() {
+    super("Identity verification is temporarily unavailable. Please try again later.");
+    this.name = "DiditOutOfCreditsError";
+    this.status = 503;
+  }
 }
 
 /** Thrown by getDiditDecision specifically for a 404 — Didit has no record of this

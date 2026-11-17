@@ -12,6 +12,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { draftReorderRequest } from "../../../../../../../lib/inventory-reorder.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { orgId } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });

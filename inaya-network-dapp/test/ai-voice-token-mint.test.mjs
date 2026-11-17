@@ -25,6 +25,9 @@ import mongoClientPromise from "../src/lib/mongodb.js";
 after(async () => {
   const client = await mongoClientPromise;
   await client.close();
+  // Let closing sockets (MongoDB, the Gemini HTTPS keep-alive) finish before `--test-force-exit` ends the process: exiting
+  // mid-close tripped libuv's "!(handle->flags & UV_HANDLE_CLOSING)" assertion on Windows after the test had passed (SQA 17 Nov 2026).
+  await new Promise((resolve) => setTimeout(resolve, 500));
 });
 
 test("mintVoiceToken returns a real, usable ephemeral token from the live Gemini API", { skip: !process.env.GEMINI_API_KEY && "GEMINI_API_KEY not configured" }, async () => {

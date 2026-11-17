@@ -86,7 +86,14 @@ export async function ensureS3Bucket({ walletAddress, bucket }) {
   const owner = walletAddress.toLowerCase();
   // Several clients writing their first objects at once must all get the SAME bucket (see namespaceClaim.js).
   const folderId = await claimId({ db, scope: owner, kind: "s3-bucket", name: bucket, make: () => randomUUID() });
-  await db.collection("metadata_folders").updateOne({ folderId }, { $setOnInsert: { owner, name: bucket, parentFolderId: null, createdAt: now, updatedAt: now, deletedAt: null } }, { upsert: true });
+  // metadata_folders has no unique index on folderId, so concurrent upserts keyed on folderId alone could each insert
+  // (SQA 17 Nov 2026: 12 parallel first writes left 2 folder records). Every caller already holds the same claimed
+  // folderId, so the record is keyed on a deterministic _id (always unique): one insert wins, the rest see E11000.
+  try {
+    await db.collection("metadata_folders").updateOne({ _id: `s3-bucket:${folderId}`, folderId }, { $setOnInsert: { owner, name: bucket, parentFolderId: null, createdAt: now, updatedAt: now, deletedAt: null } }, { upsert: true });
+  } catch (err) {
+    if (err?.code !== 11000) throw err;
+  }
   return db.collection("metadata_folders").findOne({ folderId });
 }
 

@@ -14,6 +14,7 @@ function serialize(e) {
 }
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { evidenceId } = await params;
     const { orgId, reviewStatus } = await req.json();

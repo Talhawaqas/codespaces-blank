@@ -24,7 +24,8 @@ Inaya exposes real, request-signature-verified S3, Azure Blob, and Google Cloud 
 - Temporary signed download URLs with real, tested expiration (including waiting for genuine wall-clock expiration, not a simulated clock) and tamper rejection.
 - Virtual-hosted bucket addressing, off by default until an operator configures it.
 - Object tags, an independently-verifiable checksum on every upload, storage inventory export (JSON/CSV), bulk tag/retention/legal-hold operations across up to 1,000 objects, per-bucket storage analytics, and a read-only storage-credential policy analyzer.
-- Validated against real, unmodified third-party tools: the **AWS CLI**, **rclone**, **Terraform** (`hashicorp/aws` provider — a real `init → apply → plan → destroy` lifecycle, including `force_destroy` actually emptying a bucket), and Google's own **gcloud storage** CLI. AzCopy is honestly classified unsupported today — it requires SAS-token or Entra ID auth for Azure Blob, which this layer's Shared-Key-only implementation doesn't yet provide.
+- Validated against real, unmodified third-party tools: the **AWS CLI**, **rclone**, **Terraform** (`hashicorp/aws` provider — a real `init → apply → plan → destroy` lifecycle, including `force_destroy` actually emptying a bucket), Google's own **gcloud storage** CLI, and **AzCopy** for Azure Blob through a SAS share link (upload, list, download, sync and remove, verified byte-for-byte; a read-only or tampered link is refused).
+- **Terraform:** every object is served with `Cache-Control: private, no-store` (a deliberate privacy choice), so add `cache_control = "private, no-store"` to each `aws_s3_object` to keep `terraform plan` free of changes.
 
 ## The one honest trust-model difference
 

@@ -19,6 +19,7 @@ import { logDocumentActivity } from "../../../../../../lib/document-workflow.js"
 import { getOrgCollections, toObjectId } from "../../../../../../lib/orgs.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const { orgId, expirationPreset, customExpiresAt, maxUses } = await req.json();
@@ -69,6 +70,7 @@ export async function POST(req, { params }) {
 }
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const orgId = new URL(req.url).searchParams.get("orgId");

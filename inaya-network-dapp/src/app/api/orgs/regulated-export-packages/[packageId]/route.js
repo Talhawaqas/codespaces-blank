@@ -6,6 +6,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { getRegulatedExportPackage, verifyRegulatedExportPackage } from "../../../../../lib/regulated-export-package.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { packageId } = await params;
     const { searchParams } = new URL(req.url);

@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/or
 import { attachVolume } from "../../../../../../../lib/storageResources.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { resourceId } = await params;
     const body = await req.json().catch(() => ({}));

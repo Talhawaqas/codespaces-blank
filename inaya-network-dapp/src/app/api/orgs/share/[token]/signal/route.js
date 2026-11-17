@@ -4,6 +4,7 @@ import { recordShareSignal, ShareError } from "../../../../../../lib/sharing/sha
 import { getClientIp } from "../../../../../../lib/rateLimit.js";
 export const dynamic = "force-dynamic";
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params; let body = {}; try { body = await req.json(); } catch { body = {}; }
     const r = await recordShareSignal({ token, sessionToken: req.headers.get("x-share-session"), type: body.type, ip: getClientIp(req) });

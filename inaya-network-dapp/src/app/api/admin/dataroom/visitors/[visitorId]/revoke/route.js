@@ -11,6 +11,7 @@ import { revokeDataroomVisitor } from "../../../../../../../lib/dataroom.js";
 export const dynamic = "force-dynamic";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   if (!isAdminAuthenticated(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }

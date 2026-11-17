@@ -22,6 +22,7 @@ import { requireDocumentAccess, PERMISSION_LEVELS } from "../../../../../../lib/
 import { logDocumentActivity } from "../../../../../../lib/document-workflow.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const orgId = new URL(req.url).searchParams.get("orgId");
@@ -50,6 +51,7 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const { orgId, email: rawEmail, level } = await req.json();
@@ -102,6 +104,7 @@ export async function POST(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { documentId } = params;
     const { orgId, email: rawEmail } = await req.json();

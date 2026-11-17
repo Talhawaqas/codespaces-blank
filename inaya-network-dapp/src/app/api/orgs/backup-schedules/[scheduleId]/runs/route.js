@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership, toObjectId, getOrgCollections } from "../../../../../../lib/orgs.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { scheduleId } = await params;
     const { searchParams } = new URL(req.url);

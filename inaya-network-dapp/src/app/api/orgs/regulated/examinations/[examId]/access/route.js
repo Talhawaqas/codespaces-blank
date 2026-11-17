@@ -8,6 +8,7 @@ import { requireVertical } from "../../../../../../../lib/industry-config.js";
 import { createExaminerMagicLink, revokeExaminerAccess } from "../../../../../../../lib/regulatory-examination-access.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { examId } = await params;
     const body = await req.json();
@@ -35,6 +36,7 @@ export async function POST(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { examId } = await params;
     const { orgId, examinerEmail } = await req.json();

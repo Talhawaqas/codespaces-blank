@@ -15,6 +15,7 @@ import { isValidSeverity } from "../../../../../lib/hackathon";
 const VALID_STATUSES = new Set(["submitted", "confirmed", "duplicate", "rejected", "fixed"]);
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   if (!isAdminAuthenticated(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }

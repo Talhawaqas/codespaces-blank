@@ -10,6 +10,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/or
 import { updatePurchaseOrderItems } from "../../../../../../../lib/purchase-order-workflow.js";
 
 export async function PATCH(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { orderId } = params;
     const { orgId, items } = await req.json();

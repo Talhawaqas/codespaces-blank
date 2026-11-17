@@ -37,7 +37,7 @@ const IFACE_ERC721_ENUMERABLE = "0x780e9d63";
 
 function resolveIpfsUri(uri) {
   if (!uri) return null;
-  if (uri.startsWith("ipfs://")) return `https://cloudflare-ipfs.com/ipfs/${uri.slice("ipfs://".length)}`;
+  if (uri.startsWith("ipfs://")) return `https://ipfs.filebase.io/ipfs/${uri.slice("ipfs://".length)}`; // cloudflare-ipfs.com no longer exists (SQA 17 Nov 2026)
   return uri;
 }
 

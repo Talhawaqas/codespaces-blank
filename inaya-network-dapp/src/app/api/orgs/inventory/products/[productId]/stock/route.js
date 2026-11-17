@@ -12,6 +12,7 @@ import { listStockLevelsForProduct } from "../../../../../../../lib/inventory.js
 import { fefoSort, daysUntilExpiry } from "../../../../../../../lib/inventory-lots.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { productId } = params;
     const orgId = new URL(req.url).searchParams.get("orgId");

@@ -11,6 +11,7 @@ import { ensureOrgIndexes, requireMembership, canAccessAttestations } from "../.
 import { verifyAttestation } from "../../../../../../lib/financial-attestation.js";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { attestationId } = params;
     const orgId = req.nextUrl.searchParams.get("orgId");

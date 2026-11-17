@@ -206,7 +206,7 @@ export default function ChatView({ orgId, email, canManage }) {
   function onType(v) { setText(v); const n = Date.now(); if (sel && n - lastTyping.current > 3000 && v) { lastTyping.current = n; client?.api.setTyping({ conversationId: sel, typing: true }).catch(() => {}); } }
 
   if (status === "unsupported") return <EmptyState title="This browser cannot run Secure Chat" description="Secure Chat needs a modern browser with WebCrypto and IndexedDB. Use the desktop app or a current browser." />;
-  if (status === "off") return <EmptyState title="Secure Chat is not enabled" description={canManage ? "Ask your platform contact to enable FEATURE_SECURE_CHAT for this organization, or enable it from Settings." : "Your organization has not turned on Secure Chat yet."} />;
+  if (status === "off") return <EmptyState title="Secure Chat is not enabled" description={canManage ? "Turn on “Secure Chat (beta)” under Settings, Beta features." : "Your organization has not turned on Secure Chat yet. An owner or admin can turn it on under Settings."} />;
   if (status === "error") return <EmptyState title="Secure Chat could not start" description={error} />;
   if (status === "elsewhere") return <EmptyState title="Secure Chat is open in another window" description="Only one window can run Secure Chat at a time, so its encrypted conversations stay consistent. Use it here and the other window will stop." ctaLabel="Use Secure Chat in this window" onCta={takeOver} />;
   if (status === "switching") return <p className={`text-sm ${muted}`}>Switching Secure Chat to this window… the other window finishes its current update first, which can take a few seconds.</p>;

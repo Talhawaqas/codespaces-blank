@@ -95,6 +95,9 @@ test("rclone: a wrong secret is refused", (t) => {
 test("AzCopy: upload a tree (incl. a large blob) with a share link, list, download back byte-for-byte, sync, remove", (t) => {
   if (!up) return t.skip("no dev server"); if (!have("azcopy")) return t.skip("azcopy is not installed");
   const container = `az-${RUN}`; const keyB64 = Buffer.from(cred.secretAccessKey, "utf8").toString("base64");
+  // The rclone sync test deletes src/nested on purpose; AzCopy needs the full tree again (SQA 17 Nov 2026: this
+  // ordering made AzCopy "miss" nested/data.bin whenever rclone was installed).
+  if (!fs.existsSync(path.join(work, "src", "nested", "data.bin"))) { fs.mkdirSync(path.join(work, "src", "nested"), { recursive: true }); fs.writeFileSync(path.join(work, "src", "nested", "data.bin"), randomBytes(300_000)); }
   const sas = signServiceSas({ accountName: cred.accessKeyId, accountKeyBase64: keyB64, container, permissions: "racwdl", expiresAt: Date.now() + 3600_000 });
   const url = `${AZ}/${container}?${sas}`; const sub = (p) => `${AZ}/${container}/${p}?${sas}`;
   const env = { AZCOPY_AUTO_LOGIN_TYPE: "", AZCOPY_DISABLE_SYSLOG: "true", AZCOPY_LOG_LOCATION: path.join(work, "azlog"), AZCOPY_JOB_PLAN_LOCATION: path.join(work, "azplan") };

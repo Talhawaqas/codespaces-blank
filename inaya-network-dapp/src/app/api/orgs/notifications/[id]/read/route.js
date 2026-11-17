@@ -9,6 +9,7 @@ import { requireMembership } from "../../../../../../lib/orgs.js";
 import { markRead } from "../../../../../../lib/notifications.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
     const { orgId } = body;

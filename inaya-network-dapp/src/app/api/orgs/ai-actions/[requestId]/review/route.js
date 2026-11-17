@@ -16,6 +16,7 @@ import { resolveCanApprove } from "../../../../../../lib/ai-action-approval-gate
 import { reviewAiAction } from "../../../../../../lib/ai-action-requests.js";
 
 export async function POST(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { requestId } = params;
     const { orgId, decision, note } = await req.json();

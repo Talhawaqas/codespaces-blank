@@ -25,8 +25,9 @@ export default function EmptyState({ icon = "📭", title, description, ctaLabel
     <div className="bg-black/20 border border-white/5 rounded-2xl p-10 text-center flex flex-col items-center gap-3">
       <span className="text-3xl opacity-70">{icon}</span>
       <div>
-        <div className="text-white font-bold text-sm">{title}</div>
-        {description && <p className="text-[#8a96ab] text-xs mt-1.5 max-w-sm mx-auto">{description}</p>}
+        {/* Theme tokens, not fixed white: on the Light theme (the Workspace default) a white title was invisible (SQA 17 Nov 2026). */}
+        <div className="text-[var(--inaya-text-primary)] font-bold text-sm">{title}</div>
+        {description && <p className="text-[var(--inaya-text-muted)] text-xs mt-1.5 max-w-sm mx-auto">{description}</p>}
       </div>
       {ctaLabel && onCta && (
         <button

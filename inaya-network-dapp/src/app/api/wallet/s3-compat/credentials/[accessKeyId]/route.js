@@ -6,6 +6,7 @@ import { verifyMetadataAuth } from "../../../../../../lib/metadata-auth.js";
 import { revokeS3Credential } from "../../../../../../lib/s3-compat/credentials.js";
 
 export async function DELETE(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { walletAddress, message, signature, timestamp } = await req.json();
     if (!walletAddress) return NextResponse.json({ error: "walletAddress is required." }, { status: 400 });

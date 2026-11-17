@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const DATA_ROOM_SESSION_COOKIE = "inaya_data_room_session";
 
 export async function GET(req, { params }) {
+  params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { token } = await params;
     const result = await exchangeRoomMagicLink(token);

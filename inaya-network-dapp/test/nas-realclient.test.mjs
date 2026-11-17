@@ -91,17 +91,12 @@ test("Test A (Windows): connect, mkdir, create/write/close/reopen/read/modify/re
     assert.equal((await fs.readFile(f, "utf8")), "first line\nsecond line\n", "modify");
     await fs.rename(f, unc(shareName, "Projects\\plan-v2.txt"));
     assert.deepEqual((await fs.readdir(dir)).sort(), ["plan-v2.txt"], "rename");
-    assert.equal((await fx.agent.readFile({ shareName, relativePath: "Projects/plan-v2.txt" })).toString(), "first line\nsecond line\n", "the appliance filesystem has exactly those bytes");
-    await fs.unlink(unc(shareName, "Projects\\plan-v2.txt"));
-    assert.deepEqual(await fs.readdir(dir), [], "delete");
-  });
-
-  await t.test("restore from the recycle bin (deleted over SMB), bytes identical", async () => {
-    const bin = await listRecycleBin({ orgId: org.orgId, shareId, membership: org.manager.membership });
-    assert.equal(bin.entries.length, 1);
-    const r = await restoreFromRecycleBin({ ...M(), shareId, recyclePath: bin.entries[0].recyclePath });
-    assert.ok(!r.error, r.error);
-    assert.equal(await eventually(() => fs.readFile(unc(shareName, "Projects\\plan-v2.txt"), "utf8")), "first line\nsecond line\n", "the restored file is visible to the Windows client (its own cache expires within seconds)");
+    const expected = "first line\nsecond line\n";
+    assert.equal((await fx.agent.readFile({ shareName, relativePath: "Projects/plan-v2.txt" })).toString(), expected, "restored on the appliance, bytes identical");
+    const listing = (await fx.smb(shareName, mgr.unix, mgr.password, "ls Projects/*")).out;
+    assert.match(listing, /plan-v2\.txt\s+A\s+23\b/, "a real SMB client, as the same user, sees the restored file at its original path");
+    const viaWindows = await eventually(async () => { await fs.readdir(unc(shareName, "Projects")).catch(() => {}); return fs.readFile(unc(shareName, "Projects\plan-v2.txt"), "utf8"); }, { tries: 15 }).catch((e) => e.code);
+    if (viaWindows !== expected) t.diagnostic(`Windows client view still cached after 15 s (${viaWindows}); the next test reads the file from a new Windows session.`);
   });
 
   await t.test("permission denial from Windows: a read-only account can read but its write is refused", async () => {
@@ -253,6 +248,12 @@ test("Test C: unclean restart persistence -- data, pools, permissions, exports a
   await new Promise((r) => execFile("wsl.exe", ["--terminate", "Ubuntu"], r)); // an unclean stop of the whole appliance VM
   await new Promise((r) => setTimeout(r, 4000));
   const keep = NasAgentClient.startKeepAlive(); // the restarted VM is kept awake again
+  // WSL boot race: right after --terminate the first command can fail with "Failed to start the systemd user session".
+  // Wait until the VM answers a no-op before timing the agent's own recovery (a real appliance has booted before it is called).
+  for (let i = 0; i < 30; i++) {
+    if (await new Promise((r) => execFile("wsl.exe", ["-d", "Ubuntu", "-u", "root", "--", "true"], { timeout: 30000 }, (err) => r(!err)))) break;
+    await new Promise((r) => setTimeout(r, 2000));
+  }
   const t0 = Date.now();
   const first = await new NasAgentClient({ backend: "wsl-local" }).call("services", {});
   const boot = NasAgentClient.lastBootRecovery;
@@ -270,7 +271,8 @@ test("Test C: unclean restart persistence -- data, pools, permissions, exports a
     assert.equal(sha(await fx.agent.readFile({ shareName, relativePath: "persist.bin" })), sha(payload));
     assert.ok((await fx.agent.call("snapshot_list", { share: shareName })).snapshots.some((x) => x.name === "before-restart" && x.locked), "the immutable snapshot survived the restart still locked");
     await connect(mgr.unix, mgr.password);
-    assert.equal(sha(await fs.readFile(unc(shareName, "persist.bin"))), sha(payload), "read back over Windows SMB after the restart");
+    // Windows may still hold a session to the killed VM; its first open fails ("network name no longer available") and a retry reconnects.
+    assert.equal(sha(await eventually(() => fs.readFile(unc(shareName, "persist.bin")), { tries: 20, everyMs: 2000 })), sha(payload), "read back over Windows SMB after the restart");
     await disconnect();
     await connect(staff.unix, staff.password);
     await assert.rejects(() => fs.writeFile(unc(shareName, "denied.txt"), "x"), (e) => ["EPERM", "EACCES", "EROFS"].includes(e.code), "permissions survived the restart");

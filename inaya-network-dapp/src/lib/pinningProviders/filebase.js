@@ -19,6 +19,7 @@
 
 import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { sha256Hex } from "./hash.js";
+import { realStorageAllowed } from "./testGuard.js";
 
 const ENDPOINT = "https://s3.filebase.io";
 const REGION = "auto";
@@ -49,8 +50,9 @@ function getBucket() {
   return bucket;
 }
 
+// Off during test runs unless a test opts in (testGuard.js): tests must not fill the real account.
 export function isConfigured() {
-  return Boolean(process.env.FILEBASE_ACCESS_KEY && process.env.FILEBASE_SECRET_KEY && process.env.FILEBASE_BUCKET);
+  return realStorageAllowed() && Boolean(process.env.FILEBASE_ACCESS_KEY && process.env.FILEBASE_SECRET_KEY && process.env.FILEBASE_BUCKET);
 }
 
 /** Pins `content` as a raw object; returns { provider: "filebase", cid, providerRef, contentHash }
