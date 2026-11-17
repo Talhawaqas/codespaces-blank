@@ -210,7 +210,8 @@ export async function readVisitorContent({ token, viewId, part }) {
   const v = await views.findOne({ viewId: hashToken(String(viewId || "")) });
   if (!v || String(v.sessionId) !== String(session._id) || v.expiresAt <= new Date()) fail(401, "Your view has expired. Open the document again.");
   const doc = await c.orgDocuments.findOne({ _id: v.documentId, orgId: session.orgId }); if (!doc) fail(404, "Document not found.");
-  let content; try { content = await fetchShard(part === "alpha" ? doc.cidAlpha : doc.cidBeta); } catch { fail(502, "The encrypted content could not be fetched right now. Try again."); }
+  // A chunked large file answers with its manifest (signed links to the encrypted pieces) instead of the shard itself.
+  let content; try { content = doc.storage?.prefix ? JSON.stringify(await (await import("../chunkedStorage.js")).manifestWithLinks(doc, part)) : await fetchShard(part === "alpha" ? doc.cidAlpha : doc.cidBeta); } catch { fail(502, "The encrypted content could not be fetched right now. Try again."); }
   return { part, content };
 }
 /** Client-reported viewer events (capture-attempt signals, download clicks). Signals, not proof: the page says so. Rate limited. */

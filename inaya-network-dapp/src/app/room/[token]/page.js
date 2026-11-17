@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState, use } from "react";
 import SecureViewer from "../../../components/viewer/SecureViewer";
-import { dataUrlToFile, decryptData } from "../../../components/viewer/decrypt";
+import { decryptToFile, parseShardContent } from "../../../components/viewer/documentFiles";
 
 const input = "w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#8a96ab]";
 const primary = "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40";
@@ -49,10 +49,10 @@ export default function RoomPage({ params }) {
     e.preventDefault(); setBusy(true); setError("");
     try {
       const o = await api("/api/data-room-access/v2/open", { method: "POST", body: JSON.stringify({ documentId: opening.id, deviceId: device() }) });
-      const get = async (part) => JSON.parse((await api(`/api/data-room-access/v2/content?viewId=${encodeURIComponent(o.viewId)}&part=${part}`)).content).shard;
+      const get = async (part) => parseShardContent((await api(`/api/data-room-access/v2/content?viewId=${encodeURIComponent(o.viewId)}&part=${part}`)).content);
       const [a, b] = await Promise.all([get("alpha"), get("beta")]);
-      let dataUrl; try { dataUrl = await decryptData(a + b, passkey); } catch { throw new Error("Could not decrypt this document. Check the passkey and try again."); }
-      viewRef.current = o.viewId; setView({ ...o, file: { ...dataUrlToFile(dataUrl), name: o.filename } }); setPasskey("");
+      const file = await decryptToFile(a, b, passkey); // either storage format
+      viewRef.current = o.viewId; setView({ ...o, file: { ...file, name: o.filename } }); setPasskey("");
     } catch (e2) { setError(e2.message); } finally { setBusy(false); }
   }
   const signal = useCallback((type) => { if (viewRef.current) fetch("/api/data-room-access/v2/signal", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ viewId: viewRef.current, type }) }).catch(() => {}); }, []);

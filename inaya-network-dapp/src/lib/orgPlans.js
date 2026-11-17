@@ -26,7 +26,7 @@ export const PLANS = {
     maxUsers: 2,
     maxExtraUsers: 3,
     maxStorageGB: 250,
-    maxFileSizeMB: 5,
+    maxFileSizeMB: 5 * 1024, // 5 GB (chunked uploads, 16 Nov 2026; was 5 MB while every upload passed through a server function)
     features: [
       "2 Users",
       "250 GB Secure Storage",
@@ -50,7 +50,7 @@ export const PLANS = {
     maxUsers: 5,
     maxExtraUsers: 10,
     maxStorageGB: 1000,
-    maxFileSizeMB: 10,
+    maxFileSizeMB: 10 * 1024, // 10 GB
     features: [
       "5 Users",
       "1 TB Secure Storage",
@@ -74,7 +74,7 @@ export const PLANS = {
     maxUsers: 10,
     maxExtraUsers: 15,
     maxStorageGB: 5000,
-    maxFileSizeMB: 25,
+    maxFileSizeMB: 25 * 1024, // 25 GB
     features: [
       "10 Users",
       "5 TB Secure Storage",
@@ -104,7 +104,7 @@ export const PLANS = {
     maxUsers: 25,
     maxExtraUsers: 20,
     maxStorageGB: 10000,
-    maxFileSizeMB: 100,
+    maxFileSizeMB: 100 * 1024, // 100 GB
     features: [
       "Up to 25 Users",
       "10 TB Secure Storage",
@@ -272,4 +272,28 @@ export async function getOrgUsage(orgId) {
     activeUsers,
     storageUsedBytes: storageAgg[0]?.totalBytes || 0,
   };
+}
+
+const MB = 1048576;
+const GB = 1073741824;
+/** "5 GB" / "250 MB": the plan's file-size limit in words. */
+export function fileSizeLimitLabel(maxFileSizeMB) {
+  return maxFileSizeMB >= 1024 ? `${+(maxFileSizeMB / 1024).toFixed(1)} GB` : `${maxFileSizeMB} MB`;
+}
+
+/** The one place a document upload is checked against the plan: per-file size, then remaining storage.
+ *  Returns null when allowed, or { error, status }. Used before an upload starts and again when it is saved. */
+export async function checkUploadAgainstPlan({ org, orgId, sizeBytes }) {
+  const plan = getOrgPlan(org);
+  const size = Number(sizeBytes);
+  if (plan.maxFileSizeMB !== Infinity && size > plan.maxFileSizeMB * MB) {
+    return { status: 413, error: `Your ${plan.name} plan allows files up to ${fileSizeLimitLabel(plan.maxFileSizeMB)}. Upgrade to upload larger files.` };
+  }
+  if (plan.maxStorageGB !== Infinity) {
+    const { storageUsedBytes } = await getOrgUsage(orgId);
+    if (storageUsedBytes + size > plan.maxStorageGB * GB) {
+      return { status: 403, error: `Your ${plan.name} plan's ${plan.maxStorageGB} GB storage limit is full. Upgrade for more space.` };
+    }
+  }
+  return null;
 }

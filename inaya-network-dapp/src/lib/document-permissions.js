@@ -536,5 +536,7 @@ export async function resolveShareAccess(token) {
     metadata: { shareId: result.share._id.toString() },
   });
 
-  return { filename: doc.filename, sizeBytes: doc.sizeBytes, cidAlpha: doc.cidAlpha, cidBeta: doc.cidBeta };
+  // Chunked large files also need short-lived signed links to their pieces (loaded only for those documents).
+  const chunked = doc.storage?.prefix ? await (await import("./chunkedStorage.js")).chunkedForReader(doc) : null;
+  return { filename: doc.filename, sizeBytes: doc.sizeBytes, cidAlpha: doc.cidAlpha, cidBeta: doc.cidBeta, ...(chunked ? { chunked } : {}) };
 }

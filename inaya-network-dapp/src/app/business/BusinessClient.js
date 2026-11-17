@@ -74,7 +74,7 @@ import MfaVerifyScreen from "../../components/business/MfaVerifyScreen";
 const MfaSettings = dynamic(() => import("../../components/business/MfaSettings"), { ssr: false, loading: () => null });
 import ThemeSwitcher from "../../components/ThemeSwitcher";
 import { useTheme } from "../../components/ThemeProvider";
-import { encryptAndShardFile } from "../../lib/clientCrypto";
+import { uploadDocumentFile, abandonChunkedUpload, decryptToFile, saveDocument } from "../../components/viewer/documentFiles";
 import ConfirmButton from "../../components/business/ConfirmButton";
 import { OrgProvider } from "../../contexts/OrgContext";
 import NotificationsBell from "../../components/NotificationsBell";
@@ -127,7 +127,6 @@ const InfrastructureView = dynamic(() => import("../../components/business/Infra
 const RansomwareView = dynamic(() => import("../../components/business/endpoint/RansomwareView"), { ssr: false, loading: ScreenLoading });
 const DocGovernancePanel = dynamic(() => import("../../components/business/governance/DocGovernancePanel"), { ssr: false, loading: () => null });
 const SecureViewer = dynamic(() => import("../../components/viewer/SecureViewer"), { ssr: false, loading: () => null });
-import { dataUrlToFile } from "../../components/viewer/decrypt";
 const FileRequestsView = dynamic(() => import("../../components/business/shares/FileRequestsView"), { ssr: false, loading: ScreenLoading });
 import LockControl from "../../components/business/shares/LockControl";
 const AdvancedShareForm = dynamic(() => import("../../components/business/shares/AdvancedShareForm"), { ssr: false, loading: () => null });
@@ -176,20 +175,7 @@ const ROLE_LABELS = { owner: "Owner", admin: "Admin", member: "Member" };
 // ============================================================
 // Client-side crypto + pinning — see module comment above.
 // ============================================================
-async function decryptData(base64Str, password) {
-  const binaryStr = window.atob(base64Str);
-  const combined = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) combined[i] = binaryStr.charCodeAt(i);
-  const salt = combined.slice(0, 16);
-  const iv = combined.slice(16, 28);
-  const encrypted = combined.slice(28);
-  const enc = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-  const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-  const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted);
-  return new TextDecoder().decode(decrypted);
-}
-
+// Decryption of both storage formats lives in components/viewer/documentFiles.js.
 // Same two-gateway fallback the wallet-connected flow uses (page.js) —
 // Cloudflare's IPFS gateway first, Pinata's as a fallback.
 async function fetchShardFromIPFS(cid) {
@@ -2298,6 +2284,7 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
   const [passkey, setPasskey] = useState("");
   const [accessLevel, setAccessLevel] = useState("DEPARTMENT");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(null); // { done, count } while a large file uploads in pieces
   const [error, setError] = useState("");
 
   async function handleUpload(e) {
@@ -2305,21 +2292,27 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
     if (!file || !passkey) return;
     setUploading(true);
     setError("");
+    setProgress(null);
+    let uploaded = null;
     try {
-      const { fileHash, sizeBytes, cidAlpha, cidBeta } = await encryptAndShardFile(file, passkey);
+      // Small files keep the original format; large ones go to storage in encrypted pieces (documentFiles.js).
+      uploaded = await uploadDocumentFile(file, passkey, { orgId, onProgress: setProgress });
+      const { fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken } = uploaded;
 
       await api("/api/orgs/documents", {
         method: "POST",
-        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel }),
+        body: JSON.stringify({ orgId, departmentId, projectId, filename: file.name, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel, chunkedUploadToken }),
       });
 
       setFile(null);
       setPasskey("");
       onUploaded();
     } catch (err) {
+      if (uploaded?.chunkedUploadToken) abandonChunkedUpload(orgId, uploaded.chunkedUploadToken);
       setError(err.message);
     } finally {
       setUploading(false);
+      setProgress(null);
     }
   }
 
@@ -2335,8 +2328,9 @@ function DocumentColumn({ orgId, departmentId, projectId, documents, canManage, 
         </select>
         <p className="text-[11px] text-[var(--inaya-text-muted)]">{ACCESS_LEVEL_HINTS[accessLevel]}</p>
         <button disabled={uploading || !file || !passkey} className="w-full text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] py-2 rounded-lg disabled:opacity-40">
-          {uploading ? "Encrypting & uploading…" : "Upload document"}
+          {uploading ? (progress ? `Uploading… ${Math.round((progress.done / progress.count) * 100)}%` : "Encrypting & uploading…") : "Upload document"}
         </button>
+        {uploading && progress && <p className="text-[11px] text-[var(--inaya-text-muted)]">Large file: encrypted and uploaded in {progress.count} pieces. Keep this page open.</p>}
       </form>
       {error && <p className="text-red-400 text-[12px] mb-2">{error}</p>}
       {documents.length === 0 ? (
@@ -2414,9 +2408,9 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
     setPreviewBusy(true); setError("");
     try {
       const info = await api(`/api/orgs/documents/${doc.id}/retrieve?orgId=${orgId}`);
-      const [shardA, shardB] = await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
-      const dataUrl = await decryptData(shardA + shardB, previewPasskey);
-      setPreviewFile({ ...dataUrlToFile(dataUrl), name: info.filename }); setPreviewPasskey("");
+      if (info.chunked && info.sizeBytes > 512 * 1024 * 1024) throw new Error("This file is too large to preview. Download it instead.");
+      const [shardA, shardB] = info.chunked ? [info.chunked.alpha, info.chunked.beta] : await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
+      setPreviewFile({ ...(await decryptToFile(shardA, shardB, previewPasskey)), name: info.filename }); setPreviewPasskey("");
     } catch (err) { setError(err.message || "Could not decrypt — check the passkey."); } finally { setPreviewBusy(false); }
   }
 
@@ -2426,12 +2420,8 @@ function DocumentCard({ doc, orgId, canManage, onChanged }) {
     setError("");
     try {
       const info = await api(`/api/orgs/documents/${doc.id}/retrieve?orgId=${orgId}`);
-      const [shardA, shardB] = await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
-      const dataUrl = await decryptData(shardA + shardB, downloadPasskey);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = info.filename;
-      a.click();
+      const [shardA, shardB] = info.chunked ? [info.chunked.alpha, info.chunked.beta] : await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
+      await saveDocument(shardA, shardB, downloadPasskey, info.filename);
       setShowDownload(false);
       setDownloadPasskey("");
     } catch (err) {

@@ -21,7 +21,8 @@ import { getDocumentAccessLevel, meetsLevel } from "../../../../../../lib/docume
 import { lockedByOther } from "../../../../../../lib/filelocks.js";
 import { logDocumentActivity } from "../../../../../../lib/document-workflow.js";
 import { supersedeActiveSigningRequests } from "../../../../../../lib/signing-workflow.js";
-import { getOrgPlan, getOrgUsage } from "../../../../../../lib/orgPlans.js";
+import { checkUploadAgainstPlan } from "../../../../../../lib/orgPlans.js";
+import { verifyChunkedRegistration, ChunkedError } from "../../../../../../lib/chunkedStorage.js";
 
 const BYTES_PER_MB = 1048576;
 const BYTES_PER_GB = 1073741824;
@@ -47,7 +48,7 @@ export const maxDuration = 60;
 export async function POST(req, { params }) {
   try {
     const { documentId } = params;
-    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta } = await req.json();
+    const { orgId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, chunkedUploadToken = null } = await req.json();
     if (!orgId || !filename || !fileHash || !sizeBytes || !cidAlpha || !cidBeta) {
       return NextResponse.json({ error: "orgId, filename, fileHash, sizeBytes, cidAlpha, and cidBeta are required." }, { status: 400 });
     }
@@ -76,16 +77,14 @@ export async function POST(req, { params }) {
     if (existing) return NextResponse.json({ error: "This exact file has already been registered." }, { status: 409 });
 
     const org = await orgs.findOne({ _id: orgObjectId });
-    const plan = getOrgPlan(org);
     const sizeBytesNum = Number(sizeBytes);
-    if (plan.maxFileSizeMB !== Infinity && sizeBytesNum > plan.maxFileSizeMB * BYTES_PER_MB) {
-      return NextResponse.json({ error: `Your ${plan.name} plan allows files up to ${plan.maxFileSizeMB} MB. Upgrade to upload larger files.` }, { status: 413 });
-    }
-    if (plan.maxStorageGB !== Infinity) {
-      const { storageUsedBytes } = await getOrgUsage(orgId);
-      if (storageUsedBytes + sizeBytesNum > plan.maxStorageGB * BYTES_PER_GB) {
-        return NextResponse.json({ error: `Your ${plan.name} plan's ${plan.maxStorageGB} GB storage limit is full. Upgrade for more space.` }, { status: 403 });
-      }
+    const planBlock = await checkUploadAgainstPlan({ org, orgId, sizeBytes: sizeBytesNum });
+    if (planBlock) return NextResponse.json({ error: planBlock.error }, { status: planBlock.status });
+    // A large new version arrives in the chunked format, exactly as in POST /api/orgs/documents.
+    let storage = null;
+    if (chunkedUploadToken) {
+      try { storage = await verifyChunkedRegistration({ token: chunkedUploadToken, orgId, email: auth.session.email, cidAlpha, cidBeta, sizeBytes: sizeBytesNum }); }
+      catch (err) { if (err instanceof ChunkedError) return NextResponse.json({ error: err.message }, { status: err.status }); throw err; }
     }
 
     const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -125,6 +124,7 @@ export async function POST(req, { params }) {
       sizeBytes: sizeBytesNum,
       cidAlpha,
       cidBeta,
+      ...(storage ? { storage } : {}), // chunked large file (chunkedStorage.js)
       uploadedByEmail: auth.session.email,
       txHash: registerTx.hash,
       status: "DRAFT",

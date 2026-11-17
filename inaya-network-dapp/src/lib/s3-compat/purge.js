@@ -20,6 +20,21 @@ function refsOf(doc) {
 /** Best-effort: never throws, so a provider outage can't fail the user's DELETE/PUT. */
 export async function purgeObjectStorage(doc) {
   if (!doc?.fileHash || (!doc.cidAlpha && !doc.cidBeta)) return { skipped: true };
+  // Chunked large files keep every piece and both manifests under one prefix: delete them all.
+  if (doc.storage?.prefix) {
+    try {
+      const { deletePrefix } = await import("../chunkedStorage.js");
+      const r = await deletePrefix(doc.storage.prefix);
+      const { orgDocuments } = await getOrgCollections();
+      await orgDocuments.updateOne({ _id: doc._id }, { $set: { storagePurgedAt: new Date().toISOString() }, $unset: { purgePending: "" } });
+      return { purged: r.deleted, failed: 0 };
+    } catch (err) {
+      console.error("purge of a chunked document failed (will be retried by the sweep):", err.message);
+      const { orgDocuments } = await getOrgCollections();
+      await orgDocuments.updateOne({ _id: doc._id }, { $set: { purgePending: true } }).catch(() => {});
+      return { failed: 1 };
+    }
+  }
   try {
     const result = await purgeAssetReplicas(doc.fileHash, { extraRefs: refsOf(doc) });
     const { orgDocuments } = await getOrgCollections();

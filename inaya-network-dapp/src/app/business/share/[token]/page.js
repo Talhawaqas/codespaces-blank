@@ -16,20 +16,7 @@
 
 import { useState, useEffect, use } from "react";
 import V2Viewer from "../../../../components/shares/V2Viewer";
-
-async function decryptData(base64Str, password) {
-  const binaryStr = window.atob(base64Str);
-  const combined = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) combined[i] = binaryStr.charCodeAt(i);
-  const salt = combined.slice(0, 16);
-  const iv = combined.slice(16, 28);
-  const encrypted = combined.slice(28);
-  const enc = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-  const key = await window.crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-  const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted);
-  return new TextDecoder().decode(decrypted);
-}
+import { saveDocument } from "../../../../components/viewer/documentFiles";
 
 async function fetchShardFromIPFS(cid) {
   try {
@@ -70,12 +57,9 @@ export default function SharePage({ params }) {
     setDecrypting(true);
     setDecryptError("");
     try {
-      const [shardA, shardB] = await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
-      const dataUrl = await decryptData(shardA + shardB, passkey);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = info.filename;
-      a.click();
+      // Large files are stored in encrypted pieces; the share response then carries signed links to them.
+      const [shardA, shardB] = info.chunked ? [info.chunked.alpha, info.chunked.beta] : await Promise.all([fetchShardFromIPFS(info.cidAlpha), fetchShardFromIPFS(info.cidBeta)]);
+      await saveDocument(shardA, shardB, passkey, info.filename);
     } catch {
       setDecryptError("Could not decrypt this document — check the passkey and try again.");
     } finally {

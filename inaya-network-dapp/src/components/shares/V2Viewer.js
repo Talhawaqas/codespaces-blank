@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import SecureViewer from "../viewer/SecureViewer";
-import { dataUrlToFile, decryptData } from "../viewer/decrypt";
+import { decryptToFile, parseShardContent } from "../viewer/documentFiles";
 
 const post = async (url, body) => {
   const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -61,10 +61,9 @@ export default function V2Viewer({ token, peek }) {
   async function decrypt(e) {
     e.preventDefault(); setBusy(true); setErr("");
     try {
-      const get = async (part) => { const r = await fetch(`/api/orgs/share/${token}/content?part=${part}`, { headers: { "x-share-session": session.sessionToken } }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Could not fetch the document."); return JSON.parse(d.content).shard; };
+      const get = async (part) => { const r = await fetch(`/api/orgs/share/${token}/content?part=${part}`, { headers: { "x-share-session": session.sessionToken } }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Could not fetch the document."); return parseShardContent(d.content); };
       const [a, b] = await Promise.all([get("alpha"), get("beta")]);
-      let dataUrl; try { dataUrl = await decryptData(a + b, passkey); } catch { throw new Error("Could not decrypt this document. Check the passkey and try again."); }
-      setFile({ ...dataUrlToFile(dataUrl), name: session.filename });
+      setFile({ ...(await decryptToFile(a, b, passkey)), name: session.filename }); // either storage format
     } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   }
 

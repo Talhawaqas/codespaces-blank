@@ -31,7 +31,8 @@ import { ObjectId } from "mongodb";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../lib/orgs.js";
 import { logDocumentActivity } from "../../../../lib/document-workflow.js";
 import { getBulkDocumentAccess, isProjectMember, ACCESS_LEVELS } from "../../../../lib/document-permissions.js";
-import { getOrgPlan, getOrgUsage } from "../../../../lib/orgPlans.js";
+import { checkUploadAgainstPlan } from "../../../../lib/orgPlans.js";
+import { verifyChunkedRegistration, ChunkedError } from "../../../../lib/chunkedStorage.js";
 
 const BYTES_PER_MB = 1048576;
 const BYTES_PER_GB = 1073741824;
@@ -57,7 +58,7 @@ export const maxDuration = 60; // on-chain confirmations can be slow, same reaso
 
 export async function POST(req) {
   try {
-    const { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel = "DEPARTMENT" } = await req.json();
+    const { orgId, departmentId, projectId, filename, fileHash, sizeBytes, cidAlpha, cidBeta, accessLevel = "DEPARTMENT", chunkedUploadToken = null } = await req.json();
 
     if (!orgId || !departmentId || !projectId) {
       return NextResponse.json({ error: "orgId, departmentId, and projectId are required." }, { status: 400 });
@@ -94,21 +95,20 @@ export async function POST(req) {
 
     // Plan limits — checked before doing any on-chain work so a rejected
     // upload never wastes the treasury wallet's gas.
-    const plan = getOrgPlan(org);
     const sizeBytesNum = Number(sizeBytes);
-    if (plan.maxFileSizeMB !== Infinity && sizeBytesNum > plan.maxFileSizeMB * BYTES_PER_MB) {
-      return NextResponse.json(
-        { error: `Your ${plan.name} plan allows files up to ${plan.maxFileSizeMB} MB. Upgrade to upload larger files.` },
-        { status: 413 }
-      );
-    }
-    if (plan.maxStorageGB !== Infinity) {
-      const { storageUsedBytes } = await getOrgUsage(orgId);
-      if (storageUsedBytes + sizeBytesNum > plan.maxStorageGB * BYTES_PER_GB) {
-        return NextResponse.json(
-          { error: `Your ${plan.name} plan's ${plan.maxStorageGB} GB storage limit is full. Upgrade for more space.` },
-          { status: 403 }
-        );
+    const planBlock = await checkUploadAgainstPlan({ org, orgId, sizeBytes: sizeBytesNum });
+    if (planBlock) return NextResponse.json({ error: planBlock.error }, { status: planBlock.status });
+
+    // Large files arrive in the chunked format (src/lib/chunkedFile.js): the pieces are already in storage,
+    // uploaded straight from the browser. The upload token and the stored manifests must match exactly what
+    // is being registered; the document then remembers where its pieces live.
+    let storage = null;
+    if (chunkedUploadToken) {
+      try {
+        storage = await verifyChunkedRegistration({ token: chunkedUploadToken, orgId, email: auth.session.email, cidAlpha, cidBeta, sizeBytes: sizeBytesNum });
+      } catch (err) {
+        if (err instanceof ChunkedError) return NextResponse.json({ error: err.message }, { status: err.status });
+        throw err;
       }
     }
 
@@ -151,6 +151,7 @@ export async function POST(req) {
       sizeBytes: Number(sizeBytes),
       cidAlpha,
       cidBeta,
+      ...(storage ? { storage } : {}), // chunked large file: where its pieces live (chunkedStorage.js)
       uploadedByEmail: auth.session.email,
       txHash: registerTx.hash,
       status: "DRAFT", // Phase 2 workflow — see src/lib/document-workflow.js

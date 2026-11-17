@@ -23,6 +23,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../../lib/orgs.
 import { requireDocumentAccess } from "../../../../../../lib/document-permissions.js";
 import { getOrgProfile } from "../../../../../../lib/industry-config.js";
 import { logGovernmentDocumentRead } from "../../../../../../lib/government-audit.js";
+import { chunkedForReader } from "../../../../../../lib/chunkedStorage.js";
 
 export async function GET(req, { params }) {
   try {
@@ -59,6 +60,8 @@ export async function GET(req, { params }) {
       cidAlpha: access.doc.cidAlpha,
       cidBeta: access.doc.cidBeta,
       yourAccessLevel: access.accessLevel,
+      // Chunked large files: both manifests with short-lived signed download links (null for every other document).
+      chunked: await chunkedForReader(access.doc),
     });
   } catch (err) {
     console.error("orgs/documents/[documentId]/retrieve failed:", err);

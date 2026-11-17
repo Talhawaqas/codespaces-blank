@@ -376,7 +376,8 @@ export async function readShareContent({ token, sessionToken, part, ip }) {
   const doc = await c.orgDocuments.findOne({ _id: share.documentId, orgId: share.orgId });
   if (!doc) fail(404, "The shared document no longer exists.");
   let content;
-  try { content = await shardFetcher(part === "alpha" ? doc.cidAlpha : doc.cidBeta); } catch { fail(502, "The encrypted content could not be fetched right now. Try again."); }
+  // A chunked large file answers with its manifest (signed links to the encrypted pieces) instead of the shard itself.
+  try { content = doc.storage?.prefix ? JSON.stringify(await (await import("../chunkedStorage.js")).manifestWithLinks(doc, part)) : await shardFetcher(part === "alpha" ? doc.cidAlpha : doc.cidBeta); } catch { fail(502, "The encrypted content could not be fetched right now. Try again."); }
   return { part, content };
 }
 
