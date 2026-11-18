@@ -79,6 +79,14 @@ export async function createShare({ orgId, applianceId, shareName, ownerUnixUser
     if (sp?.error) console.error("default NAS snapshot schedule not set:", String(sp.error).slice(0, 120));
     else share.snapshotPolicy = DEFAULT_NAS_SNAPSHOT_POLICY;
   }
+  // Off-site copy by default: a nightly encrypted backup of the share to Inaya cloud storage (the appliance's backup bucket).
+  const { nasDefaultOffsiteBackup, DEFAULT_NAS_BACKUP_POLICY } = await import("../protectionDefaults.js");
+  if (nasDefaultOffsiteBackup()) {
+    const { setBackupPolicy } = await import("./backup.js");
+    const bp = await setBackupPolicy({ orgId, shareId: result.insertedId, ...DEFAULT_NAS_BACKUP_POLICY, membership, actorEmail }).catch((e) => ({ error: e.message }));
+    if (bp?.error) console.error("default NAS off-site backup not set:", String(bp.error).slice(0, 120));
+    else share.backupPolicy = DEFAULT_NAS_BACKUP_POLICY;
+  }
   return { share };
 }
 
