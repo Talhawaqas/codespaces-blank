@@ -58,7 +58,8 @@ export async function GET(req) {
       },
       subscription: subscription
         ? {
-            status: subscription.status,
+            // A company license (src/lib/licensing) is the source of truth for the state shown to customers.
+            status: subscription.licenseId ? (await import("../../../../lib/licensing/state.js")).STATE_LABELS[(await import("../../../../lib/licensing/state.js")).effectiveState(subscription).state].toLowerCase() : subscription.status,
             provider: subscription.provider || "stripe",
             billingInterval: subscription.billingInterval,
             currentPeriodEnd: subscription.currentPeriodEnd,

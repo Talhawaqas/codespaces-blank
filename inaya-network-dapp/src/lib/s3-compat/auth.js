@@ -121,6 +121,20 @@ async function authenticateViaGoogleOAuth(idToken) {
  *  (nullish), which `??` would otherwise treat as "not provided" and
  *  incorrectly fall through to re-deriving from the URL. */
 export async function authenticateS3Request(req, bodyBuffer, routeParams) {
+  return assertCompanyLicensed(await authenticateS3RequestUnlicensed(req, bodyBuffer, routeParams), () => new S3AuthError("AccessDenied", "This company's Business Workspace license is not active, so its storage keys are paused.", 403));
+}
+
+// Company license (License Manager SOW 9.3): a company whose license is suspended, cancelled or expired cannot use
+// its storage keys; its Owner/Admin still downloads everything through the company data export.
+async function assertCompanyLicensed(result, makeError) {
+  if (result?.owner?.type === "org") {
+    const { companyMayOperate } = await import("../licensing/gate.js");
+    if (!(await companyMayOperate(result.owner.orgId))) throw makeError();
+  }
+  return result;
+}
+
+async function authenticateS3RequestUnlicensed(req, bodyBuffer, routeParams) {
   const url = new URL(req.url);
   const derived = deriveRequestTarget(url);
   const bucket = routeParams && "bucket" in routeParams ? routeParams.bucket : derived.bucket;

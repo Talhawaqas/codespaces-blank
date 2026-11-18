@@ -93,6 +93,9 @@ async function activePage(slug) {
   const p = await calendar.findOne({ kind: "page", slug: s });
   if (!p || !p.active) return null;
   if (await engagementAccess(String(p.orgId))) return null; // plan lapsed: page goes dark
+  // Company license (License Manager SOW 9.3): a suspended company's booking page goes dark too.
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(p.orgId))) return null;
   return p;
 }
 

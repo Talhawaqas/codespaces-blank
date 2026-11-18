@@ -407,7 +407,10 @@ export async function executeApprovedAiActions({ orgId } = {}) {
   const due = await aiActionRequests.find(filter).toArray();
 
   const results = { claimed: 0, executed: 0, expired: 0 };
+  const { companyMayOperate } = await import("./licensing/gate.js");
   for (const request of due) {
+    // Company license (License Manager SOW 9.3 / 15): approved AI actions wait while the company's license is restricted.
+    if (!(await companyMayOperate(request.orgId))) continue;
     const queued = await aiActionRequests.findOneAndUpdate(
       { _id: request._id, status: "APPROVED" },
       { $set: { status: "QUEUED" } },

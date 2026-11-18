@@ -60,6 +60,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/licenses",
+      "schedule": "5 * * * *"
+    },
+    {
       "path": "/api/bridge/cron/index-events",
       "schedule": "*/5 * * * *"
     },

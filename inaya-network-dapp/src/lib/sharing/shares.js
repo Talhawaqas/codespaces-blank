@@ -230,6 +230,8 @@ export async function listAccessEvents({ orgId, shareId, actorEmail, membership,
 async function shareByToken(token) {
   const { documentShares } = await cols();
   const s = await documentShares.findOne({ tokenHash: hashShareToken(String(token || "")) });
+  // Company license (License Manager SOW 9.3): a suspended company's share links stop opening.
+  if (s) { const { companyMayOperate } = await import("../licensing/gate.js"); if (!(await companyMayOperate(s.orgId))) return null; }
   return s || null;
 }
 

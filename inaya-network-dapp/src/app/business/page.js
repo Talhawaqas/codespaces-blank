@@ -18,7 +18,7 @@ const softwareJsonLd = {
   applicationSubCategory: "ERP",
   operatingSystem: "Web, Windows, Linux, Android",
   description:
-    "An ERP-style business workspace: documents, finance, CRM, HR, inventory and procurement in one place, with every file encrypted on your own device before upload. Sign in with email and pay in USD, no wallet needed.",
+    "An ERP-style business workspace: documents, finance, CRM, HR, inventory and procurement in one place. Sign in with email and pay in USD, no wallet needed.",
   featureList: [
     "Client-side encrypted document management with approvals",
     "Finance: invoices, expenses and revenue reporting",

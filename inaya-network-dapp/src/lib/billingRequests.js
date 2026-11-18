@@ -224,7 +224,8 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
 /** Pending and recent requests for the admin page, newest first. */
 export async function listBillingRequests({ limit = 100 } = {}) {
   const col = await requests();
-  const rows = await col.find({}).sort({ requestedAt: -1 }).limit(limit).toArray();
+  // Only activation requests: license history rows share this collection with a `kind` (src/lib/licensing/service.js).
+  const rows = await col.find({ kind: { $exists: false } }).sort({ requestedAt: -1 }).limit(limit).toArray();
   return rows.map((r) => ({
     id: String(r._id), orgId: String(r.orgId), orgName: r.orgName, planId: r.planId, interval: r.interval, pilot: !!r.pilot,
     extraUsers: r.extraUsers || 0, amountPkr: r.amountPkr, setupFeePkr: r.setupFeePkr || 0, setupFeeReason: r.setupFeeReason || null, status: r.status, requestedByEmail: r.requestedByEmail, requestedAt: r.requestedAt,
@@ -243,19 +244,36 @@ export async function activatePkRequest({ requestId, months, paymentReference, a
   if (!reqDoc) return { error: "Request not found.", status: 404 };
   if (reqDoc.status !== "pending") return { error: `This request is already ${reqDoc.status}.`, status: 409 };
 
-  const now = new Date();
-  const paidUntil = new Date(now);
-  paidUntil.setMonth(paidUntil.getMonth() + m);
-  const { orgs, db } = await getOrgCollections();
+  // Since 17 Nov 2026 (License Manager SOW) activation goes through the company license: a license is assigned (or,
+  // for a company that already has one, renewed) with this payment recorded and confirmed, so every package has one
+  // license, one payment history and one audit trail. `months` is the number of months paid.
+  const L = await import("./licensing/service.js");
+  const { billingDateOf } = await import("./licensing/dates.js");
   const currency = reqDoc.currency || "PKR";
-  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { plan: reqDoc.planId, extraUsers: reqDoc.extraUsers || 0, planUpdatedAt: now.toISOString(), billingRegion: currency === "PKR" ? "PK" : "INTL", requiresPlanSelection: false } });
-  await db.collection("org_subscriptions").updateOne(
-    { orgId: reqDoc.orgId },
-    { $set: { orgId: reqDoc.orgId, plan: reqDoc.planId, status: "active", provider: reqDoc.paymentMethod || "bank_transfer", currency, billingInterval: reqDoc.interval, pilot: !!reqDoc.pilot, currentPeriodEnd: paidUntil.toISOString(), updatedAt: now.toISOString() } },
-    { upsert: true }
-  );
-  await col.updateOne({ _id: reqDoc._id }, { $set: { status: "active", activatedAt: now.toISOString(), paidUntil: paidUntil.toISOString(), paymentReference: String(paymentReference || "").slice(0, 120) || null, activatedBy: adminLabel } });
-  await logOrgActivity({ orgId: String(reqDoc.orgId), recordType: "ORGANIZATION", recordId: String(reqDoc.orgId), actorEmail: adminLabel, action: "PK_PLAN_ACTIVATED", previousState: null, newState: reqDoc.planId, metadata: { months: m, paidUntil: paidUntil.toISOString() } }).catch(() => {});
+  const cycle = reqDoc.interval === "year" ? "yearly" : "monthly";
+  const periods = cycle === "yearly" ? Math.max(1, Math.round(m / 12)) : m;
+  const perPeriod = currency === "PKR" ? Number(reqDoc.amountPkr) : Number(reqDoc.amountUsd);
+  const method = reqDoc.paymentMethod === "nayapay" ? "nayapay" : "bank_transfer";
+  const reference = String(paymentReference || "").slice(0, 120) || `activation-request-${reqDoc._id}`;
+  let license;
+  try {
+    const existing = await L.getLicense(String(reqDoc.orgId));
+    if (!existing || ["cancelled", "expired"].includes(existing.licenseStatus)) {
+      await L.assignLicense({ orgId: String(reqDoc.orgId), planId: reqDoc.planId, billingCycle: cycle, currency, amount: perPeriod, startDate: billingDateOf(new Date()), firstPayment: { status: "awaiting" }, note: `From activation request ${reqDoc._id}`, actor: adminLabel });
+    } else if (existing.planId !== reqDoc.planId || existing.billingCycle !== cycle || existing.amount !== perPeriod) {
+      await L.changeSubscription({ orgId: String(reqDoc.orgId), planId: reqDoc.planId, billingCycle: cycle, amount: perPeriod, applyAt: "now", reason: `Activation request ${reqDoc._id}`, actor: adminLabel });
+    }
+    const pay = await L.recordPayment({ orgId: String(reqDoc.orgId), amount: perPeriod * periods, currency, method, reference, periods, note: `Activation request ${reqDoc._id}`, actor: adminLabel });
+    ({ license } = await L.confirmPayment({ orgId: String(reqDoc.orgId), paymentId: pay.paymentId, actor: adminLabel }));
+  } catch (err) {
+    return { error: err.message, status: err.status || 500 };
+  }
+  const now = new Date();
+  const paidUntil = new Date(license.paymentDueAt);
+  const { orgs } = await getOrgCollections();
+  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { extraUsers: reqDoc.extraUsers || 0 } });
+  await col.updateOne({ _id: reqDoc._id }, { $set: { status: "active", activatedAt: now.toISOString(), paidUntil: paidUntil.toISOString(), paymentReference: String(paymentReference || "").slice(0, 120) || null, activatedBy: adminLabel, licenseId: license.licenseId } });
+  await logOrgActivity({ orgId: String(reqDoc.orgId), recordType: "ORGANIZATION", recordId: String(reqDoc.orgId), actorEmail: adminLabel, action: "PK_PLAN_ACTIVATED", previousState: null, newState: reqDoc.planId, metadata: { months: m, paidUntil: paidUntil.toISOString(), licenseId: license.licenseId } }).catch(() => {});
 
   if (reqDoc.requestedByEmail) {
     await sendEmail({

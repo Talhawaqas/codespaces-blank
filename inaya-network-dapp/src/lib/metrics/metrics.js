@@ -29,6 +29,10 @@ export const CATALOG = {
   "gateway.heartbeat": { help: "Gateway heartbeats received", labels: ANY }, "gateway.transfer_completed": { help: "Gateway transfers completed", labels: ANY },
   // compliance and keys
   "compliance.snapshot": { help: "Compliance snapshots taken", labels: ANY }, "keys.operation": { help: "Key provider operations", labels: ["wrap_ok", "wrap_failed", "unwrap_ok", "unwrap_failed"] },
+  // company licenses (License Manager SOW section 22)
+  "license.entitlement_denied": { help: "Requests refused because the company license is restricted", labels: ANY }, "license.transition": { help: "License state transitions", labels: ANY },
+  "license.job_run": { help: "License job runs", labels: ["ok", "failed"] }, "license.notice": { help: "License notices sent or failed", labels: ANY },
+  "license.export_job": { help: "Company data export jobs", labels: ["ready", "failed", "expired"] }, "license.payment": { help: "License payment operations", labels: ANY },
 };
 export const CLIENT_METRICS = Object.keys(CATALOG).filter((n) => CATALOG[n].client);
 const bucketFor = (ms) => { for (const b of LATENCY_BUCKETS_MS) if (ms <= b) return String(b); return "inf"; };

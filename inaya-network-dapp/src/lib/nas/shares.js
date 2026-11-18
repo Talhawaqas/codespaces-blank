@@ -70,6 +70,15 @@ export async function createShare({ orgId, applianceId, shareName, ownerUnixUser
     const q = await setShareQuota({ orgId, shareId: result.insertedId, hardBytes: Number(quotaBytes), membership, actorEmail });
     if (q.quota) share.quota = q.quota;
   }
+  // Ransomware protection by default (src/lib/protectionDefaults.js): a daily snapshot, the last 14 kept, each immutable
+  // for 7 days. A problem here never blocks the share; the company can change or switch off the schedule.
+  const { nasDefaultSnapshots, DEFAULT_NAS_SNAPSHOT_POLICY } = await import("../protectionDefaults.js");
+  if (nasDefaultSnapshots()) {
+    const { setSnapshotPolicy } = await import("./snapshots.js");
+    const sp = await setSnapshotPolicy({ orgId, shareId: result.insertedId, ...DEFAULT_NAS_SNAPSHOT_POLICY, membership, actorEmail }).catch((e) => ({ error: e.message }));
+    if (sp?.error) console.error("default NAS snapshot schedule not set:", String(sp.error).slice(0, 120));
+    else share.snapshotPolicy = DEFAULT_NAS_SNAPSHOT_POLICY;
+  }
   return { share };
 }
 

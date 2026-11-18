@@ -90,5 +90,8 @@ export async function resolveAccessKey({ accessKeyId }) {
   const { keys } = await cols();
   const doc = await keys.findOne({ accessKeyId, status: "ACTIVE" });
   if (!doc) return null;
+  // Company license (License Manager SOW 9.3): a suspended company's infrastructure keys stop working.
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(doc.orgId))) return null;
   return { orgId: doc.orgId, secretAccessKey: decryptIntegrationSecret(doc.secretAccessKeyEncrypted) };
 }

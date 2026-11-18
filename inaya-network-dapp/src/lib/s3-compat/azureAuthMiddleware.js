@@ -102,6 +102,20 @@ async function authenticateViaSas(req, url) {
 }
 
 export async function authenticateAzureRequest(req, bodyBuffer) {
+  return assertCompanyLicensed(await authenticateAzureRequestUnlicensed(req, bodyBuffer), () => new AzureAuthError("AuthorizationFailure", "This company's Business Workspace license is not active, so its storage keys are paused.", 403));
+}
+
+// Company license (License Manager SOW 9.3): a company whose license is suspended, cancelled or expired cannot use
+// its storage keys; its Owner/Admin still downloads everything through the company data export.
+async function assertCompanyLicensed(result, makeError) {
+  if (result?.owner?.type === "org") {
+    const { companyMayOperate } = await import("../licensing/gate.js");
+    if (!(await companyMayOperate(result.owner.orgId))) throw makeError();
+  }
+  return result;
+}
+
+async function authenticateAzureRequestUnlicensed(req, bodyBuffer) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
     const sasUrl = new URL(req.url);

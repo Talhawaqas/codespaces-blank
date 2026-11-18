@@ -150,7 +150,10 @@ export async function deleteUpload({ orgId, requestId, uploadId, actorEmail, mem
 
 async function byToken(token) {
   const { requests } = await cols();
-  return requests.findOne({ tokenHash: sha(String(token || "")) });
+  const r = await requests.findOne({ tokenHash: sha(String(token || "")) });
+  // Company license (License Manager SOW 9.3): a suspended company's upload links read as unavailable.
+  if (r) { const { companyMayOperate } = await import("../licensing/gate.js"); if (!(await companyMayOperate(r.orgId))) return null; }
+  return r;
 }
 
 /** What the upload page shows. Nothing about the organization's data; a dead link reveals only that it is dead. */

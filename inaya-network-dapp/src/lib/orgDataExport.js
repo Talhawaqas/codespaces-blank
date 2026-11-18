@@ -33,6 +33,37 @@ async function pool(items, size, fn) {
   return results;
 }
 
+// Company license records (License Manager SOW 12.3 / 7.1): the company gets its payments and subscription periods,
+// never Inaya's internal admin notes, reasons or admin names, nor the internal audit and notice rows.
+const LICENSE_INTERNAL_FIELDS = ["notes", "overrideReason", "manualSuspensionReason", "needsReview", "createdBy", "updatedBy", "confirmedBy", "rejectedBy", "reversedBy", "adjustmentReason", "rejectReason", "reason", "note", "changeReason", "activatedBy", "previousLicense"];
+const stripInternal = (d) => { const o = { ...d }; for (const f of LICENSE_INTERNAL_FIELDS) delete o[f]; return o; };
+function sanitizeCollection(name, docs) {
+  if (name === "org_subscriptions") return docs.map(stripInternal);
+  if (name === "billing_requests") return docs.filter((d) => !["license_event", "license_notice"].includes(d.kind)).map(stripInternal);
+  return docs;
+}
+
+/** Every record the company owns, as ZIP entries: records/<collection>.json plus company.json. */
+export async function collectOrgRecordFiles(orgId) {
+  const { db } = await connectToDatabase();
+  const oid = toObjectId(orgId);
+  const filter = { $or: [{ orgId: oid }, { orgId: String(orgId) }] };
+  const names = (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name).filter((n) => !SKIP_COLLECTION.test(n)).sort();
+  const org = await db.collection("orgs").findOne({ _id: oid });
+  const found = await pool(names, 16, async (name) => {
+    const docs = await db.collection(name).find(filter).limit(50000).toArray().catch(() => []);
+    const kept = sanitizeCollection(name, docs);
+    return kept.length ? { name, docs: kept } : null;
+  });
+  const files = [{ name: "company.json", data: EJSON.stringify(redact(org || { _id: oid }), null, 2, { relaxed: true }) }];
+  let records = 0;
+  for (const f of found.filter(Boolean)) {
+    records += f.docs.length;
+    files.push({ name: `records/${f.name}.json`, data: EJSON.stringify(f.docs.map((d) => redact(d)), null, 2, { relaxed: true }) });
+  }
+  return { org, files, records, collections: files.length - 1 };
+}
+
 /** Builds the ZIP. Returns { buffer, filename, collections, records }. */
 export async function buildOrgDataExport(orgId) {
   const { db } = await connectToDatabase();
@@ -42,7 +73,7 @@ export async function buildOrgDataExport(orgId) {
 
   const org = await db.collection("orgs").findOne({ _id: oid });
   const found = await pool(names, 16, async (name) => {
-    const docs = await db.collection(name).find(filter).limit(50000).toArray().catch(() => []);
+    const docs = sanitizeCollection(name, await db.collection(name).find(filter).limit(50000).toArray().catch(() => []));
     return docs.length ? { name, docs } : null;
   });
 

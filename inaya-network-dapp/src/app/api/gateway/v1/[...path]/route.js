@@ -48,6 +48,8 @@ async function handle(req, ctx) {
     if (auth.error) return json({ error: auth.error, ...(auth.revoked ? { code: "REVOKED" } : {}) }, auth.status);
     const gateway = auth.gateway;
     const off = await requireFeature("FEATURE_SOVEREIGN_GATEWAY", String(gateway.orgId)); if (off) return json({ error: off.error }, off.status);
+    // Company license (License Manager SOW 9.3): a suspended company's gateways stop transferring.
+    { const { companyMayOperate } = await import("../../../../../lib/licensing/gate.js"); if (!(await companyMayOperate(gateway.orgId))) return json({ error: "This company's Business Workspace license is not active.", code: "LICENSE_RESTRICTED" }, 403); }
     if (!withinCallBudget(String(gateway._id))) return json({ error: "Too many requests." }, 429);
 
     if (method === "POST" && a === "heartbeat") return json(await G.heartbeat({ gateway, report: body }));

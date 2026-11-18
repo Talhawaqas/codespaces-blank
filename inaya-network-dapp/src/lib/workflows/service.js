@@ -341,6 +341,9 @@ export async function verifyWebhook({ workflowId, timestamp, signature, rawBody 
   const { workflows, workflowWebhookHits } = await getOrgCollections();
   let w; try { w = await workflows.findOne({ _id: toObjectId(workflowId), deletedAt: null }); } catch { return { ok: false, status: 404 }; }
   if (!w || w.status !== "ACTIVE" || !w.webhook?.secretEncrypted) return { ok: false, status: 404 };
+  // Company license (License Manager SOW 9.3): a suspended company's automations do not run.
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(w.orgId))) return { ok: false, status: 403, reason: "license restricted" };
   const ts = Number(timestamp);
   if (!Number.isFinite(ts) || Math.abs(Date.now() - ts * 1000) > 5 * 60 * 1000) return { ok: false, status: 401, reason: "stale or missing timestamp" };
   let secret; try { secret = decryptIntegrationSecret(w.webhook.secretEncrypted); } catch { return { ok: false, status: 500 }; }

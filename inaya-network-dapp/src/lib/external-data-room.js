@@ -204,6 +204,9 @@ export async function getRoomSession(rawToken) {
   if (new Date(session.expiresAt).getTime() < Date.now()) return null;
   const room = await dataRooms.findOne({ _id: session.roomId });
   if (!room || room.closedAt) return null;
+  // Company license (License Manager SOW 9.3): a suspended company's data rooms are closed to visitors.
+  const { companyMayOperate } = await import("./licensing/gate.js");
+  if (!(await companyMayOperate(room.orgId))) return null;
   return session;
 }
 

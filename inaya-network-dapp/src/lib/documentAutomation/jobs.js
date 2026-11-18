@@ -114,7 +114,10 @@ export async function processDocumentJobs({ orgId, limit = 50 } = {}) {
   if (orgId) filter.orgId = toObjectId(orgId);
   const due = await documentJobs.find(filter).sort({ nextAttemptAt: 1 }).limit(limit).toArray();
   const out = { claimed: 0, succeeded: 0, failed: 0, gaveUp: 0 };
+  const { companyMayOperate } = await import("../licensing/gate.js");
   for (const job of due) {
+    // Company license (License Manager SOW 15): queued document jobs wait while the company's license is restricted.
+    if (!(await companyMayOperate(job.orgId))) continue;
     const claimed = await documentJobs.findOneAndUpdate({ _id: job._id, status: "PENDING" }, { $set: { status: "RUNNING", startedAt: now }, $inc: { attempts: 1 } }, { returnDocument: "after" });
     if (!claimed) continue;
     out.claimed++;

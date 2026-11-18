@@ -174,6 +174,8 @@ export async function getRoomByToken({ joinToken }) {
   const r = await rooms.findOne({ joinTokenHash: hashToken(String(joinToken || "")) });
   if (!r) fail(404, "This meeting link is not valid.");
   if (r.status === "ended") fail(410, "This meeting has ended.", "MEETING_ENDED");
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(r.orgId))) fail(403, "This meeting is not available right now.", "LICENSE_RESTRICTED");
   return { roomId: String(r._id), orgId: r.orgId, title: r.title, status: r.status, guestAccess: r.policy.guestAccess };
 }
 

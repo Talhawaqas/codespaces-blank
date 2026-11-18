@@ -28,7 +28,8 @@ export async function processDueReminders({ now = new Date(), limit = 100, sms =
 
   for (const a of due) {
     const orgKey = String(a.orgId);
-    if (!gateCache.has(orgKey)) gateCache.set(orgKey, !(await engagementAccess(orgKey)));
+    // Company license (License Manager SOW 15): no reminders are sent for a suspended company.
+    if (!gateCache.has(orgKey)) gateCache.set(orgKey, !(await engagementAccess(orgKey)) && (await (await import("../licensing/gate.js")).companyMayOperate(orgKey)));
     if (!settingsCache.has(orgKey)) settingsCache.set(orgKey, await getCalendarSettings(orgKey));
     const settings = settingsCache.get(orgKey);
     for (const r of a.reminders.filter((x) => x.sentAt === null && x.dueAt && new Date(x.dueAt) <= now)) {

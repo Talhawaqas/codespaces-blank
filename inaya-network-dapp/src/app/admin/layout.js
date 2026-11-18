@@ -19,6 +19,7 @@ const REFRESH_EVERY_MS = 4 * 60 * 1000;
 
 const SECTIONS = [
   ["/admin", "Enterprise Dashboard"],
+  ["/admin/licenses", "License Manager"],
   ["/admin/billing", "Billing & invoices"],
   ["/admin/leads", "Leads (outreach)"],
   ["/admin/dataroom", "Data Room"],

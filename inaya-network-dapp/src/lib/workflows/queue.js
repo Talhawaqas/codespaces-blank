@@ -104,6 +104,13 @@ export async function processQueue({ workerId = `worker-${process.pid}-${Math.ra
     const claim = await claimNext({ workerId });
     if (!claim) break;
     if (claim.deadLettered) { ran.push({ executionId: String(claim.execution._id), status: "FAILED", deadLetter: true }); continue; }
+    // Company license (License Manager SOW 9.3 / 15): a suspended company's automations do not run.
+    { const { companyMayOperate } = await import("../licensing/gate.js");
+      if (!(await companyMayOperate(claim.execution.orgId))) {
+        const { workflowExecutions } = await getOrgCollections();
+        await workflowExecutions.updateOne({ _id: claim.execution._id, "lease.owner": workerId }, { $set: { status: "FAILED", completedAt: new Date().toISOString(), error: "Not run: the company's Business Workspace license is not active.", lease: null } });
+        ran.push({ executionId: String(claim.execution._id), status: "FAILED", licenseRestricted: true }); continue;
+      } }
     try {
       const out = await runExecution(claim.execution._id, { workerId });
       ran.push({ executionId: String(out._id), status: out.status });

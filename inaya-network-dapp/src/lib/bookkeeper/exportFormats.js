@@ -63,6 +63,38 @@ export function toXlsx({ meta, columns, rows }) {
   ]);
 }
 
+/**
+ * A workbook with several named sheets (License Manager SOW 13.3): sheets = [{ name, columns, rows }]; optional
+ * `about` = { key: value } adds a final "About" sheet (export time, filters). Same cell rules as toXlsx: numbers stay
+ * numbers, text is never a formula (leading = + - @ are neutralised).
+ */
+export function toXlsxWorkbook({ sheets, about = null }) {
+  const all = [...sheets.map((s) => ({ ...s, kind: "table" })), ...(about ? [{ name: "About", kind: "about", meta: about }] : [])];
+  const safeName = (n, i) => String(n || `Sheet${i + 1}`).replace(/[\\/?*[\]:]/g, " ").slice(0, 31) || `Sheet${i + 1}`;
+  const xmlSheets = all.map((s) => {
+    if (s.kind === "about") {
+      const metaRows = Object.entries(s.meta).map(([k, v], i) => `<row r="${i + 1}">${cell(`A${i + 1}`, k, 1)}${cell(`B${i + 1}`, typeof v === "object" ? JSON.stringify(v) : v)}</row>`);
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="80" customWidth="1"/></cols><sheetData>${metaRows.join("")}</sheetData></worksheet>`;
+    }
+    const rows = [`<row r="1">${s.columns.map((c, i) => cell(`${columnName(i)}1`, c, 1)).join("")}</row>`];
+    s.rows.forEach((r, ri) => rows.push(`<row r="${ri + 2}">${s.columns.map((c, ci) => cell(`${columnName(ci)}${ri + 2}`, r[c])).join("")}</row>`));
+    const widths = s.columns.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${Math.min(48, Math.max(10, String(c).length + 2, ...s.rows.slice(0, 200).map((r) => String(r[c] ?? "").length + 2)))}" customWidth="1"/>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths}</cols><sheetData>${rows.join("")}</sheetData></worksheet>`;
+  });
+  const n = xmlSheets.length;
+  const overrides = xmlSheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("");
+  const sheetEls = all.map((s, i) => `<sheet name="${xmlEscape(safeName(s.name, i))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("");
+  const rels = xmlSheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("");
+  return zip([
+    { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+    { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: "xl/workbook.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetEls}</sheets></workbook>` },
+    { name: "xl/_rels/workbook.xml.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: "xl/styles.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>` },
+    ...xmlSheets.map((x, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: x })),
+  ]);
+}
+
 // ------------------------------------------------------------------------------------------------ pdf
 const latin = (v) => String(v ?? "").replace(/[^ -~ -ÿ]/g, "?");
 

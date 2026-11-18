@@ -4,6 +4,10 @@
 // 2) Installs the delete guard (src/lib/testDeleteGuard.js).
 import { installTestDeleteGuard } from "../src/lib/testDeleteGuard.js";
 
+// Suites written for plain S3 / NAS semantics keep the old defaults; test/protection-defaults.test.mjs turns the
+// production defaults (versioned buckets, daily immutable NAS snapshots) on explicitly (src/lib/protectionDefaults.js).
+process.env.S3_DEFAULT_VERSIONING ??= "off";
+process.env.NAS_DEFAULT_SNAPSHOTS ??= "off";
 const testUri = process.env.TEST_MONGODB_URI;
 if (!testUri) throw new Error("Tests need TEST_MONGODB_URI in .env.local (the separate test database). Refusing to run tests against the live database.");
 const host = (u) => { try { return new URL(String(u).replace(/^mongodb\+srv/, "http")).host; } catch { return ""; } };

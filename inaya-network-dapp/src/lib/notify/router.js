@@ -21,6 +21,9 @@ export const CHANNELS = ["inApp", "email", "push", "desktop", "webhook"];
 const HIGH_TRUST = new Set(["inApp", "desktop"]);
 /** event -> label, defaults, severity, and the registry webhook type (if any). `generic` is the text safe for any channel. */
 export const EVENTS = {
+  // Company license notices (License Manager SOW 14). The e-mail copy is mandatory and sent by src/lib/licensing/notices.js,
+  // so this event only puts the in-app notice in front of Owners and Admins.
+  "billing.license": { label: "Billing and license notices", defaults: { inApp: true }, severity: "warning", generic: "There is a notice about your Business Workspace subscription. Open Billing for details." },
   // Sovereign Infrastructure Fabric SOW §123
   "infra.node_revoked": { label: "An infrastructure node was revoked", defaults: { inApp: true, email: true }, severity: "warning", generic: "An infrastructure node's certificate was revoked." },
   "infra.operation_failed": { label: "An infrastructure operation failed", defaults: { inApp: true }, severity: "warning", generic: "A compute/network/storage operation failed on one of your nodes." },

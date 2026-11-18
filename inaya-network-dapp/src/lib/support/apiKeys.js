@@ -58,6 +58,8 @@ export async function requireSupportApiKey(req, scope) {
   const key = await apiKeys.findOne({ tokenHash: hashToken(raw), kind: "support", revokedAt: null });
   if (!key || new Date(key.expiresAt).getTime() <= Date.now()) return fail("Invalid, expired or revoked API key.", 401);
   if (scope && !(key.scopes || []).includes(scope)) return fail(`This key does not have the ${scope} scope.`, 403, { reasonCode: "SCOPE_MISSING" });
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(key.orgId))) return fail("This company's Business Workspace license is not active.", 403, { reasonCode: "LICENSE_RESTRICTED" });
   const settings = await getSettings(key.orgId);
   try { await checkRateLimit({ action: "support-api", key: String(key._id), max: settings.rate.apiPerMinute, windowMs: 60000 }); }
   catch { return fail("Rate limit exceeded. Slow down and retry shortly.", 429, { reasonCode: "RATE_LIMITED" }); }

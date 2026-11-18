@@ -139,6 +139,8 @@ const NasManagementView = dynamic(() => import("../../components/business/NasMan
 const WorkflowsView = dynamic(() => import("../../components/business/WorkflowsView"), { ssr: false, loading: ScreenLoading });
 const SupportView = dynamic(() => import("../../components/business/SupportView"), { ssr: false, loading: ScreenLoading });
 const HelpSupportView = dynamic(() => import("../../components/business/HelpSupportView"), { ssr: false, loading: ScreenLoading });
+// Company license (License Manager SOW 7, 8.1): banner, Billing card and the restricted screen.
+import { LicenseBanner, LicenseCard, RestrictedWorkspace, useLicenseStatus } from "../../components/business/LicenseBilling";
 const DocIntelligenceView = dynamic(() => import("../../components/business/DocIntelligenceView"), { ssr: false, loading: ScreenLoading });
 const DatabasesView = dynamic(() => import("../../components/business/DatabasesView"), { ssr: false, loading: ScreenLoading });
 const MlStudioView = dynamic(() => import("../../components/business/MlStudioView"), { ssr: false, loading: ScreenLoading });
@@ -627,18 +629,24 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-14 items-center">
         {/* HERO */}
         <div className="inaya-fade-in-up">
-          <span className="inline-block text-[12px] font-mono font-bold tracking-[0.2em] text-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] border border-[var(--inaya-border)] rounded-full px-3 py-1 mb-4">
-            INAYA BUSINESS WORKSPACE
-          </span>
+          {/* Hero copy: "Ransomware & Security" brief (17 Nov 2026), Option 1, worded so every claim is verified in the
+              code and tested (docs/marketing/HERO_CLAIMS_VERIFICATION.md): no "never" / "ransomware-proof" guarantees. */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="inline-block text-[12px] font-mono font-bold tracking-[0.2em] text-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] border border-[var(--inaya-border)] rounded-full px-3 py-1">
+              INAYA BUSINESS WORKSPACE
+            </span>
+            <span className="inline-block text-[11px] font-bold tracking-wide text-[#b8862f] border border-[#b8862f]/50 bg-[#b8862f]/10 rounded-full px-3 py-1">
+              NEW: TESTED IMMUTABLE SNAPSHOTS &amp; RANSOMWARE ROLLBACK
+            </span>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black text-[var(--inaya-text-primary)] tracking-tight leading-[1.1] mb-4">
-            Run Your Whole Business on One Secure Workspace.
+            Run Your Entire Business on Sovereign, Ransomware-Resilient Infrastructure.
           </h1>
-          <p className="text-xl sm:text-2xl font-extrabold leading-tight mb-4">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--inaya-accent)] via-[var(--inaya-accent-2)] to-[#c9a24d] whitespace-nowrap">Ahead of Its Time.</span>{" "}
-            <span className="text-[var(--inaya-text-primary)]">Built for What Comes Next.</span>
+          <p className="text-base sm:text-lg font-semibold text-[var(--inaya-text-primary)] leading-snug mb-4 max-w-xl">
+            One workspace for 77 business modules, from finance, HR and CRM to inventory and documents, with documents encrypted on your own device, immutable snapshots and tested ransomware rollback, so you can restore your data instead of paying a ransom.
           </p>
           <p className="text-[var(--inaya-text-muted)] text-sm leading-relaxed max-w-xl mb-6">
-            An ERP-style workspace for running your company day to day: documents, finance, CRM, HR, inventory and procurement in one place. Every file is encrypted on your own device before it is uploaded, so your records stay yours. Sign in with email, pay in USD, no wallet or token needed, and no egress fees.
+            An ERP-style workspace for running your company day to day: documents, finance, CRM, HR, inventory and procurement in one place. Sign in with email, pay in USD, no wallet or token needed, and no egress fees.
           </p>
           <div className="flex flex-wrap items-center gap-3 mb-5">
             <button type="button" onClick={() => openForm("create")} className="px-6 py-3 rounded-xl text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] hover:brightness-110 active:scale-95 transition-all">
@@ -650,8 +658,14 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
             <a href="/business/demo" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline px-1">▶ Watch the 4-minute demo</a>
             <a href="/business/pricing" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline px-1">See pricing</a>
           </div>
+          {/* Security micro-proof strip (brief section 3.2): each item is a verified, tested capability. */}
+          <ul aria-label="Data protection" className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-semibold text-[var(--inaya-text-primary)] mb-3">
+            {["Encrypted chunked storage", "Immutable snapshots & point-in-time rollback", "Automated nightly backups"].map((t) => (
+              <li key={t} className="flex items-center gap-1.5"><span aria-hidden="true" className="text-[#b8862f]">✓</span>{t}</li>
+            ))}
+          </ul>
           <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-[var(--inaya-text-muted)]">
-            {["🔒 Client-side encrypted", "💳 Pay in USD, no wallet", "🖥️ Web, desktop and Android"].map((t) => (
+            {["🔒 Documents encrypted on your device", "💳 Pay in USD, no wallet", "🖥️ Web, desktop and Android"].map((t) => (
               <span key={t} className="border border-[var(--inaya-border)] bg-[var(--inaya-surface)] rounded-full px-3 py-1">{t}</span>
             ))}
           </div>
@@ -1122,6 +1136,10 @@ function BetaGate({ orgId, flag, title, canManage, onSettings, children }) {
 function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogout, onSessionChanged }) {
   const { orgId, role, departmentIds } = membership;
   const canManage = role === "owner" || role === "admin";
+  // Company license: a suspended / cancelled / expired company sees only Billing, its data export, document download
+  // and Help (the server enforces the same rule on every API; this is the matching screen).
+  const { status: licenseStatus } = useLicenseStatus(orgId);
+  const licenseRestricted = licenseStatus?.access === "restricted";
   const [supportOpen, setSupportOpen] = useState(false);
   // ERP mode (docs/erp-mode-plan.md): on by default in the desktop app, opt-in on the web.
   const erp = useErpLayout();
@@ -1378,11 +1396,19 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     erp: erp.active, section: activeSection, request: erpRequest, consumeRequest, reportSection, registerSections: setErpSections,
   }), [erp.active, activeSection, erpRequest, consumeRequest, reportSection]);
 
+  // What a company with a restricted license sees instead of the modules (Help & Support stays reachable).
+  const restrictedContent = (
+    <ErpNavContext.Provider value={erpNav}>
+      <OfflineBanner />
+      {activeView === "help" ? <HelpSupportView orgId={orgId} /> : <RestrictedWorkspace orgId={orgId} status={licenseStatus} orgName={membership.orgName} onHelp={() => navigate("help")} />}
+    </ErpNavContext.Provider>
+  );
   // Every screen, shared by both layouts: ERP mode frames exactly the same components.
   const pageContent = (
     <ErpNavContext.Provider value={erpNav}>
       <OfflineBanner />
       <StepUpPrompt />
+      <LicenseBanner orgId={orgId} status={licenseStatus} onOpenBilling={() => navigate("billing")} />
       {activeView === "osHome" && (erp.active ? (
         <ErpHomeView
           orgId={orgId}
@@ -1505,7 +1531,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "ai" && (
         <AIAssistantView orgId={orgId} currentView={activeView} guidedTask={guidedTask} onGuidedTaskChange={setGuidedTask} voiceEnabled={!!orgAiPolicy?.voiceEnabled} />
       )}
-      {activeView === "billing" && canManage && <BillingView orgId={orgId} canManage={canManage} />}
+      {activeView === "billing" && canManage && <div className="space-y-6"><LicenseCard orgId={orgId} /><BillingView orgId={orgId} canManage={canManage} /></div>}
       {activeView === "appearance" && <AppearancePanel />}
       {activeView === "settings" && canManage && (
         <div className="space-y-6">
@@ -1584,7 +1610,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           search={<CommandPalette searchUrl={`/api/orgs/search?orgId=${membership.orgId}`} onSelect={(r) => navigate(r.view)} localSearch={searchLiveChat} />}
           notifications={<NotificationsBell scope="org" orgId={membership.orgId} email={email} />}
         >
-          {pageContent}
+          {licenseRestricted ? restrictedContent : pageContent}
         </ErpShell>
       </>
     );
@@ -1697,7 +1723,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
         </header>
 
         <main className="p-5 md:p-8 max-w-6xl">
-          {pageContent}
+          {licenseRestricted ? restrictedContent : pageContent}
         </main>
       </div>
       <SupportAgentPanel orgId={selectedOrgId} open={supportOpen} onClose={() => setSupportOpen(false)} />

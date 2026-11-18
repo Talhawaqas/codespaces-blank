@@ -105,9 +105,11 @@ export async function runAutoReorder({ limit = 1000, sender, orgIds } = {}) {
   let drafted = 0;
   let skipped = 0;
   let failed = 0;
+  const { companyMayOperate } = await import("./licensing/gate.js");
   for (const product of candidates) {
     try {
       const orgId = product.orgId.toString();
+      if (!(await companyMayOperate(orgId))) continue; // License Manager SOW 15: no automatic purchase requests while restricted
       const stock = await totalStockForProduct(orgId, product._id);
       if (!isLowStock(product, stock)) { skipped++; continue; }
       const result = await draftReorderRequest({ orgId, productId: product._id.toString(), actorEmail: "system:auto-reorder", source: "auto", sender });

@@ -206,6 +206,9 @@ export async function processNotificationDeliveries({ limit = 25 } = {}) {
       { sort: { nextAttemptAt: 1 }, returnDocument: "after" }
     );
     if (!d) break;
+    // Company license (License Manager SOW 15): event deliveries for a suspended company wait (not counted as an attempt).
+    { const { companyMayOperate } = await import("../licensing/gate.js");
+      if (!(await companyMayOperate(d.orgId))) { await deliveries.updateOne({ _id: d._id }, { $set: { status: "PENDING", nextAttemptAt: new Date(Date.now() + 3600_000).toISOString() }, $inc: { attempts: -1 } }); continue; } }
     const config = await configs.findOne({ _id: d.configId, orgId: d.orgId });
 
     const finish = async (ok, err, status) => {

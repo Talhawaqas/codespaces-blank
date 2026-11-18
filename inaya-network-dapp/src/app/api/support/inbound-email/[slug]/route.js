@@ -19,7 +19,7 @@ export async function POST(req, ctx) {
   try {
     const { slug } = await ctx.params;
     await ensureOrgIndexes();
-    const org = await orgBySlug(slug);
+    const org = await orgBySlug(slug, { allowRestricted: true }); // received and kept even while the license is restricted
     if (!org) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const orgId = String(org.orgId);
     try { await checkRateLimit({ action: "support:inbound", key: orgId, max: 600, windowMs: 60 * 60 * 1000 }); } catch { return NextResponse.json({ error: "Rate limit exceeded." }, { status: 429 }); }

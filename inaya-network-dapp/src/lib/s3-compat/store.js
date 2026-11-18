@@ -109,7 +109,15 @@ export async function ensureS3Bucket({ orgId, bucket, actorEmail }) {
   // Several clients writing their first objects at once must all get the SAME bucket (see namespaceClaim.js).
   const { db } = await getOrgCollections();
   const id = await claimId({ db, scope: String(orgId), kind: "s3-bucket", parent: departmentId, name: bucket, make: () => new ObjectId() });
-  await projects.updateOne({ _id: id }, { $setOnInsert: { orgId: orgObjectId, departmentId, name: bucket, createdAt: new Date().toISOString(), createdByEmail: actorEmail || "s3-compat" } }, { upsert: true });
+  const { s3DefaultVersioning, NONCURRENT_VERSION_DAYS, DEFAULT_LIFECYCLE_RULE_ID } = await import("../protectionDefaults.js");
+  const versioned = s3DefaultVersioning();
+  const created = await projects.updateOne({ _id: id }, { $setOnInsert: { orgId: orgObjectId, departmentId, name: bucket, createdAt: new Date().toISOString(), createdByEmail: actorEmail || "s3-compat", ...(versioned ? { versioningStatus: "Enabled", protectionDefaults: true } : {}) } }, { upsert: true });
+  // Ransomware protection by default (src/lib/protectionDefaults.js): a NEW bucket is versioned, and keeps old versions
+  // for NONCURRENT_VERSION_DAYS through a lifecycle rule (only if the bucket has no lifecycle policy of its own).
+  if (versioned && created.upsertedCount) {
+    const now = new Date().toISOString();
+    await db.collection("s3_lifecycle_policies").updateOne({ orgId: orgObjectId, bucket }, { $setOnInsert: { orgId: orgObjectId, bucket, rules: [{ id: DEFAULT_LIFECYCLE_RULE_ID, prefix: "", enabled: true, expirationDays: null, noncurrentVersionExpirationDays: NONCURRENT_VERSION_DAYS }], createdAt: now, updatedAt: now, updatedByEmail: "inaya-default" } }, { upsert: true }).catch((e) => console.error("default lifecycle rule not set:", e.message));
+  }
   return projects.findOne({ _id: id });
 }
 
@@ -563,6 +571,34 @@ export async function getS3ObjectBody({ orgId, bucket, key, versionId, governanc
     return { buffer: Buffer.from(base64, "base64") };
   });
   return { doc, buffer };
+}
+
+/**
+ * Every live S3-compatible object of a company (NAS backups, S3 / Azure / GCS uploads, bookkeeping, support
+ * attachments, document automation), for the company data export (License Manager SOW 12). Returns
+ * [{ bucket, key, sizeBytes, contentType, read() }] -- read() decrypts that one object when called, so the export
+ * can stop at its size cap without reading the rest.
+ */
+export async function listCompanyObjectsForExport(orgId) {
+  const { departments, projects, orgDocuments } = await getOrgCollections();
+  const orgObjectId = toObjectId(orgId);
+  const dept = await departments.findOne({ orgId: orgObjectId, name: S3_SYSTEM_DEPARTMENT_NAME });
+  if (!dept) return [];
+  const buckets = await projects.find({ orgId: orgObjectId, departmentId: dept._id }, { projection: { name: 1 } }).toArray();
+  const nameById = new Map(buckets.map((b) => [String(b._id), b.name]));
+  const docs = await orgDocuments.find({ orgId: orgObjectId, projectId: { $in: buckets.map((b) => b._id) }, isLatest: IS_LATEST, deletedAt: null }, { projection: { filename: 1, sizeBytes: 1, contentType: 1, projectId: 1, cidAlpha: 1, cidBeta: 1, pinProvider: 1, storage: 1 } }).toArray();
+  return docs.map((doc) => ({
+    bucket: nameById.get(String(doc.projectId)) || "bucket", key: doc.filename, sizeBytes: doc.sizeBytes || 0, contentType: doc.contentType || "application/octet-stream",
+    read: async () => {
+      const passphrase = await getOrgS3Passphrase(orgId);
+      if (doc.storage?.prefix) return readBytesChunked(doc, passphrase);
+      if (!doc.cidAlpha || !doc.cidBeta) return Buffer.alloc(0);
+      const provider = getProvider(doc.pinProvider || LEGACY_ROW_PROVIDER);
+      const [shardAlpha, shardBeta] = await Promise.all([provider.fetchReplica(doc.cidAlpha), provider.fetchReplica(doc.cidBeta)]);
+      const dataUrl = await InayaKernel.reconstructAndDecrypt({ shardAlpha, shardBeta, passkey: passphrase });
+      return Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
+    },
+  }));
 }
 
 /** Real S3 semantics: DELETE without a versionId on a VERSIONED bucket

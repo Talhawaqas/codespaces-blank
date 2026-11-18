@@ -116,6 +116,8 @@ async function deliverQueued(now, stats, maxEmails, fetchImpl) {
   for (const [cid, sends] of byCampaign) {
     const c = await marketing.findOne({ _id: toObjectId(cid), kind: "campaign" });
     if (!c || c.status !== "SENDING") { await marketing.updateMany({ _id: { $in: sends.map((s) => s._id) } }, { $set: { status: "cancelled" } }); continue; }
+    // Company license (License Manager SOW 15): a suspended company's campaign emails wait in the queue, unsent.
+    if (!(await (await import("../licensing/gate.js")).companyMayOperate(c.orgId))) continue;
     const settings = await getMarketingSettings(c.orgId);
     // Re-check suppression at the moment of sending (someone may have unsubscribed from another email meanwhile).
     const blocked = await suppressedAmong(c.orgId, sends.map((s) => s.email));

@@ -1150,6 +1150,11 @@ export async function requireMembership(req, orgId, { requireManage = false } = 
     const verdict = await deviceGate({ orgId, session });
     if (verdict) return { error: verdict.error, status: verdict.status, code: verdict.code };
   }
+  // Company license (License Manager SOW section 9): a suspended / cancelled / expired company keeps only Billing,
+  // its data export, read-only document download and the session; every other API is refused here, centrally.
+  const { licenseGate } = await import("./licensing/gate.js");
+  const blocked = await licenseGate(req, orgId, { isManager: canManageOrg(membership) });
+  if (blocked) return { error: blocked.error, status: blocked.status, code: blocked.code, licenseState: blocked.licenseState };
 
   return { session, membership };
 }

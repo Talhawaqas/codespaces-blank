@@ -104,6 +104,9 @@ export async function processDeliveries({ limit = 25, onlyOrgId = null, sender =
   for (let i = 0; i < limit; i++) {
     const q = { status: "PENDING", nextAttemptAt: { $lte: nowIso() } }; if (onlyOrgId) q.orgId = toObjectId(onlyOrgId);
     const r = await deliveries.findOneAndUpdate(q, { $set: { status: "SENDING", lockedAt: nowIso() }, $inc: { attempts: 1 } }, { sort: { nextAttemptAt: 1 }, returnDocument: "after" }); const d = r?.value ?? r; if (!d) break;
+    // Company license (License Manager SOW 15): deliveries for a suspended company wait (not counted as an attempt).
+    { const { companyMayOperate } = await import("../licensing/gate.js");
+      if (!(await companyMayOperate(d.orgId))) { await deliveries.updateOne({ _id: d._id }, { $set: { status: "PENDING", nextAttemptAt: new Date(Date.now() + 3600_000).toISOString() }, $inc: { attempts: -1 } }); continue; } }
     const w = await hooks.findOne({ _id: d.webhookId, orgId: d.orgId });
     const finish = async (ok, err, status) => {
       if (ok) { await deliveries.updateOne({ _id: d._id }, { $set: { status: "DELIVERED", deliveredAt: nowIso(), lastError: null, responseStatus: status } }); if (w) await hooks.updateOne({ _id: w._id }, { $set: { consecutiveFailures: 0, lastSuccessAt: nowIso() } }); delivered++; return; }

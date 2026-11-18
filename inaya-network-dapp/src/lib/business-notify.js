@@ -144,7 +144,9 @@ export async function runTaskReminders({ now = Date.now(), limit = 2000, sender,
 
   let dueSoon = 0;
   let overdue = 0;
+  const { companyMayOperate } = await import("./licensing/gate.js");
   for (const task of candidates) {
+    if (!(await companyMayOperate(task.orgId))) continue; // License Manager SOW 15: no task reminders while restricted
     const due = String(task.dueDate).slice(0, 10);
     const kind = due === tomorrow ? "due_soon" : due < today ? "overdue" : null;
     if (!kind) continue;

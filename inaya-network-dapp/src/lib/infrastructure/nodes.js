@@ -140,6 +140,8 @@ export async function enrollNode({ enrollmentToken, hostname, csrPem }) {
   if (!record) throw new InfrastructureError("Invalid or expired enrollment token.", { status: 401 });
   if (record.usedAt) throw new InfrastructureError("This enrollment token has already been used.", { status: 409 });
   if (record.expiresAt < new Date()) throw new InfrastructureError("This enrollment token has expired.", { status: 401 });
+  const { companyMayOperate } = await import("../licensing/gate.js");
+  if (!(await companyMayOperate(record.orgId))) throw new InfrastructureError("This company's Business Workspace license is not active.", { status: 403 });
 
   const nodeId = crypto.randomUUID();
   let signed;

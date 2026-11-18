@@ -131,12 +131,16 @@ export async function getInboundSecret(orgId) {
 }
 
 /** Resolves a portal slug to its organization (enabled portals only). */
-export async function orgBySlug(slug) {
+export async function orgBySlug(slug, { allowRestricted = false } = {}) {
   await ensureSupportIndexes();
   const { supportSettings } = await getSupportCollections();
   if (!SLUG_RE.test(String(slug || ""))) return null;
   const doc = await supportSettings.findOne({ portalSlug: String(slug), portalEnabled: true });
-  return doc ? { orgId: doc.orgId, settings: merge(DEFAULT_SETTINGS, doc.settings || {}), portalSlug: doc.portalSlug } : null;
+  if (!doc) return null;
+  // Company license (License Manager SOW 9.3): a suspended company's customer portal is unavailable. Inbound email
+  // passes allowRestricted so customers' emails are still received and kept (nothing is lost while suspended).
+  if (!allowRestricted) { const { companyMayOperate } = await import("../licensing/gate.js"); if (!(await companyMayOperate(doc.orgId))) return null; }
+  return { orgId: doc.orgId, settings: merge(DEFAULT_SETTINGS, doc.settings || {}), portalSlug: doc.portalSlug };
 }
 
 // ------------------------------------------------------------ single sign-on client secret

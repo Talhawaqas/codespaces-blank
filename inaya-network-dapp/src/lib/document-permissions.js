@@ -471,6 +471,8 @@ export async function consumeDocumentShare(token) {
   // these conditions atomically; that's the actual enforcement.
   const existing = await documentShares.findOne({ tokenHash });
   if (!existing) return { error: "This link is invalid.", status: 404 };
+  // Company license (License Manager SOW 9.3): a suspended company's share links stop opening.
+  { const { companyMayOperate } = await import("./licensing/gate.js"); if (!(await companyMayOperate(existing.orgId))) return { error: "This link is not available right now.", status: 403 }; }
   // Sharing 2.0 links (v: 2) carry policies -- password, IP range, device, download limits -- that this legacy path knows nothing about
   // and it hands out storage pointers. They must only ever be opened through lib/sharing/shares.js, so refuse here, hard.
   if (existing.v === 2) return { error: "This link must be opened through the secure viewer.", status: 409, v2: true };
