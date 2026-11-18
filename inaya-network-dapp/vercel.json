@@ -96,6 +96,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/nas-watchdog",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/s3-lifecycle",
       "schedule": "0 9 * * *"
     },

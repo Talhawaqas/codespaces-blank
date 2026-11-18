@@ -37,6 +37,8 @@ export const EVENTS = {
   "classification.changed": { label: "A file's classification changed", defaults: { inApp: true }, severity: "info", generic: "A file's classification changed." },
   "governance.review": { label: "Documents need a retention review", defaults: { inApp: true, email: true }, severity: "info", generic: "Some documents reached the end of their retention period." },
   "backup.failed": { label: "A backup failed", defaults: { inApp: true, email: true, desktop: true }, severity: "warning", generic: "A backup run failed.", webhook: "backup.event" },
+  // Hosted NAS watchdog (src/lib/nas/watchdog.js): scheduled snapshots/backups overdue, i.e. the on-host NAS worker likely stopped.
+  "nas.schedule_stale": { label: "Scheduled NAS snapshots or backups stopped running", defaults: { inApp: true, email: true }, severity: "warning", generic: "Scheduled NAS snapshots or backups have stopped running. The NAS worker on your appliance host may be down; open NAS in Inaya for details." },
   "resilience.failed": { label: "A resilience test failed", defaults: { inApp: true, email: true }, severity: "critical", generic: "A resilience test failed.", webhook: "resilience.event" },
   "chat.message": { label: "New chat message", defaults: { inApp: true, push: true, desktop: true }, severity: "info", generic: "You have a new message." },
   "note.shared": { label: "A note is shared with me", defaults: { inApp: true, email: false }, severity: "info", generic: "A secure note was shared with you." },
