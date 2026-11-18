@@ -4,12 +4,15 @@
 process.env.S3_DEFAULT_VERSIONING = "on";
 process.env.NAS_DEFAULT_SNAPSHOTS = "on";
 process.env.NAS_DEFAULT_OFFSITE_BACKUP = "on";
+process.env.S3_DEFAULT_TRIPWIRE = "on";
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import * as fx from "./_nas-fixtures.mjs";
 import { installMemoryProviders } from "./_docauto-fixtures.mjs";
-import { putS3Object, getS3ObjectBody, getBucketVersioning, getLifecyclePolicy, putBucketVersioning } from "../src/lib/s3-compat/store.js";
+import { putS3Object, getS3ObjectBody, getBucketVersioning, getLifecyclePolicy, putBucketVersioning, deleteS3Bucket, getS3Bucket } from "../src/lib/s3-compat/store.js";
+import { getOrgCollections } from "../src/lib/orgs.js";
+import { classifyCloudThreat } from "../src/lib/ransomware/cloud.js";
 import { getBackupPolicy } from "../src/lib/nas/backup.js";
 import { applyProtectionDefaults } from "../src/lib/protectionBackfill.js";
 import { ensureOwnerS3Passphrase } from "../src/lib/s3-compat/credentials.js";
@@ -70,7 +73,7 @@ test("a new NAS share gets a daily snapshot schedule (14 kept, immutable 7 days)
 
 test("backfill: existing buckets and shares get the same protection; a company's own choices are never overridden", { timeout: 240000 }, async () => {
   // Existing state from before the defaults: a never-versioned bucket, a bucket the company Suspended, a share with no policies.
-  process.env.S3_DEFAULT_VERSIONING = "off"; process.env.NAS_DEFAULT_SNAPSHOTS = "off"; process.env.NAS_DEFAULT_OFFSITE_BACKUP = "off";
+  process.env.S3_DEFAULT_VERSIONING = "off"; process.env.NAS_DEFAULT_SNAPSHOTS = "off"; process.env.NAS_DEFAULT_OFFSITE_BACKUP = "off"; process.env.S3_DEFAULT_TRIPWIRE = "off";
   const old = `old-${randomBytes(3).toString("hex")}`; const chosen = `chosen-${randomBytes(3).toString("hex")}`;
   await putS3Object({ orgId: org.orgId, bucket: old, key: "a.txt", bodyBuffer: Buffer.from("a"), actorEmail: "sqa" });
   await putS3Object({ orgId: org.orgId, bucket: chosen, key: "a.txt", bodyBuffer: Buffer.from("a"), actorEmail: "sqa" });
@@ -79,7 +82,8 @@ test("backfill: existing buckets and shares get the same protection; a company's
   const shareName = fx.tag("old"); fx.created.shares.add(shareName);
   const s = await createShare({ ...M(), applianceId: String(appliance._id), shareName, ownerUnixUser: mgr.unix });
   assert.ok(!s.error, s.error);
-  process.env.S3_DEFAULT_VERSIONING = "on"; process.env.NAS_DEFAULT_SNAPSHOTS = "on"; process.env.NAS_DEFAULT_OFFSITE_BACKUP = "on";
+  process.env.S3_DEFAULT_VERSIONING = "on"; process.env.NAS_DEFAULT_SNAPSHOTS = "on"; process.env.NAS_DEFAULT_OFFSITE_BACKUP = "on"; process.env.S3_DEFAULT_TRIPWIRE = "on";
+  assert.equal(await tripwires(old), 0);
   const shareId = String(s.share._id);
 
   const preview = await applyProtectionDefaults({ orgIds: [org.orgId] });
@@ -95,7 +99,30 @@ test("backfill: existing buckets and shares get the same protection; a company's
   const sp = (await getSnapshotPolicy({ ...M(), shareId })).policy;
   assert.equal(sp.immutable, true); assert.equal(sp.keepLast, 14);
   assert.equal((await getBackupPolicy({ ...M(), shareId })).policy.enabled, true);
+  assert.equal(await tripwires(old), 1, "an existing bucket gets a tripwire");
 
   const again = await applyProtectionDefaults({ orgIds: [org.orgId], apply: true });
-  assert.equal(again.buckets.versioningEnabled, 0); assert.equal(again.shares.snapshotScheduleAdded, 0); assert.equal(again.shares.offsiteBackupAdded, 0);
+  assert.equal(again.buckets.versioningEnabled, 0); assert.equal(again.shares.snapshotScheduleAdded, 0); assert.equal(again.shares.offsiteBackupAdded, 0); assert.equal(again.buckets.tripwirePlaced, 0);
+});
+
+async function tripwires(bucket) {
+  const { orgDocuments } = await getOrgCollections(); const b = await getS3Bucket({ orgId: org.orgId, bucket });
+  return orgDocuments.countDocuments({ orgId: b.orgId, projectId: b._id, filename: /^\.inaya-canary\//, deletedAt: null });
+}
+
+test("a new bucket gets a hidden tripwire; it does not stop the company deleting an empty bucket", { timeout: 120000 }, async () => {
+  const bucket = `trip-${randomBytes(3).toString("hex")}`;
+  await putS3Object({ orgId: org.orgId, bucket, key: "a.txt", bodyBuffer: Buffer.from("a"), actorEmail: "sqa" });
+  assert.equal(await tripwires(bucket), 1);
+  assert.equal((await deleteS3Bucket({ orgId: org.orgId, bucket })).reason, "BucketNotEmpty", "a real file still blocks deletion");
+  const { orgDocuments } = await getOrgCollections(); const b = await getS3Bucket({ orgId: org.orgId, bucket });
+  await orgDocuments.deleteMany({ projectId: b._id, filename: "a.txt" }); // the company empties the bucket (all versions)
+  assert.equal((await deleteS3Bucket({ orgId: org.orgId, bucket })).deleted, true);
+  assert.equal(await orgDocuments.countDocuments({ projectId: b._id }), 0, "the tripwire went with the bucket");
+});
+
+test("tripwire scoring: rewriting one pauses the account (CRITICAL); deleting one only alerts (HIGH), because mirror-sync tools delete too", () => {
+  assert.equal(classifyCloudThreat({ canaryTouched: 1 }).level, "CRITICAL");
+  const del = classifyCloudThreat({ canaryDeleted: 1 });
+  assert.equal(del.level, "HIGH"); assert.deepEqual(del.rules, ["canary_deleted"]);
 });

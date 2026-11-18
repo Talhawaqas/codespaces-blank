@@ -118,6 +118,10 @@ export async function ensureS3Bucket({ orgId, bucket, actorEmail }) {
     const now = new Date().toISOString();
     await db.collection("s3_lifecycle_policies").updateOne({ orgId: orgObjectId, bucket }, { $setOnInsert: { orgId: orgObjectId, bucket, rules: [{ id: DEFAULT_LIFECYCLE_RULE_ID, prefix: "", enabled: true, expirationDays: null, noncurrentVersionExpirationDays: NONCURRENT_VERSION_DAYS }], createdAt: now, updatedAt: now, updatedByEmail: "inaya-default" } }, { upsert: true }).catch((e) => console.error("default lifecycle rule not set:", e.message));
   }
+  // A hidden tripwire (decoy) file in every NEW bucket. Never blocks the bucket.
+  if (created.upsertedCount && (await import("../protectionDefaults.js")).s3DefaultTripwire()) {
+    await import("../ransomware/cloud.js").then((m) => m.placeTripwire({ orgId, bucket })).catch((e) => console.error("default tripwire not placed:", e.message));
+  }
   return projects.findOne({ _id: id });
 }
 
@@ -125,8 +129,13 @@ export async function deleteS3Bucket({ orgId, bucket }) {
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return { deleted: false, reason: "NoSuchBucket" };
   const { orgDocuments, projects } = await getOrgCollections();
-  const objectCount = await orgDocuments.countDocuments({ orgId: toObjectId(orgId), projectId: bucketDoc._id, deletedAt: null });
+  // Tripwire (decoy) files placed by Inaya do not count: the company sees the bucket as empty, and they go with it.
+  const TRIPWIRE = /^\.inaya-canary\//;
+  const objectCount = await orgDocuments.countDocuments({ orgId: toObjectId(orgId), projectId: bucketDoc._id, deletedAt: null, filename: { $not: TRIPWIRE } });
   if (objectCount > 0) return { deleted: false, reason: "BucketNotEmpty" };
+  for (const t of await orgDocuments.find({ orgId: toObjectId(orgId), projectId: bucketDoc._id, filename: TRIPWIRE }).toArray()) {
+    await purgeObjectStorage(t).catch(() => {}); await orgDocuments.deleteOne({ _id: t._id });
+  }
   await projects.deleteOne({ _id: bucketDoc._id });
   const { db } = await getOrgCollections();
   await releaseClaim({ db, scope: String(orgId), kind: "s3-bucket", parent: bucketDoc.departmentId, name: bucket });

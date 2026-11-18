@@ -44,6 +44,9 @@ export const isRansomNote = (key) => RANSOM_NOTE.test(String(key));
 export function classifyCloudThreat(s, t = DEFAULT_THRESHOLDS) {
   const th = { ...DEFAULT_THRESHOLDS, ...t }; const reasons = []; const rules = []; let score = 0; const add = (pts, rule, text) => { score += pts; reasons.push(text); rules.push(rule); };
   if (s.canaryTouched) add(80, "canary_touched", `A hidden tripwire file was ${s.canaryTouched > 1 ? "touched " + s.canaryTouched + " times" : "touched"}; no legitimate client uses it`);
+  // Deleting a tripwire alone is HIGH (alert, no automatic containment): mirror-sync tools (sync --delete) remove files
+  // that are not in their source, so a deletion is suspicious but not proof. Rewriting one is CRITICAL.
+  else if (s.canaryDeleted) add(50, "canary_deleted", `A hidden tripwire file was deleted${s.canaryDeleted > 1 ? " (" + s.canaryDeleted + " times)" : ""}; a mirror-sync tool can also do this`);
   if (s.ransomNotes >= th.ransomNotes) add(50, "ransom_note_names", `${s.ransomNotes} file(s) with ransom-note style names were written`);
   if (s.extensionChanges >= th.extensionChanges) add(40, "extension_anomaly", `${s.extensionChanges} files were written with known ransomware extensions`);
   if (s.highEntropyRewrites >= th.highEntropyRewrites) add(40, "encryption_like_rewrites", `${s.highEntropyRewrites} files were overwritten with encryption-like content`);
@@ -117,7 +120,7 @@ export async function evaluateActor({ orgId, actorKey, onlyIf = "always", now = 
   const { activity, signals } = await cols(); const since = new Date(now - t.windowMinutes * 60_000);
   const rows = await activity.find({ orgId: toObjectId(orgId), actorKey: String(actorKey), at: { $gte: since } }).limit(20000).toArray();
   const count = (f) => rows.filter(f).length;
-  const s = { overwrites: count((r) => r.kind === "overwrite"), deletes: count((r) => r.kind === "delete"), downloads: count((r) => r.kind === "download"), shares: count((r) => r.kind === "share_create"), ransomNotes: count((r) => r.flags?.note), extensionChanges: count((r) => r.flags?.ransomExt), highEntropyRewrites: count((r) => r.flags?.encLike), canaryTouched: count((r) => r.flags?.canary && r.kind !== "download") };
+  const s = { overwrites: count((r) => r.kind === "overwrite"), deletes: count((r) => r.kind === "delete"), downloads: count((r) => r.kind === "download"), shares: count((r) => r.kind === "share_create"), ransomNotes: count((r) => r.flags?.note), extensionChanges: count((r) => r.flags?.ransomExt), highEntropyRewrites: count((r) => r.flags?.encLike), canaryTouched: count((r) => r.flags?.canary && (r.kind === "write" || r.kind === "overwrite")), canaryDeleted: count((r) => r.flags?.canary && r.kind === "delete") };
   const verdict = classifyCloudThreat(s, t); if (verdict.level === "NONE" || verdict.level === "LOW") return { level: verdict.level, raised: false, counts: s };
   const open = await signals.findOne({ orgId: toObjectId(orgId), actorKey: String(actorKey), state: "open", at: { $gt: new Date(now - 30 * 60_000).toISOString() } });
   const shouldContain = pol.autoContainLevel !== "NONE" && LEVELS.indexOf(verdict.level) >= LEVELS.indexOf(pol.autoContainLevel);
@@ -162,11 +165,16 @@ export async function rollbackExecute({ orgId, membership, actorEmail, items, st
   for (const it of (items || []).slice(0, 500)) { try { await s.restoreObjectVersion({ orgId, bucket: it.bucket, key: it.key, versionId: it.versionId, actorEmail }); done.push(`${it.bucket}/${it.key}`); } catch (e) { failed.push({ key: `${it.bucket}/${it.key}`, error: String(e.message).slice(0, 120) }); } }
   await logOrgActivity({ orgId, recordType: "RANSOMWARE_SIGNAL", recordId: new ObjectId(), actorEmail, action: "ROLLBACK_EXECUTED", previousState: null, newState: null, metadata: { restored: done.length, failed: failed.length } }).catch(() => {}); return { restored: done.length, failed };
 }
-/** Place a tripwire object in a bucket. Any write or delete of it by a client is a CRITICAL signal. */
-export async function placeCanary({ orgId, membership, actorEmail, bucket, store }) {
-  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can place a tripwire."); const s = store || (await import("../s3-compat/store.js"));
+/** Place a tripwire object in a bucket (no permission check -- callers check). Writes as a system actor, so placing it is not a signal. */
+export async function placeTripwire({ orgId, bucket, store }) {
+  const s = store || (await import("../s3-compat/store.js"));
   const key = `${CANARY_PREFIX}do-not-touch-${new ObjectId().toHexString().slice(-8)}.txt`;
   await s.putS3Object({ orgId, bucket, key, bodyBuffer: Buffer.from("Inaya tripwire file. Nothing should read, change or delete this file. If you did, tell your administrator."), contentType: "text/plain", actorEmail: "system:tripwire" }); return { bucket, key };
+}
+/** Place a tripwire object in a bucket. Rewriting it is a CRITICAL signal; deleting it alone is HIGH. */
+export async function placeCanary({ orgId, membership, actorEmail, bucket, store }) {
+  if (!hasAdminRole(membership, "securityAdmin")) fail(403, "Only an owner or admin can place a tripwire.");
+  return placeTripwire({ orgId, bucket, store });
 }
 export async function incidentReport({ orgId, membership, signalId }) {
   if (!hasAdminRole(membership, "securityAdmin", { read: true })) fail(403, "Only a security administrator or auditor can export an incident."); const { signals, activity, contain } = await cols(); const e = await signals.findOne({ _id: new ObjectId(signalId), orgId: toObjectId(orgId) }); if (!e) fail(404, "Signal not found.");

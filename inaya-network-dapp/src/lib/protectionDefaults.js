@@ -7,10 +7,12 @@
 //     (cannot be deleted, even with stolen credentials) for 7 days.
 //   - every NEW NAS share also gets a nightly OFF-SITE backup to Inaya cloud storage (encrypted, verified, the last 14
 //     recovery points kept), so a stolen, destroyed or failed appliance does not take the snapshots' only copy with it.
+//   - every NEW S3-compatible bucket gets a hidden tripwire (decoy) file: rewriting it pauses the account automatically,
+//     deleting it raises an alert (src/lib/ransomware/cloud.js).
 // Buckets and shares that existed before 17 Nov 2026 get the same protection once through scripts/ops/apply-protection-defaults.mjs
 // (src/lib/protectionBackfill.js), which never overrides a choice the company made. A company can change or switch off any
 // of these per bucket / per share.
-// S3_DEFAULT_VERSIONING=off, NAS_DEFAULT_SNAPSHOTS=off and NAS_DEFAULT_OFFSITE_BACKUP=off switch the defaults off (the test harness does this for
+// S3_DEFAULT_VERSIONING=off, NAS_DEFAULT_SNAPSHOTS=off and NAS_DEFAULT_OFFSITE_BACKUP=off and S3_DEFAULT_TRIPWIRE=off switch the defaults off (the test harness does this for
 // suites written for plain S3 semantics; test/protection-defaults.test.mjs exercises the defaults explicitly).
 
 const isOff = (v) => ["0", "off", "false", "no"].includes(String(v ?? "").trim().toLowerCase());
@@ -24,3 +26,4 @@ export const DEFAULT_NAS_BACKUP_POLICY = { intervalMinutes: 1440, keepRecoveryPo
 export const s3DefaultVersioning = () => !isOff(process.env.S3_DEFAULT_VERSIONING);
 export const nasDefaultSnapshots = () => !isOff(process.env.NAS_DEFAULT_SNAPSHOTS);
 export const nasDefaultOffsiteBackup = () => !isOff(process.env.NAS_DEFAULT_OFFSITE_BACKUP);
+export const s3DefaultTripwire = () => !isOff(process.env.S3_DEFAULT_TRIPWIRE);

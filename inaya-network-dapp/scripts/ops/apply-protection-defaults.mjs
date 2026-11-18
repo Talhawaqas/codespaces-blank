@@ -6,4 +6,4 @@ const apply = process.argv.includes("--apply");
 const r = await applyProtectionDefaults({ apply });
 console.log(JSON.stringify(r, null, 2));
 console.log(apply ? "Applied." : "Preview only -- run again with --apply to make these changes.");
-process.exit(r.shares.errors.length ? 1 : 0);
+process.exit(r.shares.errors.length || r.buckets.errors.length ? 1 : 0);

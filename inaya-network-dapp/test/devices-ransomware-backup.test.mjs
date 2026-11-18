@@ -111,7 +111,7 @@ test("ransomware: activity becomes a signal with evidence, contains the credenti
 
 test("ransomware: a tripwire file is CRITICAL on its own; rollback lists and restores previous versions; flag off means no recording", T, async () => {
   const actor = "AKIATRIP" + did().slice(0, 6);
-  const r = await R.noteActivity({ orgId: org.oid, actorKey: actor, kind: "delete", bucket: "docs", key: `${R.CANARY_PREFIX}do-not-touch-ab12.txt` }); assert.equal(r.level, "CRITICAL"); assert.equal(r.raised, true);
+  const r = await R.noteActivity({ orgId: org.oid, actorKey: actor, kind: "overwrite", bucket: "docs", key: `${R.CANARY_PREFIX}do-not-touch-ab12.txt` }); assert.equal(r.level, "CRITICAL"); assert.equal(r.raised, true);
   const since = new Date(Date.now() - 3600_000).toISOString(); const ver = (key, id, at) => ({ key, versionId: id, lastModified: at, sizeBytes: 10, deleteMarker: false });
   const old = new Date(Date.now() - 7200_000).toISOString();
   const store = { listObjectVersions: async ({ key }) => (key === "keep.docx" ? [ver(key, "v2", new Date().toISOString()), ver(key, "v1", old)] : key === "new.docx" ? [ver(key, "n1", new Date().toISOString())] : []), restored: [], restoreObjectVersion: async (a) => { store.restored.push(a); } };
