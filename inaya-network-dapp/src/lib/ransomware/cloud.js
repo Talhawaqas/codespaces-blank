@@ -167,6 +167,9 @@ export async function rollbackExecute({ orgId, membership, actorEmail, items, st
 }
 /** Place a tripwire object in a bucket (no permission check -- callers check). Writes as a system actor, so placing it is not a signal. */
 export async function placeTripwire({ orgId, bucket, store }) {
+  // Server-side writes need the company's S3 storage key; create it on demand (as NAS backup and data export do), so a
+  // company that never issued an S3 credential still gets its tripwire.
+  if (!store) await (await import("../s3-compat/credentials.js")).ensureOwnerS3Passphrase({ type: "org", orgId: String(orgId) });
   const s = store || (await import("../s3-compat/store.js"));
   const key = `${CANARY_PREFIX}do-not-touch-${new ObjectId().toHexString().slice(-8)}.txt`;
   await s.putS3Object({ orgId, bucket, key, bodyBuffer: Buffer.from("Inaya tripwire file. Nothing should read, change or delete this file. If you did, tell your administrator."), contentType: "text/plain", actorEmail: "system:tripwire" }); return { bucket, key };

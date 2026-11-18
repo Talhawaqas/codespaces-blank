@@ -23,7 +23,9 @@ export async function applyProtectionDefaults({ apply = false, orgIds = null } =
   // S3-compatible buckets live as projects under each company's S3 system department.
   const depts = await departments.find({ ...orgFilter, name: S3_SYSTEM_DEPARTMENT_NAME }).project({ _id: 1, orgId: 1 }).toArray();
   const lifecycle = db.collection("s3_lifecycle_policies");
+  const liveOrgs = new Set((await db.collection("orgs").find({ _id: { $in: depts.map((d) => d.orgId) } }).project({ _id: 1 }).toArray()).map((o) => String(o._id)));
   for (const d of depts) {
+    if (!liveOrgs.has(String(d.orgId))) continue; // leftover buckets of a company that no longer exists
     for (const b of await projects.find({ orgId: d.orgId, departmentId: d._id }).project({ _id: 1, name: 1, versioningStatus: 1 }).toArray()) {
       let touched = false;
       if (b.versioningStatus == null) {

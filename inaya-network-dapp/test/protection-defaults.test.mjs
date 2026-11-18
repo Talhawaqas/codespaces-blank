@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import * as fx from "./_nas-fixtures.mjs";
 import { installMemoryProviders } from "./_docauto-fixtures.mjs";
-import { putS3Object, getS3ObjectBody, getBucketVersioning, getLifecyclePolicy, putBucketVersioning, deleteS3Bucket, getS3Bucket } from "../src/lib/s3-compat/store.js";
+import { putS3Object, getS3ObjectBody, getBucketVersioning, getLifecyclePolicy, putBucketVersioning, deleteS3Bucket, getS3Bucket, ensureS3Bucket } from "../src/lib/s3-compat/store.js";
 import { getOrgCollections } from "../src/lib/orgs.js";
 import { classifyCloudThreat } from "../src/lib/ransomware/cloud.js";
 import { getBackupPolicy } from "../src/lib/nas/backup.js";
@@ -105,8 +105,8 @@ test("backfill: existing buckets and shares get the same protection; a company's
   assert.equal(again.buckets.versioningEnabled, 0); assert.equal(again.shares.snapshotScheduleAdded, 0); assert.equal(again.shares.offsiteBackupAdded, 0); assert.equal(again.buckets.tripwirePlaced, 0);
 });
 
-async function tripwires(bucket) {
-  const { orgDocuments } = await getOrgCollections(); const b = await getS3Bucket({ orgId: org.orgId, bucket });
+async function tripwires(bucket, orgId = org.orgId) {
+  const { orgDocuments } = await getOrgCollections(); const b = await getS3Bucket({ orgId, bucket });
   return orgDocuments.countDocuments({ orgId: b.orgId, projectId: b._id, filename: /^\.inaya-canary\//, deletedAt: null });
 }
 
@@ -125,4 +125,13 @@ test("tripwire scoring: rewriting one pauses the account (CRITICAL); deleting on
   assert.equal(classifyCloudThreat({ canaryTouched: 1 }).level, "CRITICAL");
   const del = classifyCloudThreat({ canaryDeleted: 1 });
   assert.equal(del.level, "HIGH"); assert.deepEqual(del.rules, ["canary_deleted"]);
+});
+
+test("a company that never issued an S3 credential still gets its tripwire (its storage key is created on demand)", { timeout: 120000 }, async () => {
+  const fresh = await fx.makeOrg("nokey");
+  const { db } = await getOrgCollections();
+  assert.equal(await db.collection("s3_owner_keys").countDocuments({ ownerType: "org", ownerId: String(fresh.orgId) }), 0);
+  const bucket = `app-${randomBytes(3).toString("hex")}`;
+  await ensureS3Bucket({ orgId: fresh.orgId, bucket, actorEmail: "sqa" });
+  assert.equal(await tripwires(bucket, fresh.orgId), 1);
 });
