@@ -7,7 +7,7 @@
 ## Switches (Vercel environment, production)
 | Variable | Effect |
 |---|---|
-| `LICENSE_AUTO_SUSPEND=on` | Automatic suspension at the end of grace. **Leave unset until the founder approves** (dry run). |
+| `LICENSE_AUTO_SUSPEND=on` | Automatic suspension at the end of grace. **On in production since 17 Nov 2026 (founder approved).** Set to `off` and redeploy to go back to dry run. |
 | `LICENSE_ENFORCEMENT=off` | Emergency: the gate stops restricting anyone (takes effect on the next request; cache ≤ 15 s per server). |
 | `LICENSE_ADMIN_NAME` | Name recorded on admin actions. |
 

@@ -37,4 +37,4 @@ No failure was caused by the license changes.
 
 ## Not covered automatically
 - Real email delivery of license notices (tests use a recording sender; production uses Resend).
-- Automatic suspension in production stays **off** (`LICENSE_AUTO_SUSPEND` unset = dry run) until the founder approves it.
+- Automatic suspension is **on** in production (`LICENSE_AUTO_SUSPEND=on`, founder approved 17 Nov 2026). Companies without a license are not affected.

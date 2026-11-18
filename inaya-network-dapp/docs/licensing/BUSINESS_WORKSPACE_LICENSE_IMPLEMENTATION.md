@@ -30,7 +30,7 @@ First payment: period starts at the license start date. Every later payment exte
 - Coverage is checked by `scripts/sqa/license-route-coverage.mjs` and `test/license-route-coverage.test.mjs` (fails if a new route reaches company data without the gate).
 
 ## Feature flags / switches
-- `LICENSE_AUTO_SUSPEND` — `on` enables automatic suspension. **Unset in production = dry run** (SOW 27.16). On outside production.
+- `LICENSE_AUTO_SUSPEND` — `on` enables automatic suspension. Unset = dry run (SOW 27.16). **Set to `on` in production on 17 Nov 2026 (founder approved).** On outside production.
 - `LICENSE_ENFORCEMENT=off` — emergency kill switch for the gate (restricted companies regain access immediately).
 - `LICENSE_ADMIN_NAME` — name recorded on admin actions.
 
