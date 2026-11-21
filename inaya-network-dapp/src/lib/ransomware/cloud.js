@@ -155,7 +155,13 @@ export async function rollbackPreview({ orgId, membership, actorKey, sinceIso, s
   const out = [];
   for (const [id, r] of seen) {
     if (r.flags?.canary) continue; let versions = []; try { versions = (await s.listObjectVersions({ orgId, bucket: r.bucket, key: r.key })) || [] } catch { versions = []; }
-    const before = versions.filter((v) => new Date(v.lastModified || v.createdAt || 0).getTime() < r.at.getTime()).sort((a, b) => new Date(b.lastModified || b.createdAt) - new Date(a.lastModified || a.createdAt))[0];
+    // The activity row is written just AFTER a write completes, so the version the change itself created is older than r.at.
+    // Cut off at that version (by its id, or the latest one when the bucket is unversioned) and never offer it: the restorable
+    // version is the newest one from strictly before the change. A delete is recorded BEFORE it happens, so r.at is the cutoff.
+    const t = (v) => new Date(v.lastModified || v.createdAt || 0).getTime();
+    const changedVersion = r.kind === "delete" ? null : (r.versionId ? versions.find((v) => String(v.versionId) === String(r.versionId)) : versions.find((v) => v.isLatest)) || null;
+    const cutoff = changedVersion ? t(changedVersion) : r.at.getTime();
+    const before = versions.filter((v) => v !== changedVersion && (!changedVersion || String(v.versionId) !== String(changedVersion.versionId)) && t(v) < cutoff).sort((a, b) => t(b) - t(a))[0];
     out.push({ bucket: r.bucket, key: r.key, changedAs: r.kind, at: r.at, restorableVersionId: before?.versionId || null, note: before ? "A version from before the change exists." : r.kind === "write" ? "A new file; there is nothing earlier to restore." : "No earlier version is available (the bucket may not be versioned)." });
   }
   return { actorKey, since: sinceIso, objects: out, restorable: out.filter((o) => o.restorableVersionId).length };

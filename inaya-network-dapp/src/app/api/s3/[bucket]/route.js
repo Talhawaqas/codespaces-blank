@@ -181,7 +181,7 @@ export async function POST(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const bodyBuffer = Buffer.from(await req.arrayBuffer());
-    const { owner } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
+    const { owner, accessKeyId } = await authenticateS3Request(req, bodyBuffer, { bucket: params.bucket, key: null });
     const store = storeFor(owner);
     const url = new URL(req.url);
 
@@ -192,10 +192,10 @@ export async function POST(req, { params }) {
     const errors = [];
     for (const obj of objects) {
       try {
-        await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key: obj.key, versionId: obj.versionId });
+        await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key: obj.key, versionId: obj.versionId, actorEmail: accessKeyId });
         deleted.push(obj);
       } catch (err) {
-        errors.push({ ...obj, code: "InternalError", message: err.message });
+        errors.push({ ...obj, code: err?.reason === "Contained" || err?.reason === "Governance" || err?.reason === "LegalHold" || err?.reason === "ObjectLocked" ? "AccessDenied" : "InternalError", message: err.message });
       }
     }
 

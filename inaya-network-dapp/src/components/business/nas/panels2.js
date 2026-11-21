@@ -3,7 +3,7 @@
 // NAS console, part 2: Snapshots, Backup, Replication, Cloud Targets, Security,
 // Hardware Health, Audit, Evidence, Digital Twin, Updates, Settings.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, useLoad, useAction, Card, Note, Err, Btn, Input, Select, Table, Pill, fmtBytes, fmtTime, Result } from "./ui";
 import { ShareSelect } from "./panels1";
 
@@ -22,6 +22,8 @@ export function SnapshotsPanel({ orgId, shares }) {
   const [interval, setInterval_] = useState("1440");
   const [keep, setKeep] = useState("7");
   const [wormDays, setWormDays] = useState("30");
+  // Show the share's saved schedule in the form (it used to start from defaults, e.g. "keep last 7" next to an active policy of 14).
+  useEffect(() => { const p = policy.data?.policy; if (!p) return; setInterval_(String(p.intervalMinutes)); setKeep(String(p.keepLast)); if (p.immutable) { setImmutable(true); if (p.retentionDays) setDays(String(p.retentionDays)); } }, [policy.data]);
   const act = useAction(async () => { snaps.reload(); worm.reload(); policy.reload(); });
   const share = shares.find((s) => s._id === shareId);
   return (

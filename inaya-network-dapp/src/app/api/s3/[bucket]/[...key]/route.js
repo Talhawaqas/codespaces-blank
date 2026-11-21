@@ -183,7 +183,7 @@ export async function POST(req, { params }) {
       // for content, only used to confirm the client's view matches (real S3
       // does the equivalent ETag-per-part verification, simplified here).
       parseCompleteMultipartBody(bodyBuffer.toString("utf8"));
-      const doc = await store.completeMultipartUpload({ ...ownerArgs(owner), uploadId, actorEmail: null });
+      const doc = await store.completeMultipartUpload({ ...ownerArgs(owner), uploadId, actorEmail: accessKeyId });
       if (!doc) return s3Error("NoSuchUpload", "The specified multipart upload does not exist.");
       return xmlResponse(completeMultipartUploadXml({ bucket: params.bucket, key, etag: etagOf(doc) }));
     }
@@ -193,6 +193,7 @@ export async function POST(req, { params }) {
     if (err instanceof S3AuthError) return s3Error(err.code, err.message);
     const folderResp = folderAwareError(err);
     if (folderResp) return folderResp;
+    if (err?.reason === "Contained") return s3Error("AccessDenied", err.message);
     console.error("POST /api/s3/[bucket]/[...key] failed:", err);
     return s3Error("InternalError", err.message || "An internal error occurred.");
   }
@@ -360,7 +361,7 @@ export async function DELETE(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const key = joinKey(params.key);
-    const { owner } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
+    const { owner, accessKeyId } = await authenticateS3Request(req, Buffer.alloc(0), { bucket: params.bucket, key });
     const store = storeFor(owner);
     const url = new URL(req.url);
     const uploadId = url.searchParams.get("uploadId");
@@ -372,16 +373,16 @@ export async function DELETE(req, { params }) {
 
     // ?folder -- Inaya-specific extension, same disclosure as PUT ?folder.
     if (url.searchParams.has("folder")) {
-      await store.deleteS3Folder({ ...ownerArgs(owner), bucket: params.bucket, folderPath: key, actorEmail: null });
+      await store.deleteS3Folder({ ...ownerArgs(owner), bucket: params.bucket, folderPath: key, actorEmail: accessKeyId });
       return new Response(null, { status: 204 });
     }
 
     if (url.searchParams.has("tagging")) {
-      await store.deleteObjectTagging({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), actorEmail: null });
+      await store.deleteObjectTagging({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId"), actorEmail: accessKeyId });
       return new Response(null, { status: 204 });
     }
 
-    const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined });
+    const result = await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.bucket, key, versionId: url.searchParams.get("versionId") || undefined, actorEmail: accessKeyId });
     return new Response(null, { status: 204, headers: result?.deleteMarker ? { "x-amz-delete-marker": "true" } : {} });
   } catch (err) {
     if (err?.reason === "Governance" || err?.reason === "Contained") return s3Error("AccessDenied", err.message);

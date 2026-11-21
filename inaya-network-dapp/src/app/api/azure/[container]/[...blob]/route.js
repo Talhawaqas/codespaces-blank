@@ -157,13 +157,13 @@ export async function HEAD(req, { params }) {
 export async function DELETE(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
-    const { owner } = await authenticateAzureRequest(req, Buffer.alloc(0));
+    const { owner, accessKeyId } = await authenticateAzureRequest(req, Buffer.alloc(0));
     const store = storeFor(owner);
     const blob = joinBlob(params.blob);
-    await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, actorEmail: null });
+    await store.deleteS3Object({ ...ownerArgs(owner), bucket: params.container, key: blob, actorEmail: accessKeyId });
     return new Response(null, { status: 202, headers: { "x-ms-version": "2021-08-06" } });
   } catch (err) {
-    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked") return azureError("AuthorizationPermissionMismatch", err.message);
+    if (err?.reason === "LegalHold" || err?.reason === "ObjectLocked" || err?.reason === "Contained") return azureError("AuthorizationPermissionMismatch", err.message);
     if (err instanceof AzureAuthError) return azureError(err.code, err.message);
     console.error("DELETE /api/azure/[container]/[...blob] failed:", err);
     return azureError("InternalError", "An internal error occurred.");

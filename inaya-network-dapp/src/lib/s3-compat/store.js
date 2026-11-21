@@ -861,6 +861,7 @@ export async function getS3FolderInfo({ orgId, bucket, folderPath }) {
  *  a folder row (see module note above), so there is nothing to orphan or
  *  cascade for them. */
 export async function deleteS3Folder({ orgId, bucket, folderPath, actorEmail }) {
+  await assertContained(orgId, actorEmail);
   const bucketDoc = await getS3Bucket({ orgId, bucket });
   if (!bucketDoc) return { deleted: true };
   const segments = splitFolderPath(folderPath);
@@ -1182,6 +1183,7 @@ export async function uploadPart({ orgId, uploadId, partNumber, bodyBuffer }) {
 }
 
 export async function completeMultipartUpload({ orgId, uploadId, actorEmail }) {
+  await assertContained(orgId, actorEmail);
   const { db, orgDocuments } = await getOrgCollections();
   const uploads = db.collection("s3_multipart_uploads");
   // housekeeping: completed upload records are kept for a day so a retried Complete request still gets its answer (SQA-018)
