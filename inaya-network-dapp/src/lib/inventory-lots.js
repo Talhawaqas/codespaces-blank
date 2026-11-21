@@ -61,7 +61,7 @@ export function daysUntilExpiry(expiryDate, today = new Date().toISOString().sli
 /** Works out which lots a movement of `delta` touches, before anything is
  *  written. Returns { lots } (null when the movement isn't lot-tracked) or
  *  { error, status }. */
-export async function planLots({ stockLots, orgId, productId, warehouseId, delta, trackLots, lotNumber, expiryDate, lots: explicit, defaultLotNumber }) {
+export async function planLots({ stockLots, orgId, productId, warehouseId, delta, trackLots, lotNumber, expiryDate, lots: explicit, defaultLotNumber, session = null }) {
   const qty = Math.abs(delta);
   const expiry = normalizeExpiryDate(expiryDate);
   if (expiry?.error) return { error: expiry.error, status: 400 };
@@ -83,7 +83,7 @@ export async function planLots({ stockLots, orgId, productId, warehouseId, delta
     if (named) planned = [{ lotNumber: named, expiryDate: delta > 0 ? expiry : null, quantity: qty }];
     else if (trackLots && delta > 0) return { error: "This product tracks batches: enter a batch / lot number for stock coming in.", status: 400 };
     else if (trackLots && delta < 0) {
-      const available = await stockLots.find({ orgId, productId, warehouseId, quantity: { $gt: 0 } }).toArray();
+      const available = await stockLots.find({ orgId, productId, warehouseId, quantity: { $gt: 0 } }, { session }).toArray();
       const fefo = allocateFefo(available, qty);
       if (fefo.error) return { error: `Not enough stock in batches at this warehouse (have ${fefo.available}, tried to remove ${qty}).`, status: 409 };
       return { lots: fefo.lots };
@@ -101,13 +101,19 @@ export async function planLots({ stockLots, orgId, productId, warehouseId, delta
 }
 
 /** Applies planned lot changes (sign follows the movement's delta). */
-export async function applyLots({ stockLots, orgId, productId, warehouseId, sign, lots }) {
+export async function applyLots({ stockLots, orgId, productId, warehouseId, sign, lots, session = null, allowNegative = false }) {
   const now = new Date().toISOString();
   for (const l of lots) {
     const key = { orgId, productId, warehouseId, lotNumber: l.lotNumber };
-    await stockLots.updateOne(key, { $inc: { quantity: sign * l.quantity }, $set: { updatedAt: now }, $setOnInsert: { expiryDate: l.expiryDate || null, createdAt: now } }, { upsert: sign > 0 });
+    if (sign < 0 && !allowNegative) {
+      // Guarded like the stock level: a batch can't go below zero, even under concurrent issues (the transaction aborts).
+      const r = await stockLots.updateOne({ ...key, quantity: { $gte: l.quantity } }, { $inc: { quantity: -l.quantity }, $set: { updatedAt: now } }, { session });
+      if (!r.matchedCount) { const e = new Error(`Not enough stock in batch ${l.lotNumber}.`); e.status = 409; e.code = "INSUFFICIENT_LOT"; e.name = "StockError"; throw Object.assign(e, { isStockError: true }); }
+      continue;
+    }
+    await stockLots.updateOne(key, { $inc: { quantity: sign * l.quantity }, $set: { updatedAt: now }, $setOnInsert: { expiryDate: l.expiryDate || null, createdAt: now } }, { upsert: sign > 0, session });
     // A lot first received without an expiry date takes one given later.
-    if (sign > 0 && l.expiryDate) await stockLots.updateOne({ ...key, expiryDate: null }, { $set: { expiryDate: l.expiryDate } });
+    if (sign > 0 && l.expiryDate) await stockLots.updateOne({ ...key, expiryDate: null }, { $set: { expiryDate: l.expiryDate } }, { session });
   }
 }
 

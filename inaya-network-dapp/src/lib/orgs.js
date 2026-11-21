@@ -744,6 +744,8 @@ async function createAllOrgIndexes() {
     stockMovements.createIndex({ orgId: 1, productId: 1, createdAt: 1 }),
     stockMovements.createIndex({ orgId: 1, relatedPurchaseOrderId: 1 }),
     stockMovements.createIndex({ orgId: 1, "lots.lotNumber": 1 }),
+    // Inaya Commerce (Master SOW 5.4): a retried stock request with the same idempotency key never moves stock twice.
+    stockMovements.createIndex({ orgId: 1, idempotencyKey: 1 }, { unique: true, name: "stock_idempotency", partialFilterExpression: { idempotencyKey: { $type: "string" } } }),
     stockLots.createIndex({ orgId: 1, productId: 1, warehouseId: 1, lotNumber: 1 }, { unique: true }),
     stockLots.createIndex({ orgId: 1, expiryDate: 1 }),
     salesOrders.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
