@@ -96,5 +96,6 @@ test("SECURITY: cross-org isolation -- a transfer cannot move stock belonging to
   // stock to move, since recordStockMovement's own org-scoped filter
   // means fxA's product/warehouse simply doesn't exist under fxB's org.
   const result = await transferStock({ orgId: fxB.orgId, productId: fxA.productId, sourceWarehouseId: fxA.warehouseAId, destWarehouseId: fxA.warehouseBId, quantity: 5, actorEmail: fxB.actorEmail });
-  assert.equal(result.status, 409, "no stock exists for this product under org B, so the transfer must fail closed");
+  // Fails closed: since the stock ledger became transactional (Commerce Batch 1) the product is checked against the org first, so 404.
+  assert.ok([404, 409].includes(result.status), `the transfer must fail closed (got ${result.status})`);
 });
