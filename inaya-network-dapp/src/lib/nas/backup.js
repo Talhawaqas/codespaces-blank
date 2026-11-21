@@ -35,7 +35,7 @@ import { getOrgCollections, toObjectId } from "../orgs.js";
 import { fail, gate, loadShare, iso, notifyNasManagers } from "./common.js";
 import { recordNasEvidence } from "./evidence.js";
 import { getTargetAdapter, recordTargetResult, INAYA_TARGET_ID } from "./cloudTargets.js";
-import { putBucketVersioning, getS3Bucket } from "../s3-compat/store.js";
+import { putBucketVersioning, getS3Bucket, deleteS3Object } from "../s3-compat/store.js";
 import { registerJobHandler, enqueueJob, runJob } from "./jobs.js";
 
 const MAX_MANIFEST_FILES = 5000;
@@ -221,10 +221,57 @@ export async function runBackup({ orgId, shareId, targetId = INAYA_TARGET_ID, ve
 
   const ok = status === "COMPLETED";
   await recordTargetResult({ orgId, targetKey: adapter.targetKey, ok, bytes, error: allFailures[0]?.error });
+  // Retention: keep the policy's newest recovery points; never blocks or fails the backup itself.
+  let retention = null;
+  if (ok) {
+    const { nasBackupPolicies } = await getOrgCollections();
+    const pol = await nasBackupPolicies.findOne({ orgId: toObjectId(orgId), shareId: share._id });
+    if (pol?.keepRecoveryPoints) retention = await pruneRecoveryPoints({ orgId, shareId: share._id, targetKey: adapter.targetKey, keep: pol.keepRecoveryPoints }).catch((e) => ({ error: e.message }));
+  }
   await recordNasEvidence({ orgId, applianceId: appliance._id, subjectId: share._id, action: ok ? "BACKUP_VERIFIED" : "BACKUP_FAILED", actorEmail, actorType, result: ok ? "OK" : status, integrityHash: recoveryManifestHash, data: { runId: String(run._id), target: adapter.label, filesTotal: all.length, filesBackedUp: backedUp, filesSkipped: skip.length, filesFailed: allFailures.length, filesVerified: verified, verifyMode: verify } });
   if (ok) await nasShares.updateOne({ _id: share._id }, { $set: { lastBackup: { at: iso(), runId: run._id, target: adapter.targetKey, manifestHash: recoveryManifestHash, verifiedFiles: verified } } });
   else await notifyNasManagers({ orgId, type: "nas_backup_failed", title: `Backup of ${share.shareName} ${status.toLowerCase().replace(/_/g, " ")}`, body: allFailures[0]?.error || "See the backup run for details.", dedupeKey: `${run._id}:backup-failed`, sourceId: share._id });
-  return { runId: run._id, status, filesTotal: all.length, filesBackedUp: backedUp, filesSkipped: skip.length, filesFailed: allFailures.length, filesVerified: verified, failures: allFailures, recoveryManifestHash, resumed: !!resumeRunId };
+  return { runId: run._id, status, filesTotal: all.length, filesBackedUp: backedUp, filesSkipped: skip.length, filesFailed: allFailures.length, filesVerified: verified, failures: allFailures, recoveryManifestHash, resumed: !!resumeRunId , retention };
+}
+
+/**
+ * Recovery-point retention: keeps the newest `keep` completed recovery points of a share on one target and prunes older ones.
+ * Deduplication means a recovery point can reuse a file uploaded by an earlier run, so a stored object version is deleted only
+ * when NO kept recovery point and no entry of the current backup index (which later runs reuse) still references it. Pruned
+ * runs stay as records (status PRUNED, file list removed) so the history is auditable. Only Inaya's own storage is cleaned;
+ * a customer's external cloud target keeps its own retention, so for those only the records are marked.
+ */
+export async function pruneRecoveryPoints({ orgId, shareId, targetKey = INAYA_TARGET_ID, keep }) {
+  const k = Number(keep);
+  if (!Number.isInteger(k) || k < 1) return { pruned: 0 };
+  const { nasBackupRuns, nasBackupIndex, nasShares, nasAppliances } = await getOrgCollections();
+  const o = toObjectId(orgId); const s = toObjectId(shareId);
+  const runs = await nasBackupRuns.find({ orgId: o, shareId: s, targetKey, status: { $in: ["COMPLETED", "COMPLETED_WITH_ERRORS"] }, "recoveryPoint.files": { $exists: true } }, { projection: { done: 0 } }).sort({ completedAt: -1 }).toArray();
+  if (runs.length <= k) return { pruned: 0, kept: runs.length, deletedVersions: 0 };
+  const keepRuns = runs.slice(0, k); const old = runs.slice(k);
+  const ref = (f) => `${f.objectKey}@${f.versionId || "null"}`;
+  const stillUsed = new Set();
+  for (const r of keepRuns) for (const f of r.recoveryPoint.files || []) stillUsed.add(ref(f));
+  for (const i of await nasBackupIndex.find({ orgId: o, shareId: s, targetKey }).toArray()) stillUsed.add(ref(i));
+  let bucket = null;
+  if (targetKey === INAYA_TARGET_ID) {
+    const share = await nasShares.findOne({ _id: s, orgId: o });
+    const appliance = share ? await nasAppliances.findOne({ _id: share.applianceId, orgId: o }) : null;
+    bucket = appliance?.backupBucket || null;
+  }
+  const deleted = new Set(); const failed = [];
+  for (const r of old) {
+    for (const f of r.recoveryPoint.files || []) {
+      const id = ref(f);
+      if (stillUsed.has(id) || deleted.has(id) || !bucket || !f.versionId) continue;
+      try { await deleteS3Object({ orgId: String(orgId), bucket, key: f.objectKey, versionId: f.versionId, actorEmail: "system:nas-retention" }); deleted.add(id); }
+      catch (err) { failed.push({ objectKey: f.objectKey, versionId: f.versionId, error: String(err.message).slice(0, 160) }); }
+    }
+    await nasBackupRuns.updateOne({ _id: r._id }, { $set: { status: "PRUNED", prunedAt: iso(), "recoveryPoint.prunedFileCount": (r.recoveryPoint.files || []).length, "recoveryPoint.files": [] } });
+  }
+  await recordNasEvidence({ orgId, applianceId: runs[0].applianceId, subjectId: s, action: "RECOVERY_POINTS_PRUNED", actorEmail: "system", actorType: "system", result: failed.length ? "PARTIAL" : "OK",
+    policy: { kind: "backup-retention", keepRecoveryPoints: k, targetKey }, data: { prunedRuns: old.map((r) => String(r._id)), deletedVersions: deleted.size, failed: failed.length }, graph: false });
+  return { pruned: old.length, kept: k, deletedVersions: deleted.size, failed };
 }
 
 /** Public entry point (kept for the API): back up to Inaya, tracked as a job. */

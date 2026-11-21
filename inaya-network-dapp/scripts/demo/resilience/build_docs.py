@@ -17,7 +17,8 @@ RUN, OUT, BUILD = sys.argv[1], sys.argv[2], sys.argv[3]
 EVID = os.path.join(os.path.expanduser("~"), "Downloads", "Inaya-Resilience-Demo", "evidence")
 os.makedirs(OUT, exist_ok=True)
 state = json.load(open(os.path.join(EVID, "demo-state.json"), encoding="utf-8"))
-base = json.load(open(state["baselineFile"], encoding="utf-8"))
+BASELINE = sys.argv[4] if len(sys.argv) > 4 else state["baselineFile"]  # pin to the recorded run (a later reset writes a new one)
+base = json.load(open(BASELINE, encoding="utf-8"))
 newest = lambda pat: sorted(glob.glob(os.path.join(EVID, pat)))[-1] if glob.glob(os.path.join(EVID, pat)) else None
 safety = json.load(open(newest("safety-checklist-*.json"), encoding="utf-8"))
 verif = json.load(open(newest("verification-after-*.json"), encoding="utf-8"))
@@ -89,12 +90,12 @@ FACTS_NAS = [
     ["Threat detection", "The NAS worker scans each share every 15 minutes against a clean baseline: files changed, deleted and added, encryption-like rewrites, ransomware extensions and ransom notes, repeated failed logons, snapshot-deletion attempts."],
     ["Response", "On detection: an immutable protective snapshot (kept 30 days) and an alert. Share lockdown (read-only, sessions closed) is a recommendation a person approves, unless the company enables automatic lockdown (CRITICAL only); it always expires."],
     ["Restore", "Side by side into .restored/<snapshot>/ so live files are never overwritten by surprise; in-place restore needs a written reason."],
-    ["Off-site copy", "Nightly encrypted backup of each share to Inaya cloud storage; unchanged files are not uploaded again; a sample of each run is read back and compared. Recovery points are currently kept without automatic pruning (the 14-point setting is recorded but not yet enforced)."],
+    ["Off-site copy", "Nightly encrypted backup of each share to Inaya cloud storage; unchanged files are not uploaded again; a sample of each run is read back and compared. Each share keeps its newest 14 recovery points: after a successful backup, older ones are pruned, deleting only stored copies that no kept recovery point still uses (pruned runs stay listed for audit)."],
     ["Worker", "Snapshots, scans and off-site copies run in a worker on the customer's own network next to the appliance; if it is switched off they pause."],
     ["Database backup", "The workspace database is backed up nightly, encrypted, 14 kept. This is separate from file versions and NAS snapshots."],
 ]
 LIMITS = [
-    "<b>Finite retention.</b> Cloud versions 30 days; NAS snapshots 14 daily (each locked 7 days). Recovery depends on finding an attack inside these windows.",
+    "<b>Finite retention.</b> Cloud versions 30 days; NAS snapshots 14 daily (each locked 7 days); off-site NAS copies the newest 14 recovery points. Recovery depends on finding an attack inside these windows.",
     "<b>Rule-based detection.</b> A slow, quiet attack can stay below the thresholds; a legitimate bulk job can raise an alert.",
     "<b>No exfiltration prevention.</b> Download bursts raise an alert; reading is never blocked by containment.",
     "<b>Two encryption models.</b> On-device encryption applies to Documents; S3/Azure API and NAS files are encrypted server-side.",
@@ -168,13 +169,13 @@ for q, a in [
     ("What are the thresholds?", "Rolling 10 minutes: 25 overwrites, 25 deletes, 5 encryption-like rewrites, 5 ransomware extensions, 1 ransom-note name, 150 downloads, 12 shares; decoy rewrite is critical alone. A company can tune them."),
     ("How is 'encryption-like' measured?", "Shannon entropy of the first 32 KB of the new content: at least 7.5 bits/byte and at least 1.0 higher than the version it replaced, so already-compressed files do not count."),
     ("Can an attacker delete the history?", "Cloud: deleting creates a hidden marker; earlier versions stay until the 30-day rule. NAS: snapshots are locked for 7 days against the API; an owner override needs a recorded reason; root on the appliance can still lift it."),
-    ("Is the NAS data copied off site?", "Yes, nightly to Inaya cloud storage, encrypted, with a sample read back. Recovery points are currently kept without automatic pruning."),
+    ("Is the NAS data copied off site?", "Yes, nightly to Inaya cloud storage, encrypted, with a sample read back. The newest 14 recovery points are kept; older ones are pruned without breaking the kept ones."),
     ("Who performs recovery?", "The company's own Owner/Admin. Inaya support can guide; Inaya staff do not restore company files."),
     ("Does this replace backup and endpoint security?", "No. It adds recovery points and detection to the files stored in Inaya; endpoints and other systems still need their own controls."),
     ("What is logged?", "Signals, containments, lifts, rollbacks, NAS events, lockdowns and restores are recorded in the activity and NAS evidence trails; an incident export is available."),
     ("Is it certified?", "No compliance certification is claimed for this capability.")]:
     S += [P(f"<b>{q}</b>"), P(a)]
-doc("2-Live-Demo-Presenter-Guide.pdf", "Live demonstration presenter guide", S, "Script, presenter notes, checklist, reset and technical Q&A")
+doc("2-Live-Demo-Presenter-Guide.pdf", "Live demonstration presenter guide", S, "Script, presenter notes, checklist, reset and technical Q&amp;A")
 
 # 3 One-pager ------------------------------------------------------------------------------------------------------------
 S = [P("When ransomware reaches business files, the question is not only whether it is noticed, but whether the business can carry on. Inaya Business Workspace combines day-to-day operations (standard workspace or ERP mode) with built-in data protection, so a company can <b>restore its data instead of paying</b>.", LEAD), flow(), Spacer(1, 6)]
@@ -186,7 +187,7 @@ S += [table([["", "Cloud files", "Office NAS"],
     ["Recover", "Roll changed files back to clean versions", "Restore a clean snapshot side by side"]], [W * 0.13, W * 0.47, W * 0.4])]
 S += [P("Tested, not just described", H1), P(f"In a controlled test on {run_date} with a synthetic company, a simulated attack changed {changed} files before the account was paused automatically; {refused} further writes and deletes were refused while reading continued. Every restored file matched its pre-attack SHA-256 hash.")]
 S += [P("Boundaries", H2), P("Detection is rule-based and does not stop data being read or copied. Recovery depends on clean copies within the retention windows. NAS protection runs on the customer's network; endpoints still need their own security.", SM)]
-S += [P("<b>Request an Enterprise Resilience Demonstration</b>: see it live, in an isolated environment.", LEAD)]
+S += [Spacer(1, 14), P("<b>Request an Enterprise Resilience Demonstration</b>: see it live, in an isolated environment.", LEAD)]
 doc("3-Enterprise-Resilience-Overview.pdf", "Enterprise Resilience overview", S, "Inaya Business Workspace · one page")
 
 # 4 Factsheet ------------------------------------------------------------------------------------------------------------
@@ -229,11 +230,12 @@ cloud_rows = [r for r in verif["rows"] if r["where"].startswith("cloud")]; nas_r
 S = [table([["Item", "Record"], ["Build", f"commit {BUILD}, production build"], ["Configuration", "Isolated demo environment (see runbook); cloud pause at CRITICAL for 60 min; NAS automatic lockdown off"], ["Test date", f"{run_date} (UTC)"], ["Operator", "Claude Code, automated test operator, for the product owner"], ["Evidence", f"Downloads/Inaya-Resilience-Demo/evidence and runs/{os.path.basename(RUN)}"]], [W * 0.22, W * 0.78])]
 S += [P("Demonstrated behaviours", H1), table([["Behaviour", "Result", "Evidence"],
     ["Isolated environment", ok("PASS") + f" ({sum(c['result'] == 'PASS' for c in safety['checks'])}/{len(safety['checks'])} checks)", os.path.basename(newest("safety-checklist-*.json"))],
-    ["Baseline recorded", ok("PASS"), os.path.basename(state["baselineFile"])],
+    ["Baseline recorded", ok("PASS"), os.path.basename(BASELINE)],
     ["Simulation reproducible", ok("PASS"), "attack-cloud.log, attack-nas.log (second clean run after the fixes)"],
     ["Detection and evidence", ok("PASS"), "09-signal-evidence.png, 07-notifications.png"],
     ["Containment (writes and deletes refused, reads continue)", ok("PASS") if refused and read_ok and delete_refused else no("CHECK"), f"first write {first}, first refusal {paused}; {changed} changed, {refused} refused"],
     ["Cloud rollback", ok("PASS"), "10-rollback-plan.png, 11-rollback-done.png, 12-file-versions-after.png"],
+    ["Optional scenario B: decoy rewrite pauses a second credential at once (next write and delete refused, read works)", ok("PASS"), os.path.basename(newest("attack-cloud-decoy-*.log") or "attack-cloud-decoy log")],
     ["NAS detection, protective snapshot, approved lockdown", ok("PASS"), "14-nas-threat-event.png, 15-nas-lockdown.png"],
     ["NAS side-by-side restore; off-site copy", ok("PASS"), "17-nas-restore-copy.png, 18-nas-offsite.png"],
     ["Integrity: cloud documents match baseline", ok(f"{sum(r['match'] for r in cloud_rows)}/{len(cloud_rows)} MATCH"), os.path.basename(newest("verification-after-*.json"))],
@@ -243,8 +245,8 @@ S += [P("Deviations and defects found (documented, not hidden)", H1), table([["#
     ["1", "Product defect (also in production): a paused credential could still DELETE through the S3 and Azure APIs; multi-delete, folder delete and multipart completion also skipped the pause.", "Fixed: the routes pass the caller; containment checked for all; test/ransomware-containment-deletes.test.mjs. Rehearsal stopped, reset and repeated."],
     ["2", "Product defect (also in production): Plan rollback offered the attacker's own version as the 'clean' version, so restoring brought back the encrypted file.", "Fixed: the version created by the change is the cutoff and never offered; created files show nothing to restore. Real-store test proves original bytes come back; it fails on the old code."],
     ["3", "Display defect: the NAS snapshot schedule form showed 'keep last 7' beside an active policy of 14.", "Fixed: the form shows the saved schedule."],
-    ["4", "Product gap: off-site NAS recovery points record 'keep 14' but are not pruned.", "Documented as-is in all materials; not changed (outside this SOW). Decision for the product owner."],
-    ["5", "Environment: one local storage folder instead of two cloud providers, so version panels show 'Health: Degraded (replicas 1/2)'.", "Expected in isolation; explained in the runbook; the video zooms on the version list."],
+    ["4", "Product gap: off-site NAS recovery points recorded 'keep 14' but were never pruned, so off-site copies grew for ever.", "Product owner decided (21 Nov) to build it: newest 14 kept, older pruned without deleting copies a kept point reuses; test/nas-backup-retention.test.mjs. Built after this run."],
+    ["5", "Environment: one local storage folder instead of two cloud providers, so version panels show 'Health: Degraded (replicas 1/2)'.", "Expected in isolation; visible as-is in the video's version-history frame and explained here and in the runbook. Production keeps two replicas."],
     ["6", "Environment: NAS scan pressed manually ('Scan now') instead of waiting for the 15-minute schedule; lockdown approved by the presenter.", "Stated in narration and runbook."],
     ["7", "Rehearsal 1: the seed wrote NAS files as root, so the simulation could not create .locked files.", "Seed now saves files over SMB as the staff account; not presented as a protection."],
     ["8", "Video: waiting periods shortened; every frame is a real screenshot or the real console output.", "Labelled 'Edited walkthrough' on every frame."]], [W * 0.05, W * 0.53, W * 0.42])]
@@ -262,7 +264,7 @@ S += [P("What is in the folder 'Inaya Ransomware Demo'", H1), table([["File", "W
     ["3 Enterprise Resilience overview", "One page to send to prospects"],
     ["4 Technical factsheet", "For IT and security teams: how cloud and NAS protection work, and their limits"],
     ["5 Sales enablement pack", "What we may and may not claim, talking points, FAQ, follow-up email"],
-    ["6 Validation record", "What was tested, the results, every problem found; the sign-off table is for us to complete"]], [W * 0.38, W * 0.62])]
+    ["6 Validation record", "What was tested, the results, every problem found; the sign-off table is for us to complete"], ["7 Summary for the co-founder", "This document"]], [W * 0.38, W * 0.62])]
 S += [P("How the demonstration goes", H1)] + nl([
     "The company works normally: the standard workspace and ERP mode, files in cloud storage with version history and a hidden decoy file, and an office NAS with locked daily snapshots.",
     "A test script plays a laptop hit by ransomware: it drops a 'ransom note' file and scrambles business files, using that laptop's real sync key. No real malware is involved.",
@@ -273,11 +275,12 @@ S += [P("Problems the rehearsal found (and fixed)", H1), P("The SOW said: if a s
     ["A paused account could still DELETE files through the S3/Azure connection", "The pause is meant to stop deletes too; our materials say so", ok("Fixed and tested")],
     ["'Roll back' put back the scrambled version instead of the original", "Recovery would not have worked in a real attack", ok("Fixed; a test proves the originals come back")],
     ["A NAS screen showed 'keep 7' while 14 snapshots were really kept", "Confusing on camera", ok("Fixed")]], [W * 0.42, W * 0.36, W * 0.22])]
-S += [P("Decisions for us", H1)] + nl([
-    "<b>Push the fixes to production.</b> They are committed but not yet live; the two security fixes matter for real customers.",
-    "<b>Off-site NAS copies are never cleaned up.</b> The 'keep 14' setting is stored but not enforced, so these copies grow forever (more storage cost, nothing lost). Build the clean-up, or leave as is? The materials currently describe it honestly.",
-    "<b>Correct one sentence</b> in the earlier 'Ransomware Protection Overview' PDF ('off-site NAS copies cover the last 14 days'): off-site copies are currently kept longer.",
+S += [P("Decided on 21 November", H1)] + bl([
+    "<b>Fixes pushed to production</b> (commit f347525): the delete and rollback fixes are live with the next deployment.",
+    "<b>Off-site NAS clean-up built:</b> each share keeps its newest 14 off-site recovery points; older ones are removed safely, never deleting a copy a kept point still uses.",
+    "<b>The earlier 'Ransomware Protection Overview' PDF corrected</b> to match."])
+S += [P("Still for us", H1)] + nl([
     "<b>Sign off</b> the validation record (product owner, engineering, QA, marketing) before publishing the video.",
-    "<b>Voice:</b> the video uses the computer's built-in voice. A human voice-over can replace it later without re-recording."])
+    "<b>Voice:</b> the video uses the computer's built-in voice; a human voice-over can replace it later without re-recording."])
 S += [P("What we must not say", H2), P("No 'stops all ransomware', 'bulletproof', 'zero data loss' or 'guaranteed recovery'; it does not stop data being read or copied; detection is rule-based, not AI; NAS checks run every 15 minutes, not instantly.", SM)]
 doc("7-Summary-for-Co-founder.pdf", "Summary for the co-founder", S, f"Enterprise Resilience Demonstration · what was built, what it proved, what we need to decide · {run_date}")
