@@ -45,6 +45,7 @@ export const NAV_ITEMS = [
   { key: "campaigns", label: "Email Campaigns", icon: "crm", group: "operations" },
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
+  { key: "pos", label: "Point of Sale", icon: "inventory", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
   { key: "bookkeeper", label: "AI Bookkeeper", icon: "finance", group: "operations" },
   { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
@@ -125,6 +126,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  pos: "pos point of sale register till checkout cashier receipt sell retail shop counter barcode",
   crm: "crm customers leads deals pipeline sales contacts",
   appointments: "appointments calendar booking bookings schedule meetings availability reminders consultations",
   campaigns: "email campaigns marketing newsletter mass email mailing promotions sequences unsubscribe",

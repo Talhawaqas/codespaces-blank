@@ -45,6 +45,7 @@ export const ERP_MODULES = [
       { id: "overview", label: "Overview", items: ["moduleOverview:sales"] },
       { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new", "crm:orders!new"] },
       { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals", "crm:orders"] },
+      { id: "store", label: "Shop counter", items: ["pos"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
   },

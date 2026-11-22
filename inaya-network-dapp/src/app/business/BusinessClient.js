@@ -45,6 +45,7 @@ import VoiceAssistantControl from "../../components/business/VoiceAssistantContr
 const TasksView = dynamic(() => import("../../components/business/TasksView"), { ssr: false, loading: ScreenLoading });
 const CRMView = dynamic(() => import("../../components/business/CRMView"), { ssr: false, loading: ScreenLoading });
 const ProcurementView = dynamic(() => import("../../components/business/ProcurementView"), { ssr: false, loading: ScreenLoading });
+const PosView = dynamic(() => import("../../components/business/commerce/PosView"), { ssr: false, loading: ScreenLoading });
 const InventoryView = dynamic(() => import("../../components/business/InventoryView"), { ssr: false, loading: ScreenLoading });
 const FinanceView = dynamic(() => import("../../components/business/FinanceView"), { ssr: false, loading: ScreenLoading });
 const HRView = dynamic(() => import("../../components/business/HRView"), { ssr: false, loading: ScreenLoading });
@@ -1347,6 +1348,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     financial: { title: "Financial OS", description: "Fund, investor, and portfolio management." },
     government: { title: "Government OS", description: "Citizen records and case management." },
     education: { title: "Education OS", description: "Students, fees, attendance, exams and parent links, with student personal data encrypted." },
+    pos: { title: "Point of Sale", description: "Sell at the counter: scan or search, discounts with approval, split payments, receipts and parked sales." },
     hospitality: { title: "Hospitality OS", description: "Reservations, tables, guests, menu, stock, shifts and daily checklists for restaurants, cafes and caterers." },
     resilience: { title: "Security & Resilience Controls", description: "Vendors, ICT assets, privileged access, and resilience policy." },
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
@@ -1474,6 +1476,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "campaigns" && <CampaignsView orgId={orgId} canManage={canManage} email={email} />}
       {activeView === "procurement" && <ProcurementView orgId={orgId} canManage={canManage} />}
       {activeView === "inventory" && <InventoryView orgId={orgId} />}
+      {activeView === "pos" && <PosView orgId={orgId} />}
       {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
       {activeView === "hr" && <HRView orgId={orgId} email={email} />}
       {activeView === "sign" && <SignView orgId={orgId} email={email} />}

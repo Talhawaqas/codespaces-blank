@@ -148,7 +148,7 @@ export async function priceCart({ orgId, membership, input, session = null }) {
   const sum = (k) => out.reduce((s, l) => s + l._m[k], 0);
   const taxBreakdown = [...out.reduce((m, l) => { const k = `${l._m.cat || "NONE"}@${l._m.rate}`; const v = m.get(k) || { category: l._m.cat, name: l._m.catName, rate: l._m.rate, taxableMinor: 0, taxMinor: 0 }; v.taxableMinor += l._m.netMinor; v.taxMinor += l._m.taxMinor; m.set(k, v); return m; }, new Map()).values()]
     .map((v) => ({ category: v.category, name: v.name, rate: v.rate, taxable: fromMinor(v.taxableMinor), tax: fromMinor(v.taxMinor) }));
-  const totals = { subtotal: fromMinor(sum("base")), discounts: fromMinor(sum("disc")), net: fromMinor(sum("netMinor")), tax: fromMinor(sum("taxMinor")), total: fromMinor(sum("grossMinor")), totalMinor: sum("grossMinor"), taxBreakdown };
+  const totals = { subtotal: fromMinor(sum("base")), discounts: fromMinor(sum("disc")), net: fromMinor(sum("netMinor")), tax: fromMinor(sum("taxMinor")), total: fromMinor(sum("grossMinor")), totalMinor: sum("grossMinor"), cashTotal: fromMinor(cashRounded(sum("grossMinor"), settings.rounding?.cashIncrement || 0)), taxBreakdown };
   return { currency: settings.currency, taxMode: settings.taxMode, lines: out.map(({ _m, ...l }) => ({ ...l, _minor: _m })), totals, approvals, role };
 }
 
