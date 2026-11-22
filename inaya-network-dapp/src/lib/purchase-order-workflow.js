@@ -204,10 +204,21 @@ export async function receivePurchaseOrder({ orgId, poId, receipts, membership, 
     return { error: "This purchase order changed since it was loaded — reload and try again.", status: 409 };
   }
 
+  // Costing (Inaya Commerce): each stock unit received carries its purchase cost in the company's selling currency,
+  // which keeps the product's moving-average cost (and so COGS and margins) honest.
+  const { getSettings } = await import("./commerce/store.js");
+  const { convert } = await import("./currency.js");
+  const sellCurrency = (await getSettings(orgId).catch(() => null))?.currency || null;
+  const unitCostOf = (item) => {
+    const per = Number(item.unitPrice) / (Number(item.unitsPerPurchaseUnit) > 0 ? Number(item.unitsPerPurchaseUnit) : 1);
+    if (!Number.isFinite(per) || per < 0) return null;
+    const from = po.currency || "USD"; if (!sellCurrency || !from || from === sellCurrency) return Math.round(per * 10000) / 10000;
+    const c = convert(per, from, sellCurrency); return Number.isFinite(c?.convertedAmount) ? Math.round(per * c.rate * 10000) / 10000 : null;
+  };
   for (const { itemIndex, quantity, lotNumber, expiryDate } of receipts) {
     const item = items[itemIndex];
     if (item.productId && item.warehouseId) {
-      await recordStockMovement({
+      await recordStockMovement({ unitCost: unitCostOf(item) ?? undefined,
         orgId, productId: item.productId, warehouseId: item.warehouseId, delta: stockUnitsFor(item, quantity),
         type: "RECEIPT", relatedPurchaseOrderId: poId, lotNumber, expiryDate, defaultLotNumber: `PO-${String(poId).slice(-6).toUpperCase()}`, note: item.unitsPerPurchaseUnit > 1 ? `PO receipt: ${item.description} (${quantity} ${item.unit} × ${item.unitsPerPurchaseUnit})` : `PO receipt: ${item.description}`, actorEmail,
       });

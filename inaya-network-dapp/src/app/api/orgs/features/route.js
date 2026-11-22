@@ -12,6 +12,7 @@ import { FEATURES, listOrgFeatures, setOrgFeature } from "../../../../lib/featur
 import { logOrgActivity } from "../../../../lib/org-activity-log.js";
 
 export const dynamic = "force-dynamic";
+const PAID_ADDONS = new Set(["FEATURE_COMMERCE"]);
 const json = (d, s = 200) => NextResponse.json(d, { status: s, headers: { "Cache-Control": "no-store" } });
 
 export async function GET(req) {
@@ -33,6 +34,8 @@ export async function PATCH(req) {
     const auth = await requireMembership(req, body.orgId, { requireManage: true });
     if (auth.error) return json({ error: auth.error }, auth.status);
     if (!FEATURES.includes(body.name)) return json({ error: "Unknown feature." }, 400);
+    // Paid add-ons are switched on by Inaya with the subscription, not by the company itself.
+    if (PAID_ADDONS.has(body.name)) return json({ error: "This is a paid add-on. Ask Inaya to enable it with your plan.", code: "PAID_ADDON" }, 403);
     const r = await setOrgFeature({ orgId: body.orgId, name: body.name, enabled: body.enabled === true });
     if (r.error) return json({ error: r.error }, r.status);
     try { await logOrgActivity({ orgId: body.orgId, recordType: "ORG_FEATURE", recordId: body.orgId, actorEmail: auth.session.email, action: body.enabled ? "ENABLED" : "DISABLED", previousState: null, newState: null, metadata: { feature: body.name } }); } catch { /* best effort */ }

@@ -9,6 +9,7 @@ import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepart
 import { totalStockForProduct, isLowStock } from "../../../../../../lib/inventory.js";
 import { findOpenReorderRequest } from "../../../../../../lib/inventory-reorder.js";
 import { validateUnitFields, DEFAULT_UNIT } from "../../../../../../lib/inventory-units.js";
+import { validateCatalogueFields, catalogueView, PRICE_FIELDS } from "../../../../../../lib/commerce/catalogue.js";
 import { openingLotsForExistingStock } from "../../../../../../lib/inventory-lots.js";
 
 const STATUSES = ["ACTIVE", "DISCONTINUED"];
@@ -20,7 +21,7 @@ function serializeProduct(p, totalStock) {
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
-    trackLots: !!p.trackLots,
+    trackLots: !!p.trackLots, ...catalogueView(p),
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -68,7 +69,7 @@ export async function PATCH(req, { params }) {
 
     const result = await loadAuthorized(req, orgId, params.productId);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
-    const { products, product } = result;
+    const { products, product, auth } = result;
 
     const updateFields = { updatedAt: new Date().toISOString() };
     if (name !== undefined) {
@@ -111,6 +112,11 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: `Barcode "${units.fields.barcode}" is already used by another product.` }, { status: 409 });
     }
     Object.assign(updateFields, units.fields);
+    const cat = validateCatalogueFields(body);
+    if (cat.error) return NextResponse.json({ error: cat.error }, { status: 400 });
+    Object.assign(updateFields, cat.fields);
+    // Price, cost and tax changes are audited with old and new values and emitted as price.changed (Master SOW 6.4).
+    const priceChanges = Object.fromEntries(PRICE_FIELDS.filter((k) => k in updateFields && (updateFields[k] ?? null) !== (product[k] ?? null)).map((k) => [k, { from: product[k] ?? null, to: updateFields[k] ?? null }]));
     try {
       await products.updateOne({ _id: product._id }, { $set: updateFields });
     } catch (e) {
@@ -121,6 +127,11 @@ export async function PATCH(req, { params }) {
     if (trackLots === true && !product.trackLots) {
       const { stockLevels, stockLots } = await getOrgCollections();
       await openingLotsForExistingStock({ stockLevels, stockLots, orgId: product.orgId, productId: product._id });
+    }
+    if (Object.keys(priceChanges).length) {
+      const { audit, emitCommerceEvent } = await import("../../../../../../lib/commerce/store.js");
+      await audit({ orgId, actorEmail: auth.session.email, recordType: "PRODUCT", recordId: product._id, action: "PRICE_CHANGED", previousState: Object.fromEntries(Object.entries(priceChanges).map(([k, v]) => [k, v.from])), newState: Object.fromEntries(Object.entries(priceChanges).map(([k, v]) => [k, v.to])) });
+      await emitCommerceEvent({ orgId, name: "price.changed", entityId: product._id, actorEmail: auth.session.email, source: "catalogue", payload: { sku: product.sku, changes: priceChanges } });
     }
     const updated = await products.findOne({ _id: product._id });
     const total = await totalStockForProduct(orgId, product._id);

@@ -17,6 +17,7 @@ import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { isLowStock } from "../../../../../lib/inventory.js";
 import { findOpenReorderRequest } from "../../../../../lib/inventory-reorder.js";
 import { validateUnitFields, DEFAULT_UNIT } from "../../../../../lib/inventory-units.js";
+import { validateCatalogueFields, catalogueView } from "../../../../../lib/commerce/catalogue.js";
 
 function serializeProduct(p, totalStock) {
   return {
@@ -25,7 +26,7 @@ function serializeProduct(p, totalStock) {
     reorderThreshold: p.reorderThreshold || 0, status: p.status,
     reorderQuantity: p.reorderQuantity ?? null, autoReorder: !!p.autoReorder,
     barcode: p.barcode || null, unit: p.unit || DEFAULT_UNIT, purchaseUnit: p.purchaseUnit || null, unitsPerPurchaseUnit: p.unitsPerPurchaseUnit ?? null,
-    trackLots: !!p.trackLots,
+    trackLots: !!p.trackLots, ...catalogueView(p),
     totalStock, lowStock: isLowStock(p, totalStock),
     createdByEmail: p.createdByEmail, createdAt: p.createdAt, updatedAt: p.updatedAt,
   };
@@ -123,6 +124,8 @@ export async function POST(req) {
     if (existing) return NextResponse.json({ error: `A product with SKU "${sku}" already exists in this company.` }, { status: 409 });
     const units = validateUnitFields(body);
     if (units.error) return NextResponse.json({ error: units.error }, { status: 400 });
+    const cat = validateCatalogueFields(body);
+    if (cat.error) return NextResponse.json({ error: cat.error }, { status: 400 });
     if (units.fields.barcode && await products.findOne({ orgId: orgObjectId, barcode: units.fields.barcode })) {
       return NextResponse.json({ error: `Barcode "${units.fields.barcode}" is already used by another product.` }, { status: 409 });
     }
@@ -134,7 +137,7 @@ export async function POST(req) {
       result = await products.insertOne({
         orgId: orgObjectId, departmentId: departmentObjectId, sku, name,
         description: description ? String(description).trim() : null,
-        unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, ...unitDoc, trackLots: trackLots === true,
+        unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, ...unitDoc, ...cat.fields, trackLots: trackLots === true,
         status: "ACTIVE", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
       });
     } catch (e) {
@@ -144,7 +147,7 @@ export async function POST(req) {
 
     return NextResponse.json(serializeProduct({
       _id: result.insertedId, orgId: orgObjectId, departmentId: departmentObjectId, sku, name, description,
-      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE", ...unitDoc, trackLots: trackLots === true,
+      unitPrice: unitPrice ?? null, reorderThreshold: reorderThreshold ?? 0, status: "ACTIVE", ...unitDoc, ...cat.fields, trackLots: trackLots === true,
       createdByEmail: auth.session.email, createdAt: now, updatedAt: now,
     }, 0));
   } catch (err) {

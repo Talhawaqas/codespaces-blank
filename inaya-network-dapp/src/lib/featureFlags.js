@@ -33,6 +33,8 @@ export const FEATURES = [
   "FEATURE_PQC",
   "FEATURE_MEET",
   "FEATURE_INFRASTRUCTURE",
+  // Inaya Commerce (paid add-on for Business/Enterprise): enabled by Inaya with the add-on, never self-service.
+  "FEATURE_COMMERCE",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);

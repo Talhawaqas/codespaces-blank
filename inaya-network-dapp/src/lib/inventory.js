@@ -86,7 +86,7 @@ async function applyMovement(a, session) {
     }
   }
 
-  const product = await products.findOne({ _id: productObjectId, orgId: orgObjectId }, { projection: { trackLots: 1 }, session });
+  const product = await products.findOne({ _id: productObjectId, orgId: orgObjectId }, { projection: { trackLots: 1, avgCost: 1, costPrice: 1, productType: 1 }, session });
   if (!product) throw new StockError("Product not found.", 404, "NOT_FOUND");
   const plan = await planLots({
     stockLots, orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, delta: a.delta,
@@ -109,6 +109,19 @@ async function applyMovement(a, session) {
     catch (e) { if (e?.isStockError) throw new StockError(e.message, e.status || 409, e.code || "INSUFFICIENT_LOT"); throw e; }
   }
 
+  // Costing (Inaya Commerce, Batch 1): stock IN with a unit cost updates the moving-average cost (weighted by the stock
+  // on hand across all warehouses before this movement); stock OUT records the cost at that moment for COGS.
+  let costAtMovement = Number.isFinite(a.unitCost) ? a.unitCost : null;
+  if (a.delta > 0 && Number.isFinite(a.unitCost) && ["RECEIPT", "PRODUCE", "RETURN"].includes(a.type)) {
+    const levels = await stockLevels.find({ orgId: orgObjectId, productId: productObjectId }, { projection: { quantity: 1 }, session }).toArray();
+    const onHandBefore = Math.max(0, levels.reduce((n, l) => n + l.quantity, 0) - a.delta);
+    const prevAvg = Number.isFinite(product.avgCost) ? product.avgCost : null;
+    const avg = prevAvg === null || onHandBefore === 0 ? a.unitCost : (onHandBefore * prevAvg + a.delta * a.unitCost) / (onHandBefore + a.delta);
+    await products.updateOne({ _id: productObjectId, orgId: orgObjectId }, { $set: { avgCost: Math.round(avg * 10000) / 10000, ...(a.type === "RECEIPT" ? { lastPurchaseCost: a.unitCost } : {}), costUpdatedAt: new Date().toISOString() } }, { session });
+  } else if (a.delta < 0 && costAtMovement === null) {
+    costAtMovement = Number.isFinite(product.avgCost) ? product.avgCost : Number.isFinite(product.costPrice) ? product.costPrice : null;
+  }
+
   const now = new Date().toISOString();
   const doc = {
     orgId: orgObjectId, productId: productObjectId, warehouseId: warehouseObjectId, type: a.type, delta: a.delta,
@@ -118,7 +131,7 @@ async function applyMovement(a, session) {
     ...(a.relatedSaleId ? { relatedSaleId: toObjectId(a.relatedSaleId) } : {}),
     ...(idem ? { idempotencyKey: idem } : {}),
     ...(a.allowNegative ? { override: { negativeAllowed: true, reason: String(a.allowNegative.reason).trim().slice(0, 300), by: a.actorEmail || null } } : {}),
-    ...(Number.isFinite(a.unitCost) ? { unitCost: a.unitCost } : {}),
+    ...(costAtMovement !== null ? { unitCost: costAtMovement } : {}),
     note: a.note || null, lots: plan.lots, actorEmail: a.actorEmail, createdAt: now,
   };
   const result = await stockMovements.insertOne(doc, o);
