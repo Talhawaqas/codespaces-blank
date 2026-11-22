@@ -23,3 +23,8 @@ PII minimisation: payloads carry ids, SKUs, amounts and counts; never customer n
 
 ## Processing and failure
 Queued per subscribed endpoint at the time of the operation (never inside the sale transaction's critical path: a failed enqueue is logged, not a failed sale). Delivery workers retry with backoff; after the last attempt the delivery is `FAILED` and visible for redelivery (dead letter). Audit evidence for the operation itself is in `org_activity` (the cryptographic audit chain), referenced by `entityId`.
+
+## Orders, reservations and reporting (Batch 4)
+- Sales orders share `sales_orders` with POS (channel absent/"ORDER"; online orders will use the same lifecycle): QUOTE → DRAFT → CONFIRMED/BACKORDERED (stock reserved on `stock_levels.reserved`) → stages PICKING, PACKED, READY_FOR_PICKUP → FULFILLED (DISPATCHED or COLLECTED) → DELIVERED; CANCELLED; RETURNED. Reserved stock leaves only through its order (`consumeReserved`); reconciliation reports and repairs reservation drift.
+- Order money is recorded manually (cash, bank transfer, referenced) and posts as Customer Deposits (2200) until the invoice is paid, when the ledger applies the deposit to the invoice.
+- Commerce reports are computed from the stored transactions in minor units; every breakdown reconciles to the totals and drills down to the source sales and refunds.

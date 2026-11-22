@@ -89,6 +89,8 @@ export const DEFAULT_SETTINGS = {
   refundRole: "supervisor", // lowest commerce role that may refund without approval: "cashier" | "supervisor" | "manager"
   quarantineWarehouseId: null, // where QUARANTINE returns go (a location kept out of selling)
   cashVarianceTolerance: 0, // minor units; a shift closing further over/short than this is flagged for the manager
+  timezone: "UTC", // IANA zone used to put sales on the right day/hour in reports (e.g. "Asia/Karachi", "Europe/London")
+  receiptShowNotes: false, // print sale notes on receipts (privacy: off by default)
 };
 export async function getSettings(orgId) {
   await ensureCommerceIndexes();
@@ -120,6 +122,8 @@ export function validateSettings(input = {}) {
   if (input.allowNegativeStock !== undefined) out.allowNegativeStock = input.allowNegativeStock === true;
   if (input.refundRole !== undefined) { if (!COMMERCE_ROLES.includes(input.refundRole)) return fail("refundRole: cashier|supervisor|manager."); out.refundRole = input.refundRole; }
   if (input.quarantineWarehouseId !== undefined) out.quarantineWarehouseId = input.quarantineWarehouseId ? sid(input.quarantineWarehouseId) : null;
+  if (input.timezone !== undefined) { try { new Intl.DateTimeFormat("en", { timeZone: String(input.timezone) }); out.timezone = String(input.timezone); } catch { return fail("Unknown time zone (use a name like Asia/Karachi or Europe/London)."); } }
+  if (input.receiptShowNotes !== undefined) out.receiptShowNotes = input.receiptShowNotes === true;
   if (input.cashVarianceTolerance !== undefined) { const t = Number(input.cashVarianceTolerance); if (!Number.isInteger(t) || t < 0 || t > 10000000) return fail("cashVarianceTolerance: whole minor units >= 0."); out.cashVarianceTolerance = t; }
   return { settings: out };
 }

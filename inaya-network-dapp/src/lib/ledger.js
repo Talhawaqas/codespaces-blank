@@ -55,7 +55,7 @@ const DEBIT_NORMAL = new Set(["ASSET", "EXPENSE"]);
 export const ACCOUNTS = {
   CASH: "1000", AR: "1100", AP: "2000", EQUITY: "3000",
   SALES: "4000", OTHER_INCOME: "4900", OPEX: "5000", OTHER_EXPENSE: "5900",
-  FEES: "4100", TAX_PAYABLE: "2100",
+  FEES: "4100", TAX_PAYABLE: "2100", DEPOSITS: "2200",
 };
 // Created only for organizations that bill school fees (syncLedger).
 const FEE_INCOME_ACCOUNT = { code: ACCOUNTS.FEES, name: "Fee Income", type: "REVENUE" };
@@ -64,6 +64,7 @@ export const DEFAULT_ACCOUNTS = [
   { code: ACCOUNTS.AR, name: "Accounts Receivable", type: "ASSET" },
   { code: ACCOUNTS.AP, name: "Accounts Payable", type: "LIABILITY" },
   { code: ACCOUNTS.TAX_PAYABLE, name: "Sales Tax Payable", type: "LIABILITY" },
+  { code: ACCOUNTS.DEPOSITS, name: "Customer Deposits", type: "LIABILITY" },
   { code: ACCOUNTS.EQUITY, name: "Owner's Equity", type: "EQUITY" },
   { code: ACCOUNTS.SALES, name: "Sales Revenue", type: "REVENUE" },
   { code: ACCOUNTS.OTHER_INCOME, name: "Other Income", type: "REVENUE" },
@@ -182,6 +183,17 @@ export async function reverseEntry({ orgId, entryId, date, actorEmail }) {
 // at the daily rate stored for the entry's own date (fx-rates.js), falling
 // back to the static reference table. Posted entries keep the rate they
 // were posted with.
+/** Invoice paid where part (or all) of the money was already taken as sales-order deposits: Dr Deposits (applied),
+ *  Dr Cash (the rest), Cr Accounts Receivable (the whole invoice). */
+function depositAppliedLines(total, applied, currency, memo) {
+  return async (date) => {
+    const a = await usdLines(applied, currency, ACCOUNTS.DEPOSITS, ACCOUNTS.AR, memo)(date); if (a.error) return a;
+    const rest = Math.round((total - applied) * 100) / 100;
+    if (rest <= 0) return a;
+    const b = await usdLines(rest, currency, ACCOUNTS.CASH, ACCOUNTS.AR, memo)(date); if (b.error) return b;
+    return { lines: [a.lines[0], b.lines[0], { ...a.lines[1], credit: Math.round((a.lines[1].credit + b.lines[1].credit) * 100) / 100 }] };
+  };
+}
 function usdLines(amount, currency, debitCode, creditCode, memo) {
   return async (date) => {
     const cur = String(currency || "USD").toUpperCase();
@@ -245,7 +257,7 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     ).catch((err) => { if (err?.code !== 11000) throw err; });
   }
   const posted = new Set((await journalEntries.find(
-    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT", "POS_SALE", "POS_REFUND"] } },
+    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT", "POS_SALE", "POS_REFUND", "ORDER_PAYMENT"] } },
     { projection: { source: 1 } }
   ).toArray()).map((e) => `${e.source.type}:${e.source.id}:${e.source.event}`));
 
@@ -263,6 +275,10 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
   }
   const when = (doc, action, fallback) => eventTimes.get(`${doc._id}:${action}`) || fallback || doc.updatedAt || doc.createdAt;
 
+  // Sales orders (Master SOW 6.9): money taken against an order is a customer deposit until its invoice is paid.
+  const orderList = await salesOrders.find({ orgId: orgObjectId, channel: { $ne: "POS" }, "payments.0": { $exists: true } }, { projection: { orderNumber: 1, currency: 1, payments: 1, invoiceId: 1 } }).toArray();
+  const depositByInvoice = new Map();
+  for (const ord of orderList) if (ord.invoiceId) depositByInvoice.set(String(ord.invoiceId), ord.payments.reduce((n, p) => n + (p.kind === "REFUND" ? -p.amountMinor : p.amountMinor), 0) / 100);
   const plan = [];
   const add = (type, doc, event, date, memo, built) => {
     if (posted.has(`${type}:${doc._id}:${event}`)) return;
@@ -277,7 +293,8 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
       add("INVOICE", inv, "SENT", when(inv, "INVOICE_SENT", inv.issueDate), `${label} issued`, usdLines(amount, inv.currency, ACCOUNTS.AR, ACCOUNTS.SALES, label));
     }
     if (inv.status === "PAID") {
-      add("INVOICE", inv, "PAID", when(inv, "INVOICE_PAID", inv.updatedAt), `${label} paid`, usdLines(amount, inv.currency, ACCOUNTS.CASH, ACCOUNTS.AR, label));
+      const dep = Math.min(amount, Math.max(0, depositByInvoice.get(String(inv._id)) || 0));
+      add("INVOICE", inv, "PAID", when(inv, "INVOICE_PAID", inv.updatedAt), `${label} paid`, dep > 0 ? depositAppliedLines(amount, dep, inv.currency, `${label} (order deposits applied)`) : usdLines(amount, inv.currency, ACCOUNTS.CASH, ACCOUNTS.AR, label));
     }
     if (inv.status === "CANCELLED" && posted.has(sentKey)) {
       add("INVOICE", inv, "CANCELLED", when(inv, "INVOICE_CANCELLED", inv.updatedAt), `${label} cancelled`, usdLines(amount, inv.currency, ACCOUNTS.SALES, ACCOUNTS.AR, label));
@@ -336,6 +353,12 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     }
   }
 
+  for (const ord of orderList) for (const p of ord.payments) {
+    const amt = p.amountMinor / 100; const doc = { _id: `${ord._id}:${p.no}` };
+    if (p.kind === "REFUND") add("ORDER_PAYMENT", doc, "REFUNDED", p.at, `Order ${ord.orderNumber} deposit refunded`, usdLines(amt, ord.currency, ACCOUNTS.DEPOSITS, ACCOUNTS.CASH, `Order ${ord.orderNumber} refund ${p.no}`));
+    else add("ORDER_PAYMENT", doc, "RECEIVED", p.at, `Order ${ord.orderNumber} payment`, usdLines(amt, ord.currency, ACCOUNTS.CASH, ACCOUNTS.DEPOSITS, `Order ${ord.orderNumber} payment ${p.no}`));
+  }
+
   // Inaya Commerce: POS sales and their refunds (refunds are stored on the sale as refunds[]; each posts once).
   const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED", "VOIDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1, status: 1, voidedAt: 1 } }).toArray();
   for (const sale of posSales) {
@@ -368,7 +391,7 @@ export async function syncAllLedgers({ orgIds } = {}) {
   const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, salesOrders } = await getOrgCollections();
   const scope = orgIds ? { orgId: { $in: orgIds.map(toObjectId) } } : {};
   const all = await Promise.all([invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments].map((c) => c.distinct("orgId", { ...scope, deletedAt: null })));
-  all.push(await salesOrders.distinct("orgId", { ...scope, channel: "POS" })); // shops that only sell at the till
+  all.push(await salesOrders.distinct("orgId", { ...scope, $or: [{ channel: "POS" }, { "payments.0": { $exists: true } }] })); // shops that sell at the till or take order deposits
   const unique = [...new Map(all.flat().filter(Boolean).map((id) => [id.toString(), id])).keys()];
   const out = { orgs: unique.length, posted: 0, failedOrgs: 0, errors: 0 };
   for (const id of unique) {

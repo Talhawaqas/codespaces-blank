@@ -57,12 +57,12 @@ export async function withStockTransaction(fn, session = null) {
 // IN leg reuses the OUT leg's lots). For a trackLots product a stock-out
 // without a lot is allocated earliest-expiry-first, and defaultLotNumber is
 // used for a stock-in that names none (PO receipts pass the PO's number).
-export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, relatedProductionOrderId, relatedSaleId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber, session = null, idempotencyKey = null, allowNegative = null, unitCost = null }) {
+export async function recordStockMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, relatedProductionOrderId, relatedSaleId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber, session = null, idempotencyKey = null, allowNegative = null, unitCost = null, consumeReserved = 0 }) {
   if (!MOVEMENT_TYPES.includes(type)) return { error: `Unknown movement type "${type}".`, status: 400 };
   if (!Number.isFinite(delta) || delta === 0) return { error: "delta must be a non-zero number.", status: 400 };
   if (allowNegative && String(allowNegative.reason || "").trim().length < 3) return { error: "A reason is required to allow negative stock.", status: 400 };
   try {
-    return await withStockTransaction((s) => applyMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, relatedProductionOrderId, relatedSaleId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber, idempotencyKey, allowNegative, unitCost }, s), session);
+    return await withStockTransaction((s) => applyMovement({ orgId, productId, warehouseId, delta, type, relatedPurchaseOrderId, relatedSalesOrderId, relatedProductionOrderId, relatedSaleId, note, actorEmail, lotNumber, expiryDate, lots, defaultLotNumber, idempotencyKey, allowNegative, unitCost, consumeReserved }, s), session);
   } catch (e) {
     if (e instanceof StockError && !session) return { error: e.message, status: e.status, code: e.code };
     throw e; // inside a caller's transaction the caller decides (and the whole transaction aborts)
@@ -95,11 +95,20 @@ async function applyMovement(a, session) {
   if (plan.error) throw new StockError(plan.error, plan.status || 400, "LOTS");
 
   let updatedLevel;
+  const consume = Number(a.consumeReserved) > 0 ? Number(a.consumeReserved) : 0;
   if (a.delta < 0 && !a.allowNegative) {
-    updatedLevel = await stockLevels.findOneAndUpdate({ ...key, quantity: { $gte: -a.delta } }, { $inc: { quantity: a.delta } }, { returnDocument: "after", session });
+    // Reservations (Master SOW 6.9): stock held for confirmed orders can only leave through those orders (consumeReserved);
+    // everything else -- POS sales, transfers, production -- may take only what is free. Counts, write-offs and
+    // adjustments record physical reality, so they are limited by the quantity on hand, not by reservations.
+    const physical = ["COUNT", "WRITE_OFF", "ADJUSTMENT"].includes(a.type);
+    const filter = consume ? { ...key, quantity: { $gte: -a.delta }, reserved: { $gte: consume } }
+      : physical ? { ...key, quantity: { $gte: -a.delta } }
+      : { ...key, $expr: { $gte: [{ $subtract: ["$quantity", { $ifNull: ["$reserved", 0] }] }, -a.delta] } };
+    updatedLevel = await stockLevels.findOneAndUpdate(filter, { $inc: { quantity: a.delta, ...(consume ? { reserved: -consume } : {}) } }, { returnDocument: "after", session });
     if (!updatedLevel) {
       const current = await stockLevels.findOne(key, o);
-      throw new StockError(`Not enough stock at this warehouse (have ${current?.quantity || 0}, tried to remove ${-a.delta}).`, 409, "INSUFFICIENT_STOCK");
+      const have = current?.quantity || 0; const held = current?.reserved || 0;
+      throw new StockError(held > 0 && !consume && !physical ? `Not enough free stock at this warehouse (${have} on hand, ${held} reserved for orders, tried to remove ${-a.delta}).` : `Not enough stock at this warehouse (have ${have}, tried to remove ${-a.delta}).`, 409, "INSUFFICIENT_STOCK");
     }
   } else {
     updatedLevel = await stockLevels.findOneAndUpdate(key, { $inc: { quantity: a.delta }, $setOnInsert: key }, { upsert: true, returnDocument: "after", session });
@@ -163,7 +172,19 @@ export async function reconcileStockLevels({ orgId, repair = false, actorEmail =
       if (Math.abs(sum - l.quantity) > 1e-6) lotIssues.push({ productId: String(p._id), warehouseId: String(l.warehouseId), level: l.quantity, lots: sum });
     }
   }
+  // reservations: the cached reserved quantity must equal what open orders hold
+  const { salesOrders } = await getOrgCollections();
+  const held = new Map();
+  for (const ord of await salesOrders.find({ orgId: orgObjectId, channel: { $ne: "POS" }, status: { $in: ["CONFIRMED", "BACKORDERED"] } }, { projection: { warehouseId: 1, lines: 1 } }).toArray())
+    for (const l of ord.lines || []) if (l.reservedQty > 0) { const k = `${l.productId}:${ord.warehouseId}`; held.set(k, (held.get(k) || 0) + l.reservedQty); }
+  const reservationIssues = [];
+  for (const l of levels) { const k = `${l.productId}:${l.warehouseId}`; const want = Math.round((held.get(k) || 0) * 1e6) / 1e6; if (Math.abs((l.reserved || 0) - want) > 1e-6) reservationIssues.push({ productId: String(l.productId), warehouseId: String(l.warehouseId), level: l.reserved || 0, orders: want }); }
   let repaired = 0;
+  if (repair && reservationIssues.length) {
+    for (const m of reservationIssues) await stockLevels.updateOne({ orgId: orgObjectId, productId: toObjectId(m.productId), warehouseId: toObjectId(m.warehouseId) }, { $set: { reserved: m.orders } });
+    repaired += reservationIssues.length;
+    await logOrgActivity({ orgId: orgObjectId, recordType: "STOCK_RECONCILIATION", recordId: orgObjectId, actorEmail, action: "STOCK_RESERVATIONS_REPAIRED", previousState: null, newState: null, metadata: { reservationIssues: reservationIssues.slice(0, 50) } }).catch(() => {});
+  }
   if (repair && mismatches.length) {
     await withStockTransaction(async (session) => {
       for (const m of mismatches) {
@@ -173,7 +194,34 @@ export async function reconcileStockLevels({ orgId, repair = false, actorEmail =
     });
     await logOrgActivity({ orgId: orgObjectId, recordType: "STOCK_RECONCILIATION", recordId: orgObjectId, actorEmail, action: "STOCK_LEVELS_REPAIRED", previousState: null, newState: null, metadata: { repaired, mismatches: mismatches.slice(0, 50) } }).catch(() => {});
   }
-  return { checked: levels.length, mismatches, lotIssues, repaired };
+  return { checked: levels.length, mismatches, lotIssues, reservationIssues, repaired };
+}
+
+/** Reserve free stock for an order line (inside the caller's transaction when a session is given). Reserves up to
+ *  `quantity` when partial=true, otherwise exactly `quantity` or nothing; returns how much was reserved. */
+export async function reserveStock({ orgId, productId, warehouseId, quantity, partial = false, session = null }) {
+  const { stockLevels } = await getOrgCollections();
+  const key = { orgId: toObjectId(orgId), productId: toObjectId(productId), warehouseId: toObjectId(warehouseId) };
+  const level = await stockLevels.findOne(key, { session });
+  const free = Math.max(0, (level?.quantity || 0) - (level?.reserved || 0));
+  const take = partial ? Math.min(free, quantity) : (free >= quantity ? quantity : 0);
+  if (!(take > 0)) return { reserved: 0, free };
+  const r = await stockLevels.findOneAndUpdate({ ...key, $expr: { $gte: [{ $subtract: ["$quantity", { $ifNull: ["$reserved", 0] }] }, take] } }, { $inc: { reserved: take } }, { returnDocument: "after", session });
+  if (!r) return { reserved: 0, free, error: "Stock changed while reserving; try again." };
+  return { reserved: take, free: free - take };
+}
+export async function releaseStock({ orgId, productId, warehouseId, quantity, session = null }) {
+  if (!(quantity > 0)) return { released: 0 };
+  const { stockLevels } = await getOrgCollections();
+  const key = { orgId: toObjectId(orgId), productId: toObjectId(productId), warehouseId: toObjectId(warehouseId) };
+  const r = await stockLevels.findOneAndUpdate({ ...key, reserved: { $gte: quantity } }, { $inc: { reserved: -quantity } }, { returnDocument: "after", session });
+  if (!r) throw new StockError("Reservation is out of step; run stock reconciliation.", 409, "RESERVATION");
+  return { released: quantity };
+}
+export async function getFreeStock(orgId, productId, warehouseId) {
+  const { stockLevels } = await getOrgCollections();
+  const level = await stockLevels.findOne({ orgId: toObjectId(orgId), productId: toObjectId(productId), warehouseId: toObjectId(warehouseId) });
+  return { onHand: level?.quantity || 0, reserved: level?.reserved || 0, free: Math.max(0, (level?.quantity || 0) - (level?.reserved || 0)) };
 }
 
 export async function getStockLevel(orgId, productId, warehouseId) {

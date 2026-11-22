@@ -35,7 +35,7 @@ export default function PosView({ orgId }) {
     </div>
   );
   if (!settings) return <p className={muted}>Loading…</p>;
-  const tabs = [["register", "Register"], ["sales", "Sales"], ["shifts", "Shifts"], ...(role !== "cashier" ? [["approvals", "Approvals"]] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
+  const tabs = [["register", "Register"], ["sales", "Sales"], ["shifts", "Shifts"], ...(role !== "cashier" ? [["approvals", "Approvals"], ["reports", "Reports"]] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2" role="tablist">
@@ -45,6 +45,7 @@ export default function PosView({ orgId }) {
       {tab === "register" && <Register orgId={orgId} settings={settings} role={role} />}
       {tab === "sales" && <Sales orgId={orgId} settings={settings} role={role} />}
       {tab === "shifts" && <Shifts orgId={orgId} settings={settings} role={role} />}
+      {tab === "reports" && <Reports orgId={orgId} settings={settings} role={role} />}
       {tab === "approvals" && <Approvals orgId={orgId} settings={settings} />}
       {tab === "setup" && <Setup orgId={orgId} settings={settings} onSaved={setSettings} />}
     </div>
@@ -277,7 +278,7 @@ function ReceiptDialog({ orgId, saleId, onClose }) {
   useEffect(() => { api(`sales/${saleId}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch((e) => setErr(e.message)); }, [orgId, saleId]);
   return <Modal title="Sale complete" onClose={onClose}>
     {err && <p className="text-red-500">{err}</p>}
-    {r && <><Receipt r={r} /><div className="flex gap-2 mt-3 print:hidden"><button className={primary} onClick={() => printReceipt(r)}>Print receipt</button><button className={btn} onClick={onClose}>New sale</button></div></>}
+    {r && <><Receipt r={r} /><div className="flex flex-wrap gap-2 mt-3 print:hidden"><button className={primary} onClick={() => printReceipt(r)}>Print receipt</button><button className={btn} onClick={onClose}>New sale</button></div><ReceiptActions orgId={orgId} saleId={saleId} /></>}
   </Modal>;
 }
 export function Receipt({ r }) {
@@ -431,7 +432,7 @@ function SaleDialog({ orgId, settings, role, saleId, onClose }) {
 function ReceiptLoader({ orgId, saleId }) {
   const [r, setR] = useState(null);
   useEffect(() => { api(`sales/${saleId}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch(() => {}); }, [orgId, saleId]);
-  return r ? <><Receipt r={r} /><button className={`${btn} mt-2`} onClick={() => printReceipt(r)}>Reprint receipt</button></> : <p className={muted}>Loading receipt…</p>;
+  return r ? <><Receipt r={r} /><button className={`${btn} mt-2`} onClick={() => printReceipt(r)}>Reprint receipt</button><ReceiptActions orgId={orgId} saleId={saleId} /></> : <p className={muted}>Loading receipt…</p>;
 }
 const DISPOSITION_NAMES = { RESTOCK: "Back on the shelf", QUARANTINE: "Quarantine (inspect first)", DAMAGED: "Damaged (write off)", NON_RESTOCKABLE: "Not restockable" };
 function ReturnDialog({ orgId, settings, sale, onClose, onDone }) {
@@ -516,8 +517,83 @@ function RefundReceiptDialog({ orgId, saleId, refundNumber, onClose }) {
       <div className="flex justify-between font-bold"><span>REFUND TOTAL</span><span>{money(r.total, r.currency)}</span></div>
       {r.tenders.map((t, i) => <div key={i} className="flex justify-between"><span>{TENDER_NAMES[t.method] || t.method}{t.reference ? ` (${t.reference})` : ""}</span><span>{money(t.amount, r.currency)}</span></div>)}
       <hr /><p>Reason: {r.reason}</p><p>Processed by {r.processedBy}{r.approvedBy ? `, approved by ${r.approvedBy}` : ""}</p>
-    </div><button className={`${primary} mt-3`} onClick={() => printReceipt({ saleNumber: r.refundNumber })}>Print refund receipt</button></>}
+    </div><button className={`${primary} mt-3`} onClick={() => printReceipt({ saleNumber: r.refundNumber })}>Print refund receipt</button><ReceiptActions orgId={orgId} saleId={saleId} refundNumber={refundNumber} /></>}
   </Modal>;
+}
+
+// ================================================================= Receipt actions (Master SOW 6.10)
+function ReceiptActions({ orgId, saleId, refundNumber = null }) {
+  const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState("");
+  const pdfUrl = `/api/orgs/commerce/sales/${saleId}${refundNumber ? `/refunds/${refundNumber}` : ""}/receipt.pdf?orgId=${orgId}`;
+  const go = async (kind) => {
+    setErr(""); setMsg("");
+    if (kind === "email") { const to = window.prompt("Customer's email address"); if (!to) return; setBusy(kind); try { await api(`sales/${saleId}/email-receipt`, { orgId, method: "POST", body: { to, refundNumber } }); setMsg(`Receipt emailed to ${to}.`); } catch (e) { setErr(e.message); } finally { setBusy(""); } return; }
+    setBusy(kind); try { const d = await api(`sales/${saleId}/save-receipt`, { orgId, method: "POST", body: { refundNumber } }); setMsg(`Saved to Documents (${d.bucket}/${d.key}).`); } catch (e) { setErr(e.message); } finally { setBusy(""); }
+  };
+  return <div className="mt-2 print:hidden"><div className="flex flex-wrap gap-2">
+    <a className={`${btn} inline-flex items-center`} href={pdfUrl} download>Download PDF</a>
+    <button className={btn} disabled={!!busy} onClick={() => go("email")}>{busy === "email" ? "Sending…" : "Email receipt"}</button>
+    <button className={btn} disabled={!!busy} onClick={() => go("save")}>{busy === "save" ? "Saving…" : "Save to Documents"}</button>
+  </div>{msg && <p className="text-xs text-emerald-600 mt-1">{msg}</p>}{err && <p className="text-xs text-red-500 mt-1">{err}</p>}</div>;
+}
+
+// ================================================================= Reports (Master SOW 6.11)
+const DIM_NAMES = { day: "Day", hour: "Hour", employee: "Employee", register: "Register", branch: "Branch", product: "Product", category: "Category" };
+function Reports({ orgId, settings, role }) {
+  const today = new Date(); const iso = (d) => d.toISOString().slice(0, 10);
+  const [range, setRange] = useState({ from: iso(new Date(today.getTime() - 6 * 86400000)), to: iso(today) });
+  const [rep, setRep] = useState(null); const [err, setErr] = useState(""); const [dim, setDim] = useState("day"); const [drill, setDrill] = useState(null); const [open, setOpen] = useState(null);
+  const q = `from=${new Date(`${range.from}T00:00:00`).toISOString()}&to=${new Date(new Date(`${range.to}T00:00:00`).getTime() + 86400000).toISOString()}`;
+  const load = useCallback(() => { setErr(""); api(`reports?${q}`, { orgId }).then(setRep).catch((e) => setErr(e.message)); }, [orgId, q]);
+  useEffect(() => { load(); }, [load]);
+  const cur = rep?.currency || settings.currency;
+  const showDrill = async (title, extra) => { try { const d = await api(`reports/transactions?${q}${extra}`, { orgId }); setDrill({ title, ...d }); } catch (e) { setErr(e.message); } };
+  const preset = (days) => setRange({ from: iso(new Date(today.getTime() - (days - 1) * 86400000)), to: iso(today) });
+  const T = rep?.totals;
+  const Tile = ({ k, v, sub, onClick }) => <button className={`${card} p-3 text-left ${onClick ? "hover:border-[var(--inaya-accent)]" : "cursor-default"}`} onClick={onClick}><p className={`text-xs ${muted}`}>{k}</p><p className="text-lg font-bold">{v}</p>{sub && <p className={`text-xs ${muted}`}>{sub}</p>}</button>;
+  return <div className="space-y-3">
+    <div className={`${card} p-3 flex flex-wrap items-end gap-2`}>
+      {[[1, "Today"], [7, "7 days"], [30, "30 days"]].map(([d, l]) => <button key={d} className={btn} onClick={() => preset(d)}>{l}</button>)}
+      <label className="text-xs">From<input type="date" aria-label="Report from" className={field} value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} /></label>
+      <label className="text-xs">To<input type="date" aria-label="Report to" className={field} value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} /></label>
+      <span className={`text-xs ${muted} ml-auto`}>Times in {rep?.period.timezone || settings.timezone}. Click any figure to see the sales behind it.</span>
+    </div>
+    {err && <p className="text-sm text-red-500">{err}</p>}
+    {!rep ? <p className={muted}>Loading…</p> : <>
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+        <Tile k="Gross sales" v={money(T.gross, cur)} sub={`${T.sales} sale(s)`} onClick={() => showDrill("All sales", "&kind=sale")} />
+        <Tile k="Discounts" v={`−${money(T.discounts, cur)}`} />
+        <Tile k="Returns" v={`−${money(T.returns, cur)}`} sub={`${T.refunds} refund(s)`} onClick={() => showDrill("Refunds", "&kind=refund")} />
+        <Tile k="Net sales" v={money(T.net, cur)} sub="before tax" />
+        <Tile k="Tax" v={money(T.tax, cur)} />
+        <Tile k="Total collected" v={money(T.totalCollected, cur)} />
+        <Tile k="Average sale" v={money(T.atv, cur)} sub={`${T.upt} items per sale`} />
+        <Tile k="Gross margin" v={T.grossMargin.percent === null ? "-" : `${money(T.grossMargin.amount, cur)} (${T.grossMargin.percent}%)`} sub={T.grossMargin.reliable ? "every item has a cost" : `partial: cost known for ${T.grossMargin.costCoverage ?? 0}% of items`} />
+        <Tile k="Voids" v={`${T.voids.count} · ${money(T.voids.total, cur)}`} onClick={() => showDrill("Voided sales", "&kind=void")} />
+        <Tile k="Overrides" v={`${T.overrides.priceOverrides} price change(s)`} sub={`${T.overrides.approvedSales} sale(s) needed approval`} />
+        <Tile k="Cash over / short" v={money(rep.cashOverShortTotal, cur)} sub={`${rep.cashDrawers.length} shift(s) closed`} />
+        <Tile k="Sales orders" v={rep.orders.count} sub={Object.entries(rep.orders.byStatus).map(([k, v]) => `${k.toLowerCase()} ${v.count}`).join(" · ") || "none"} />
+      </div>
+      <div className={`${card} p-3`}><h3 className="font-bold text-sm mb-1">Payment methods (net of refunds)</h3>
+        <div className="flex flex-wrap gap-4 text-sm">{Object.entries(rep.paymentMethods).map(([k, v]) => <span key={k}>{TENDER_NAMES[k] || k}: <b>{money(v, cur)}</b></span>)}{!Object.keys(rep.paymentMethods).length && <span className={muted}>No payments in this period.</span>}</div></div>
+      <div className={`${card} p-3 space-y-2`}>
+        <div className="flex flex-wrap gap-2">{Object.entries(DIM_NAMES).map(([k, l]) => <button key={k} className={dim === k ? primary : btn} onClick={() => setDim(k)}>{l}</button>)}</div>
+        {!rep.by[dim].length ? <p className={muted}>No sales in this period.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className={`text-left ${muted}`}><th>{DIM_NAMES[dim]}</th><th className="text-right">Sales</th><th className="text-right">Units</th><th className="text-right">Gross</th><th className="text-right">Discounts</th><th className="text-right">Returns</th><th className="text-right">Net</th><th className="text-right">Total</th></tr></thead>
+          <tbody>{rep.by[dim].map((b) => <tr key={b.key} className="border-t border-[var(--inaya-border)] hover:bg-[var(--inaya-surface-2,transparent)] cursor-pointer" onClick={() => showDrill(`${DIM_NAMES[dim]}: ${dim === "hour" ? `${b.key}:00` : b.key}`, `&dimension=${dim}&value=${encodeURIComponent(b.key)}`)}>
+            <td>{dim === "hour" ? `${b.key}:00` : b.key}</td><td className="text-right">{b.sales}</td><td className="text-right">{b.units}</td><td className="text-right">{money(b.gross, cur)}</td><td className="text-right">{money(b.discounts, cur)}</td><td className="text-right">{money(b.returns, cur)}</td><td className="text-right font-semibold">{money(b.net, cur)}</td><td className="text-right">{money(b.total, cur)}</td></tr>)}</tbody></table></div>}
+      </div>
+      {rep.cashDrawers.length > 0 && <div className={`${card} p-3`}><h3 className="font-bold text-sm mb-1">Cash drawer reconciliation</h3>
+        <table className="w-full text-sm"><thead><tr className={`text-left ${muted}`}><th>Shift</th><th>Closed</th><th className="text-right">Expected</th><th className="text-right">Counted</th><th className="text-right">Over / short</th></tr></thead>
+          <tbody>{rep.cashDrawers.map((d) => <tr key={d.shiftId} className="border-t border-[var(--inaya-border)]"><td>{d.shiftNumber}{d.flagged ? <span className="text-amber-600 text-xs"> flagged</span> : null}{d.reviewed ? <span className="text-emerald-600 text-xs"> reviewed</span> : null}</td><td>{new Date(d.closedAt).toLocaleString()} · {d.closedBy}</td><td className="text-right">{money(d.expected, cur)}</td><td className="text-right">{money(d.counted, cur)}</td><td className="text-right">{money(d.overShort, cur)}</td></tr>)}</tbody></table></div>}
+      <p className={`text-xs ${muted}`}>Gross = before discounts and returns, excluding tax. Net = gross − discounts − returns. Returns count on the day they were made. Voided sales are excluded from every figure except Voids.</p>
+    </>}
+    {drill && <Modal title={drill.title} wide onClose={() => setDrill(null)}>
+      <p className={`text-xs ${muted} mb-2`}>{drill.count} transaction(s) · net {money(drill.net, cur)}</p>
+      <table className="w-full text-sm"><thead><tr className={`text-left ${muted}`}><th>Receipt</th><th>Time</th><th>By</th><th className="text-right">Net</th><th className="text-right">Total</th></tr></thead>
+        <tbody>{drill.transactions.map((x, i) => <tr key={i} className="border-t border-[var(--inaya-border)] cursor-pointer" onClick={() => setOpen(x.saleId)}><td>{x.number}{x.kind !== "sale" ? <span className={`text-xs ${x.kind === "void" ? "text-red-500" : "text-amber-600"}`}> {x.kind}</span> : null}</td><td>{new Date(x.at).toLocaleString()}</td><td>{x.employee}</td><td className="text-right">{money(x.net, cur)}</td><td className="text-right">{money(x.total, cur)}</td></tr>)}</tbody></table>
+    </Modal>}
+    {open && <SaleDialog orgId={orgId} settings={settings} role={role} saleId={open} onClose={() => setOpen(null)} />}
+  </div>;
 }
 
 // ================================================================= Sales history
@@ -593,6 +669,8 @@ function Setup({ orgId, settings, onSaved }) {
       <label className="text-sm block">Return policy (days)<input className={field} inputMode="numeric" value={s.returnPolicy.days} onChange={(e) => setS({ ...s, returnPolicy: { ...s.returnPolicy, days: Number(e.target.value) } })} /></label>
       <label className="text-sm block">Return policy text (printed on receipts)<textarea className={field} value={s.returnPolicy.text} onChange={(e) => setS({ ...s, returnPolicy: { ...s.returnPolicy, text: e.target.value } })} /></label>
       <label className="text-sm block">Receipt footer<textarea className={field} value={s.receiptFooter} onChange={(e) => setS({ ...s, receiptFooter: e.target.value })} /></label>
+      <label className="text-sm block">Time zone for reports<input className={field} aria-label="Time zone" list="pos-tz" value={s.timezone || "UTC"} onChange={(e) => setS({ ...s, timezone: e.target.value })} /><datalist id="pos-tz">{["Asia/Karachi", "Europe/London", "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Riyadh", "Asia/Singapore", "Asia/Kuala_Lumpur", "Asia/Jakarta", "UTC"].map((z) => <option key={z} value={z} />)}</datalist></label>
+      <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!s.receiptShowNotes} onChange={(e) => setS({ ...s, receiptShowNotes: e.target.checked })} /> Print sale notes on receipts</label>
       <label className="text-sm block">Who may refund without approval<select className={field} value={s.refundRole} onChange={(e) => setS({ ...s, refundRole: e.target.value })}><option value="cashier">everyone (cashiers too)</option><option value="supervisor">supervisors and managers</option><option value="manager">managers only</option></select></label>
       <label className="text-sm block">Quarantine location (returned items to inspect)<select className={field} value={s.quarantineWarehouseId || ""} onChange={(e) => setS({ ...s, quarantineWarehouseId: e.target.value || null })}><option value="">none</option>{whs.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
       <label className="text-sm block">Shift cash tolerance (over/short allowed before a shift is flagged)<input className={field} inputMode="decimal" value={(s.cashVarianceTolerance || 0) / 100} onChange={(e) => setS({ ...s, cashVarianceTolerance: Math.round((Number(e.target.value) || 0) * 100) })} /></label>

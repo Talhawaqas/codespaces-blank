@@ -1,6 +1,8 @@
 // app/api/orgs/sales/orders/[orderId]/transition/route.js
 //
-// POST { orgId, action: "confirm" | "fulfil" | "invoice" | "cancel" }
+// POST { orgId, action, ...input } -- actions: accept | confirm (allowBackorder?) | reserve | pick | pack | ready | fulfil |
+//   deliver (note?) | invoice | cancel (reason?) | payment { method, amount, reference? } | refund { method, amount, reference?, reason }
+//   | return { lines: [{ lineIndex, quantity, disposition }], reason }
 //   -> moves a sales order along its workflow (src/lib/sales-orders.js):
 //      confirm checks stock, fulfil dispatches it (batches earliest-expiry
 //      first), invoice raises a DRAFT invoice, cancel stops a not-yet-
@@ -18,7 +20,7 @@ export async function POST(req, { params }) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const result = await transitionSalesOrder({ orgId: body.orgId, orderId: params.orderId, action: body.action, membership: auth.membership, actorEmail: auth.session.email });
+    const result = await transitionSalesOrder({ orgId: body.orgId, orderId: params.orderId, action: body.action, membership: auth.membership, actorEmail: auth.session.email, input: body });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json(result.order);
   } catch (err) {

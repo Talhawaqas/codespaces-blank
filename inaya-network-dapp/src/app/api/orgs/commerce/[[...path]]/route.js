@@ -22,6 +22,10 @@
 //   GET  shifts (?registerId&status=OPEN|CLOSED|NEEDS_REVIEW)  GET shifts/{id}   POST shifts { registerId, openingFloat }
 //   POST shifts/{id}/cash { type: IN|OUT, amount, reason }     POST shifts/{id}/close { countedCash, note }
 //   POST shifts/{id}/review { note }                           POST shifts/{id}/correct { countedCash, reason }
+//   Batch 4 -- reporting and receipts:
+//   GET  reports (?from&to&warehouseId&registerId)              GET reports/transactions (?...&dimension&value&kind)
+//   GET  sales/{id}/receipt.pdf   GET sales/{id}/refunds/{R-n}/receipt.pdf
+//   POST sales/{id}/email-receipt { to, refundNumber? }        POST sales/{id}/save-receipt { refundNumber? }
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
 import * as S from "../../../../../lib/commerce/store.js";
@@ -31,6 +35,8 @@ import { reconcileStockLevels } from "../../../../../lib/inventory.js";
 import * as SALE from "../../../../../lib/commerce/sale.js";
 import * as RET from "../../../../../lib/commerce/returns.js";
 import * as SH from "../../../../../lib/commerce/shifts.js";
+import * as REP from "../../../../../lib/commerce/reports.js";
+import * as RC from "../../../../../lib/commerce/receipts.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -58,6 +64,15 @@ export async function GET(req, { params }) {
     if (path === "sales") return out(await SALE.listSales({ orgId, membership: c.membership, from: qs.get("from"), to: qs.get("to"), warehouseId: qs.get("warehouseId"), shiftId: qs.get("shiftId") }));
     if (seg[0] === "sales" && seg[1] === "by-number" && seg[2]) return out(await SALE.findSaleByNumber({ orgId, membership: c.membership, saleNumber: seg[2] }));
     if (seg[0] === "sales" && seg[1] && seg[2] === "receipt") return out(await SALE.receiptFor({ orgId, membership: c.membership, saleId: seg[1] }));
+    const rinput = { from: qs.get("from"), to: qs.get("to"), warehouseId: qs.get("warehouseId"), registerId: qs.get("registerId"), dimension: qs.get("dimension"), value: qs.get("value"), kind: qs.get("kind") };
+    if (path === "reports") return out(await REP.commerceReport({ orgId, membership: c.membership, input: rinput }));
+    if (path === "reports/transactions") return out(await REP.reportTransactions({ orgId, membership: c.membership, input: rinput }));
+    const pdfAsk = seg[0] === "sales" && seg[1] && ((seg[2] === "receipt.pdf") || (seg[2] === "refunds" && seg[3] && seg[4] === "receipt.pdf"));
+    if (pdfAsk) {
+      const r = await RC.receiptPdf({ orgId, membership: c.membership, saleId: seg[1], refundNumber: seg[2] === "refunds" ? seg[3] : null });
+      if (r.error) return out(r);
+      return new NextResponse(r.pdf, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${r.filename}"`, "Cache-Control": "no-store" } });
+    }
     if (seg[0] === "sales" && seg[1] && seg[2] === "refunds" && seg[3] && seg[4] === "receipt") return out(await RET.refundReceipt({ orgId, membership: c.membership, saleId: seg[1], refundNumber: seg[3] }));
     if (path === "registers") return out(await SH.listRegisters({ orgId, membership: c.membership }));
     if (path === "shifts") return out(await SH.listShifts({ orgId, membership: c.membership, registerId: qs.get("registerId"), status: qs.get("status") }));
@@ -89,6 +104,8 @@ async function write(req, params, method) {
     }
     const seg = params.path || [];
     if (method === "POST" && path === "sales") return out(await SALE.completeSale({ ...base, input: body }));
+    if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "email-receipt") return out(await RC.emailReceipt({ ...base, saleId: seg[1], refundNumber: body.refundNumber || null, to: body.to }));
+    if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "save-receipt") return out(await RC.saveReceiptToDocuments({ ...base, saleId: seg[1], refundNumber: body.refundNumber || null }));
     if (method === "POST" && path === "returns/preview") return out(await RET.previewReturn({ ...base, input: body }));
     if (method === "POST" && path === "returns/approval") return out(await RET.requestReturnApproval({ ...base, input: body }));
     if (method === "POST" && path === "returns") return out(await RET.processReturn({ ...base, input: body }));
