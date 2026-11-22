@@ -47,6 +47,7 @@ export const NAV_ITEMS = [
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "pos", label: "Point of Sale", icon: "inventory", group: "operations" },
   { key: "growth", label: "Customer Growth", icon: "crm", group: "operations" },
+  { key: "online", label: "Online Store", icon: "crm", group: "operations" },
   { key: "finance", label: "Finance", icon: "finance", group: "operations" },
   { key: "bookkeeper", label: "AI Bookkeeper", icon: "finance", group: "operations" },
   { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
@@ -127,6 +128,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  online: "online store ecommerce e-commerce web shop website storefront shopify woocommerce woo sync channel checkout cart stripe safepay card payments cash on delivery bank transfer delivery shipping",
   growth: "customer 360 loyalty points rewards gift cards store credit promotions coupons offers membership segments win-back retention",
   pos: "pos point of sale register till checkout cashier receipt sell retail shop counter barcode",
   crm: "crm customers leads deals pipeline sales contacts",

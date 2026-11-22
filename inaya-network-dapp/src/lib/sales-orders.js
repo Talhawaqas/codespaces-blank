@@ -31,7 +31,7 @@ import { getDocumentSettings } from "./documentAutomation/settings.js";
 
 export const SALES_ORDER_STATES = ["QUOTE", "DRAFT", "CONFIRMED", "BACKORDERED", "FULFILLED", "INVOICED", "CANCELLED", "RETURNED"];
 export const ORDER_STAGES = ["RESERVED", "PICKING", "PACKED", "READY_FOR_PICKUP", "DISPATCHED", "COLLECTED", "DELIVERED"];
-export const ORDER_PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE"];
+export const ORDER_PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE", "CARD"]; // CARD: confirmed by the shop's own payment provider (online store), never captured by Inaya
 const MAX_LINES = 500;
 const r2 = (n) => Math.round(n * 100) / 100;
 const boom = (message, status = 400) => Object.assign(new Error(message), { status, isOrderError: true });
@@ -232,12 +232,14 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
     if (!["CONFIRMED", "BACKORDERED", "FULFILLED"].includes(order.status)) return { error: `Only a confirmed or dispatched order can be invoiced (this one is ${order.status}).`, status: 409 };
     if (order.invoiceId) return { error: "This order already has an invoice.", status: 409 };
     if (!canAccessFinance(membership)) return { error: "Creating invoices needs finance access.", status: 403 };
-    const { lineItems, error } = validateInvoiceLines(order.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, sku: l.sku })));
+    // Online / channel orders carry invoiceLines: the net amount actually charged per line with its own tax rate, plus delivery,
+    // so the invoice equals what the customer paid at checkout.
+    const { lineItems, error } = validateInvoiceLines(order.invoiceLines?.length ? order.invoiceLines : order.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, sku: l.sku })));
     if (error) return { error, status: 400 };
     let totals;
     try {
       const settings = await getDocumentSettings(orgId);
-      totals = computeInvoiceTotals({ lineItems, currency: order.currency, orgDefaultTaxPercent: settings.billingProfile.defaultTaxPercent });
+      totals = computeInvoiceTotals({ lineItems, currency: order.currency, orgDefaultTaxPercent: order.invoiceLines?.length ? 0 : settings.billingProfile.defaultTaxPercent, terms: order.shippingAmount ? { shippingAmount: order.shippingAmount, taxPercent: 0 } : {} });
     } catch (err) {
       return { error: `Cannot total the invoice: ${err.message}`, status: 400 };
     }
@@ -252,7 +254,7 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
       invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`, issueDate: now, dueDate: due,
       lineItems, subtotal: totals.subtotal, total: totals.total, currency: order.currency, status: "DRAFT",
       notes: `From sales order ${order.orderNumber}${pay.paid > 0 ? ` (${order.currency} ${pay.paid.toFixed(2)} already received as deposit)` : ""}`, reference: order.orderNumber, relatedSalesOrderId: order._id,
-      depositsReceived: pay.paid, createdByEmail: actorEmail, createdAt: now, updatedAt: now, deletedAt: null,
+      depositsReceived: pay.paid, ...(order.shippingAmount ? { shippingAmount: order.shippingAmount, taxPercent: 0 } : {}), createdByEmail: actorEmail, createdAt: now, updatedAt: now, deletedAt: null,
     });
     const next = order.status === "FULFILLED" ? "INVOICED" : order.status;
     await salesOrders.updateOne({ _id: order._id }, { $set: { status: next, invoiceId: inv.insertedId, updatedAt: now }, $unset: { invoicing: "" }, ...hist(next === order.status ? `${next}/INVOICE_RAISED` : next) });
@@ -276,7 +278,10 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
   } else {
     return { error: "Unknown action.", status: 400 };
   }
-  return { order: serializeSalesOrder(await salesOrders.findOne({ _id: order._id })) };
+  const updated = await salesOrders.findOne({ _id: order._id });
+  // Online / Shopify / WooCommerce orders: tell the customer and sync the status back to the channel (never blocks the caller)
+  if (updated?.channel && ["ONLINE", "SHOPIFY", "WOOCOMMERCE"].includes(updated.channel) && actorEmail !== "online-store@system") import("./online/orders.js").then((m) => m.afterTransition({ orgId, order: updated, action })).catch(() => {});
+  return { order: serializeSalesOrder(updated) };
 }
 
 /** Deposit / part payment / final payment, or a deposit refund. Amounts are bounded: payments never exceed the order

@@ -47,6 +47,7 @@ export const ERP_MODULES = [
       { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals", "crm:orders"] },
       { id: "store", label: "Shop counter", items: ["pos"] },
       { id: "growth", label: "Customer growth", items: ["growth"] },
+      { id: "online", label: "Online store & Shopify / WooCommerce", items: ["online"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
   },

@@ -53,6 +53,11 @@ export function middleware(req) {
     url.pathname = `/api/azure${rawPath === "/" ? "" : rawPath}`;
     return NextResponse.rewrite(url);
   }
+  // Online stores (Commerce Phase 5): "<slug>.<STORE_HOST_BASE>" and, when ONLINE_STORE_CUSTOM_DOMAINS=1, a shop's own verified
+  // domain are served by the storefront pages. Inert unless the operator sets them; Inaya's own hosts are never rewritten, and
+  // /api and /_next pass through untouched (the storefront calls /api/shop/<slug>/... on the same origin).
+  const storeRewrite = storefrontRewrite(req, rawPath);
+  if (storeRewrite) return storeRewrite;
   if (!BASE_HOST) return NextResponse.next();
 
   // Host header includes the port (e.g. "bucket.example.com:3000") for any
@@ -80,6 +85,26 @@ export function middleware(req) {
   // same-Host request to those routes.
   url.pathname = `/api/s3/${bucket}${url.pathname}`;
   return NextResponse.rewrite(url);
+}
+
+const STORE_SLUG = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
+const OWN_HOST = /(^|\.)inayanetwork\.com$|\.vercel\.app$|^localhost$|^127\.0\.0\.1$|^\[::1\]$/;
+function storefrontRewrite(req, rawPath) {
+  const seo = rawPath.match(/^\/shop\/([a-z0-9-]+)\/(sitemap\.xml|robots\.txt)$/);
+  if (seo && STORE_SLUG.test(seo[1])) { const u = req.nextUrl.clone(); u.pathname = `/api/shop/${seo[1]}/${seo[2]}`; return NextResponse.rewrite(u); }
+  if (rawPath.startsWith("/api/") || rawPath.startsWith("/_next/") || rawPath.startsWith("/shop/")) return null;
+  const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
+  const base = (process.env.STORE_HOST_BASE || "").toLowerCase().split(":")[0];
+  const url = req.nextUrl.clone(); const tail = rawPath === "/" ? "" : rawPath;
+  if (base && host.endsWith(`.${base}`)) {
+    const slug = host.slice(0, -(base.length + 1));
+    if (!STORE_SLUG.test(slug)) return new NextResponse("Store not found.", { status: 404 });
+    url.pathname = tail === "/sitemap.xml" || tail === "/robots.txt" ? `/api/shop/${slug}${tail}` : `/shop/${slug}${tail}`; return NextResponse.rewrite(url);
+  }
+  if (process.env.ONLINE_STORE_CUSTOM_DOMAINS === "1" && host && !OWN_HOST.test(host) && host !== base && !(BASE_HOST && host.endsWith("." + BASE_HOST.toLowerCase().split(":")[0])) && /^[a-z0-9.-]+$/.test(host)) {
+    url.pathname = tail === "/sitemap.xml" || tail === "/robots.txt" ? `/api/shop/_host${tail}` : `/shop/_host/${host}${tail}`; return NextResponse.rewrite(url);
+  }
+  return null;
 }
 
 export const config = {

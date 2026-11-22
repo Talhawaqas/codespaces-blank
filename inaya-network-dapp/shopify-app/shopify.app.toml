@@ -1,0 +1,27 @@
+# Inaya Commerce -- Shopify app configuration (Dev Dashboard app). Deployed with:  npx @shopify/cli@latest app deploy
+# client_id is the app's public Client ID (Dev Dashboard -> Inaya Commerce -> Settings). The Client SECRET never goes in this
+# file: it lives only in Vercel as SHOPIFY_APP_CLIENT_SECRET.
+client_id = "24de7aedc0307351b012de9d634c52c9"
+name = "Inaya Commerce"
+application_url = "https://www.inayanetwork.com/business?view=online"
+embedded = false
+
+[access_scopes]
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders"
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = ["https://www.inayanetwork.com/api/shop/shopify/callback"]
+
+[webhooks]
+api_version = "2026-10"
+
+  # Mandatory privacy (compliance) webhooks -- handled by src/app/api/shop/shopify/compliance/route.js
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "https://www.inayanetwork.com/api/shop/shopify/compliance"
+
+  # Uninstalls: the store's connection and token are removed
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "https://www.inayanetwork.com/api/shop/shopify/compliance"
