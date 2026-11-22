@@ -750,6 +750,10 @@ async function createAllOrgIndexes() {
     stockLots.createIndex({ orgId: 1, expiryDate: 1 }),
     salesOrders.createIndex({ orgId: 1, departmentId: 1, createdAt: -1 }),
     salesOrders.createIndex({ orgId: 1, contactId: 1 }),
+    // Inaya Commerce: POS sales share sales_orders (channel "POS"); a resubmitted sale can never create a second one.
+    salesOrders.createIndex({ orgId: 1, idempotencyKey: 1 }, { unique: true, name: "sale_idempotency", partialFilterExpression: { idempotencyKey: { $type: "string" } } }),
+    salesOrders.createIndex({ orgId: 1, saleNumber: 1 }, { unique: true, name: "pos_sale_number", partialFilterExpression: { channel: "POS" } }),
+    salesOrders.createIndex({ orgId: 1, channel: 1, completedAt: -1 }, { name: "sale_channel_time", partialFilterExpression: { channel: { $type: "string" } } }),
     boms.createIndex({ orgId: 1, productId: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } }),
     productionOrders.createIndex({ orgId: 1, status: 1, dueDate: 1 }),
     stockMovements.createIndex({ orgId: 1, relatedProductionOrderId: 1 }),

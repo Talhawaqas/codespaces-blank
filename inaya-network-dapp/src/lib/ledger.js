@@ -55,7 +55,7 @@ const DEBIT_NORMAL = new Set(["ASSET", "EXPENSE"]);
 export const ACCOUNTS = {
   CASH: "1000", AR: "1100", AP: "2000", EQUITY: "3000",
   SALES: "4000", OTHER_INCOME: "4900", OPEX: "5000", OTHER_EXPENSE: "5900",
-  FEES: "4100",
+  FEES: "4100", TAX_PAYABLE: "2100",
 };
 // Created only for organizations that bill school fees (syncLedger).
 const FEE_INCOME_ACCOUNT = { code: ACCOUNTS.FEES, name: "Fee Income", type: "REVENUE" };
@@ -63,6 +63,7 @@ export const DEFAULT_ACCOUNTS = [
   { code: ACCOUNTS.CASH, name: "Cash", type: "ASSET" },
   { code: ACCOUNTS.AR, name: "Accounts Receivable", type: "ASSET" },
   { code: ACCOUNTS.AP, name: "Accounts Payable", type: "LIABILITY" },
+  { code: ACCOUNTS.TAX_PAYABLE, name: "Sales Tax Payable", type: "LIABILITY" },
   { code: ACCOUNTS.EQUITY, name: "Owner's Equity", type: "EQUITY" },
   { code: ACCOUNTS.SALES, name: "Sales Revenue", type: "REVENUE" },
   { code: ACCOUNTS.OTHER_INCOME, name: "Other Income", type: "REVENUE" },
@@ -199,10 +200,32 @@ function usdLines(amount, currency, debitCode, creditCode, memo) {
   };
 }
 
+/** Inaya Commerce: a POS sale (or refund) as one balanced entry -- Cash against Sales Revenue (net) and Sales Tax
+ *  Payable (tax) -- converted to the USD ledger at the day's rate; tax is total minus net in USD so the entry balances
+ *  exactly. COGS is NOT posted here: purchases already reach the ledger as expenses, so posting COGS/Inventory would
+ *  double-count; margins use the cost recorded on each sale's stock movement (commerce reports). */
+function posLines({ totalMinor, netMinor, currency, memo, refund = false }) {
+  return async (date) => {
+    const cur = String(currency || "USD").toUpperCase(); const total = totalMinor / 100; const net = netMinor / 100;
+    let usdTotal = total, usdNet = net; const extra = {};
+    if (cur !== "USD") {
+      const t = await convertAt(total, cur, "USD", date ? String(date).slice(0, 10) : undefined); if (t.error) return { error: t.error };
+      const n = await convertAt(net, cur, "USD", date ? String(date).slice(0, 10) : undefined); if (n.error) return { error: n.error };
+      usdTotal = t.convertedAmount; usdNet = n.convertedAmount;
+      Object.assign(extra, { originalAmount: total, originalCurrency: cur, fxRate: t.rate, ratesAsOf: t.ratesAsOf, fxSource: t.source });
+    }
+    const usdTax = Math.round((usdTotal - usdNet) * 100) / 100;
+    const lines = [{ accountCode: ACCOUNTS.CASH, debit: refund ? 0 : usdTotal, credit: refund ? usdTotal : 0, memo, ...extra },
+      { accountCode: ACCOUNTS.SALES, debit: refund ? usdNet : 0, credit: refund ? 0 : usdNet, memo, ...extra }];
+    if (usdTax) lines.push({ accountCode: ACCOUNTS.TAX_PAYABLE, debit: refund ? usdTax : 0, credit: refund ? 0 : usdTax, memo, ...extra });
+    return { lines };
+  };
+}
+
 /** Posts every missing automatic entry for an org. Safe to call any time,
  *  as often as wanted. Returns { posted, skipped, errors }. */
 export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
-  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, ledgerAccounts, journalEntries, orgActivity } = await getOrgCollections();
+  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, ledgerAccounts, journalEntries, orgActivity, salesOrders } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   await ensureChartOfAccounts(orgId);
 
@@ -222,7 +245,7 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     ).catch((err) => { if (err?.code !== 11000) throw err; });
   }
   const posted = new Set((await journalEntries.find(
-    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT"] } },
+    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT", "POS_SALE", "POS_REFUND"] } },
     { projection: { source: 1 } }
   ).toArray()).map((e) => `${e.source.type}:${e.source.id}:${e.source.event}`));
 
@@ -310,6 +333,16 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     add("EDU_FEE_PAYMENT", pay, "RECEIVED", pay.paidOn || pay.recordedAt, label, usdLines(amount, pay.currency, ACCOUNTS.CASH, ACCOUNTS.AR, label));
     if (pay.status === "reversed") {
       add("EDU_FEE_PAYMENT", pay, "REVERSED", pay.reversedAt, `${label} reversed`, usdLines(amount, pay.currency, ACCOUNTS.AR, ACCOUNTS.CASH, `${label} reversed`));
+    }
+  }
+
+  // Inaya Commerce: POS sales and their refunds (refunds are stored on the sale as refunds[]; each posts once).
+  const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1 } }).toArray();
+  for (const sale of posSales) {
+    add("POS_SALE", sale, "COMPLETED", sale.completedAt, `POS sale ${sale.saleNumber}`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS sale ${sale.saleNumber}` }));
+    for (const r of sale.refunds || []) {
+      const doc = { _id: `${sale._id}:${r.refundNumber}` };
+      add("POS_REFUND", doc, "COMPLETED", r.createdAt, `POS refund ${r.refundNumber} (${sale.saleNumber})`, posLines({ totalMinor: r.totalMinor, netMinor: r.netMinor, currency: sale.currency, memo: `POS refund ${r.refundNumber}`, refund: true }));
     }
   }
 

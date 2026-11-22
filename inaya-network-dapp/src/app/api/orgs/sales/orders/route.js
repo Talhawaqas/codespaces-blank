@@ -20,7 +20,7 @@ export async function GET(req) {
 
     const { salesOrders, crmContacts, warehouses } = await getOrgCollections();
     const org = toObjectId(orgId);
-    const q = { orgId: org, deletedAt: null };
+    const q = { orgId: org, deletedAt: null, channel: { $ne: "POS" } }; // POS sales have their own screens
     const status = searchParams.get("status");
     if (SALES_ORDER_STATES.includes(status)) q.status = status;
     const contactId = searchParams.get("contactId");
