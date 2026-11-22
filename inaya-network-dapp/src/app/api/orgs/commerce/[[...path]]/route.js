@@ -14,6 +14,14 @@
 //   GET  sales (?from&to&warehouseId&shiftId)   GET sales/{id}   GET sales/{id}/receipt   GET sales/by-number/{saleNumber}
 //   POST approvals { cart }  (cashier asks)     GET approvals (supervisor: pending)   GET approvals/{id}   POST approvals/{id}/decide { approve, reason }
 //   GET  parked   POST parked { cart, label }   DELETE parked/{id}
+//   Batch 3 -- returns, voids, registers, shifts:
+//   POST returns/preview { saleId|saleNumber, lines:[{lineIndex,quantity,disposition}], reason, refundTo?, exchange?, warehouseId?, registerId? }
+//   POST returns { ...same, idempotencyKey, approvalId? }     POST returns/approval { ...same }   GET sales/{id}/refunds/{R-n}/receipt
+//   POST sales/{id}/void { reason, approvalId? }               POST sales/{id}/void-approval { reason }
+//   GET  registers   POST registers { id?, code, name, warehouseId, active }
+//   GET  shifts (?registerId&status=OPEN|CLOSED|NEEDS_REVIEW)  GET shifts/{id}   POST shifts { registerId, openingFloat }
+//   POST shifts/{id}/cash { type: IN|OUT, amount, reason }     POST shifts/{id}/close { countedCash, note }
+//   POST shifts/{id}/review { note }                           POST shifts/{id}/correct { countedCash, reason }
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
 import * as S from "../../../../../lib/commerce/store.js";
@@ -21,6 +29,8 @@ import * as TAX from "../../../../../lib/commerce/tax.js";
 import * as PR from "../../../../../lib/commerce/pricing.js";
 import { reconcileStockLevels } from "../../../../../lib/inventory.js";
 import * as SALE from "../../../../../lib/commerce/sale.js";
+import * as RET from "../../../../../lib/commerce/returns.js";
+import * as SH from "../../../../../lib/commerce/shifts.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -48,6 +58,10 @@ export async function GET(req, { params }) {
     if (path === "sales") return out(await SALE.listSales({ orgId, membership: c.membership, from: qs.get("from"), to: qs.get("to"), warehouseId: qs.get("warehouseId"), shiftId: qs.get("shiftId") }));
     if (seg[0] === "sales" && seg[1] === "by-number" && seg[2]) return out(await SALE.findSaleByNumber({ orgId, membership: c.membership, saleNumber: seg[2] }));
     if (seg[0] === "sales" && seg[1] && seg[2] === "receipt") return out(await SALE.receiptFor({ orgId, membership: c.membership, saleId: seg[1] }));
+    if (seg[0] === "sales" && seg[1] && seg[2] === "refunds" && seg[3] && seg[4] === "receipt") return out(await RET.refundReceipt({ orgId, membership: c.membership, saleId: seg[1], refundNumber: seg[3] }));
+    if (path === "registers") return out(await SH.listRegisters({ orgId, membership: c.membership }));
+    if (path === "shifts") return out(await SH.listShifts({ orgId, membership: c.membership, registerId: qs.get("registerId"), status: qs.get("status") }));
+    if (seg[0] === "shifts" && seg[1] && !seg[2]) return out(await SH.getShift({ orgId, membership: c.membership, shiftId: seg[1] }));
     if (seg[0] === "sales" && seg[1] && !seg[2]) return out(await SALE.getSale({ orgId, membership: c.membership, saleId: seg[1] }));
     if (path === "approvals") return out(await SALE.listPendingApprovals({ orgId, membership: c.membership }));
     if (seg[0] === "approvals" && seg[1]) return out(await SALE.getApprovalStatus({ orgId, membership: c.membership, approvalId: seg[1] }));
@@ -75,6 +89,17 @@ async function write(req, params, method) {
     }
     const seg = params.path || [];
     if (method === "POST" && path === "sales") return out(await SALE.completeSale({ ...base, input: body }));
+    if (method === "POST" && path === "returns/preview") return out(await RET.previewReturn({ ...base, input: body }));
+    if (method === "POST" && path === "returns/approval") return out(await RET.requestReturnApproval({ ...base, input: body }));
+    if (method === "POST" && path === "returns") return out(await RET.processReturn({ ...base, input: body }));
+    if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "void") return out(await RET.voidSale({ ...base, saleId: seg[1], reason: body.reason, approvalId: body.approvalId }));
+    if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "void-approval") return out(await RET.requestVoidApproval({ ...base, saleId: seg[1], reason: body.reason }));
+    if (method === "POST" && path === "registers") return out(await SH.saveRegister({ ...base, input: body }));
+    if (method === "POST" && path === "shifts") return out(await SH.openShift({ ...base, registerId: body.registerId, openingFloat: body.openingFloat }));
+    if (method === "POST" && seg[0] === "shifts" && seg[1] && seg[2] === "cash") return out(await SH.cashMove({ ...base, shiftId: seg[1], type: body.type, amount: body.amount, reason: body.reason }));
+    if (method === "POST" && seg[0] === "shifts" && seg[1] && seg[2] === "close") return out(await SH.closeShift({ ...base, shiftId: seg[1], countedCash: body.countedCash, note: body.note }));
+    if (method === "POST" && seg[0] === "shifts" && seg[1] && seg[2] === "review") return out(await SH.reviewShift({ ...base, shiftId: seg[1], note: body.note }));
+    if (method === "POST" && seg[0] === "shifts" && seg[1] && seg[2] === "correct") return out(await SH.correctShiftCount({ ...base, shiftId: seg[1], countedCash: body.countedCash, reason: body.reason }));
     if (method === "POST" && path === "approvals") return out(await SALE.requestApproval({ ...base, input: body.cart || {} }));
     if (method === "POST" && seg[0] === "approvals" && seg[1] && seg[2] === "decide") return out(await SALE.decideApproval({ ...base, approvalId: seg[1], approve: body.approve === true, reason: body.reason }));
     if (method === "POST" && path === "parked") return out(await SALE.parkSale({ ...base, input: body.cart || {}, label: body.label }));

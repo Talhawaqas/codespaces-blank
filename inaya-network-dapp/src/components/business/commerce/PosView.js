@@ -35,15 +35,16 @@ export default function PosView({ orgId }) {
     </div>
   );
   if (!settings) return <p className={muted}>Loading…</p>;
-  const tabs = [["register", "Register"], ["sales", "Sales"], ...(role !== "cashier" ? [["approvals", "Approvals"]] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
+  const tabs = [["register", "Register"], ["sales", "Sales"], ["shifts", "Shifts"], ...(role !== "cashier" ? [["approvals", "Approvals"]] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2" role="tablist">
         {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? primary : btn} onClick={() => setTab(k)}>{l}</button>)}
         <span className={`ml-auto self-center text-xs ${muted}`}>Signed in as {role} · prices in {settings.currency} ({settings.taxMode === "inclusive" ? "tax included" : "tax added"})</span>
       </div>
-      {tab === "register" && <Register orgId={orgId} settings={settings} />}
-      {tab === "sales" && <Sales orgId={orgId} settings={settings} />}
+      {tab === "register" && <Register orgId={orgId} settings={settings} role={role} />}
+      {tab === "sales" && <Sales orgId={orgId} settings={settings} role={role} />}
+      {tab === "shifts" && <Shifts orgId={orgId} settings={settings} role={role} />}
       {tab === "approvals" && <Approvals orgId={orgId} settings={settings} />}
       {tab === "setup" && <Setup orgId={orgId} settings={settings} onSaved={setSettings} />}
     </div>
@@ -51,11 +52,13 @@ export default function PosView({ orgId }) {
 }
 
 // ================================================================= Register
-function Register({ orgId, settings }) {
+function Register({ orgId, settings, role }) {
   const [products, setProducts] = useState(null); const [warehouses, setWarehouses] = useState([]); const [warehouseId, setWarehouseId] = useState("");
   const [q, setQ] = useState(""); const [category, setCategory] = useState(""); const [cart, setCart] = useState([]); const [orderDiscount, setOrderDiscount] = useState(null);
   const [customer, setCustomer] = useState(null); const [notes, setNotes] = useState(""); const [priced, setPriced] = useState(null); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
   const [dialog, setDialog] = useState(null); const [parkedId, setParkedId] = useState(null); const searchRef = useRef(null);
+  const [registerId, setRegisterIdState] = useState(() => savedRegister(orgId));
+  const setRegisterId = useCallback((v) => { setRegisterIdState(v); try { localStorage.setItem(regKey(orgId), v || ""); } catch { /* ignore */ } }, [orgId]);
 
   useEffect(() => {
     fetch(`/api/orgs/inventory/products?orgId=${orgId}`, { credentials: "include" }).then((r) => r.json()).then((d) => setProducts((d.products || []).filter((p) => p.status === "ACTIVE" && p.posVisible !== false))).catch(() => { setProducts([]); setErr("Could not load products."); });
@@ -63,7 +66,7 @@ function Register({ orgId, settings }) {
   }, [orgId]);
   useEffect(() => { try { if (warehouseId) localStorage.setItem(`pos:wh:${orgId}`, warehouseId); } catch { /* ignore */ } }, [orgId, warehouseId]);
 
-  const input = useMemo(() => ({ warehouseId, customerId: customer?.id || null, lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, discount: l.discount || undefined, priceOverride: l.priceOverride ?? undefined, note: l.note || undefined })), orderDiscount: orderDiscount || undefined, notes }), [warehouseId, customer, cart, orderDiscount, notes]);
+  const input = useMemo(() => ({ warehouseId, registerId: registerId || undefined, customerId: customer?.id || null, lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, discount: l.discount || undefined, priceOverride: l.priceOverride ?? undefined, note: l.note || undefined })), orderDiscount: orderDiscount || undefined, notes }), [warehouseId, registerId, customer, cart, orderDiscount, notes]);
   // server-side pricing on every change (debounced)
   useEffect(() => {
     if (!cart.length || !warehouseId) { setPriced(null); return; }
@@ -101,6 +104,7 @@ function Register({ orgId, settings }) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <ShiftBar orgId={orgId} settings={settings} role={role} warehouseId={warehouseId} registerId={registerId} setRegisterId={setRegisterId} />
       <div className={`${card} p-3 space-y-3`}>
         <div className="flex flex-wrap gap-2">
           <input ref={searchRef} autoFocus aria-label="Search or scan" className={`${field} flex-1 min-w-[200px]`} placeholder="Search name or SKU, or scan a barcode (F2)" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onScan} />
@@ -297,17 +301,237 @@ export function printReceipt(r) {
   w.document.close(); w.focus(); w.print();
 }
 
+// ================================================================= Registers and shifts (Master SOW 6.8)
+const regKey = (orgId) => `pos:reg:${orgId}`;
+function savedRegister(orgId) { try { return localStorage.getItem(regKey(orgId)) || ""; } catch { return ""; } }
+function ShiftBar({ orgId, settings, role, warehouseId, registerId, setRegisterId }) {
+  const [regs, setRegs] = useState([]); const [shift, setShift] = useState(null); const [dialog, setDialog] = useState(null); const [err, setErr] = useState("");
+  const load = useCallback(() => api("registers", { orgId }).then((d) => setRegs(d.registers.filter((r) => r.active))).catch(() => {}), [orgId]);
+  useEffect(() => { load(); }, [load]);
+  const here = regs.filter((r) => r.warehouseId === warehouseId); const hereIds = here.map((r) => r.id).join();
+  useEffect(() => { if (registerId && !here.some((r) => r.id === registerId)) setRegisterId(here.length === 1 ? here[0].id : ""); else if (!registerId && here.length === 1) setRegisterId(here[0].id); }, [hereIds, registerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reg = here.find((r) => r.id === registerId); const openId = reg?.openShift?.id;
+  const loadShift = useCallback(() => { if (!openId) { setShift(null); return; } api(`shifts/${openId}`, { orgId }).then((d) => setShift(d.shift)).catch(() => {}); }, [orgId, openId]);
+  useEffect(() => { loadShift(); const t = setInterval(loadShift, 30000); return () => clearInterval(t); }, [loadShift]);
+  if (!here.length) return null;
+  const refresh = () => { load(); setDialog(null); };
+  return <div className={`${card} p-2 flex flex-wrap items-center gap-2 lg:col-span-2`}>
+    <select aria-label="Register" className={`${field} !w-auto`} value={registerId} onChange={(e) => setRegisterId(e.target.value)}><option value="">No register</option>{here.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select>
+    {reg && !reg.openShift && <><span className="text-sm text-amber-600">No open shift. Sales on this register need one.</span><button className={primary} onClick={() => setDialog("open")}>Open shift</button></>}
+    {reg && shift && <>
+      <span className="text-sm">Shift {shift.shiftNumber} · opened by {shift.openedBy} · expected cash <b>{money(shift.expected, settings.currency)}</b></span>
+      <span className="ml-auto flex flex-wrap gap-2">
+        {role !== "cashier" && <button className={btn} onClick={() => setDialog("cash")}>Cash in / out</button>}
+        <button className={btn} onClick={() => { loadShift(); setDialog("report"); }}>Shift report</button>
+        <button className={btn} onClick={() => setDialog("close")}>Close shift</button>
+      </span></>}
+    {err && <p className="text-sm text-red-500 w-full">{err}</p>}
+    {dialog === "open" && <OpenShiftDialog orgId={orgId} register={reg} onClose={() => setDialog(null)} onDone={refresh} />}
+    {dialog === "cash" && <CashMoveDialog orgId={orgId} shift={shift} onClose={() => setDialog(null)} onDone={() => { setDialog(null); loadShift(); }} />}
+    {dialog === "report" && shift && <Modal title={`Shift ${shift.shiftNumber}`} wide onClose={() => setDialog(null)}><ShiftReport shift={shift} currency={settings.currency} /></Modal>}
+    {dialog === "close" && <CloseShiftDialog orgId={orgId} shift={shift} currency={settings.currency} onClose={() => setDialog(null)} onDone={refresh} setErr={setErr} />}
+  </div>;
+}
+function OpenShiftDialog({ orgId, register, onClose, onDone }) {
+  const [float, setFloat] = useState(""); const [err, setErr] = useState("");
+  return <Modal title={`Open a shift on ${register.name}`} onClose={onClose}>
+    <label className="text-sm">Opening float (cash in the drawer now)<input autoFocus className={field} inputMode="decimal" value={float} onChange={(e) => setFloat(e.target.value)} placeholder="e.g. 5000" /></label>
+    {err && <p className="text-sm text-red-500 mt-2">{err}</p>}
+    <button className={`${primary} mt-3`} onClick={async () => { try { await api("shifts", { orgId, method: "POST", body: { registerId: register.id, openingFloat: Number(float || 0) } }); onDone(); } catch (e) { setErr(e.message); } }}>Open shift</button>
+  </Modal>;
+}
+function CashMoveDialog({ orgId, shift, onClose, onDone }) {
+  const [f, setF] = useState({ type: "OUT", amount: "", reason: "" }); const [err, setErr] = useState("");
+  return <Modal title="Cash in / cash out" onClose={onClose}>
+    <div className="flex gap-2 mb-2">{[["IN", "Cash in"], ["OUT", "Cash out"]].map(([k, l]) => <button key={k} className={f.type === k ? primary : btn} onClick={() => setF({ ...f, type: k })}>{l}</button>)}</div>
+    <input aria-label="Cash amount" className={field} inputMode="decimal" placeholder="Amount" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} />
+    <input aria-label="Cash reason" className={`${field} mt-2`} placeholder="Reason, e.g. bank drop, change top-up" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} />
+    {err && <p className="text-sm text-red-500 mt-2">{err}</p>}
+    <button className={`${primary} mt-3`} onClick={async () => { try { await api(`shifts/${shift.id}/cash`, { orgId, method: "POST", body: { type: f.type, amount: Number(f.amount), reason: f.reason } }); onDone(); } catch (e) { setErr(e.message); } }}>Record</button>
+  </Modal>;
+}
+function CloseShiftDialog({ orgId, shift, currency, onClose, onDone }) {
+  const [counted, setCounted] = useState(""); const [note, setNote] = useState(""); const [err, setErr] = useState(""); const [closed, setClosed] = useState(null);
+  if (closed) return <Modal title={`Shift ${closed.shiftNumber} closed`} wide onClose={onDone}>
+    <p className={`text-lg font-bold ${closed.overShort === 0 ? "text-emerald-600" : "text-amber-600"}`}>{closed.overShort === 0 ? "Cash balances exactly." : closed.overShort > 0 ? `Over by ${money(closed.overShort, currency)}` : `Short by ${money(-closed.overShort, currency)}`}</p>
+    {closed.flagged && <p className="text-sm text-amber-600">This is beyond the company's tolerance and is flagged for a manager.</p>}
+    <ShiftReport shift={closed} currency={currency} />
+    <button className={`${primary} mt-3`} onClick={onDone}>Done</button>
+  </Modal>;
+  return <Modal title={`Close shift ${shift.shiftNumber}`} onClose={onClose}>
+    <p className="text-sm mb-2">Count the cash in the drawer and enter the total. The expected amount is compared after you close, so the count stays honest.</p>
+    <input autoFocus aria-label="Counted cash" className={field} inputMode="decimal" placeholder="Counted cash" value={counted} onChange={(e) => setCounted(e.target.value)} />
+    <input aria-label="Close note" className={`${field} mt-2`} placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+    {err && <p className="text-sm text-red-500 mt-2">{err}</p>}
+    <button className={`${primary} mt-3`} disabled={counted === ""} onClick={async () => { try { const d = await api(`shifts/${shift.id}/close`, { orgId, method: "POST", body: { countedCash: Number(counted), note } }); setClosed(d.shift); } catch (e) { setErr(e.message); } }}>Close shift</button>
+  </Modal>;
+}
+const TENDER_NAMES = { CASH: "Cash", BANK_TRANSFER: "Bank transfer", MANUAL_REFERENCE: "Other", EXCHANGE_CREDIT: "Exchange credit", EXCHANGE: "Exchange" };
+function ShiftReport({ shift, currency }) {
+  const r = shift.report; if (!r) return <p className={muted}>No report.</p>;
+  return <div className="text-sm space-y-1">
+    <Row k="Opening float" v={money(shift.openingFloat, currency)} />
+    <Row k={`Sales (${r.sales})`} v={money(r.salesTotal, currency)} />
+    {Object.entries(r.byTender).map(([k, v]) => <Row key={k} k={<span className="ml-3">{TENDER_NAMES[k] || k}</span>} v={money(v, currency)} />)}
+    <Row k={`Refunds (${r.refunds})`} v={`−${money(r.refundTotal, currency)}`} />
+    <Row k={`Voids (${r.voids})`} v={money(r.voidTotal, currency)} />
+    <Row k="Discounts given" v={money(r.discounts, currency)} /><Row k="Tax collected" v={money(r.tax, currency)} />
+    <Row k="Cash in / out" v={`+${money(r.cashIn, currency)} / −${money(r.cashOut, currency)}`} />
+    <Row k={<b>Expected cash</b>} v={<b>{money(shift.expected, currency)}</b>} />
+    {shift.counted !== null && <><Row k="Counted" v={money(shift.counted, currency)} /><Row k="Over / short" v={money(shift.overShort, currency)} /></>}
+    {r.moves.length > 0 && <div className="pt-1"><p className="font-semibold">Cash movements</p>{r.moves.map((x) => <p key={x.id} className="text-xs">{x.type === "IN" ? "In" : "Out"} {money(x.amount, currency)} · {x.reason} · {x.by}</p>)}</div>}
+    <div className="pt-1"><p className="font-semibold">By employee</p>{Object.entries(r.byEmployee).map(([k, v]) => <p key={k} className="text-xs">{k}: {v.sales} sale(s) {money(v.salesTotal, currency)}{v.refunds ? `, ${v.refunds} refund(s) ${money(v.refundTotal, currency)}` : ""}</p>)}</div>
+    {shift.corrections?.length > 0 && <div className="pt-1"><p className="font-semibold">Count corrections</p>{shift.corrections.map((x, i) => <p key={i} className="text-xs">{money(x.from, currency)} → {money(x.to, currency)} by {x.by}: {x.reason}</p>)}</div>}
+    {shift.review && <p className="text-xs text-emerald-600">Reviewed by {shift.review.by}{shift.review.note ? `: ${shift.review.note}` : ""}</p>}
+  </div>;
+}
+function Shifts({ orgId, settings, role }) {
+  const [filter, setFilter] = useState(role === "manager" ? "NEEDS_REVIEW" : ""); const [list, setList] = useState(null); const [open, setOpen] = useState(null); const [err, setErr] = useState("");
+  const load = useCallback(() => api(`shifts${filter ? `?status=${filter}` : ""}`, { orgId }).then((d) => setList(d.shifts)).catch((e) => setErr(e.message)), [orgId, filter]);
+  useEffect(() => { load(); }, [load]);
+  const act = async (path, body) => { setErr(""); try { const d = await api(`shifts/${open.id}/${path}`, { orgId, method: "POST", body }); setOpen(d.shift); load(); } catch (e) { setErr(e.message); } };
+  return <div className={`${card} p-3 space-y-2`}>
+    <div className="flex flex-wrap gap-2">{[["", "All"], ["OPEN", "Open"], ["CLOSED", "Closed"], ["NEEDS_REVIEW", "Waiting for review"]].map(([k, l]) => <button key={k} className={filter === k ? primary : btn} onClick={() => setFilter(k)}>{l}</button>)}</div>
+    {err && <p className="text-sm text-red-500">{err}</p>}
+    {!list ? <p className={muted}>Loading…</p> : !list.length ? <p className={muted}>No shifts here.</p> : <table className="w-full text-sm"><thead><tr className={`text-left ${muted}`}><th>Shift</th><th>Opened</th><th>Status</th><th className="text-right">Over / short</th><th /></tr></thead>
+      <tbody>{list.map((s) => <tr key={s.id} className="border-t border-[var(--inaya-border)]"><td>{s.shiftNumber}</td><td>{s.openedBy}<br /><span className={`text-xs ${muted}`}>{new Date(s.openedAt).toLocaleString()}</span></td><td>{s.status === "OPEN" ? "Open" : s.review ? "Reviewed" : s.flagged ? <span className="text-amber-600">Flagged</span> : "Closed"}</td><td className="text-right">{s.overShort === null ? "-" : money(s.overShort, settings.currency)}</td><td className="text-right"><button className={btn} onClick={async () => { try { const d = await api(`shifts/${s.id}`, { orgId }); setOpen(d.shift); } catch (e) { setErr(e.message); } }}>Open</button></td></tr>)}</tbody></table>}
+    {open && <Modal title={`Shift ${open.shiftNumber}`} wide onClose={() => setOpen(null)}>
+      <ShiftReport shift={open} currency={settings.currency} />
+      {err && <p className="text-sm text-red-500 mt-2">{err}</p>}
+      {role === "manager" && open.status === "CLOSED" && <div className="flex flex-wrap gap-2 mt-3">
+        {!open.review && <button className={primary} onClick={() => act("review", { note: window.prompt("Review note (optional)") ?? "" })}>Mark reviewed</button>}
+        <button className={btn} onClick={() => { const v = window.prompt("Corrected counted cash"); if (v === null) return; const reason = window.prompt("Reason for the correction"); if (!reason) return; act("correct", { countedCash: Number(v), reason }); }}>Correct the count</button>
+      </div>}
+    </Modal>}
+  </div>;
+}
+
+// ================================================================= Sale detail, returns, exchanges and voids (Master SOW 6.7)
+function SaleDialog({ orgId, settings, role, saleId, onClose }) {
+  const [sale, setSale] = useState(null); const [view, setView] = useState("receipt"); const [err, setErr] = useState(""); const [refundNo, setRefundNo] = useState(null);
+  const load = useCallback(() => api(`sales/${saleId}`, { orgId }).then((d) => setSale(d.sale)).catch((e) => setErr(e.message)), [orgId, saleId]);
+  useEffect(() => { load(); }, [load]);
+  if (view === "return" && sale) return <ReturnDialog orgId={orgId} settings={settings} sale={sale} onClose={() => setView("receipt")} onDone={(r) => { load(); setRefundNo(r.refundNumber); setView("refund"); }} />;
+  if (view === "void" && sale) return <VoidDialog orgId={orgId} sale={sale} role={role} onClose={() => setView("receipt")} onDone={() => { load(); setView("receipt"); }} />;
+  if (view === "refund") return <RefundReceiptDialog orgId={orgId} saleId={saleId} refundNumber={refundNo} onClose={() => setView("receipt")} />;
+  const returnable = sale && ["COMPLETED", "PARTIALLY_REFUNDED"].includes(sale.status);
+  return <Modal title={sale ? `Sale ${sale.saleNumber}` : "Sale"} onClose={onClose}>
+    {err && <p className="text-red-500 text-sm">{err}</p>}
+    {sale && <>
+      {sale.status === "VOIDED" && <p className="text-sm text-red-500 mb-2">Voided by {sale.voided.by}{sale.voided.approvedBy ? ` (approved by ${sale.voided.approvedBy})` : ""}: {sale.voided.reason}</p>}
+      {sale.refunds.length > 0 && <div className="text-sm mb-2"><p className="font-semibold">Returns</p>{sale.refunds.map((r) => <p key={r.refundNumber}><button className="underline" onClick={() => { setRefundNo(r.refundNumber); setView("refund"); }}>{r.refundNumber}</button> · {money(r.total, sale.currency)} · {r.reason} · {r.processedBy}{r.exchangeSaleId ? " · exchange" : ""}</p>)}</div>}
+      <ReceiptLoader orgId={orgId} saleId={saleId} key={`${sale.refunded}${sale.status}`} />
+      <div className="flex flex-wrap gap-2 mt-3">
+        {returnable && <button className={primary} onClick={() => setView("return")}>Return or exchange items</button>}
+        {sale.status === "COMPLETED" && !sale.refunds.length && <button className={btn} onClick={() => setView("void")}>Void sale</button>}
+      </div>
+    </>}
+  </Modal>;
+}
+function ReceiptLoader({ orgId, saleId }) {
+  const [r, setR] = useState(null);
+  useEffect(() => { api(`sales/${saleId}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch(() => {}); }, [orgId, saleId]);
+  return r ? <><Receipt r={r} /><button className={`${btn} mt-2`} onClick={() => printReceipt(r)}>Reprint receipt</button></> : <p className={muted}>Loading receipt…</p>;
+}
+const DISPOSITION_NAMES = { RESTOCK: "Back on the shelf", QUARANTINE: "Quarantine (inspect first)", DAMAGED: "Damaged (write off)", NON_RESTOCKABLE: "Not restockable" };
+function ReturnDialog({ orgId, settings, sale, onClose, onDone }) {
+  const [qty, setQty] = useState(() => sale.lines.map(() => 0)); const [disp, setDisp] = useState(() => sale.lines.map(() => "RESTOCK"));
+  const [reason, setReason] = useState(""); const [refundTo, setRefundTo] = useState([]); const [exchange, setExchange] = useState(null); const [products, setProducts] = useState([]);
+  const [preview, setPreview] = useState(null); const [err, setErr] = useState(""); const [approval, setApproval] = useState(null); const [busy, setBusy] = useState(false); const keyRef = useRef(newKey());
+  const registerId = savedRegister(orgId) || undefined;
+  useEffect(() => { if (exchange && !products.length) fetch(`/api/orgs/inventory/products?orgId=${orgId}`, { credentials: "include" }).then((r) => r.json()).then((d) => setProducts((d.products || []).filter((p) => p.status === "ACTIVE"))).catch(() => {}); }, [exchange, orgId, products.length]);
+  const body = useMemo(() => ({ saleId: sale.id, reason: reason.trim() || "(reason pending)", registerId, lines: sale.lines.map((l, i) => ({ lineIndex: i, quantity: qty[i], disposition: disp[i] })).filter((l) => l.quantity > 0),
+    refundTo: refundTo.length ? refundTo.map((t) => ({ method: t.method, amount: t.method === "CASH" ? undefined : Number(t.amount), reference: t.reference || undefined })) : undefined,
+    exchange: exchange ? { lines: exchange.lines.filter((l) => l.productId && Number(l.quantity) > 0).map((l) => ({ productId: l.productId, quantity: Number(l.quantity) })), tenders: Number(exchange.pay) > 0 ? [{ method: "CASH", amount: Number(exchange.pay) }] : [] } : undefined }), [sale, reason, registerId, qty, disp, refundTo, exchange]);
+  useEffect(() => {
+    if (!body.lines.length || (exchange && !body.exchange.lines.length)) { setPreview(null); return; }
+    const t = setTimeout(() => api("returns/preview", { orgId, method: "POST", body }).then((d) => { setPreview(d); setErr(""); }).catch((e) => { setPreview(null); setErr(e.message); }), 300);
+    return () => clearTimeout(t);
+  }, [orgId, body, exchange]);
+  useEffect(() => { if (approval?.status !== "PENDING") return; const t = setInterval(() => api(`approvals/${approval.id}`, { orgId }).then((d) => setApproval((a) => ({ ...a, status: d.status, by: d.decidedBy }))).catch(() => {}), 3000); return () => clearInterval(t); }, [orgId, approval?.id, approval?.status]);
+  const needs = preview?.approvalNeeded; const ok = preview && reason.trim().length >= 3 && (!needs || approval?.status === "APPROVED");
+  const submit = async () => { setBusy(true); setErr(""); try { const d = await api("returns", { orgId, method: "POST", body: { ...body, idempotencyKey: keyRef.current, approvalId: approval?.status === "APPROVED" ? approval.id : undefined } }); onDone(d.refund); } catch (e) { setErr(e.message); if (!["APPROVAL_REQUIRED", "APPROVAL_INVALID"].includes(e.code)) keyRef.current = newKey(); } finally { setBusy(false); } };
+  return <Modal title={`Return from ${sale.saleNumber}`} wide onClose={onClose}>
+    <p className={`text-xs ${muted} mb-2`}>Sold {new Date(sale.completedAt).toLocaleDateString()} · return window {settings.returnPolicy.days} days · refunds go back to how the customer paid.</p>
+    <ul className="divide-y divide-[var(--inaya-border)]">{sale.lines.map((l, i) => { const left = l.quantity - l.returnedQty; return <li key={i} className="py-2 grid sm:grid-cols-[1fr_auto] gap-2 items-center">
+      <span className="text-sm">{l.name} <span className={muted}>· {l.quantity} sold{l.returnedQty ? `, ${l.returnedQty} returned` : ""} · {money(l.total, sale.currency)}</span></span>
+      {left > 0 ? <span className="flex gap-2"><input aria-label={`Return quantity for ${l.name}`} className={`${field} !w-20`} inputMode="decimal" value={qty[i]} onChange={(e) => { const v = Math.max(0, Math.min(left, Number(e.target.value) || 0)); setQty((q) => q.map((x, k) => (k === i ? v : x))); }} />
+        <select aria-label={`What happens to ${l.name}`} className={`${field} !w-auto`} value={disp[i]} onChange={(e) => setDisp((d) => d.map((x, k) => (k === i ? e.target.value : x)))}>{Object.entries(DISPOSITION_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></span> : <span className={`text-xs ${muted}`}>all returned</span>}
+    </li>; })}</ul>
+    <input aria-label="Return reason" className={`${field} mt-2`} placeholder="Reason for the return (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
+    <div className="flex flex-wrap gap-2 mt-2">
+      <button className={!exchange ? primary : btn} onClick={() => setExchange(null)}>Refund</button>
+      <button className={exchange ? primary : btn} onClick={() => setExchange(exchange || { lines: [{ productId: "", quantity: 1 }], pay: "" })}>Exchange for other items</button>
+      {!exchange && <select aria-label="Refund method" className={`${field} !w-auto`} value={refundTo[0]?.method || ""} onChange={(e) => setRefundTo(e.target.value ? [{ method: e.target.value, amount: "", reference: "" }] : [])}><option value="">Back to the original payment</option><option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer</option><option value="MANUAL_REFERENCE">Other (reference)</option></select>}
+    </div>
+    {!exchange && refundTo[0] && refundTo[0].method !== "CASH" && <div className="grid grid-cols-2 gap-2 mt-2"><input aria-label="Refund amount" className={field} inputMode="decimal" placeholder="Amount" value={refundTo[0].amount} onChange={(e) => setRefundTo([{ ...refundTo[0], amount: e.target.value }])} /><input aria-label="Refund reference" className={field} placeholder="Reference" value={refundTo[0].reference} onChange={(e) => setRefundTo([{ ...refundTo[0], reference: e.target.value }])} /></div>}
+    {exchange && <div className="mt-2 space-y-2">{exchange.lines.map((l, i) => <div key={i} className="grid grid-cols-[1fr_80px] gap-2">
+      <select aria-label="Exchange product" className={field} value={l.productId} onChange={(e) => setExchange({ ...exchange, lines: exchange.lines.map((x, k) => (k === i ? { ...x, productId: e.target.value } : x)) })}><option value="">Choose the replacement item</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.sku}) · {money(p.unitPrice, settings.currency)}</option>)}</select>
+      <input aria-label="Exchange quantity" className={field} inputMode="decimal" value={l.quantity} onChange={(e) => setExchange({ ...exchange, lines: exchange.lines.map((x, k) => (k === i ? { ...x, quantity: e.target.value } : x)) })} /></div>)}
+      <button className={btn} onClick={() => setExchange({ ...exchange, lines: [...exchange.lines, { productId: "", quantity: 1 }] })}>Add another item</button>
+      {preview?.exchange?.toPay > 0 && <label className="text-sm block">Customer pays the difference in cash ({money(preview.exchange.toPay, sale.currency)})<input aria-label="Exchange cash paid" className={field} inputMode="decimal" value={exchange.pay} onChange={(e) => setExchange({ ...exchange, pay: e.target.value })} /></label>}
+    </div>}
+    {preview && <div className="border-t border-[var(--inaya-border)] mt-3 pt-2 text-sm space-y-1">
+      <Row k="Refund (before tax)" v={money(preview.refund.net, sale.currency)} /><Row k="Tax reversed" v={money(preview.refund.tax, sale.currency)} /><Row k={<b>Refund total</b>} v={<b>{money(preview.refund.total, sale.currency)}</b>} />
+      {preview.refund.tenders.map((t, i) => <Row key={i} k={<span className="ml-3">{TENDER_NAMES[t.method] || t.method}{t.reference ? ` (${t.reference})` : ""}</span>} v={money(t.amount, sale.currency)} />)}
+      {preview.exchange && <><Row k="New items" v={money(preview.exchange.total, sale.currency)} /><Row k="Customer pays" v={money(preview.exchange.toPay, sale.currency)} /></>}
+      {preview.exceptions.map((x, i) => <p key={i} className="text-xs text-amber-600">{exceptionText(x, sale.currency)}</p>)}
+    </div>}
+    {needs && approval?.status !== "APPROVED" && <div className="mt-2 text-sm">{!approval ? <button className={btn} disabled={reason.trim().length < 3} onClick={async () => { try { const r = await api("returns/approval", { orgId, method: "POST", body }); setApproval({ id: r.approvalId, status: "PENDING" }); } catch (e) { setErr(e.message); } }}>Ask a {needs} to approve</button> : <p className={muted}>{approval.status === "PENDING" ? `Waiting for a ${needs}…` : approval.status === "REJECTED" ? "Rejected." : "Expired; ask again."}</p>}</div>}
+    {approval?.status === "APPROVED" && <p className="text-sm text-emerald-600 mt-2">Approved by {approval.by}.</p>}
+    {err && <p className="text-sm text-red-500 mt-2" role="alert">{err}</p>}
+    <button className={`${primary} w-full mt-3`} disabled={!ok || busy} onClick={submit}>{busy ? "Processing…" : exchange ? "Complete exchange" : "Complete refund"}</button>
+  </Modal>;
+}
+function exceptionText(x, cur) {
+  if (x.kind === "return_window") return `Outside the ${x.policyDays}-day return window (${x.days} days): needs a manager.`;
+  if (x.kind === "refund") return `Refunds need a ${x.needed}'s approval.`;
+  if (x.kind === "refund_method") return `${TENDER_NAMES[x.method] || x.method} refund of ${money(x.amount, cur)} is more than that payment method can give back (${money(x.originalLeft, cur)}): needs a supervisor.`;
+  if (x.kind === "void") return `Void ${x.saleNumber}${x.reason ? `: ${x.reason}` : ""}`;
+  if (x.kind === "price_override") return `Price changed ${x.from ?? "-"} → ${x.to}`;
+  return `${x.kind === "sale_discount" ? "Whole-sale" : "Line"} discount ${x.percent}%`;
+}
+function VoidDialog({ orgId, sale, role, onClose, onDone }) {
+  const [reason, setReason] = useState(""); const [approval, setApproval] = useState(null); const [err, setErr] = useState(""); const needs = role === "cashier";
+  useEffect(() => { if (approval?.status !== "PENDING") return; const t = setInterval(() => api(`approvals/${approval.id}`, { orgId }).then((d) => setApproval((a) => ({ ...a, status: d.status, by: d.decidedBy }))).catch(() => {}), 3000); return () => clearInterval(t); }, [orgId, approval?.id, approval?.status]);
+  return <Modal title={`Void ${sale.saleNumber}`} onClose={onClose}>
+    <p className="text-sm mb-2">A void cancels the whole sale ({money(sale.totals.total, sale.currency)}): stock goes back and the customer's history and the books are reversed. Give the money back the way it was paid.</p>
+    <input autoFocus aria-label="Void reason" className={field} placeholder="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
+    {needs && approval?.status !== "APPROVED" && (!approval ? <button className={`${btn} mt-2`} disabled={reason.trim().length < 3} onClick={async () => { try { const r = await api(`sales/${sale.id}/void-approval`, { orgId, method: "POST", body: { reason } }); setApproval({ id: r.approvalId, status: "PENDING" }); } catch (e) { setErr(e.message); } }}>Ask a supervisor to approve</button> : <p className={`text-sm mt-2 ${muted}`}>{approval.status === "PENDING" ? "Waiting for a supervisor…" : approval.status === "REJECTED" ? "Rejected." : "Expired; ask again."}</p>)}
+    {approval?.status === "APPROVED" && <p className="text-sm text-emerald-600 mt-2">Approved by {approval.by}.</p>}
+    {err && <p className="text-sm text-red-500 mt-2">{err}</p>}
+    <button className={`${primary} w-full mt-3`} disabled={reason.trim().length < 3 || (needs && approval?.status !== "APPROVED")} onClick={async () => { try { await api(`sales/${sale.id}/void`, { orgId, method: "POST", body: { reason, approvalId: approval?.id } }); onDone(); } catch (e) { setErr(e.message); } }}>Void sale</button>
+  </Modal>;
+}
+function RefundReceiptDialog({ orgId, saleId, refundNumber, onClose }) {
+  const [r, setR] = useState(null); const [err, setErr] = useState("");
+  useEffect(() => { api(`sales/${saleId}/refunds/${refundNumber}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch((e) => setErr(e.message)); }, [orgId, saleId, refundNumber]);
+  return <Modal title={`Refund ${refundNumber}`} onClose={onClose}>
+    {err && <p className="text-red-500">{err}</p>}
+    {r && <><div className="font-mono text-xs space-y-1" id="pos-receipt">
+      <p className="text-center font-bold">{r.company}</p><p className="text-center">{r.location}</p>
+      <p className="text-center">REFUND {r.refundNumber} · {new Date(r.createdAt).toLocaleString()}</p><p className="text-center">Original sale {r.saleNumber} ({new Date(r.originalDate).toLocaleDateString()})</p><hr />
+      {r.lines.map((l, i) => <div key={i}><div className="flex justify-between"><span>{l.name} × {l.quantity}</span><span>−{money(l.total, r.currency)}</span></div><div className="text-[10px]">{DISPOSITION_NAMES[l.disposition] || l.disposition}{l.taxRate ? ` · tax ${l.taxRate}% reversed ${money(l.tax, r.currency)}` : ""}</div></div>)}<hr />
+      <div className="flex justify-between"><span>Refund before tax</span><span>{money(r.net, r.currency)}</span></div><div className="flex justify-between"><span>Tax reversed</span><span>{money(r.tax, r.currency)}</span></div>
+      <div className="flex justify-between font-bold"><span>REFUND TOTAL</span><span>{money(r.total, r.currency)}</span></div>
+      {r.tenders.map((t, i) => <div key={i} className="flex justify-between"><span>{TENDER_NAMES[t.method] || t.method}{t.reference ? ` (${t.reference})` : ""}</span><span>{money(t.amount, r.currency)}</span></div>)}
+      <hr /><p>Reason: {r.reason}</p><p>Processed by {r.processedBy}{r.approvedBy ? `, approved by ${r.approvedBy}` : ""}</p>
+    </div><button className={`${primary} mt-3`} onClick={() => printReceipt({ saleNumber: r.refundNumber })}>Print refund receipt</button></>}
+  </Modal>;
+}
+
 // ================================================================= Sales history
-function Sales({ orgId, settings }) {
+function Sales({ orgId, settings, role }) {
   const [sales, setSales] = useState(null); const [q, setQ] = useState(""); const [open, setOpen] = useState(null); const [err, setErr] = useState("");
-  useEffect(() => { api("sales", { orgId }).then((d) => setSales(d.sales)).catch((e) => setErr(e.message)); }, [orgId]);
+  const load = useCallback(() => api("sales", { orgId }).then((d) => setSales(d.sales)).catch((e) => setErr(e.message)), [orgId]);
+  useEffect(() => { load(); }, [load]);
   const find = async () => { setErr(""); try { const d = await api(`sales/by-number/${encodeURIComponent(q.trim())}`, { orgId }); setOpen(d.sale.id); } catch (e) { setErr(e.message); } };
   return <div className={`${card} p-3 space-y-2`}>
     <div className="flex gap-2"><input className={field} placeholder="Find by receipt number, e.g. S-000123" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && find()} /><button className={btn} onClick={find}>Find</button></div>
     {err && <p className="text-red-500 text-sm">{err}</p>}
     {!sales ? <p className={muted}>Loading…</p> : !sales.length ? <p className={muted}>No sales yet.</p> : <table className="w-full text-sm"><thead><tr className={`text-left ${muted}`}><th>Receipt</th><th>Time</th><th>Cashier</th><th className="text-right">Total</th><th /></tr></thead>
-      <tbody>{sales.map((s) => <tr key={s.id} className="border-t border-[var(--inaya-border)]"><td>{s.saleNumber}</td><td>{new Date(s.completedAt).toLocaleString()}</td><td>{s.cashier}</td><td className="text-right">{money(s.totals.total, s.currency)}{s.refunded ? <span className="text-amber-600 text-xs"> (refunded {money(s.refunded, s.currency)})</span> : null}</td><td className="text-right"><button className={btn} onClick={() => setOpen(s.id)}>Receipt</button></td></tr>)}</tbody></table>}
-    {open && <ReceiptDialog orgId={orgId} saleId={open} onClose={() => setOpen(null)} />}
+      <tbody>{sales.map((s) => <tr key={s.id} className="border-t border-[var(--inaya-border)]"><td>{s.saleNumber}</td><td>{new Date(s.completedAt).toLocaleString()}</td><td>{s.cashier}</td><td className="text-right">{s.status === "VOIDED" ? <span className="text-red-500 text-xs">VOIDED </span> : null}{money(s.totals.total, s.currency)}{s.refunded ? <span className="text-amber-600 text-xs"> (refunded {money(s.refunded, s.currency)})</span> : null}</td><td className="text-right"><button className={btn} onClick={() => setOpen(s.id)}>Open</button></td></tr>)}</tbody></table>}
+    {open && <SaleDialog orgId={orgId} settings={settings} role={role} saleId={open} onClose={() => { setOpen(null); load(); }} />}
   </div>;
 }
 
@@ -318,11 +542,11 @@ function Approvals({ orgId, settings }) {
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, [load]);
   const decide = async (id, approve) => { const reason = window.prompt(approve ? "Reason (optional)" : "Why is this rejected?") ?? ""; try { await api(`approvals/${id}/decide`, { orgId, method: "POST", body: { approve, reason } }); load(); } catch (e) { setErr(e.message); } };
   return <div className={`${card} p-3`}>
-    <p className={`text-sm ${muted} mb-2`}>Discounts and price changes above a cashier's limit wait here. You cannot approve your own request.</p>
+    <p className={`text-sm ${muted} mb-2`}>Discounts, price changes, refunds and voids beyond someone's limit wait here. You cannot approve your own request.</p>
     {err && <p className="text-red-500 text-sm">{err}</p>}
     {!list ? <p className={muted}>Loading…</p> : !list.length ? <p className={muted}>Nothing waiting.</p> : list.map((a) => <div key={a.id} className="border-t border-[var(--inaya-border)] py-2">
-      <p className="text-sm font-semibold">{a.requestedBy} · {money(a.total, a.currency)} · needs a {a.needed}</p>
-      <ul className="text-xs list-disc ml-5">{a.items.map((x, i) => <li key={i}>{x.kind === "price_override" ? `Price changed ${x.from ?? "-"} → ${x.to}` : `${x.kind === "sale_discount" ? "Whole-sale" : "Line"} discount ${x.percent}%`}</li>)}</ul>
+      <p className="text-sm font-semibold">{a.subject === "return" ? "Return" : a.subject === "void" ? "Void" : "Sale"} · {a.requestedBy} · {money(a.total, a.currency)} · needs a {a.needed}</p>
+      <ul className="text-xs list-disc ml-5">{a.items.map((x, i) => <li key={i}>{exceptionText(x, a.currency)}</li>)}</ul>
       <div className="flex gap-2 mt-1"><button className={primary} onClick={() => decide(a.id, true)}>Approve</button><button className={btn} onClick={() => decide(a.id, false)}>Reject</button></div>
     </div>)}
   </div>;
@@ -351,7 +575,9 @@ function SetPrice({ orgId, lists, run }) {
 // ================================================================= Setup (managers)
 function Setup({ orgId, settings, onSaved }) {
   const [s, setS] = useState(settings); const [taxes, setTaxes] = useState([]); const [lists, setLists] = useState([]); const [staff, setStaff] = useState([]); const [msg, setMsg] = useState(""); const [err, setErr] = useState("");
-  const load = useCallback(() => { api("tax-categories", { orgId }).then((d) => setTaxes(d.categories)); api("price-lists", { orgId }).then((d) => setLists(d.priceLists)); api("staff", { orgId }).then((d) => setStaff(d.staff)).catch(() => {}); }, [orgId]);
+  const [regs, setRegs] = useState([]); const [whs, setWhs] = useState([]); const [reg, setReg] = useState({ code: "", name: "", warehouseId: "" });
+  useEffect(() => { fetch(`/api/orgs/inventory/warehouses?orgId=${orgId}`, { credentials: "include" }).then((r) => r.json()).then((d) => setWhs(d.warehouses || [])).catch(() => {}); }, [orgId]);
+  const load = useCallback(() => { api("registers", { orgId }).then((d) => setRegs(d.registers)).catch(() => {}); api("tax-categories", { orgId }).then((d) => setTaxes(d.categories)); api("price-lists", { orgId }).then((d) => setLists(d.priceLists)); api("staff", { orgId }).then((d) => setStaff(d.staff)).catch(() => {}); }, [orgId]);
   useEffect(() => { load(); }, [load]);
   const run = async (fn, ok) => { setErr(""); setMsg(""); try { await fn(); setMsg(ok); load(); } catch (e) { setErr(e.message); } };
   const [tax, setTax] = useState({ code: "", name: "", rate: "", isDefault: false }); const [pl, setPl] = useState({ code: "", name: "" });
@@ -367,6 +593,9 @@ function Setup({ orgId, settings, onSaved }) {
       <label className="text-sm block">Return policy (days)<input className={field} inputMode="numeric" value={s.returnPolicy.days} onChange={(e) => setS({ ...s, returnPolicy: { ...s.returnPolicy, days: Number(e.target.value) } })} /></label>
       <label className="text-sm block">Return policy text (printed on receipts)<textarea className={field} value={s.returnPolicy.text} onChange={(e) => setS({ ...s, returnPolicy: { ...s.returnPolicy, text: e.target.value } })} /></label>
       <label className="text-sm block">Receipt footer<textarea className={field} value={s.receiptFooter} onChange={(e) => setS({ ...s, receiptFooter: e.target.value })} /></label>
+      <label className="text-sm block">Who may refund without approval<select className={field} value={s.refundRole} onChange={(e) => setS({ ...s, refundRole: e.target.value })}><option value="cashier">everyone (cashiers too)</option><option value="supervisor">supervisors and managers</option><option value="manager">managers only</option></select></label>
+      <label className="text-sm block">Quarantine location (returned items to inspect)<select className={field} value={s.quarantineWarehouseId || ""} onChange={(e) => setS({ ...s, quarantineWarehouseId: e.target.value || null })}><option value="">none</option>{whs.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+      <label className="text-sm block">Shift cash tolerance (over/short allowed before a shift is flagged)<input className={field} inputMode="decimal" value={(s.cashVarianceTolerance || 0) / 100} onChange={(e) => setS({ ...s, cashVarianceTolerance: Math.round((Number(e.target.value) || 0) * 100) })} /></label>
       <button className={primary} onClick={() => run(async () => { const d = await api("settings", { orgId, method: "PUT", body: s }); onSaved(d.settings); }, "Settings saved.")}>Save settings</button>
     </div>
     <div className="space-y-3">
@@ -381,6 +610,14 @@ function Setup({ orgId, settings, onSaved }) {
         <div className="grid grid-cols-2 gap-2"><input className={field} placeholder="Code" value={pl.code} onChange={(e) => setPl({ ...pl, code: e.target.value })} /><input className={field} placeholder="Name" value={pl.name} onChange={(e) => setPl({ ...pl, name: e.target.value })} /></div>
         <button className={btn} onClick={() => run(() => api("price-lists", { orgId, method: "POST", body: pl }), "Price list saved.")}>Add price list</button>
         <SetPrice orgId={orgId} lists={lists} run={run} />
+      </div>
+      <div className={`${card} p-3 space-y-2`}><h3 className="font-bold">Registers (tills)</h3>
+        <ul className="text-sm divide-y divide-[var(--inaya-border)]">{regs.map((r) => <li key={r.id} className="py-1 flex items-center gap-2"><span className="flex-1">{r.code} · {r.name} · {whs.find((w) => w.id === r.warehouseId)?.name || "?"}{r.openShift ? ` · shift open (${r.openShift.openedBy})` : ""}{!r.active ? " · inactive" : ""}</span>
+          <button className={btn} onClick={() => run(() => api("registers", { orgId, method: "POST", body: { id: r.id, code: r.code, name: r.name, warehouseId: r.warehouseId, active: !r.active } }), r.active ? "Register deactivated." : "Register activated.")}>{r.active ? "Deactivate" : "Activate"}</button></li>)}</ul>
+        <div className="grid grid-cols-3 gap-2"><input className={field} placeholder="Code" aria-label="Register code" value={reg.code} onChange={(e) => setReg({ ...reg, code: e.target.value })} /><input className={field} placeholder="Name" aria-label="Register name" value={reg.name} onChange={(e) => setReg({ ...reg, name: e.target.value })} />
+          <select className={field} aria-label="Register location" value={reg.warehouseId} onChange={(e) => setReg({ ...reg, warehouseId: e.target.value })}><option value="">Location</option>{whs.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></div>
+        <button className={btn} onClick={() => run(() => api("registers", { orgId, method: "POST", body: reg }), "Register added.")}>Add register</button>
+        <p className={`text-xs ${muted}`}>Using registers is optional. When a till uses one, a shift must be open to sell, and the drawer is counted when the shift closes.</p>
       </div>
       <div className={`${card} p-3 space-y-2`}><h3 className="font-bold">Staff</h3>
         <ul className="text-sm divide-y divide-[var(--inaya-border)]">{staff.map((m) => <li key={m.email} className="py-1 flex items-center gap-2"><span className="flex-1">{m.email}</span>

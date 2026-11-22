@@ -46,7 +46,7 @@ export async function listPendingApprovals({ orgId, membership }) {
   const denied = await commerceAccess({ orgId, membership, need: "supervise" }); if (denied) return denied;
   const c = await ccol();
   const rows = await c.find({ orgId: oid(orgId), kind: APPROVAL_KIND, status: "PENDING", expiresAt: { $gt: nowIso() } }).sort({ createdAt: -1 }).limit(50).toArray();
-  return { approvals: rows.map((a) => ({ id: sid(a._id), needed: a.needed, items: a.items, total: a.total, currency: a.currency, requestedBy: a.requestedBy, createdAt: a.createdAt, expiresAt: a.expiresAt })) };
+  return { approvals: rows.map((a) => ({ id: sid(a._id), subject: a.subject || "sale", needed: a.needed, items: a.items, total: a.total, currency: a.currency, requestedBy: a.requestedBy, createdAt: a.createdAt, expiresAt: a.expiresAt })) };
 }
 export async function decideApproval({ orgId, membership, actorEmail, approvalId, approve, reason }) {
   const denied = await commerceAccess({ orgId, membership, need: "supervise" }); if (denied) return denied;
@@ -69,10 +69,11 @@ export async function getApprovalStatus({ orgId, membership, approvalId }) {
 // ---------------------------------------------------------------- tenders
 /** Validates tenders against the amount due. Cash may exceed what is due (change is given, from cash only); other tenders
  *  must not. Returns minor-unit tenders, change and the cash-rounding adjustment. */
-export function settleTenders(tenders, dueMinor, cashIncrement) {
-  if (!Array.isArray(tenders) || !tenders.length) return fail("Add at least one payment.");
+export function settleTenders(tenders, dueMinor, cashIncrement, { creditMinor = 0, creditRef = null } = {}) {
+  tenders = Array.isArray(tenders) ? tenders.filter((x) => Number(x?.amount) > 0) : [];
+  if (!tenders.length && !(creditMinor > 0)) return fail("Add at least one payment.");
   if (tenders.length > 10) return fail("At most 10 payments per sale.");
-  const t = [];
+  const t = creditMinor > 0 ? [{ method: "EXCHANGE_CREDIT", amountMinor: creditMinor, reference: creditRef, manual: true, status: "RECORDED" }] : [];
   for (const x of tenders) {
     if (!TENDERS.includes(x.method)) return fail(`Unsupported payment method ${x.method}. Card payments need an approved payment provider.`, 400, "TENDER");
     const m = toMinor(x.amount); if (!(m > 0)) return fail("Each payment must be a positive amount.");
@@ -90,31 +91,57 @@ export function settleTenders(tenders, dueMinor, cashIncrement) {
 }
 
 // ---------------------------------------------------------------- completion
-export async function completeSale({ orgId, membership, actorEmail, input }) {
-  const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
-  const idem = clean(input?.idempotencyKey, 120);
-  if (!idem || idem.length < 8) return fail("idempotencyKey is required (a unique id per sale attempt).");
-  const { salesOrders, warehouses, crmContacts } = await getOrgCollections(); const o = oid(orgId);
-  const prior = await salesOrders.findOne({ orgId: o, idempotencyKey: idem });
-  if (prior) return { sale: saleView(prior), duplicate: true };
+/** Location, customer, settings and (when a register is used) its OPEN shift -- shared by sales, returns and exchanges. */
+export async function saleContext({ orgId, input }) {
+  const { warehouses, crmContacts } = await getOrgCollections(); const o = oid(orgId);
   const warehouse = await warehouses.findOne({ _id: oid(input.warehouseId), orgId: o });
   if (!warehouse) return fail("Choose the location (warehouse) the sale is made from.", 400);
   const customer = input.customerId ? await crmContacts.findOne({ _id: oid(input.customerId), orgId: o }) : null;
   if (input.customerId && !customer) return fail("Customer not found.", 404);
   const settings = await getSettings(orgId);
   await ensureCommerceIndexes(); const c = await ccol();
-  // register / shift: when a register is used it must have an OPEN shift (cash control, Batch 3)
-  let register = null, shift = null;
-  if (input.registerId) {
-    register = await c.findOne({ _id: oid(input.registerId), orgId: o, kind: KINDS.register, active: { $ne: false } });
-    if (!register) return fail("Register not found.", 404);
-    if (sid(register.warehouseId) !== sid(warehouse._id)) return fail("This register belongs to another location.", 409);
-    shift = await c.findOne({ orgId: o, kind: KINDS.shift, registerId: register._id, status: "OPEN" });
-    if (!shift) return fail("Open a shift on this register before selling.", 409, "NO_OPEN_SHIFT");
-  }
-  const cid = newCorrelation(); const startedAt = nowIso(); let saleDoc;
+  const rs = await registerShift({ orgId, registerId: input.registerId, warehouseId: warehouse._id }); if (rs.error) return rs;
+  return { warehouse, customer, settings, register: rs.register, shift: rs.shift, c };
+}
+/** When a register is used it must be at this location and have an OPEN shift (Master SOW 6.8). */
+export async function registerShift({ orgId, registerId, warehouseId }) {
+  if (!registerId) return { register: null, shift: null };
+  const c = await ccol(); const o = oid(orgId);
+  const register = await c.findOne({ _id: oid(registerId), orgId: o, kind: KINDS.register, active: { $ne: false } });
+  if (!register) return fail("Register not found.", 404);
+  if (warehouseId && sid(register.warehouseId) !== sid(warehouseId)) return fail("This register belongs to another location.", 409);
+  const shift = await c.findOne({ orgId: o, kind: KINDS.shift, registerId: register._id, status: "OPEN" });
+  if (!shift) return fail("Open a shift on this register first.", 409, "NO_OPEN_SHIFT");
+  return { register, shift };
+}
+
+export async function completeSale({ orgId, membership, actorEmail, input }) {
+  const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
+  const idem = clean(input?.idempotencyKey, 120);
+  if (!idem || idem.length < 8) return fail("idempotencyKey is required (a unique id per sale attempt).");
+  const { salesOrders } = await getOrgCollections(); const o = oid(orgId);
+  const prior = await salesOrders.findOne({ orgId: o, idempotencyKey: idem });
+  if (prior) return { sale: saleView(prior), duplicate: true };
+  const ctx = await saleContext({ orgId, input }); if (ctx.error) return ctx;
+  const cid = newCorrelation(); let saleDoc;
   try {
-    saleDoc = await withStockTransaction(async (session) => {
+    saleDoc = await withStockTransaction((session) => buildSale({ orgId, membership, actorEmail, input, ctx, session, cid, idem }));
+  } catch (e) {
+    if (e?.code === 11000 && /idempotency/.test(e.message || "")) { const again = await salesOrders.findOne({ orgId: o, idempotencyKey: idem }); if (again) return { sale: saleView(again), duplicate: true }; }
+    if (e instanceof StockError || e.status) return { error: e.message, status: e.status || 409, code: e.code, ...(e.approvals ? { approvals: e.approvals } : {}) };
+    throw e;
+  }
+  await afterSale({ orgId, actorEmail, saleDoc, cid, idem });
+  return { sale: saleView(saleDoc) };
+}
+
+/** The sale itself, inside the caller's transaction (a plain sale, or the replacement half of an exchange). Throws on
+ *  any failure so the whole transaction aborts. `credit` = exchange credit from a return in the same transaction. */
+export async function buildSale({ orgId, membership, actorEmail, input, ctx, session, cid, idem, credit = null }) {
+  const { salesOrders, crmContacts } = await getOrgCollections(); const o = oid(orgId);
+  const { warehouse, customer, settings, register, shift, c } = ctx; const startedAt = nowIso();
+  {
+    {
       const priced = await priceCart({ orgId, membership, input, session });
       if (priced.error) throw Object.assign(new Error(priced.error), { status: priced.status || 400, code: priced.code });
       // approvals for anything beyond the actor's authority
@@ -127,7 +154,8 @@ export async function completeSale({ orgId, membership, actorEmail, input }) {
         if (!roleCovers(approval.decidedRole, needed)) throw Object.assign(new Error(`This needs a ${needed}'s approval.`), { status: 403, code: "APPROVAL_INVALID" });
       }
       const totalMinor = priced.totals.totalMinor;
-      const pay = settleTenders(input.tenders, totalMinor, settings.rounding.cashIncrement);
+      const creditMinor = credit ? Math.min(credit.minor, totalMinor) : 0;
+      const pay = settleTenders(input.tenders, totalMinor, settings.rounding.cashIncrement, { creditMinor, creditRef: credit?.reference || null });
       if (pay.error) throw Object.assign(new Error(pay.error), { status: pay.status || 400, code: pay.code });
       const saleId = new (await import("mongodb")).ObjectId();
       const saleNumber = `S-${String(await nextNumber(orgId, "pos_sale", session)).padStart(6, "0")}`;
@@ -152,19 +180,19 @@ export async function completeSale({ orgId, membership, actorEmail, input }) {
         lines, totals: { subtotalMinor: toMinor(priced.totals.subtotal), discountMinor: toMinor(priced.totals.discounts), netMinor: toMinor(priced.totals.net), taxMinor: toMinor(priced.totals.tax), totalMinor, taxBreakdown: priced.totals.taxBreakdown },
         tenders: pay.tenders, changeMinor: pay.changeMinor, cashRoundingMinor: pay.roundingMinor, paidMinor: pay.paidMinor,
         approval: approval ? { id: approval._id, decidedBy: approval.decidedBy, decidedRole: approval.decidedRole, items: approval.items } : null,
-        notes: clean(input.notes, 500) || null, refundedMinor: 0, deletedAt: null, createdAt: startedAt, completedAt: nowIso(), updatedAt: nowIso(),
+        notes: clean(input.notes, 500) || null, refundedMinor: 0, refunds: [], exchangeOf: credit?.saleId || null, deletedAt: null, createdAt: startedAt, completedAt: nowIso(), updatedAt: nowIso(),
       };
       await salesOrders.insertOne(doc, { session });
       if (customer) await crmContacts.updateOne({ _id: customer._id, orgId: o }, { $inc: { "commerce.purchaseCount": 1, "commerce.spendMinor": totalMinor }, $set: { "commerce.lastPurchaseAt": doc.completedAt, "commerce.currency": priced.currency }, $min: { "commerce.firstPurchaseAt": doc.completedAt } }, { session });
       if (input.parkedId) await c.deleteOne({ _id: oid(input.parkedId), orgId: o, kind: PARKED_KIND }, { session });
       return doc;
-    });
-  } catch (e) {
-    if (e?.code === 11000 && /idempotency/.test(e.message || "")) { const again = await salesOrders.findOne({ orgId: o, idempotencyKey: idem }); if (again) return { sale: saleView(again), duplicate: true }; }
-    if (e instanceof StockError || e.status) return { error: e.message, status: e.status || 409, code: e.code, ...(e.approvals ? { approvals: e.approvals } : {}) };
-    throw e;
+    }
   }
-  // after commit: finance, audit, events (none of these can un-make the sale; failures are logged and retried by the nightly sync)
+}
+
+/** After commit: finance, audit, events. None of these can un-make the sale; failures are logged and the nightly ledger
+ *  sync posts anything missed. */
+export async function afterSale({ orgId, actorEmail, saleDoc, cid, idem }) {
   try { const { syncLedger } = await import("../ledger.js"); await syncLedger(orgId, { actorEmail: "system:pos" }); } catch (e) { console.error("pos: ledger sync after sale failed (nightly sync will retry):", e?.message); }
   await audit({ orgId, actorEmail, recordType: "POS_SALE", recordId: saleDoc._id, action: "SALE_COMPLETED", newState: { saleNumber: saleDoc.saleNumber, total: fromMinor(saleDoc.totals.totalMinor), currency: saleDoc.currency, lines: saleDoc.lines.length }, metadata: { correlationId: cid, approval: saleDoc.approval ? { by: saleDoc.approval.decidedBy } : null } });
   const payload = { saleNumber: saleDoc.saleNumber, total: fromMinor(saleDoc.totals.totalMinor), currency: saleDoc.currency, lines: saleDoc.lines.map((l) => ({ sku: l.sku, quantity: l.quantity })), warehouseId: sid(saleDoc.warehouseId) };
@@ -182,7 +210,9 @@ export function saleView(s) {
     lines: s.lines.map((l) => ({ productId: sid(l.productId), sku: l.sku, name: l.name, quantity: l.quantity, returnedQty: l.returnedQty || 0, unitPrice: m(l.unitPriceMinor), discount: m(l.lineDiscountMinor + l.orderShareMinor), net: m(l.netMinor), tax: m(l.taxMinor), total: m(l.grossMinor), taxCategory: l.taxCategory, taxRate: l.taxRate, note: l.note || null })),
     totals: { subtotal: m(s.totals.subtotalMinor), discounts: m(s.totals.discountMinor), net: m(s.totals.netMinor), tax: m(s.totals.taxMinor), total: m(s.totals.totalMinor), taxBreakdown: s.totals.taxBreakdown },
     tenders: s.tenders.map((t) => ({ method: t.method, amount: m(t.amountMinor), reference: t.reference, manual: true, label: "Recorded manually" })), change: m(s.changeMinor), cashRounding: m(s.cashRoundingMinor),
-    refunded: m(s.refundedMinor), approvedBy: s.approval?.decidedBy || null, notes: s.notes || null, completedAt: s.completedAt,
+    refunded: m(s.refundedMinor), approvedBy: s.approval?.decidedBy || null, notes: s.notes || null, completedAt: s.completedAt, exchangeOf: sid(s.exchangeOf),
+    refunds: (s.refunds || []).map((r) => ({ refundNumber: r.refundNumber, total: m(r.totalMinor), reason: r.reason, processedBy: r.processedBy, createdAt: r.createdAt, exchangeSaleId: sid(r.exchangeSaleId) })),
+    voided: s.status === "VOIDED" ? { at: s.voidedAt, by: s.voidedBy, reason: s.voidReason, approvedBy: s.voidApproval?.decidedBy || null } : null,
   };
 }
 export async function getSale({ orgId, membership, saleId }) {

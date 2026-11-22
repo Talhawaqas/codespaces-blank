@@ -337,9 +337,10 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
   }
 
   // Inaya Commerce: POS sales and their refunds (refunds are stored on the sale as refunds[]; each posts once).
-  const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1 } }).toArray();
+  const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED", "VOIDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1, status: 1, voidedAt: 1 } }).toArray();
   for (const sale of posSales) {
     add("POS_SALE", sale, "COMPLETED", sale.completedAt, `POS sale ${sale.saleNumber}`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS sale ${sale.saleNumber}` }));
+    if (sale.status === "VOIDED") add("POS_SALE", sale, "VOIDED", sale.voidedAt, `POS sale ${sale.saleNumber} voided`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS void ${sale.saleNumber}`, refund: true }));
     for (const r of sale.refunds || []) {
       const doc = { _id: `${sale._id}:${r.refundNumber}` };
       add("POS_REFUND", doc, "COMPLETED", r.createdAt, `POS refund ${r.refundNumber} (${sale.saleNumber})`, posLines({ totalMinor: r.totalMinor, netMinor: r.netMinor, currency: sale.currency, memo: `POS refund ${r.refundNumber}`, refund: true }));
@@ -364,9 +365,10 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
 /** Daily cron: sync every org that has finance records. One org failing
  *  never stops the others. `orgIds` scopes a run (tests). */
 export async function syncAllLedgers({ orgIds } = {}) {
-  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments } = await getOrgCollections();
+  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, salesOrders } = await getOrgCollections();
   const scope = orgIds ? { orgId: { $in: orgIds.map(toObjectId) } } : {};
   const all = await Promise.all([invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments].map((c) => c.distinct("orgId", { ...scope, deletedAt: null })));
+  all.push(await salesOrders.distinct("orgId", { ...scope, channel: "POS" })); // shops that only sell at the till
   const unique = [...new Map(all.flat().filter(Boolean).map((id) => [id.toString(), id])).keys()];
   const out = { orgs: unique.length, posted: 0, failedOrgs: 0, errors: 0 };
   for (const id of unique) {

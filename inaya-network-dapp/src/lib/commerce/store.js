@@ -86,6 +86,9 @@ export const DEFAULT_SETTINGS = {
   stacking: "line_and_order", // "line_and_order" | "best_only"
   returnPolicy: { days: 30, requireReceipt: true, text: "Returns accepted within 30 days with a receipt." },
   receiptFooter: "", allowNegativeStock: false,
+  refundRole: "supervisor", // lowest commerce role that may refund without approval: "cashier" | "supervisor" | "manager"
+  quarantineWarehouseId: null, // where QUARANTINE returns go (a location kept out of selling)
+  cashVarianceTolerance: 0, // minor units; a shift closing further over/short than this is flagged for the manager
 };
 export async function getSettings(orgId) {
   await ensureCommerceIndexes();
@@ -115,11 +118,15 @@ export function validateSettings(input = {}) {
   }
   if (input.receiptFooter !== undefined) out.receiptFooter = clean(input.receiptFooter, 500);
   if (input.allowNegativeStock !== undefined) out.allowNegativeStock = input.allowNegativeStock === true;
+  if (input.refundRole !== undefined) { if (!COMMERCE_ROLES.includes(input.refundRole)) return fail("refundRole: cashier|supervisor|manager."); out.refundRole = input.refundRole; }
+  if (input.quarantineWarehouseId !== undefined) out.quarantineWarehouseId = input.quarantineWarehouseId ? sid(input.quarantineWarehouseId) : null;
+  if (input.cashVarianceTolerance !== undefined) { const t = Number(input.cashVarianceTolerance); if (!Number.isInteger(t) || t < 0 || t > 10000000) return fail("cashVarianceTolerance: whole minor units >= 0."); out.cashVarianceTolerance = t; }
   return { settings: out };
 }
 export async function updateSettings({ orgId, membership, actorEmail, input }) {
   const denied = await commerceAccess({ orgId, membership, need: "manage" }); if (denied) return denied;
   const v = validateSettings(input); if (v.error) return v;
+  if (v.settings.quarantineWarehouseId) { const { warehouses } = await getOrgCollections(); if (!(await warehouses.findOne({ _id: oid(v.settings.quarantineWarehouseId), orgId: oid(orgId) }))) return fail("Quarantine location not found.", 404); }
   const before = await getSettings(orgId); const c = await ccol(); const now = nowIso();
   const set = Object.fromEntries(Object.entries(v.settings).map(([k, val]) => [`settings.${k}`, val]));
   await c.updateOne({ orgId: oid(orgId), kind: KINDS.settings }, { $set: { ...set, updatedAt: now, updatedBy: actorEmail }, $setOnInsert: { orgId: oid(orgId), kind: KINDS.settings, createdAt: now } }, { upsert: true });
