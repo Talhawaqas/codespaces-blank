@@ -63,7 +63,8 @@ test("order -> confirm -> dispatch (FEFO batches tied to the order) -> invoice",
   assert.equal(await getStockLevel(f.orgId, f.ale, f.warehouseId), 26);
   assert.equal(await getStockLevel(f.orgId, f.glass, f.warehouseId), 4);
   const so = await c.salesOrders.findOne({ orgId: f.orgId });
-  assert.equal(await c.stockMovements.countDocuments({ orgId: f.orgId, relatedSalesOrderId: so._id }), 2, "both lines' stock movements point at the order");
+  assert.equal(await c.stockMovements.countDocuments({ orgId: f.orgId, relatedSalesOrderId: so._id, type: "ISSUE" }), 2, "both lines' stock movements point at the order");
+  assert.equal(await c.stockMovements.countDocuments({ orgId: f.orgId, relatedSalesOrderId: so._id, type: "RESERVATION", delta: 0 }), 2, "the reservations are in the history too (Phase 3)");
   const tied = await c.stockMovements.countDocuments({ orgId: f.orgId, "lots.lotNumber": "ALE-SOON", type: "ISSUE" });
   assert.equal(tied, 1, "the dispatch is traceable through the batch");
 

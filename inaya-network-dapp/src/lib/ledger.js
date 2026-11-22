@@ -55,7 +55,7 @@ const DEBIT_NORMAL = new Set(["ASSET", "EXPENSE"]);
 export const ACCOUNTS = {
   CASH: "1000", AR: "1100", AP: "2000", EQUITY: "3000",
   SALES: "4000", OTHER_INCOME: "4900", OPEX: "5000", OTHER_EXPENSE: "5900",
-  FEES: "4100", TAX_PAYABLE: "2100", DEPOSITS: "2200",
+  FEES: "4100", TAX_PAYABLE: "2100", DEPOSITS: "2200", GIFT_LIABILITY: "2300",
 };
 // Created only for organizations that bill school fees (syncLedger).
 const FEE_INCOME_ACCOUNT = { code: ACCOUNTS.FEES, name: "Fee Income", type: "REVENUE" };
@@ -65,6 +65,7 @@ export const DEFAULT_ACCOUNTS = [
   { code: ACCOUNTS.AP, name: "Accounts Payable", type: "LIABILITY" },
   { code: ACCOUNTS.TAX_PAYABLE, name: "Sales Tax Payable", type: "LIABILITY" },
   { code: ACCOUNTS.DEPOSITS, name: "Customer Deposits", type: "LIABILITY" },
+  { code: ACCOUNTS.GIFT_LIABILITY, name: "Gift Card & Store Credit Liability", type: "LIABILITY" },
   { code: ACCOUNTS.EQUITY, name: "Owner's Equity", type: "EQUITY" },
   { code: ACCOUNTS.SALES, name: "Sales Revenue", type: "REVENUE" },
   { code: ACCOUNTS.OTHER_INCOME, name: "Other Income", type: "REVENUE" },
@@ -216,28 +217,30 @@ function usdLines(amount, currency, debitCode, creditCode, memo) {
  *  Payable (tax) -- converted to the USD ledger at the day's rate; tax is total minus net in USD so the entry balances
  *  exactly. COGS is NOT posted here: purchases already reach the ledger as expenses, so posting COGS/Inventory would
  *  double-count; margins use the cost recorded on each sale's stock movement (commerce reports). */
-function posLines({ totalMinor, netMinor, currency, memo, refund = false }) {
+// liabMinor: the part paid by gift card / store credit (or, on a refund, given back that way) -- it moves the Gift Card &
+// Store Credit Liability instead of cash. giftNetMinor: the part of the sale that SOLD gift cards -- a liability, not sales.
+function posLines({ totalMinor, netMinor, currency, memo, refund = false, liabMinor = 0, giftNetMinor = 0 }) {
   return async (date) => {
-    const cur = String(currency || "USD").toUpperCase(); const total = totalMinor / 100; const net = netMinor / 100;
-    let usdTotal = total, usdNet = net; const extra = {};
-    if (cur !== "USD") {
-      const t = await convertAt(total, cur, "USD", date ? String(date).slice(0, 10) : undefined); if (t.error) return { error: t.error };
-      const n = await convertAt(net, cur, "USD", date ? String(date).slice(0, 10) : undefined); if (n.error) return { error: n.error };
-      usdTotal = t.convertedAmount; usdNet = n.convertedAmount;
-      Object.assign(extra, { originalAmount: total, originalCurrency: cur, fxRate: t.rate, ratesAsOf: t.ratesAsOf, fxSource: t.source });
-    }
-    const usdTax = Math.round((usdTotal - usdNet) * 100) / 100;
-    const lines = [{ accountCode: ACCOUNTS.CASH, debit: refund ? 0 : usdTotal, credit: refund ? usdTotal : 0, memo, ...extra },
-      { accountCode: ACCOUNTS.SALES, debit: refund ? usdNet : 0, credit: refund ? 0 : usdNet, memo, ...extra }];
-    if (usdTax) lines.push({ accountCode: ACCOUNTS.TAX_PAYABLE, debit: refund ? usdTax : 0, credit: refund ? 0 : usdTax, memo, ...extra });
+    const cur = String(currency || "USD").toUpperCase(); const d = date ? String(date).slice(0, 10) : undefined;
+    const conv = async (minor) => { if (cur === "USD") return { v: minor / 100 }; const c = await convertAt(minor / 100, cur, "USD", d); if (c.error) return { error: c.error }; return { v: c.convertedAmount, c }; };
+    const T = await conv(totalMinor); if (T.error) return { error: T.error }; const N = await conv(netMinor); if (N.error) return { error: N.error };
+    const L = liabMinor ? await conv(liabMinor) : { v: 0 }; if (L.error) return { error: L.error }; const GN = giftNetMinor ? await conv(giftNetMinor) : { v: 0 }; if (GN.error) return { error: GN.error };
+    const extra = T.c ? { originalAmount: totalMinor / 100, originalCurrency: cur, fxRate: T.c.rate, ratesAsOf: T.c.ratesAsOf, fxSource: T.c.source } : {};
+    const r2 = (x) => Math.round(x * 100) / 100;
+    const usdTax = r2(T.v - N.v), cashPart = r2(T.v - L.v), salesPart = r2(N.v - GN.v);
+    const side = (code, amt, debitOnSale) => (amt ? [{ accountCode: code, debit: (debitOnSale !== refund) ? amt : 0, credit: (debitOnSale !== refund) ? 0 : amt, memo, ...extra }] : []);
+    const lines = [...side(ACCOUNTS.CASH, cashPart, true), ...side(ACCOUNTS.GIFT_LIABILITY, r2(L.v), true), ...side(ACCOUNTS.SALES, salesPart, false), ...side(ACCOUNTS.GIFT_LIABILITY, r2(GN.v), false), ...side(ACCOUNTS.TAX_PAYABLE, usdTax, false)];
     return { lines };
   };
 }
+const LIAB_TENDERS = ["GIFT_CARD", "STORE_CREDIT"];
+const liabOf = (tenders) => (tenders || []).filter((t) => LIAB_TENDERS.includes(t.method)).reduce((s, t) => s + t.amountMinor, 0);
+const giftNetOf = (sale) => (sale.lines || []).filter((l) => l.productType === "GIFT_CARD").reduce((s, l) => s + (l.netMinor || 0), 0);
 
 /** Posts every missing automatic entry for an org. Safe to call any time,
  *  as often as wanted. Returns { posted, skipped, errors }. */
 export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
-  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, ledgerAccounts, journalEntries, orgActivity, salesOrders } = await getOrgCollections();
+  const { invoices, expenses, payments, legalBilling, eduFeeInvoices, eduFeePayments, ledgerAccounts, journalEntries, orgActivity, salesOrders, db } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);
   await ensureChartOfAccounts(orgId);
 
@@ -257,7 +260,7 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     ).catch((err) => { if (err?.code !== 11000) throw err; });
   }
   const posted = new Set((await journalEntries.find(
-    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT", "POS_SALE", "POS_REFUND", "ORDER_PAYMENT"] } },
+    { orgId: orgObjectId, "source.type": { $in: ["INVOICE", "EXPENSE", "PAYMENT", "LEGAL_BILL", "EDU_FEE_INVOICE", "EDU_FEE_PAYMENT", "POS_SALE", "POS_REFUND", "ORDER_PAYMENT", "GIFT_BREAKAGE"] } },
     { projection: { source: 1 } }
   ).toArray()).map((e) => `${e.source.type}:${e.source.id}:${e.source.event}`));
 
@@ -359,14 +362,18 @@ export async function syncLedger(orgId, { actorEmail = "system:ledger" } = {}) {
     else add("ORDER_PAYMENT", doc, "RECEIVED", p.at, `Order ${ord.orderNumber} payment`, usdLines(amt, ord.currency, ACCOUNTS.CASH, ACCOUNTS.DEPOSITS, `Order ${ord.orderNumber} payment ${p.no}`));
   }
 
+  // Gift card breakage approved by two managers: the unused balance leaves the liability as other income (Phase 4 policy)
+  { const brk = await db.collection("calendar_records").find({ orgId: orgObjectId, kind: "g_card_tx", type: "BREAKAGE" }, { projection: { amountMinor: 1, at: 1, cardId: 1 } }).toArray();
+    for (const b of brk) { const cur = (await db.collection("calendar_records").findOne({ _id: b.cardId }, { projection: { currency: 1 } }))?.currency || "USD"; add("GIFT_BREAKAGE", b, "APPROVED", b.at, "Gift card balance written off", usdLines(-b.amountMinor / 100, cur, ACCOUNTS.GIFT_LIABILITY, ACCOUNTS.OTHER_INCOME, "Gift card breakage")); } }
+
   // Inaya Commerce: POS sales and their refunds (refunds are stored on the sale as refunds[]; each posts once).
-  const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED", "VOIDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1, status: 1, voidedAt: 1 } }).toArray();
+  const posSales = await salesOrders.find({ orgId: orgObjectId, channel: "POS", status: { $in: ["COMPLETED", "PARTIALLY_REFUNDED", "REFUNDED", "VOIDED"] } }, { projection: { saleNumber: 1, totals: 1, currency: 1, completedAt: 1, refunds: 1, status: 1, voidedAt: 1, tenders: 1, "lines.productType": 1, "lines.netMinor": 1 } }).toArray();
   for (const sale of posSales) {
-    add("POS_SALE", sale, "COMPLETED", sale.completedAt, `POS sale ${sale.saleNumber}`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS sale ${sale.saleNumber}` }));
-    if (sale.status === "VOIDED") add("POS_SALE", sale, "VOIDED", sale.voidedAt, `POS sale ${sale.saleNumber} voided`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS void ${sale.saleNumber}`, refund: true }));
+    add("POS_SALE", sale, "COMPLETED", sale.completedAt, `POS sale ${sale.saleNumber}`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS sale ${sale.saleNumber}`, liabMinor: liabOf(sale.tenders), giftNetMinor: giftNetOf(sale) }));
+    if (sale.status === "VOIDED") add("POS_SALE", sale, "VOIDED", sale.voidedAt, `POS sale ${sale.saleNumber} voided`, posLines({ totalMinor: sale.totals.totalMinor, netMinor: sale.totals.netMinor, currency: sale.currency, memo: `POS void ${sale.saleNumber}`, refund: true, liabMinor: liabOf(sale.tenders), giftNetMinor: giftNetOf(sale) }));
     for (const r of sale.refunds || []) {
       const doc = { _id: `${sale._id}:${r.refundNumber}` };
-      add("POS_REFUND", doc, "COMPLETED", r.createdAt, `POS refund ${r.refundNumber} (${sale.saleNumber})`, posLines({ totalMinor: r.totalMinor, netMinor: r.netMinor, currency: sale.currency, memo: `POS refund ${r.refundNumber}`, refund: true }));
+      add("POS_REFUND", doc, "COMPLETED", r.createdAt, `POS refund ${r.refundNumber} (${sale.saleNumber})`, posLines({ totalMinor: r.totalMinor, netMinor: r.netMinor, currency: sale.currency, memo: `POS refund ${r.refundNumber}`, refund: true, liabMinor: liabOf(r.tenders) }));
     }
   }
 

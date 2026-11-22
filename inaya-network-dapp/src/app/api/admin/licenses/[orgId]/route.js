@@ -13,6 +13,7 @@
 //     reactivate        { reason, untilDate }        (override without payment)
 //     cancel            { reason, immediate? }
 //     note              { text }
+//     set_addon         { addon: "FEATURE_COMMERCE", enabled, reason }   (paid add-ons; companies can't switch these themselves)
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "../../../../../lib/admin-auth";
 import { checkRateLimit } from "../../../../../lib/rateLimit.js";
@@ -23,7 +24,8 @@ import { formatDeadline } from "../../../../../lib/licensing/dates.js";
 import { rowView } from "../../../../../lib/licensing/admin.js";
 
 export const dynamic = "force-dynamic";
-const HIGH_IMPACT = new Set(["assign", "confirm_payment", "reverse_payment", "change", "extend_grace", "suspend", "reactivate", "cancel"]);
+const ADDONS = { FEATURE_COMMERCE: "Inaya Commerce (Point of Sale, orders, reports)" };
+const HIGH_IMPACT = new Set(["set_addon", "assign", "confirm_payment", "reverse_payment", "change", "extend_grace", "suspend", "reactivate", "cancel"]);
 
 export async function GET(req, { params }) {
   if (!isAdminAuthenticated(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -31,7 +33,7 @@ export async function GET(req, { params }) {
     const { orgId } = await params;
     let oid; try { oid = toObjectId(orgId); } catch { return NextResponse.json({ error: "Invalid company id." }, { status: 400 }); }
     const { orgs, orgMembers } = await getOrgCollections();
-    const org = await orgs.findOne({ _id: oid }, { projection: { name: 1, plan: 1, createdAt: 1, ownerEmail: 1 } });
+    const org = await orgs.findOne({ _id: oid }, { projection: { name: 1, plan: 1, createdAt: 1, ownerEmail: 1, features: 1 } });
     if (!org) return NextResponse.json({ error: "No company with that id." }, { status: 404 });
     const lic = await L.getLicense(orgId);
     const { ledger } = await L.licenseCollections();
@@ -43,7 +45,7 @@ export async function GET(req, { params }) {
     ]);
     const eff = lic ? effectiveState(lic) : null;
     return NextResponse.json({
-      company: { orgId, name: org.name, plan: org.plan || null, createdAt: org.createdAt || null, billingContacts: admins.map((a) => ({ email: a.email, role: a.role })) },
+      company: { orgId, name: org.name, plan: org.plan || null, createdAt: org.createdAt || null, billingContacts: admins.map((a) => ({ email: a.email, role: a.role })), addons: Object.entries(ADDONS).map(([key, label]) => ({ key, label, enabled: org.features?.[key] === true })) },
       license: lic ? { ...rowView({ ...lic, companyName: org.name, effective: eff }), notes: lic.notes || [], planSnapshot: lic.planSnapshot, anchorDay: lic.anchorDay, graceExtensionDays: lic.graceExtensionDays || 0, cancelEffectiveAt: lic.cancelEffectiveAt || null, deadlineText: eff?.deadline ? formatDeadline(eff.deadline) : null, stateLabel: STATE_LABELS[eff.state] } : null,
       renewalPreview: lic && !["cancelled", "expired"].includes(lic.licenseStatus) ? L.previewRenewal(lic) : null,
       history, notices, exports,
@@ -75,6 +77,19 @@ export async function POST(req, { params }) {
       case "reactivate": result = await L.reactivateLicense({ orgId, reason: b.reason, untilDate: b.untilDate }); break;
       case "cancel": result = await L.cancelLicense({ orgId, reason: b.reason, immediate: !!b.immediate }); break;
       case "note": result = await L.addNote({ orgId, text: b.text }); break;
+      case "set_addon": {
+        if (!ADDONS[b.addon]) return NextResponse.json({ error: "Unknown add-on." }, { status: 400 });
+        const reason = String(b.reason || "").trim(); if (reason.length < 3) return NextResponse.json({ error: "Give a reason (e.g. the invoice or agreement)." }, { status: 400 });
+        const { setOrgFeature } = await import("../../../../../lib/featureFlags.js");
+        const r = await setOrgFeature({ orgId, name: b.addon, enabled: b.enabled === true }); if (r.error) return NextResponse.json({ error: r.error }, { status: r.status || 400 });
+        const { adminActorName } = await import("../../../../../lib/licensing/config.js");
+        const { logOrgActivity } = await import("../../../../../lib/org-activity-log.js");
+        await logOrgActivity({ orgId: toObjectId(orgId), recordType: "ORG_FEATURE", recordId: toObjectId(orgId), actorEmail: `admin:${adminActorName()}`, action: b.enabled === true ? "ADDON_ENABLED" : "ADDON_DISABLED", previousState: null, newState: null, metadata: { addon: b.addon, reason } }).catch(() => {});
+        const { ledger } = await L.licenseCollections();
+        await ledger.insertOne({ kind: "license_event", orgId: toObjectId(orgId), eventType: b.enabled === true ? "addon_enabled" : "addon_disabled", actorType: "admin", actorId: adminActorName(), source: "admin_portal", at: new Date().toISOString(), createdAt: new Date().toISOString(), metadata: { addon: b.addon, reason } });
+        result = { addon: b.addon, enabled: b.enabled === true };
+        break;
+      }
       default: return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }
     const { invalidateLicenseCache } = await import("../../../../../lib/licensing/gate.js"); invalidateLicenseCache(orgId);

@@ -75,11 +75,16 @@ async function validateLines(products, orgId, rawLines) {
     const product = await products.findOne({ _id: toObjectId(raw.productId), orgId, deletedAt: null });
     if (!product) return { error: "A product on this order wasn't found." };
     const lotNumber = normalizeLotNumber(raw.lotNumber);
-    lines.push({ productId: product._id, sku: product.sku, description: String(raw.description || product.name).trim().slice(0, 500), quantity, unitPrice, unit: product.unit || "each", productType: product.productType || "STOCK", ...(lotNumber ? { lotNumber } : {}) });
+    lines.push({ productId: product._id, sku: product.sku, description: String(raw.description || product.name).trim().slice(0, 500), quantity, unitPrice, unit: product.unit || "each", productType: product.productType || "STOCK", ...(lotNumber ? { lotNumber } : {}),
+      ...(product.productType === "KIT" ? { kitComponents: (product.kitComponents || []).map((c) => ({ productId: toObjectId(c.productId), quantity: c.quantity })) } : {}) });
   }
   return { lines, subtotal: r2(lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)) };
 }
-const stocked = (l) => !["SERVICE", "NON_STOCK"].includes(l.productType);
+const stocked = (l) => !["SERVICE", "NON_STOCK", "KIT"].includes(l.productType);
+/** The stock behind one unit of an order line: the product itself, a kit's components (snapshot taken when the order
+ *  was created), or nothing for services. Reservations of a kit line are counted in kits. */
+const legsOf = (l) => (l.productType === "KIT" ? (l.kitComponents || []).map((c) => ({ productId: c.productId, per: c.quantity })) : stocked(l) ? [{ productId: l.productId, per: 1 }] : []);
+const hasStock = (l) => legsOf(l).length > 0;
 
 /** Order total including the company's default tax, computed exactly like the invoice it will become. */
 async function orderTotals(orgId, lines, currency) {
@@ -130,13 +135,13 @@ export async function createSalesOrder({ orgId, membership, actorEmail, departme
 
 async function stockShortfalls(orgId, order) {
   const need = new Map();
-  for (const l of order.lines) if (stocked(l)) need.set(l.productId.toString(), (need.get(l.productId.toString()) || 0) + l.quantity);
+  for (const l of order.lines) for (const g of legsOf(l)) need.set(g.productId.toString(), (need.get(g.productId.toString()) || 0) + l.quantity * g.per);
   const short = [];
   const { stockLevels } = await getOrgCollections();
   for (const [productId, qty] of need) {
     const lvl = await stockLevels.findOne({ orgId: toObjectId(orgId), productId: toObjectId(productId), warehouseId: order.warehouseId });
     const free = Math.max(0, (lvl?.quantity || 0) - (lvl?.reserved || 0));
-    if (free < qty) short.push(`${order.lines.find((l) => l.productId.toString() === productId).description} (have ${free}, need ${qty}${lvl?.reserved ? `; ${lvl.reserved} more are reserved for other orders` : ""})`);
+    if (free < qty) short.push(`${order.lines.find((l) => legsOf(l).some((g) => g.productId.toString() === productId))?.description || "An item"} (have ${free}, need ${qty}${lvl?.reserved ? `; ${lvl.reserved} more are reserved for other orders` : ""})`);
   }
   return short;
 }
@@ -170,9 +175,17 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
       const fresh = await salesOrders.findOne({ _id: order._id, status: { $in: from } }, { session }); if (!fresh) throw boom(changed.error, 409);
       const lines = []; let complete = true;
       for (const l of fresh.lines) {
-        if (!stocked(l)) { lines.push(l); continue; }
+        if (!hasStock(l)) { lines.push(l); continue; }
         const want = r2(l.quantity - (l.reservedQty || 0));
-        const got = want > 0 ? await reserveStock({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, quantity: want, partial: allowBackorder, session }) : { reserved: 0 };
+        let got = { reserved: 0 };
+        if (want > 0 && l.productType === "KIT") {
+          // a kit is reserved whole: as many complete kits as every component allows
+          const { stockLevels } = await getOrgCollections(); let kits = want;
+          for (const g of legsOf(l)) { const lvl = await stockLevels.findOne({ orgId: org, productId: g.productId, warehouseId: fresh.warehouseId }, { session }); kits = Math.min(kits, Math.floor((Math.max(0, (lvl?.quantity || 0) - (lvl?.reserved || 0)) / g.per) + 1e-9)); }
+          if (!allowBackorder && kits < want) kits = 0;
+          if (kits > 0) for (const g of legsOf(l)) { const r = await reserveStock({ orgId, productId: g.productId, warehouseId: fresh.warehouseId, quantity: r2(kits * g.per), session, relatedSalesOrderId: fresh._id, actorEmail }); if (r.reserved < r2(kits * g.per)) throw boom(`Stock for ${l.description} changed while reserving; try again.`, 409); }
+          got = { reserved: kits };
+        } else if (want > 0) got = await reserveStock({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, quantity: want, partial: allowBackorder, session, relatedSalesOrderId: fresh._id, actorEmail });
         if (!allowBackorder && got.reserved < want) throw boom(`Not enough stock for ${l.description}; nothing was reserved.`, 409);
         const reservedQty = r2((l.reservedQty || 0) + got.reserved); if (reservedQty < l.quantity) complete = false;
         lines.push({ ...l, reservedQty });
@@ -196,10 +209,14 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
       const fresh = await salesOrders.findOne({ _id: order._id, status: "CONFIRMED" }, { session }); if (!fresh) throw boom(changed.error, 409);
       const lines = [];
       for (const l of fresh.lines) {
-        if (!stocked(l)) { lines.push(l); continue; }
-        const r = await recordStockMovement({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, delta: -l.quantity, type: "ISSUE", relatedSalesOrderId: fresh._id, note: `Sales order ${fresh.orderNumber}`, actorEmail, lotNumber: l.lotNumber, session, consumeReserved: l.reservedQty || 0, idempotencyKey: `so:${fresh._id}:${lines.length}` });
-        if (r.error) throw boom(`Couldn't dispatch "${l.description}": ${r.error}`, r.status || 409);
-        lines.push({ ...l, reservedQty: 0, dispatchedLots: r.lots || null });
+        if (!hasStock(l)) { lines.push(l); continue; }
+        let lots = null; const idx = lines.length;
+        for (const [k, g] of legsOf(l).entries()) {
+          const r = await recordStockMovement({ orgId, productId: g.productId, warehouseId: fresh.warehouseId, delta: -r2(l.quantity * g.per), type: "ISSUE", relatedSalesOrderId: fresh._id, note: `Sales order ${fresh.orderNumber}${l.productType === "KIT" ? ` (kit ${l.sku})` : ""}`, actorEmail, lotNumber: l.productType === "KIT" ? undefined : l.lotNumber, session, consumeReserved: r2((l.reservedQty || 0) * g.per), idempotencyKey: l.productType === "KIT" ? `so:${fresh._id}:${idx}:k${k}` : `so:${fresh._id}:${idx}` });
+          if (r.error) throw boom(`Couldn't dispatch "${l.description}": ${r.error}`, r.status || 409);
+          if (l.productType !== "KIT") lots = r.lots || null;
+        }
+        lines.push({ ...l, reservedQty: 0, dispatchedLots: lots });
       }
       const next = fresh.invoiceId ? "INVOICED" : "FULFILLED"; const stage = fresh.fulfilmentMethod === "PICKUP" ? "COLLECTED" : "DISPATCHED";
       await salesOrders.updateOne({ _id: fresh._id }, { $set: { status: next, stage, lines, fulfilledAt: now, updatedAt: now }, ...hist(`${next}/${stage}`) }, { session });
@@ -246,7 +263,7 @@ export async function transitionSalesOrder({ orgId, orderId, action, membership,
     if (paymentSummary(order).paidMinor > 0) return { error: "This order holds a deposit. Refund it before cancelling.", status: 409 };
     const res = await run(async (session) => {
       const fresh = await salesOrders.findOne({ _id: order._id, status: { $in: ["QUOTE", "DRAFT", "CONFIRMED", "BACKORDERED"] }, invoiceId: null }, { session }); if (!fresh) throw boom(changed.error, 409);
-      for (const l of fresh.lines) if (l.reservedQty > 0) await releaseStock({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, quantity: l.reservedQty, session });
+      for (const l of fresh.lines) if (l.reservedQty > 0) for (const g of legsOf(l)) await releaseStock({ orgId, productId: g.productId, warehouseId: fresh.warehouseId, quantity: r2(l.reservedQty * g.per), session, relatedSalesOrderId: fresh._id, actorEmail });
       await salesOrders.updateOne({ _id: fresh._id }, { $set: { status: "CANCELLED", stage: null, lines: fresh.lines.map((l) => ({ ...l, reservedQty: 0 })), cancelledAt: now, cancelReason: String(input.reason || "").slice(0, 300) || null, updatedAt: now }, ...hist("CANCELLED") }, { session });
       return { ok: true };
     });
@@ -309,12 +326,13 @@ async function returnOrderItems({ orgId, order, actorEmail, input, now }) {
         const i = Number(x.lineIndex); const l = lines[i]; const q = Number(x.quantity);
         if (!l) throw boom("Unknown order line.");
         if (!(q > 0) || q > l.quantity - (l.returnedQty || 0) + 1e-9) throw boom(`Only ${l.quantity - (l.returnedQty || 0)} of ${l.description} can come back.`, 409);
-        const disposition = stocked(l) ? (x.disposition || "RESTOCK") : "NON_RESTOCKABLE";
+        const disposition = hasStock(l) ? (x.disposition || "RESTOCK") : "NON_RESTOCKABLE";
         if (!["RESTOCK", "DAMAGED", "NON_RESTOCKABLE"].includes(disposition)) throw boom("Disposition must be RESTOCK, DAMAGED or NON_RESTOCKABLE.");
-        if (disposition !== "NON_RESTOCKABLE") {
-          const back = await recordStockMovement({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, delta: q, type: "RETURN", relatedSalesOrderId: fresh._id, actorEmail, session, note: `Return ${no} of ${fresh.orderNumber}`, idempotencyKey: `so:${fresh._id}:${no}:${i}`, lotNumber: l.dispatchedLots?.[0]?.lotNumber || l.lotNumber, expiryDate: l.dispatchedLots?.[0]?.expiryDate });
+        if (disposition !== "NON_RESTOCKABLE") for (const [k, g] of legsOf(l).entries()) {
+          const kit = l.productType === "KIT"; const tag = kit ? `:k${k}` : "";
+          const back = await recordStockMovement({ orgId, productId: g.productId, warehouseId: fresh.warehouseId, delta: r2(q * g.per), type: "RETURN", relatedSalesOrderId: fresh._id, actorEmail, session, note: `Return ${no} of ${fresh.orderNumber}`, idempotencyKey: `so:${fresh._id}:${no}:${i}${tag}`, ...(kit ? {} : { lotNumber: l.dispatchedLots?.[0]?.lotNumber || l.lotNumber, expiryDate: l.dispatchedLots?.[0]?.expiryDate }) });
           if (back.error) throw boom(back.error, back.status || 409);
-          if (disposition === "DAMAGED") { const off = await recordStockMovement({ orgId, productId: l.productId, warehouseId: fresh.warehouseId, delta: -q, type: "WRITE_OFF", relatedSalesOrderId: fresh._id, actorEmail, session, note: `Damaged return ${no}`, idempotencyKey: `so:${fresh._id}:${no}:${i}:w` }); if (off.error) throw boom(off.error, off.status || 409); }
+          if (disposition === "DAMAGED") { const off = await recordStockMovement({ orgId, productId: g.productId, warehouseId: fresh.warehouseId, delta: -r2(q * g.per), type: "WRITE_OFF", relatedSalesOrderId: fresh._id, actorEmail, session, note: `Damaged return ${no}`, idempotencyKey: `so:${fresh._id}:${no}:${i}${tag}:w` }); if (off.error) throw boom(off.error, off.status || 409); }
         }
         l.returnedQty = r2((l.returnedQty || 0) + q); rec.push({ lineIndex: i, sku: l.sku, description: l.description, quantity: q, disposition });
       }

@@ -26,12 +26,14 @@ function serializeOrder(po) {
       description: item.description, sku: item.sku || null,
       productId: item.productId ? item.productId.toString() : null,
       warehouseId: item.warehouseId ? item.warehouseId.toString() : null,
-      quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0,
+      quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0, damagedQuantity: item.damagedQuantity || 0,
       unit: item.unit || null, unitsPerPurchaseUnit: item.unitsPerPurchaseUnit ?? null, stockUnit: item.stockUnit || null,
     })),
     currency: po.currency || "USD",
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
-    expectedDeliveryDate: po.expectedDeliveryDate || null,
+    expectedDeliveryDate: po.expectedDeliveryDate || null, orderedAt: po.orderedAt || null,
+    landedCharges: po.landedCharges || [], landedTotal: Math.round((po.landedCharges || []).reduce((n, c) => n + c.amount, 0) * 100) / 100,
+    approvals: po.approvals || [], amendments: po.amendments || [], receipts: (po.receipts || []).slice(-20),
     ...computePoTotals(po),
   };
 }
@@ -144,15 +146,22 @@ export async function POST(req) {
     // Batch 3: lines for a product bought in a larger unit (e.g. box of 12) snapshot that conversion.
     await applyPurchaseUnits(orgId, items);
 
+    // Phase 3 (Master SOW 7.8, 7.10): duplicate-order guard, supplier catalogue checks, landed charges
+    const SC = await import("../../../../../lib/stock-control/purchasing.js");
+    if (body.allowDuplicate !== true) { const dup = await SC.findDuplicatePo({ orgId, supplierId, items }); if (dup) return NextResponse.json({ error: "An identical order to this supplier was created recently. Confirm to create it anyway.", code: "DUPLICATE_PO", existingId: String(dup._id) }, { status: 409 }); }
+    let landedCharges = [];
+    if (body.landedCharges !== undefined) { const v = SC.validateCharges(body.landedCharges); if (v.error) return NextResponse.json({ error: v.error }, { status: 400 }); landedCharges = v.charges; }
+    const warnings = await SC.poLineWarnings({ orgId, supplierId, items });
+
     const now = new Date().toISOString();
     const doc = {
       orgId: orgObjectId, departmentId: departmentObjectId, supplierId: supplierObjectId, sourceRequestId: sourceRequestObjectId,
       items, currency: poCurrency, status: "DRAFT", createdByEmail: auth.session.email, createdAt: now, updatedAt: now, deletedAt: null,
-      ...extras,
+      ...extras, landedCharges,
     };
     const result = await purchaseOrders.insertOne(doc);
 
-    return NextResponse.json(serializeOrder({ ...doc, _id: result.insertedId }));
+    return NextResponse.json({ ...serializeOrder({ ...doc, _id: result.insertedId }), warnings });
   } catch (err) {
     console.error("orgs/procurement/orders POST failed:", err);
     return NextResponse.json({ error: "Could not create the purchase order." }, { status: 500 });

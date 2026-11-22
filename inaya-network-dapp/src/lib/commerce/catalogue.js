@@ -14,13 +14,13 @@
 import { clean } from "./store.js";
 import { toObjectId } from "../orgs.js";
 
-export const PRODUCT_TYPES = ["STOCK", "NON_STOCK", "SERVICE"];
+export const PRODUCT_TYPES = ["STOCK", "NON_STOCK", "SERVICE", "KIT", "GIFT_CARD"]; // GIFT_CARD: sold at the till, issues a gift card (a liability), no tax, no stock // KIT: sold as one item, its components leave stock
 const money = (v) => v === null || (Number.isFinite(v) && v >= 0);
 const idOk = (v) => { try { toObjectId(String(v)); return true; } catch { return false; } };
 
 export function validateCatalogueFields(body = {}) {
   const f = {};
-  if (body.productType !== undefined) { if (!PRODUCT_TYPES.includes(body.productType)) return { error: "productType must be STOCK, NON_STOCK or SERVICE." }; f.productType = body.productType; }
+  if (body.productType !== undefined) { if (!PRODUCT_TYPES.includes(body.productType)) return { error: "productType must be STOCK, NON_STOCK, SERVICE, KIT or GIFT_CARD." }; f.productType = body.productType; }
   if (body.category !== undefined) f.category = clean(body.category, 80) || null;
   if (body.brand !== undefined) f.brand = clean(body.brand, 80) || null;
   if (body.tags !== undefined) {
@@ -45,7 +45,30 @@ export function validateCatalogueFields(body = {}) {
     f.availableWarehouseIds = [...new Set(body.availableWarehouseIds.map(String))];
   }
   if (body.posVisible !== undefined) { if (typeof body.posVisible !== "boolean") return { error: "posVisible must be true or false." }; f.posVisible = body.posVisible; }
-  if (f.productType && f.productType !== "STOCK" && body.trackLots === true) return { error: "Only stock products can track batches." };
+  // Stock control (Master SOW 7.2, 7.4, 7.12): min/max, safety stock, lead time, preferred supplier, per-location rules
+  for (const k of ["minStock", "maxStock", "safetyStock", "leadTimeDays"]) if (body[k] !== undefined) { if (body[k] !== null && !(Number.isFinite(body[k]) && body[k] >= 0 && body[k] <= 1e9)) return { error: `${k} must be a non-negative number or null.` }; f[k] = body[k]; }
+  if (f.minStock != null && f.maxStock != null && f.maxStock < f.minStock) return { error: "maxStock can't be below minStock." };
+  if (body.preferredSupplierId !== undefined) { if (body.preferredSupplierId !== null && !idOk(body.preferredSupplierId)) return { error: "preferredSupplierId is not valid." }; f.preferredSupplierId = body.preferredSupplierId ? String(body.preferredSupplierId) : null; }
+  if (body.locationRules !== undefined) {
+    if (!Array.isArray(body.locationRules) || body.locationRules.length > 200) return { error: "locationRules must be a list." };
+    const rules = [];
+    for (const r of body.locationRules) {
+      if (!idOk(r?.warehouseId)) return { error: "Each location rule needs a warehouseId." };
+      const rule = { warehouseId: String(r.warehouseId) };
+      for (const k of ["reorderThreshold", "minStock", "maxStock", "safetyStock"]) if (r[k] !== undefined && r[k] !== null) { if (!(Number.isFinite(r[k]) && r[k] >= 0)) return { error: `locationRules.${k} must be a non-negative number.` }; rule[k] = r[k]; }
+      if (r.bin !== undefined) rule.bin = clean(r.bin, 40) || null; // bin / rack / shelf location
+      rules.push(rule);
+    }
+    f.locationRules = rules;
+  }
+  if (body.kitComponents !== undefined) {
+    if (body.kitComponents !== null && (!Array.isArray(body.kitComponents) || body.kitComponents.length > 50 || !body.kitComponents.every((c) => idOk(c?.productId) && Number.isFinite(c?.quantity) && c.quantity > 0))) return { error: "kitComponents must be up to 50 { productId, quantity } entries." };
+    f.kitComponents = body.kitComponents ? body.kitComponents.map((c) => ({ productId: String(c.productId), quantity: c.quantity })) : null;
+  }
+  if (f.productType === "KIT" && !(f.kitComponents?.length) && body.kitComponents !== undefined) return { error: "A KIT product needs kitComponents." };
+  if (f.kitComponents?.length && f.productType && f.productType !== "KIT") return { error: "Only a KIT product has kitComponents." };
+  if (body.trackSerials !== undefined) { if (typeof body.trackSerials !== "boolean") return { error: "trackSerials must be true or false." }; f.trackSerials = body.trackSerials; if (body.trackSerials) f.trackLots = true; }
+  if (f.productType && f.productType !== "STOCK" && (body.trackLots === true || body.trackSerials === true)) return { error: "Only stock products can track batches or serial numbers." };
   return { fields: f };
 }
 
@@ -57,10 +80,22 @@ export function catalogueView(p) {
     imageDocumentIds: p.imageDocumentIds || [], wholesalePrice: p.wholesalePrice ?? null, costPrice: p.costPrice ?? null,
     avgCost: p.avgCost ?? null, lastPurchaseCost: p.lastPurchaseCost ?? null, taxCategoryId: p.taxCategoryId || null,
     availableWarehouseIds: p.availableWarehouseIds || [], posVisible: p.posVisible !== false,
+    minStock: p.minStock ?? null, maxStock: p.maxStock ?? null, safetyStock: p.safetyStock ?? null, leadTimeDays: p.leadTimeDays ?? null,
+    preferredSupplierId: p.preferredSupplierId || null, locationRules: p.locationRules || [], kitComponents: p.kitComponents || null, trackSerials: !!p.trackSerials,
   };
 }
 
 /** Fields whose change is a price/tax event (audited and emitted as price.changed). */
 export const PRICE_FIELDS = ["unitPrice", "wholesalePrice", "costPrice", "taxCategoryId"];
 export const isStocked = (p) => (p?.productType || "STOCK") === "STOCK";
+export const isKit = (p) => p?.productType === "KIT";
+/** The stock movements behind selling or returning `quantity` of a line: the product itself, or a kit's components. */
+export async function stockLegs({ orgId, productId, productType, quantity, session = null }) {
+  if (isStocked({ productType })) return [{ productId: String(productId), quantity }];
+  if (!isKit({ productType })) return [];
+  const { getOrgCollections, toObjectId } = await import("../orgs.js");
+  const { products } = await getOrgCollections();
+  const kit = await products.findOne({ _id: toObjectId(productId), orgId: toObjectId(orgId) }, { projection: { kitComponents: 1 }, session });
+  return (kit?.kitComponents || []).map((c) => ({ productId: String(c.productId), quantity: Math.round(c.quantity * quantity * 1e6) / 1e6 }));
+}
 export const availableAt = (p, warehouseId) => !p?.availableWarehouseIds?.length || p.availableWarehouseIds.includes(String(warehouseId));

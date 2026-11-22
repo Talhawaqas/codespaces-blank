@@ -22,12 +22,14 @@ function serializeOrder(po) {
       description: item.description, sku: item.sku || null,
       productId: item.productId ? item.productId.toString() : null,
       warehouseId: item.warehouseId ? item.warehouseId.toString() : null,
-      quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0,
+      quantity: item.quantity, unitPrice: item.unitPrice ?? null, receivedQuantity: item.receivedQuantity || 0, damagedQuantity: item.damagedQuantity || 0,
       unit: item.unit || null, unitsPerPurchaseUnit: item.unitsPerPurchaseUnit ?? null, stockUnit: item.stockUnit || null,
     })),
     status: po.status, createdByEmail: po.createdByEmail, createdAt: po.createdAt, updatedAt: po.updatedAt,
     currency: po.currency || "USD",
-    expectedDeliveryDate: po.expectedDeliveryDate || null,
+    expectedDeliveryDate: po.expectedDeliveryDate || null, orderedAt: po.orderedAt || null,
+    landedCharges: po.landedCharges || [], landedTotal: Math.round((po.landedCharges || []).reduce((n, c) => n + c.amount, 0) * 100) / 100,
+    approvals: po.approvals || [], amendments: po.amendments || [], receipts: (po.receipts || []).slice(-20),
     ...computePoTotals(po),
   };
 }

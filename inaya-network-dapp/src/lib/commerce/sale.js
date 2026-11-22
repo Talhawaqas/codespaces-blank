@@ -18,10 +18,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { ccol, ensureCommerceIndexes, KINDS, fail, clean, nowIso, oid, sid, commerceAccess, commerceRoleOf, getSettings, nextNumber, audit, emitCommerceEvent, toMinor, fromMinor, correlationId as newCorrelation } from "./store.js";
 import { priceCart, roleCovers, cashRounded } from "./pricing.js";
 import { withStockTransaction, recordStockMovement, StockError } from "../inventory.js";
-import { isStocked } from "./catalogue.js";
+import { isStocked, stockLegs } from "./catalogue.js";
 import { getOrgCollections } from "../orgs.js";
 
-export const TENDERS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE"]; // card/provider tenders arrive with an approved provider integration
+export const TENDERS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE", "GIFT_CARD", "STORE_CREDIT"]; // gift card / store credit = liability tenders (Phase 4) // card/provider tenders arrive with an approved provider integration
 const APPROVAL_TTL_MS = 10 * 60 * 1000;
 export const APPROVAL_KIND = "c_approval"; export const PARKED_KIND = "c_parked";
 
@@ -78,6 +78,8 @@ export function settleTenders(tenders, dueMinor, cashIncrement, { creditMinor = 
     if (!TENDERS.includes(x.method)) return fail(`Unsupported payment method ${x.method}. Card payments need an approved payment provider.`, 400, "TENDER");
     const m = toMinor(x.amount); if (!(m > 0)) return fail("Each payment must be a positive amount.");
     const ref = clean(x.reference, 120);
+    if (x.method === "GIFT_CARD") { if (!clean(x.code, 40)) return fail("Enter the gift card code."); t.push({ method: x.method, amountMinor: m, reference: null, manual: false, status: "RECORDED", _code: clean(x.code, 40) }); continue; }
+    if (x.method === "STORE_CREDIT") { t.push({ method: x.method, amountMinor: m, reference: null, manual: false, status: "RECORDED" }); continue; }
     if (x.method !== "CASH" && !ref) return fail(`${x.method === "BANK_TRANSFER" ? "Bank transfer" : "Manual payment"} needs a reference.`);
     t.push({ method: x.method, amountMinor: m, reference: ref || null, manual: true, status: "RECORDED" });
   }
@@ -132,7 +134,7 @@ export async function completeSale({ orgId, membership, actorEmail, input }) {
     throw e;
   }
   await afterSale({ orgId, actorEmail, saleDoc, cid, idem });
-  return { sale: saleView(saleDoc) };
+  return { sale: saleView(saleDoc), ...(saleDoc._issuedCards?.length ? { giftCards: saleDoc._issuedCards.map((g) => ({ code: g.code, last4: g.last4, line: g.line })) } : {}) };
 }
 
 /** The sale itself, inside the caller's transaction (a plain sale, or the replacement half of an exchange). Throws on
@@ -159,18 +161,30 @@ export async function buildSale({ orgId, membership, actorEmail, input, ctx, ses
       if (pay.error) throw Object.assign(new Error(pay.error), { status: pay.status || 400, code: pay.code });
       const saleId = new (await import("mongodb")).ObjectId();
       const saleNumber = `S-${String(await nextNumber(orgId, "pos_sale", session)).padStart(6, "0")}`;
+      // gift card / store credit tenders: guarded redemption inside this transaction; the code itself is never stored
+      const G = (pay.tenders.some((t) => ["GIFT_CARD", "STORE_CREDIT"].includes(t.method)) || priced.lines.some((l) => l.productType === "GIFT_CARD")) ? await import("../growth/giftcards.js") : null;
+      if (pay.tenders.some((t) => t.method === "GIFT_CARD") && priced.lines.some((l) => l.productType === "GIFT_CARD")) throw Object.assign(new Error("A gift card can't be paid for with another gift card."), { status: 400, code: "GIFT_FOR_GIFT" });
+      for (const [k, t] of pay.tenders.entries()) {
+        if (!["GIFT_CARD", "STORE_CREDIT"].includes(t.method)) continue;
+        const r = await G.redeemTender({ orgId, sale: { _id: saleId }, tender: { method: t.method, code: t._code }, amountMinor: t.amountMinor, customerId: customer?._id || null, idem: `redeem:${sid(saleId)}:${k}`, session });
+        t.reference = `••${r.last4}`; t.cardId = r.cardId; delete t._code;
+      }
       // stock: one guarded SALE movement per stock line; non-stock and service lines don't move stock
       const lines = [];
       for (const [i, l] of priced.lines.entries()) {
-        let movement = null;
-        if (isStocked({ productType: l.productType })) {
-          movement = await recordStockMovement({ orgId, productId: l.productId, warehouseId: sid(warehouse._id), delta: -l.quantity, type: "SALE", relatedSaleId: saleId, actorEmail, session, idempotencyKey: `${idem}:${i}`, note: `POS ${saleNumber}`,
+        let movement = null; let kitCost = null;
+        const legs = await stockLegs({ orgId, productId: l.productId, productType: l.productType, quantity: l.quantity, session });
+        for (const [k, leg] of legs.entries()) {
+          const mv = await recordStockMovement({ orgId, productId: leg.productId, warehouseId: sid(warehouse._id), delta: -leg.quantity, type: "SALE", relatedSaleId: saleId, actorEmail, session, idempotencyKey: legs.length === 1 && leg.productId === String(l.productId) ? `${idem}:${i}` : `${idem}:${i}:k${k}`, note: `POS ${saleNumber}${leg.productId !== String(l.productId) ? ` (kit ${l.sku})` : ""}`,
             ...(settings.allowNegativeStock ? { allowNegative: { reason: "Company setting allows selling below zero stock" } } : {}) });
-          if (movement.error) throw new StockError(movement.error, movement.status || 409, movement.code || "STOCK");
+          if (mv.error) throw new StockError(mv.error, mv.status || 409, mv.code || "STOCK");
+          if (leg.productId === String(l.productId)) movement = mv;
+          else if (mv.movement?.unitCost !== undefined && mv.movement?.unitCost !== null) kitCost = (kitCost || 0) + (mv.movement.unitCost * leg.quantity) / l.quantity;
         }
+        if (!movement && kitCost !== null) movement = { movement: { unitCost: Math.round(kitCost * 10000) / 10000, _id: null } };
         const m = l._minor;
-        lines.push({ productId: oid(l.productId), sku: l.sku, name: l.name, productType: l.productType, quantity: l.quantity, unitPriceMinor: toMinor(l.unitPrice), priceSource: l.priceSource,
-          lineDiscountMinor: toMinor(l.lineDiscount), orderShareMinor: toMinor(l.orderDiscountShare), netMinor: m.netMinor, taxMinor: m.taxMinor, grossMinor: m.grossMinor,
+        lines.push({ productId: oid(l.productId), sku: l.sku, name: l.name, productType: l.productType, category: l.category || null, quantity: l.quantity, unitPriceMinor: toMinor(l.unitPrice), priceSource: l.priceSource,
+          lineDiscountMinor: toMinor(l.lineDiscount), orderShareMinor: toMinor(l.orderDiscountShare) + m.promo + m.member + m.loyalty, promoMinor: m.promo, memberMinor: m.member, loyaltyMinor: m.loyalty, netMinor: m.netMinor, taxMinor: m.taxMinor, grossMinor: m.grossMinor,
           taxCategory: l.taxCategory, taxRate: l.taxRate, note: l.note, unitCost: movement?.movement?.unitCost ?? null, movementId: movement?.movement?._id || null, returnedQty: 0 });
       }
       const doc = {
@@ -181,8 +195,20 @@ export async function buildSale({ orgId, membership, actorEmail, input, ctx, ses
         tenders: pay.tenders, changeMinor: pay.changeMinor, cashRoundingMinor: pay.roundingMinor, paidMinor: pay.paidMinor,
         approval: approval ? { id: approval._id, decidedBy: approval.decidedBy, decidedRole: approval.decidedRole, items: approval.items } : null,
         notes: clean(input.notes, 500) || null, refundedMinor: 0, refunds: [], exchangeOf: credit?.saleId || null, deletedAt: null, createdAt: startedAt, completedAt: nowIso(), updatedAt: nowIso(),
+        promotions: (priced.totals.promotions || []).map((p) => ({ id: p.id, name: p.name, code: p.code, discountMinor: p.discountMinor })), member: priced.totals.member || null,
+        loyalty: priced.totals.loyalty?.points ? { redeemedPoints: priced.totals.loyalty.points, redeemedValueMinor: priced.totals.loyalty.valueMinor } : null,
       };
+      // Phase 4: promotion uses, loyalty points (redeem + earn) and gift cards, all inside this transaction
+      if (doc.promotions.length) { const { recordPromotionUses } = await import("../growth/promotions.js"); await recordPromotionUses({ orgId, applied: doc.promotions.map((p) => ({ ...p })), saleId, customerId: customer?._id || null, revenueMinor: totalMinor, session }); }
+      if (customer) {
+        const { postSalePoints } = await import("../growth/loyalty.js");
+        const pts = await postSalePoints({ orgId, sale: { _id: saleId, contactId: customer._id }, lines: lines.filter((l) => l.productType !== "GIFT_CARD").map((l) => ({ paidMinor: l.grossMinor, category: l.category })), redeemPoints: doc.loyalty?.redeemedPoints || 0, session });
+        if (pts.earned || pts.redeemed) doc.loyalty = { ...(doc.loyalty || {}), earnedPoints: pts.earned, tier: pts.tier };
+      }
+      const issued = [];
+      for (const [i, l] of lines.entries()) if (l.productType === "GIFT_CARD") { const card = await G.issueCardFromSale({ orgId, sale: { _id: saleId }, lineIndex: i, amountMinor: l.grossMinor, currency: priced.currency, customerId: customer?._id || null, session }); l.giftCardId = oid(card.cardId); l.giftCardLast4 = card.last4; issued.push({ line: i, ...card }); }
       await salesOrders.insertOne(doc, { session });
+      Object.defineProperty(doc, "_issuedCards", { value: issued, enumerable: false });
       if (customer) await crmContacts.updateOne({ _id: customer._id, orgId: o }, { $inc: { "commerce.purchaseCount": 1, "commerce.spendMinor": totalMinor }, $set: { "commerce.lastPurchaseAt": doc.completedAt, "commerce.currency": priced.currency }, $min: { "commerce.firstPurchaseAt": doc.completedAt } }, { session });
       if (input.parkedId) await c.deleteOne({ _id: oid(input.parkedId), orgId: o, kind: PARKED_KIND }, { session });
       return doc;
@@ -211,6 +237,9 @@ export function saleView(s) {
     totals: { subtotal: m(s.totals.subtotalMinor), discounts: m(s.totals.discountMinor), net: m(s.totals.netMinor), tax: m(s.totals.taxMinor), total: m(s.totals.totalMinor), taxBreakdown: s.totals.taxBreakdown },
     tenders: s.tenders.map((t) => ({ method: t.method, amount: m(t.amountMinor), reference: t.reference, manual: true, label: "Recorded manually" })), change: m(s.changeMinor), cashRounding: m(s.cashRoundingMinor),
     refunded: m(s.refundedMinor), approvedBy: s.approval?.decidedBy || null, notes: s.notes || null, completedAt: s.completedAt, exchangeOf: sid(s.exchangeOf),
+    promotions: (s.promotions || []).map((p) => ({ name: p.name, code: p.code || null, discount: m(p.discountMinor) })), member: s.member || null,
+    loyalty: s.loyalty ? { redeemedPoints: s.loyalty.redeemedPoints || 0, redeemedValue: m(s.loyalty.redeemedValueMinor || 0), earnedPoints: s.loyalty.earnedPoints || 0, tier: s.loyalty.tier || null } : null,
+    giftCards: s.lines.filter((l) => l.giftCardLast4).map((l) => ({ last4: l.giftCardLast4, amount: m(l.grossMinor) })),
     refunds: (s.refunds || []).map((r) => ({ refundNumber: r.refundNumber, total: m(r.totalMinor), reason: r.reason, processedBy: r.processedBy, createdAt: r.createdAt, exchangeSaleId: sid(r.exchangeSaleId) })),
     voided: s.status === "VOIDED" ? { at: s.voidedAt, by: s.voidedBy, reason: s.voidReason, approvedBy: s.voidApproval?.decidedBy || null } : null,
   };

@@ -16,14 +16,14 @@ export async function POST(req, { params }) {
   params = await params; // Next.js 15: params is a Promise (SQA 17 Nov 2026)
   try {
     const { orderId } = params;
-    const { orgId, receipts, note } = await req.json();
+    const { orgId, receipts, note, discrepancies, packingSlipDocumentId } = await req.json();
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
 
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const result = await receivePurchaseOrder({ orgId, poId: orderId, receipts, membership: auth.membership, actorEmail: auth.session.email, note });
+    const result = await receivePurchaseOrder({ orgId, poId: orderId, receipts, membership: auth.membership, actorEmail: auth.session.email, note, discrepancies, packingSlipDocumentId });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 
     return NextResponse.json({ status: result.po.status, updatedAt: result.po.updatedAt, items: result.po.items });

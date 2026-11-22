@@ -213,6 +213,11 @@ function LicenseDetail({ orgId, plans, onClose, onChanged }) {
     <Panel title={d ? `${d.company.name}` : "License"} onClose={onClose}>
       {err && <p className="text-red-300 text-sm" role="alert">{err}</p>}
       {msg && <p className="text-emerald-300 text-sm" role="status">{msg}</p>}
+      {d?.company?.addons && <div className="bg-black/20 border border-white/10 rounded p-3 text-[12px] space-y-1.5">
+        <p className="text-[#94a3b8] text-[10px] uppercase">Paid add-ons</p>
+        {d.company.addons.map((a) => <div key={a.key} className="flex items-center gap-2"><span className="flex-1 text-white">{a.label}: <b className={a.enabled ? "text-emerald-300" : "text-[#94a3b8]"}>{a.enabled ? "on" : "off"}</b></span>
+          <button className={a.enabled ? danger : primary} disabled={busy} onClick={() => { const reason = window.prompt(a.enabled ? `Reason for switching ${a.label} off (customers keep their data):` : `Reason / invoice reference for switching ${a.label} on:`); if (reason) act({ action: "set_addon", addon: a.key, enabled: !a.enabled, reason }, `${a.enabled ? "Switch off" : "Switch on"} ${a.label} for ${d.company.name}?`); }}>{a.enabled ? "Switch off" : "Switch on"}</button></div>)}
+      </div>}
       {!d ? <p className="text-[#94a3b8] text-sm">Loading…</p> : !lic ? (
         <p className="text-[#94a3b8] text-sm">This company has no license yet. Use "Assign a license".</p>
       ) : (

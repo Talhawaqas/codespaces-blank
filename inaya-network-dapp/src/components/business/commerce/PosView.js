@@ -56,8 +56,8 @@ export default function PosView({ orgId }) {
 function Register({ orgId, settings, role }) {
   const [products, setProducts] = useState(null); const [warehouses, setWarehouses] = useState([]); const [warehouseId, setWarehouseId] = useState("");
   const [q, setQ] = useState(""); const [category, setCategory] = useState(""); const [cart, setCart] = useState([]); const [orderDiscount, setOrderDiscount] = useState(null);
-  const [customer, setCustomer] = useState(null); const [notes, setNotes] = useState(""); const [priced, setPriced] = useState(null); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
-  const [dialog, setDialog] = useState(null); const [parkedId, setParkedId] = useState(null); const searchRef = useRef(null);
+  const [customer, setCustomer] = useState(null); const [notes, setNotes] = useState(""); const [coupons, setCoupons] = useState([]); const [redeemPoints, setRedeemPoints] = useState(0); const [priced, setPriced] = useState(null); const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
+  const [dialog, setDialog] = useState(null); const [parkedId, setParkedId] = useState(null); const searchRef = useRef(null); const cartRef = useRef(null);
   const [registerId, setRegisterIdState] = useState(() => savedRegister(orgId));
   const setRegisterId = useCallback((v) => { setRegisterIdState(v); try { localStorage.setItem(regKey(orgId), v || ""); } catch { /* ignore */ } }, [orgId]);
 
@@ -67,7 +67,7 @@ function Register({ orgId, settings, role }) {
   }, [orgId]);
   useEffect(() => { try { if (warehouseId) localStorage.setItem(`pos:wh:${orgId}`, warehouseId); } catch { /* ignore */ } }, [orgId, warehouseId]);
 
-  const input = useMemo(() => ({ warehouseId, registerId: registerId || undefined, customerId: customer?.id || null, lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, discount: l.discount || undefined, priceOverride: l.priceOverride ?? undefined, note: l.note || undefined })), orderDiscount: orderDiscount || undefined, notes }), [warehouseId, registerId, customer, cart, orderDiscount, notes]);
+  const input = useMemo(() => ({ warehouseId, registerId: registerId || undefined, customerId: customer?.id || null, lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, discount: l.discount || undefined, priceOverride: l.priceOverride ?? undefined, note: l.note || undefined })), orderDiscount: orderDiscount || undefined, notes, coupons: coupons.length ? coupons : undefined, redeemPoints: customer && redeemPoints > 0 ? redeemPoints : undefined }), [warehouseId, registerId, customer, cart, orderDiscount, notes, coupons, redeemPoints]);
   // server-side pricing on every change (debounced)
   useEffect(() => {
     if (!cart.length || !warehouseId) { setPriced(null); return; }
@@ -88,6 +88,7 @@ function Register({ orgId, settings, role }) {
   }, [products, q, category, warehouseId]);
 
   const add = useCallback((p) => {
+    if (p.productType === "GIFT_CARD") { const v = window.prompt("Gift card value"); if (!v || !(Number(v) > 0)) return; setCart((c) => [...c, { productId: p.id, name: `${p.name} ${v}`, sku: p.sku, quantity: 1, priceOverride: Number(v), gift: true }]); setMsg(""); searchRef.current?.focus(); return; }
     setCart((c) => { const i = c.findIndex((l) => l.productId === p.id && !l.priceOverride && !l.discount); if (i >= 0) { const n = [...c]; n[i] = { ...n[i], quantity: n[i].quantity + 1 }; return n; } return [...c, { productId: p.id, name: p.name, sku: p.sku, quantity: 1 }]; });
     setMsg(""); searchRef.current?.focus();
   }, []);
@@ -97,7 +98,7 @@ function Register({ orgId, settings, role }) {
     if (hit) { add(hit); setQ(""); } else if (visible.length === 1 && visible[0].length === 1) { add(visible[0][0]); setQ(""); } else setMsg(`No product with barcode or SKU "${q.trim()}".`);
   };
   const setLine = (i, patch) => setCart((c) => c.map((l, k) => (k === i ? { ...l, ...patch } : l)).filter((l) => l.quantity > 0));
-  const clearSale = () => { setCart([]); setOrderDiscount(null); setCustomer(null); setNotes(""); setPriced(null); setParkedId(null); setErr(""); };
+  const clearSale = () => { setCoupons([]); setRedeemPoints(0); setCart([]); setOrderDiscount(null); setCustomer(null); setNotes(""); setPriced(null); setParkedId(null); setErr(""); };
   useEffect(() => {
     const k = (e) => { if (e.key === "F2") { e.preventDefault(); searchRef.current?.focus(); } if (e.key === "F4") { e.preventDefault(); setDialog({ type: "customer" }); } if (e.key === "F8" && cart.length) { e.preventDefault(); setDialog({ type: "park" }); } if (e.key === "F9" && priced) { e.preventDefault(); setDialog({ type: "pay" }); } if (e.key === "Escape") setDialog(null); };
     window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
@@ -130,7 +131,7 @@ function Register({ orgId, settings, role }) {
         )}
       </div>
 
-      <div className={`${card} p-3 flex flex-col gap-2`}>
+      <div ref={cartRef} className={`${card} p-3 flex flex-col gap-2`}>
         <div className="flex items-center gap-2">
           <button className={btn} onClick={() => setDialog({ type: "customer" })}>{customer ? `Customer: ${customer.name}` : "Guest sale · add customer (F4)"}</button>
           {customer && <button className={btn} aria-label="Remove customer" onClick={() => setCustomer(null)}>✕</button>}
@@ -157,11 +158,20 @@ function Register({ orgId, settings, role }) {
           <div className="border-t border-[var(--inaya-border)] pt-2 text-sm space-y-1">
             <Row k="Subtotal" v={money(priced.totals.subtotal, settings.currency)} />
             {priced.totals.discounts > 0 && <Row k="Discounts" v={`−${money(priced.totals.discounts, settings.currency)}`} />}
+            {(priced.totals.promotions || []).map((p) => <Row key={p.id} k={<span className="ml-3 text-emerald-600">Offer: {p.name}{p.code ? ` (${p.code})` : ""}</span>} v={`−${money(p.discount, settings.currency)}`} />)}
+            {priced.totals.member && <p className="text-xs text-emerald-600 ml-3">Member discount {priced.totals.member.percent}% ({priced.totals.member.plan})</p>}
+            {priced.totals.loyalty?.points > 0 && <Row k={<span className="ml-3 text-emerald-600">{priced.totals.loyalty.points} points used</span>} v={`−${money(priced.totals.loyalty.value, settings.currency)}`} />}
+            {(priced.totals.rejectedCoupons || []).map((r) => <p key={r.code} className="text-xs text-amber-600">Code {r.code}: {r.reason}</p>)}
             {priced.totals.taxBreakdown.map((t) => <Row key={`${t.category}${t.rate}`} k={`${t.name || "Tax"} ${t.rate}%${settings.taxMode === "inclusive" ? " (included)" : ""}`} v={money(t.tax, settings.currency)} />)}
             <Row k={<b>Total</b>} v={<b className="text-lg">{money(priced.totals.total, settings.currency)}</b>} />
             {priced.approvals.length > 0 && <p className="text-xs text-amber-600">Needs a {priced.approvals.some((a) => a.needed === "manager") ? "manager" : "supervisor"}'s approval before payment.</p>}
           </div>
         )}
+        <div className="flex flex-wrap gap-2">
+          <button className={btn} disabled={!cart.length} onClick={() => { const code = window.prompt("Coupon code"); if (code && code.trim()) setCoupons((x) => [...new Set([...x, code.trim().toUpperCase()])]); }}>Coupon{coupons.length ? ` (${coupons.length})` : ""}</button>
+          {coupons.length > 0 && <button className={btn} onClick={() => setCoupons([])}>Remove codes</button>}
+          {customer && priced?.totals?.loyalty && <button className={btn} disabled={!priced.totals.loyalty.maxPoints && !redeemPoints} onClick={() => { const v = window.prompt(`Use how many points? (${priced.totals.loyalty.balance} available, up to ${priced.totals.loyalty.maxPoints} on this sale)`, String(priced.totals.loyalty.maxPoints || 0)); if (v !== null) setRedeemPoints(Math.max(0, Math.floor(Number(v) || 0))); }}>{redeemPoints ? `Points: ${redeemPoints}` : `Use points (${priced.totals.loyalty.balance})`}</button>}
+        </div>
         <div className="grid grid-cols-3 gap-2 mt-auto">
           <button className={btn} disabled={!cart.length} onClick={() => setDialog({ type: "orderDiscount" })}>Discount</button>
           <button className={btn} disabled={!cart.length} onClick={() => setDialog({ type: "park" })}>Park (F8)</button>
@@ -171,6 +181,10 @@ function Register({ orgId, settings, role }) {
         <button className={primary} disabled={!priced} onClick={() => setDialog({ type: "pay" })}>Pay {priced ? money(priced.totals.total, settings.currency) : ""} (F9)</button>
       </div>
 
+      {cart.length > 0 && <div className="lg:hidden sticky bottom-2 z-30 p-2 pr-16 rounded-xl shadow-lg bg-[var(--inaya-surface)] border border-[var(--inaya-border)] flex items-center gap-2">
+        <button className={btn} onClick={() => cartRef.current?.scrollIntoView({ behavior: "smooth" })}>Cart ({cart.reduce((n, l) => n + l.quantity, 0)})</button>
+        <button className={`${primary} flex-1`} disabled={!priced} onClick={() => setDialog({ type: "pay" })}>Pay {priced ? money(priced.totals.total, settings.currency) : ""}</button>
+      </div>}
       {dialog?.type === "variant" && <Modal title={dialog.group[0].variantGroupName || "Choose an option"} onClose={() => setDialog(null)}>
         <div className="grid grid-cols-2 gap-2">{dialog.group.map((p) => <button key={p.id} className={btn} onClick={() => { add(p); setDialog(null); }}>{Object.values(p.variantAttributes || {}).join(" / ") || p.name}<br /><span className={`text-xs ${muted}`}>{money(p.unitPrice, settings.currency)} · {p.totalStock} in stock</span></button>)}</div>
       </Modal>}
@@ -179,8 +193,8 @@ function Register({ orgId, settings, role }) {
       {dialog?.type === "customer" && <CustomerDialog orgId={orgId} onClose={() => setDialog(null)} onPick={(cst) => { setCustomer(cst); setDialog(null); }} />}
       {dialog?.type === "park" && <ParkDialog onClose={() => setDialog(null)} onPark={async (label) => { try { await api("parked", { orgId, method: "POST", body: { cart: input, label } }); clearSale(); setMsg("Sale parked."); } catch (e) { setErr(e.message); } setDialog(null); }} />}
       {dialog?.type === "parked" && <ParkedDialog orgId={orgId} onClose={() => setDialog(null)} onResume={(p) => { setCart(p.cart.lines.map((l) => ({ ...l, name: (products || []).find((x) => x.id === l.productId)?.name || "Item", sku: (products || []).find((x) => x.id === l.productId)?.sku || "" }))); setOrderDiscount(p.cart.orderDiscount || null); setNotes(p.cart.notes || ""); setParkedId(p.id); if (p.cart.warehouseId) setWarehouseId(p.cart.warehouseId); setDialog(null); }} />}
-      {dialog?.type === "pay" && priced && <PayDialog orgId={orgId} settings={settings} input={{ ...input, parkedId: parkedId || undefined }} priced={priced} onClose={() => setDialog(null)} onDone={(sale) => { setDialog({ type: "receipt", saleId: sale.id }); clearSale(); }} />}
-      {dialog?.type === "receipt" && <ReceiptDialog orgId={orgId} saleId={dialog.saleId} onClose={() => { setDialog(null); searchRef.current?.focus(); }} />}
+      {dialog?.type === "pay" && priced && <PayDialog orgId={orgId} settings={settings} input={{ ...input, parkedId: parkedId || undefined }} priced={priced} onClose={() => setDialog(null)} customerChosen={!!customer} onDone={(sale, giftCards) => { setDialog({ type: "receipt", saleId: sale.id, giftCards }); clearSale(); }} />}
+      {dialog?.type === "receipt" && <ReceiptDialog orgId={orgId} saleId={dialog.saleId} giftCards={dialog.giftCards} onClose={() => { setDialog(null); searchRef.current?.focus(); }} />}
     </div>
   );
 }
@@ -237,7 +251,7 @@ function ParkedDialog({ orgId, onResume, onClose }) {
     {!list ? <p className={muted}>Loading…</p> : !list.length ? <p className={muted}>Nothing parked.</p> : <ul className="divide-y divide-[var(--inaya-border)]">{list.map((p) => <li key={p.id} className="py-2 flex items-center gap-2"><span className="flex-1 text-sm">{p.label || "Unnamed"} · {p.lines} item(s)<br /><span className={`text-xs ${muted}`}>{p.parkedBy} · {new Date(p.createdAt).toLocaleString()}</span></span><button className={btn} onClick={() => onResume(p)}>Resume</button><button className={btn} onClick={async () => { await api(`parked/${p.id}`, { orgId, method: "DELETE" }); load(); }}>Discard</button></li>)}</ul>}
   </Modal>;
 }
-function PayDialog({ orgId, settings, input, priced, onDone, onClose }) {
+function PayDialog({ orgId, settings, input, priced, onDone, onClose, customerChosen = false }) {
   const total = priced.totals.total; const cashTotal = priced.totals.cashTotal ?? total; const [tenders, setTenders] = useState([{ method: "CASH", amount: String(cashTotal), reference: "" }]); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const [approval, setApproval] = useState(null); const keyRef = useRef(newKey());
   const sum = tenders.reduce((s, t) => s + (Number(t.amount) || 0), 0); const cash = tenders.filter((t) => t.method === "CASH").reduce((s, t) => s + (Number(t.amount) || 0), 0);
@@ -247,7 +261,7 @@ function PayDialog({ orgId, settings, input, priced, onDone, onClose }) {
   useEffect(() => { if (approval?.status !== "PENDING") return; const t = setInterval(() => api(`approvals/${approval.id}`, { orgId }).then((d) => setApproval((a) => ({ ...a, status: d.status, by: d.decidedBy }))).catch(() => {}), 3000); return () => clearInterval(t); }, [orgId, approval?.id, approval?.status]);
   const complete = async () => {
     setBusy(true); setErr("");
-    try { const r = await api("sales", { orgId, method: "POST", body: { ...input, idempotencyKey: keyRef.current, approvalId: approval?.status === "APPROVED" ? approval.id : undefined, tenders: tenders.filter((t) => Number(t.amount) > 0).map((t) => ({ method: t.method, amount: Number(t.amount), reference: t.reference || undefined })) } }); onDone(r.sale); }
+    try { const r = await api("sales", { orgId, method: "POST", body: { ...input, idempotencyKey: keyRef.current, approvalId: approval?.status === "APPROVED" ? approval.id : undefined, tenders: tenders.filter((t) => Number(t.amount) > 0).map((t) => ({ method: t.method, amount: Number(t.amount), ...(t.method === "GIFT_CARD" ? { code: t.reference } : { reference: t.reference || undefined }) })) } }); onDone(r.sale, r.giftCards || []); }
     catch (e) { setErr(e.message); if (e.code !== "APPROVAL_REQUIRED" && e.code !== "APPROVAL_INVALID" && e.status >= 400 && e.status < 500 && e.code !== "UNDERPAID" && e.code !== "OVERPAID") keyRef.current = newKey(); }
     finally { setBusy(false); }
   };
@@ -259,10 +273,11 @@ function PayDialog({ orgId, settings, input, priced, onDone, onClose }) {
     {approval?.status === "APPROVED" && <p className="text-emerald-600 text-sm mb-2">Approved by {approval.by}.</p>}
     {tenders.map((t, i) => <div key={i} className="grid grid-cols-[1fr_1fr] gap-2 mb-2">
       <select aria-label="Payment method" className={field} value={t.method} onChange={(e) => setTenders((x) => x.map((y, k) => (k === i ? { ...y, method: e.target.value } : y)))}>
-        <option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer</option><option value="MANUAL_REFERENCE">Other (reference)</option>
+        <option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer</option><option value="MANUAL_REFERENCE">Other (reference)</option><option value="GIFT_CARD">Gift card</option>{customerChosen && <option value="STORE_CREDIT">Store credit</option>}
       </select>
       <input aria-label="Amount" className={field} inputMode="decimal" value={t.amount} onChange={(e) => setTenders((x) => x.map((y, k) => (k === i ? { ...y, amount: e.target.value } : y)))} />
-      {t.method !== "CASH" && <input aria-label="Reference" className={`${field} col-span-2`} placeholder="Reference (bank / NayaPay transaction id)" value={t.reference} onChange={(e) => setTenders((x) => x.map((y, k) => (k === i ? { ...y, reference: e.target.value } : y)))} />}
+      {t.method === "GIFT_CARD" && <input aria-label="Gift card code" className={`${field} col-span-2 font-mono`} placeholder="Gift card code XXXX-XXXX-XXXX-XXXX" value={t.reference} onChange={(e) => setTenders((x) => x.map((y, k) => (k === i ? { ...y, reference: e.target.value } : y)))} />}
+      {!["CASH", "GIFT_CARD", "STORE_CREDIT"].includes(t.method) && <input aria-label="Reference" className={`${field} col-span-2`} placeholder="Reference (bank / NayaPay transaction id)" value={t.reference} onChange={(e) => setTenders((x) => x.map((y, k) => (k === i ? { ...y, reference: e.target.value } : y)))} />}
     </div>)}
     <div className="flex gap-2 mb-2"><button className={btn} onClick={() => setTenders((x) => [...x, { method: "BANK_TRANSFER", amount: String(Math.max(0, Math.round((total - sum) * 100) / 100)), reference: "" }])}>Split payment</button>
       {[500, 1000, 5000].map((v) => <button key={v} className={btn} onClick={() => setTenders((x) => x.map((y, k) => (k === 0 && y.method === "CASH" ? { ...y, amount: String(v) } : y)))}>{v}</button>)}</div>
@@ -273,11 +288,12 @@ function PayDialog({ orgId, settings, input, priced, onDone, onClose }) {
     <button className={`${primary} w-full mt-3`} disabled={busy || (needsApproval && approval?.status !== "APPROVED")} onClick={complete}>{busy ? "Completing…" : "Complete sale"}</button>
   </Modal>;
 }
-function ReceiptDialog({ orgId, saleId, onClose }) {
+function ReceiptDialog({ orgId, saleId, onClose, giftCards = [] }) {
   const [r, setR] = useState(null); const [err, setErr] = useState("");
   useEffect(() => { api(`sales/${saleId}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch((e) => setErr(e.message)); }, [orgId, saleId]);
   return <Modal title="Sale complete" onClose={onClose}>
     {err && <p className="text-red-500">{err}</p>}
+    {giftCards.length > 0 && <div className="mb-3 p-2 rounded-lg border border-emerald-500 text-sm"><p className="font-bold">New gift card code{giftCards.length > 1 ? "s" : ""}: write {giftCards.length > 1 ? "them" : "it"} on the card or print the receipt now. It is shown only once.</p>{giftCards.map((g) => <p key={g.code} className="font-mono text-lg">{g.code}</p>)}</div>}
     {r && <><Receipt r={r} /><div className="flex flex-wrap gap-2 mt-3 print:hidden"><button className={primary} onClick={() => printReceipt(r)}>Print receipt</button><button className={btn} onClick={onClose}>New sale</button></div><ReceiptActions orgId={orgId} saleId={saleId} /></>}
   </Modal>;
 }
@@ -367,7 +383,7 @@ function CloseShiftDialog({ orgId, shift, currency, onClose, onDone }) {
     <button className={`${primary} mt-3`} disabled={counted === ""} onClick={async () => { try { const d = await api(`shifts/${shift.id}/close`, { orgId, method: "POST", body: { countedCash: Number(counted), note } }); setClosed(d.shift); } catch (e) { setErr(e.message); } }}>Close shift</button>
   </Modal>;
 }
-const TENDER_NAMES = { CASH: "Cash", BANK_TRANSFER: "Bank transfer", MANUAL_REFERENCE: "Other", EXCHANGE_CREDIT: "Exchange credit", EXCHANGE: "Exchange" };
+const TENDER_NAMES = { CASH: "Cash", BANK_TRANSFER: "Bank transfer", MANUAL_REFERENCE: "Other", EXCHANGE_CREDIT: "Exchange credit", EXCHANGE: "Exchange", GIFT_CARD: "Gift card", STORE_CREDIT: "Store credit" };
 function ShiftReport({ shift, currency }) {
   const r = shift.report; if (!r) return <p className={muted}>No report.</p>;
   return <div className="text-sm space-y-1">
@@ -463,9 +479,9 @@ function ReturnDialog({ orgId, settings, sale, onClose, onDone }) {
     <div className="flex flex-wrap gap-2 mt-2">
       <button className={!exchange ? primary : btn} onClick={() => setExchange(null)}>Refund</button>
       <button className={exchange ? primary : btn} onClick={() => setExchange(exchange || { lines: [{ productId: "", quantity: 1 }], pay: "" })}>Exchange for other items</button>
-      {!exchange && <select aria-label="Refund method" className={`${field} !w-auto`} value={refundTo[0]?.method || ""} onChange={(e) => setRefundTo(e.target.value ? [{ method: e.target.value, amount: "", reference: "" }] : [])}><option value="">Back to the original payment</option><option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer</option><option value="MANUAL_REFERENCE">Other (reference)</option></select>}
+      {!exchange && <select aria-label="Refund method" className={`${field} !w-auto`} value={refundTo[0]?.method || ""} onChange={(e) => setRefundTo(e.target.value ? [{ method: e.target.value, amount: "", reference: "" }] : [])}><option value="">Back to the original payment</option><option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer</option><option value="MANUAL_REFERENCE">Other (reference)</option>{sale.customerId && <option value="STORE_CREDIT">Store credit</option>}{sale.tenders?.some((t) => t.method === "GIFT_CARD") && <option value="GIFT_CARD">Back onto the gift card</option>}</select>}
     </div>
-    {!exchange && refundTo[0] && refundTo[0].method !== "CASH" && <div className="grid grid-cols-2 gap-2 mt-2"><input aria-label="Refund amount" className={field} inputMode="decimal" placeholder="Amount" value={refundTo[0].amount} onChange={(e) => setRefundTo([{ ...refundTo[0], amount: e.target.value }])} /><input aria-label="Refund reference" className={field} placeholder="Reference" value={refundTo[0].reference} onChange={(e) => setRefundTo([{ ...refundTo[0], reference: e.target.value }])} /></div>}
+    {!exchange && refundTo[0] && !["CASH", "STORE_CREDIT", "GIFT_CARD"].includes(refundTo[0].method) && <div className="grid grid-cols-2 gap-2 mt-2"><input aria-label="Refund amount" className={field} inputMode="decimal" placeholder="Amount" value={refundTo[0].amount} onChange={(e) => setRefundTo([{ ...refundTo[0], amount: e.target.value }])} /><input aria-label="Refund reference" className={field} placeholder="Reference" value={refundTo[0].reference} onChange={(e) => setRefundTo([{ ...refundTo[0], reference: e.target.value }])} /></div>}
     {exchange && <div className="mt-2 space-y-2">{exchange.lines.map((l, i) => <div key={i} className="grid grid-cols-[1fr_80px] gap-2">
       <select aria-label="Exchange product" className={field} value={l.productId} onChange={(e) => setExchange({ ...exchange, lines: exchange.lines.map((x, k) => (k === i ? { ...x, productId: e.target.value } : x)) })}><option value="">Choose the replacement item</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.sku}) · {money(p.unitPrice, settings.currency)}</option>)}</select>
       <input aria-label="Exchange quantity" className={field} inputMode="decimal" value={l.quantity} onChange={(e) => setExchange({ ...exchange, lines: exchange.lines.map((x, k) => (k === i ? { ...x, quantity: e.target.value } : x)) })} /></div>)}

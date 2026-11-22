@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import EmptyState from "../EmptyState";
 import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
 import { BomsTab, ProductionTab } from "./ProductionViews";
+import { AvailabilityTab, TransfersTab, CountsTab, ReplenishTab, SuppliersCatalogTab, ProductStockSettings } from "./StockControlViews";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -25,7 +26,7 @@ async function api(path, options) {
 }
 
 export default function InventoryView({ orgId }) {
-  const [tab, setTab] = useErpSection("products", ["products", "batches", "boms", "production", "movements", "warehouses"]);
+  const [tab, setTab] = useErpSection("products", ["products", "availability", "transfers", "counts", "replenish", "suppliers", "batches", "boms", "production", "movements", "warehouses"]);
   // "New production order" / "New bill of materials" from the ERP task panel open those tabs' forms.
   const [newProductionSignal, setNewProductionSignal] = useState(0);
   const [newBomSignal, setNewBomSignal] = useState(0);
@@ -43,13 +44,18 @@ export default function InventoryView({ orgId }) {
     <div className="space-y-5">
       {!tabsHidden && (
         <div className="flex bg-[var(--inaya-surface)] border border-white/5 rounded-xl p-1 w-fit">
-          {[["products", "Products"], ["batches", "Batches"], ["boms", "Bills of materials"], ["production", "Production"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
+          {[["products", "Products"], ["availability", "Availability"], ["transfers", "Transfers"], ["counts", "Stock counts"], ["replenish", "Reorder planning"], ["suppliers", "Supplier catalogue"], ["batches", "Batches"], ["boms", "Bills of materials"], ["production", "Production"], ["movements", "Movements"], ["warehouses", "Warehouses"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg ${tab === key ? "bg-[#00f2fe]/15 text-[#00f2fe]" : "text-[var(--inaya-text-muted)]"}`}>{label}</button>
           ))}
         </div>
       )}
       {departmentsError && <p className="text-red-400 text-xs">{departmentsError}</p>}
       {tab === "products" && <ProductsTab orgId={orgId} departments={departments} />}
+      {tab === "availability" && <AvailabilityTab orgId={orgId} />}
+      {tab === "transfers" && <TransfersTab orgId={orgId} />}
+      {tab === "counts" && <CountsTab orgId={orgId} />}
+      {tab === "replenish" && <ReplenishTab orgId={orgId} />}
+      {tab === "suppliers" && <SuppliersCatalogTab orgId={orgId} />}
       {tab === "batches" && <BatchesTab orgId={orgId} />}
       {tab === "boms" && <BomsTab orgId={orgId} openCreateSignal={newBomSignal} />}
       {tab === "production" && <ProductionTab orgId={orgId} openCreateSignal={newProductionSignal} />}
@@ -411,6 +417,7 @@ function ProductDetailModal({ orgId, product, onClose, onChanged }) {
   return (
     <Modal title={product.name} onClose={onClose}>
       <div className="space-y-4">
+        <ProductStockSettings orgId={orgId} product={product} onChanged={onChanged} />
         <p className="text-[12px] font-mono text-[var(--inaya-text-muted)]">SKU {product.sku} · Reorder at {product.reorderThreshold}{product.barcode ? ` · Barcode ${product.barcode}` : ""} · Counted in {product.unit || "each"}{product.purchaseUnit ? ` · Bought by the ${product.purchaseUnit} of ${product.unitsPerPurchaseUnit}` : ""}</p>
         <UnitsEditor orgId={orgId} product={product} onChanged={onChanged} />
         <BatchTrackingToggle orgId={orgId} productId={product.id} trackLots={trackLots} onChanged={(v) => { setTrackLots(v); load(); onChanged(); }} />

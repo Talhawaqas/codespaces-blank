@@ -11,7 +11,8 @@
 //   Returns       = refunds made in the period (excluding tax), by the date of the refund
 //   Net sales     = gross sales - discounts - returns (excluding tax)
 //   Tax           = tax on sales - tax reversed on refunds
-//   Total collected = sales totals - refund totals (what customers paid, net)
+//   Total collected = sales totals - refund totals + gift cards sold (all money taken, net)
+//   Sales total     = sales totals - refund totals (what every breakdown below adds up to; gift cards sold are a liability, not sales)
 //   ATV           = sales total / number of sales;   UPT = units sold / number of sales
 //   Gross margin  = net sales - cost of goods sold; shown as RELIABLE only when every stock line carries a cost
 //   Voids are reported separately and excluded from every other figure.
@@ -49,6 +50,7 @@ function rows({ sales, withRefunds, cat, whs, regs }, { from, to, warehouseId, r
     const t = zoneParts(s.completedAt, tz); const voided = s.status === "VOIDED";
     const common = { kind: voided ? "void" : "sale", saleId: sid(s._id), number: s.saleNumber, at: s.completedAt, day: t.day, hour: t.hour, employee: s.cashierEmail, register: regs.get(String(s.registerId)) || "No register", branch: whs.get(String(s.warehouseId)) || "?" };
     for (const l of s.lines) {
+      if (l.productType === "GIFT_CARD") { out.push({ ...common, kind: voided ? "void" : "giftcard", totalMinor: l.grossMinor, units: l.quantity, isGift: true }); continue; }
       const disc = (l.lineDiscountMinor || 0) + (l.orderShareMinor || 0);
       const cost = l.unitCost === null || l.unitCost === undefined ? null : Math.round(l.unitCost * 100 * l.quantity);
       out.push({ ...common, product: `${l.name} (${l.sku})`, category: cat.get(String(l.productId)) || "Uncategorised", units: l.quantity, grossMinor: l.netMinor + disc, discountMinor: disc, netMinor: l.netMinor, taxMinor: l.taxMinor, totalMinor: l.grossMinor, costMinor: cost, stock: !["SERVICE", "NON_STOCK"].includes(l.productType), override: l.priceSource === "override" });
@@ -86,6 +88,7 @@ export async function commerceReport({ orgId, membership, input = {} }) {
   const by = Object.fromEntries(DIMENSIONS.map((d) => [d, {}])); const methods = {};
   for (const r of all) {
     if (r.kind === "void") { if (r.isHeader) { T.voids++; } else T.voidMinor += r.totalMinor; continue; }
+    if (r.kind === "giftcard") { T.giftCardsSoldMinor = (T.giftCardsSoldMinor || 0) + r.totalMinor; T.giftCardsSold = (T.giftCardsSold || 0) + r.units; continue; }
     if (r.isHeader) {
       if (r.kind === "sale") { T.sales++; for (const d of ["day", "hour", "employee", "register", "branch"]) add(by[d], r[d], "sales", 1); if (r.approval) T.approvals++;
         for (const t of r.tenders) methods[t.method] = (methods[t.method] || 0) + t.amountMinor; if (r.changeMinor) methods.CASH = (methods.CASH || 0) - r.changeMinor; }
@@ -112,7 +115,7 @@ export async function commerceReport({ orgId, membership, input = {} }) {
   const ordersByStatus = {}; for (const ord of ords) { const b = (ordersByStatus[ord.status] ||= { count: 0, value: 0 }); b.count++; b.value = Math.round((b.value + (ord.total ?? ord.subtotal)) * 100) / 100; }
   return {
     period: { from: p.from, to: p.to, timezone: p.tz }, currency: settings.currency,
-    totals: { sales: T.sales, refunds: T.refunds, gross: m(T.grossMinor), discounts: m(T.discountMinor), returns: m(T.returnsMinor), net: m(netMinor), tax: m(T.salesTaxMinor - T.returnsTaxMinor), totalCollected: m(T.salesTotalMinor - T.refundTotalMinor),
+    totals: { sales: T.sales, refunds: T.refunds, gross: m(T.grossMinor), discounts: m(T.discountMinor), returns: m(T.returnsMinor), net: m(netMinor), tax: m(T.salesTaxMinor - T.returnsTaxMinor), totalCollected: m(T.salesTotalMinor - T.refundTotalMinor + (T.giftCardsSoldMinor || 0)), salesTotal: m(T.salesTotalMinor - T.refundTotalMinor), giftCardsSold: { count: T.giftCardsSold || 0, value: m(T.giftCardsSoldMinor || 0) },
       atv: T.sales ? m(Math.round(T.salesTotalMinor / T.sales)) : 0, upt: T.sales ? Math.round((T.units / T.sales) * 100) / 100 : 0, units: T.units,
       grossMargin: { amount: m(marginMinor), percent: netMinor ? Math.round((marginMinor / netMinor) * 10000) / 100 : null, reliable, costCoverage: T.stockLines ? Math.round((T.costedLines / T.stockLines) * 1000) / 10 : null },
       voids: { count: T.voids, total: m(T.voidMinor) }, overrides: { priceOverrides: T.overrides, approvedSales: T.approvals } },

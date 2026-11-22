@@ -57,6 +57,10 @@ export async function ensureCommerceIndexes() {
       c.createIndex({ orgId: 1, kind: 1, registerId: 1 }, { unique: true, partialFilterExpression: { kind: KINDS.shift, status: "OPEN" }, name: "c_open_shift_unique" }),
       c.createIndex({ orgId: 1, kind: 1, key: 1 }, { unique: true, partialFilterExpression: { kind: KINDS.counter }, name: "c_counter_unique" }),
       c.createIndex({ orgId: 1, kind: 1, shiftId: 1 }, { partialFilterExpression: { kind: KINDS.cashMove }, name: "c_cash_shift" }),
+      // Phase 4: loyalty points ledger, gift-card movements and promotion uses are idempotent; card codes are looked up by hash
+      c.createIndex({ orgId: 1, kind: 1, idem: 1 }, { unique: true, partialFilterExpression: { kind: { $in: ["g_points", "g_card_tx", "g_promo_use"] } }, name: "g_idem_unique" }),
+      c.createIndex({ orgId: 1, kind: 1, codeHash: 1 }, { unique: true, partialFilterExpression: { kind: "g_card" }, name: "g_card_code" }),
+      c.createIndex({ orgId: 1, kind: 1, customerId: 1 }, { partialFilterExpression: { kind: { $in: ["g_points", "g_card", "g_member"] } }, name: "g_customer" }),
     ]);
   })().catch((e) => { indexesReady = null; throw e; });
   return indexesReady;

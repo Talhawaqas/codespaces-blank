@@ -38,7 +38,7 @@ export const FRIENDLY_LABELS = { osHome: "Home", crm: "Customers", hr: "People",
 
 export const LAUNCHER_GROUPS = [
   { id: "work", name: "Everyday work", blurb: "Your team’s day-to-day", keys: ["tasks", "documents", "projects", "departments", "notes", "chat", "meet", "approvals", "sign", "fileRequests", "shares", "office", "ai", "help"] },
-  { id: "money", name: "Money", blurb: "Sales, billing and books", keys: ["finance", "crm", "pos", "appointments", "campaigns", "inventory", "procurement", "bookkeeper", "documentAutomation", "escrow", "attestations", "support", "portalRequests"] },
+  { id: "money", name: "Money", blurb: "Sales, billing and books", keys: ["finance", "crm", "pos", "growth", "appointments", "campaigns", "inventory", "procurement", "bookkeeper", "documentAutomation", "escrow", "attestations", "support", "portalRequests"] },
   { id: "people", name: "People & insight", blurb: "Team, reports and automation", keys: ["hr", "insights", "brief", "whatChanged", "activity", "workflows", "whatIf", "executive", "docIntelligence"] },
   { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government", "education", "hospitality"] },
   { id: "security", name: "Security & compliance", blurb: "Mostly for admins", keys: ["security", "aiActions", "adminDashboard", "governance", "complianceReadiness", "ransomware", "resilience", "resilienceTesting", "evidence", "auditTrail", "complianceEvidence", "trustRelationships", "aiSecurity", "identity"] },

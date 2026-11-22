@@ -96,6 +96,7 @@ export async function receiptPdf({ orgId, membership, saleId, refundNumber }) {
 export async function emailReceipt({ orgId, membership, actorEmail, saleId, refundNumber, to }) {
   const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
   const email = clean(to, 200).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Enter a valid email address.");
+  if (process.env.INAYA_USE_TEST_DB === "1") return fail("This is a test environment, so receipts are never emailed. Download or print it instead.", 409, "EMAIL_TEST_ENVIRONMENT");
   if (!process.env.RESEND_API_KEY) return fail("Email isn't configured for this workspace, so the receipt can't be emailed. Download or print it instead.", 409, "EMAIL_NOT_CONFIGURED");
   const r = await receiptPdf({ orgId, membership, saleId, refundNumber }); if (r.error) return r;
   const { sendEmail } = await import("../email.js");

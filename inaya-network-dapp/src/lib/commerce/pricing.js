@@ -83,6 +83,8 @@ export async function priceCart({ orgId, membership, input, session = null }) {
   if (listId) { const pl = await c.findOne({ _id: listId, orgId: o, kind: KINDS.priceList, active: { $ne: false } }, { session }); if (!pl) return fail("Price list not found or inactive.", 404); if (pl.currency !== settings.currency) return fail(`This price list is in ${pl.currency}; the register sells in ${settings.currency}.`); }
   const listPrices = listId ? new Map((await c.find({ orgId: o, kind: KINDS.price, priceListId: listId, productId: { $in: ids } }, { session }).toArray()).map((x) => [sid(x.productId), x.priceMinor])) : new Map();
   const taxOf = await loadTaxResolver(orgId, session);
+  const { crmContacts } = await getOrgCollections(); const customer = custId ? await crmContacts.findOne({ _id: custId, orgId: o }, { session }) : null;
+  const isGift = (p) => p.productType === "GIFT_CARD";
   const role = commerceRoleOf(membership) || "cashier"; const approvals = [];
   const overrideRole = settings.allowPriceOverride === "never" ? null : settings.allowPriceOverride;
 
@@ -97,6 +99,11 @@ export async function priceCart({ orgId, membership, input, session = null }) {
       if (!(Number.isFinite(q) && q > 0 && q <= 100000 && Math.round(q * 1000) === q * 1000)) return fail(`Line ${i + 1}: quantity must be positive (up to 3 decimals).`);
       const listMinor = custPrices.get(sid(p._id)) ?? listPrices.get(sid(p._id)) ?? (Number.isFinite(p.unitPrice) ? toMinor(p.unitPrice) : null);
       let unitMinor = listMinor; let priceSource = custPrices.has(sid(p._id)) ? "customer" : listPrices.has(sid(p._id)) ? "price_list" : "product";
+      if (isGift(p)) { // a gift card's value is entered at the till: it is not a price change, so it needs no approval
+        const v = toMinor(l.priceOverride ?? p.unitPrice); if (!(v > 0) || v > 100000000) return fail(`Line ${i + 1}: enter the gift card value.`, 400, "GIFT_VALUE");
+        if (q !== 1) return fail(`Line ${i + 1}: sell gift cards one at a time.`, 400, "GIFT_QTY");
+        priced.push({ i, p, q, unitMinor: v, baseMinor: v, lineDisc: 0, priceSource: "gift_card", note: clean(l.note, 300), tax: { code: null, name: "No tax (gift card)", rate: 0 } }); continue;
+      }
       if (l.priceOverride !== undefined && l.priceOverride !== null) {
         const ov = toMinor(l.priceOverride); if (!(ov >= 0)) return fail(`Line ${i + 1}: override price must be zero or more.`);
         if (!overrideRole) return fail("Price overrides are switched off for this company.", 403, "OVERRIDE_DISABLED");
@@ -105,14 +112,14 @@ export async function priceCart({ orgId, membership, input, session = null }) {
       }
       if (unitMinor === null) return fail(`Line ${i + 1}: ${p.name} has no price. Set one or enter an override.`, 409, "NO_PRICE");
       const baseMinor = Math.round(unitMinor * q);
-      const lineDisc = discountMinor(l.discount, baseMinor);
-      priced.push({ i, p, q, unitMinor, baseMinor, lineDisc, priceSource, note: clean(l.note, 300), tax: taxOf(p.taxCategoryId, input.warehouseId) });
+      const lineDisc = isGift(p) ? 0 : discountMinor(l.discount, baseMinor);
+      priced.push({ i, p, q, unitMinor, baseMinor, lineDisc, priceSource, note: clean(l.note, 300), tax: isGift(p) ? { code: null, name: "No tax (gift card)", rate: 0 } : taxOf(p.taxCategoryId, input.warehouseId) });
     }
     // order discount, spread over lines by value (so tax is computed on what is really charged)
     // "line_and_order": the order discount applies to what is left after line discounts; "best_only": both are measured
     // on the undiscounted price and each line keeps the larger one.
     const bestOnly = settings.stacking === "best_only";
-    const basis = (x) => (bestOnly ? x.baseMinor : x.baseMinor - x.lineDisc);
+    const basis = (x) => (isGift(x.p) ? 0 : bestOnly ? x.baseMinor : x.baseMinor - x.lineDisc);
     const afterLine = priced.reduce((s, x) => s + basis(x), 0);
     const orderDisc = discountMinor(input.orderDiscount, afterLine);
     let spread = 0;
@@ -130,12 +137,41 @@ export async function priceCart({ orgId, membership, input, session = null }) {
     if (allDisc > 0) { const percent = pct(allDisc, subtotal); const needed = requiredRole(percent, settings); if (!roleCovers(role, needed) && !approvals.some((a) => a.kind === "discount" && a.needed === needed)) approvals.push({ line: null, kind: "sale_discount", needed, percent: Math.round(percent * 100) / 100 }); }
   } catch (e) { if (e.status) return fail(e.message, e.status); throw e; }
 
+  // Phase 4 (Master SOW 8.7 - 8.10): pre-approved promotions, the member discount and loyalty points, in that order, each on
+  // what is left after the manual discounts; gift-card lines are never discounted.
+  for (const x of priced) { x.promoShare = 0; x.memberShare = 0; x.loyaltyShare = 0; }
+  const remainOf = (x) => x.baseMinor - x.lineDisc - x.orderShare - x.promoShare - x.memberShare - x.loyaltyShare;
+  const sellable = priced.filter((x) => !isGift(x.p));
+  let promo = { applied: [], rejected: [] }, member = null, loyalty = null;
+  if (sellable.length) {
+    const { evaluatePromotions } = await import("../growth/promotions.js");
+    promo = await evaluatePromotions({ orgId, lines: sellable.map((x) => ({ i: x.i, p: x.p, q: x.q, remainMinor: remainOf(x) })), input, customer, settings, session });
+    for (const x of sellable) x.promoShare = promo.perLine?.get(x.i) || 0;
+    if (customer) {
+      const { activeMembership, redemptionLimit, getLoyaltySettings } = await import("../growth/loyalty.js");
+      const m = await activeMembership(orgId, customer._id, session);
+      if (m?.plan?.discountPercent && (!m.plan.branchIds?.length || m.plan.branchIds.includes(String(input.warehouseId)))) { for (const x of sellable) x.memberShare = Math.round((remainOf(x) * m.plan.discountPercent) / 100); member = { plan: m.plan.name, percent: m.plan.discountPercent }; }
+      const want = Math.floor(Number(input.redeemPoints) || 0);
+      const left = sellable.reduce((s, x) => s + remainOf(x), 0);
+      const lim = await redemptionLimit({ orgId, customerId: customer._id, totalMinor: left, session });
+      if (want > 0) {
+        if (want < (lim.minRedeemPoints || 0)) return fail(`At least ${lim.minRedeemPoints} points must be used at a time.`, 400, "POINTS_MIN");
+        if (want > lim.maxPoints) return fail(`Up to ${lim.maxPoints} points can be used on this sale (balance ${lim.balance}).`, 409, "POINTS_MAX");
+        const value = Math.min(left, want * lim.pointValueMinor); let spread = 0;
+        sellable.forEach((x, k) => { const s = k === sellable.length - 1 ? value - spread : Math.floor(left ? (remainOf(x) * value) / left : 0); spread += s; x.loyaltyShare = s; });
+        loyalty = { points: want, valueMinor: value };
+      }
+      const ls = await getLoyaltySettings(orgId);
+      if (ls.enabled) loyalty = { ...(loyalty || { points: 0, valueMinor: 0 }), balance: lim.balance, maxPoints: lim.maxPoints, pointValueMinor: lim.pointValueMinor };
+    }
+  }
+
   // tax per line, then totals (per-line rounding, or one rounding on the total per tax category in "total" mode)
   const out = priced.map((x) => {
-    const charged = x.baseMinor - x.lineDisc - x.orderShare; const t = taxOn(charged, x.tax.rate, settings.taxMode);
+    const charged = x.baseMinor - x.lineDisc - x.orderShare - x.promoShare - x.memberShare - x.loyaltyShare; const t = taxOn(charged, x.tax.rate, settings.taxMode);
     return { productId: sid(x.p._id), sku: x.p.sku, name: x.p.name, productType: x.p.productType || "STOCK", quantity: x.q, unitPrice: fromMinor(x.unitMinor), priceSource: x.priceSource,
-      lineDiscount: fromMinor(x.lineDisc), orderDiscountShare: fromMinor(x.orderShare), net: fromMinor(t.netMinor), tax: fromMinor(t.taxMinor), total: fromMinor(t.grossMinor),
-      taxCategory: x.tax.code, taxRate: x.tax.rate, note: x.note || null, _m: { charged, ...t, base: x.baseMinor, disc: x.lineDisc + x.orderShare, rate: x.tax.rate, cat: x.tax.code, catName: x.tax.name } };
+      lineDiscount: fromMinor(x.lineDisc), orderDiscountShare: fromMinor(x.orderShare), promoDiscount: fromMinor(x.promoShare), memberDiscount: fromMinor(x.memberShare), loyaltyDiscount: fromMinor(x.loyaltyShare), category: x.p.category || null, net: fromMinor(t.netMinor), tax: fromMinor(t.taxMinor), total: fromMinor(t.grossMinor),
+      taxCategory: x.tax.code, taxRate: x.tax.rate, note: x.note || null, _m: { charged, ...t, base: x.baseMinor, disc: x.lineDisc + x.orderShare + x.promoShare + x.memberShare + x.loyaltyShare, promo: x.promoShare, member: x.memberShare, loyalty: x.loyaltyShare, rate: x.tax.rate, cat: x.tax.code, catName: x.tax.name } };
   });
   if (settings.rounding.mode === "total") {
     const byCat = new Map(); for (const l of out) { const k = `${l._m.cat}:${l._m.rate}`; byCat.set(k, [...(byCat.get(k) || []), l]); }
@@ -149,6 +185,9 @@ export async function priceCart({ orgId, membership, input, session = null }) {
   const taxBreakdown = [...out.reduce((m, l) => { const k = `${l._m.cat || "NONE"}@${l._m.rate}`; const v = m.get(k) || { category: l._m.cat, name: l._m.catName, rate: l._m.rate, taxableMinor: 0, taxMinor: 0 }; v.taxableMinor += l._m.netMinor; v.taxMinor += l._m.taxMinor; m.set(k, v); return m; }, new Map()).values()]
     .map((v) => ({ category: v.category, name: v.name, rate: v.rate, taxable: fromMinor(v.taxableMinor), tax: fromMinor(v.taxMinor) }));
   const totals = { subtotal: fromMinor(sum("base")), discounts: fromMinor(sum("disc")), net: fromMinor(sum("netMinor")), tax: fromMinor(sum("taxMinor")), total: fromMinor(sum("grossMinor")), totalMinor: sum("grossMinor"), cashTotal: fromMinor(cashRounded(sum("grossMinor"), settings.rounding?.cashIncrement || 0)), taxBreakdown };
+  totals.promotions = (promo.applied || []).map((a) => ({ id: a.id, name: a.name, code: a.code, discount: fromMinor(a.discountMinor), discountMinor: a.discountMinor }));
+  totals.rejectedCoupons = promo.rejected || [];
+  totals.member = member; totals.loyalty = loyalty ? { points: loyalty.points, value: fromMinor(loyalty.valueMinor), valueMinor: loyalty.valueMinor, balance: loyalty.balance ?? null, maxPoints: loyalty.maxPoints ?? null } : null;
   return { currency: settings.currency, taxMode: settings.taxMode, lines: out.map(({ _m, ...l }) => ({ ...l, _minor: _m })), totals, approvals, role };
 }
 

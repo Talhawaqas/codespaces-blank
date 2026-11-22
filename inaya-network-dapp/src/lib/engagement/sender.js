@@ -76,6 +76,9 @@ export function buildMessage({ send, content, settings }) {
 }
 
 async function resendBatch(messages, fetchImpl = fetch) {
+  // Test environments never send real campaigns (Inaya Commerce Master SOW 8.13): on the test database the provider is
+  // never called; each message gets a synthetic id so the send records and reports still work end to end.
+  if (process.env.INAYA_USE_TEST_DB === "1" && fetchImpl === fetch) return { ids: messages.map((_, i) => `test-env-${Date.now().toString(36)}-${i}`), testEnvironment: true };
   const res = await fetchImpl("https://api.resend.com/emails/batch", { method: "POST", headers: { Authorization: `Bearer ${marketingKey()}`, "Content-Type": "application/json" }, body: JSON.stringify(messages) });
   if (!res.ok) return { error: `provider_${res.status}`, retry: res.status === 429 || res.status >= 500 };
   const body = await res.json().catch(() => ({}));

@@ -23,12 +23,12 @@ import { createHash } from "node:crypto";
 import { ccol, ensureCommerceIndexes, KINDS, fail, clean, nowIso, oid, sid, commerceAccess, commerceRoleOf, getSettings, nextNumber, audit, emitCommerceEvent, fromMinor, toMinor, correlationId as newCorrelation } from "./store.js";
 import { roleCovers, cashRounded, priceCart } from "./pricing.js";
 import { withStockTransaction, recordStockMovement, StockError } from "../inventory.js";
-import { isStocked } from "./catalogue.js";
+import { isStocked, isKit, stockLegs } from "./catalogue.js";
 import { getOrgCollections } from "../orgs.js";
 import { APPROVAL_KIND, saleView, saleContext, registerShift, buildSale, afterSale } from "./sale.js";
 
 export const DISPOSITIONS = ["RESTOCK", "QUARANTINE", "DAMAGED", "NON_RESTOCKABLE"];
-export const REFUND_METHODS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE"];
+export const REFUND_METHODS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE", "STORE_CREDIT", "GIFT_CARD"]; // STORE_CREDIT / GIFT_CARD: liability (Phase 4)
 const RETURNABLE = ["COMPLETED", "PARTIALLY_REFUNDED"];
 const APPROVAL_TTL_MS = 10 * 60 * 1000;
 const boom = (message, status = 400, code) => Object.assign(new Error(message), { status, code });
@@ -52,11 +52,12 @@ export function planReturn({ sale, input, settings, role, now = Date.now() }) {
   for (const x of input.lines) {
     const i = Number(x.lineIndex); const l = sale.lines[i];
     if (!Number.isInteger(i) || !l) return fail("Unknown line on this sale.");
+    if (l.productType === "GIFT_CARD") return fail("A gift card can't be returned. If it hasn't been used, void the sale instead.", 409, "GIFT_CARD_RETURN");
     if (seen.has(i)) return fail("Each sale line can appear once per return."); seen.add(i);
     const q = Number(x.quantity); const left = l.quantity - (l.returnedQty || 0);
     if (!(q > 0) || Math.round(q * 1000) !== q * 1000) return fail("Return quantities must be positive.");
     if (q > left + 1e-9) return fail(`Only ${left} of ${l.name} can still be returned.`, 409, "OVER_RETURN");
-    const disposition = isStocked({ productType: l.productType }) ? (x.disposition || "RESTOCK") : "NON_RESTOCKABLE";
+    const disposition = isStocked({ productType: l.productType }) || isKit({ productType: l.productType }) ? (x.disposition || "RESTOCK") : "NON_RESTOCKABLE";
     if (!DISPOSITIONS.includes(disposition)) return fail(`Disposition must be one of ${DISPOSITIONS.join(", ")}.`);
     const last = Math.abs(q - left) < 1e-9;
     const netMinor = last ? l.netMinor - (l.refundedNetMinor || 0) : Math.round((l.netMinor * q) / l.quantity);
@@ -81,12 +82,18 @@ export function planRefundTenders({ sale, totalMinor, refundTo, exchangeMinor = 
   if (!wanted && payout > 0) {
     const methods = Object.keys(left).filter((m) => left[m] > 0 && REFUND_METHODS.includes(m));
     if (methods.length !== 1) return fail("Choose how the refund is paid back (this sale was paid in more than one way).", 400, "REFUND_METHOD_REQUIRED");
-    wanted = [{ method: methods[0], reference: methods[0] === "CASH" ? null : (sale.tenders.find((t) => t.method === methods[0])?.reference || null) }];
+    wanted = [{ method: methods[0], amount: methods[0] === "CASH" ? undefined : fromMinor(payout), reference: methods[0] === "CASH" ? null : (sale.tenders.find((t) => t.method === methods[0])?.reference || null) }];
   }
   const out = []; let nonCash = 0; let hasCash = false;
   for (const w of wanted || []) {
-    if (!REFUND_METHODS.includes(w.method)) return fail(`Refunds can be paid as cash, bank transfer or another referenced method${w.method === "STORE_CREDIT" ? " (store credit is not available yet)" : ""}.`, 400, "REFUND_METHOD");
+    if (!REFUND_METHODS.includes(w.method)) return fail("Refunds can be paid as cash, bank transfer, another referenced method, store credit or back to the gift card.", 400, "REFUND_METHOD");
     if (w.method === "CASH") { if (hasCash) return fail("List cash once."); hasCash = true; continue; }
+    if (w.method === "STORE_CREDIT" || w.method === "GIFT_CARD") {
+      const m = toMinor(w.amount ?? fromMinor(payout - nonCash)); if (!(m > 0)) return fail("Enter the amount for store credit / the gift card.");
+      const card = w.method === "GIFT_CARD" ? (sale.tenders || []).find((t) => t.method === "GIFT_CARD" && t.cardId) : null;
+      if (w.method === "GIFT_CARD" && !card) return fail("This sale wasn't paid by gift card.", 400, "REFUND_METHOD");
+      out.push({ method: w.method, amountMinor: m, reference: card?.reference || null, cardId: card?.cardId || null, manual: false, status: "RECORDED" }); nonCash += m; continue;
+    }
     const m = toMinor(w.amount ?? (wanted.length === 1 ? fromMinor(payout) : NaN)); if (!(m > 0)) return fail("Each non-cash refund needs an amount.");
     const ref = clean(w.reference, 120); if (!ref) return fail(`${w.method === "BANK_TRANSFER" ? "A bank transfer" : "A manual"} refund needs a reference.`);
     out.push({ method: w.method, amountMinor: m, reference: ref, manual: true, status: "RECORDED" }); nonCash += m;
@@ -100,7 +107,7 @@ export function planRefundTenders({ sale, totalMinor, refundTo, exchangeMinor = 
   }
   if (exchangeMinor > 0) out.push({ method: "EXCHANGE", amountMinor: exchangeMinor, reference: null, manual: true, status: "RECORDED" });
   const exceptions = [];
-  for (const t of out) if (t.method !== "EXCHANGE" && t.amountMinor > (left[t.method] || 0)) exceptions.push({ kind: "refund_method", needed: "supervisor", method: t.method, amount: fromMinor(t.amountMinor), originalLeft: fromMinor(Math.max(0, left[t.method] || 0)) });
+  for (const t of out) if (t.method !== "EXCHANGE" && t.method !== "STORE_CREDIT" && t.amountMinor > (left[t.method] || 0)) exceptions.push({ kind: "refund_method", needed: "supervisor", method: t.method, amount: fromMinor(t.amountMinor), originalLeft: fromMinor(Math.max(0, left[t.method] || 0)) });
   return { tenders: out, roundingMinor, exceptions };
 }
 
@@ -201,13 +208,17 @@ export async function processReturn({ orgId, membership, actorEmail, input }) {
         l.movementIds = [];
         if (l.disposition === "NON_RESTOCKABLE") continue;
         const into = l.disposition === "QUARANTINE" ? settings.quarantineWarehouseId : sid(returnWh._id);
-        const back = await recordStockMovement({ orgId, productId: sid(l.productId), warehouseId: into, delta: l.quantity, type: "RETURN", relatedSaleId: sale._id, actorEmail, session, idempotencyKey: `${idem}:r${l.lineIndex}`, note: `Return ${refundNumber} (${sale.saleNumber}) ${l.disposition.toLowerCase()}`, ...(l.unitCost !== null ? { unitCost: l.unitCost } : {}) });
-        if (back.error) throw new StockError(back.error, back.status || 409, back.code || "STOCK");
-        l.movementIds.push(back.movement?._id || null);
-        if (l.disposition === "DAMAGED") {
-          const off = await recordStockMovement({ orgId, productId: sid(l.productId), warehouseId: into, delta: -l.quantity, type: "WRITE_OFF", relatedSaleId: sale._id, actorEmail, session, idempotencyKey: `${idem}:w${l.lineIndex}`, note: `Damaged return ${refundNumber}` });
-          if (off.error) throw new StockError(off.error, off.status || 409, off.code || "STOCK");
-          l.movementIds.push(off.movement?._id || null);
+        const legs = await stockLegs({ orgId, productId: l.productId, productType: l.productType, quantity: l.quantity, session });
+        for (const [k, leg] of legs.entries()) {
+          const own = leg.productId === sid(l.productId); const tag = own ? "" : `k${k}`;
+          const back = await recordStockMovement({ orgId, productId: leg.productId, warehouseId: into, delta: leg.quantity, type: "RETURN", relatedSaleId: sale._id, actorEmail, session, idempotencyKey: `${idem}:r${l.lineIndex}${tag}`, note: `Return ${refundNumber} (${sale.saleNumber}) ${l.disposition.toLowerCase()}${own ? "" : ` (kit ${l.sku})`}`, ...(own && l.unitCost !== null ? { unitCost: l.unitCost } : {}) });
+          if (back.error) throw new StockError(back.error, back.status || 409, back.code || "STOCK");
+          l.movementIds.push(back.movement?._id || null);
+          if (l.disposition === "DAMAGED") {
+            const off = await recordStockMovement({ orgId, productId: leg.productId, warehouseId: into, delta: -leg.quantity, type: "WRITE_OFF", relatedSaleId: sale._id, actorEmail, session, idempotencyKey: `${idem}:w${l.lineIndex}${tag}`, note: `Damaged return ${refundNumber}` });
+            if (off.error) throw new StockError(off.error, off.status || 409, off.code || "STOCK");
+            l.movementIds.push(off.movement?._id || null);
+          }
         }
       }
       // the bounded update: every line must still have room, the idempotency key must be new
@@ -226,8 +237,12 @@ export async function processReturn({ orgId, membership, actorEmail, input }) {
         exchangeDoc = await buildSale({ orgId, membership, actorEmail, input: { ...input.exchange, warehouseId: sid(returnWh._id), customerId: sid(sale.contactId), registerId: input.registerId, idempotencyKey: `${idem}:x` }, ctx, session, cid, idem: `${idem}:x`, credit: { minor: e.exchangeMinor, reference: refundNumber, saleId: sale._id } });
         refund.exchangeSaleId = exchangeDoc._id;
       }
+      // Phase 4: money back as store credit / onto the gift card; loyalty points and promotion uses follow the refund
+      for (const t of refund.tenders) if (t.method === "STORE_CREDIT" || t.method === "GIFT_CARD") { const G = await import("../growth/giftcards.js"); const k = await G.creditFromRefund({ orgId, sale, method: t.method, amountMinor: t.amountMinor, cardId: t.cardId, currency: sale.currency, refundNumber, session }); t.reference = `••${k.last4}`; t.cardId = oid(k.cardId); }
       const upd = await salesOrders.updateOne(filter, { $inc: inc, $push: { refunds: refund }, $set: { status: fully ? "REFUNDED" : "PARTIALLY_REFUNDED", updatedAt: nowIso() } }, { session });
       if (upd.modifiedCount !== 1) throw boom("This sale changed while the return was being made (or would be over-refunded). Look it up again.", 409, "RETURN_CONFLICT");
+      { const L = await import("../growth/loyalty.js"); await L.reverseSalePoints({ orgId, sale, share: e.plan.totalMinor / sale.totals.totalMinor, refundNumber, session }); }
+      if (fully) { const P = await import("../growth/promotions.js"); await P.releasePromotionUses({ orgId, saleId: sale._id, session }); }
       if (sale.contactId) await crmContacts.updateOne({ _id: sale.contactId, orgId: o }, { $inc: { "commerce.spendMinor": -e.plan.totalMinor, "commerce.returnCount": 1, "commerce.refundedMinor": e.plan.totalMinor }, $set: { "commerce.lastReturnAt": refund.createdAt } }, { session });
       return { refund, exchangeDoc };
     });
@@ -269,11 +284,20 @@ export async function voidSale({ orgId, membership, actorEmail, saleId, reason, 
       const r = await salesOrders.findOneAndUpdate({ _id: s.sale._id, orgId: o, status: "COMPLETED", "refunds.0": { $exists: false } }, { $set: { status: "VOIDED", voidedAt: now, voidedBy: actorEmail, voidReason: why, voidApproval: approval ? { id: approval._id, decidedBy: approval.decidedBy, decidedRole: approval.decidedRole } : null, updatedAt: now } }, { returnDocument: "after", session });
       if (!r) throw boom("This sale changed while voiding. Look it up again.", 409, "VOID_CONFLICT");
       for (const [i, l] of r.lines.entries()) {
-        if (!isStocked({ productType: l.productType })) continue;
-        const back = await recordStockMovement({ orgId, productId: sid(l.productId), warehouseId: sid(r.warehouseId), delta: l.quantity, type: "RETURN", relatedSaleId: r._id, actorEmail, session, idempotencyKey: `void:${sid(r._id)}:${i}`, note: `Void ${r.saleNumber}`, ...(l.unitCost !== null && l.unitCost !== undefined ? { unitCost: l.unitCost } : {}) });
-        if (back.error) throw new StockError(back.error, back.status || 409, back.code || "STOCK");
+        const legs = await stockLegs({ orgId, productId: l.productId, productType: l.productType, quantity: l.quantity, session });
+        for (const [k, leg] of legs.entries()) {
+          const own = leg.productId === sid(l.productId);
+          const back = await recordStockMovement({ orgId, productId: leg.productId, warehouseId: sid(r.warehouseId), delta: leg.quantity, type: "RETURN", relatedSaleId: r._id, actorEmail, session, idempotencyKey: `void:${sid(r._id)}:${i}${own ? "" : `:k${k}`}`, note: `Void ${r.saleNumber}`, ...(own && l.unitCost !== null && l.unitCost !== undefined ? { unitCost: l.unitCost } : {}) });
+          if (back.error) throw new StockError(back.error, back.status || 409, back.code || "STOCK");
+        }
       }
       if (r.contactId) await crmContacts.updateOne({ _id: r.contactId, orgId: o }, { $inc: { "commerce.purchaseCount": -1, "commerce.spendMinor": -r.totals.totalMinor, "commerce.voidCount": 1 } }, { session });
+      // Phase 4: cards issued by this sale are cancelled (only if unused); card tenders are put back; points and offers reversed
+      const G = await import("../growth/giftcards.js");
+      await G.cancelIssuedCards({ orgId, saleId: r._id, session });
+      for (const t of r.tenders || []) if ((t.method === "GIFT_CARD" || t.method === "STORE_CREDIT") && t.cardId) await G.creditFromRefund({ orgId, sale: r, method: t.method === "STORE_CREDIT" ? "STORE_CREDIT" : "GIFT_CARD", amountMinor: t.amountMinor, cardId: t.cardId, currency: r.currency, refundNumber: "VOID", session });
+      { const L = await import("../growth/loyalty.js"); await L.reverseSalePoints({ orgId, sale: r, share: 1, session }); }
+      { const P = await import("../growth/promotions.js"); await P.releasePromotionUses({ orgId, saleId: r._id, session }); }
       return r;
     });
   } catch (err) {

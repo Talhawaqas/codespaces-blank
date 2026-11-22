@@ -33,4 +33,4 @@ Production MongoDB is at **500 of 500 collections** (Atlas limit). Options:
 Not in this release (approved decisions): card/provider payments, offline POS, certified hardware, loyalty/gift cards/store credit (liability policy first), online storefront, golf, restaurant ordering.
 
 ## Close-out deliverables (owner order, 21 Nov 2026)
-After the last phase passes its gate: record a detailed, customer-friendly demonstration video in a long and a short version (free AI narration voice, e.g. edge-tts or Piper, with subtitles) and write a PDF summary for the co-founder.
+After the last phase passes its gate: record a detailed, customer-friendly demonstration video in a long and a short version (free AI narration voice, e.g. edge-tts or Piper, with subtitles) and write a PDF summary for the co-founder. Both must cover every phase built, Phase 1 to Phase 6 (owner order 22 Nov 2026).

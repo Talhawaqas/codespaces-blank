@@ -159,7 +159,7 @@ test("receipts: a branded PDF that matches the sale; email refuses honestly when
   assert.equal(r.receipt.notes, undefined, "notes are hidden unless the company turns them on");
   assert.equal(r.receipt.totals.total, 330);
   const saved = process.env.RESEND_API_KEY; process.env.RESEND_API_KEY = "";
-  try { const e = await RC.emailReceipt({ orgId: ORG, membership: cashier, actorEmail: cashier.email, saleId: s.id, to: "buyer@example.com" }); assert.equal(e.code, "EMAIL_NOT_CONFIGURED"); }
+  try { const e = await RC.emailReceipt({ orgId: ORG, membership: cashier, actorEmail: cashier.email, saleId: s.id, to: "buyer@example.com" }); assert.ok(["EMAIL_NOT_CONFIGURED", "EMAIL_TEST_ENVIRONMENT"].includes(e.code), e.code); }
   finally { if (saved !== undefined) process.env.RESEND_API_KEY = saved; }
   const rr = await RC.receiptPdf({ orgId: ORG, membership: cashier, saleId: (await c.salesOrders.findOne({ orgId, "refunds.0": { $exists: true } }))._id.toString(), refundNumber: "R-000001" });
   assert.ok(!rr.error, rr.error); assert.equal(rr.pdf.subarray(0, 4).toString(), "%PDF");

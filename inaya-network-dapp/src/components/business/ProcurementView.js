@@ -15,6 +15,7 @@ import ConfirmButton from "./ConfirmButton";
 import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 import { computePoTotals } from "../../lib/purchase-order-totals.js";
 import { useErpSection, useErpTabsHidden, useErpCreate } from "./erp/ErpNavContext";
+import { PoControls } from "./StockControlViews";
 
 const DESTRUCTIVE_ACTIONS = new Set(["cancel", "reject"]);
 
@@ -656,6 +657,8 @@ function OrderDetailModal({ orgId, orderId, onClose, onChanged }) {
 
         <PoTotalsBreakdown currency={po.currency} totals={po} />
         <PoDetailsEditor orgId={orgId} po={po} onSaved={async () => { await load(); onChanged(); }} />
+        <PoControls orgId={orgId} po={po} onChanged={async () => { await load(); onChanged(); }} />
+        {["ORDERED", "PARTIALLY_RECEIVED"].includes(po.status) && <ReceiveWithProblems orgId={orgId} po={po} onDone={async () => { await load(); onChanged(); }} />}
 
         <div className="flex flex-wrap gap-1.5">
           {(PO_ACTIONS[po.status] || []).map(([action, label]) =>
@@ -838,4 +841,30 @@ function Modal({ title, onClose, children }) {
       </div>
     </div>
   );
+}
+
+// Receiving with problems (Inaya Commerce Phase 3, Master SOW 7.9): damaged units (optionally held in the quarantine
+// location for a supplier return), discrepancy notes and the supplier's packing slip, on top of the normal receipt.
+function ReceiveWithProblems({ orgId, po, onDone }) {
+  const [open, setOpen] = useState(false); const [rows, setRows] = useState(() => po.items.map(() => ({ received: "", damaged: "", toQuarantine: true }))); const [note, setNote] = useState(""); const [type, setType] = useState("DAMAGED"); const [slip, setSlip] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const fld = "w-full bg-black/45 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-[var(--inaya-text-primary)]";
+  if (!open) return <button onClick={() => setOpen(true)} className="py-2 px-3 rounded-xl text-[11px] font-bold uppercase bg-white/5 border border-white/10 text-[var(--inaya-text-muted)]">Receive with problems (damaged / wrong / short)</button>;
+  return <div className="space-y-2 border-t border-white/5 pt-3 text-xs">
+    {po.items.map((it, i) => <div key={i} className="grid grid-cols-[1fr_70px_70px_auto] gap-1.5 items-center"><span className="text-[var(--inaya-text-primary)]">{it.description} <span className="text-[var(--inaya-text-muted)]">({(it.receivedQuantity || 0)}/{it.quantity})</span></span>
+      <input aria-label={`Good units ${it.description}`} className={fld} type="number" min="0" placeholder="good" value={rows[i].received} onChange={(e) => setRows(rows.map((r, k) => (k === i ? { ...r, received: e.target.value } : r)))} />
+      <input aria-label={`Damaged units ${it.description}`} className={fld} type="number" min="0" placeholder="damaged" value={rows[i].damaged} onChange={(e) => setRows(rows.map((r, k) => (k === i ? { ...r, damaged: e.target.value } : r)))} />
+      <label className="text-[var(--inaya-text-muted)] flex items-center gap-1"><input type="checkbox" checked={rows[i].toQuarantine} onChange={(e) => setRows(rows.map((r, k) => (k === i ? { ...r, toQuarantine: e.target.checked } : r)))} />quarantine</label></div>)}
+    <div className="grid grid-cols-[130px_1fr] gap-1.5"><select aria-label="Problem type" className={fld} value={type} onChange={(e) => setType(e.target.value)}><option value="DAMAGED">Damaged</option><option value="WRONG_ITEM">Wrong item</option><option value="SHORT">Short</option><option value="OTHER">Other</option></select><input aria-label="Problem note" className={fld} placeholder="What was wrong?" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+    <input aria-label="Packing slip document id" className={fld} placeholder="Packing slip (Documents id, optional)" value={slip} onChange={(e) => setSlip(e.target.value)} />
+    {err && <p className="text-red-400">{err}</p>}
+    <button disabled={busy} className="py-2 px-3 rounded-xl text-[11px] font-bold uppercase bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40" onClick={async () => {
+      setBusy(true); setErr("");
+      try {
+        const receipts = rows.map((r, i) => ({ itemIndex: i, quantity: Number(r.received) || 0, damaged: Number(r.damaged) || 0, toQuarantine: r.toQuarantine })).filter((r) => r.quantity > 0 || r.damaged > 0);
+        const res = await fetch(`/api/orgs/procurement/orders/${po.id}/receive`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId, receipts, discrepancies: note ? [{ type, note }] : [], packingSlipDocumentId: slip || null }) });
+        const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || "Could not receive.");
+        setOpen(false); onDone();
+      } catch (e) { setErr(e.message); } finally { setBusy(false); }
+    }}>Record receipt</button>
+  </div>;
 }
