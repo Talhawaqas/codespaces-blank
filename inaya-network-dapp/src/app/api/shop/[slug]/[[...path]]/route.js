@@ -15,12 +15,18 @@ import { countVisit, OK } from "../../../../../lib/online/stores.js";
 import { checkRateLimit } from "../../../../../lib/rateLimit.js";
 import { getClientIp } from "../../../../../lib/ipAddress.js";
 import { ccol } from "../../../../../lib/commerce/store.js";
+import { companyMayOperate } from "../../../../../lib/licensing/gate.js";
+// A company whose licence is restricted (License Manager) has its storefront closed: no browsing, carts or checkouts.
+const closed = () => json({ error: "This store is not available right now." }, 503);
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const json = (d, s = 200, cache = "no-store") => NextResponse.json(d, { status: s, headers: { "Cache-Control": cache } });
 const out = (r) => (r?.error ? json({ error: r.error, ...(r.code ? { code: r.code } : {}) }, r.status || 400) : json(r));
-async function limited(req, action, max, windowMs) { try { await checkRateLimit({ action, key: getClientIp(req) || "unknown", max, windowMs }); return null; } catch { return json({ error: "Too many requests. Please wait a moment and try again." }, 429); } }
+async function limited(req, action, max, windowMs) {
+  try { await checkRateLimit({ action, key: getClientIp(req) || "unknown", max, windowMs }); return null; }
+  catch (e) { if (/too many/i.test(String(e?.message))) return json({ error: "Too many requests. Please wait a moment and try again." }, 429); throw e; } // a database outage is a 500, not a rate limit
+}
 function storeBase(req, slug) { const u = new URL(req.url); const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || u.host).toLowerCase(); const base = (process.env.STORE_HOST_BASE || "").toLowerCase(); const proto = u.protocol === "http:" && /^localhost|^127\./.test(host) ? "http:" : "https:"; return base && host === `${slug}.${base}` ? `${proto}//${host}` : `${proto}//${host}/shop/${slug}`; }
 
 export async function GET(req, { params }) {
@@ -29,6 +35,7 @@ export async function GET(req, { params }) {
     const lim = await limited(req, "shop_read", 600, 60000); if (lim) return lim;
     const reqHost = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").toLowerCase().split(":")[0];
     const store = await resolveStore(params.slug === "_host" ? { host: reqHost } : { slug: params.slug }); if (!store) return json({ error: "Store not found." }, 404);
+    if (!(await companyMayOperate(store.orgId))) return closed();
     const qs = new URL(req.url).searchParams;
     if (seg[0] === "sitemap.xml" || seg[0] === "robots.txt") {
       const base = (process.env.STORE_HOST_BASE || "").toLowerCase(); const atRoot = params.slug === "_host" || (base && reqHost === `${store.slug}.${base}`);
@@ -64,6 +71,7 @@ export async function POST(req, { params }) {
   params = await params; const seg = params.path || [];
   try {
     const store = await resolveStore({ slug: params.slug }); if (!store) return json({ error: "Store not found." }, 404);
+    if (!(await companyMayOperate(store.orgId))) return closed();
     const body = await req.json().catch(() => ({}));
     if (seg[0] === "view") { const lim = await limited(req, "shop_view", 120, 60000); if (lim) return json({ ok: true }); await countVisit(store._id, store.orgId, body.kind === "product" ? "productViews" : "views"); return json({ ok: true }); }
     if (seg[0] === "cart") { const lim = await limited(req, "shop_cart", 120, 60000); if (lim) return lim; return out(await cartSummary(store, body)); }

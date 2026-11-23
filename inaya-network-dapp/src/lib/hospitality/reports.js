@@ -5,7 +5,7 @@
 // isn't enough data, the metric says "insufficient_data" instead of showing zero (SOW 18.3). Nothing is hardcoded.
 
 import { getOrgCollections, toObjectId } from "../orgs.js";
-import { zonedDateKey, addDaysKey } from "../engagement/time.js";
+import { zonedDateKey, addDaysKey, zonedToUtc } from "../engagement/time.js";
 import { isLowStock } from "../inventory.js";
 import { hcol, KINDS, CAN, fail, oid, allowedLocations, requireLocation, canAccessHospitality, capabilitiesOf, hRole } from "./store.js";
 import { ACTIVE } from "./reservations.js";
@@ -100,7 +100,7 @@ export async function hospitalityReports({ orgId, membership, locationId, from, 
     c.find({ orgId: org, kind: KINDS.count, locationId: { $in: locIds }, date: inRange, status: { $in: ["APPLIED", "APPLIED_WITH_ERRORS"] } }).project({ lines: 1 }).limit(2000).toArray(),
     c.find({ orgId: org, kind: KINDS.checklistRun, locationId: { $in: locIds }, date: inRange }).project({ status: 1, type: 1 }).limit(20000).toArray(),
     c.find({ orgId: org, kind: KINDS.incident, locationId: { $in: locIds }, date: inRange }).project({ category: 1, status: 1, severity: 1 }).limit(20000).toArray(),
-    purchaseOrders.find({ orgId: org, deletedAt: null, createdAt: { $gte: `${start}T00:00:00.000Z`, $lte: `${end}T23:59:59.999Z` } }).project({ supplierId: 1, items: 1, currency: 1 }).limit(5000).toArray(),
+    purchaseOrders.find({ orgId: org, deletedAt: null, createdAt: { $gte: zonedToUtc(start, "00:00", sc.locations[0].timeZone || "UTC").toISOString(), $lt: zonedToUtc(addDaysKey(end, 1), "00:00", sc.locations[0].timeZone || "UTC").toISOString() } /* the restaurant's local days, not UTC days */ }).project({ supplierId: 1, items: 1, currency: 1 }).limit(5000).toArray(),
   ]);
 
   const n = (s) => res.filter((r) => s.includes(r.status)).length;
@@ -121,7 +121,7 @@ export async function hospitalityReports({ orgId, membership, locationId, from, 
   try {
     const { engagementCollections } = await import("../engagement/store.js");
     const { marketing } = await engagementCollections();
-    const sends = await marketing.aggregate([{ $match: { orgId: org, kind: "send", createdAt: { $gte: `${start}T00:00:00.000Z`, $lte: `${end}T23:59:59.999Z` } } }, { $group: { _id: "$status", n: { $sum: 1 } } }]).toArray();
+    const sends = await marketing.aggregate([{ $match: { orgId: org, kind: "send", createdAt: { $gte: zonedToUtc(start, "00:00", sc.locations[0].timeZone || "UTC").toISOString(), $lt: zonedToUtc(addDaysKey(end, 1), "00:00", sc.locations[0].timeZone || "UTC").toISOString() } /* the restaurant's local days, not UTC days */ } }, { $group: { _id: "$status", n: { $sum: 1 } } }]).toArray();
     campaigns = sends.length ? { status: "ok", byStatus: Object.fromEntries(sends.map((s) => [s._id, s.n])), note: "Provider-reported states. An open is not proof that someone read the email." } : { status: "insufficient_data", note: "No campaign emails were sent in this range." };
   } catch { /* campaigns module unavailable: reported as not_available */ }
 

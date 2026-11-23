@@ -10,6 +10,7 @@
 
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../../../lib/orgs.js";
+import { branchGuard } from "../../../../../../../lib/workforce/branchGuard.js";
 import { transitionSalesOrder } from "../../../../../../../lib/sales-orders.js";
 
 export async function POST(req, { params }) {
@@ -20,6 +21,7 @@ export async function POST(req, { params }) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const bg = await branchGuard({ orgId: body.orgId, membership: auth.membership, saleId: params.orderId }); if (bg) return NextResponse.json({ error: bg.error, code: bg.code }, { status: bg.status }); // branch scoping (SOW 10.1)
     const result = await transitionSalesOrder({ orgId: body.orgId, orderId: params.orderId, action: body.action, membership: auth.membership, actorEmail: auth.session.email, input: body });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json(result.order);

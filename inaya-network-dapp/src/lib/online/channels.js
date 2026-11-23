@@ -17,6 +17,7 @@ import { ccol, oid, sid, clean, nowIso, toMinor, fromMinor, audit, fail, commerc
 import { OK, ensureOnlineIndexes, planLimits } from "./stores.js";
 import { seal, openSafe, last4, safeEqual } from "./crypto.js";
 import { ensureCustomer, placeOrder, recordProviderPayment, systemMembership, SYSTEM_ACTOR } from "./orders.js";
+import { recordStockMovement } from "../inventory.js";
 
 export const PLATFORMS = ["SHOPIFY", "WOOCOMMERCE"];
 const SHOPIFY_API = "2026-10"; // newest stable version (Dev Dashboard offered 2026-01..2026-10 on 22 Nov 2026); re-verify live on each bump
@@ -40,8 +41,9 @@ export function shopifyClient(ch, fetchImpl = fetch) {
     async listProducts() {
       const out = []; let after = null;
       for (let page = 0; page < 40; page++) {
-        const d = await gql(`query($after: String) { products(first: 50, after: $after) { pageInfo { hasNextPage endCursor } nodes { id title status variants(first: 100) { nodes { id sku price title inventoryItem { id } } } } } }`, { after });
-        for (const p of d.products.nodes) for (const v of p.variants.nodes) out.push({ externalProductId: p.id, externalVariantId: v.id, inventoryItemId: v.inventoryItem?.id || null, sku: v.sku || "", title: p.variants.nodes.length > 1 && v.title !== "Default Title" ? `${p.title} - ${v.title}` : p.title, priceMinor: toMinor(v.price), status: p.status });
+        const loc = ch.locationId || null;
+        const d = await gql(`query($after: String${loc ? ", $loc: ID!" : ""}) { products(first: 50, after: $after) { pageInfo { hasNextPage endCursor } nodes { id title status variants(first: 100) { nodes { id sku price title inventoryItem { id${loc ? ' inventoryLevel(locationId: $loc) { quantities(names: ["available"]) { quantity } }' : ""} } } } } } }`, loc ? { after, loc } : { after });
+        for (const p of d.products.nodes) for (const v of p.variants.nodes) out.push({ externalProductId: p.id, externalVariantId: v.id, inventoryItemId: v.inventoryItem?.id || null, sku: v.sku || "", title: p.variants.nodes.length > 1 && v.title !== "Default Title" ? `${p.title} - ${v.title}` : p.title, priceMinor: toMinor(v.price), status: p.status, stock: v.inventoryItem?.inventoryLevel ? Math.max(0, Number(v.inventoryItem.inventoryLevel.quantities?.[0]?.quantity) || 0) : null });
         if (!d.products.pageInfo.hasNextPage) break; after = d.products.pageInfo.endCursor;
       }
       return out;
@@ -128,8 +130,8 @@ export function wooClient(ch, fetchImpl = fetch) {
       for (let page = 1; page <= 50; page++) {
         const rows = await api("GET", `products?per_page=100&page=${page}`); if (!rows?.length) break;
         for (const p of rows) {
-          if (p.type === "variable") { const vars = await api("GET", `products/${p.id}/variations?per_page=100`); for (const v of vars) out.push({ externalProductId: String(p.id), externalVariantId: String(v.id), inventoryItemId: null, sku: v.sku || "", title: `${p.name} - ${(v.attributes || []).map((a) => a.option).join(" / ")}`, priceMinor: toMinor(v.regular_price || v.price || 0), status: p.status }); }
-          else out.push({ externalProductId: String(p.id), externalVariantId: null, inventoryItemId: null, sku: p.sku || "", title: p.name, priceMinor: toMinor(p.regular_price || p.price || 0), status: p.status });
+          if (p.type === "variable") { const vars = await api("GET", `products/${p.id}/variations?per_page=100`); for (const v of vars) out.push({ externalProductId: String(p.id), externalVariantId: String(v.id), inventoryItemId: null, sku: v.sku || "", title: `${p.name} - ${(v.attributes || []).map((a) => a.option).join(" / ")}`, priceMinor: toMinor(v.regular_price || v.price || 0), status: p.status, stock: v.manage_stock ? Math.max(0, Number(v.stock_quantity) || 0) : null }); }
+          else out.push({ externalProductId: String(p.id), externalVariantId: null, inventoryItemId: null, sku: p.sku || "", title: p.name, priceMinor: toMinor(p.regular_price || p.price || 0), status: p.status, stock: p.manage_stock ? Math.max(0, Number(p.stock_quantity) || 0) : null });
         }
         if (rows.length < 100) break;
       }
@@ -318,7 +320,7 @@ export async function pullProducts({ orgId, membership, id, fetchImpl = fetch })
       let matched = 0, conflicts = 0; const unmatched = [];
       for (const it of items) {
         const p = bySku.get(String(it.sku).toLowerCase()) || allSkus.get(String(it.sku).toLowerCase());
-        if (!it.sku || !p) { unmatched.push({ sku: it.sku || null, title: it.title, price: fromMinor(it.priceMinor || 0), externalProductId: it.externalProductId, externalVariantId: it.externalVariantId, inventoryItemId: it.inventoryItemId || null }); continue; }
+        if (!it.sku || !p) { unmatched.push({ sku: it.sku || null, title: it.title, price: fromMinor(it.priceMinor || 0), externalProductId: it.externalProductId, externalVariantId: it.externalVariantId, inventoryItemId: it.inventoryItemId || null, stock: it.stock ?? null }); continue; }
         matched++;
         const prev = await c.findOne({ orgId: ch.orgId, kind: OK.map, channelId: ch._id, productId: p._id });
         await c.updateOne({ orgId: ch.orgId, kind: OK.map, channelId: ch._id, productId: p._id }, { $set: { externalProductId: it.externalProductId, externalVariantId: it.externalVariantId, inventoryItemId: it.inventoryItemId, sku: it.sku, lastSeen: { priceMinor: it.priceMinor, title: it.title, at: nowIso() }, updatedAt: nowIso() }, $setOnInsert: { createdAt: nowIso(), lastPushed: { priceMinor: it.priceMinor, title: it.title } } }, { upsert: true });
@@ -393,16 +395,23 @@ export async function pushProducts({ orgId, membership, actorEmail, id, productI
   return { results };
 }
 /** Creates Inaya products for channel items that have no match (by SKU), then maps them. */
-export async function importUnmatched({ orgId, membership, actorEmail, id, items = [] }) {
+export async function importUnmatched({ orgId, membership, actorEmail, id, items = [], fetchImpl = fetch }) {
   const denied = await commerceAccess({ orgId, membership, need: "manage" }); if (denied) return denied;
   const ch = await channelDoc(orgId, id); if (!ch) return fail("Connected store not found.", 404);
+  // Opening stock comes from the store itself, re-read here: without it the products would start at 0 in Inaya and the next
+  // stock push would set the store's real stock to 0 (found in the live WooCommerce test, 22 Nov 2026).
+  const live = new Map(); let liveErr = null;
+  try { for (const x of await clientFor(ch, fetchImpl).listProducts()) live.set(`${x.externalProductId}|${x.externalVariantId || ""}`, x.stock); } catch (e) { liveErr = e?.message || "could not read the store"; }
+  if (liveErr) return fail(`Couldn't read the store's current stock (${liveErr}). Nothing was created; try again.`, 502);
   const c = await ccol(); const { products } = await getOrgCollections(); const out = [];
   for (const it of (Array.isArray(items) ? items : []).slice(0, 200)) {
     const sku = clean(it.sku, 64); if (!sku) { out.push({ ok: false, error: "Item has no SKU in the channel; add one there first." }); continue; }
     if (await products.findOne({ orgId: ch.orgId, sku, deletedAt: null })) { out.push({ sku, ok: false, error: "A product with this SKU already exists." }); continue; }
     const now = nowIso(); const r = await products.insertOne({ orgId: ch.orgId, departmentId: ch.departmentId, name: clean(it.title, 200) || sku, sku, unit: "each", unitPrice: Number(it.price) || 0, productType: "STOCK", status: "ACTIVE", createdByEmail: actorEmail, createdAt: now, updatedAt: now, deletedAt: null });
     await c.insertOne({ orgId: ch.orgId, kind: OK.map, channelId: ch._id, productId: r.insertedId, externalProductId: String(it.externalProductId), externalVariantId: it.externalVariantId ? String(it.externalVariantId) : null, inventoryItemId: it.inventoryItemId || null, sku, lastPushed: { priceMinor: toMinor(it.price || 0), title: it.title }, createdAt: now, updatedAt: now });
-    out.push({ sku, ok: true, productId: sid(r.insertedId) });
+    const qty = live.get(`${String(it.externalProductId)}|${it.externalVariantId ? String(it.externalVariantId) : ""}`);
+    if (qty > 0) { const mv = await recordStockMovement({ orgId: sid(ch.orgId), productId: sid(r.insertedId), warehouseId: sid(ch.warehouseId), delta: qty, type: "OPENING", actorEmail, note: `Opening stock from ${ch.platform === "SHOPIFY" ? "Shopify" : "WooCommerce"} (${ch.name})` }); if (mv?.error) { out.push({ sku, ok: true, productId: sid(r.insertedId), openingStock: 0, warning: `Stock not brought in: ${mv.error}` }); continue; } }
+    out.push({ sku, ok: true, productId: sid(r.insertedId), openingStock: qty > 0 ? qty : 0, stockTracked: qty !== null && qty !== undefined });
   }
   await audit({ orgId, actorEmail, recordType: "SALES_CHANNEL", recordId: ch._id, action: "CHANNEL_PRODUCTS_IMPORTED", metadata: { count: out.filter((x) => x.ok).length } });
   return { results: out };

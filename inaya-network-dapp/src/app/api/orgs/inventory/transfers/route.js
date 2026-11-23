@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId, getOrgCollections } from "../../../../../lib/orgs.js";
 import { transferStock } from "../../../../../lib/inventory.js";
+import { allowedLocation, denyLocation } from "../../../../../lib/workforce/scope.js";
 
 export async function POST(req) {
   try {
@@ -20,6 +21,8 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    // Branch scoping (SOW 10.1): staff can send stock out of their own branch only (to any branch).
+    if (!allowedLocation(auth.membership, sourceWarehouseId)) { const d = denyLocation(); return NextResponse.json({ error: d.error, code: d.code }, { status: d.status }); }
 
     const { products, warehouses } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);

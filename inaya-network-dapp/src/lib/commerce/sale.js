@@ -20,6 +20,7 @@ import { priceCart, roleCovers, cashRounded } from "./pricing.js";
 import { withStockTransaction, recordStockMovement, StockError } from "../inventory.js";
 import { isStocked, stockLegs } from "./catalogue.js";
 import { getOrgCollections } from "../orgs.js";
+import { scopeFilter } from "../workforce/scope.js";
 
 export const TENDERS = ["CASH", "BANK_TRANSFER", "MANUAL_REFERENCE", "GIFT_CARD", "STORE_CREDIT"]; // gift card / store credit = liability tenders (Phase 4) // card/provider tenders arrive with an approved provider integration
 const APPROVAL_TTL_MS = 10 * 60 * 1000;
@@ -258,7 +259,7 @@ export async function listSales({ orgId, membership, from, to, warehouseId, shif
   const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
   const { salesOrders } = await getOrgCollections(); const q = { orgId: oid(orgId), channel: "POS" };
   if (from || to) q.completedAt = { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) };
-  if (warehouseId) q.warehouseId = oid(warehouseId); if (shiftId) q.shiftId = oid(shiftId);
+  if (warehouseId) q.warehouseId = oid(warehouseId); else Object.assign(q, scopeFilter(membership, "warehouseId")); if (shiftId) q.shiftId = oid(shiftId);
   return { sales: (await salesOrders.find(q).sort({ completedAt: -1 }).limit(Math.min(500, limit)).toArray()).map(saleView) };
 }
 /** Receipt data for print/download/email: the company, the sale and the return policy. Built only from the stored sale,

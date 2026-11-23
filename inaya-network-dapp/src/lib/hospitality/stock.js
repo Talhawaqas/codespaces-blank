@@ -6,6 +6,7 @@
 // receiving itself stays in Procurement. Nothing here creates or submits a purchase order.
 
 import { getOrgCollections, toObjectId } from "../orgs.js";
+import { zonedDateKey } from "../engagement/time.js";
 import { recordStockMovement, isLowStock } from "../inventory.js";
 import { suggestedReorderQuantity, findOpenReorderRequest, draftReorderRequest } from "../inventory-reorder.js";
 import { hcol, KINDS, CAN, fail, clean, nowIso, oid, sid, intIn, logH, emitH, notifyRoles, requireLocation, nextNumber } from "./store.js";
@@ -114,7 +115,7 @@ export async function recordWastage({ orgId, membership, actorEmail, locationId,
   const settings = await getStockSettings(orgId);
   const pending = wastageNeedsApproval(q, settings);
   const seq = await nextNumber(orgId, "wastage");
-  const doc = { orgId: toObjectId(orgId), kind: KINDS.wastage, locationId: got.location._id, warehouseId: got.location.warehouseId, ref: `W-${String(seq).padStart(5, "0")}`, productId: p._id, unit: p.unit || "unit", quantity: q, reason, note: clean(note, 300) || null, imageDocumentId: oid(imageDocumentId), at: when, date: when.slice(0, 10), status: pending ? "PENDING_APPROVAL" : "RECORDED", recordedByEmail: actorEmail, createdAt: nowIso(), updatedAt: nowIso() };
+  const doc = { orgId: toObjectId(orgId), kind: KINDS.wastage, locationId: got.location._id, warehouseId: got.location.warehouseId, ref: `W-${String(seq).padStart(5, "0")}`, productId: p._id, unit: p.unit || "unit", quantity: q, reason, note: clean(note, 300) || null, imageDocumentId: oid(imageDocumentId), at: when, date: zonedDateKey(new Date(when), got.location.timeZone || "UTC"), status: pending ? "PENDING_APPROVAL" : "RECORDED", recordedByEmail: actorEmail, createdAt: nowIso(), updatedAt: nowIso() };
   const c = await hcol();
   if (!pending) {
     const mv = await applyWastage(orgId, doc, actorEmail);
@@ -187,7 +188,7 @@ export async function submitStockCount({ orgId, membership, actorEmail, location
   const settings = await getStockSettings(orgId);
   const v = countVariance(clean2, settings.countVarianceApprovalPercent);
   const seq = await nextNumber(orgId, "count");
-  const doc = { orgId: org, kind: KINDS.count, locationId: got.location._id, warehouseId: got.location.warehouseId, ref: `C-${String(seq).padStart(5, "0")}`, lines: v.lines, note: clean(note, 300) || null, status: v.changed === 0 ? "NO_CHANGE" : v.needsApproval ? "PENDING_APPROVAL" : "SUBMITTED", countedByEmail: actorEmail, date: nowIso().slice(0, 10), createdAt: nowIso(), updatedAt: nowIso() };
+  const doc = { orgId: org, kind: KINDS.count, locationId: got.location._id, warehouseId: got.location.warehouseId, ref: `C-${String(seq).padStart(5, "0")}`, lines: v.lines, note: clean(note, 300) || null, status: v.changed === 0 ? "NO_CHANGE" : v.needsApproval ? "PENDING_APPROVAL" : "SUBMITTED", countedByEmail: actorEmail, date: zonedDateKey(new Date(), got.location.timeZone || "UTC"), createdAt: nowIso(), updatedAt: nowIso() };
   const c = await hcol();
   doc._id = (await c.insertOne(doc)).insertedId;
   await logH({ orgId, recordType: "STOCK_COUNT", recordId: doc._id, actorEmail, action: "STOCK_COUNT_SUBMITTED", metadata: { ref: doc.ref, lines: v.lines.length, changed: v.changed, needsApproval: v.needsApproval } });
@@ -254,7 +255,7 @@ export async function recordReceiving({ orgId, membership, actorEmail, locationI
   }
   const failed = Object.values(checklist).some((v) => v === false);
   const seq = await nextNumber(orgId, "receiving");
-  const doc = { orgId: org, kind: KINDS.receiving, locationId: got.location._id, ref: `D-${String(seq).padStart(5, "0")}`, purchaseOrderId: po._id, supplierId: po.supplierId || null, checklist, discrepancies: issues, note: clean(note, 500) || null, status: issues.length || failed ? "OPEN" : "CLEAN", recordedByEmail: actorEmail, date: nowIso().slice(0, 10), createdAt: nowIso(), updatedAt: nowIso() };
+  const doc = { orgId: org, kind: KINDS.receiving, locationId: got.location._id, ref: `D-${String(seq).padStart(5, "0")}`, purchaseOrderId: po._id, supplierId: po.supplierId || null, checklist, discrepancies: issues, note: clean(note, 500) || null, status: issues.length || failed ? "OPEN" : "CLEAN", recordedByEmail: actorEmail, date: zonedDateKey(new Date(), got.location.timeZone || "UTC"), createdAt: nowIso(), updatedAt: nowIso() };
   const c = await hcol();
   doc._id = (await c.insertOne(doc)).insertedId;
   await logH({ orgId, recordType: "RECEIVING", recordId: doc._id, actorEmail, action: doc.status === "OPEN" ? "DELIVERY_DISCREPANCY_RECORDED" : "DELIVERY_CHECKED", metadata: { ref: doc.ref, purchaseOrderId: String(po._id), discrepancies: issues.length } });

@@ -197,7 +197,7 @@ function shopifyMock(st) {
     const q = JSON.parse(init.body || "{}"); const text = q.query || ""; const ok = (data) => new Response(JSON.stringify({ data }), { status: 200 });
     if (st.piiBlock && /customer {/.test(text)) return new Response(JSON.stringify({ errors: [{ message: "This app is not approved to access the Customer object." }] }), { status: 200 });
     if (/shop \{ name/.test(text)) return ok({ shop: { name: "Dev store", currencyCode: "PKR" }, locations: { nodes: [{ id: "gid://shopify/Location/1", name: "Shop", isActive: true }] } });
-    if (/products\(first: 50/.test(text)) return ok({ products: { pageInfo: { hasNextPage: false }, nodes: [{ id: "gid://shopify/Product/10", title: "Shirt", status: "ACTIVE", variants: { nodes: [{ id: "gid://shopify/ProductVariant/11", sku: `SH-${T}`, price: st.shopifyPrice || "1000.00", title: "Default Title", inventoryItem: { id: "gid://shopify/InventoryItem/12" } }] } }, { id: "gid://shopify/Product/20", title: "Hat", status: "ACTIVE", variants: { nodes: [{ id: "gid://shopify/ProductVariant/21", sku: `HAT-${T}`, price: "300.00", title: "Default Title", inventoryItem: { id: "gid://shopify/InventoryItem/22" } }] } }] } });
+    if (/products\(first: 50/.test(text)) return ok({ products: { pageInfo: { hasNextPage: false }, nodes: [{ id: "gid://shopify/Product/10", title: "Shirt", status: "ACTIVE", variants: { nodes: [{ id: "gid://shopify/ProductVariant/11", sku: `SH-${T}`, price: st.shopifyPrice || "1000.00", title: "Default Title", inventoryItem: { id: "gid://shopify/InventoryItem/12" } }] } }, { id: "gid://shopify/Product/20", title: "Hat", status: "ACTIVE", variants: { nodes: [{ id: "gid://shopify/ProductVariant/21", sku: `HAT-${T}`, price: "300.00", title: "Default Title", inventoryItem: { id: "gid://shopify/InventoryItem/22", inventoryLevel: { quantities: [{ quantity: 7 }] } } }] } }] } });
     if (/inventoryActivate/.test(text)) return ok({ inventoryActivate: { userErrors: [] } });
     if (/inventorySetQuantities/.test(text)) { st.stock = q.variables.in.quantities; return ok({ inventorySetQuantities: { userErrors: [] } }); }
     if (/order\(id: \$id\) \{ fulfillmentOrders/.test(text)) return ok({ order: { fulfillmentOrders: { nodes: [{ id: "gid://shopify/FulfillmentOrder/1", status: "OPEN" }] } } });
@@ -222,6 +222,8 @@ test("Shopify: plan limit, match by SKU, stock push, order import once (backorde
   assert.equal(second.code, "CHANNEL_LIMIT", "Business includes one Shopify store");
   const pull = await CH.pullProducts({ orgId: ORG, membership: owner, id: ch.id, fetchImpl }); assert.equal(pull.matched, 1); assert.equal(pull.unmatched[0].sku, `HAT-${T}`);
   const imp = await CH.importUnmatched({ orgId: ORG, membership: owner, actorEmail: owner.email, id: ch.id, items: pull.unmatched }); assert.ok(imp.results[0].ok);
+  // the store's current stock comes in as opening stock, so the next push can't zero the store (live WooCommerce finding, 22 Nov)
+  assert.equal(imp.results[0].openingStock, 7); assert.equal((await lvl(new ObjectId(imp.results[0].productId))).quantity, 7, "opening stock recorded in the channel's warehouse");
   const free = (await lvl(pShirt)).quantity - ((await lvl(pShirt)).reserved || 0);
   await CH.syncStockNow({ orgId: ORG, membership: owner, id: ch.id, force: true, fetchImpl });
   assert.equal(st.stock.find((x) => x.inventoryItemId === "gid://shopify/InventoryItem/12").quantity, free, "Shopify gets Inaya's available stock");

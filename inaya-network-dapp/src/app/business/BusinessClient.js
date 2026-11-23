@@ -46,6 +46,7 @@ const TasksView = dynamic(() => import("../../components/business/TasksView"), {
 const CRMView = dynamic(() => import("../../components/business/CRMView"), { ssr: false, loading: ScreenLoading });
 const ProcurementView = dynamic(() => import("../../components/business/ProcurementView"), { ssr: false, loading: ScreenLoading });
 const GrowthView = dynamic(() => import("../../components/business/GrowthView"), { ssr: false, loading: ScreenLoading });
+const WorkforceView = dynamic(() => import("../../components/business/WorkforceView"), { ssr: false, loading: ScreenLoading });
 const OnlineStoreView = dynamic(() => import("../../components/business/OnlineStoreView"), { ssr: false, loading: ScreenLoading });
 const PosView = dynamic(() => import("../../components/business/commerce/PosView"), { ssr: false, loading: ScreenLoading });
 const InventoryView = dynamic(() => import("../../components/business/InventoryView"), { ssr: false, loading: ScreenLoading });
@@ -1482,6 +1483,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "pos" && <PosView orgId={orgId} />}
       {activeView === "growth" && <GrowthView orgId={orgId} />}
       {activeView === "online" && <OnlineStoreView orgId={orgId} />}
+      {activeView === "workforce" && <WorkforceView orgId={orgId} />}
       {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
       {activeView === "hr" && <HRView orgId={orgId} email={email} />}
       {activeView === "sign" && <SignView orgId={orgId} email={email} />}

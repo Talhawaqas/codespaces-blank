@@ -20,6 +20,7 @@
 // time zone (Commerce settings), so a period's figures never change after the period closes.
 import { ccol, KINDS, fail, oid, sid, commerceAccess, getSettings, fromMinor } from "./store.js";
 import { getOrgCollections } from "../orgs.js";
+import { memberLocations } from "../workforce/scope.js";
 
 const DAY = 86400000;
 function zoneParts(iso, tz) {
@@ -29,12 +30,13 @@ function zoneParts(iso, tz) {
 const add = (map, key, field, v) => { const b = (map[key] ||= { sales: 0, refunds: 0, grossMinor: 0, discountMinor: 0, returnsMinor: 0, netMinor: 0, taxMinor: 0, totalMinor: 0, units: 0 }); b[field] = (b[field] || 0) + v; return b; };
 
 /** Loads the period's transactions once; both the summary and the drill-down use exactly this set. */
-async function load({ orgId, from, to, warehouseId, registerId }) {
+async function load({ orgId, from, to, warehouseId, registerId, scope = null }) {
   const { salesOrders, products, warehouses } = await getOrgCollections(); const o = oid(orgId);
   const base = { orgId: o, channel: "POS" };
-  if (warehouseId) base.warehouseId = oid(warehouseId);
+  const wq = warehouseId ? oid(warehouseId) : scope ? { $in: scope.map(oid) } : null; // scope: the member's branches (SOW 10.1)
+  if (wq) base.warehouseId = wq;
   const sales = await salesOrders.find({ ...base, completedAt: { $gte: from, $lt: to }, ...(registerId ? { registerId: oid(registerId) } : {}) }).toArray();
-  const withRefunds = await salesOrders.find({ orgId: o, channel: "POS", refunds: { $elemMatch: { createdAt: { $gte: from, $lt: to }, ...(warehouseId ? { warehouseId: oid(warehouseId) } : {}), ...(registerId ? { registerId: oid(registerId) } : {}) } } }).toArray();
+  const withRefunds = await salesOrders.find({ orgId: o, channel: "POS", refunds: { $elemMatch: { createdAt: { $gte: from, $lt: to }, ...(wq ? { warehouseId: wq } : {}), ...(registerId ? { registerId: oid(registerId) } : {}) } } }).toArray();
   const ids = new Set(); for (const s of [...sales, ...withRefunds]) for (const l of s.lines) ids.add(String(l.productId));
   const prods = await products.find({ orgId: o, _id: { $in: [...ids].map(oid) } }, { projection: { category: 1, name: 1, sku: 1 } }).toArray();
   const cat = new Map(prods.map((p) => [String(p._id), p.category || "Uncategorised"]));
@@ -82,7 +84,7 @@ function periodBounds(input, tz) {
 export async function commerceReport({ orgId, membership, input = {} }) {
   const denied = await commerceAccess({ orgId, membership, need: "supervise" }); if (denied) return denied;
   const settings = await getSettings(orgId); const p = periodBounds(input, settings.timezone || "UTC"); if (p.error) return p;
-  const data = await load({ orgId, from: p.from, to: p.to, warehouseId: input.warehouseId, registerId: input.registerId });
+  const data = await load({ orgId, from: p.from, to: p.to, warehouseId: input.warehouseId, registerId: input.registerId, scope: memberLocations(membership) });
   const all = rows(data, { ...p, warehouseId: input.warehouseId, registerId: input.registerId });
   const T = { sales: 0, refunds: 0, voids: 0, voidMinor: 0, grossMinor: 0, discountMinor: 0, returnsMinor: 0, returnsTaxMinor: 0, salesTaxMinor: 0, salesNetMinor: 0, salesTotalMinor: 0, refundTotalMinor: 0, units: 0, costMinor: 0, refundCostMinor: 0, costedLines: 0, stockLines: 0, overrides: 0, approvals: 0 };
   const by = Object.fromEntries(DIMENSIONS.map((d) => [d, {}])); const methods = {};
@@ -131,7 +133,7 @@ export async function commerceReport({ orgId, membership, input = {} }) {
 export async function reportTransactions({ orgId, membership, input = {} }) {
   const denied = await commerceAccess({ orgId, membership, need: "supervise" }); if (denied) return denied;
   const settings = await getSettings(orgId); const p = periodBounds(input, settings.timezone || "UTC"); if (p.error) return p;
-  const data = await load({ orgId, from: p.from, to: p.to, warehouseId: input.warehouseId, registerId: input.registerId });
+  const data = await load({ orgId, from: p.from, to: p.to, warehouseId: input.warehouseId, registerId: input.registerId, scope: memberLocations(membership) });
   const all = rows(data, { ...p, warehouseId: input.warehouseId, registerId: input.registerId }).filter((r) => !r.isHeader);
   const dim = DIMENSIONS.includes(input.dimension) ? input.dimension : null;
   const pick = all.filter((r) => (!dim || r[dim] === input.value) && (!input.kind || r.kind === input.kind));

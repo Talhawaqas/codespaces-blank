@@ -170,6 +170,10 @@ export async function getBulkDocumentAccess({ orgId, email, membership, docs }) 
  *  so they don't each re-derive it. Org owner/admin naturally get
  *  everything, since canAccessDepartment/getBulkDocumentAccess already
  *  bypass every check for them. */
+function branchScoped(membership, list) {
+  const ids = canManageOrg(membership) ? [] : (membership?.locationIds || []).map(String).filter(Boolean);
+  return ids.length ? list.filter((w) => ids.includes(String(w._id))) : list;
+}
 export async function getAccessibleScope({ orgId, membership, email }) {
   const {
     departments, projects, orgDocuments, projectMembers, tasks,
@@ -381,7 +385,9 @@ export async function getAccessibleScope({ orgId, membership, email }) {
 
   return {
     visibleDepartments, visibleProjects, visibleDocuments, visibleTasks,
-    visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleWarehouses, visibleProducts,
+    visibleContacts, visibleDeals, visibleSuppliers, visiblePurchaseRequests, visiblePurchaseOrders, visibleProducts,
+    // Branch scoping (Commerce SOW 10.1): a member assigned to branches sees only those warehouses/branches.
+    visibleWarehouses: branchScoped(membership, visibleWarehouses),
     visibleInvoices, visibleExpenses, visibleEmployees, visibleLeaveRequests,
     visiblePatients, visibleEncounters, visibleClients, visibleMatters,
     visibleFunds, visibleEntities,

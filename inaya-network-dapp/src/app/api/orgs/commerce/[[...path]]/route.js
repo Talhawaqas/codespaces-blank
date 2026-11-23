@@ -37,6 +37,7 @@ import * as RET from "../../../../../lib/commerce/returns.js";
 import * as SH from "../../../../../lib/commerce/shifts.js";
 import * as REP from "../../../../../lib/commerce/reports.js";
 import * as RC from "../../../../../lib/commerce/receipts.js";
+import { branchGuard } from "../../../../../lib/workforce/branchGuard.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -56,6 +57,9 @@ export async function GET(req, { params }) {
   try {
     const orgId = new URL(req.url).searchParams.get("orgId"); const c = await ctx(req, orgId); if (c.error) return c.error;
     const gate = await S.commerceAccess({ orgId, membership: c.membership, need: "sell" }); if (gate) return out(gate);
+    { const q0 = new URL(req.url).searchParams; const s0 = params.path || []; // branch scoping (SOW 10.1): only the member's branches
+      const bg = await branchGuard({ orgId, membership: c.membership, warehouseIds: [q0.get("warehouseId")], registerId: q0.get("registerId"), shiftId: q0.get("shiftId") || (s0[0] === "shifts" ? s0[1] : null),
+        saleId: s0[0] === "sales" && s0[1] && s0[1] !== "by-number" ? s0[1] : null, saleNumber: s0[0] === "sales" && s0[1] === "by-number" ? s0[2] : null }); if (bg) return out(bg); }
     if (path === "settings") return json({ settings: await S.getSettings(orgId), role: S.commerceRoleOf(c.membership) });
     if (path === "staff") return out(await S.listCommerceStaff({ orgId, membership: c.membership }));
     if (path === "tax-categories") return json({ categories: await TAX.listTaxCategories(orgId) });
@@ -92,6 +96,9 @@ async function write(req, params, method) {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
     const orgId = body.orgId || new URL(req.url).searchParams.get("orgId"); const c = await ctx(req, orgId); if (c.error) return c.error;
     const base = { orgId, membership: c.membership, actorEmail: c.actorEmail };
+    { const s0 = params.path || []; // branch scoping (SOW 10.1): every branch the write touches must be one of the member's
+      const bg = await branchGuard({ orgId, membership: c.membership, warehouseIds: [body.warehouseId, body.exchange?.warehouseId], registerId: body.registerId || (s0[0] === "registers" ? body.id : null), shiftId: s0[0] === "shifts" ? s0[1] : null,
+        saleId: (s0[0] === "sales" && s0[1]) || body.saleId || null, saleNumber: body.saleNumber || null }); if (bg) return out(bg); }
     if (method === "PUT" && path === "settings") return out(await S.updateSettings({ ...base, input: body }));
     if (method === "PUT" && path === "staff") return out(await S.setCommerceRole({ ...base, email: body.email, commerceRole: body.commerceRole ?? null }));
     if (method === "POST" && path === "tax-categories") return out(await TAX.saveTaxCategory({ ...base, id: body.id, code: body.code, name: body.name, rate: Number(body.rate), isDefault: body.isDefault === true, active: body.active !== false }));

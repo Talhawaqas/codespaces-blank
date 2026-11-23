@@ -11,6 +11,7 @@
 import { ccol, ensureCommerceIndexes, KINDS, fail, clean, nowIso, oid, sid, commerceAccess, commerceRoleOf, getSettings, nextNumber, audit, emitCommerceEvent, toMinor, fromMinor } from "./store.js";
 import { roleCovers } from "./pricing.js";
 import { getOrgCollections } from "../orgs.js";
+import { scopeFilter } from "../workforce/scope.js";
 
 const m = (v) => fromMinor(v || 0);
 
@@ -18,7 +19,7 @@ const m = (v) => fromMinor(v || 0);
 export async function listRegisters({ orgId, membership }) {
   const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
   await ensureCommerceIndexes(); const c = await ccol(); const o = oid(orgId);
-  const regs = await c.find({ orgId: o, kind: KINDS.register }).sort({ name: 1 }).toArray();
+  const regs = await c.find({ orgId: o, kind: KINDS.register, ...scopeFilter(membership, "warehouseId") }).sort({ name: 1 }).toArray();
   const open = await c.find({ orgId: o, kind: KINDS.shift, status: "OPEN" }).toArray();
   return { registers: regs.map((r) => { const sh = open.find((x) => sid(x.registerId) === sid(r._id)); return { id: sid(r._id), code: r.code, name: r.name, warehouseId: sid(r.warehouseId), active: r.active !== false, openShift: sh ? { id: sid(sh._id), shiftNumber: sh.shiftNumber, openedBy: sh.openedBy, openedAt: sh.openedAt } : null }; }) };
 }
@@ -116,7 +117,7 @@ export async function getShift({ orgId, membership, shiftId }) {
 }
 export async function listShifts({ orgId, membership, registerId, status, limit = 50 }) {
   const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
-  const c = await ccol(); const q = { orgId: oid(orgId), kind: KINDS.shift };
+  const c = await ccol(); const q = { orgId: oid(orgId), kind: KINDS.shift, ...scopeFilter(membership, "warehouseId") };
   if (registerId) q.registerId = oid(registerId); if (status === "NEEDS_REVIEW") { q.status = "CLOSED"; q.review = null; } else if (status) q.status = status;
   const rows = await c.find(q).sort({ openedAt: -1 }).limit(Math.min(200, limit)).toArray();
   return { shifts: await Promise.all(rows.map((r) => shiftView(orgId, r, false))) };

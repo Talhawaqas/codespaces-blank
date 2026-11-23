@@ -46,7 +46,7 @@ export const ERP_MODULES = [
       { id: "tasks", label: "My tasks", items: ["crm:contacts!new", "crm:deals!new", "crm:orders!new"] },
       { id: "customers", label: "Customers and deals", items: ["crm:contacts", "crm:deals", "crm:orders"] },
       { id: "store", label: "Shop counter", items: ["pos"] },
-      { id: "growth", label: "Customer growth", items: ["growth"] },
+      { id: "growth", label: "Customer growth", items: ["growth", "appointments", "campaigns"] },
       { id: "online", label: "Online store & Shopify / WooCommerce", items: ["online"] },
       { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
     ],
@@ -87,6 +87,7 @@ export const ERP_MODULES = [
       { id: "overview", label: "Overview", items: ["moduleOverview:people"] },
       { id: "tasks", label: "My tasks", items: ["hr:employees!new", "hr:leave!new"] },
       { id: "staff", label: "Staff", items: ["hr:employees", "hr:leave", "hr:managers", "hr:orgChart", "hr:onboarding"] },
+      { id: "workforce", label: "Time, rota and commissions", items: ["workforce"] },
     ],
   },
   {

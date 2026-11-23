@@ -67,6 +67,10 @@ export async function POST(req) {
     const departmentObjectId = toObjectId(departmentId);
     const department = await departments.findOne({ _id: departmentObjectId, orgId: orgObjectId });
     if (!department) return NextResponse.json({ error: "Department not found." }, { status: 404 });
+    // Commerce Phase 6 / pricing Option A: branch limits apply only once the new pricing is switched on, and only to
+    // companies on it (inert until then; existing companies keep their warehouses).
+    const { canAddBranch } = await import("../../../../../lib/workforce/scope.js");
+    const limited = await canAddBranch(orgId); if (limited) return NextResponse.json({ error: limited.error, code: limited.code }, { status: limited.status });
 
     const now = new Date().toISOString();
     const result = await warehouses.insertOne({

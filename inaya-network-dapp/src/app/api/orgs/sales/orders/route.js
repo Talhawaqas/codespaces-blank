@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { createSalesOrder, serializeSalesOrder, SALES_ORDER_STATES } from "../../../../../lib/sales-orders.js";
+import { allowedLocation, denyLocation, scopeFilter } from "../../../../../lib/workforce/scope.js";
 
 export async function GET(req) {
   try {
@@ -20,7 +21,7 @@ export async function GET(req) {
 
     const { salesOrders, crmContacts, warehouses } = await getOrgCollections();
     const org = toObjectId(orgId);
-    const q = { orgId: org, deletedAt: null, channel: { $ne: "POS" } }; // POS sales have their own screens
+    const q = { orgId: org, deletedAt: null, channel: { $ne: "POS" }, ...scopeFilter(auth.membership, "warehouseId") }; // POS sales have their own screens; branch-scoped (SOW 10.1)
     const status = searchParams.get("status");
     if (SALES_ORDER_STATES.includes(status)) q.status = status;
     const contactId = searchParams.get("contactId");
@@ -47,6 +48,7 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, body.orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if (body.warehouseId && !allowedLocation(auth.membership, body.warehouseId)) { const d = denyLocation(); return NextResponse.json({ error: d.error, code: d.code }, { status: d.status }); }
     const result = await createSalesOrder({ ...body, membership: auth.membership, actorEmail: auth.session.email });
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json(result.order);

@@ -52,6 +52,7 @@ export const NAV_ITEMS = [
   { key: "bookkeeper", label: "AI Bookkeeper", icon: "finance", group: "operations" },
   { key: "documentAutomation", label: "Document Automation", icon: "documents", group: "operations" },
   { key: "hr", label: "HR", icon: "hr", group: "operations" },
+  { key: "workforce", label: "Time & Rota", icon: "hr", group: "operations" },
   { key: "sign", label: "Inaya Sign", icon: "documents", group: "operations" },
   { key: "escrow", label: "Milestone Escrow", icon: "finance", group: "operations" },
   { key: "storageManager", label: "DePIN Storage", icon: "resilience", group: "operations" },
@@ -128,6 +129,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  workforce: "time clock clock in clock out break attendance timesheet rota shifts schedule commission tips checklist incident branch location manage users roles permissions staff",
   online: "online store ecommerce e-commerce web shop website storefront shopify woocommerce woo sync channel checkout cart stripe safepay card payments cash on delivery bank transfer delivery shipping",
   growth: "customer 360 loyalty points rewards gift cards store credit promotions coupons offers membership segments win-back retention",
   pos: "pos point of sale register till checkout cashier receipt sell retail shop counter barcode",

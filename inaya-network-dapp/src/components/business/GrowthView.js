@@ -7,6 +7,7 @@
 // points are a ledger with a liability report and are not posted to the books.
 
 import { useState, useEffect, useCallback } from "react";
+import { useErpSection } from "./erp/ErpNavContext";
 
 const f = "w-full min-h-[38px] bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-lg px-2.5 text-sm text-[var(--inaya-text-primary)]";
 const pb = "min-h-[38px] px-3 rounded-lg text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] disabled:opacity-40";
@@ -23,10 +24,10 @@ const H = ({ children }) => <h3 className="font-bold text-sm text-[var(--inaya-t
 function useAction() { const [ok, setOk] = useState(""); const [err, setErr] = useState(""); const run = async (fn, msg) => { setOk(""); setErr(""); try { const r = await fn(); if (msg) setOk(typeof msg === "function" ? msg(r) : msg); return r; } catch (e) { setErr(e.message); return null; } }; return { ok, err, run, setErr }; }
 
 export default function GrowthView({ orgId }) {
-  const [tab, setTab] = useState("customers");
   const tabs = [["customers", "Customers"], ["loyalty", "Loyalty & members"], ["cards", "Gift cards"], ["promotions", "Promotions"], ["automation", "Automation"], ["duplicates", "Duplicates"], ["assistant", "Assistant"]];
+  const [tab, setTab] = useErpSection("customers", tabs);
   return <div className="space-y-3">
-    <div className="flex flex-wrap gap-2" role="tablist">{tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? pb : gb} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="flex flex-wrap gap-2" role="tablist" data-erp-tabs>{tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? pb : gb} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === "customers" && <Customers orgId={orgId} />}
     {tab === "loyalty" && <Loyalty orgId={orgId} />}
     {tab === "cards" && <Cards orgId={orgId} />}

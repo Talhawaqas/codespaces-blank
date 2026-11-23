@@ -41,9 +41,9 @@ describe("inventory: nothing live is left out", () => {
   });
 
   test("every view the workspace renders is reachable from an ERP module", () => {
-    // Reads the real render switch in business/page.js, so a new view added
+    // Reads the real render switch in business/BusinessClient.js, so a new view added
     // there without an ERP home fails this test.
-    const rendered = new Set([...read("src/app/business/page.js").matchAll(/activeView === "([a-zA-Z]+)"/g)].map((m) => m[1]));
+    const rendered = new Set([...read("src/app/business/BusinessClient.js").matchAll(/activeView === "([a-zA-Z]+)"/g)].map((m) => m[1]));
     const placed = new Set(erpPlacedViews());
     expect([...rendered].filter((k) => k !== "browse" && !placed.has(k))).toEqual([]);
     expect(rendered.size).toBeGreaterThan(60);
@@ -177,7 +177,7 @@ describe("every tabbed screen gives its tabs to the task panel", () => {
   const CORE = ["FinanceView", "HRView", "InventoryView", "ProcurementView", "CRMView"];
   const REPORTED = [
     "admin/ComplianceReadinessView", "gateway/GatewayView", "governance/GovernanceView", "AiSecurityView", "BookkeeperView",
-    "DeviceProtectionView", "DocumentAutomationView", "EnterpriseHardeningView", "ExecutiveDashboardView", "FinancialView",
+    "DeviceProtectionView", "DocumentAutomationView", "GrowthView", "WorkforceView", "EnterpriseHardeningView", "ExecutiveDashboardView", "FinancialView",
     "GovernmentView", "HealthView", "IdentityView", "InfrastructureView", "IntegrationsView", "LegalView", "NasManagementView",
     "RegulatedView", "SecurityResilienceView", "StorageManagerView", "SupportView", "WorkflowsView",
   ];

@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canAccessDepartment, toObjectId } from "../../../../../lib/orgs.js";
 import { getAccessibleScope } from "../../../../../lib/document-permissions.js";
 import { recordStockMovement } from "../../../../../lib/inventory.js";
+import { allowedLocation, denyLocation, scopeFilter } from "../../../../../lib/workforce/scope.js";
 
 const MANUAL_TYPES = ["RECEIPT", "ISSUE", "ADJUSTMENT"];
 
@@ -35,6 +36,7 @@ export async function POST(req) {
     const { products, warehouses } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);
     const productObjectId = toObjectId(productId);
+    if (!allowedLocation(auth.membership, warehouseId)) { const d = denyLocation(); return NextResponse.json({ error: d.error, code: d.code }, { status: d.status }); } // branch scoping (SOW 10.1)
     const warehouseObjectId = toObjectId(warehouseId);
 
     const product = await products.findOne({ _id: productObjectId, orgId: orgObjectId, deletedAt: null });
@@ -84,7 +86,7 @@ export async function GET(req) {
     const { stockMovements, warehouses } = await getOrgCollections();
     const orgObjectId = toObjectId(orgId);
     const [movements, allWarehouses] = await Promise.all([
-      stockMovements.find({ orgId: orgObjectId, productId: { $in: productIds } }).sort({ createdAt: -1 }).limit(limit).toArray(),
+      stockMovements.find({ orgId: orgObjectId, productId: { $in: productIds }, ...scopeFilter(auth.membership, "warehouseId") }).sort({ createdAt: -1 }).limit(limit).toArray(),
       warehouses.find({ orgId: orgObjectId }).toArray(),
     ]);
     const productNameById = new Map(visibleProducts.map((p) => [p._id.toString(), p.name]));
