@@ -19,6 +19,7 @@ import LearnSection from '../components/learn/LearnSection';
 import NetworkVisualization from '../components/security/NetworkVisualization';
 import GlobeBackground from '../components/GlobeBackground';
 import EmptyState from '../components/EmptyState';
+import DappRoadmap from '../components/DappRoadmap';
 import AccentGraphic from '../components/AccentGraphic';
 import Skeleton from '../components/Skeleton';
 import ThemeSwitcher from '../components/ThemeSwitcher';
@@ -7576,32 +7577,8 @@ export default function Home() {
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
-                <h3 className="text-base font-bold text-white mb-4">🗺️ TACTICAL PROJECT DEVELOPMENT ROADMAP</h3>
-                <div className="space-y-4">
-                  {roadmapPhases.map((p) => {
-                    const s = roadmapStatusConfig[p.status];
-                    return (
-                      <div key={p.phase} className={`p-4 rounded-xl border font-mono text-xs ${s.tint} ${s.border}`}>
-                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                          <span className={`font-bold text-sm ${s.text}`}>{p.phase}</span>
-                          <span className={`text-[10px] font-bold uppercase tracking-widest rounded px-1.5 py-0.5 border ${s.badge}`}>{s.emoji} {s.label}</span>
-                        </div>
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1.5">
-                          {p.items.map((item) => {
-                            const text = typeof item === 'string' ? item : item.text;
-                            const done = typeof item === 'object' && item.done;
-                            return (
-                              <li key={text} className={`text-[13px] flex items-start gap-1.5 ${done ? 'text-slate-300' : s.item}`}>
-                                <span className={done ? 'text-emerald-400' : s.text}>{done ? '✓' : s.bullet}</span>
-                                {text}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
+                <h3 className="text-lg font-bold text-white mb-5">🗺️ Tactical project development roadmap</h3>
+                <DappRoadmap phases={roadmapPhases} />
               </div>
 
               <div className="bg-[#090d16]/80 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
