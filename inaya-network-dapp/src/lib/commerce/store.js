@@ -95,12 +95,13 @@ export const DEFAULT_SETTINGS = {
   cashVarianceTolerance: 0, // minor units; a shift closing further over/short than this is flagged for the manager
   timezone: "UTC", // IANA zone used to put sales on the right day/hour in reports (e.g. "Asia/Karachi", "Europe/London")
   receiptShowNotes: false, // print sale notes on receipts (privacy: off by default)
+  offlineSelling: { enabled: false, maxHours: 12, maxSales: 300, maxSaleMinor: 0 }, // offline.js: cash-only selling while the till is offline (off by default; maxSaleMinor 0 = no limit)
 };
 export async function getSettings(orgId) {
   await ensureCommerceIndexes();
   const c = await ccol();
   const s = await c.findOne({ orgId: oid(orgId), kind: KINDS.settings });
-  return { ...DEFAULT_SETTINGS, ...(s?.settings || {}), discountLimits: { ...DEFAULT_SETTINGS.discountLimits, ...(s?.settings?.discountLimits || {}) }, rounding: { ...DEFAULT_SETTINGS.rounding, ...(s?.settings?.rounding || {}) }, returnPolicy: { ...DEFAULT_SETTINGS.returnPolicy, ...(s?.settings?.returnPolicy || {}) } };
+  return { ...DEFAULT_SETTINGS, ...(s?.settings || {}), discountLimits: { ...DEFAULT_SETTINGS.discountLimits, ...(s?.settings?.discountLimits || {}) }, rounding: { ...DEFAULT_SETTINGS.rounding, ...(s?.settings?.rounding || {}) }, returnPolicy: { ...DEFAULT_SETTINGS.returnPolicy, ...(s?.settings?.returnPolicy || {}) }, offlineSelling: { ...DEFAULT_SETTINGS.offlineSelling, ...(s?.settings?.offlineSelling || {}) } };
 }
 export function validateSettings(input = {}) {
   const out = {};
@@ -128,6 +129,13 @@ export function validateSettings(input = {}) {
   if (input.quarantineWarehouseId !== undefined) out.quarantineWarehouseId = input.quarantineWarehouseId ? sid(input.quarantineWarehouseId) : null;
   if (input.timezone !== undefined) { try { new Intl.DateTimeFormat("en", { timeZone: String(input.timezone) }); out.timezone = String(input.timezone); } catch { return fail("Unknown time zone (use a name like Asia/Karachi or Europe/London)."); } }
   if (input.receiptShowNotes !== undefined) out.receiptShowNotes = input.receiptShowNotes === true;
+  if (input.offlineSelling !== undefined) {
+    const v = input.offlineSelling || {}; const o = { enabled: v.enabled === true, maxHours: Number(v.maxHours ?? 12), maxSales: Number(v.maxSales ?? 300), maxSaleMinor: Number(v.maxSaleMinor ?? 0) };
+    if (!Number.isInteger(o.maxHours) || o.maxHours < 1 || o.maxHours > 72) return fail("Offline selling: hours must be 1-72.");
+    if (!Number.isInteger(o.maxSales) || o.maxSales < 1 || o.maxSales > 2000) return fail("Offline selling: number of sales must be 1-2000.");
+    if (!Number.isInteger(o.maxSaleMinor) || o.maxSaleMinor < 0 || o.maxSaleMinor > 10000000000) return fail("Offline selling: largest sale must be zero (no limit) or more.");
+    out.offlineSelling = o;
+  }
   if (input.cashVarianceTolerance !== undefined) { const t = Number(input.cashVarianceTolerance); if (!Number.isInteger(t) || t < 0 || t > 10000000) return fail("cashVarianceTolerance: whole minor units >= 0."); out.cashVarianceTolerance = t; }
   return { settings: out };
 }

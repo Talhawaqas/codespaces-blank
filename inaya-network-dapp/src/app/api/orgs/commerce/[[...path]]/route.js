@@ -26,6 +26,10 @@
 //   GET  reports (?from&to&warehouseId&registerId)              GET reports/transactions (?...&dimension&value&kind)
 //   GET  sales/{id}/receipt.pdf   GET sales/{id}/refunds/{R-n}/receipt.pdf
 //   POST sales/{id}/email-receipt { to, refundNumber? }        POST sales/{id}/save-receipt { refundNumber? }
+//   Phone as a scanner (scanPair.js): POST scanner/pair { registerId? }   GET scanner/{id}?after=n   POST scanner/{id}/end
+//   Offline selling (offline.js):
+//   POST offline/pack { registerId }   POST offline/sync { packId, registerId, warehouseId, sales: [...] }
+//   GET  offline/issues (?status=OPEN|RESOLVED|ALL) (supervisor)   POST offline/issues/{id}/resolve { action: record|dismiss|acknowledge, reason } (manager)
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js";
 import * as S from "../../../../../lib/commerce/store.js";
@@ -37,6 +41,8 @@ import * as RET from "../../../../../lib/commerce/returns.js";
 import * as SH from "../../../../../lib/commerce/shifts.js";
 import * as REP from "../../../../../lib/commerce/reports.js";
 import * as RC from "../../../../../lib/commerce/receipts.js";
+import * as SCAN from "../../../../../lib/commerce/scanPair.js";
+import * as OFF from "../../../../../lib/commerce/offline.js";
 import { branchGuard } from "../../../../../lib/workforce/branchGuard.js";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +91,8 @@ export async function GET(req, { params }) {
     if (seg[0] === "sales" && seg[1] && !seg[2]) return out(await SALE.getSale({ orgId, membership: c.membership, saleId: seg[1] }));
     if (path === "approvals") return out(await SALE.listPendingApprovals({ orgId, membership: c.membership }));
     if (seg[0] === "approvals" && seg[1]) return out(await SALE.getApprovalStatus({ orgId, membership: c.membership, approvalId: seg[1] }));
+    if (seg[0] === "scanner" && seg[1] && !seg[2]) return out(await SCAN.pollScans({ orgId, membership: c.membership, pairId: seg[1], after: qs.get("after") }));
+    if (path === "offline/issues") return out(await OFF.listOfflineIssues({ orgId, membership: c.membership, status: qs.get("status") || "OPEN" }));
     if (path === "parked") return out(await SALE.listParked({ orgId, membership: c.membership }));
     if (path === "stock-reconciliation") { const g = await S.commerceAccess({ orgId, membership: c.membership, need: "manage" }); if (g) return out(g); return json(await reconcileStockLevels({ orgId })); }
     return json({ error: "Not found." }, 404);
@@ -112,6 +120,11 @@ async function write(req, params, method) {
       return json(await reconcileStockLevels({ orgId, repair: body.repair === true, actorEmail: c.actorEmail }));
     }
     const seg = params.path || [];
+    if (method === "POST" && path === "scanner/pair") return out(await SCAN.createScanPair({ ...base, registerId: body.registerId || null }));
+    if (method === "POST" && seg[0] === "scanner" && seg[1] && seg[2] === "end") return out(await SCAN.endScanPair({ ...base, pairId: seg[1] }));
+    if (method === "POST" && path === "offline/pack") return out(await OFF.issueOfflinePack({ ...base, registerId: body.registerId }));
+    if (method === "POST" && path === "offline/sync") return out(await OFF.syncOfflineSales({ ...base, packId: body.packId, registerId: body.registerId, sales: body.sales }));
+    if (method === "POST" && seg[0] === "offline" && seg[1] === "issues" && seg[2] && seg[3] === "resolve") return out(await OFF.resolveOfflineIssue({ ...base, issueId: seg[2], action: body.action, reason: body.reason }));
     if (method === "POST" && path === "sales") return out(await SALE.completeSale({ ...base, input: body }));
     if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "email-receipt") return out(await RC.emailReceipt({ ...base, saleId: seg[1], refundNumber: body.refundNumber || null, to: body.to }));
     if (method === "POST" && seg[0] === "sales" && seg[1] && seg[2] === "save-receipt") return out(await RC.saveReceiptToDocuments({ ...base, saleId: seg[1], refundNumber: body.refundNumber || null }));

@@ -2,11 +2,17 @@
 
 // src/components/business/commerce/PosView.js -- Inaya Commerce: Point of Sale (Master SOW 6.3, 6.5, 6.10).
 // Tabs: Register (sell), Sales (history, receipts, reprint), Approvals (supervisors/managers), Setup (managers).
-// Every number shown in the cart comes from the server (POST price-preview); the register never computes prices itself.
+// Every number shown in the cart comes from the server (POST price-preview); the register never computes prices itself --
+// except offline (OfflinePos.js): cash-only at shelf prices from the till's server-issued offline pack, re-checked on sync.
 // Barcode scanners work as keyboards: the search box keeps focus, and Enter on an exact barcode/SKU adds the item.
 // Touch-friendly controls; keyboard: F2 search, F4 customer, F8 park, F9 pay, Esc closes dialogs.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { CameraScanner, cameraAvailable, usePhoneScanner, PhonePairDialog } from "./CameraScanner";
+const LabelsView = dynamic(() => import("./LabelsView"), { ssr: false });
+import { useOfflineTill, OfflineBar, OfflineRegister, OfflineReview } from "./OfflinePos";
+import { fullPageReceiptHtml, fullPageFromMarkup } from "../../../lib/commerce/receiptLayout";
 import { inDesktopApp, loadPrintSettings, savePrintSettings, listPrinters, listSerialPorts, printSaleReceipt, openDrawer, canOpenDrawer, printTest, printOn } from "../../../lib/commerce/desktopPrint";
 
 const card = "bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-xl";
@@ -19,7 +25,8 @@ const newKey = () => `pos_${Date.now().toString(36)}_${Math.random().toString(36
 
 async function api(path, { orgId, method = "GET", body } = {}) {
   const url = `/api/orgs/commerce/${path}${method === "GET" || method === "DELETE" ? `${path.includes("?") ? "&" : "?"}orgId=${orgId}` : ""}`;
-  const r = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify({ orgId, ...body }) } : {}) });
+  let r; try { r = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify({ orgId, ...body }) } : {}) }); }
+  catch { throw Object.assign(new Error("No connection. Check the internet; offline selling takes over if it is switched on."), { code: "NETWORK" }); }
   let d = {}; try { d = await r.json(); } catch { /* empty */ }
   if (!r.ok) throw Object.assign(new Error(d.error || `Request failed (${r.status})`), { status: r.status, code: d.code, data: d });
   return d;
@@ -36,7 +43,7 @@ export default function PosView({ orgId }) {
     </div>
   );
   if (!settings) return <p className={muted}>Loading…</p>;
-  const tabs = [["register", "Register"], ["sales", "Sales"], ["shifts", "Shifts"], ...(role !== "cashier" ? [["approvals", "Approvals"], ["reports", "Reports"]] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
+  const tabs = [["register", "Register"], ["sales", "Sales"], ["shifts", "Shifts"], ...(role !== "cashier" ? [["approvals", "Approvals"], ["reports", "Reports"], ["labels", "Labels"], ...(settings.offlineSelling?.enabled ? [["offline", "Offline review"]] : [])] : []), ...(role === "manager" ? [["setup", "Setup"]] : [])];
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2" role="tablist">
@@ -48,6 +55,8 @@ export default function PosView({ orgId }) {
       {tab === "shifts" && <Shifts orgId={orgId} settings={settings} role={role} />}
       {tab === "reports" && <Reports orgId={orgId} settings={settings} role={role} />}
       {tab === "approvals" && <Approvals orgId={orgId} settings={settings} />}
+      {tab === "labels" && <LabelsView orgId={orgId} settings={settings} />}
+      {tab === "offline" && <OfflineReview orgId={orgId} settings={settings} role={role} />}
       {tab === "setup" && <Setup orgId={orgId} settings={settings} onSaved={setSettings} />}
     </div>
   );
@@ -61,6 +70,10 @@ function Register({ orgId, settings, role }) {
   const [dialog, setDialog] = useState(null); const [parkedId, setParkedId] = useState(null); const searchRef = useRef(null); const cartRef = useRef(null);
   const [registerId, setRegisterIdState] = useState(() => savedRegister(orgId));
   const setRegisterId = useCallback((v) => { setRegisterIdState(v); try { localStorage.setItem(regKey(orgId), v || ""); } catch { /* ignore */ } }, [orgId]);
+  const [shiftId, setShiftId] = useState(null); const [pendingKey, setPendingKey] = useState(null);
+  const till = useOfflineTill({ orgId, registerId, shiftId, enabled: !!settings.offlineSelling?.enabled });
+  const [offlineBusy, setOfflineBusy] = useState(false); // an offline sale in progress finishes offline, even if the connection returns
+  const offlineReady = (!till.online || offlineBusy) && !!settings.offlineSelling?.enabled && !!till.pack && !till.problem && till.pack.registerId === registerId;
 
   useEffect(() => {
     fetch(`/api/orgs/inventory/products?orgId=${orgId}`, { credentials: "include" }).then((r) => r.json()).then((d) => setProducts((d.products || []).filter((p) => p.status === "ACTIVE" && p.posVisible !== false))).catch(() => { setProducts([]); setErr("Could not load products."); });
@@ -72,7 +85,7 @@ function Register({ orgId, settings, role }) {
   // server-side pricing on every change (debounced)
   useEffect(() => {
     if (!cart.length || !warehouseId) { setPriced(null); return; }
-    const t = setTimeout(() => api("price-preview", { orgId, method: "POST", body: input }).then((d) => { setPriced(d); setErr(""); }).catch((e) => setErr(e.message)), 250);
+    const t = setTimeout(() => api("price-preview", { orgId, method: "POST", body: input }).then((d) => { setPriced(d); setErr(""); }).catch((e) => { setErr(e.message); if (e.code === "NETWORK") till.goOffline(); }), 250);
     return () => clearTimeout(t);
   }, [orgId, input, cart.length, warehouseId]);
 
@@ -98,6 +111,9 @@ function Register({ orgId, settings, role }) {
     const hit = (products || []).find((p) => (p.barcode || "").toLowerCase() === s || p.sku.toLowerCase() === s);
     if (hit) { add(hit); setQ(""); } else if (visible.length === 1 && visible[0].length === 1) { add(visible[0][0]); setQ(""); } else setMsg(`No product with barcode or SKU "${q.trim()}".`);
   };
+  const phone = usePhoneScanner({ orgId, registerId, onCode: (code) => onCameraRef.current?.(code) }); const onCameraRef = useRef(null);
+  const onCamera = (code) => { const s = String(code).trim().toLowerCase(); const hit = (products || []).find((p) => (p.barcode || "").toLowerCase() === s || p.sku.toLowerCase() === s); if (hit) add(hit); else setMsg(`No product with barcode or SKU "${String(code).trim()}".`); };
+  onCameraRef.current = onCamera;
   const setLine = (i, patch) => setCart((c) => c.map((l, k) => (k === i ? { ...l, ...patch } : l)).filter((l) => l.quantity > 0));
   const clearSale = () => { setCoupons([]); setRedeemPoints(0); setCart([]); setOrderDiscount(null); setCustomer(null); setNotes(""); setPriced(null); setParkedId(null); setErr(""); };
   useEffect(() => {
@@ -105,12 +121,21 @@ function Register({ orgId, settings, role }) {
     window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
   }, [cart.length, priced]);
 
+  if (offlineReady) return (
+    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <OfflineBar till={till} settings={settings} />
+      <OfflineRegister key={till.pack.packId} orgId={orgId} registerId={registerId} pack={till.pack} initial={input.lines} pendingKey={pendingKey} onQueued={() => { setPendingKey(null); clearSale(); till.reloadLocal(); }} onBusy={setOfflineBusy} />
+    </div>
+  );
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <ShiftBar orgId={orgId} settings={settings} role={role} warehouseId={warehouseId} registerId={registerId} setRegisterId={setRegisterId} />
+      <OfflineBar till={till} settings={settings} />
+      <ShiftBar orgId={orgId} settings={settings} role={role} warehouseId={warehouseId} registerId={registerId} setRegisterId={setRegisterId} onShift={setShiftId} queued={till.queued} />
       <div className={`${card} p-3 space-y-3`}>
         <div className="flex flex-wrap gap-2">
           <input ref={searchRef} autoFocus aria-label="Search or scan" className={`${field} flex-1 min-w-[200px]`} placeholder="Search name or SKU, or scan a barcode (F2)" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onScan} />
+          {cameraAvailable() && <button className={btn} aria-label="Scan with camera" title="Scan with camera" onClick={() => setDialog({ type: "camera" })}>Camera</button>}
+          <button className={phone.pair ? primary : btn} aria-label="Use a phone as the scanner" title="Use a phone as the scanner" onClick={() => setDialog({ type: "phone" })}>{phone.pair ? (phone.seenAt ? "Phone ✓" : "Phone…") : "Phone"}</button>
           <select aria-label="Location" className={`${field} !w-auto`} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>{warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select>
         </div>
         {categories.length > 0 && <div className="flex flex-wrap gap-2">{["", ...categories].map((c) => <button key={c || "all"} className={category === c ? primary : btn} onClick={() => setCategory(c)}>{c || "All"}</button>)}</div>}
@@ -194,7 +219,9 @@ function Register({ orgId, settings, role }) {
       {dialog?.type === "customer" && <CustomerDialog orgId={orgId} onClose={() => setDialog(null)} onPick={(cst) => { setCustomer(cst); setDialog(null); }} />}
       {dialog?.type === "park" && <ParkDialog onClose={() => setDialog(null)} onPark={async (label) => { try { await api("parked", { orgId, method: "POST", body: { cart: input, label } }); clearSale(); setMsg("Sale parked."); } catch (e) { setErr(e.message); } setDialog(null); }} />}
       {dialog?.type === "parked" && <ParkedDialog orgId={orgId} onClose={() => setDialog(null)} onResume={(p) => { setCart(p.cart.lines.map((l) => ({ ...l, name: (products || []).find((x) => x.id === l.productId)?.name || "Item", sku: (products || []).find((x) => x.id === l.productId)?.sku || "" }))); setOrderDiscount(p.cart.orderDiscount || null); setNotes(p.cart.notes || ""); setParkedId(p.id); if (p.cart.warehouseId) setWarehouseId(p.cart.warehouseId); setDialog(null); }} />}
-      {dialog?.type === "pay" && priced && <PayDialog orgId={orgId} settings={settings} input={{ ...input, parkedId: parkedId || undefined }} priced={priced} onClose={() => setDialog(null)} customerChosen={!!customer} onDone={(sale, giftCards) => { setDialog({ type: "receipt", saleId: sale.id, giftCards }); clearSale(); }} />}
+      {dialog?.type === "pay" && priced && <PayDialog orgId={orgId} settings={settings} input={{ ...input, parkedId: parkedId || undefined }} priced={priced} onClose={() => setDialog(null)} customerChosen={!!customer} canFinishOffline={!!settings.offlineSelling?.enabled && !!till.pack && !till.problem && till.pack.registerId === registerId && !customer} onOffline={(key) => { setPendingKey(key); setDialog(null); till.goOffline(); }} onDone={(sale, giftCards) => { setDialog({ type: "receipt", saleId: sale.id, giftCards }); clearSale(); }} />}
+      {dialog?.type === "phone" && <PhonePairDialog phone={phone} onClose={() => { setDialog(null); searchRef.current?.focus(); }} />}
+      {dialog?.type === "camera" && <CameraScanner onCode={onCamera} onClose={() => { setDialog(null); searchRef.current?.focus(); }} />}
       {dialog?.type === "receipt" && <ReceiptDialog orgId={orgId} saleId={dialog.saleId} giftCards={dialog.giftCards} onClose={() => { setDialog(null); searchRef.current?.focus(); }} />}
     </div>
   );
@@ -252,9 +279,9 @@ function ParkedDialog({ orgId, onResume, onClose }) {
     {!list ? <p className={muted}>Loading…</p> : !list.length ? <p className={muted}>Nothing parked.</p> : <ul className="divide-y divide-[var(--inaya-border)]">{list.map((p) => <li key={p.id} className="py-2 flex items-center gap-2"><span className="flex-1 text-sm">{p.label || "Unnamed"} · {p.lines} item(s)<br /><span className={`text-xs ${muted}`}>{p.parkedBy} · {new Date(p.createdAt).toLocaleString()}</span></span><button className={btn} onClick={() => onResume(p)}>Resume</button><button className={btn} onClick={async () => { await api(`parked/${p.id}`, { orgId, method: "DELETE" }); load(); }}>Discard</button></li>)}</ul>}
   </Modal>;
 }
-function PayDialog({ orgId, settings, input, priced, onDone, onClose, customerChosen = false }) {
+function PayDialog({ orgId, settings, input, priced, onDone, onClose, customerChosen = false, canFinishOffline = false, onOffline }) {
   const total = priced.totals.total; const cashTotal = priced.totals.cashTotal ?? total; const [tenders, setTenders] = useState([{ method: "CASH", amount: String(cashTotal), reference: "" }]); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
-  const [approval, setApproval] = useState(null); const keyRef = useRef(newKey());
+  const [approval, setApproval] = useState(null); const keyRef = useRef(newKey()); const [lost, setLost] = useState(false);
   const sum = tenders.reduce((s, t) => s + (Number(t.amount) || 0), 0); const cash = tenders.filter((t) => t.method === "CASH").reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const due = cash > 0 ? cashTotal : total; const change = Math.max(0, Math.round((sum - due) * 100) / 100);
   const needsApproval = priced.approvals.length > 0;
@@ -263,10 +290,12 @@ function PayDialog({ orgId, settings, input, priced, onDone, onClose, customerCh
   const complete = async () => {
     setBusy(true); setErr("");
     try { const r = await api("sales", { orgId, method: "POST", body: { ...input, idempotencyKey: keyRef.current, approvalId: approval?.status === "APPROVED" ? approval.id : undefined, tenders: tenders.filter((t) => Number(t.amount) > 0).map((t) => ({ method: t.method, amount: Number(t.amount), ...(t.method === "GIFT_CARD" ? { code: t.reference } : { reference: t.reference || undefined }) })) } }); onDone(r.sale, r.giftCards || []); }
-    catch (e) { setErr(e.message); if (e.code !== "APPROVAL_REQUIRED" && e.code !== "APPROVAL_INVALID" && e.status >= 400 && e.status < 500 && e.code !== "UNDERPAID" && e.code !== "OVERPAID") keyRef.current = newKey(); }
+    catch (e) { setErr(e.message); if (e.code === "NETWORK") { setLost(true); return; } if (e.code !== "APPROVAL_REQUIRED" && e.code !== "APPROVAL_INVALID" && e.status >= 400 && e.status < 500 && e.code !== "UNDERPAID" && e.code !== "OVERPAID") keyRef.current = newKey(); }
     finally { setBusy(false); }
   };
   return <Modal title={`Payment · ${money(total, settings.currency)}`} onClose={onClose}>
+    {lost && <div role="alert" className="mb-3 p-2 rounded-lg border border-amber-500 text-sm"><p className="font-semibold">The connection dropped while saving this sale.</p><p>It may or may not have reached the server. Retrying is safe: the same sale can never be recorded twice.</p>
+      {canFinishOffline && tenders.every((t) => t.method === "CASH") && <button className={`${btn} mt-2`} onClick={() => onOffline?.(keyRef.current)}>Finish offline (cash, shelf prices)</button>}</div>}
     {needsApproval && approval?.status !== "APPROVED" && <div className="mb-3 text-sm">
       <p className="text-amber-600 mb-2">This sale has a discount or price change above your limit. A {priced.approvals.some((a) => a.needed === "manager") ? "manager" : "supervisor"} must approve it from their own device (Point of Sale → Approvals).</p>
       {!approval ? <button className={btn} onClick={askApproval}>Request approval</button> : <p className={muted}>{approval.status === "PENDING" ? "Waiting for approval…" : approval.status === "REJECTED" ? "The request was rejected." : approval.status === "EXPIRED" ? "The request expired; ask again." : approval.status}</p>}
@@ -329,6 +358,13 @@ export function Receipt({ r }) {
   </div>;
 }
 export function printReceipt(r) {
+  const layout = loadPrintSettings().pageLayout || "strip"; // laser / inkjet: a proper A4 or A5 page (Setup), or the till-roll strip
+  if (layout === "A4" || layout === "A5") {
+    const el0 = document.getElementById("pos-receipt");
+    const html = r?.lines && r?.totals ? fullPageReceiptHtml(r, layout) : el0 ? fullPageFromMarkup(el0.innerHTML, r?.saleNumber || "Receipt", layout) : null; if (!html) return;
+    const w0 = window.open("", "_blank", layout === "A5" ? "width=620,height=820" : "width=820,height=1000"); if (!w0) return;
+    w0.document.write(html); w0.document.close(); w0.focus(); setTimeout(() => w0.print(), 150); return;
+  }
   const el = document.getElementById("pos-receipt"); const w = window.open("", "_blank", "width=380,height=640"); if (!w || !el) return;
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.saleNumber}</title><style>body{font:12px/1.4 ui-monospace,Consolas,monospace;margin:8px;width:72mm} .flex{display:flex} .justify-between{justify-content:space-between} .text-center{text-align:center} .font-bold{font-weight:700} hr{border:0;border-top:1px dashed #000} p{margin:2px 0}</style></head><body>${el.innerHTML}</body></html>`);
   w.document.close(); w.focus(); w.print();
@@ -337,13 +373,14 @@ export function printReceipt(r) {
 // ================================================================= Registers and shifts (Master SOW 6.8)
 const regKey = (orgId) => `pos:reg:${orgId}`;
 function savedRegister(orgId) { try { return localStorage.getItem(regKey(orgId)) || ""; } catch { return ""; } }
-function ShiftBar({ orgId, settings, role, warehouseId, registerId, setRegisterId }) {
+function ShiftBar({ orgId, settings, role, warehouseId, registerId, setRegisterId, onShift, queued = 0 }) {
   const [regs, setRegs] = useState([]); const [shift, setShift] = useState(null); const [dialog, setDialog] = useState(null); const [err, setErr] = useState("");
   const load = useCallback(() => api("registers", { orgId }).then((d) => setRegs(d.registers.filter((r) => r.active))).catch(() => {}), [orgId]);
   useEffect(() => { load(); }, [load]);
   const here = regs.filter((r) => r.warehouseId === warehouseId); const hereIds = here.map((r) => r.id).join();
   useEffect(() => { if (registerId && !here.some((r) => r.id === registerId)) setRegisterId(here.length === 1 ? here[0].id : ""); else if (!registerId && here.length === 1) setRegisterId(here[0].id); }, [hereIds, registerId]); // eslint-disable-line react-hooks/exhaustive-deps
   const reg = here.find((r) => r.id === registerId); const openId = reg?.openShift?.id;
+  useEffect(() => { onShift?.(openId || null); }, [openId]); // eslint-disable-line react-hooks/exhaustive-deps
   const loadShift = useCallback(() => { if (!openId) { setShift(null); return; } api(`shifts/${openId}`, { orgId }).then((d) => setShift(d.shift)).catch(() => {}); }, [orgId, openId]);
   useEffect(() => { loadShift(); const t = setInterval(loadShift, 30000); return () => clearInterval(t); }, [loadShift]);
   if (!here.length) return null;
@@ -357,7 +394,7 @@ function ShiftBar({ orgId, settings, role, warehouseId, registerId, setRegisterI
         {role !== "cashier" && <button className={btn} onClick={() => setDialog("cash")}>Cash in / out</button>}
         {canOpenDrawer() && <button className={btn} onClick={async () => { const reason = (window.prompt("Reason for opening the drawer without a sale (required)") || "").trim(); if (!reason) return; try { await api("drawer-log", { orgId, method: "POST", body: { registerId, kind: "NO_SALE", reason } }); await openDrawer(); setErr(""); } catch (e) { setErr(e.message || String(e)); } }}>No sale</button>}
         <button className={btn} onClick={() => { loadShift(); setDialog("report"); }}>Shift report</button>
-        <button className={btn} onClick={() => setDialog("close")}>Close shift</button>
+        <button className={btn} onClick={() => { if (queued > 0) { setErr(`${queued} offline sale${queued === 1 ? " hasn't" : "s haven't"} synced yet. Wait for ${queued === 1 ? "it" : "them"} to sync before closing, so the cash count is right.`); return; } setDialog("close"); }}>Close shift</button>
       </span></>}
     {err && <p className="text-sm text-red-500 w-full">{err}</p>}
     {dialog === "open" && <OpenShiftDialog orgId={orgId} register={reg} onClose={() => setDialog(null)} onDone={refresh} />}
@@ -699,7 +736,8 @@ function PrinterSetup() {
   const [ps, setPs] = useState(() => loadPrintSettings()); const [printers, setPrinters] = useState([]); const [ports, setPorts] = useState([]); const [msg, setMsg] = useState(""); const desktop = inDesktopApp();
   useEffect(() => { if (!desktop) return; listPrinters().then(setPrinters).catch(() => {}); listSerialPorts().then(setPorts).catch(() => {}); }, [desktop]);
   const set = (path, v) => { const n = { ...ps, printer: { ...ps.printer }, drawer: { ...ps.drawer } }; const [a, b] = path.split("."); if (b) n[a][b] = v; else n[a] = v; setPs(n); savePrintSettings(n); setMsg("Saved on this till."); };
-  if (!desktop) return <div className={`${card} p-3 text-sm`}><h3 className="font-bold">Receipt printer and cash drawer</h3><p className={muted}>Silent receipt printing and opening the cash drawer work in the Inaya desktop app (Windows / Linux). In a browser, receipts print through the normal print dialog.</p></div>;
+  const layoutPick = <label className="block">Receipts on a laser / inkjet printer<select aria-label="Laser receipt layout" className={field} value={ps.pageLayout || "strip"} onChange={(e) => set("pageLayout", e.target.value)}><option value="strip">Till-roll strip (thermal printers)</option><option value="A4">Full A4 page</option><option value="A5">Full A5 page</option></select></label>;
+  if (!desktop) return <div className={`${card} p-3 text-sm space-y-2`}><h3 className="font-bold">Receipt printer and cash drawer</h3><p className={muted}>Silent receipt printing and opening the cash drawer work in the Inaya desktop app (Windows / Linux). In a browser, receipts print through the normal print dialog.</p>{layoutPick}</div>;
   return <div className={`${card} p-3 space-y-2 text-sm`}>
     <h3 className="font-bold">This till's receipt printer and cash drawer <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-amber-500 text-amber-600 ml-1">Beta</span></h3>
     <p className={`text-xs ${muted}`}>Saved on this computer only. Every drawer opening is recorded with who, which till and why.</p>
@@ -707,9 +745,13 @@ function PrinterSetup() {
     {ps.printer.kind === "installed" && <label className="block">Printer<select className={field} value={ps.printer.name} onChange={(e) => set("printer.name", e.target.value)}><option value="">Choose…</option>{printers.map((p) => <option key={p} value={p}>{p}</option>)}</select></label>}
     {ps.printer.kind === "network" && <div className="grid grid-cols-[1fr_90px] gap-2"><input className={field} placeholder="192.168.1.50" value={ps.printer.host} onChange={(e) => set("printer.host", e.target.value.trim())} /><input className={field} inputMode="numeric" value={ps.printer.port} onChange={(e) => set("printer.port", Number(e.target.value) || 9100)} /></div>}
     {(ps.printer.kind === "installed" || ps.printer.kind === "network") && <label className="block">Paper<select className={field} value={ps.printer.paper} onChange={(e) => set("printer.paper", Number(e.target.value))}><option value={80}>80 mm</option><option value={58}>58 mm</option></select></label>}
-    <label className="block">Cash drawer<select className={field} value={ps.drawer.kind} onChange={(e) => set("drawer.kind", e.target.value)}><option value="none">None</option><option value="printer">Connected to the receipt printer (RJ11)</option><option value="serial">USB cash drawer or trigger box (COM port)</option></select></label>
+    <label className="block">Cash drawer<select className={field} value={ps.drawer.kind} onChange={(e) => set("drawer.kind", e.target.value)}><option value="none">None</option><option value="printer">Connected to the receipt printer (RJ11)</option><option value="serial">USB cash drawer or trigger box (COM port)</option><option value="network">Network cash drawer controller (IP address)</option></select></label>
+    {ps.drawer.kind === "network" && <div className="grid grid-cols-[1fr_90px] gap-2"><input aria-label="Drawer controller address" className={field} placeholder="192.168.1.60" value={ps.drawer.host || ""} onChange={(e) => set("drawer.host", e.target.value.trim())} /><input aria-label="Drawer controller port" className={field} inputMode="numeric" value={ps.drawer.netPort || 9100} onChange={(e) => set("drawer.netPort", Number(e.target.value) || 9100)} /></div>}
+    {ps.drawer.kind === "network" && <p className={`text-xs ${muted}`}>For controllers that take the standard drawer-open command on a network port (usually 9100). Only addresses on the shop's own network are allowed.</p>}
     {ps.drawer.kind === "serial" && <div className="grid grid-cols-[1fr_110px] gap-2"><select className={field} value={ps.drawer.port} onChange={(e) => set("drawer.port", e.target.value)}><option value="">Choose port…</option>{ports.map((p) => <option key={p} value={p}>{p}</option>)}</select><input className={field} inputMode="numeric" value={ps.drawer.baud} onChange={(e) => set("drawer.baud", Number(e.target.value) || 9600)} /></div>}
     {ps.drawer.kind === "printer" && ps.printer.kind === "laser" && <p className="text-xs text-amber-600">A laser printer can't open a drawer. Use a USB trigger box (COM port) instead.</p>}
+    {layoutPick}
+    {canOpenDrawer(ps) && <button className={btn} onClick={async () => { try { await openDrawer(ps); setMsg("Drawer open command sent (test, not recorded as a sale)."); } catch (e) { setMsg(`Drawer: ${e.message || e}`); } }}>Test the cash drawer</button>}
     <label className="flex items-center gap-2"><input type="checkbox" checked={!!ps.autoPrint} onChange={(e) => set("autoPrint", e.target.checked)} />Print the receipt automatically after each sale</label>
     <label className="block">If the receipt printer fails<select className={field} value={ps.backup || "dialog"} onChange={(e) => set("backup", e.target.value)}><option value="dialog">Print on a laser / inkjet printer (print dialog)</option><option value="none">Do nothing (reprint later)</option></select></label>
     {(ps.printer.kind === "installed" || ps.printer.kind === "network") && <button className={btn} onClick={async () => { try { await printTest(ps); setMsg("Test receipt sent."); } catch (e) { setMsg(`Printer: ${e.message || e}`); } }}>Print a test receipt</button>}
@@ -741,6 +783,15 @@ function Setup({ orgId, settings, onSaved }) {
       <label className="text-sm block">Who may refund without approval<select className={field} value={s.refundRole} onChange={(e) => setS({ ...s, refundRole: e.target.value })}><option value="cashier">everyone (cashiers too)</option><option value="supervisor">supervisors and managers</option><option value="manager">managers only</option></select></label>
       <label className="text-sm block">Quarantine location (returned items to inspect)<select className={field} value={s.quarantineWarehouseId || ""} onChange={(e) => setS({ ...s, quarantineWarehouseId: e.target.value || null })}><option value="">none</option>{whs.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
       <label className="text-sm block">Shift cash tolerance (over/short allowed before a shift is flagged)<input className={field} inputMode="decimal" value={(s.cashVarianceTolerance || 0) / 100} onChange={(e) => setS({ ...s, cashVarianceTolerance: Math.round((Number(e.target.value) || 0) * 100) })} /></label>
+      <fieldset className="border border-[var(--inaya-border)] rounded-lg p-2 space-y-2"><legend className="text-sm font-semibold px-1">Offline selling</legend>
+        <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!s.offlineSelling?.enabled} onChange={(e) => setS({ ...s, offlineSelling: { ...s.offlineSelling, enabled: e.target.checked } })} /> Let tills keep selling when the internet drops</label>
+        <p className={`text-xs ${muted}`}>Cash only, at shelf prices, guest sales (no discounts, customers, gift cards or loyalty). Each till downloads an encrypted offline price list while online with a shift open; offline sales are signed, kept encrypted on the till, and checked again by the server when it reconnects. Anything that doesn't match goes to Offline review, not into the books.</p>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="text-xs">Hours a till may sell offline<input className={field} inputMode="numeric" value={s.offlineSelling?.maxHours ?? 12} onChange={(e) => setS({ ...s, offlineSelling: { ...s.offlineSelling, maxHours: Math.floor(Number(e.target.value) || 0) } })} /></label>
+          <label className="text-xs">Most offline sales per till<input className={field} inputMode="numeric" value={s.offlineSelling?.maxSales ?? 300} onChange={(e) => setS({ ...s, offlineSelling: { ...s.offlineSelling, maxSales: Math.floor(Number(e.target.value) || 0) } })} /></label>
+          <label className="text-xs">Largest offline sale (0 = no limit)<input className={field} inputMode="decimal" value={(s.offlineSelling?.maxSaleMinor || 0) / 100} onChange={(e) => setS({ ...s, offlineSelling: { ...s.offlineSelling, maxSaleMinor: Math.round((Number(e.target.value) || 0) * 100) } })} /></label>
+        </div>
+      </fieldset>
       <button className={primary} onClick={() => run(async () => { const d = await api("settings", { orgId, method: "PUT", body: s }); onSaved(d.settings); }, "Settings saved.")}>Save settings</button>
     </div>
     <div className="space-y-3">

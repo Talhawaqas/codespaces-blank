@@ -5,11 +5,14 @@
 //                 | "network" (a LAN receipt printer, IP + port 9100) | "laser" (normal print dialog, A4/A5 or roll)
 //   drawer.kind   "none" | "printer" (pulse through the receipt printer's RJ11 port)
 //                 | "serial" (USB cash drawer or USB-to-RJ11 trigger box on a COM port; the shop buys and connects it)
+//                 | "network" (a network cash drawer controller on the shop's LAN that takes the standard ESC/POS drawer
+//                   command on a TCP port, usually 9100; local addresses only, enforced by the desktop app)
+//   pageLayout    "A4" | "A5" | "strip": how a receipt prints on a laser / inkjet printer (print dialog), per till
 // Only the Inaya desktop app can print silently or open a drawer; in a browser the till falls back to the print dialog.
 import { receiptBytes, drawerKickBytes, toBase64 } from "./escpos.js";
 
 const KEY = "inaya_pos_print_v1";
-export const DEFAULT_PRINT = { printer: { kind: "none", name: "", host: "", port: 9100, paper: 80 }, drawer: { kind: "none", port: "", baud: 9600 }, autoPrint: true, backup: "dialog" }; // backup: "dialog" (laser/inkjet via the print dialog) | "none"
+export const DEFAULT_PRINT = { printer: { kind: "none", name: "", host: "", port: 9100, paper: 80 }, drawer: { kind: "none", port: "", baud: 9600, host: "", netPort: 9100 }, autoPrint: true, backup: "dialog", pageLayout: "strip" }; // strip = unchanged default (thermal printers through the print dialog keep working) // backup: "dialog" (laser/inkjet via the print dialog) | "none"
 
 export const inDesktopApp = () => typeof window !== "undefined" && !!window.__TAURI__?.core?.invoke;
 const invoke = (cmd, args) => window.__TAURI__.core.invoke(cmd, args);
@@ -33,6 +36,7 @@ async function sendToPrinter(s, bytes) {
 export function canOpenDrawer(s = loadPrintSettings()) {
   if (!inDesktopApp()) return false;
   if (s.drawer.kind === "serial") return !!s.drawer.port;
+  if (s.drawer.kind === "network") return !!s.drawer.host;
   if (s.drawer.kind === "printer") return s.printer.kind === "installed" || s.printer.kind === "network";
   return false;
 }
@@ -40,6 +44,7 @@ export function canOpenDrawer(s = loadPrintSettings()) {
 /** Opens the drawer (no logging here: callers log every opening through the server first). */
 export async function openDrawer(s = loadPrintSettings()) {
   if (!canOpenDrawer(s)) throw new Error("This till can't open a cash drawer by itself. Set it up in Point of Sale > Setup on the Inaya desktop app.");
+  if (s.drawer.kind === "network") return invoke("pos_print_network", { host: s.drawer.host, port: Number(s.drawer.netPort) || 9100, dataB64: toBase64(drawerKickBytes()) });
   if (s.drawer.kind === "serial") return invoke("pos_serial_write", { port: s.drawer.port, baud: Number(s.drawer.baud) || 9600, dataB64: toBase64(drawerKickBytes()) });
   return sendToPrinter(s, drawerKickBytes());
 }
@@ -53,7 +58,7 @@ export async function printSaleReceipt(r, { cash = false, money } = {}, s = load
   if (!inDesktopApp() || s.printer.kind === "none" || s.printer.kind === "laser") return { printed: false, drawer: cash && canOpenDrawer(s) ? "ask" : "none" };
   const kickInJob = cash && s.drawer.kind === "printer";
   await sendToPrinter(s, receiptBytes(r, { paper: Number(s.printer.paper) === 58 ? 58 : 80, kickDrawer: kickInJob, money }));
-  if (cash && s.drawer.kind === "serial" && s.drawer.port) { await openDrawer(s); return { printed: true, drawer: "opened" }; }
+  if (cash && ((s.drawer.kind === "serial" && s.drawer.port) || (s.drawer.kind === "network" && s.drawer.host))) { await openDrawer(s); return { printed: true, drawer: "opened" }; }
   return { printed: true, drawer: kickInJob ? "opened" : "none" };
 }
 
@@ -67,4 +72,11 @@ export async function printOn(printerName, r, { money, paper = 80 } = {}) {
 export async function printTest(s = loadPrintSettings()) {
   const r = { company: "Inaya test receipt", location: "Printer check", saleNumber: "TEST", completedAt: new Date().toISOString(), currency: "", lines: [{ name: "If you can read this, printing works", quantity: 1, unitPrice: 0, total: 0 }], totals: { subtotal: 0, taxBreakdown: [], total: 0 }, tenders: [], returnPolicy: "", footer: s.printer.paper === 58 ? "58 mm paper" : "80 mm paper" };
   return sendToPrinter(s, receiptBytes(r, { paper: Number(s.printer.paper) === 58 ? 58 : 80 }));
+}
+
+/** Raw label-printer commands (ZPL / TSPL text) to an installed label printer (desktop app). */
+export async function printRawText(printerName, text) {
+  if (!inDesktopApp()) throw new Error("Printing straight to a label printer needs the Inaya desktop app; use Print labels instead.");
+  if (!printerName) throw new Error("Choose the label printer.");
+  return invoke("pos_print_raw", { printer: printerName, dataB64: toBase64(new TextEncoder().encode(text)) });
 }

@@ -219,8 +219,8 @@ export async function buildSale({ orgId, membership, actorEmail, input, ctx, ses
 
 /** After commit: finance, audit, events. None of these can un-make the sale; failures are logged and the nightly ledger
  *  sync posts anything missed. */
-export async function afterSale({ orgId, actorEmail, saleDoc, cid, idem }) {
-  try { const { syncLedger } = await import("../ledger.js"); await syncLedger(orgId, { actorEmail: "system:pos" }); } catch (e) { console.error("pos: ledger sync after sale failed (nightly sync will retry):", e?.message); }
+export async function afterSale({ orgId, actorEmail, saleDoc, cid, idem, skipLedger = false }) {
+  if (!skipLedger) try { const { syncLedger } = await import("../ledger.js"); await syncLedger(orgId, { actorEmail: "system:pos" }); } catch (e) { console.error("pos: ledger sync after sale failed (nightly sync will retry):", e?.message); }
   await audit({ orgId, actorEmail, recordType: "POS_SALE", recordId: saleDoc._id, action: "SALE_COMPLETED", newState: { saleNumber: saleDoc.saleNumber, total: fromMinor(saleDoc.totals.totalMinor), currency: saleDoc.currency, lines: saleDoc.lines.length }, metadata: { correlationId: cid, approval: saleDoc.approval ? { by: saleDoc.approval.decidedBy } : null } });
   const payload = { saleNumber: saleDoc.saleNumber, total: fromMinor(saleDoc.totals.totalMinor), currency: saleDoc.currency, lines: saleDoc.lines.map((l) => ({ sku: l.sku, quantity: l.quantity })), warehouseId: sid(saleDoc.warehouseId) };
   await emitCommerceEvent({ orgId, name: "sale.completed", entityId: saleDoc._id, actorEmail, correlationId: cid, idempotencyKey: idem, payload });
@@ -252,7 +252,7 @@ export async function getSale({ orgId, membership, saleId }) {
 }
 export async function findSaleByNumber({ orgId, membership, saleNumber }) {
   const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
-  const { salesOrders } = await getOrgCollections(); const s = await salesOrders.findOne({ orgId: oid(orgId), channel: "POS", saleNumber: clean(saleNumber, 20).toUpperCase() });
+  const { salesOrders } = await getOrgCollections(); const n = clean(saleNumber, 60).toUpperCase(); const s = await salesOrders.findOne({ orgId: oid(orgId), channel: "POS", $or: [{ saleNumber: n }, { "offline.receiptNumber": n }] }); // offline receipts (OFF-...) are found too
   return s ? { sale: saleView(s) } : fail("Sale not found.", 404);
 }
 export async function listSales({ orgId, membership, from, to, warehouseId, shiftId, limit = 100 }) {

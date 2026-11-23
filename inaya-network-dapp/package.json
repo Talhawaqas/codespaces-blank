@@ -44,6 +44,8 @@
     "@walletconnect/ethereum-provider": "^2.23.10",
     "@wormhole-foundation/sdk": "^6.1.5",
     "@wormhole-foundation/sdk-base": "^6.1.5",
+    "@zxing/browser": "0.1.5",
+    "@zxing/library": "0.21.3",
     "autoprefixer": "^10.4.19",
     "dicom-parser": "^1.8.21",
     "ethers": "^6.17.0",
