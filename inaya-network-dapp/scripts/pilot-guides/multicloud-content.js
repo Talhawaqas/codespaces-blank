@@ -45,7 +45,7 @@ export const multicloudGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "1. Sign in to Business Workspace", body: "Go to your organization's Business Workspace and open the storage section from the left navigation." },
+            { heading: "1. Sign in to Business OS", body: "Go to your organization's Business OS and open the storage section from the left navigation." },
             { heading: "2. Open \"S3-Compatible Storage.\"", body: "This panel lists any credentials already issued for your organization." },
             { heading: "3. Click \"+ New S3 credential.\"", body: "Optionally give it a label (e.g. \"backup-server-prod\") so you can identify it later." },
             { heading: "4. (Optional) Click \"Restrict scope\" before creating it.", body: "You can limit a credential to one bucket, one folder path/prefix, a specific set of operations (READ / WRITE / DELETE / LIST), and/or an expiry date — useful for handing a narrowly-scoped credential to a specific backup job or third-party tool. Leave every field blank for a full-access credential." },
@@ -104,7 +104,7 @@ export const multicloudGuide = {
         {
           type: "note",
           label: "Share links (SAS) and AzCopy.",
-          text: "Owners and admins can create time-limited Azure share links (SAS) for a container or a single file in the Business Workspace storage screen, with read, write, delete or list permission and an expiry. A link can be given to someone who has no Inaya account, and it carries only the permissions it was created with: a read-only link used to write, or a link that has been altered, is refused. Microsoft AzCopy works with these links. AzCopy treats the first part of a web address as the container, so for listing and syncing folders your Inaya administrator needs to set up a dedicated Azure hostname for your deployment (it is switched off by default); uploading and downloading single files works without it. Because the address is not a Microsoft one, add --from-to to each AzCopy command (and --location to list).",
+          text: "Owners and admins can create time-limited Azure share links (SAS) for a container or a single file in Inaya Business OS storage screen, with read, write, delete or list permission and an expiry. A link can be given to someone who has no Inaya account, and it carries only the permissions it was created with: a read-only link used to write, or a link that has been altered, is refused. Microsoft AzCopy works with these links. AzCopy treats the first part of a web address as the container, so for listing and syncing folders your Inaya administrator needs to set up a dedicated Azure hostname for your deployment (it is switched off by default); uploading and downloading single files works without it. Because the address is not a Microsoft one, add --from-to to each AzCopy command (and --location to list).",
         },
       ],
     },
@@ -118,7 +118,7 @@ export const multicloudGuide = {
             { heading: "1. Create a test bucket/container.", body: "aws s3 mb s3://pilot-test (or the Azure container equivalent)." },
             { heading: "2. Upload a small test file.", body: "Confirm it appears in a subsequent list command." },
             { heading: "3. Download it back and compare.", body: "The downloaded file should be byte-for-byte identical to what you uploaded." },
-            { heading: "4. Confirm it's visible in Business Workspace.", body: "The object should appear under the matching bucket in the S3-Compatible Storage panel — this confirms Inaya's own storage/encryption/redundancy pipeline received it, not just a local acknowledgment." },
+            { heading: "4. Confirm it's visible in Business OS.", body: "The object should appear under the matching bucket in the S3-Compatible Storage panel — this confirms Inaya's own storage/encryption/redundancy pipeline received it, not just a local acknowledgment." },
             { heading: "5. Delete the test object and bucket.", body: "Confirms delete permissions work end-to-end before moving real data." },
           ],
         },

@@ -22,7 +22,7 @@
 //     Phase 1-3 Business Records Management build — real, tested, shipped.
 //   - Stage 4 (AI Business Assistant) is real and shipped on BOTH web
 //     (/business, "AI Assistant" tab) and mobile ("Ask the AI Assistant"
-//     from each company card in the Business Workspace) — both call the
+//     from each company card in Inaya Business OS) — both call the
 //     same POST /api/ai/business-chat and the same permission-scoped
 //     tools. The mobile app's separate, older "Ask AI" screen (a general
 //     docs assistant, /api/ai/chat) is unrelated and still exists
@@ -90,7 +90,7 @@ export const STATUS_COLORS = {
 export const ARCHITECTURE_LAYERS = [
   "Inaya DePIN Infrastructure",
   "Secure Decentralized Storage",
-  "Business Workspace",
+  "Business OS",
   "Document & Workflow Management",
   "AI Business Assistant",
   "Business SaaS / ERP Modules",
@@ -129,7 +129,7 @@ export const ROADMAP_STAGES = [
     description:
       "A secure workspace where businesses can organize teams, projects and documents while using Inaya's privacy-first storage infrastructure underneath.",
     features: [
-      "Business Workspace",
+      "Business OS",
       "Company / organization accounts",
       "Passwordless magic-link authentication",
       "Departments",
@@ -198,7 +198,7 @@ export const ROADMAP_STAGES = [
       "Activity & history queries",
       "Document access queries",
       "Natural-language business questions",
-      "Integrated into the Business Workspace",
+      "Integrated into Inaya Business OS",
       "Available on web and mobile",
     ],
     tools: [
@@ -209,14 +209,14 @@ export const ROADMAP_STAGES = [
       "get_business_brief",
     ],
     notes:
-      "Live today in both the web and mobile Business Workspace, powered by the exact same permission-scoped tools on the backend. Read-only here — for the AI's ability to propose real changes (never execute them directly), see Stage 9.",
+      "Live today in both the web and mobile Business OS, powered by the exact same permission-scoped tools on the backend. Read-only here — for the AI's ability to propose real changes (never execute them directly), see Stage 9.",
   },
   {
     number: 5,
     title: "Desktop & Native Apps",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "The Business Workspace as a real installed application — its own icon, tray presence, native notifications and auto-updates, not just a browser tab.",
+      "Inaya Business OS as a real installed application — its own icon, tray presence, native notifications and auto-updates, not just a browser tab.",
     features: [
       "Windows installer (NSIS)",
       "Linux installer (AppImage)",
@@ -230,7 +230,7 @@ export const ROADMAP_STAGES = [
       "Combined download page for Windows & Linux",
     ],
     notes:
-      "Same Business Workspace, same permissions and encryption, running in its own window instead of a browser tab. macOS is not available yet. October 2026: found and fixed a real bug where the desktop app's security allowlist never actually granted the website permission to call most of its native features (chat notifications, tray unread count, pop-out module windows, DirectSync, Inaya Drive mount) — every installed copy needed a new signed build to pick up the fix, since that allowlist is compiled into the app, not loaded from the website. Also rotated the auto-update signing key after the original key's password turned out to be unrecoverable, and fixed the updater checking the wrong app's release.",
+      "Same Business OS, same permissions and encryption, running in its own window instead of a browser tab. macOS is not available yet. October 2026: found and fixed a real bug where the desktop app's security allowlist never actually granted the website permission to call most of its native features (chat notifications, tray unread count, pop-out module windows, DirectSync, Inaya Drive mount) — every installed copy needed a new signed build to pick up the fix, since that allowlist is compiled into the app, not loaded from the website. Also rotated the auto-update signing key after the original key's password turned out to be unrecoverable, and fixed the updater checking the wrong app's release.",
   },
   {
     number: 6,
@@ -250,7 +250,7 @@ export const ROADMAP_STAGES = [
     number: 7,
     title: "Finance & HR",
     status: ROADMAP_STATUS.LIVE,
-    description: "Secure financial and people-management capabilities built directly into the Business Workspace.",
+    description: "Secure financial and people-management capabilities built directly into Inaya Business OS.",
     groups: [
       {
         title: "Finance",
@@ -287,7 +287,7 @@ export const ROADMAP_STAGES = [
       "“Give me my weekly brief.”",
     ],
     notes:
-      "Real and shipped: KPI cards, period-over-period comparison, trend charts, and business alerts all compute from the same permission-scoped data every other Business Workspace module already reads — no separate, weaker-scoped path. The AI Business Assistant answers KPI/trend/alert questions directly via a dedicated get_business_insights tool. The Business Brief (new 2026-09-01) is a periodic recap on the same real data — deterministic highlight bullets plus a best-effort AI narrative paragraph on top, available as its own Workspace view and conversationally via get_business_brief. See BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's explicitly not yet (no custom date-range picker, no trend charts on mobile yet).",
+      "Real and shipped: KPI cards, period-over-period comparison, trend charts, and business alerts all compute from the same permission-scoped data every other Business OS module already reads — no separate, weaker-scoped path. The AI Business Assistant answers KPI/trend/alert questions directly via a dedicated get_business_insights tool. The Business Brief (new 2026-09-01) is a periodic recap on the same real data — deterministic highlight bullets plus a best-effort AI narrative paragraph on top, available as its own Workspace view and conversationally via get_business_brief. See BUSINESS_OPERATIONS_INSIGHTS.md for what's covered and what's explicitly not yet (no custom date-range picker, no trend charts on mobile yet).",
   },
   {
     number: 9,
@@ -321,7 +321,7 @@ export const ROADMAP_STAGES = [
     title: "Healthcare & Legal OS",
     status: ROADMAP_STATUS.IN_PROGRESS,
     description:
-      "Two vertical specializations of the Business Workspace — Health OS and Legal OS — for organizations handling patient or client/matter data, picked at company signup or changed later in Settings.",
+      "Two vertical specializations of Inaya Business OS — Health OS and Legal OS — for organizations handling patient or client/matter data, picked at company signup or changed later in Settings.",
     securityStatement: "Patient and matter visibility is assignment-based, not department-based — being in the right department is never enough on its own.",
     features: [
       "Patient registry & Patient 360 — appointments, consent, ROI, billing, care team (Health OS)",
@@ -337,14 +337,14 @@ export const ROADMAP_STAGES = [
       "Health/Legal AI assistants (read/summarize/draft only — no diagnosis, no legal advice, no filing, no hold release, no evidence deletion)",
     ],
     notes:
-      "Every domain module for both verticals now has a real, working screen in Business Workspace — not just Patients and Matters — live-verified end-to-end against the running app, including the trust ledger's server-side overdraft rejection. Mobile now has real screens for both verticals too (Health OS, Legal OS, and their patient/matter detail screens), built against the exact same vertical-locked API routes as web; these are written and syntax-verified but not yet exercised on a live device/simulator, which is the one thing still holding this at IN_PROGRESS rather than LIVE. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
+      "Every domain module for both verticals now has a real, working screen in Business OS — not just Patients and Matters — live-verified end-to-end against the running app, including the trust ledger's server-side overdraft rejection. Mobile now has real screens for both verticals too (Health OS, Legal OS, and their patient/matter detail screens), built against the exact same vertical-locked API routes as web; these are written and syntax-verified but not yet exercised on a live device/simulator, which is the one thing still holding this at IN_PROGRESS rather than LIVE. FHIR/HL7/e-filing/e-signature/SSO and every other third-party integration are documented adapter interfaces with an honest not-configured stub, not live integrations. No HIPAA/ABA/eDiscovery compliance certification exists or is claimed.",
   },
   {
     number: 11,
     title: "Financial Services & Regulated Enterprise OS",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "A third and fourth vertical specialization of the Business Workspace — Financial Services OS (hedge funds/asset managers), Private Capital OS (PE/VC), and Regulated Enterprise OS (cross-industry compliance for banks, insurers, pharma, and other regulated organizations) — sharing one platform core with Health OS and Legal OS. All ten phases of the SOW are now built.",
+      "A third and fourth vertical specialization of Inaya Business OS — Financial Services OS (hedge funds/asset managers), Private Capital OS (PE/VC), and Regulated Enterprise OS (cross-industry compliance for banks, insurers, pharma, and other regulated organizations) — sharing one platform core with Health OS and Legal OS. All ten phases of the SOW are now built.",
     securityStatement: "A framework or control mapping is never presented as a compliance certification — and a control with no test on file shows as \"unknown,\" never as passing.",
     features: [
       "Regulatory Framework Engine — pluggable reference mappings (NIST CSF 2.0, ISO 27001, SOC 2, DORA, GDPR, GLBA/Reg S-P, SEC IA) with an explicit compliance-is-not-certification disclaimer",
@@ -368,7 +368,7 @@ export const ROADMAP_STAGES = [
     title: "Government & Public Sector Sovereign OS",
     status: ROADMAP_STATUS.IN_PROGRESS,
     description:
-      "A fifth vertical specialization of the Business Workspace, for government departments and agencies handling citizen, legal, financial, procurement, health, and operational data — sharing the same platform core as every other vertical above.",
+      "A fifth vertical specialization of Inaya Business OS, for government departments and agencies handling citizen, legal, financial, procurement, health, and operational data — sharing the same platform core as every other vertical above.",
     securityStatement: "Citizen-record visibility is assignment-based, not department-based — being in the right department, or even holding staff-level government access, is never enough on its own to see a specific person's record.",
     features: [
       "Citizen Records — need-to-know, assignment-based access, mirroring Health OS's care-team model exactly",
@@ -390,7 +390,7 @@ export const ROADMAP_STAGES = [
     title: "Storage Interoperability & Inaya Drive",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "Makes Business Workspace storage consumable through the exact tools an enterprise IT team already has — real AWS S3, Azure Blob, and Google Cloud Storage protocol compatibility, a real mounted drive letter on Windows and Linux, and a local migration tool that moves existing cloud data in — without rebuilding or weakening the encryption/sharding/DePIN pipeline underneath any of it.",
+      "Makes Business OS storage consumable through the exact tools an enterprise IT team already has — real AWS S3, Azure Blob, and Google Cloud Storage protocol compatibility, a real mounted drive letter on Windows and Linux, and a local migration tool that moves existing cloud data in — without rebuilding or weakening the encryption/sharding/DePIN pipeline underneath any of it.",
     securityStatement: "A signed URL or federated Google sign-in can never grant more access than the credential or membership it's built on already has — verified by adversarial test, not just by design intent.",
     features: [
       "Real AWS SigV4 (AWS4-HMAC-SHA256) and native Google Cloud Storage (GOOG4-HMAC-SHA256) request signing on one endpoint",
@@ -436,7 +436,7 @@ export const ROADMAP_STAGES = [
       "DirectSync — a background local-folder watcher inside the Inaya desktop app; automatically, incrementally uploads new/changed files via the existing S3-compatible API, duplicate-safe and resumable across restarts, reusing the same real S3 client Inaya Drive already uses",
       "Zero-Knowledge Data Room Templates — four ready-made room configurations (Fundraising, M&A, Legal Review, Web3 Due-Diligence) built on the existing Data Room, NDA, and audit infrastructure, not a second document-sharing system",
       "Smart Cloud Backup & Health Scheduler — recurring, incremental AWS S3/Azure Blob/Google Cloud Storage backup into Inaya, orchestrating the existing, already-tested migration engine rather than a second copy of it, with real size-verified integrity checks and a six-state health status",
-      "Interactive What-If Scenario Studio — a Business Workspace view over the existing Digital Twin simulation API (not a second simulation engine), with scenario history, current-vs-simulated comparison, dependency impact, and integrity-hashed provenance",
+      "Interactive What-If Scenario Studio — a Business OS view over the existing Digital Twin simulation API (not a second simulation engine), with scenario history, current-vs-simulated comparison, dependency impact, and integrity-hashed provenance",
       "A mandatory capability audit was produced and published before any of the four features was built, classifying every proposed capability as already-implemented, reusable, or a genuine gap — nothing here duplicates an existing system",
     ],
     notes:
@@ -492,7 +492,7 @@ export const ROADMAP_STAGES = [
       "SQL gateway — a real SQL parser, authorization against exactly what's been published, real query execution with row/timeout limits, and every query (succeeded, denied, or failed) audited to the same shared audit trail every other Inaya feature uses",
       "A real JDBC driver (jdbc-driver/) — a genuine, compiled java.sql.Driver implementation, tested end-to-end including a standalone-jar smoke test with zero other classpath dependencies",
       "A real ODBC driver (odbc-driver/) — a genuine, compiled Win32 DLL exporting 34 standard ODBC entry points, built with MinGW-w64 GCC against the real ODBC SDK, verified end-to-end (19/19 checks) by loading the compiled DLL directly, AND now proven to register and connect through the real Windows ODBC Driver Manager itself (the path Excel/Power BI actually use)",
-      "A real REST API (/api/public/v1/data-sources/**) and Business Workspace admin UI (Data Sources + SQL Console tabs)",
+      "A real REST API (/api/public/v1/data-sources/**) and Business OS admin UI (Data Sources + SQL Console tabs)",
     ],
     notes:
       "Live-verified: 11 automated tests for the connector/metadata/gateway layer, 7 automated JDBC integration tests, 19 automated ODBC direct-load tests, and 7 automated RMS/OpenVMS tests against a live OpenVMS instance. Real bugs found and fixed this pass, each confirmed against the real system: getting OpenVMS itself to boot under a hypervisor took five separate genuine firmware/controller/boot-order fixes; the RMS connector's SSH dependency broke Next.js's production bundling for every route that touches the connector registry; and getting the ODBC driver through the real Windows Driver Manager for the first time surfaced five more real bugs (a PowerShell script parameter colliding with a built-in variable, two connection-attribute handlers that hard-errored instead of no-opping, a DSN-resolution gap, and a missing mandatory ODBC Core function whose absence crashed the Driver Manager itself). ODBC registration and a real Driver-Manager-mediated connection are now proven; query execution through that same path still crashes, isolated via the Windows Event Log to a fault inside Microsoft's own odbc32.dll, not this driver — documented honestly as open. Not built: Adabas, VSAM and IMS connectors (Adabas's test environment — a real Docker container — is up and healthy, but the connector code isn't written; VSAM/IMS require a genuine z/OS environment, a much larger undertaking), write-back, and federated cross-source joins. See docs/mainframe-legacy-data-access-report.md for the full breakdown.",
@@ -513,7 +513,7 @@ export const ROADMAP_STAGES = [
       "Ransomware detection (change and delete ratios, extension changes, entropy jumps, ransom notes, failed logons, snapshot-deletion attempts) with automatic immutable snapshot, alert, time-limited lockdown and recovery from the last clean snapshot",
       "Backup with file-level dedup, resumable runs, read-back verification and restore drills; replication with manifest verification; recovery runbook",
       "Local autonomy: after an unclean restart the pools re-attach, mirrors reassemble and services start by themselves, with cloud reachability shown as degraded, not fatal",
-      "49 API route files, an 18-section Business Workspace console and a background worker, reusing the existing permissions, audit chain, Evidence Graph, Digital Twin and encrypted storage",
+      "49 API route files, an 18-section Business OS console and a background worker, reusing the existing permissions, audit chain, Evidence Graph, Digital Twin and encrypted storage",
     ],
     notes:
       "Implemented and tested end to end on ONE documented profile: a Linux VM appliance (Ubuntu 26.04, Samba, NFSv4.2, mdadm, Btrfs) with real disk failure, crash recovery and real Windows and Linux clients. NOT validated on physical hardware (SMART, temperature and UPS are reported UNKNOWN on virtual disks) — the largest remaining gap and the next step before selling hardware. NAS-to-NAS replication was tested on one host only; Active Directory/LDAP login, iSCSI, a local S3 gateway and Kubernetes CSI are not implemented; macOS is untested.",
@@ -530,7 +530,7 @@ export const ROADMAP_STAGES = [
       "A policy engine per organization (allow, warn, redact, block, require human approval), a model registry, and rate limiting wired into every route",
       "Decisions written to the existing tamper-evident audit chain and to the Evidence Graph as a new AI_SECURITY_CHECK subject — no second audit system",
       "Coverage of all six text AI routes: the business assistant, wallet assistant, security assistant, Learn assistant, documentation assistant and the OS chat",
-      "An AI Security view in the Business Workspace showing what each request was allowed to see, which checks ran and why one was blocked or redacted",
+      "An AI Security view in Inaya Business OS showing what each request was allowed to see, which checks ran and why one was blocked or redacted",
     ],
     notes:
       "Live-verified: 23/23 adversarial tests, and a real HTTP round trip against the running server in which a real injection attempt on the business assistant was blocked while normal chat was unaffected. Known boundaries: the voice assistant (speech goes browser to Gemini Live directly) is not gateway-covered; the documentation assistant streams with input-side checks only; routes that have no organization log without an organization audit chain. No independent security certification is claimed.",
@@ -558,7 +558,7 @@ export const ROADMAP_STAGES = [
     title: "AI Business Operations Manager — Visual Automations, Approvals, Evidence and Notifications",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "A visual, node-based workflow builder inside the Business Workspace. A company draws its own routines (a schedule, a webhook or an event as the trigger, then steps that read its own data, ask the AI to summarize or decide, send notifications, or wait for a person's approval), publishes them, and Inaya runs them on its own with a full step-by-step record. Ready-made templates cover daily business health, invoice follow-up, support escalation, and the Finance Operations Manager routine for the AI Bookkeeper.",
+      "A visual, node-based workflow builder inside Inaya Business OS. A company draws its own routines (a schedule, a webhook or an event as the trigger, then steps that read its own data, ask the AI to summarize or decide, send notifications, or wait for a person's approval), publishes them, and Inaya runs them on its own with a full step-by-step record. Ready-made templates cover daily business health, invoice follow-up, support escalation, and the Finance Operations Manager routine for the AI Bookkeeper.",
     securityStatement: "The AI reads only what the person who owns the automation may see, can suggest but never change records by itself, and every consequential step goes through the existing Controlled Actions approval flow. Connection credentials are stored encrypted, shown once and never returned, logged or audited.",
     features: [
       "A visual editor with validation, publishing, versions, and safe replay that never repeats an action",
@@ -575,14 +575,14 @@ export const ROADMAP_STAGES = [
     title: "Customer Portal & Customer Service — Tickets, Portal, SLAs, Knowledge Base, AI Assist, and Help & Support for Inaya Users",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "A complete support desk built into Inaya, on the customer and invoice records the company already has. Customers sign in to their own portal to raise tickets, attach files and follow the conversation; the company's team works them in a console with queues, assignment, business-hours SLAs that pause and resume correctly, saved replies, internal notes customers never see, a help centre with search, an AI helper that answers from the company's own articles with citations, satisfaction ratings, idea voting, analytics and an open API. Inaya's own users get Help & Support: Business Workspace members raise a ticket to Inaya's support desk, with an email copy to the support mailbox, and dApp visitors are pointed to the portal.",
+      "A complete support desk built into Inaya, on the customer and invoice records the company already has. Customers sign in to their own portal to raise tickets, attach files and follow the conversation; the company's team works them in a console with queues, assignment, business-hours SLAs that pause and resume correctly, saved replies, internal notes customers never see, a help centre with search, an AI helper that answers from the company's own articles with citations, satisfaction ratings, idea voting, analytics and an open API. Inaya's own users get Help & Support: Business OS members raise a ticket to Inaya's support desk, with an email copy to the support mailbox, and dApp visitors are pointed to the portal.",
     securityStatement: "One company's customers can never see another's, and one customer can never see another's tickets; internal notes never reach customers; the AI is untrusted input, cannot change anything by itself and hands over to a person when unsure. Every uploaded file is scanned for malware and stored encrypted; portal sign-in links are single-use and login never reveals whether an address exists.",
     features: [
       "Ticketing with routing, priority policy, business-hours SLAs (nights, weekends, holidays, time zones, pause/resume), macros, merge/relate, incidents and bulk actions",
       "A responsive, accessible customer portal at /portal/<name> with one-time-link sign-in (and company single sign-on via OpenID Connect with PKCE)",
       "A knowledge base with search, an AI answer helper with citations and human hand-off, ratings, ideas and voting, analytics that show honest empty states",
       "Open API with scoped API keys, signed webhooks (SSRF-safe) and export; a native workflow node and support data scope for Automations",
-      "Help & Support: a Business Workspace view that files tickets in Inaya's own support desk from the verified account, five requests per hour, idempotent against double submission, with an email copy to the support mailbox (Reply-To set to the requester)",
+      "Help & Support: a Business OS view that files tickets in Inaya's own support desk from the verified account, five requests per hour, idempotent against double submission, with an email copy to the support mailbox (Reply-To set to the requester)",
     ],
     notes:
       "Verified against the real database; Help & Support verified by seven automated tests and a live production check of the endpoints. NOT yet verified against real providers: reply-by-email through the inbound email provider (built, setup pending), company single sign-on, and the malware scanner. To make Help & Support fully visible to dApp visitors, the Inaya Network organization's portal must be switched on in Customer Support settings.",
@@ -646,7 +646,7 @@ export const ROADMAP_STAGES = [
     title: "Managed Database, Document Intelligence & AI/ML Studio",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "A real, provisioned PostgreSQL database managed from inside the Business Workspace; a general document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
+      "A real, provisioned PostgreSQL database managed from inside Inaya Business OS; a general document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
     securityStatement: "Provisioning a database and running code are owner/admin-only, rate-limited and fully audited. The sandbox never receives Inaya's own server secrets and has no internet access unless a person explicitly turns it on for one run. Inaya does not train AI models on its own infrastructure — registering a model tracks a real file a team already produced elsewhere.",
     features: [
       "Databases: provision, start, stop, list backups, restore to a point in time, and query a real PostgreSQL database through a real external provider (Supabase) — Inaya's own serverless hosting cannot run a database engine itself",
@@ -771,7 +771,7 @@ export const ROADMAP_STAGES = [
           "Real QEMU/KVM virtual machines on a customer's own connected hardware — create, start, stop, restart, delete, confirmed by a real guest OS genuinely booting and coming online with its own network address, not just an engine starting and stopping",
           "Real qcow2 block storage, written and read back byte-for-byte, with image-backed overlay disks for fast VM creation",
           "A private, isolated network per customer with default-drop nftables rules and NAT so guests reach the internet safely without reaching each other",
-          "An Infrastructure console in the Business Workspace showing connected nodes, VMs, capacity, clusters, load balancers and access keys, with real Terraform provider support (3 compute resources, separate from the earlier storage-only provider)",
+          "An Infrastructure console in Inaya Business OS showing connected nodes, VMs, capacity, clusters, load balancers and access keys, with real Terraform provider support (3 compute resources, separate from the earlier storage-only provider)",
         ],
       },
       {
@@ -811,7 +811,7 @@ export const ROADMAP_STAGES = [
     title: "Education OS — Schools and Colleges",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "The seventh industry vertical of the Business Workspace, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs in ERP mode alongside the existing Finance, HR and Documents modules, and is built around the three things schools asked to keep safe: students' personal data, fee payments, and documents.",
+      "The seventh industry vertical of Inaya Business OS, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs in ERP mode alongside the existing Finance, HR and Documents modules, and is built around the three things schools asked to keep safe: students' personal data, fee payments, and documents.",
     securityStatement:
       "Guardian contact details, home addresses, national ID numbers and medical notes are encrypted before they are stored, and a teacher can only open the records of students in the classes they are assigned to, with ID numbers masked.",
     groups: [
@@ -856,7 +856,7 @@ export const ROADMAP_STAGES = [
     title: "Appointments & Email Marketing — Online Booking, Team Calendars, Campaigns and Follow-ups",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "An online booking calendar and a mass email marketing tool inside the Business Workspace, both connected to the CRM, so an enquiry becomes a lead, a booking, a meeting on the customer's record and a follow-up campaign without leaving Inaya. Included in the Business and Enterprise packages.",
+      "An online booking calendar and a mass email marketing tool inside Inaya Business OS, both connected to the CRM, so an enquiry becomes a lead, a booking, a meeting on the customer's record and a follow-up campaign without leaving Inaya. Included in the Business and Enterprise packages.",
     securityStatement:
       "Customer phone numbers, meeting notes and calendar addresses are encrypted before they are stored, staff email addresses never appear on public booking pages, and every marketing email carries a one-click unsubscribe that is honoured for good.",
     groups: [
@@ -899,7 +899,7 @@ export const ROADMAP_STAGES = [
     title: "Hospitality OS — Reservations, Tables, Menu, Stock and Daily Operations for Restaurants",
     status: ROADMAP_STATUS.LIVE,
     description:
-      "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app.",
+      "An industry edition of Inaya Business OS for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app.",
     securityStatement:
       "Every action is checked on the server by role and by location, guest contact details and staff notes are hidden from service staff, the public booking page shows only free times, and reservations, price and allergen changes, wastage and stock counts are written to the tamper-evident audit chain.",
     groups: [
@@ -980,6 +980,237 @@ export const ROADMAP_STAGES = [
     ],
     notes:
       "Verified with automated tests and in a running app. Payment is confirmed by the Inaya team when the transfer arrives, not by an automatic payment gateway.",
+  },
+  {
+    number: 35,
+    title: "License Manager — Package Licences, Payment Reminders, Grace Period and Suspension",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "Every company has a licence tied to its package and billing cycle, so access follows payment automatically and fairly, with plenty of warning before anything is paused.",
+    securityStatement:
+      "Only the Inaya founder account can change licences, and every change is recorded. A suspended company keeps access to Billing, Help & Support and its full data export, so it can always pay or take its data.",
+    groups: [
+      {
+        title: "Licences and reminders",
+        items: [
+          "A licence per company with its package, billing cycle and next payment date (Pakistan time)",
+          "Payment reminders by email and in the app before the due date",
+          "A 14-day grace period after a missed payment, with a daily notice counting down the days left",
+        ],
+      },
+      {
+        title: "Suspension and return",
+        items: [
+          "Automatic suspension when the grace period ends, with Billing, Help and the data export still open",
+          "Access returns as soon as the payment is confirmed, with an email to the company",
+          "A licence report and export for the Inaya team",
+        ],
+      },
+    ],
+    notes: "Verified with automated tests, including the daily countdown notices, one suspension notice per billing contact and reactivation.",
+  },
+  {
+    number: 36,
+    title: "Ransomware Protection & Recovery — Immutable Snapshots, Tripwires and Tested Rollback",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "If ransomware reaches a company's files, Inaya can spot it, stop it spreading and roll the files back to a clean point in time, so the company restores its data instead of paying a ransom.",
+    securityStatement:
+      "Protected copies cannot be changed or deleted by an attacker using the company's own access, and recovery is tested end to end in a controlled demonstration rather than only promised.",
+    groups: [
+      {
+        title: "Protection",
+        items: [
+          "Immutable snapshots and point-in-time rollback for business files, switched on by default",
+          "A hidden decoy file in every storage bucket that raises the alarm the moment it is touched",
+          "Protection for data that already existed before the feature was switched on",
+          "Off-site copies of network storage (Sovereign NAS) by default",
+        ],
+      },
+      {
+        title: "Recovery",
+        items: [
+          "Restore to a clean point in time from the Security & Resilience screens",
+          "An Enterprise Resilience Demonstration on a synthetic company in an isolated environment, with a published demo video",
+        ],
+      },
+    ],
+    notes: "The demonstration rehearsal found three defects, which were fixed before release.",
+  },
+  {
+    number: 37,
+    title: "Inaya Commerce — Point of Sale, Returns, Shifts, Orders and Commerce Reporting",
+    status: ROADMAP_STATUS.LIVE,
+    description:
+      "A full shop counter inside the same system as the office: every sale updates stock, the books, the customer's history and the cash drawer at once.",
+    securityStatement:
+      "Prices and taxes are worked out on the server, never trusted from the till. Discounts or price changes above a cashier's limit need a supervisor or manager to approve them from their own screen, and every sale, refund, void and drawer opening is recorded.",
+    groups: [
+      {
+        title: "At the counter",
+        items: [
+          "Sell by scanning, searching or tapping, with configurable tax (for example Pakistan sales tax or UK VAT)",
+          "Cash, bank transfer and other payments, split payments and cash rounding",
+          "Returns, exchanges and voids linked to the original sale, with approvals",
+          "Parked sales, receipts to print, email or save as PDF",
+        ],
+      },
+      {
+        title: "Shifts and orders",
+        items: [
+          "Registers and shifts with an opening float, cash in and out, and a counted close that flags differences",
+          "Sales orders from quote to delivery, with stock reservations and customer deposits",
+          "Commerce reports with drill-down to every transaction",
+        ],
+      },
+    ],
+    notes: "Verified with automated tests against the real database and in a running app.",
+  },
+  {
+    number: 38,
+    title: "Stock Control — Availability, Transfers, Counts, Purchasing and Replenishment",
+    status: ROADMAP_STATUS.LIVE,
+    description: "One accurate picture of stock across every branch and warehouse, so a shop never sells what it does not have.",
+    securityStatement: "Every stock change is a recorded movement; concurrent sales cannot oversell, and corrections need a reason.",
+    groups: [
+      {
+        title: "Stock",
+        items: [
+          "Stock in hand per branch, with low and out-of-stock flags",
+          "Transfers between branches that arrive only when received",
+          "Stock counts with approved differences",
+          "Purchasing and replenishment suggestions from sales",
+        ],
+      },
+    ],
+    notes: "Verified with automated tests, including simultaneous sales of the last item.",
+  },
+  {
+    number: 39,
+    title: "Customer Growth — Promotions, Loyalty Points, Gift Cards and Store Credit",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Tools that bring customers back, used automatically at the shop counter.",
+    securityStatement: "Gift cards and store credit are treated as money owed to the customer until they are spent; card codes are never stored in readable form.",
+    groups: [
+      {
+        title: "Growth",
+        items: [
+          "Promotions and coupon codes, applied automatically when a cart qualifies",
+          "Loyalty points and member discounts",
+          "Gift cards and store credit as tenders at the till",
+          "Customer segments for campaigns",
+        ],
+      },
+    ],
+    notes: "Verified with automated tests.",
+  },
+  {
+    number: 40,
+    title: "Online Selling — Your Own Web Store and Two-Way Shopify & WooCommerce Sync",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Sell online from the same products, stock and books as the shop: an Inaya web store, plus a Shopify or WooCommerce store the company already has.",
+    securityStatement: "Card payments go through the company's own Stripe or Safepay account; Inaya never holds the money. Store keys are kept encrypted.",
+    groups: [
+      {
+        title: "Online",
+        items: [
+          "An Inaya web store with the company's branding, delivery options and bank transfer or cash on delivery",
+          "Card payments through the company's own Stripe or Safepay account",
+          "WooCommerce: products matched, stock sent and orders brought in once each",
+          "Shopify: the same sync, connected by installing the Inaya app",
+        ],
+      },
+    ],
+    notes: "WooCommerce and Shopify sync were verified with real test stores. One-click Shopify installation for every shop is waiting for Shopify's app review.",
+  },
+  {
+    number: 41,
+    title: "Workforce & Branches — Rotas, Clock-In, Commissions, Branch Access and Manage Users",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Run the people side of a multi-branch business: who works where and when, and what each person may see and do.",
+    securityStatement: "Branch access is enforced on the server: a person only reaches the branches they are assigned, even through a direct link. Only admins change access, and every change is recorded.",
+    groups: [
+      {
+        title: "People and branches",
+        items: [
+          "Weekly rotas per branch, clock-in and clock-out at a branch",
+          "Sales commissions worked out from the till",
+          "Opening and closing checklists",
+          "Manage users: role templates, module permissions and assigned branches",
+        ],
+      },
+    ],
+    notes: "Verified with automated tests, including cross-branch access attempts.",
+  },
+  {
+    number: 42,
+    title: "Commerce Pricing, Commerce Starter and Suggest an Improvement",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Clear Commerce prices for every size of business, and a way for customers to shape what we build next.",
+    securityStatement: "Plan limits apply only to new companies on the new prices; existing customers are never blocked.",
+    groups: [
+      {
+        title: "Pricing",
+        items: [
+          "Commerce Starter on Professional ($49 / PKR 8,000 a month), the Commerce add-on on Business ($79 / PKR 12,000) and a Business + Commerce bundle ($169 / PKR 40,000)",
+          "Commerce included in Enterprise, with unlimited branches and tills and three connected stores",
+          "Extra branches and tills when a company grows",
+        ],
+      },
+      {
+        title: "Ideas",
+        items: [
+          "Suggest an improvement from inside the Workspace, with voting on other companies' ideas",
+          "Ideas planned into development sprints, with a notice when an idea is planned and when it ships",
+        ],
+      },
+    ],
+    notes: "Live on the pricing page and in the Workspace.",
+  },
+  {
+    number: 43,
+    title: "Till Hardware and Offline Selling (Beta)",
+    status: ROADMAP_STATUS.LIVE,
+    description: "The till keeps selling cash sales when the internet drops, and works with everyday shop hardware. In Beta with our first pilot shops, who confirm each feature on their own equipment.",
+    securityStatement: "Offline sales are signed and kept encrypted on the till, then checked again by the server before they reach the books; anything that does not match goes to the manager, never straight into the books.",
+    groups: [
+      {
+        title: "Offline selling",
+        items: [
+          "Cash sales at shelf prices during an internet outage, even after a restart (desktop app 0.3.1)",
+          "Every offline sale recorded exactly once when the connection returns",
+          "An Offline review list for the manager",
+        ],
+      },
+      {
+        title: "Hardware (desktop app)",
+        items: [
+          "Silent receipt printing on USB or network printers (80 mm and 58 mm) and full A4 or A5 receipts on laser printers",
+          "Cash drawers through the printer, a USB trigger box or a network controller, with every opening recorded",
+          "Barcode labels for any printer, plus Zebra and TSC / Xprinter label printers",
+          "Camera scanning, and a phone as a wireless scanner for a computer till",
+        ],
+      },
+    ],
+    notes: "Verified with automated failure tests and printer emulators; phone scanning was also confirmed on a real Android phone. Beta until pilot shops confirm each item on real hardware.",
+  },
+  {
+    number: 44,
+    title: "Inaya Business OS — New Name, Modern Look and User Guide",
+    status: ROADMAP_STATUS.LIVE,
+    description: "The Business Workspace is now Inaya Business OS, a Business Operations Platform: run your whole business on one connected system.",
+    securityStatement: "A new name and look only; companies, data and sign-in are unchanged.",
+    groups: [
+      {
+        title: "Identity and look",
+        items: [
+          "New name and landing page: back office, front office and online selling, with ransomware resilience",
+          "A modern look across every screen, plus a new Calm theme",
+          "A 36-page illustrated user guide in plain language",
+        ],
+      },
+    ],
+    notes: "Live on inayanetwork.com/business.",
   },
 ];
 

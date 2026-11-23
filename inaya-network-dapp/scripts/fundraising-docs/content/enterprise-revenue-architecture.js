@@ -186,7 +186,7 @@ export const enterpriseRevenueArchitecture = {
         {
           type: "note",
           label: "Scope note, October 2026.",
-          text: "Business Workspace's October additions — a Filen/FileCloud-inspired Secure Collaboration suite and an Internxt-inspired Device Protection suite (hybrid post-quantum key establishment, a local-only Cleaner, Inaya Meet) — are SaaS-side features with no on-chain revenue mechanics of their own; the settlement, escrow, and vesting flow described in this document is unchanged. See the companion SaaS Business Model document for where they fit in the SaaS revenue line instead.",
+          text: "Business OS's October additions — a Filen/FileCloud-inspired Secure Collaboration suite and an Internxt-inspired Device Protection suite (hybrid post-quantum key establishment, a local-only Cleaner, Inaya Meet) — are SaaS-side features with no on-chain revenue mechanics of their own; the settlement, escrow, and vesting flow described in this document is unchanged. See the companion SaaS Business Model document for where they fit in the SaaS revenue line instead.",
         },
         {
           type: "note",

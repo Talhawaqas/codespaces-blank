@@ -46,7 +46,7 @@ export const mainframeLegacyGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "1. Sign in to Business Workspace.", body: "Open the \"Data Sources\" panel from the left navigation." },
+            { heading: "1. Sign in to Business OS.", body: "Open the \"Data Sources\" panel from the left navigation." },
             { heading: "2. Click \"+ Add Data Source.\"", body: "Choose your connector type and enter its real connection details -- credentials are encrypted at rest, never shown back in plain text, and never exposed to query clients." },
             { heading: "3. Test the connection.", body: "A real connection attempt against your actual source, not a format check -- a bad credential or unreachable host fails here, before anything is published." },
             { heading: "4. Discover metadata.", body: "Inaya reads your source's real schema (for RMS/OpenVMS, this parses the source's own FDL output directly, not an invented schema) and shows you what it found." },

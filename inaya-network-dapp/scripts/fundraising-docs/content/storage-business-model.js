@@ -4,7 +4,7 @@
 //
 // Named storage-business-model.js (not business-model.js) to keep it
 // unambiguous from saas-business-model.js — this one covers the core
-// storage/DePIN economics; that one covers the Business Workspace SaaS
+// storage/DePIN economics; that one covers Inaya Business OS SaaS
 // product. Same correction notes as whitepaper.js/enterprise-revenue.js
 // apply here (RevenueRouter/Escrow flow). All financial figures are
 // confirmed real values — live on-chain reads, production-hardcoded
@@ -205,7 +205,7 @@ export const storageBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business Workspace (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), Identity Integration with MSP multi-tenancy, an AI Bookkeeper, and a Managed Database/Document Intelligence/AI-ML Studio — and, as of October 2026, six industry editions of Business Workspace (Health, Legal, Regulated Enterprise, Financial, Government and Education) with an optional ERP-style layout.",
+          text: "This deck covers the core storage/DePIN economics specifically. Inaya has since grown a full application layer on the same infrastructure — Business OS (a genuinely independent SaaS revenue line, now including real business operations and a Finance & HR layer), the Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, two desktop apps, four AI assistants, a Sovereign Enterprise OS layer connecting all of it, and — as of September 2026 — a public Trust Center, an Autonomous Resilience Layer, a Node Operator Dashboard, four new business primitives (Inaya Sign, DePIN Storage Manager, Milestone Escrow, Financial Attestation), Identity Integration with MSP multi-tenancy, an AI Bookkeeper, and a Managed Database/Document Intelligence/AI-ML Studio — and, as of October 2026, six industry editions of Business OS (Health, Legal, Regulated Enterprise, Financial, Government and Education) with an optional ERP-style layout.",
         },
         {
           type: "note",
@@ -215,12 +215,12 @@ export const storageBusinessModel = {
         {
           type: "note",
           label: "Secure Collaboration & Device Protection, October 2026.",
-          text: "Two further additions to Business Workspace, both off by default per organization: a Filen/FileCloud-inspired Secure Collaboration suite (end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent for on-premises file servers), and an Internxt-inspired Device Protection suite (a hybrid post-quantum key-establishment layer combining classical X25519 with ML-KEM-768, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls). Neither changes the storage/DePIN revenue mechanics described above.",
+          text: "Two further additions to Business OS, both off by default per organization: a Filen/FileCloud-inspired Secure Collaboration suite (end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent for on-premises file servers), and an Internxt-inspired Device Protection suite (a hybrid post-quantum key-establishment layer combining classical X25519 with ML-KEM-768, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls). Neither changes the storage/DePIN revenue mechanics described above.",
         },
         {
           type: "note",
           label: "Sovereign Infrastructure, October 2026.",
-          text: "A third addition, structurally distinct from the storage/DePIN protocol above: a customer can now connect their own server and run real virtual machines, block storage, and private networking on it, managed from the Business Workspace, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. This is customer-owned hardware — it does not route through the storage network's node-reward economics described elsewhere in this document.",
+          text: "A third addition, structurally distinct from the storage/DePIN protocol above: a customer can now connect their own server and run real virtual machines, block storage, and private networking on it, managed from Inaya Business OS, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. This is customer-owned hardware — it does not route through the storage network's node-reward economics described elsewhere in this document.",
         },
         {
           type: "note",

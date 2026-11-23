@@ -57,7 +57,7 @@ export const communityFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "The current testnet rate, set on the deployed contracts, is 6.49 USDT per TB per month — about 0.0063 USDT per Gigabyte (GB) — plus a flat account fee of 12 USDT a year. Storage has no $INAYA fee at all. There are no egress fees on testnet today. From mainnet, downloading up to the amount you store stays included every month; retrieval beyond that costs 10 INAYA per 0.5 TB on the dApp, paid by card in USD at the equivalent rate and converted to $INAYA automatically, so you never need to hold the token. The Business Workspace has no egress fees. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
+          text: "The current testnet rate, set on the deployed contracts, is 6.49 USDT per TB per month — about 0.0063 USDT per Gigabyte (GB) — plus a flat account fee of 12 USDT a year. Storage has no $INAYA fee at all. There are no egress fees on testnet today. From mainnet, downloading up to the amount you store stays included every month; retrieval beyond that costs 10 INAYA per 0.5 TB on the dApp, paid by card in USD at the equivalent rate and converted to $INAYA automatically, so you never need to hold the token. Inaya Business OS has no egress fees. Rates are read live from the contract and may be adjusted by the protocol over time — always confirm the current rate in the app before uploading at scale.",
         },
       ],
     },
@@ -71,7 +71,7 @@ export const communityFaqs = {
         },
         {
           type: "note",
-          text: "Business Workspace, Inaya Learn, and the public Security page don't require a wallet at all — email sign-in (or nothing, for public pages) is enough.",
+          text: "Business OS, Inaya Learn, and the public Security page don't require a wallet at all — email sign-in (or nothing, for public pages) is enough.",
         },
       ],
     },
@@ -94,8 +94,9 @@ export const communityFaqs = {
           items: [
             "Inaya Learn — browse and watch curated educational videos on Web3, AI, and programming, with a built-in AI tutor. No wallet needed.",
             "Security — check whether a domain or IP has been flagged by the network's decentralized threat-intelligence layer, right from the public website. No wallet needed.",
-            "Business Workspace — if your company needs document management with real approval workflows and permissions, it's a separate sign-up with just an email address.",
-            "OS Home — once you're signed in (either with a wallet or a Business Workspace account), a single home screen now shows you what actually needs your attention: real notifications, a trust/health check on your data, and one search box that finds anything across every part of the app.",
+            "Business OS — if your company needs document management with real approval workflows and permissions, it's a separate sign-up with just an email address.",
+            "Inaya Commerce — if you run a shop: a till (it keeps selling cash sales when the internet drops, in Beta), stock across branches, loyalty and gift cards, and your own web store with Shopify and WooCommerce sync.",
+            "OS Home — once you're signed in (either with a wallet or a Business OS account), a single home screen now shows you what actually needs your attention: real notifications, a trust/health check on your data, and one search box that finds anything across every part of the app.",
             "Trust Center — visit inayanetwork.com/trust and independently verify Inaya's own security claims yourself, right in your browser, without logging in.",
             "Inaya Sign — sign a document with a real cryptographic signature tied to that exact document and moment, with an optional stamp onto the blockchain as extra proof.",
             "Node Operators — if you run an Inaya storage node, you now have your own dashboard for uptime, rewards, and network standing, separate from the wallet app.",
@@ -109,7 +110,7 @@ export const communityFaqs = {
       blocks: [
         {
           type: "lead",
-          text: "Four new, optional additions to Business Workspace, each off by default until an organization turns it on. Secure Chat and Secure Notes are end-to-end encrypted — your organization's own server only ever sees scrambled ciphertext, never your messages or notes. Sharing got real upgrades too: links can expire, require a password, carry a watermark, or let an outsider upload a file to you securely. Inaya Cleaner is a desktop tool that finds junk and duplicate files on your own computer and never uploads a list of what it found anywhere — anything it removes goes to your recycle bin, never a permanent delete. Inaya Meet is a private video-calling feature where your camera and microphone connect directly between participants' devices rather than through an Inaya server.",
+          text: "Four new, optional additions to Business OS, each off by default until an organization turns it on. Secure Chat and Secure Notes are end-to-end encrypted — your organization's own server only ever sees scrambled ciphertext, never your messages or notes. Sharing got real upgrades too: links can expire, require a password, carry a watermark, or let an outsider upload a file to you securely. Inaya Cleaner is a desktop tool that finds junk and duplicate files on your own computer and never uploads a list of what it found anywhere — anything it removes goes to your recycle bin, never a permanent delete. Inaya Meet is a private video-calling feature where your camera and microphone connect directly between participants' devices rather than through an Inaya server.",
         },
         {
           type: "note",

@@ -11,7 +11,7 @@
 //      Web3/DePIN engine"; a new "Engine 2: the Business SaaS engine"
 //      subsection is added.
 //   2. Section 10 (Customer Segmentation) — a new, distinct "Phase Five:
-//      Business Workspace Adopters" is added after the existing four
+//      Business OS Adopters" is added after the existing four
 //      phases (not nested under Phase Three's storage-motivated Enterprise
 //      segment — different buyer, different pain points).
 //   3. Section 22 (Partnership Strategy, renumbered from 21 — see below) —
@@ -22,7 +22,7 @@
 //      No company name, no terms — not finalized.
 //      29 Oct 2026: that consultancy sentence was removed at founder
 //      request (not current); the subsection keeps the generic partner list.
-//   4. NEW Section 15 "Business Workspace Competitive Landscape" — a
+//   4. NEW Section 15 "Business OS Competitive Landscape" — a
 //      wholly separate section (SharePoint/Box/Notion/etc.), inserted
 //      after the existing Section 14 (DePIN storage competitors —
 //      AWS/Filecoin/Storj/etc., left completely untouched, no
@@ -79,7 +79,7 @@
 
 // NOVEMBER 2026 EDITION (v1.1, 16 Nov 2026) — redesigned layout (buildStrategyBookHTML: cover with
 // headline figures, an "at a glance" page, full-bleed Part dividers, page numbers) and a factual
-// refresh: the Business Workspace launch on 1 January 2027, the real price books of both engines
+// refresh: Inaya Business OS launch on 1 January 2027, the real price books of both engines
 // (storage: src/lib/dappPricing.js; Workspace: src/lib/orgPlans.js + pkPricing.js), the 35% node
 // share, the seventh industry edition (Hospitality), Appointments & Email Marketing, launch
 // readiness, and the pilot programmes actually running. Every figure here comes from the code or a
@@ -92,9 +92,9 @@ export const gtmStrategy = {
     kicker: "GO-TO-MARKET STRATEGY · NOVEMBER 2026 EDITION",
     title: "The Inaya GTM Blueprint",
     subtitle:
-      "How one encrypted infrastructure powers two engines: a DePIN storage network that grows through developers and node operators, and a Business Workspace that companies adopt as everyday software.",
+      "How one encrypted infrastructure powers two engines: a DePIN storage network that grows through developers and node operators, and a Business OS that companies adopt as everyday software.",
     stats: [
-      { value: "1 Jan 2027", label: "Business Workspace public launch" },
+      { value: "1 Jan 2027", label: "Business OS public launch" },
       { value: "$7.99", label: "a month, entry Workspace package (PKR 8,000 in Pakistan)" },
       { value: "6.49 USDT", label: "per TB a month, storage network list price" },
       { value: "35%", label: "of storage revenue shared with node operators" },
@@ -110,14 +110,14 @@ export const gtmStrategy = {
         type: "columns",
         items: [
           { heading: "Engine 1 — Storage network (DePIN)", body: "Buyer: developers, Web3 and AI teams, enterprises with storage-cost or sovereignty problems.\nProduct: encrypted, sharded storage on BNB Chain, SDKs, S3 and Azure Blob compatible APIs.\nPrice: 6.49 USDT per TB a month; Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year.\nStatus: live on testnet; mainnet follows the security audit." },
-          { heading: "Engine 2 — Business Workspace (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027." },
+          { heading: "Engine 2 — Business OS (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027. In November 2026 Inaya Business OS became Inaya Business OS, a Business Operations Platform, and added Inaya Commerce: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync — back office, front office and online selling on the same stock and books." },
         ],
       },
       {
         type: "stats",
         items: [
           { value: "8", label: "Workspace editions: general business plus seven industries" },
-          { value: "29", label: "of 34 Business Workspace roadmap stages live (5 in progress)" },
+          { value: "29", label: "of 34 Business OS roadmap stages live (5 in progress)" },
           { value: "3", label: "pilot programmes: Pakistan, Asia (9 countries), UK" },
           { value: "3", label: "ways to use it: web, desktop (Windows, Linux) and Android" },
         ],
@@ -126,7 +126,7 @@ export const gtmStrategy = {
         type: "table",
         headers: ["Near-term milestone", "Status"],
         rows: [
-          ["Business Workspace public launch", "1 January 2027"],
+          ["Business OS public launch", "1 January 2027"],
           ["Workspace packages paid by NayaPay or bank transfer, invoices, data export, daily backups, built-in support assistant", "Done (November 2026)"],
           ["Pilot outreach: Pakistan (10 places), nine Asian countries (10 places each), UK", "Running"],
           ["Storage network price book for launch (6.49 USDT/TB, 35% node share)", "Set on testnet (November 2026)"],
@@ -187,13 +187,13 @@ export const gtmStrategy = {
             "Published npm packages",
             "Open-source developer resources",
             "Enterprise-oriented product architecture",
-            "Beyond storage: a Business Workspace SaaS product (now including real business operations — Tasks, CRM, Procurement, Inventory — and a Finance & HR layer), a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and four purpose-built AI assistants — all live on the same infrastructure",
+            "Beyond storage: a Business OS SaaS product (now including real business operations — Tasks, CRM, Procurement, Inventory — and a Finance & HR layer), a decentralized Security Layer (\"Inaya Firewall\"), an Oracle & Automation Layer, Inaya Learn (educational platform), an Investor Data Room, two native desktop apps, and four purpose-built AI assistants — all live on the same infrastructure",
             "Enterprise storage interoperability: real AWS S3 and Azure Blob Storage API compatibility (tested against the actual AWS CLI and the official Azure SDK), plus an enterprise storage governance suite — scoped/time-limited access credentials, object version history with restore, immutable locked retention, legal hold, automated lifecycle/retention policies, and a native desktop drive mount — so an enterprise customer's existing tools and workflows connect directly, with no migration required",
             "Secure Collaboration suite (Filen/FileCloud-inspired, October 2026): end-to-end encrypted Secure Chat and Secure Notes, Sharing 2.0, enterprise Governance, device control, and a Sovereign Gateway agent for on-premises file servers — off by default per organization. Device Protection suite (Internxt-inspired, October 2026): a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls",
             "September 2026: Identity Integration & MSP multi-tenancy (Entra ID/Active Directory sign-in, SCIM, Rewst), an AI Bookkeeper, a Managed Database/Document Intelligence/AI-ML Studio, Document & Invoice Automation, an AI Business Operations Manager (Automations), and a Customer Portal with ticketing and a knowledge base",
             "October 2026: Sovereign Infrastructure — bring-your-own-hardware compute: real virtual machines, block storage, and private networking on a customer's own server, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s)",
-            "October–November 2026: an ERP-style layout for the Business Workspace, and industry editions for Education (schools and colleges) and Hospitality (restaurants, cafes, caterers), alongside Health, Legal, Regulated Enterprise, Financial / Private Capital and Government",
-            "November 2026: Appointments & Email Marketing (online booking, team calendars, email campaigns and follow-up sequences), the storage network's launch price book (6.49 USDT per TB a month, 35% node-operator share), and launch readiness for the Business Workspace: packages paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, daily encrypted backups and a built-in support assistant. Public launch: 1 January 2027",
+            "October–November 2026: an ERP-style layout for Inaya Business OS, and industry editions for Education (schools and colleges) and Hospitality (restaurants, cafes, caterers), alongside Health, Legal, Regulated Enterprise, Financial / Private Capital and Government",
+            "November 2026: Appointments & Email Marketing (online booking, team calendars, email campaigns and follow-up sequences), the storage network's launch price book (6.49 USDT per TB a month, 35% node-operator share), and launch readiness for Inaya Business OS: packages paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, daily encrypted backups and a built-in support assistant. Public launch: 1 January 2027",
           ],
         },
         {
@@ -244,7 +244,7 @@ export const gtmStrategy = {
           heading: "Revenue Strategy",
           body: "Inaya combines multiple complementary revenue streams designed to scale with network adoption:",
           bullets: [
-            "Pay-As-You-Go storage (6.49 USDT per TB a month)", "Corporate Reserve subscriptions (17,970 / 34,740 / 65,880 USDT a year)", "Business Workspace packages ($7.99 to $799 a month, or PKR 8,000 to 60,000 in Pakistan)",
+            "Pay-As-You-Go storage (6.49 USDT per TB a month)", "Corporate Reserve subscriptions (17,970 / 34,740 / 65,880 USDT a year)", "Business OS packages ($7.99 to $799 a month, or PKR 8,000 to 60,000 in Pakistan)",
             "Extra users and one-time setup fees", "Enterprise storage plans and API consumption", "Future premium enterprise services",
           ],
         },
@@ -302,7 +302,7 @@ export const gtmStrategy = {
           type: "subsection",
           heading: "Engine 2 — The Business SaaS Engine",
           body:
-            "Businesses → workspace → documents → permissions → workflow → AI Business Assistant → secure storage. This is the newer, second engine, built on top of the same infrastructure rather than replacing it. It targets a different buyer entirely: a business doesn't adopt the Business Workspace because it cares about decentralized storage — it adopts it because it needs a secure place to manage teams, projects, documents, approvals, and access, the same way it would evaluate any B2B SaaS tool. The DePIN layer underneath is what makes that possible; it is not what's being sold.",
+            "Businesses → workspace → documents → permissions → workflow → AI Business Assistant → secure storage. This is the newer, second engine, built on top of the same infrastructure rather than replacing it. It targets a different buyer entirely: a business doesn't adopt Inaya Business OS because it cares about decentralized storage — it adopts it because it needs a secure place to manage teams, projects, documents, approvals, and access, the same way it would evaluate any B2B SaaS tool. The DePIN layer underneath is what makes that possible; it is not what's being sold.",
         },
         {
           type: "note",
@@ -573,7 +573,7 @@ export const gtmStrategy = {
           headers: ["Market", "Size", "Inaya's Approach"],
           rows: [
             ["TAM\nTotal Addressable Market", "$100B+\nGlobal cloud storage", "Participates in the broader evolution of enterprise digital infrastructure — object storage, archival, backup, AI datasets, and sovereign infrastructure."],
-            ["SAM\nServiceable Available Market", "$10B\nWeb3 & AI data storage", "Organizations actively seeking decentralized, privacy-first, AI-safe storage: AI startups, SaaS companies, Web3 developers, fintech, healthcare, legal technology, digital media. This figure covers the storage/DePIN line specifically — it is a deliberately conservative scope that does not add in the Business Workspace SaaS, Identity/MSP, AI Bookkeeper, or Sovereign Infrastructure compute revenue lines described elsewhere in this document, each a separate market with its own buyer."],
+            ["SAM\nServiceable Available Market", "$10B\nWeb3 & AI data storage", "Organizations actively seeking decentralized, privacy-first, AI-safe storage: AI startups, SaaS companies, Web3 developers, fintech, healthcare, legal technology, digital media. This figure covers the storage/DePIN line specifically — it is a deliberately conservative scope that does not add in Inaya Business OS SaaS, Identity/MSP, AI Bookkeeper, or Sovereign Infrastructure compute revenue lines described elsewhere in this document, each a separate market with its own buyer."],
             ["SOM\nServiceable Obtainable Market", "$150M\nYear 1-3 target", "Developer-first startups, blockchain-native companies, privacy-focused software vendors, and innovation-driven enterprises most likely to adopt decentralized storage within the next several years."],
           ],
         },
@@ -636,7 +636,7 @@ export const gtmStrategy = {
         {
           type: "note",
           label: "Update, September 2026 — these are no longer storage-only pitches.",
-          text: "Three of the four enterprise industries above now have a real, purpose-built vertical OS on the Business Workspace foundation, not just a storage value proposition: a Healthcare & Legal OS, a Financial Services & Regulated Enterprise OS (live), and a Government & Public Sector Sovereign OS — each adding the compliance workflows and record types that vertical actually needs.",
+          text: "Three of the four enterprise industries above now have a real, purpose-built vertical OS on Inaya Business OS foundation, not just a storage value proposition: a Healthcare & Legal OS, a Financial Services & Regulated Enterprise OS (live), and a Government & Public Sector Sovereign OS — each adding the compliance workflows and record types that vertical actually needs.",
         },
         {
           type: "subsection",
@@ -648,17 +648,17 @@ export const gtmStrategy = {
           type: "note",
           text: "Update, September 2026 — managed service providers are no longer only a distribution channel. Identity Integration shipped real MSP multi-tenant management (Entra ID/Active Directory sign-in, SCIM provisioning, Rewst automation), so an MSP can now be sold to directly as a buyer, not only recruited as a partner.",
         },
-        // Approved addition — new, distinct phase for Business Workspace,
+        // Approved addition — new, distinct phase for Business OS,
         // not nested under Phase Three's storage-motivated Enterprise segment.
         {
           type: "subsection",
-          heading: "Phase Five: Business Workspace Adopters",
+          heading: "Phase Five: Business OS Adopters",
           body:
-            "This is a genuinely distinct segment from Phases One through Four — the buyer isn't motivated by storage economics, vendor lock-in, or DePIN at all. They're evaluating the Business Workspace the same way they'd evaluate any B2B SaaS tool: does it solve a real operational problem for our team.",
+            "This is a genuinely distinct segment from Phases One through Four — the buyer isn't motivated by storage economics, vendor lock-in, or DePIN at all. They're evaluating Inaya Business OS the same way they'd evaluate any B2B SaaS tool: does it solve a real operational problem for our team.",
           bullets: [
             "Target buyers — small and mid-sized businesses and departments within larger organizations that manage documents, approvals, and team permissions through email attachments, shared drives, or spreadsheets today.",
             "Their primary pain points — document sprawl across email and shared drives; no real approval workflow (who approved what, and when, is often unclear); permission chaos (everyone has access to everything, or nobody knows who has access to what); no audit trail when something goes wrong; growing compliance pressure without the tooling to support it.",
-            "Why they adopt Inaya's Business Workspace — organizations, departments, projects, and documents with server-enforced approval workflows; VIEW/EDIT/MANAGE permissions and three document access levels; secure external sharing with expiring, revocable links; a full, immutable audit history; a permission-aware AI assistant that answers questions instead of requiring a search through folders; email-based sign-in, no wallet or blockchain literacy required.",
+            "Why they adopt Inaya's Business OS — organizations, departments, projects, and documents with server-enforced approval workflows; VIEW/EDIT/MANAGE permissions and three document access levels; secure external sharing with expiring, revocable links; a full, immutable audit history; a permission-aware AI assistant that answers questions instead of requiring a search through folders; email-based sign-in, no wallet or blockchain literacy required.",
             "What makes this different from Phase Three — a Phase Three (storage) buyer is trying to solve a cost or ownership problem with their existing infrastructure. A Phase Five buyer doesn't have an infrastructure problem in mind at all — they have a document-and-workflow problem, and the DePIN storage underneath is invisible to their buying decision.",
           ],
         },
@@ -685,12 +685,12 @@ export const gtmStrategy = {
             ["AI Companies", "High", "Medium", "Medium", "High"],
             ["Enterprise", "Very High", "Long", "High", "Very High"],
             ["Government", "Very High", "Very Long", "High", "Medium"],
-            ["Business Workspace Adopters", "Medium-High", "Short-Medium", "Low", "High"],
+            ["Business OS Adopters", "Medium-High", "Short-Medium", "Low", "High"],
           ],
         },
         {
           type: "note",
-          text: "This phased strategy enables Inaya to generate early adoption while progressively moving toward larger enterprise opportunities — with the Business Workspace opening a parallel, storage-agnostic adoption path alongside it.",
+          text: "This phased strategy enables Inaya to generate early adoption while progressively moving toward larger enterprise opportunities — with Inaya Business OS opening a parallel, storage-agnostic adoption path alongside it.",
         },
       ],
     },
@@ -791,7 +791,7 @@ export const gtmStrategy = {
       kicker: "Part II — Commercialization Strategy",
       title: "Commercialization Strategy",
       subtitle:
-        "Product Strategy · Competitive Landscape · Business Workspace Competitive Landscape · Sustainable Competitive Advantage · Product-Led Growth Strategy · Developer Acquisition Strategy · Marketing Strategy · Community Strategy · Enterprise Sales Strategy · Partnership Strategy · Pricing Strategy · Revenue Model · Go-To-Market Funnel · Network Effects · Commercial KPI Dashboard",
+        "Product Strategy · Competitive Landscape · Business OS Competitive Landscape · Sustainable Competitive Advantage · Product-Led Growth Strategy · Developer Acquisition Strategy · Marketing Strategy · Community Strategy · Enterprise Sales Strategy · Partnership Strategy · Pricing Strategy · Revenue Model · Go-To-Market Funnel · Network Effects · Commercial KPI Dashboard",
     },
     {
       type: "section",
@@ -826,7 +826,7 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Principle Five — Continuous Platform Expansion",
-          body: "Storage represents only the initial infrastructure layer. Identity, data sharing, enterprise analytics, storage automation, access management, and governance have each since shipped (see the September/October 2026 updates below and the Business Workspace Competitive Landscape section) — each increasing switching costs while expanding platform utility. AI storage optimization and a public marketplace of third-party integrations remain genuinely future.",
+          body: "Storage represents only the initial infrastructure layer. Identity, data sharing, enterprise analytics, storage automation, access management, and governance have each since shipped (see the September/October 2026 updates below and Inaya Business OS Competitive Landscape section) — each increasing switching costs while expanding platform utility. AI storage optimization and a public marketplace of third-party integrations remain genuinely future.",
         },
         {
           type: "subsection",
@@ -835,7 +835,7 @@ export const gtmStrategy = {
         },
         {
           type: "note",
-          text: "Update, September 2026 — a real piece of Phase Three shipped: a Sovereign Enterprise OS layer now provides unified identity, cross-module notifications, unified search, a real trust & health signal, and one AI assistant spanning business and security questions, on both the web app and Business Workspace. Not a rebrand of this roadmap — an actual, shipped, tested connecting layer over the features already described throughout this document.",
+          text: "Update, September 2026 — a real piece of Phase Three shipped: a Sovereign Enterprise OS layer now provides unified identity, cross-module notifications, unified search, a real trust & health signal, and one AI assistant spanning business and security questions, on both the web app and Business OS. Not a rebrand of this roadmap — an actual, shipped, tested connecting layer over the features already described throughout this document.",
         },
         {
           type: "note",
@@ -908,12 +908,12 @@ export const gtmStrategy = {
       type: "section",
       number: "15",
       part: "II",
-      title: "Business Workspace Competitive Landscape",
+      title: "Business OS Competitive Landscape",
       blocks: [
         {
           type: "lead",
           text:
-            "The Business Workspace competes in an entirely different category from Inaya's storage protocol: enterprise document and workflow management, not decentralized storage. Business buyers evaluating it are not comparing it against decentralized storage providers at all — they're comparing it to the document and collaboration tools they already use day to day.",
+            "Inaya Business OS competes in an entirely different category from Inaya's storage protocol: enterprise document and workflow management, not decentralized storage. Business buyers evaluating it are not comparing it against decentralized storage providers at all — they're comparing it to the document and collaboration tools they already use day to day.",
         },
         {
           type: "columns",
@@ -934,7 +934,7 @@ export const gtmStrategy = {
         },
         {
           type: "subsection",
-          heading: "Where the Business Workspace Differentiates",
+          heading: "Where Inaya Business OS Differentiates",
           bullets: [
             "Client-side encryption and decentralized storage underneath a familiar document/workflow UI — a security posture none of the above offer natively.",
             "A server-enforced approval state machine (Draft → Pending → Under Review → Approved/Rejected → Archived) as a first-class primitive, not an add-on.",
@@ -944,7 +944,7 @@ export const gtmStrategy = {
         },
         {
           type: "note",
-          text: "This is an early-stage comparison, not a claim of feature parity with mature, well-funded incumbents — SharePoint and Box in particular have years of enterprise trust and compliance certifications the Business Workspace does not yet have. The differentiation above is about product design center, not current market share.",
+          text: "This is an early-stage comparison, not a claim of feature parity with mature, well-funded incumbents — SharePoint and Box in particular have years of enterprise trust and compliance certifications Inaya Business OS does not yet have. The differentiation above is about product design center, not current market share.",
         },
         {
           // Additive, October 2026 — see the top-of-file note on this edit.
@@ -1169,7 +1169,7 @@ export const gtmStrategy = {
         },
         {
           type: "subsection",
-          heading: "The Business Workspace Sales Motion (live since November 2026)",
+          heading: "Inaya Business OS Sales Motion (live since November 2026)",
           body: "The Workspace is sold differently from storage: outbound and assisted rather than developer-led. A company is created self-serve; its owner requests a package inside the Workspace; the team contacts them within one working day, emails a numbered invoice, and activates the package when the NayaPay or bank transfer arrives. Onboarding is carried by a public demo video, a customer onboarding guide, and a support assistant in the Help panel that fixes common account problems. Payments are confirmed by the team, not an automatic gateway, which suits markets where bank transfer is the norm.",
         },
       ],
@@ -1246,7 +1246,7 @@ export const gtmStrategy = {
         },
         {
           type: "subsection",
-          heading: "Business Workspace Packages (live; public launch 1 January 2027)",
+          heading: "Business OS Packages (live; public launch 1 January 2027)",
           body: "Four packages, priced monthly or yearly (about 17% less). Requested inside the Workspace and paid by NayaPay or bank transfer before the workspace opens. Extra users cost $3 a month (PKR 2,500) up to each package's limit; above it, a company moves up a package.",
         },
         {
@@ -1289,7 +1289,7 @@ export const gtmStrategy = {
         },
         {
           type: "subsection",
-          heading: "Revenue Stream Four — Business Workspace Subscriptions",
+          heading: "Revenue Stream Four — Business OS Subscriptions",
           body: "Monthly or yearly package fees from companies, paid before the workspace opens, plus extra users and one-time setup fees (PKR 10,000 or 25,000 in Pakistan; $39 or $89 in the Asia programme). This stream does not depend on the token, the mainnet date or crypto adoption.",
         },
         {
@@ -1463,10 +1463,10 @@ export const gtmStrategy = {
           type: "table",
           headers: ["Dated milestones (as of 16 November 2026)", "Status"],
           rows: [
-            ["Business Workspace: 29 of 34 roadmap stages live, eight editions, ERP mode, desktop and Android apps", "Shipped"],
+            ["Business OS: 29 of 34 roadmap stages live, eight editions, ERP mode, desktop and Android apps", "Shipped"],
             ["Workspace billing, invoices, data export, daily backups, built-in support assistant", "Shipped, November 2026"],
             ["Pilot outreach in Pakistan, nine Asian countries and the UK", "Running"],
-            ["Business Workspace public launch", "1 January 2027"],
+            ["Business OS public launch", "1 January 2027"],
             ["Storage network launch price book on the testnet contracts", "Set, November 2026"],
             ["Third-party security audit", "Open"],
             ["Storage network mainnet, node rewards, explorer, on-chain governance", "After the audit"],

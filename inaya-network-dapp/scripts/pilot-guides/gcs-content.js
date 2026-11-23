@@ -46,7 +46,7 @@ export const gcsGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "1. Sign in to Business Workspace.", body: "Open the \"S3-Compatible Storage\" panel from the left navigation -- the same panel used for AWS and Azure access." },
+            { heading: "1. Sign in to Business OS.", body: "Open the \"S3-Compatible Storage\" panel from the left navigation -- the same panel used for AWS and Azure access." },
             { heading: "2. Click \"+ New S3 credential.\"", body: "One credential works across AWS, Azure, and Google Cloud Storage signing conventions -- you do not need a separate credential per cloud." },
             { heading: "3. (Optional) Restrict its scope.", body: "Limit the credential to one bucket, one folder path, specific operations (READ/WRITE/DELETE/LIST), and/or an expiry date before creating it." },
             { heading: "4. Save the Access Key ID and Secret Access Key immediately.", body: "Shown exactly once. Store it the way you would store any other cloud credential." },
@@ -98,7 +98,7 @@ export const gcsGuide = {
             { heading: "1. Create a test bucket.", body: "Using whichever authentication path from Steps 2-3 matches your existing tooling." },
             { heading: "2. Upload a small test file, then list the bucket to confirm it appears.", body: "" },
             { heading: "3. Download it back and compare.", body: "The downloaded file must be byte-for-byte identical to what you uploaded." },
-            { heading: "4. Confirm it's visible in Business Workspace.", body: "Confirms Inaya's real storage/encryption/redundancy pipeline received it, not just a local acknowledgment." },
+            { heading: "4. Confirm it's visible in Business OS.", body: "Confirms Inaya's real storage/encryption/redundancy pipeline received it, not just a local acknowledgment." },
             { heading: "5. Delete the test object and bucket.", body: "Confirms delete permissions work end-to-end before moving real data." },
           ],
         },

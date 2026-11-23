@@ -43,7 +43,7 @@ export const executiveSummary = {
         // deliberately prose, not more bullets, to keep this a compression
         // exercise rather than an expansion of the one-page format.
         trailer:
-          "Inaya now operates two connected engines: the DePIN storage protocol above, and a Business Workspace SaaS layer — document management, real business operations (tasks, CRM, procurement, inventory), and a Finance & HR layer, all on one permission foundation — built on the same infrastructure. Shipped and functional on web and mobile; proving repeated business usage and willingness to pay is the next milestone, not yet an established result.",
+          "Inaya now operates two connected engines: the DePIN storage protocol above, and a Business OS SaaS layer — document management, real business operations (tasks, CRM, procurement, inventory), and a Finance & HR layer, all on one permission foundation — built on the same infrastructure. Shipped and functional on web and mobile; proving repeated business usage and willingness to pay is the next milestone, not yet an established result. In November 2026 Inaya Business OS became Inaya Business OS, a Business Operations Platform, and added Inaya Commerce: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync — back office, front office and online selling on the same stock and books.",
       },
     ],
     [

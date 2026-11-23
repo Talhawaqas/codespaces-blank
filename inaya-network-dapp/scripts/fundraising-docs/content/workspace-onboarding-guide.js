@@ -1,6 +1,6 @@
 // scripts/fundraising-docs/content/workspace-onboarding-guide.js
 //
-// Business Workspace onboarding guide (16 Nov 2026), written for new customers ahead of the
+// Business OS onboarding guide (16 Nov 2026), written for new customers ahead of the
 // 1 January 2027 launch. One source for two outputs:
 //   - PDF:      node scripts/fundraising-docs/generate-one.mjs workspace-onboarding-guide
 //   - Markdown: node scripts/fundraising-docs/onboarding-guide-to-md.mjs  (public/docs/business-workspace-guide.md,
@@ -13,7 +13,7 @@ export const workspaceOnboardingGuide = {
     company: "INAYA NETWORK",
     classification: "CUSTOMER GUIDE",
     kicker: "GETTING STARTED",
-    title: "Inaya Business Workspace Onboarding Guide",
+    title: "Inaya Business OS Onboarding Guide",
     subtitle: "From creating your company to running daily work: documents, customers, finance, people, stock and purchasing in one encrypted workspace.",
     stats: [
       { value: "1 day", label: "for our team to contact you after your package request" },
@@ -29,7 +29,7 @@ export const workspaceOnboardingGuide = {
       number: "01",
       title: "Welcome",
       blocks: [
-        { type: "lead", text: "Inaya Business Workspace is an ERP-style workspace for running your company day to day: documents and approvals, customers and sales, finance, people, stock, purchasing, tasks, insights and team chat, in one place. Every file is encrypted on your own device before it is uploaded." },
+        { type: "lead", text: "Inaya Business OS is an ERP-style workspace for running your company day to day: documents and approvals, customers and sales, finance, people, stock, purchasing, tasks, insights and team chat, in one place. Every file is encrypted on your own device before it is uploaded." },
         {
           type: "bullets",
           items: [
@@ -189,7 +189,7 @@ export const workspaceOnboardingGuide = {
             "Your files are encrypted on your own device, and your company's records are backed up every day.",
             "Owners and admins can download all company data as a ZIP file at any time from Settings, then Billing: every record plus the files in your S3 and NAS storage, with a list of exactly what is included.",
             "Your company has one license for everyone. Billing shows your package, monthly or yearly billing, amount, next due date and payment history. Pay by NayaPay or bank transfer; the Inaya team confirms each payment.",
-            "If a payment is missed, you have 14 days of grace with normal access, and Owners and Admins get a reminder every day, by email and in Business Workspace, showing how many days remain and the exact deadline. If payment is still not confirmed, the license is suspended: nothing is deleted, and Owners and Admins can still open Billing, contact support and download all company data. Access returns as soon as payment is confirmed.",
+            "If a payment is missed, you have 14 days of grace with normal access, and Owners and Admins get a reminder every day, by email and in Business OS, showing how many days remain and the exact deadline. If payment is still not confirmed, the license is suspended: nothing is deleted, and Owners and Admins can still open Billing, contact support and download all company data. Access returns as soon as payment is confirmed.",
           ],
         },
       ],

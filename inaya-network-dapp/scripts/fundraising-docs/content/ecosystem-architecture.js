@@ -31,7 +31,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Inaya is one product with two connected engines: a decentralized storage/DePIN protocol (on-chain contracts, node operators, client-side encryption) and a set of applications built on top of it (the web dApp, Business Workspace SaaS, mobile app, two desktop apps, and three AI assistants). This document maps every piece, what it actually does, and how it connects to everything else.",
+          text: "Inaya is one product with two connected engines: a decentralized storage/DePIN protocol (on-chain contracts, node operators, client-side encryption) and a set of applications built on top of it (the web dApp, Business OS SaaS, mobile app, two desktop apps, and three AI assistants). This document maps every piece, what it actually does, and how it connects to everything else.",
         },
         {
           type: "bullets",
@@ -53,12 +53,12 @@ export const ecosystemArchitecture = {
           type: "table",
           headers: ["Repo / App", "What it is", "Runs on"],
           rows: [
-            ["inaya-network-dapp", "The backend (Next.js API routes + MongoDB) AND the main web dApp AND the Business Workspace web UI — one Next.js app serving all three.", "Vercel, Node.js"],
+            ["inaya-network-dapp", "The backend (Next.js API routes + MongoDB) AND the main web dApp AND Inaya Business OS web UI — one Next.js app serving all three.", "Vercel, Node.js"],
             ["contracts/ (repo root)", "Solidity source for the protocol's own contracts (Staking, Vault, Escrow, Node Registry, Proof Registry, Security Layer). Deployed to BSC Testnet.", "Solidity 0.8.20, Hardhat"],
             ["custody-sdk", "Client-side encryption/sharding library (\"InayaKernel\") — the code that actually encrypts and splits a file before it ever leaves a user's device.", "JS, @noble crypto primitives, ethers v6"],
             ["custody-sdk/packages/node-daemon", "CLI a storage-node operator runs — registers on-chain, sends heartbeat telemetry. Published to npm.", "Node.js CLI"],
-            ["inaya-mobile", "React Native / Expo mobile app — a superset of the web dApp's consumer features plus Business Workspace, Learn, and Security.", "Expo, React Native"],
-            ["inaya-desktop", "Tauri (Rust) native wrapper around the Business Workspace web app.", "Tauri, WebView2 (Win) / WebKitGTK (Linux)"],
+            ["inaya-mobile", "React Native / Expo mobile app — a superset of the web dApp's consumer features plus Business OS, Learn, and Security.", "Expo, React Native"],
+            ["inaya-desktop", "Tauri (Rust) native wrapper around Inaya Business OS web app.", "Tauri, WebView2 (Win) / WebKitGTK (Linux)"],
             ["inaya-dapp-desktop", "Tauri native wrapper around the main dApp (faucet, staking, etc).", "Tauri, same engines as above"],
           ],
         },
@@ -81,14 +81,14 @@ export const ecosystemArchitecture = {
             },
             {
               heading: "Engine 2 — Applications",
-              body: "Everything a user actually touches: the web dApp, Business Workspace (SaaS document management for companies that will never think about blockchain), mobile app, two desktop wrappers, a public Security transparency page, an investor Data Room, and three Gemini-powered AI assistants. All of it sits on top of Engine 1's infrastructure, but most of it is reachable — and usable — without a wallet.",
+              body: "Everything a user actually touches: the web dApp, Business OS (SaaS document management for companies that will never think about blockchain), mobile app, two desktop wrappers, a public Security transparency page, an investor Data Room, and three Gemini-powered AI assistants. All of it sits on top of Engine 1's infrastructure, but most of it is reachable — and usable — without a wallet.",
             },
           ],
         },
         {
           type: "note",
           label: "Why this split matters.",
-          text: "It's the reason a non-crypto business customer can use the Business Workspace with just an email address while a node operator, three layers down, is settling USDT through a timelocked escrow contract — the same infrastructure serves both, but almost nothing about Engine 1 leaks into Engine 2's user experience.",
+          text: "It's the reason a non-crypto business customer can use Inaya Business OS with just an email address while a node operator, three layers down, is settling USDT through a timelocked escrow contract — the same infrastructure serves both, but almost nothing about Engine 1 leaks into Engine 2's user experience.",
         },
       ],
     },
@@ -274,7 +274,7 @@ export const ecosystemArchitecture = {
           type: "table",
           headers: ["Tab", "What it does"],
           rows: [
-            ["Network Home", "Landing panel only — status tiles, CTA into Sovereign Vault, cross-promo into Business Workspace / desktop downloads. No contract or API calls of its own."],
+            ["Network Home", "Landing panel only — status tiles, CTA into Sovereign Vault, cross-promo into Business OS / desktop downloads. No contract or API calls of its own."],
             ["Faucet", "POSTs to /api/faucet; the route dispenses test $INAYA/USDT server-side from a custodial faucet wallet. Self-limits by checking the wallet's existing balance rather than a visible cooldown timer."],
             ["Sovereign Vault", "The core product. Upload: encrypt+shard client-side (custody-sdk) → pin to Pinata → InayaCustody.batchRegisterAssets() → InayaProofRegistry.registerMerkleRoot() per file. Download: reverse of the same path. Also has a no-wallet path for Stripe card customers (upload happens locally, on-chain registration happens server-side post-payment)."],
             ["Corporate Reserve (sidebar panel + Business Model tab)", "The sidebar tier selector (250/500/1000 TB) only sets display state and enforces per-plan upload size limits — it is NOT the purchase flow. The real purchase lives on the Business Model tab: approve USDT → RevenueRouter.processCorporateInvoice() → approve USDT → InayaCorporateEscrow.createEscrow() escrowing the 35% operator share over 12 months."],
@@ -288,7 +288,7 @@ export const ecosystemArchitecture = {
     },
     {
       number: "08",
-      title: "Business Workspace — SaaS Layer",
+      title: "Business OS — SaaS Layer",
       blocks: [
         {
           type: "lead",
@@ -375,7 +375,7 @@ export const ecosystemArchitecture = {
           type: "bullets",
           items: [
             "Single shareable link, email required (not optional) + NDA click-through, per-visitor magic-link email verification.",
-            "Deliberately different storage model from the Business Workspace: documents here are plain, unencrypted PDFs (server-proxied streaming, never a raw Pinata URL exposed) so they can be viewed inline with real duration tracking — the Business Workspace's client-side-encrypted-blob model is the wrong fit when the entire point is casual inline viewing with analytics.",
+            "Deliberately different storage model from Inaya Business OS: documents here are plain, unencrypted PDFs (server-proxied streaming, never a raw Pinata URL exposed) so they can be viewed inline with real duration tracking — Inaya Business OS's client-side-encrypted-blob model is the wrong fit when the entire point is casual inline viewing with analytics.",
             "View events (open + 15-second heartbeat + close) roll up into a per-visitor engagement table for the admin — exactly who looked at what, for how long.",
           ],
         },
@@ -394,7 +394,7 @@ export const ecosystemArchitecture = {
           headers: ["Assistant", "Where", "Guardrail philosophy"],
           rows: [
             ["Docs Assistant", "Public site-wide chat widget", "Grounded in the project's own docs/FAQ/fundraising-doc corpus via RAG retrieval (Section 25) instead of a static hardcoded knowledge block — answers cite which source they came from."],
-            ["Business Assistant", "Business Workspace sidebar", "Permission-aware — every tool call re-checks the requesting user's actual document/project/finance/HR access; never surfaces data they couldn't otherwise see. Uses direct permission-scoped MongoDB tool-calling, not RAG — this is live, per-org private data, never appropriate to put in a shared vector index."],
+            ["Business Assistant", "Business OS sidebar", "Permission-aware — every tool call re-checks the requesting user's actual document/project/finance/HR access; never surfaces data they couldn't otherwise see. Uses direct permission-scoped MongoDB tool-calling, not RAG — this is live, per-org private data, never appropriate to put in a shared vector index."],
             ["Security Assistant", "Public /security page + mobile SecurityScreen", "Strict evidence-grounding — explicitly forbidden from inventing or generalizing beyond verified security_* collection data (live tool-calling) or the RAG-indexed security policy/explainer docs (Section 25). \"Explain phishing in general\" is fine; fabricating a specific threat's status is not."],
             ["Learn AI Tutor", "Web + mobile Learn section", "The opposite on purpose — teaches using its own general knowledge like a real tutor; tools (including RAG search over the current video's transcript, Section 25) exist only to ground it in the user's own saved videos/progress, never to gate what subject matter it can discuss."],
           ],
@@ -407,13 +407,13 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "inaya-mobile (Expo/React Native) is a superset of the web dApp's consumer features, plus Business Workspace, Learn, and Security — not a stripped-down companion app.",
+          text: "inaya-mobile (Expo/React Native) is a superset of the web dApp's consumer features, plus Business OS, Learn, and Security — not a stripped-down companion app.",
         },
         {
           type: "bullets",
           items: [
             "Wallet: MetaMask Connect Multichain (direct deeplink to MetaMask Mobile), configured for BNB Chain Testnet specifically.",
-            "Business Workspace: full org/department/project/document hierarchy, permissions, sharing, Bearer-token session auth (separate from web's cookie session), biometric app-lock, Google Sign-In.",
+            "Business OS: full org/department/project/document hierarchy, permissions, sharing, Bearer-token session auth (separate from web's cookie session), biometric app-lock, Google Sign-In.",
             "Security: SecurityScreen with protection mode, destination checker, local allow/blocklist, network overview, AI Security Assistant chat.",
             "Learn: search/browse/watch/save/progress via react-native-youtube-iframe, plus a global AiTutorButton (header icon → full-screen modal) reachable from every Learn screen.",
             "Watcher Pioneer, Referrals, Faucet-adjacent flows, and Genesis Airdrop all mirror the web dApp's mechanics 1:1 against the same backend routes.",
@@ -433,7 +433,7 @@ export const ecosystemArchitecture = {
           type: "table",
           headers: ["App", "Wraps", "Native additions beyond the web page"],
           rows: [
-            ["inaya-desktop\n(\"Business Workspace\")", "inayanetwork.com/business", "System tray/minimize-to-tray, native menu, native Windows toast for pending approvals (polls /api/orgs/pending-approvals), signed auto-updater, real firewall-block enforcement (netsh/iptables) for the Security Layer."],
+            ["inaya-desktop\n(\"Business OS\")", "inayanetwork.com/business", "System tray/minimize-to-tray, native menu, native Windows toast for pending approvals (polls /api/orgs/pending-approvals), signed auto-updater, real firewall-block enforcement (netsh/iptables) for the Security Layer."],
             ["inaya-dapp-desktop\n(\"Inaya Network\")", "inayanetwork.com/", "Same tray/menu/updater pattern, no notifications plugin (no equivalent concept on the main dApp). Detects window.__TAURI__ and leads with WalletConnect instead of extension-based wallets, since a native webview has no browser extensions."],
           ],
         },
@@ -449,7 +449,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "One Next.js app (inaya-network-dapp) serves the web dApp, Business Workspace, every public page, and the entire API surface every client (mobile, both desktop apps) calls.",
+          text: "One Next.js app (inaya-network-dapp) serves the web dApp, Business OS, every public page, and the entire API surface every client (mobile, both desktop apps) calls.",
         },
         {
           type: "bullets",
@@ -471,11 +471,11 @@ export const ecosystemArchitecture = {
           headers: ["Pattern", "Used by", "Mechanism"],
           rows: [
             ["Signed-message wallet auth", "Sovereign Vault sign-up, Security Layer node reports, Watcher Pioneer", "ethers.verifyMessage over a reconstructed message string, 5-minute freshness window — reimplemented locally per-feature rather than shared, by established convention in this codebase."],
-            ["Cookie session (magic-link / Google)", "Business Workspace (web)", "orgs.js — generateToken/hashToken, TTL-indexed magic_links collection, consumeLoginToken."],
-            ["Bearer token session", "Business Workspace (mobile)", "Same session concept as web, token-based instead of cookie-based since mobile has no cookie jar shared with a browser."],
+            ["Cookie session (magic-link / Google)", "Business OS (web)", "orgs.js — generateToken/hashToken, TTL-indexed magic_links collection, consumeLoginToken."],
+            ["Bearer token session", "Business OS (mobile)", "Same session concept as web, token-based instead of cookie-based since mobile has no cookie jar shared with a browser."],
             ["Social login (Google or Telegram)", "Watcher Pioneer Program (added October 2026)", "Google: the ID token's signature and audience are verified server-side. Telegram: a one-time link opens the program's bot, the same Telegram user confirms Yes, and the server issues a signed 30-day session token exactly once. The identity is the provider's stable account id (never the email); a wallet can be linked later, or a login attached to an existing wallet account, and two accounts are never merged. Telegram stays off until its bot is configured."],
             ["Anonymous device/visitor ID", "Referrals, activity pings, Security destination checker, Learn progress (no wallet)", "Client-generated UUID cached in localStorage/AsyncStorage, upgraded to wallet address once one connects — same trust model reused across every feature that needs to work pre-wallet."],
-            ["Investor Data Room session", "Data Room only", "Its own magic-link + session-cookie pair, deliberately separate from Business Workspace's — different visitor identity model (name+email+NDA, not org membership)."],
+            ["Investor Data Room session", "Data Room only", "Its own magic-link + session-cookie pair, deliberately separate from Business OS's — different visitor identity model (name+email+NDA, not org membership)."],
           ],
         },
       ],
@@ -486,7 +486,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "One small, shared primitive tracks daily/weekly active users across all three surfaces — dApp, Business Workspace, mobile.",
+          text: "One small, shared primitive tracks daily/weekly active users across all three surfaces — dApp, Business OS, mobile.",
         },
         {
           type: "bullets",
@@ -548,7 +548,7 @@ export const ecosystemArchitecture = {
             "Genesis Airdrop has no on-chain claim function — both mechanics are display/manual-review only, real distribution happens off-app at TGE.",
             "macOS is out of scope for both desktop apps, per Apple Developer Program cost + notarization constraint.",
             "Finance & HR (Section 24) is explicitly a testnet demonstration/validation layer — no PDF invoice generation, no multi-currency conversion, no regulated banking/payment-processor integration, no payroll/tax processing.",
-            "RAG (Section 25) deliberately never ingests custody-sdk's own docs or the legacy KNOWLEDGE_ARTICLES collection, and never ingests private per-org Business Workspace data or per-identity Security events into the shared vector index — those stay live, permission-scoped tool calls, by design.",
+            "RAG (Section 25) deliberately never ingests custody-sdk's own docs or the legacy KNOWLEDGE_ARTICLES collection, and never ingests private per-org Business OS data or per-identity Security events into the shared vector index — those stay live, permission-scoped tool calls, by design.",
           ],
         },
       ],
@@ -614,12 +614,12 @@ export const ecosystemArchitecture = {
             ["Wormhole interoperability layer", "src/lib/chain-adapters/interop/, src/app/api/interop/; deployments/interop/wormhole-wtt/bscTestnet-attestation.json; docs/{interoperability-provider-evaluation,inaya-interoperability,multichain-support-matrix,chain-expansion-guide,interop-security-boundary}.md"],
             ["Storage backup & redundancy", "contracts/InayaBackupRegistry.sol; src/lib/pinningProviders/ (Pinata + Filebase); docs/backup-redundancy-architecture.md"],
             ["AI guarded execution + cryptographic audit trail", "src/lib/ai-action-requests.js, src/lib/auditChain.js, src/lib/ai-business-tools.js (propose_* tools); src/app/api/cron/execute-approved-ai-actions/; src/app/api/orgs/audit/"],
-            ["Backend + web dApp + Business Workspace", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],
+            ["Backend + web dApp + Business OS", "inaya-network-dapp/src/app/, src/lib/, src/app/api/"],
             ["Business Operations (Tasks/CRM/Procurement/Inventory)", "src/lib/{task,deal,purchase-request,purchase-order}-workflow.js, inventory.js; src/app/api/orgs/{tasks,crm,procurement,inventory}/"],
             ["Finance & HR", "src/lib/{invoice,expense,employee,leave}-workflow.js, attachments.js; src/app/api/orgs/{finance,hr}/"],
             ["RAG infrastructure", "src/lib/rag/ (chunking, embeddings, vectorStore, retrieve, ingest); src/app/api/admin/rag/, src/app/api/cron/rag-reingest/"],
             ["Mobile app", "inaya-mobile/src/"],
-            ["Desktop — Business Workspace wrapper", "inaya-desktop/src-tauri/"],
+            ["Desktop — Business OS wrapper", "inaya-desktop/src-tauri/"],
             ["Desktop — dApp wrapper", "inaya-dapp-desktop/src-tauri/"],
           ],
         },
@@ -631,7 +631,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Four modules added to the Business Workspace on the exact same org/department/permission foundation Section 08 describes — no new auth system, no new storage system, every record department-scoped through the same canAccessDepartment gate every document already goes through.",
+          text: "Four modules added to Inaya Business OS on the exact same org/department/permission foundation Section 08 describes — no new auth system, no new storage system, every record department-scoped through the same canAccessDepartment gate every document already goes through.",
         },
         {
           type: "table",
@@ -929,11 +929,11 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Two related trust-surface additions: real MFA on Business Workspace login, and a full ecosystem security audit + remediation pass across web, mobile, custody-sdk, and both desktop apps.",
+          text: "Two related trust-surface additions: real MFA on Business OS login, and a full ecosystem security audit + remediation pass across web, mobile, custody-sdk, and both desktop apps.",
         },
         {
           type: "subsection",
-          heading: "MFA (TOTP + SMS) on Business Workspace login",
+          heading: "MFA (TOTP + SMS) on Business OS login",
           body: "An optional second factor on top of the existing magic-link/Google sign-in — TOTP (any standard authenticator app) or SMS via Firebase Phone Auth, managed from the Security nav item (src/components/business/MfaSettings.js) and enforced at login (MfaVerifyScreen.js). Mirrors the same pattern on inaya-mobile.",
         },
         {
@@ -962,7 +962,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Most of what this SOW asked for already existed — Business Workspace, AI Guarded Execution, the audit trail, the App Store, custody-sdk. What was genuinely missing was the layer connecting all of it into one coherent operating environment rather than a pile of separate features. Built on both surfaces as two parallel instances sharing the same underlying engines: Business Workspace (email/org identity) and the main dApp (wallet identity) are confirmed, completely separate identity systems today — no walletAddress field exists anywhere on an org_members record — so this deliberately does not build a new identity-linking layer, it builds the same connecting capability twice from shared code.",
+          text: "Most of what this SOW asked for already existed — Business OS, AI Guarded Execution, the audit trail, the App Store, custody-sdk. What was genuinely missing was the layer connecting all of it into one coherent operating environment rather than a pile of separate features. Built on both surfaces as two parallel instances sharing the same underlying engines: Business OS (email/org identity) and the main dApp (wallet identity) are confirmed, completely separate identity systems today — no walletAddress field exists anywhere on an org_members record — so this deliberately does not build a new identity-linking layer, it builds the same connecting capability twice from shared code.",
         },
         {
           type: "subsection",
@@ -986,7 +986,7 @@ export const ecosystemArchitecture = {
             ["Unified Search", "New Cmd/Ctrl+K src/components/CommandPalette.js, src/lib/orgSearch.js + walletSearch.js — the only prior search anywhere was a scoped YouTube proxy for Learn.", "getAccessibleScope() as orgSearch's only data source (no-leak-by-construction); metadata_files as walletSearch's source, the same off-chain enumeration list-files/route.js already documents as the only full-list source that exists."],
             ["Activity Center", "New src/lib/activityCenter.js's generateWhatChanged() — genuine period-over-period counts (AI outcomes, notification volume) from real timestamped fields.", "business-brief.js's generateBusinessBrief() output composed verbatim as the org-side business section, not reimplemented."],
             ["OS-Level AI Router", "New src/lib/ai-os-router.js — a thin dispatch shim merging Business+Security (org) or a new search_docs tool (wraps RAG's existing retrieveContext, domain:\"docs\") + Security (wallet) behind one conversation, tool-name-prefixed so Gemini sees one collision-free list.", "runBusinessTool/runSecurityTool called unmodified after prefix-stripping — a router bug can't change what either tool set actually does."],
-            ["OS Home", "New OsHomeView.js (Business Workspace, new default view) and OsHomeSection.js (dApp, new non-default tab — that page is the public anonymous landing page too, so its default couldn't change).", "No new aggregate backend route — parallel fetches against the APIs above, same pattern DashboardView already uses for /api/orgs/dashboard."],
+            ["OS Home", "New OsHomeView.js (Business OS, new default view) and OsHomeSection.js (dApp, new non-default tab — that page is the public anonymous landing page too, so its default couldn't change).", "No new aggregate backend route — parallel fetches against the APIs above, same pattern DashboardView already uses for /api/orgs/dashboard."],
           ],
         },
         {
@@ -1002,7 +1002,7 @@ export const ecosystemArchitecture = {
         {
           type: "note",
           label: "What OS Home does and does not guarantee.",
-          text: "Guarantees: every number shown is a real value from an already-shipped, already-tested API — no new aggregate route fabricating a summary. Does not guarantee: a unified identity across the dApp and Business Workspace (a deliberate, confirmed-with-the-team scope decision, not an oversight — see the opening note above); a historical trust/health trend (the aggregator computes live, nothing persists snapshots yet, so Activity Center reports current-state rather than a claimed delta it can't honestly back).",
+          text: "Guarantees: every number shown is a real value from an already-shipped, already-tested API — no new aggregate route fabricating a summary. Does not guarantee: a unified identity across the dApp and Business OS (a deliberate, confirmed-with-the-team scope decision, not an oversight — see the opening note above); a historical trust/health trend (the aggregator computes live, nothing persists snapshots yet, so Activity Center reports current-state rather than a claimed delta it can't honestly back).",
         },
       ],
     },
@@ -1012,7 +1012,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Extends the Sovereign Enterprise OS (§31) into two vertical specializations — Health OS and Legal OS — for organizations handling patient or client/matter data, on Business Workspace's existing org/email identity side only. Reuses the shared OS foundation throughout (getAccessibleScope(), the audit chain, notifications, unified search) rather than building parallel systems — confirmed via codebase audit before writing anything: appendAuditEntry() is fully generic and reused directly for healthcare/legal audit and evidence chain-of-custody by passing new recordType values, no second audit system built.",
+          text: "Extends the Sovereign Enterprise OS (§31) into two vertical specializations — Health OS and Legal OS — for organizations handling patient or client/matter data, on Business OS's existing org/email identity side only. Reuses the shared OS foundation throughout (getAccessibleScope(), the audit chain, notifications, unified search) rather than building parallel systems — confirmed via codebase audit before writing anything: appendAuditEntry() is fully generic and reused directly for healthcare/legal audit and evidence chain-of-custody by passing new recordType values, no second audit system built.",
         },
         {
           type: "subsection",
@@ -1151,7 +1151,7 @@ export const ecosystemArchitecture = {
         },
         {
           type: "note",
-          text: "Every route here is testnet-only — grep across all eleven files and routes in this section returns zero mainnet references, consistent with the rest of the platform. Per-org resilience status and recovery-test results are deliberately never published on the public Trust Center, to avoid disclosing one customer's specific security posture — they stay inside the authenticated Business Workspace. Every module ships with a co-located automated test file, none of it mocked against a fake database.",
+          text: "Every route here is testnet-only — grep across all eleven files and routes in this section returns zero mainnet references, consistent with the rest of the platform. Per-org resilience status and recovery-test results are deliberately never published on the public Trust Center, to avoid disclosing one customer's specific security posture — they stay inside the authenticated Business OS. Every module ships with a co-located automated test file, none of it mocked against a fake database.",
         },
       ],
     },
@@ -1190,12 +1190,12 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "A dedicated, wallet-authenticated home for node operators at /operator, entirely separate from the dApp's own wallet context and the Business Workspace's email-based session — seven tabs: Overview, Uptime & Telemetry, Qualification, Tier & Rewards, Events, Network, and an optional multi-node Fleet view.",
+          text: "A dedicated, wallet-authenticated home for node operators at /operator, entirely separate from the dApp's own wallet context and Inaya Business OS's email-based session — seven tabs: Overview, Uptime & Telemetry, Qualification, Tier & Rewards, Events, Network, and an optional multi-node Fleet view.",
         },
         {
           type: "subsection",
           heading: "A new, deliberately shorter-lived session layer",
-          body: "Every prior node route authenticated one wallet-signed action per request; nothing persisted a browser session. The dashboard adds a real session on top of that same unchanged signature-verification logic — a 12-hour cookie, deliberately shorter than the Business Workspace's 30-day session because it gates commission and reward data. Login requires the wallet already be a registered node; every route resolves data strictly from the session's own wallet, never from a client-supplied node ID.",
+          body: "Every prior node route authenticated one wallet-signed action per request; nothing persisted a browser session. The dashboard adds a real session on top of that same unchanged signature-verification logic — a 12-hour cookie, deliberately shorter than Inaya Business OS's 30-day session because it gates commission and reward data. Login requires the wallet already be a registered node; every route resolves data strictly from the session's own wallet, never from a client-supplied node ID.",
         },
         {
           type: "subsection",
@@ -1219,7 +1219,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "Four new Business Workspace modules, each with a module-header comment stating plainly what's real and what isn't — verified against the actual code, not just the comments. The throughline across all four: real cryptography and real ledger effects where they exist, and an explicit refusal to claim a stronger guarantee (on-chain, zero-knowledge, non-custodial) than the code actually provides.",
+          text: "Four new Business OS modules, each with a module-header comment stating plainly what's real and what isn't — verified against the actual code, not just the comments. The throughline across all four: real cryptography and real ledger effects where they exist, and an explicit refusal to claim a stronger guarantee (on-chain, zero-knowledge, non-custodial) than the code actually provides.",
         },
         {
           type: "subsection",
@@ -1243,13 +1243,13 @@ export const ecosystemArchitecture = {
         },
         {
           type: "note",
-          text: "All four are wired into the Business Workspace as real nav entries backed by real, org-scoped API routes — not placeholder screens. Roughly 19 new routes across the four modules, each with its own test suite (inaya-sign, milestone-escrow, depin-storage-manager, financial-attestation).",
+          text: "All four are wired into Inaya Business OS as real nav entries backed by real, org-scoped API routes — not placeholder screens. Roughly 19 new routes across the four modules, each with its own test suite (inaya-sign, milestone-escrow, depin-storage-manager, financial-attestation).",
         },
       ],
     },
     {
       number: "39",
-      title: "Business Workspace Operational Enhancements & Guided AI Assistant (September 2026)",
+      title: "Business OS Operational Enhancements & Guided AI Assistant (September 2026)",
       blocks: [
         {
           type: "subsection",
@@ -1307,11 +1307,11 @@ export const ecosystemArchitecture = {
     },
     {
       number: "42",
-      title: "Business Workspace UX/UI Makeover (September 2026)",
+      title: "Business OS UX/UI Makeover (September 2026)",
       blocks: [
         {
           type: "lead",
-          text: "A usability pass across the Business Workspace frontend — not a redesign. Three parallel research passes across all 36 view files found that the visual language was already a de facto consistent design system, hand-copied into existence dozens of times over rather than ever centralized: a Modal shell duplicated 12 times, status-color logic duplicated 6+ times, date/currency formatting hand-written 46 times across 19 files.",
+          text: "A usability pass across Inaya Business OS frontend — not a redesign. Three parallel research passes across all 36 view files found that the visual language was already a de facto consistent design system, hand-copied into existence dozens of times over rather than ever centralized: a Modal shell duplicated 12 times, status-color logic duplicated 6+ times, date/currency formatting hand-written 46 times across 19 files.",
         },
         {
           type: "subsection",
@@ -1350,7 +1350,7 @@ export const ecosystemArchitecture = {
             },
             {
               heading: "Object Versioning, Object Lock, Legal Hold — one shared enforcement chokepoint.",
-              body: "assertNotProtected() in store.js/walletStore.js is called from both the overwrite path and the delete path, so a lock or hold can never be bypassed by hitting the S3 API, the Azure API, or Business Workspace through a different route. Object Lock requires Versioning already Enabled — enforced, not just documented.",
+              body: "assertNotProtected() in store.js/walletStore.js is called from both the overwrite path and the delete path, so a lock or hold can never be bypassed by hitting the S3 API, the Azure API, or Business OS through a different route. Object Lock requires Versioning already Enabled — enforced, not just documented.",
             },
             {
               heading: "Lifecycle policies, real enforcement.",
@@ -1372,7 +1372,7 @@ export const ecosystemArchitecture = {
           rows: [
             ["S3 REST surface", "src/app/api/s3/**/route.js — ListBuckets, bucket CRUD, ListObjectsV2, PutObject, GetObject (byte-range aware), HeadObject, DeleteObject, multipart upload, plus real sub-resources (?versioning, ?object-lock, ?versions, ?legal-hold, ?retention, ?versionId=)."],
             ["Azure REST surface", "src/app/api/azure/**/route.js — List Containers, container CRUD, List Blobs, Put/Get/Delete Blob (Range-aware), Put Block / Put Block List. Three ways to authenticate: Shared Key, time-limited SAS share links (added October 2026), or real Microsoft Entra ID Bearer tokens (verified live against Microsoft Graph)."],
-            ["Business Workspace console", "src/app/api/orgs/s3-compat/manage/route.js + S3CompatView.js — bucket/version/lock/health visibility and controls, session-authenticated, separate from the SigV4-signed protocol surface."],
+            ["Business OS console", "src/app/api/orgs/s3-compat/manage/route.js + S3CompatView.js — bucket/version/lock/health visibility and controls, session-authenticated, separate from the SigV4-signed protocol surface."],
             ["Test coverage", "19 new tests (test/s3-compat-capabilities.test.mjs) plus the pre-existing 9 (sigv4) + 9 (store) — all passing, zero regressions."],
           ],
         },
@@ -1417,7 +1417,7 @@ export const ecosystemArchitecture = {
             },
             {
               heading: "A Compliance Evidence Exporter, read-only by construction.",
-              body: "A new Business Workspace panel and API route aggregate an organization's own existing audit chain, bucket protection settings (versioning/Object Lock/lifecycle), and security event history into a downloadable JSON or PDF evidence package — with a real SHA-256 export hash over a canonical serialization, and a live re-verification of the audit chain's own tamper-evident integrity, not a cached flag. No new tracking collection, no new audit system: the one write this feature ever performs is logging its own generation event to the existing audit chain.",
+              body: "A new Business OS panel and API route aggregate an organization's own existing audit chain, bucket protection settings (versioning/Object Lock/lifecycle), and security event history into a downloadable JSON or PDF evidence package — with a real SHA-256 export hash over a canonical serialization, and a live re-verification of the audit chain's own tamper-evident integrity, not a cached flag. No new tracking collection, no new audit system: the one write this feature ever performs is logging its own generation event to the existing audit chain.",
             },
             {
               heading: "Google OAuth, temporary signed URLs, and virtual-hosted bucket addressing.",
@@ -1532,7 +1532,7 @@ export const ecosystemArchitecture = {
             ["New: src/lib/cloudBackupScheduler.js", "Orchestrates inaya-migration-agent's real, already-tested source adapters and runMigration() engine — linked via a file: dependency, not rewritten. Resolves two real semantic gaps in that package (a local-file Manifest incompatible with serverless invocations; permanent-once-migrated semantics wrong for a recurring backup) with its own Mongo-backed incremental diff (backupObjectState) and a duck-typed shim manifest, without modifying the shared package. Destination writes go through s3-compat/store.js directly, in-process, rather than round-tripping through the package's own HTTP-oriented client."],
             ["New: src/lib/backupCryptoAndCredentials.js", "Envelope-encrypted (AES-256-GCM) storage of a customer's own AWS/Azure/GCS credentials, under a key dedicated solely to this feature — a disclosed, deliberate departure from the migration tool's own \"credentials never leave your machine\" design, necessary for anything to re-authenticate on a recurring schedule."],
             ["Modified: src/lib/digitalTwinSimulate.js", "Added an independently-recomputable integrityHash (reusing evidenceExporter.js's canonicalization), simulationId, and a new listDigitalTwinSimulations() for scenario history — the What-If Studio UI's only new backend surface; the simulation engine itself is unchanged."],
-            ["New: src/components/business/WhatIfStudioView.js, DataRoomsView.js extensions, CloudBackupSchedulerView.js, DirectSyncView.js", "Business Workspace UI for all four features, following the existing self-contained-view convention. DirectSyncView calls native Tauri commands via window.__TAURI__.core.invoke() (the same pattern the app's existing pending-approvals/security-feed pollers use) and degrades to an honest \"requires the desktop app\" message in a plain browser tab."],
+            ["New: src/components/business/WhatIfStudioView.js, DataRoomsView.js extensions, CloudBackupSchedulerView.js, DirectSyncView.js", "Business OS UI for all four features, following the existing self-contained-view convention. DirectSyncView calls native Tauri commands via window.__TAURI__.core.invoke() (the same pattern the app's existing pending-approvals/security-feed pollers use) and degrades to an honest \"requires the desktop app\" message in a plain browser tab."],
             ["Test coverage", "Data Room Templates: 8 tests, zero regressions to external-data-room.test.mjs. Cloud Backup Scheduler: 12 tests, including a genuine end-to-end run through the real migration engine and real storage write path via node:test's mock.module() substituting only the external cloud source adapter. What-If Studio: 2 additional tests on the existing Digital Twin suite. DirectSync: 7 Rust unit tests plus 1 real, non-mocked #[ignore] end-to-end test run manually against a live dev server and a real, disposable S3-compat credential (read from environment variables, never hardcoded) — proving real upload+verify, duplicate-safety, change detection, rename with actual remote relocation, and delete-preserves-remote."],
           ],
         },
@@ -1924,7 +1924,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "A new sibling Rust workspace, inaya-infrastructure/, gives a customer's own connected hardware a real control plane: real QEMU/KVM virtual machines, real qcow2 block storage, real Linux-bridge+nftables networking, and a capacity-based scheduler -- authenticated node-to-node over signed requests on HTTPS (not literal TLS mTLS, a documented Vercel-edge platform constraint), surfaced through a new 'Infrastructure' console in the Business Workspace.",
+          text: "A new sibling Rust workspace, inaya-infrastructure/, gives a customer's own connected hardware a real control plane: real QEMU/KVM virtual machines, real qcow2 block storage, real Linux-bridge+nftables networking, and a capacity-based scheduler -- authenticated node-to-node over signed requests on HTTPS (not literal TLS mTLS, a documented Vercel-edge platform constraint), surfaced through a new 'Infrastructure' console in Inaya Business OS.",
         },
         {
           type: "table",
@@ -1999,7 +1999,7 @@ export const ecosystemArchitecture = {
       blocks: [
         {
           type: "lead",
-          text: "A Filen/FileCloud-inspired suite built across 26 workstreams on top of the existing Business Workspace permission foundation -- end-to-end encrypted chat and notes, link sharing controls, an enterprise governance/compliance layer, device trust, and an on-premises gateway agent -- every feature off by default per organization.",
+          text: "A Filen/FileCloud-inspired suite built across 26 workstreams on top of the existing Business OS permission foundation -- end-to-end encrypted chat and notes, link sharing controls, an enterprise governance/compliance layer, device trust, and an on-premises gateway agent -- every feature off by default per organization.",
         },
         {
           type: "table",
@@ -2014,7 +2014,7 @@ export const ecosystemArchitecture = {
             ["Governance -- classification & DLP", "src/lib/governance/{classification,classifyRules,dlp}.js", "Document classification labels and data-loss-prevention rule matching, enforced at the point data would leave a scope."],
             ["Governance -- retention & lifecycle", "src/lib/governance/{retention,lifecycle,metadata}.js", "Automated retention/legal-hold policies and lifecycle transitions, journaled through governance/events.js for the audit trail."],
             ["Governance enforcement", "src/lib/governance/enforce.js", "The single checkpoint every governed action passes through -- policy evaluation lives here once, not duplicated per feature."],
-            ["Sovereign Gateway", "src/lib/gateway/{gateway,acl,transfers,health,modes}.js", "An agent connecting a customer's own on-premises file server into Business Workspace, with its own ACL model, transfer queue, and health reporting -- built and tested but not yet proven against a real company file server."],
+            ["Sovereign Gateway", "src/lib/gateway/{gateway,acl,transfers,health,modes}.js", "An agent connecting a customer's own on-premises file server into Business OS, with its own ACL model, transfer queue, and health reporting -- built and tested but not yet proven against a real company file server."],
           ],
         },
         {
@@ -2071,6 +2071,34 @@ export const ecosystemArchitecture = {
         {"type": "subsection", "heading": "Money that can't drift", "body": "Amounts are integer minor units. Invoice generation is idempotent through a unique (student, period, structure) index. A payment moves the invoice's paid amount with a conditional $inc that only succeeds if it doesn't exceed the total, so concurrent clerks can't overpay. Receipt numbers come from an atomic per-school, per-year counter. Payments are reversed, never deleted, and concessions can't be approved by the person who requested them."},
         {"type": "subsection", "heading": "Parent access without an account", "body": "A parent link is a 256-bit random token; only its SHA-256 hash is stored. The public route is rate-limited, answers every failure with the same 404, and re-checks expiry, revocation, the school's vertical and the student's erasure status on every view, returning only fees, attendance and published results."},
         {"type": "note", "text": "14 automated tests against the real database cover encryption at rest, per-role views, duplicate billing, overpayment, self-approval, the publish lock, parent-link contents, revocation and erasure, plus a static test that the single catch-all Education OS route locks every path to the education vertical before dispatching. Not built: online fee collection, SMS/WhatsApp reminders, timetables, transport/hostel, mobile screens. No data-protection-law compliance is claimed."},
+      ],
+    },
+    {
+      number: "63",
+      title: "Inaya Commerce Architecture (November 2026)",
+      blocks: [
+        {"type":"lead","text":"The commerce layer reuses the existing products, stock, customers and ledger rather than adding a parallel system, and adds no new database collections: configuration lives as kind-scoped records in an existing collection and sales are sales orders with channel POS."},
+        {"type":"subsection","heading":"One transaction per sale","body":"completeSale runs the whole sale (prices, tax, approvals, stock movements, payments, the sale record and the customer's history) in one MongoDB transaction; any failure aborts all of it. A resubmitted sale with the same idempotency key returns the original sale."},
+        {"type":"subsection","heading":"The till is never trusted with money","body":"Prices and tax are computed on the server for every cart. Discounts above a cashier's limit need an approval from a supervisor or manager on their own session, bound to a hash of the exact cart, valid for 10 minutes and usable once."},
+        {"type":"subsection","heading":"Online channels","body":"Card payments use the shop's own Stripe or Safepay account, so Inaya never holds the money. Shopify connects through an installed app (OAuth) and WooCommerce through REST keys stored encrypted; product, stock and order sync is idempotent so an order is imported once."},
+        {"type":"subsection","heading":"Branch scope","body":"Branch access is enforced in the API, not just the screens: a member reaches only their assigned branches, even through a direct link."},
+      ],
+    },
+    {
+      number: "64",
+      title: "Offline Selling Architecture (Beta, November 2026)",
+      blocks: [
+        {"type":"subsection","heading":"The offline pack","body":"While online with a shift open, the till downloads a pack: its products, shelf prices, tax rates, limits and a random per-pack secret, bound to the till, the shift and the cashier. On the device it is stored in IndexedDB encrypted with AES-GCM-256 under a non-extractable key."},
+        {"type":"subsection","heading":"Signed sales, re-checked on sync","body":"Each offline sale gets a per-pack receipt number and an HMAC-SHA256 signature. On sync the server verifies the signature, the time window and the limits, recomputes the totals with the same pricing code the till used, and records the sale with its offline id as the idempotency key. Sales that fail are not recorded; they go to a manager review queue."},
+        {"type":"subsection","heading":"Restart with no internet","body":"A service worker scoped only to the offline till page keeps that page and its files on the computer, so it opens with no connection; the desktop app's start screen links to it."},
+        {"type":"note","text":"Automated tests cover tampering with any signed field, re-sends in parallel, a busy till sending 50 sales, another company's pack and an old pack after a new one; sync runs in time-budgeted rounds so a long outage fits the hosting time limit."},
+      ],
+    },
+    {
+      number: "65",
+      title: "Appointments, Hospitality OS, Launch Readiness and the License Manager (November 2026)",
+      blocks: [
+        {"type":"bullets","items":["Appointments: a public booking page with team calendars and Google/Outlook calendar sync through calendar files, without a paid API.","Hospitality OS: locations, tables and reservations that refuse double bookings, connected to the CRM and inventory.","Launch readiness: packages requested in the Workspace and paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, and daily encrypted backups.","License Manager: licences tied to packages with a 14-day grace period and automatic suspension that keeps Billing, Help and the data export available."]},
       ],
     },
   ],

@@ -4,7 +4,7 @@
 //
 // Companion to the existing inaya-business-model.pdf (which covers the
 // Web3/DePIN storage engine's tokenomics) — this one covers the second,
-// SaaS engine: Business Workspace. Content here is drawn only from what's
+// SaaS engine: Business OS. Content here is drawn only from what's
 // actually built and already-approved language elsewhere in this repo:
 // pricing/limits from src/lib/orgPlans.js, product scope from
 // src/lib/saasRoadmap.js, and the "two-engine" framing + Business
@@ -32,7 +32,7 @@ export const saasBusinessModel = {
     company: "INAYA NETWORK",
     classification: "CONFIDENTIAL",
     kicker: "INAYA SAAS — BUSINESS MODEL",
-    title: "Business Workspace: The SaaS Engine",
+    title: "Business OS: The SaaS Engine",
     subtitle:
       "A zero-knowledge, encrypted business collaboration platform — built on the same client-side encryption and decentralized storage infrastructure as Inaya's DePIN network, packaged as a recurring-revenue SaaS product for companies of every size.",
     docLine: "Document INAYA-SAAS-BM-2026-V1 · Classification Confidential · November 2026",
@@ -46,9 +46,9 @@ export const saasBusinessModel = {
         {
           type: "paragraphs",
           text: [
-            "Inaya Network operates two complementary engines. The Web3/DePIN engine turns users into node operators and storage demand into on-chain network activity. The Business SaaS engine — Business Workspace — turns that same zero-knowledge storage infrastructure into a recurring-revenue product for companies: document management, team collaboration, and an AI business assistant, all encrypted client-side before it ever reaches a server.",
-            "Business Workspace is not a hypothetical roadmap item. Company/department/project/document hierarchy, role-based permissions, secure sharing, a full document approval workflow, and a permission-aware AI assistant are built and live today. This document covers that product specifically: what it does, who it's for, how it's priced, and how it generates revenue.",
-            "It's one of several products now built on Inaya's infrastructure alongside the core DePIN storage layer — a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, and two desktop apps — each covered in its own dedicated document; this one stays scoped to Business Workspace specifically.",
+            "Inaya Network operates two complementary engines. The Web3/DePIN engine turns users into node operators and storage demand into on-chain network activity. The Business SaaS engine — Business OS — turns that same zero-knowledge storage infrastructure into a recurring-revenue product for companies: document management, team collaboration, and an AI business assistant, all encrypted client-side before it ever reaches a server.",
+            "Business OS is not a hypothetical roadmap item. Company/department/project/document hierarchy, role-based permissions, secure sharing, a full document approval workflow, and a permission-aware AI assistant are built and live today. This document covers that product specifically: what it does, who it's for, how it's priced, and how it generates revenue.",
+            "It's one of several products now built on Inaya's infrastructure alongside the core DePIN storage layer — a decentralized Security Layer, an Oracle & Automation Layer, Inaya Learn, an Investor Data Room, and two desktop apps — each covered in its own dedicated document; this one stays scoped to Business OS specifically.",
           ],
         },
       ],
@@ -71,14 +71,14 @@ export const saasBusinessModel = {
     },
     {
       number: "03",
-      title: "The Solution — Business Workspace",
+      title: "The Solution — Business OS",
       blocks: [
         {
           type: "columns",
           items: [
             {
               heading: "Structured by Design",
-              body: "Every company using Business Workspace organizes its documents in a real hierarchy — Company → Department → Project → Document — not a flat file dump. Role-based membership (owner, admin, member) governs who can see what, enforced server-side on every request.",
+              body: "Every company using Business OS organizes its documents in a real hierarchy — Company → Department → Project → Document — not a flat file dump. Role-based membership (owner, admin, member) governs who can see what, enforced server-side on every request.",
             },
             {
               heading: "Workflow, Not Just Storage",
@@ -92,7 +92,7 @@ export const saasBusinessModel = {
         },
         {
           type: "lead",
-          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization. As of late October 2026: six industry editions (Health, Legal, Regulated Enterprise, Financial, Government and Education), each with its own sidebar of the modules that kind of organization uses every day, and an optional ERP-style layout with module tiles and a task panel for teams used to desktop ERP software. As of November 2026: a seventh edition, Hospitality, for restaurants, cafes and caterers; online appointment booking and email campaigns for the Business and Enterprise packages; a support assistant in the Workspace Help panel that diagnoses and fixes common account problems; a one-click download of all company data as a ZIP file; and a daily encrypted backup of company records. The Business Workspace launches publicly on 1 January 2027.",
+          text: "Also included: secure, expiring document share links; per-document and per-project access grants; a dashboard and activity feed built from the same permission resolution as everything else; full mobile access via the Inaya app; and, as of September 2026, an OS Home screen — real-time trust & health status, cross-module notifications, one search across every module, and an AI assistant that answers both business and security questions in a single conversation. Also as of September 2026: real OAuth connections to nine external business tools, a spoken-voice mode for the AI Assistant, and a usability pass across the whole workspace — a real shared component system, accessible form labels everywhere, and three navigation bugs fixed, with zero change to any permission or backend behavior underneath. As of October 2026: a flag-gated Secure Collaboration suite (end-to-end encrypted chat and notes, controlled sharing, governance, device control) and a Device Protection suite (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private video calls) — both off by default per organization. As of late October 2026: six industry editions (Health, Legal, Regulated Enterprise, Financial, Government and Education), each with its own sidebar of the modules that kind of organization uses every day, and an optional ERP-style layout with module tiles and a task panel for teams used to desktop ERP software. As of November 2026: a seventh edition, Hospitality, for restaurants, cafes and caterers; online appointment booking and email campaigns for the Business and Enterprise packages; a support assistant in the Workspace Help panel that diagnoses and fixes common account problems; a one-click download of all company data as a ZIP file; and a daily encrypted backup of company records. Inaya Business OS launches publicly on 1 January 2027.",
         },
       ],
     },
@@ -102,7 +102,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace inherits the same client-side encryption model as Inaya's core storage layer — a business document is encrypted in the browser before it ever leaves the user's device.",
+          text: "Business OS inherits the same client-side encryption model as Inaya's core storage layer — a business document is encrypted in the browser before it ever leaves the user's device.",
         },
         {
           type: "bullets",
@@ -115,7 +115,7 @@ export const saasBusinessModel = {
         {
           type: "note",
           label: "Positioning:",
-          text: "This is the product's core differentiator against traditional business collaboration SaaS — competitors encrypt data on their servers with keys they control; Business Workspace encrypts it before it arrives.",
+          text: "This is the product's core differentiator against traditional business collaboration SaaS — competitors encrypt data on their servers with keys they control; Business OS encrypts it before it arrives.",
         },
       ],
     },
@@ -164,6 +164,24 @@ export const saasBusinessModel = {
             "Asia (India, Bangladesh, Sri Lanka, UAE, Saudi Arabia, Malaysia, Indonesia, Singapore, Philippines) — priced in USD, 10 pilot places per country, 30% off the package and extra users ($2.10) for 6 months. Setup is always charged: $29 (Starter) or $49 for pilot companies, $39 or $89 otherwise.",
           ],
         },
+
+        { type: "lead", text: "Inaya Commerce pricing. Inaya Commerce adds the front office (point of sale) and online selling to the back office. Approved prices, live on the pricing page since 23 November 2026; annual billing is 10x the monthly price." },
+        {
+          type: "table",
+          headers: ["Option", "USD a month", "PKR a month", "What is included"],
+          rows: [
+            ["Commerce Starter (add-on to Professional)", "$49", "PKR 8,000", "1 branch, 1 till, own web store, 1 Shopify or WooCommerce store, 300 online orders a month"],
+            ["Commerce add-on (add-on to Business)", "$79", "PKR 12,000", "2 branches, 3 tills, own web store, 1 Shopify + 1 WooCommerce store, 1,000 online orders a month"],
+            ["Business + Commerce bundle", "$169", "PKR 40,000", "The Business package with the Commerce add-on, saving $9 / PKR 2,000 a month"],
+            ["Enterprise", "Included", "Included", "Unlimited branches and tills, 3 connected stores, unlimited online orders"],
+            ["Extra branch / extra till", "$19 / $12", "PKR 5,000 / 3,000", "Per month"],
+          ],
+        },
+        { type: "bullets", items: [
+          "Plan limits apply only to companies on the new prices; existing customers are never blocked.",
+          "Card payments in the online store go through the shop's own Stripe or Safepay account; Inaya never holds the money.",
+          "Offline selling and till hardware are in Beta with the first pilot shops and move to \"Available now\" once pilots confirm them on their own equipment.",
+        ] },
       ],
     },
     {
@@ -177,7 +195,8 @@ export const saasBusinessModel = {
             "One-time setup fees. Charged per company in Pakistan (PKR 10,000 or 25,000) and in the Asia programme ($39 or $89; $29 or $49 for pilots), covering onboarding time.",
             "Seat and storage expansion revenue. Companies that outgrow their package's limits pay incrementally for additional users or storage rather than being forced into a full package jump.",
             "Enterprise contracts. Organizations beyond Enterprise's listed capacity are handled as direct sales engagements with custom pricing.",
-            "Shared infrastructure economics. Business Workspace runs on the same encrypted storage backend as Inaya's core DePIN product — SaaS subscription revenue and DePIN storage/staking revenue draw on shared infrastructure investment rather than requiring a separate cost base.",
+            "Inaya Commerce add-on revenue. Commerce Starter, the Commerce add-on, the Business + Commerce bundle and extra branches and tills. The Combined Financial Model's base case (take-up of 20% of Professional, 30% of Business and 50% of Enterprise customers) puts Commerce revenue at about $2.2K in year 1 rising to about $57.5K in year 5, shown separately from the package revenue above.",
+            "Shared infrastructure economics. Business OS runs on the same encrypted storage backend as Inaya's core DePIN product — SaaS subscription revenue and DePIN storage/staking revenue draw on shared infrastructure investment rather than requiring a separate cost base.",
           ],
         },
       ],
@@ -188,13 +207,13 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace competes in the business collaboration and document management category — the space occupied by mainstream cloud productivity suites and document platforms — on a specific, structural axis: who actually holds the encryption key.",
+          text: "Business OS competes in the business collaboration and document management category — the space occupied by mainstream cloud productivity suites and document platforms — on a specific, structural axis: who actually holds the encryption key.",
         },
         {
           type: "bullets",
           items: [
             "Most incumbent platforms in this category encrypt customer data with provider-managed keys — meaning the provider retains the technical ability to access customer data.",
-            "Business Workspace encrypts client-side before data ever reaches a server, so Inaya never holds a decryption-capable key for any customer's documents.",
+            "Business OS encrypts client-side before data ever reaches a server, so Inaya never holds a decryption-capable key for any customer's documents.",
             "This isn't positioned as a replacement for full enterprise-suite platforms (email, calendaring, spreadsheets) — it's positioned specifically for the document storage, workflow, and permissioning layer, where the zero-knowledge guarantee matters most.",
           ],
         },
@@ -214,7 +233,7 @@ export const saasBusinessModel = {
           items: [
             "Assisted activation. A company is created self-serve; its owner requests a package from inside the Workspace, our team contacts them within one working day, emails an invoice, and activates the package when payment arrives. A public demo video, a customer onboarding guide and the in-app support assistant carry the rest of onboarding.",
             "Pilot outreach. Direct email outreach to mid-size companies in Pakistan, the UK and nine Asian countries (manufacturers and pharma, traders and distributors, clinics, schools), each offered a limited number of discounted pilot places. Public launch: 1 January 2027.",
-            "Cross-promotion from the existing DePIN dApp. Wallet-connected users of Inaya's core network are shown Business Workspace directly inside the dApp, converting an already-engaged audience into a second product line.",
+            "Cross-promotion from the existing DePIN dApp. Wallet-connected users of Inaya's core network are shown Business OS directly inside the dApp, converting an already-engaged audience into a second product line.",
             "Primary target segments: Web3 builders, AI startups, SaaS companies, healthcare technology, financial technology, legal technology, schools and colleges, managed service providers (as direct multi-tenant buyers, not just distribution partners, via Identity Integration's MSP support), and any organization whose documents carry real confidentiality requirements.",
           ],
         },
@@ -247,7 +266,7 @@ export const saasBusinessModel = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace ships in stages — every stage below is live today, extending it toward a full business operations platform.",
+          text: "Business OS ships in stages — every stage below is live today, extending it toward a full business operations platform.",
         },
         {
           type: "numbered",
@@ -267,12 +286,17 @@ export const saasBusinessModel = {
             { heading: "Device Protection & Post-Quantum Key Establishment — LIVE (flag-gated).", body: "A hybrid key-establishment layer combining the existing classical X25519 exchange with ML-KEM-768 (additive, not a replacement of classical crypto); a local-only Cleaner that never uploads a file inventory; and Inaya Meet, private peer-to-peer video calls with a conservative default room size rather than a scalable SFU. Backup, sync, Cleaner, and device status are now one consolidated view." },
             { heading: "Identity Integration & MSP Multi-Tenancy — LIVE.", body: "Microsoft Entra ID and on-premises Active Directory sign-in, SCIM user provisioning, a Rewst automation connector, and multi-tenant management for managed service providers, verified against a real Entra tenant and a real Windows Server AD domain controller." },
             { heading: "AI Bookkeeper — LIVE.", body: "AI-assisted transaction categorization, reconciliation, and reporting on top of the existing Finance & HR layer, with every suggested entry reviewed and confirmed by a person before it posts." },
-            { heading: "Managed Database, Document Intelligence & AI/ML Studio — LIVE.", body: "A provisioned PostgreSQL database managed from inside the Business Workspace, a document-understanding studio for invoices, purchase orders, receipts and contracts, and an AI workbench for data cataloguing, model registration, and running one governed script at a time in an isolated, disposable sandbox." },
-            { heading: "Sovereign Infrastructure — LIVE.", body: "Bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. A structurally distinct revenue line from the SaaS seat/storage tiers above — the customer's own hardware, managed through Business Workspace." },
+            { heading: "Managed Database, Document Intelligence & AI/ML Studio — LIVE.", body: "A provisioned PostgreSQL database managed from inside Inaya Business OS, a document-understanding studio for invoices, purchase orders, receipts and contracts, and an AI workbench for data cataloguing, model registration, and running one governed script at a time in an isolated, disposable sandbox." },
+            { heading: "Sovereign Infrastructure — LIVE.", body: "Bring-your-own-hardware compute: a customer connects their own server and runs real virtual machines, block storage, and private networking on it, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s) on guest VMs this stage creates. A structurally distinct revenue line from the SaaS seat/storage tiers above — the customer's own hardware, managed through Business OS." },
             { heading: "Industry Editions & ERP Mode — LIVE.", body: "Six industry operating systems on the same workspace and permission model: Health, Legal, Regulated Enterprise, Financial / Private Capital, Government, and Education for schools and colleges (student ID numbers, addresses, phone numbers and medical notes encrypted before they are stored; fees in PKR, INR, BDT or AED, recorded rather than collected online). Legal bills and school fees post to the same general ledger as the Finance module. An optional ERP-style layout puts each industry's own modules first." },
             { heading: "Appointments & Email Marketing — LIVE (Business and Enterprise).", body: "A self-service booking page with team calendars, email reminders, Google/Outlook calendar sync and CRM logging of every meeting, plus email campaigns with templates, CRM segments, two-person approval, scheduling and open/click reporting, and automatic follow-up sequences. Business includes 50,000 marketing emails a month and Enterprise 250,000, so neither package needs a separate marketing subscription." },
             { heading: "Hospitality OS — LIVE.", body: "An industry edition for restaurants, cafes, caterers and cloud kitchens: locations, tables, reservations with double bookings refused, an online booking page, a waitlist, guests as CRM contacts, menus with allergens, recipes from Inventory, wastage and stock counts, rosters and daily checklists. No point-of-sale, payments or kitchen display." },
             { heading: "Launch Readiness — LIVE.", body: "Package activation by NayaPay or bank transfer with numbered PDF invoices, no workspace access before payment, a one-click ZIP download of all company data, a daily encrypted backup of company records, and a support assistant in the Help panel that checks a user's account and fixes common problems or hands them to the team." },
+            { heading: "License Manager — LIVE.", body: "A licence per company tied to its package: payment reminders, a 14-day grace period with a daily countdown, then automatic suspension that keeps Billing, Help and the data export open." },
+            { heading: "Ransomware Protection & Recovery — LIVE.", body: "Immutable snapshots and point-in-time rollback on by default, decoy tripwire files in every bucket, and a recorded Enterprise Resilience Demonstration." },
+            { heading: "Inaya Commerce — LIVE.", body: "Point of sale with server-side pricing, approvals, returns, shifts and cash control; stock control across branches; promotions, loyalty and gift cards; an Inaya web store with Stripe/Safepay on the shop's own account and two-way Shopify and WooCommerce sync; rotas, commissions and branch-level access." },
+            { heading: "Offline Selling & Till Hardware — LIVE (Beta).", body: "Cash sales continue during an internet outage and sync exactly once; silent receipt printing, cash drawers, A4/A5 receipts, barcode labels, camera and phone scanning in the desktop app." },
+            { heading: "Inaya Business OS — LIVE.", body: "Inaya Business OS's new name and identity as a Business Operations Platform, with a modern look and an illustrated user guide." },
           ],
         },
       ],
@@ -284,7 +308,7 @@ export const saasBusinessModel = {
         {
           type: "paragraphs",
           text: [
-            "Business Workspace turns Inaya's core zero-knowledge storage infrastructure into a second, independent revenue engine — recurring SaaS subscriptions from companies, rather than storage fees from individual users and node operators. The product is built, live, and priced today, not a roadmap promise.",
+            "Business OS turns Inaya's core zero-knowledge storage infrastructure into a second, independent revenue engine — recurring SaaS subscriptions from companies, rather than storage fees from individual users and node operators. The product is built, live, and priced today, not a roadmap promise.",
             "The two engines share infrastructure but serve different buyers and different revenue mechanics, giving Inaya Network two distinct paths to growth from a single underlying technology investment.",
           ],
         },

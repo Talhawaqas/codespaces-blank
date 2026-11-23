@@ -44,7 +44,7 @@ export const ecosystemOverview = {
             },
             {
               heading: "The application layer",
-              body: "Everything a person actually opens: the storage dApp, the Business Workspace for companies (including its own operations, finance, and HR tooling), the mobile app, two desktop apps, a public security page, an investor data room, and four AI assistants — all talking to the same backend.",
+              body: "Everything a person actually opens: the storage dApp, Inaya Business OS for companies (including its own operations, finance, and HR tooling), the mobile app, two desktop apps, a public security page, an investor data room, and four AI assistants — all talking to the same backend.",
             },
           ],
         },
@@ -114,11 +114,11 @@ export const ecosystemOverview = {
     },
     {
       number: "05",
-      title: "Business Workspace — A Second Product On The Same Foundation",
+      title: "Business OS — A Second Product On The Same Foundation",
       blocks: [
         {
           type: "lead",
-          text: "Not every customer wants a blockchain product. Business Workspace is a genuine B2B SaaS tool — organizations, departments, projects, documents — with real approval workflows, granular permissions, secure sharing links, and a permission-aware AI assistant. Sign-in is just an email or a Google account. No wallet, no tokens, no blockchain vocabulary anywhere in the experience.",
+          text: "Not every customer wants a blockchain product. Business OS is a genuine B2B SaaS tool — organizations, departments, projects, documents — with real approval workflows, granular permissions, secure sharing links, and a permission-aware AI assistant. Sign-in is just an email or a Google account. No wallet, no tokens, no blockchain vocabulary anywhere in the experience.",
         },
         {
           type: "lead",
@@ -204,7 +204,7 @@ export const ecosystemOverview = {
         {
           type: "bullets",
           items: [
-            "The mobile app is a full superset — everything the web dApp does, plus the Business Workspace, Learn, and Security, in one app.",
+            "The mobile app is a full superset — everything the web dApp does, plus Inaya Business OS, Learn, and Security, in one app.",
             "The two desktop apps are deliberately thin — each one is just the real website, running inside a lightweight native window with a system tray icon, native notifications, and auto-updates layered on top. There is no separate desktop-only feature set to keep in sync.",
           ],
         },
@@ -223,7 +223,7 @@ export const ecosystemOverview = {
           items: [
             "Web3 App Store (/apps) — a curated set of Inaya's own apps, plus community-submitted ones. A submission needs a wallet signature and is checked against the live threat network before an admin ever sees it, and nothing goes live until approved.",
             "NFT Vault (/nfts) — discovers NFTs a wallet owns and backs up their metadata and image using the exact same encrypt-and-shard pipeline that protects every other file on Inaya.",
-            "Optional two-factor login for Business Workspace — an authenticator app or a text message code, on top of the existing passwordless sign-in.",
+            "Optional two-factor login for Business OS — an authenticator app or a text message code, on top of the existing passwordless sign-in.",
           ],
         },
       ],
@@ -285,7 +285,7 @@ export const ecosystemOverview = {
         {
           type: "bullets",
           items: [
-            "One OS Home screen — trust & health status, recent notifications, what changed this week, and an assistant that can answer both business and security questions — on both the web app and Business Workspace, each tailored to how you actually use it.",
+            "One OS Home screen — trust & health status, recent notifications, what changed this week, and an assistant that can answer both business and security questions — on both the web app and Business OS, each tailored to how you actually use it.",
             "Real notifications with a memory — mark something read once, and it stays read, instead of the app forgetting the moment you refresh.",
             "One search bar (Cmd/Ctrl+K) instead of hunting through a dozen separate screens for a task, a deal, a document, or a file.",
             "A trust & health signal that's actually true, not decorative — built from the same real audit trail, backup health, and security data described earlier in this document, never invented for the sake of a clean-looking dashboard.",
@@ -295,7 +295,7 @@ export const ecosystemOverview = {
         {
           type: "note",
           label: "Two operating environments, not one blended one.",
-          text: "Your business identity (email, organization membership) and your wallet identity are kept genuinely separate — there was no clean way to merge them without inventing a new identity system neither product actually needed, so the OS shell was built twice from the same underlying pieces instead: one for Business Workspace, one for the wallet-connected app. This mirrors how the two desktop apps already work today.",
+          text: "Your business identity (email, organization membership) and your wallet identity are kept genuinely separate — there was no clean way to merge them without inventing a new identity system neither product actually needed, so the OS shell was built twice from the same underlying pieces instead: one for Business OS, one for the wallet-connected app. This mirrors how the two desktop apps already work today.",
         },
       ],
     },
@@ -305,12 +305,12 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace now has two specialized modes for organizations with genuinely different needs: Health OS for hospitals and clinics, Legal OS for law firms and legal departments. Both are built on the exact same encryption, audit trail, and permission model as the rest of Business Workspace — just adapted to the records those two industries actually work with.",
+          text: "Business OS now has two specialized modes for organizations with genuinely different needs: Health OS for hospitals and clinics, Legal OS for law firms and legal departments. Both are built on the exact same encryption, audit trail, and permission model as the rest of Business OS — just adapted to the records those two industries actually work with.",
         },
         {
           type: "bullets",
           items: [
-            "Need-to-know access, not just department-wide — only staff actually assigned to a patient's care team, or a lawyer actually on a matter's team, can see that record. Being in the right department isn't enough on its own, which is stricter than how the rest of Business Workspace works, on purpose.",
+            "Need-to-know access, not just department-wide — only staff actually assigned to a patient's care team, or a lawyer actually on a matter's team, can see that record. Being in the right department isn't enough on its own, which is stricter than how the rest of Business OS works, on purpose.",
             "Emergency access that's actually safe — a clinician can get emergency access to a patient outside their normal assignment, but it's logged the instant it happens, expires automatically after a few hours, and a manager is notified to review it. We caught and fixed a real bug during testing where an early version didn't expire on time.",
             "A legal hold that actually holds — placing a hold on a matter doesn't just show a warning, it genuinely blocks anyone from deleting the related records until the hold is released.",
             "Trust accounting with one hard rule — the system will never let anyone withdraw more from a client's trust fund than what's actually there, no matter who's asking.",
@@ -321,7 +321,7 @@ export const ecosystemOverview = {
         {
           type: "note",
           label: "What's live today vs. what's next.",
-          text: "Patient records and legal matters both have a real, working screen in Business Workspace today. Most of the other modules described above — consent, billing, scheduling, evidence, legal holds, contracts, trust accounting — work correctly behind the scenes and are already tested, but don't have their own screen in the app yet; that's the next phase of work, building on logic that's already written rather than starting over. Nothing here is HIPAA-certified, ABA-certified, or legally compliant with any specific jurisdiction — that would require a real legal/compliance review this build doesn't include, and we've been careful not to claim otherwise.",
+          text: "Patient records and legal matters both have a real, working screen in Business OS today. Most of the other modules described above — consent, billing, scheduling, evidence, legal holds, contracts, trust accounting — work correctly behind the scenes and are already tested, but don't have their own screen in the app yet; that's the next phase of work, building on logic that's already written rather than starting over. Nothing here is HIPAA-certified, ABA-certified, or legally compliant with any specific jurisdiction — that would require a real legal/compliance review this build doesn't include, and we've been careful not to claim otherwise.",
         },
       ],
     },
@@ -339,7 +339,7 @@ export const ecosystemOverview = {
             "A compliance foundation that never overstates itself — controls can be mapped to real industry frameworks (NIST, ISO 27001, SOC 2, DORA, GDPR), but every mapping is clearly labeled a reference, never a certification. A control nobody has tested yet shows up as 'unknown,' never a falsely reassuring green checkmark.",
             "A published policy can't be quietly rewritten — changing it always creates a brand-new version, so there's always a clear record of what a rule said on any given day. The Government OS Policy Knowledge Base reuses this exact same rule.",
             "Real fund, deal, and investor tracking for the finance side — research, investment committee decisions, portfolios, and for private equity/VC: deal pipelines, due diligence, cap tables, and portfolio-company boards.",
-            "Government's need-to-know rule, borrowed from Health OS — a caseworker with general staff access still can't open a specific citizen's record unless they're actually assigned to it. Every citizen-record read is logged, not just every change — a stricter bar than the rest of Business Workspace.",
+            "Government's need-to-know rule, borrowed from Health OS — a caseworker with general staff access still can't open a specific citizen's record unless they're actually assigned to it. Every citizen-record read is logged, not just every change — a stricter bar than the rest of Business OS.",
             "An outside examiner or auditor gets their own scoped, one-time-use link — never a real login to the company's system — for both regulatory examinations and Government OS's own case reviews.",
             "AI assistants that know their limits here too — they can search, summarize, and draft, but are built to flatly refuse a request to certify compliance, approve something final, or override a permission, on any of these four verticals.",
           ],
@@ -382,7 +382,7 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "The people who actually run Inaya's storage nodes now have their own dashboard — separate login, separate from the wallet app, separate from Business Workspace — showing uptime, rewards, and network standing.",
+          text: "The people who actually run Inaya's storage nodes now have their own dashboard — separate login, separate from the wallet app, separate from Business OS — showing uptime, rewards, and network standing.",
         },
         {
           type: "bullets",
@@ -400,7 +400,7 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "Four new tools in Business Workspace, each doing something genuinely useful — described precisely, so nobody mistakes what's cryptographically guaranteed for what's a well-built internal workflow.",
+          text: "Four new tools in Business OS, each doing something genuinely useful — described precisely, so nobody mistakes what's cryptographically guaranteed for what's a well-built internal workflow.",
         },
         {
           type: "bullets",
@@ -454,7 +454,7 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "A real usability pass across Business Workspace — not a visual redesign, since the look was already consistent. The actual problem: the same interface pieces had been hand-copied dozens of times instead of built once and shared, and a few navigation choices genuinely confused people.",
+          text: "A real usability pass across Business OS — not a visual redesign, since the look was already consistent. The actual problem: the same interface pieces had been hand-copied dozens of times instead of built once and shared, and a few navigation choices genuinely confused people.",
         },
         {
           type: "bullets",
@@ -479,7 +479,7 @@ export const ecosystemOverview = {
           items: [
             "Scoped access credentials — a credential can be restricted to one bucket, one folder path, a specific set of operations (read/write/delete/list), and an expiry date, enforced server-side on every request.",
             "Object versioning — overwriting a file keeps prior versions retrievable and restorable, opt-in per bucket.",
-            "Object Lock — immutable, time-locked retention for compliance, enforced identically whether the request comes through the S3 API, the Azure API, or Business Workspace.",
+            "Object Lock — immutable, time-locked retention for compliance, enforced identically whether the request comes through the S3 API, the Azure API, or Business OS.",
             "Legal hold — an indefinite deletion block for litigation/investigation holds, independent of any retention timer.",
             "Lifecycle policies — automated expiration by age, with locked or legally-held objects always exempt.",
             "Inaya Drive — a real Windows drive letter backed by the same storage, live-tested end to end: mount, browse, open, save, and delete files the same way you would on any local or network drive.",
@@ -488,7 +488,7 @@ export const ecosystemOverview = {
         {
           type: "note",
           label: "How this fits the zero-knowledge model described in Section 02.",
-          text: "Standard S3/Azure client tools were never built to encrypt a file client-side before sending it — that step doesn't exist in the AWS CLI or the Azure SDK. So objects written through this compatibility layer specifically use a server-managed encryption key, scoped per organization, itself encrypted at rest, with every use logged to that organization's own audit trail — the same trust model any real S3-compatible gateway product operates under. This is a disclosed, structurally necessary exception for this one access path; every other Inaya document — uploaded through the web app, mobile app, or Business Workspace — keeps the client-side-only model Section 02 describes, unchanged.",
+          text: "Standard S3/Azure client tools were never built to encrypt a file client-side before sending it — that step doesn't exist in the AWS CLI or the Azure SDK. So objects written through this compatibility layer specifically use a server-managed encryption key, scoped per organization, itself encrypted at rest, with every use logged to that organization's own audit trail — the same trust model any real S3-compatible gateway product operates under. This is a disclosed, structurally necessary exception for this one access path; every other Inaya document — uploaded through the web app, mobile app, or Business OS — keeps the client-side-only model Section 02 describes, unchanged.",
         },
         {
           type: "note",
@@ -504,7 +504,7 @@ export const ecosystemOverview = {
           type: "paragraphs",
           text: [
             "One backend serves every surface — the website, the mobile app, and both desktop apps all call the exact same API. There's no duplicated logic to keep in sync between platforms; a fix or feature on the backend is instantly live everywhere.",
-            "The protocol (contracts, node operators, encryption) and the applications (dApp, Business Workspace, mobile, desktop, AI) are cleanly separated — most of what a user touches day-to-day never has to think about the blockchain underneath it, even though it's doing real work a layer down.",
+            "The protocol (contracts, node operators, encryption) and the applications (dApp, Business OS, mobile, desktop, AI) are cleanly separated — most of what a user touches day-to-day never has to think about the blockchain underneath it, even though it's doing real work a layer down.",
             "BNB Chain Testnet is still home base — the core protocol, staking, and node settlement all live there — but it's no longer the only chain involved: $INAYA now moves to several other testnets through the bridge described in Section 10. Nothing described in this document is live on mainnet yet, on any chain — that's the next major milestone, not a past one.",
           ],
         },
@@ -632,7 +632,7 @@ export const ecosystemOverview = {
         {
           type: "bullets",
           items: [
-            "Product guides, written in plain language, covering storage, the storage control plane, Inaya Drive, Business Workspace, and Security.",
+            "Product guides, written in plain language, covering storage, the storage control plane, Inaya Drive, Business OS, and Security.",
             "A complete reference for developers — every public API endpoint, all five published developer packages, and every command across our three command-line tools, documented straight from the real thing, not written from memory.",
             "Real search, plus a link to the existing AI Docs Assistant for anyone who'd rather just ask a question in plain English.",
             "Release notes that can never go stale, because they're generated from the same roadmap data the public roadmap page itself uses — one source of truth, not two lists someone has to remember to keep in sync.",
@@ -771,7 +771,7 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "A visual, node-based workflow builder in the Business Workspace: pick a trigger (a schedule, a webhook, an event), add steps that read real Inaya data, an AI Operations Manager that analyses it, rules that decide what happens, and notifications or approval requests — data, then AI, then a decision, then governance, then action, then evidence.",
+          text: "A visual, node-based workflow builder in Inaya Business OS: pick a trigger (a schedule, a webhook, an event), add steps that read real Inaya data, an AI Operations Manager that analyses it, rules that decide what happens, and notifications or approval requests — data, then AI, then a decision, then governance, then action, then evidence.",
         },
         {
           type: "bullets",
@@ -807,7 +807,7 @@ export const ecosystemOverview = {
             "Ticketing with routing, priority policy, business-hours SLAs that correctly pause and resume, saved replies, and internal notes customers never see.",
             "A responsive customer portal with one-time-link sign-in (and company single sign-on via OpenID Connect with PKCE).",
             "An AI helper that answers from the company's own knowledge base with citations and hands off to a person when unsure.",
-            "Help & Support: any signed-in Business Workspace member can raise a ticket with Inaya's own support desk, filed from their verified account, with an email copy sent to the support mailbox.",
+            "Help & Support: any signed-in Business OS member can raise a ticket with Inaya's own support desk, filed from their verified account, with an email copy sent to the support mailbox.",
           ],
         },
         {
@@ -917,7 +917,7 @@ export const ecosystemOverview = {
         {
           type: "bullets",
           items: [
-            "Databases: provision, start, stop, back up, restore-to-a-point-in-time, and query a real PostgreSQL database through a real external provider (Supabase), all from the Business Workspace — Inaya's own infrastructure cannot run a database engine, so it manages a real one elsewhere rather than pretending to host one itself.",
+            "Databases: provision, start, stop, back up, restore-to-a-point-in-time, and query a real PostgreSQL database through a real external provider (Supabase), all from Inaya Business OS — Inaya's own infrastructure cannot run a database engine, so it manages a real one elsewhere rather than pretending to host one itself.",
             "Document Intelligence: built-in readers for invoices, purchase orders, receipts and contracts, plus a tool to build a custom one for any other document type, each with a version and a status (draft, testing, ready, live) before it is trusted with real work.",
             "Every extracted value shows its confidence and whether it was actually found in the document's own text — a correction a person makes is added to the record, never silently overwriting what the system originally read.",
             "AI/ML Studio: a catalogue of an organization's data and models, automatic data-quality checks (missing values, duplicates, out-of-range numbers) against a real data source, and a model registry that fingerprints and version-tracks whatever a data team uploads.",
@@ -992,7 +992,7 @@ export const ecosystemOverview = {
       blocks: [
         {
           type: "lead",
-          text: "Inaya could always store and protect files, but had no way to actually run compute for a customer. This closes that gap: a customer connects their own server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — on hardware they own, not shared with anyone else, managed from inside the Business Workspace.",
+          text: "Inaya could always store and protect files, but had no way to actually run compute for a customer. This closes that gap: a customer connects their own server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — on hardware they own, not shared with anyone else, managed from inside Inaya Business OS.",
         },
         {
           type: "bullets",
@@ -1019,7 +1019,7 @@ export const ecosystemOverview = {
       number: "38",
       title: "Education OS: Schools and Colleges",
       blocks: [
-        {"type": "lead", "text": "A seventh industry mode, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs inside the ERP-style Business Workspace and is built around the three things schools need to keep safe: students' personal data, fee payments, and documents."},
+        {"type": "lead", "text": "A seventh industry mode, for small and mid-sized schools, colleges and academies in Pakistan, India, Bangladesh and the UAE. It runs inside the ERP-style Business OS and is built around the three things schools need to keep safe: students' personal data, fee payments, and documents."},
         {"type": "bullets", "items": ["Student and guardian records where phone numbers, home addresses, ID numbers and medical notes are encrypted before they are saved.", "Each staff member sees only what their job needs: the principal and admissions office see the full record, accounts staff see contact details for fee follow-up, and a teacher sees only the students in their own classes, with ID numbers masked.", "Fees in rupees, taka or dirhams: fee invoices for every student in one step, never billed twice for the same month; concessions that need a second person to approve; receipts with running numbers; payments that can be reversed with a reason but never deleted; and a list of who is overdue.", "Admissions, daily attendance, and exams with report cards. Results are locked once the principal publishes them, and any later change is recorded with a reason.", "Parent links: a read-only page for one child's fees, attendance and published results, which expires, can be withdrawn, and never shows ID numbers, medical notes or the address.", "Every opening of a student record, every payment and every mark change goes into the tamper-evident activity record. A student's data can be exported, or erased on request while the fee records are kept."]},
         {"type": "note", "label": "What's live today vs. what's next.", "text": "Education OS is built and tested on the web app and the desktop ERP mode. Not built yet: collecting fees online through a payment gateway (fees are recorded, not collected), SMS or WhatsApp fee reminders, timetables, transport and hostel, and mobile screens. We don't claim compliance with India's DPDP Act, the UAE's PDPL, or Pakistani or Bangladeshi data law; the features help a school meet its own obligations."},
       ],
@@ -1028,7 +1028,7 @@ export const ecosystemOverview = {
       number: "39",
       title: "Appointments & Email Marketing (November 2026)",
       blocks: [
-        {"type": "lead", "text": "An online booking calendar and a mass email marketing tool inside the Business Workspace, both connected to the CRM, for companies on the Business and Enterprise packages."},
+        {"type": "lead", "text": "An online booking calendar and a mass email marketing tool inside Inaya Business OS, both connected to the CRM, for companies on the Business and Enterprise packages."},
         {"type": "bullets", "items": ["A public booking page for each company: customers choose a service, a person if they like, and a time shown in their own time zone, then get a confirmation with a calendar invite and a private link to reschedule or cancel.", "Staff working hours, time off, buffers, notice and daily limits; round-robin assignment; double bookings refused even when two people click the same time at once.", "Day, week and month calendars for yourself, the whole team or a department, and an overview of total appointments, completed, upcoming today and customers engaged.", "Google Calendar and Outlook sync without any paid API or app approval: each person gets a private calendar address for their appointments, and Inaya reads only the busy times from their own calendar.", "Email reminders, encrypted meeting notes, Inaya Meet links, and the meeting outcome written to the customer's CRM record when it is marked completed.", "Email campaigns built in four steps (design, audience, review, send) from five starter templates, sent to CRM segments once a second person approves, once or on a repeating schedule, with opens, clicks, bounces and unsubscribes reported.", "Follow-up email sequences that start after an enquiry, a meeting or a campaign, and stop when someone unsubscribes, bounces or books.", "Every marketing email has a one-click unsubscribe and the sender's postal address and goes out from a separate sending domain; unsubscribes, bounces and spam complaints are never emailed again."]},
         {"type": "note", "label": "What's live today vs. what's next.", "text": "Built, tested against the real database and live on the website and mobile app. Campaign sending starts once the separate marketing sending domain is connected; SMS reminders are built but switched off because no SMS provider is connected, so reminders go by email. Packages include 50,000 marketing emails a month on Business and 250,000 on Enterprise."},
       ],
@@ -1037,7 +1037,7 @@ export const ecosystemOverview = {
       number: "40",
       title: "Hospitality OS: Restaurants, Cafes and Caterers (November 2026)",
       blocks: [
-        {"type": "lead", "text": "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Purchasing, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app."},
+        {"type": "lead", "text": "An industry edition of Inaya Business OS for restaurants, cafes, caterers and cloud kitchens. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Purchasing, shifts to HR and guest campaigns to the Campaigns module, instead of being a separate restaurant app."},
         {"type": "bullets", "items": ["Locations with opening hours, closures, time zone and currency; seating areas and tables, including combinable tables.", "Reservations by phone, in person, walk-in or an online booking page, with a table chosen automatically, double bookings refused, a guest limit per time slot, a live floor view and a waitlist.", "Guests are CRM contacts, with visits, feedback and preferences on the customer record; marketing opt-in is recorded separately from the booking.", "Menus with dietary labels and allergens, reviewed and published by a manager; recipes built from Inventory ingredients; wastage with reasons and approval, stock counts and reorder suggestions that draft purchase requests.", "Weekly rosters with approved leave from HR, opening and closing checklists with required evidence, and guest complaints and incidents with escalation.", "Every action is checked on the server by role and by location, and reservations, price and allergen changes, wastage and stock counts are written to the tamper-evident activity record."]},
         {"type": "note", "label": "What's live today vs. what's next.", "text": "Built and tested against the real database on the web app, including simultaneous booking attempts and other-company isolation. Not built: point-of-sale, payments, a kitchen display, payroll and mobile screens, so stock is not deducted from sales and no sales or food-cost figures are shown."},
       ],
@@ -1046,9 +1046,41 @@ export const ecosystemOverview = {
       number: "41",
       title: "Launch Readiness: 1 January 2027",
       blocks: [
-        {"type": "lead", "text": "The Business Workspace launches publicly on 1 January 2027. The work in November 2026 made it ready for paying companies."},
+        {"type": "lead", "text": "Inaya Business OS launches publicly on 1 January 2027. The work in November 2026 made it ready for paying companies."},
         {"type": "bullets", "items": ["Packages are requested from inside the Workspace and paid by NayaPay or bank transfer against numbered PDF invoices; the workspace stays closed until the payment is confirmed. Prices are in USD, or PKR for companies in Pakistan.", "Owners and admins can download all of the company's records and documents as one ZIP file at any time.", "Company records are backed up every day, encrypted, with a restore that only adds missing records.", "A support assistant in the Workspace Help panel checks a user's account, fixes common problems once an owner or admin agrees, and emails anything else to the support team.", "A customer onboarding guide (PDF and a downloadable guide on the website) covers creating a company, choosing a package and the first week."]},
-        {"type": "note", "label": "How payment works today.", "text": "Payments are confirmed by the Inaya team when the transfer arrives; there is no automatic payment gateway for the Business Workspace."},
+        {"type": "note", "label": "How payment works today.", "text": "Payments are confirmed by the Inaya team when the transfer arrives; there is no automatic payment gateway for Inaya Business OS."},
+      ],
+    },
+    {
+      number: "42",
+      title: "Inaya Commerce: Point of Sale, Stock, Customer Growth and Online Selling (November 2026)",
+      blocks: [
+        {"type":"lead","text":"Inaya Business OS now covers the front office and online selling as well as the back office, on the same products, stock, customers and books."},
+        {"type":"bullets","items":["A point of sale with server-side pricing and tax, approvals for discounts above a cashier's limit, split payments, returns, exchanges and voids, registers and shifts with a counted cash close, and receipts to print, email or save.","Stock control across branches: availability, transfers, counts, purchasing and replenishment, with concurrent sales unable to oversell.","Customer growth: promotions and coupons, loyalty points and member discounts, gift cards and store credit as tenders at the till.","An Inaya web store with card payments through the shop's own Stripe or Safepay account, and two-way Shopify and WooCommerce sync of products, stock and orders.","Rotas, clock-in, commissions and checklists, with branch-level access enforced on the server.","Prices: Commerce Starter on Professional ($49 / PKR 8,000 a month), the Commerce add-on on Business ($79 / PKR 12,000), a Business + Commerce bundle ($169 / PKR 40,000), and included in Enterprise."]},
+        {"type":"note","label":"What's live today vs. what's next.","text":"Built, tested against the real database and live. WooCommerce and Shopify sync were verified with real test stores; one-click Shopify installation for every shop is waiting for Shopify's app review."},
+      ],
+    },
+    {
+      number: "43",
+      title: "Offline Selling and Till Hardware (Beta, November 2026)",
+      blocks: [
+        {"type":"lead","text":"The till keeps selling cash sales when the internet drops, even after a restart, and works with everyday shop hardware through the Inaya desktop app."},
+        {"type":"bullets","items":["Offline sales are signed, kept encrypted on the till, re-checked by the server with the same pricing code and recorded exactly once when the connection returns; anything that does not match goes to the manager.","Silent receipt printing (80 mm and 58 mm), full A4 or A5 receipts, cash drawers through the printer, a USB trigger box or a network controller, every opening recorded.","Barcode labels for any printer plus Zebra and TSC / Xprinter label printers; camera scanning, and a phone as a wireless scanner for a computer till."]},
+        {"type":"note","label":"Beta.","text":"In Beta with the first pilot shops, who confirm each feature on their own equipment. Phone scanning has been confirmed on a real Android phone."},
+      ],
+    },
+    {
+      number: "44",
+      title: "License Manager and Ransomware Recovery (November 2026)",
+      blocks: [
+        {"type":"bullets","items":["A licence per company tied to its package: payment reminders, a 14-day grace period with a daily countdown, then automatic suspension that keeps Billing, Help and the full data export open.","Immutable snapshots and point-in-time rollback for business files on by default, a decoy tripwire file in every storage bucket, protection for existing data and off-site network-storage copies, proven in a recorded Enterprise Resilience Demonstration."]},
+      ],
+    },
+    {
+      number: "45",
+      title: "Inaya Business OS: The New Name (November 2026)",
+      blocks: [
+        {"type":"lead","text":"The Business Workspace is now Inaya Business OS, a Business Operations Platform: run your whole business on one connected system. A new landing page, a modern look across every screen and an illustrated user guide came with the new name; companies, data and sign-in are unchanged."},
       ],
     },
   ],

@@ -1,7 +1,7 @@
 // scripts/pilot-guides/complete-feature-guide-content.js
 //
 // The Complete Inaya Network Step-by-Step Guide -- covers every real,
-// shipped feature across the web dApp, Business Workspace, mobile,
+// shipped feature across the web dApp, Business OS, mobile,
 // desktop, and developer surfaces, organized by product area. Content
 // mirrors the authoritative navigation this codebase actually ships
 // (root page.js's NAV_GROUPS and business/page.js's NAV_ITEMS), not an
@@ -22,7 +22,7 @@ export const completeFeatureGuide = {
     classification: "USER GUIDE",
     kicker: "COMPLETE FEATURE GUIDE",
     title: "The Complete Inaya Network Guide",
-    subtitle: "Step-by-step instructions for every feature — the web dApp, Business Workspace, mobile, desktop, and developer tools.",
+    subtitle: "Step-by-step instructions for every feature — the web dApp, Business OS, mobile, desktop, and developer tools.",
     docLine: "Document INAYA-GUIDE-2026-V1 · October 2026",
   },
   docId: "INAYA-GUIDE-2026-V1",
@@ -50,7 +50,7 @@ export const completeFeatureGuide = {
         },
         {
           type: "note",
-          text: "You do not need a wallet at all to use Business Workspace (Section 11 onward) — that side of Inaya uses ordinary email/magic-link sign-in, independent of crypto wallets.",
+          text: "You do not need a wallet at all to use Business OS (Section 11 onward) — that side of Inaya uses ordinary email/magic-link sign-in, independent of crypto wallets.",
         },
       ],
     },
@@ -122,7 +122,7 @@ export const completeFeatureGuide = {
         },
         {
           type: "note",
-          text: "For business use — where a whole team needs access, versioning, permissions, and folders — use Business Workspace's Documents feature (Section 13) instead of the personal Sovereign Vault.",
+          text: "For business use — where a whole team needs access, versioning, permissions, and folders — use Business OS's Documents feature (Section 13) instead of the personal Sovereign Vault.",
         },
       ],
     },
@@ -197,9 +197,9 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Choose a plan.", body: "From the pricing/plans area (also linked from Business Workspace's own Pricing page), select a Corporate Reserve (annual) tier or a Pay-As-You-Go allocation." },
+            { heading: "Choose a plan.", body: "From the pricing/plans area (also linked from Business OS's own Pricing page), select a Corporate Reserve (annual) tier or a Pay-As-You-Go allocation." },
             { heading: "Pay with crypto or card.", body: "Crypto: confirm the transaction in your connected wallet. Card: you're redirected to a secure Stripe checkout page — enter your card details there, not on Inaya's own site." },
-            { heading: "Confirmation.", body: "After payment, you're redirected back to Inaya and your new storage allocation appears on your Dashboard or in Business Workspace's Billing tab." },
+            { heading: "Confirmation.", body: "After payment, you're redirected back to Inaya and your new storage allocation appears on your Dashboard or in Business OS's Billing tab." },
           ],
         },
       ],
@@ -209,16 +209,16 @@ export const completeFeatureGuide = {
     // =====================================================================
     {
       number: "11",
-      title: "Business Workspace — Creating Your Organization",
+      title: "Business OS — Creating Your Organization",
       blocks: [
         {
           type: "lead",
-          text: "Business Workspace is Inaya's B2B product — organizations, teams, documents, and real business operations, accessed by email sign-in, independent of crypto wallets.",
+          text: "Business OS is Inaya's B2B product — organizations, teams, documents, and real business operations, accessed by email sign-in, independent of crypto wallets.",
         },
         {
           type: "numbered",
           items: [
-            { heading: "Go to Business Workspace.", body: "Visit inayanetwork.com/business (or click \"Business Workspace\" from the main navigation)." },
+            { heading: "Go to Business OS.", body: "Visit inayanetwork.com/business (or click \"Business OS\" from the main navigation)." },
             { heading: "Sign in.", body: "Enter your email address; you'll receive a magic link — click it to sign in. No password to remember." },
             { heading: "Create your organization.", body: "The first time you sign in, you'll be prompted to create an organization: give it a name and choose its vertical/industry type (General, Healthcare, Legal, Financial, Regulated Enterprise, Government, or Private Capital) if applicable." },
             { heading: "You're the owner.", body: "As the creator, you're automatically the organization's Owner — the highest permission level, able to manage every setting, invite members, and access every department." },
@@ -318,7 +318,7 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Open Customer Support.", body: "From the Business Workspace navigation, select \"Customer Support\" to open the agent console." },
+            { heading: "Open Customer Support.", body: "From Inaya Business OS navigation, select \"Customer Support\" to open the agent console." },
             { heading: "Share your portal.", body: "Open the Portal & Sharing tab for your portal's link, a QR code, an email-signature line, and a website button — or point customers straight at the public \"Get Support\" page linked from the site footer." },
             { heading: "A customer opens a ticket.", body: "A customer signs in to the portal with a magic link (or your configured SSO), submits a ticket, and can attach files up to 25 MB via chunked, malware-scanned upload." },
             { heading: "Route, triage, and respond.", body: "In the console, see each ticket's SLA countdown (business-hours aware), an AI-suggested triage, and add internal notes that never reach the customer — or a saved macro for a common reply." },
@@ -439,12 +439,12 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Automations lets you build your own multi-step workflows — pull data, run an AI agent, send a notification, propose an action — without writing code, using the same permissions and approval rules as the rest of Business Workspace.",
+          text: "Automations lets you build your own multi-step workflows — pull data, run an AI agent, send a notification, propose an action — without writing code, using the same permissions and approval rules as the rest of Business OS.",
         },
         {
           type: "numbered",
           items: [
-            { heading: "Open Automations.", body: "Select \"Automations\" from the Business Workspace navigation." },
+            { heading: "Open Automations.", body: "Select \"Automations\" from Inaya Business OS navigation." },
             { heading: "Build a workflow.", body: "Use the visual editor to wire together data nodes (CRM, tasks, invoices, procurement, inventory, projects, documents, KPIs), transforms (filter/merge/aggregate/sort/dedupe and more), an AI agent node, and notification nodes — or start from one of 7 built-in templates." },
             { heading: "Choose a trigger.", body: "Run it manually, on a schedule, on an event (a document approved, a Digital Twin simulation finishing), on an inbound webhook, or when watched data changes." },
             { heading: "Let the AI agent help.", body: "An AI Operations Manager node reads your permission-scoped data, holds workflow-scoped memory across runs, and can only call a fixed set of allow-listed tools — it can propose an action, never execute one directly." },
@@ -641,7 +641,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Sovereign NAS turns a Linux appliance you control — on your own network — into a real SMB/NFS file server with RAID, snapshots, quotas, ransomware detection, and backup to Inaya, managed from an 18-section console inside Business Workspace.",
+          text: "Sovereign NAS turns a Linux appliance you control — on your own network — into a real SMB/NFS file server with RAID, snapshots, quotas, ransomware detection, and backup to Inaya, managed from an 18-section console inside Business OS.",
         },
         {
           type: "numbered",
@@ -668,7 +668,7 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Download Inaya Drive.", body: "From Business Workspace's download page, get the Inaya Drive helper for your operating system (Windows or Linux; macOS support is written but not yet validated on real hardware)." },
+            { heading: "Download Inaya Drive.", body: "From Business OS's download page, get the Inaya Drive helper for your operating system (Windows or Linux; macOS support is written but not yet validated on real hardware)." },
             { heading: "Configure it with your storage credential.", body: "Run the helper with your S3-compatible Access Key ID/Secret Access Key from Section 32." },
             { heading: "Mount the drive.", body: "The helper mounts your organization's storage as a real drive letter (Windows) or mount point (Linux). Open it in your normal file explorer/finder." },
             { heading: "Use it like any drive.", body: "Create real folders, and read, write, rename, and delete files directly — changes sync through to Inaya's storage immediately, with the same encryption/sharding pipeline underneath." },
@@ -904,13 +904,13 @@ export const completeFeatureGuide = {
           type: "numbered",
           items: [
             { heading: "Install the app.", body: "Download the Inaya mobile app for your device." },
-            { heading: "Sign in.", body: "Use the same wallet-connect flow (for the main dApp features) or email magic-link (for Business Workspace) as on the web." },
-            { heading: "Use it as a full superset.", body: "Every core web dApp feature is available, plus Business Workspace, Learn, and Security Layer — the mobile app is not a stripped-down companion, it's a complete client against the same backend as the web app." },
+            { heading: "Sign in.", body: "Use the same wallet-connect flow (for the main dApp features) or email magic-link (for Business OS) as on the web." },
+            { heading: "Use it as a full superset.", body: "Every core web dApp feature is available, plus Business OS, Learn, and Security Layer — the mobile app is not a stripped-down companion, it's a complete client against the same backend as the web app." },
           ],
         },
         {
           type: "note",
-          text: "Android: Inaya Network is on the Google Play Store, published under a personal developer account while company registration is pending. As of October 2026 it's live in internal testing and verified working; closed testing (12 testers for 14 days) is the next step before a public production release. Business Workspace stays hidden in the Play edition — it's an emergency-access tool, not a daily-use mobile feature — while staking, the Watcher Pioneer Program, and file upload/download remain. Google Play Billing for pay-as-you-go storage purchases is deferred until mainnet; corporate storage reserves can still be purchased from the website.",
+          text: "Android: Inaya Network is on the Google Play Store, published under a personal developer account while company registration is pending. As of October 2026 it's live in internal testing and verified working; closed testing (12 testers for 14 days) is the next step before a public production release. Business OS stays hidden in the Play edition — it's an emergency-access tool, not a daily-use mobile feature — while staking, the Watcher Pioneer Program, and file upload/download remain. Google Play Billing for pay-as-you-go storage purchases is deferred until mainnet; corporate storage reserves can still be purchased from the website.",
         },
       ],
     },
@@ -921,14 +921,14 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Install the Business Workspace desktop app.", body: "Download the Windows or Linux desktop app for Business Workspace from its download page. It's the same backend and features as the web version, in a native window." },
+            { heading: "Install Inaya Business OS desktop app.", body: "Download the Windows or Linux desktop app for Business OS from its download page. It's the same backend and features as the web version, in a native window." },
             { heading: "Install the main dApp desktop app.", body: "Download the separate desktop app for the main wallet/vault/staking dApp, for the same reason — a native, always-available window instead of a browser tab." },
-            { heading: "Mount Inaya Drive from the desktop app.", body: "The Business Workspace desktop app can start and stop your Inaya Drive mount (Section 36) directly from its own interface, without a separate command-line step." },
+            { heading: "Mount Inaya Drive from the desktop app.", body: "Inaya Business OS desktop app can start and stop your Inaya Drive mount (Section 36) directly from its own interface, without a separate command-line step." },
           ],
         },
         {
           type: "note",
-          text: "October 2026: found and fixed a real bug in both desktop apps where the website could not actually call most of the app's native features (chat notifications, the tray unread count, pop-out module windows, Inaya Drive mount, DirectSync) because Tauri's security allowlist was never wired to grant them permission — the apps looked installed and open but much of the native integration silently did nothing. Fixed, rebuilt, and re-signed for both apps, Windows and Linux; every installed copy needs the new release to pick up the fix, since that allowlist is compiled into the app rather than loaded from the website. The apps' auto-update signing key was also rotated after the original key's password turned out to be unrecoverable, and a second bug was found and fixed where the Business Workspace app's auto-updater had been silently checking the dApp's release instead of its own.",
+          text: "October 2026: found and fixed a real bug in both desktop apps where the website could not actually call most of the app's native features (chat notifications, the tray unread count, pop-out module windows, Inaya Drive mount, DirectSync) because Tauri's security allowlist was never wired to grant them permission — the apps looked installed and open but much of the native integration silently did nothing. Fixed, rebuilt, and re-signed for both apps, Windows and Linux; every installed copy needs the new release to pick up the fix, since that allowlist is compiled into the app rather than loaded from the website. The apps' auto-update signing key was also rotated after the original key's password turned out to be unrecoverable, and a second bug was found and fixed where Inaya Business OS app's auto-updater had been silently checking the dApp's release instead of its own.",
         },
       ],
     },
@@ -943,7 +943,7 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Open DirectSync.", body: "In the Inaya Desktop app (Business Workspace edition), open the DirectSync tab." },
+            { heading: "Open DirectSync.", body: "In the Inaya Desktop app (Business OS edition), open the DirectSync tab." },
             { heading: "Add a folder.", body: "Pick a local folder to watch. DirectSync scans and hashes it immediately, then watches it live for new and changed files." },
             { heading: "Let it sync.", body: "A new or modified file is uploaded automatically; an unchanged file (same size and content hash) is never re-uploaded, even after a restart." },
             { heading: "Rename and delete behavior.", body: "Renaming a watched file relocates it in Inaya to match. Deleting a local file does not delete its remote copy — DirectSync follows backup semantics, not mirror semantics, so a local delete can never destroy your only remaining copy." },
@@ -996,12 +996,12 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "A competitive-expansion layer added to Business Workspace in October 2026, inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration, and the controls a large organization needs to run safely. Every feature below is off by default; an owner or administrator turns each one on from the beta-features panel.",
+          text: "A competitive-expansion layer added to Business OS in October 2026, inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration, and the controls a large organization needs to run safely. Every feature below is off by default; an owner or administrator turns each one on from the beta-features panel.",
         },
         {
           type: "numbered",
           items: [
-            { heading: "Turn on Secure Chat.", body: "From Business Workspace Settings → Beta Features, enable Secure Chat. Messages are end-to-end encrypted on the MLS group-messaging standard (RFC 9420) — the server only ever stores and relays ciphertext, so even Inaya staff cannot read a conversation. Supports 1:1 and group chats, organization-wide chats, mute, archive, unread counts, and encrypted attachments." },
+            { heading: "Turn on Secure Chat.", body: "From Business OS Settings → Beta Features, enable Secure Chat. Messages are end-to-end encrypted on the MLS group-messaging standard (RFC 9420) — the server only ever stores and relays ciphertext, so even Inaya staff cannot read a conversation. Supports 1:1 and group chats, organization-wide chats, mute, archive, unread counts, and encrypted attachments." },
             { heading: "Manage Contacts.", body: "Request, accept, and block contacts. People outside your organization can only be added if the owner allows it." },
             { heading: "Use Secure Notes.", body: "Encrypted notes with version history, tags, and sharing — lighter weight than a full document, with the same client-side encryption as chat." },
             { heading: "Share files with real controls.", body: "Share links can expire, limit how many times they're opened, require a password, restrict by network or email domain, carry a watermark, and be revoked at any time. File Requests let an outsider upload to you securely without seeing anything else." },
@@ -1041,7 +1041,7 @@ export const completeFeatureGuide = {
           type: "numbered",
           items: [
             { heading: "Open the documentation site.", body: "Go to inayanetwork.com/docs, or select \"Documentation\" from the main navigation's \"Developers\" group." },
-            { heading: "Browse Product Guides.", body: "Read real, verified guides for Storage, the Storage Control Plane, Inaya Drive, Business Workspace, and Security — organized by product." },
+            { heading: "Browse Product Guides.", body: "Read real, verified guides for Storage, the Storage Control Plane, Inaya Drive, Business OS, and Security — organized by product." },
             { heading: "Look up the API Reference.", body: "Every public/v1 endpoint, with authentication, parameters, and response shapes — or download the full OpenAPI specification for use in Postman, Insomnia, or a code generator." },
             { heading: "Look up the SDK and CLI Reference.", body: "All 5 published npm packages and every command across all 3 published CLI tools, documented straight from their real exports and commands." },
             { heading: "Search or ask.", body: "Use the built-in keyword search, or ask the AI Docs Assistant on the main site a question in plain language — it's grounded in this same documentation and cites the pages it draws from." },
@@ -1075,7 +1075,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "A real, provisioned PostgreSQL database managed from inside Business Workspace; a document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
+          text: "A real, provisioned PostgreSQL database managed from inside Business OS; a document-understanding studio that reads any document, not just invoices; and an AI workbench for cataloguing data, checking its quality, registering models, and running one governed piece of code at a time in an isolated, disposable sandbox.",
         },
         {
           type: "numbered",
@@ -1098,7 +1098,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Connect your own computer or a rented server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — running on hardware you own, not shared with anyone else, managed from inside Business Workspace.",
+          text: "Connect your own computer or a rented server and it comes online as real, managed infrastructure — virtual machines, block storage, and private networking — running on hardware you own, not shared with anyone else, managed from inside Business OS.",
         },
         {
           type: "numbered",
@@ -1134,9 +1134,9 @@ export const completeFeatureGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "Open Device Protection.", body: "In the desktop app (or Business Workspace), what used to be four separate Backup / Sync / Cleaner / Devices screens are now one consolidated \"Device Protection\" view with a tab for each." },
+            { heading: "Open Device Protection.", body: "In the desktop app (or Business OS), what used to be four separate Backup / Sync / Cleaner / Devices screens are now one consolidated \"Device Protection\" view with a tab for each." },
             { heading: "Run Inaya Cleaner.", body: "Scans temporary and duplicate files on your own computer entirely locally — it never uploads a file inventory anywhere. Review the list, then confirm before anything is removed. Removed files go to the OS trash/recycle bin, never a permanent delete, and a built-in denylist protects OS directories and Inaya's own key material from ever being touched. If a file sits inside an active backup folder, Cleaner shows a warning instead of silently skipping or deleting it." },
-            { heading: "Start or join an Inaya Meet call.", body: "Create an instant meeting from Business Workspace; share the join link or invite by email. Video and audio connect directly peer-to-peer between participants' own devices — never routed through an Inaya server — reusing Secure Chat for in-call messaging. Guests without an account can be let in automatically, after moderator approval, or (for a named guest) after verifying a one-time emailed code." },
+            { heading: "Start or join an Inaya Meet call.", body: "Create an instant meeting from Business OS; share the join link or invite by email. Video and audio connect directly peer-to-peer between participants' own devices — never routed through an Inaya server — reusing Secure Chat for in-call messaging. Guests without an account can be let in automatically, after moderator approval, or (for a named guest) after verifying a one-time emailed code." },
             { heading: "Register a device's post-quantum key.", body: "When an organization turns on the post-quantum policy, each device registers a hybrid key — the existing classical X25519 exchange combined with the NIST-standardized ML-KEM-768 method, combined through a domain-separated HKDF. Sharing keeps working for devices without a registered key; an organization can require the hybrid mode going forward without breaking older links." },
             { heading: "Revoke a device.", body: "From the device list, revoking or blocking a device now also revokes that device's post-quantum keys automatically, closing a gap where a revoked device could otherwise still be addressed by a stale key." },
           ],
@@ -1159,7 +1159,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Let customers book time with your team online, and keep in touch with them by email, all connected to the CRM. Available on the Business and Enterprise packages: open Appointments or Email Campaigns from the Business Workspace sidebar or All apps.",
+          text: "Let customers book time with your team online, and keep in touch with them by email, all connected to the CRM. Available on the Business and Enterprise packages: open Appointments or Email Campaigns from Inaya Business OS sidebar or All apps.",
         },
         {
           type: "numbered",
@@ -1192,7 +1192,7 @@ export const completeFeatureGuide = {
       blocks: [
         {
           type: "lead",
-          text: "An industry edition of the Business Workspace for restaurants, cafes, caterers and cloud kitchens. Choose \"Restaurant / cafe / catering (Hospitality OS)\" as the business type when you create the company, or later in Settings. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to Campaigns.",
+          text: "An industry edition of Inaya Business OS for restaurants, cafes, caterers and cloud kitchens. Choose \"Restaurant / cafe / catering (Hospitality OS)\" as the business type when you create the company, or later in Settings. It connects reservations and guests to the CRM, recipes and wastage to Inventory, reorders to Procurement, shifts to HR and guest campaigns to Campaigns.",
         },
         {
           type: "numbered",
@@ -1220,11 +1220,11 @@ export const completeFeatureGuide = {
     },
     {
       number: "63",
-      title: "Getting Started with a Business Workspace Package (Launch, 1 January 2027)",
+      title: "Getting Started with a Business OS Package (Launch, 1 January 2027)",
       blocks: [
         {
           type: "lead",
-          text: "The Business Workspace launches publicly on 1 January 2027. A new company starts on the package screen; its workspace opens once a package is paid and activated. Packages: Starter $7.99 a month (2 users, 250 GB), Professional $39 (5 users, 1 TB), Business $99 (10 users, 5 TB) and Enterprise $799 (25 users, 10 TB); in Pakistan PKR 8,000, 20,000, 30,000 and 60,000.",
+          text: "Inaya Business OS launches publicly on 1 January 2027. A new company starts on the package screen; its workspace opens once a package is paid and activated. Packages: Starter $7.99 a month (2 users, 250 GB), Professional $39 (5 users, 1 TB), Business $99 (10 users, 5 TB) and Enterprise $799 (25 users, 10 TB); in Pakistan PKR 8,000, 20,000, 30,000 and 60,000.",
         },
         {
           type: "numbered",
@@ -1239,7 +1239,7 @@ export const completeFeatureGuide = {
         {
           type: "note",
           label: "Honest limits.",
-          text: "There is no card checkout or automatic payment gateway for the Business Workspace: payments are confirmed by the Inaya team when the transfer arrives.",
+          text: "There is no card checkout or automatic payment gateway for Inaya Business OS: payments are confirmed by the Inaya team when the transfer arrives.",
         },
       ],
     },

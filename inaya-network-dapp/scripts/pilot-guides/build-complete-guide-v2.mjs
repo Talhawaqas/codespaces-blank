@@ -30,7 +30,9 @@ const EXTRA = process.env.INAYA_GUIDE_EXTRA_DIR || path.join(os.homedir(), "Down
 const OUT = process.argv[2] || path.join(EXTRA, "Inaya Complete Ecosystem Guide.pdf");
 const missing = [];
 
-function src(p) { const full = path.isAbsolute(p) ? p : path.join(APP, p); if (!existsSync(full)) { missing.push(p); return null; } return readFileSync(full, "utf8"); }
+// The product name in source documents written before 23 Nov 2026 is shown as today's name (Inaya Business OS).
+const currentName = (t) => t.replace(/Inaya\s+Business\s+Workspace/g, "Inaya Business OS").replace(/([Tt])he\s+Business\s+Workspace's/g, "Inaya Business OS's").replace(/([Tt])he\s+Business\s+Workspace/g, "Inaya Business OS").replace(/Business\s+Workspace/g, "Business OS");
+function src(p) { const full = path.isAbsolute(p) ? p : path.join(APP, p); if (!existsSync(full)) { missing.push(p); return null; } return currentName(readFileSync(full, "utf8")); }
 function fromMd(p, opts = {}) { const t = src(p); if (!t) return []; return mdToBlocks(t, opts).blocks; }
 const lead = (what, why) => [{ type: "paragraphs", text: [`WHAT IT IS. ${what}`, `WHY USE IT. ${why}`] }];
 // complete-feature-guide-content.js grew from 47 to 56 sections
@@ -53,12 +55,12 @@ const cover = {
   classification: "COMPLETE ECOSYSTEM GUIDE",
   kicker: "STEP-BY-STEP · SECOND EDITION",
   title: "The Complete Inaya Ecosystem Guide",
-  subtitle: "What every product is, why you would use it, and exactly how to use it, with every command and instruction. The wallet dApp, Business Workspace, storage and edge products, AI and automation, identity, developer tools and the roadmap.",
-  docLine: "Document INAYA-GUIDE-2026-V2 · Edition of 16 November 2026",
+  subtitle: "What every product is, why you would use it, and exactly how to use it, with every command and instruction. The wallet dApp, Business OS, storage and edge products, AI and automation, identity, developer tools and the roadmap.",
+  docLine: "Document INAYA-GUIDE-2026-V2 · Edition of 23 November 2026",
 };
 
 // ---------------------------------------------------------------- PART 0/I: how to read + product map + the original 47 sections
-divider("PART I", "Start here, the wallet dApp and the Business Workspace", "The step-by-step guide (sections 01 to 63), plus a product map of the whole ecosystem.");
+divider("PART I", "Start here, the wallet dApp and Inaya Business OS", "The step-by-step guide (sections 01 to 63), plus a product map of the whole ecosystem.");
 entries.push({
   number: "00", part: "I", title: "How to Use This Guide, and the Product Map",
   blocks: [
@@ -77,7 +79,7 @@ entries.push({
     { type: "table", headers: ["Product", "What it is", "Why use it", "See"], rows: [
       ["Sovereign Vault (wallet dApp)", "Encrypt files in your browser, split them into two halves stored on independent networks, and register proof of ownership on-chain.", "Nobody, including Inaya, can read your files or take them; you can prove what you stored and when.", "04 to 05"],
       ["Staking, referrals, airdrop, faucet", "The $INAYA token features on BNB Chain Testnet.", "Earn rewards, get test tokens, take part in the network.", "02, 07 to 09"],
-      ["Business Workspace", "A full business suite (documents, projects, tasks, CRM, procurement, inventory, finance, HR) on encrypted, permissioned storage.", "One workplace where files, deals and money are private by default and provable.", "11 to 27, 33 to 36"],
+      ["Business OS", "A full business suite (documents, projects, tasks, CRM, procurement, inventory, finance, HR) on encrypted, permissioned storage.", "One workplace where files, deals and money are private by default and provable.", "11 to 27, 33 to 36"],
       ["Evidence Graph, Audit Trail, Digital Twin", "Tamper-evident records of business events, and read-only what-if simulations.", "Answer \"why did this happen?\" and \"what if?\" with proof, not memory.", "24 to 26"],
       ["AI Business Assistant and Voice", "An assistant that answers from your own permission-scoped data.", "Ask questions of your business in plain language, safely.", "35, " + R("The Voice AI")],
       ["Automations (AI Business Operations Manager)", "A visual builder for automatic routines with AI, approvals and evidence.", "Stop repeating daily checks; keep humans in charge of anything that matters.", R("Automations")],
@@ -102,7 +104,7 @@ for (const s of completeFeatureGuide.sections) entries.push({ number: s.number, 
 // ---------------------------------------------------------------- PART II: AI, automation, business systems
 divider("PART II", "AI, automation and business systems", "Automations, documents, the support desk, identity, the bookkeeper, AI security, controlled actions and voice.");
 currentPart = "II";
-section("Automations — the AI Business Operations Manager", [...lead("A visual, node-based builder in the Business Workspace for automatic routines: a trigger, steps that read your data, an AI analysis, rules, notifications and approvals.", "Companies repeat the same checks every day. Automations run them for you, explain every decision, and never change a record without a person's approval."), ...fromMd("content/docs/products/ai-business-operations-manager.md")]);
+section("Automations — the AI Business Operations Manager", [...lead("A visual, node-based builder in Inaya Business OS for automatic routines: a trigger, steps that read your data, an AI analysis, rules, notifications and approvals.", "Companies repeat the same checks every day. Automations run them for you, explain every decision, and never change a record without a person's approval."), ...fromMd("content/docs/products/ai-business-operations-manager.md")]);
 section("Document & Invoice Automation", [...lead("One pipeline that turns your Finance, CRM and Procurement records into nine kinds of professional, numbered, approved, encrypted documents, then delivers and verifies them.", "Documents always match the source records, every number is accounted for, and every step leaves proof an auditor can check."), ...fromMd("content/docs/products/document-automation.md"), { type: "subsection", heading: "Operating it: state, playbooks and limits (runbook)" }, ...fromMd("docs/document-automation-runbook.md")]);
 section("Customer Portal, Customer Service and Help & Support", [...lead("A complete support desk: a customer portal, tickets with business-hours SLAs, a knowledge base, an AI helper, and a Help & Support entry so Inaya's own users can raise a ticket with Inaya.", "Look after your customers in one place, and get your own questions answered by the Inaya team, with an email copy going to the support mailbox."), ...fromMd("content/docs/products/customer-portal.md")]);
 section("Identity Integration — Overview", [...lead("Inaya follows your company's directory (Microsoft Entra, Active Directory) so access follows your real starters, movers and leavers, with verified revocation.", "Manual access management is slow and risky, especially when someone leaves."), ...fromMd("content/docs/identity/identity-integration.md")]);
@@ -128,7 +130,7 @@ for (const [name, g] of [["Multi-Cloud Storage: AWS S3 and Azure Blob", multiclo
 }
 section("Migration Agent (command reference)", fromMd("../inaya-migration-agent/README.md"));
 section("Verified Client Commands: AWS CLI and rclone Against Inaya Storage", [
-  ...lead("Exact commands that were run against a live Inaya server during the quality review and passed.", "Copy them to check your own setup, or to see what a working integration looks like. Create an S3-compatible credential first (Business Workspace, S3-Compatible Storage, then Create credential); the secret is shown once."),
+  ...lead("Exact commands that were run against a live Inaya server during the quality review and passed.", "Copy them to check your own setup, or to see what a working integration looks like. Create an S3-compatible credential first (Business OS, S3-Compatible Storage, then Create credential); the secret is shown once."),
   { type: "subsection", heading: "AWS CLI (verified)" },
   { type: "code", label: "bash", text: "export AWS_ACCESS_KEY_ID=<your access key id>\nexport AWS_SECRET_ACCESS_KEY=<your secret>\nexport AWS_DEFAULT_REGION=inaya\n\n# use your deployment's address; the S3 endpoint is <site>/api/s3\nEP=\"--endpoint-url https://www.inayanetwork.com/api/s3\"\n\naws $EP s3 mb s3://my-bucket                                 # create a bucket\naws $EP s3 cp report.pdf s3://my-bucket/2026/report.pdf      # upload\naws $EP s3 cp \"my file (v1).pdf\" s3://my-bucket/             # names with spaces and brackets work\naws $EP s3 ls s3://my-bucket/ --recursive                    # list\naws $EP s3 cp s3://my-bucket/2026/report.pdf ./report.pdf    # download\naws $EP s3api head-object --bucket my-bucket --key 2026/report.pdf   # size, ETag (the content MD5), checksum\naws $EP s3api get-object --bucket my-bucket --key 2026/report.pdf --range bytes=0-1023 first-kb.bin   # byte range\naws $EP s3 presign s3://my-bucket/2026/report.pdf --expires-in 3600   # temporary download link (up to 7 days)\naws $EP s3 rm s3://my-bucket/2026/report.pdf                 # delete" },
   { type: "bullets", items: ["Large files use multipart upload automatically. Completing a very large object takes about a minute per 30 MB; keep the client's read timeout at its default or higher, and the retry is safe (the server completes once and answers the same to every retry).", "On the hosted site each request body is limited to about 4.5 MB by the hosting platform, so set the client chunk size to 4 MB or less for large uploads: aws configure set default.s3.multipart_chunksize 4MB.", "The ETag is the content MD5 for objects written from 27 September 2026 (md5-of-part-md5s-N for multipart), as in real S3. Older objects keep their earlier ETag."] },
@@ -165,7 +167,12 @@ section("IP Protection and Ownership", fromMd("../docs/ip-protection/README.md")
 // ---------------------------------------------------------------- PART V: verticals and reference
 divider("PART V", "Industry workspaces, roadmap and reference", "Health, Legal, Financial, Government, Education, Hospitality and Enterprise OS, the cross-chain layers, the roadmap and the quality review.");
 currentPart = "V";
-for (const [t, f] of [["Health OS and Legal OS", "HEALTH_LEGAL_OS_USER_SUMMARY.md"], ["Financial Services, Private Capital and Regulated Enterprise OS", "FINANCIAL_REGULATED_SOW_USER_SUMMARY.md"], ["Government and Public Sector OS", "GOVERNMENT_OS_USER_SUMMARY.md"], ["Enterprise OS", "ENTERPRISE_OS_USER_SUMMARY.md"], ["Business Workspace: Four Extensions (Data Room Templates, What-If Studio and more)", "Business Workspace - Four New Features Update.md"], ["The Hackathon", "Hackathon_Announcement_Summary.md"]]) { const p = path.join(EXTRA, f); section(t, existsSync(p) ? fromMd(p) : (missing.push(f), [])); }
+// Inaya Commerce (Commerce SOW + post-SOW, 21-23 Nov 2026): the front office and online selling, from docs/commerce/USER_GUIDE_*.md
+section("Inaya Commerce — Overview", [...lead("The front office and online selling on the same products, stock, customers and books as the back office: a point of sale, stock control across branches, promotions, loyalty and gift cards, an Inaya web store, and two-way Shopify and WooCommerce sync.", "Shops and multi-branch businesses run the counter, the office and their online store in one system instead of joining separate tools. Prices: Commerce Starter on Professional ($49 / PKR 8,000 a month), the Commerce add-on on Business ($79 / PKR 12,000), a Business + Commerce bundle ($169 / PKR 40,000), included in Enterprise.")]);
+section("Inaya Commerce — The Shop Counter", fromMd("docs/commerce/USER_GUIDE_POS.md"));
+section("Inaya Commerce — Till Hardware and Offline Selling (Beta)", fromMd("docs/commerce/USER_GUIDE_HARDWARE_OFFLINE.md"));
+section("Inaya Commerce — Online Selling, Shopify and WooCommerce", fromMd("docs/commerce/USER_GUIDE_ONLINE.md"));
+for (const [t, f] of [["Health OS and Legal OS", "HEALTH_LEGAL_OS_USER_SUMMARY.md"], ["Financial Services, Private Capital and Regulated Enterprise OS", "FINANCIAL_REGULATED_SOW_USER_SUMMARY.md"], ["Government and Public Sector OS", "GOVERNMENT_OS_USER_SUMMARY.md"], ["Enterprise OS", "ENTERPRISE_OS_USER_SUMMARY.md"], ["Business OS: Four Extensions (Data Room Templates, What-If Studio and more)", "Business Workspace - Four New Features Update.md"], ["The Hackathon", "Hackathon_Announcement_Summary.md"]]) { const p = path.join(EXTRA, f); section(t, existsSync(p) ? fromMd(p) : (missing.push(f), [])); }
 {
   const b = []; for (const [t, f] of [["Cross-chain bridge", "../CROSS_CHAIN_BRIDGE_USER_SUMMARY.md"], ["Interoperability layer", "../INTEROP_LAYER_USER_SUMMARY.md"], ["Multichain update", "../MULTICHAIN_UPDATE_USER_SUMMARY.md"], ["Security layer", "../SECURITY_LAYER_USER_SUMMARY.md"], ["Node registry and daemon", "../NODE_REGISTRY_AND_DAEMON_SUMMARY.md"], ["The desktop apps", "../DAPP_DESKTOP_APP_USER_SUMMARY.md"]]) { b.push({ type: "subsection", heading: t }, ...fromMd(f)); }
   section("Cross-Chain, Interoperability, Security Layer, Node Registry and Desktop Apps: User Summaries", b);

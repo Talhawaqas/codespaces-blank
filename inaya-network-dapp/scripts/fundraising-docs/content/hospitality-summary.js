@@ -18,7 +18,7 @@ export const hospitalitySummary = {
       number: "01",
       title: "At a Glance",
       blocks: [
-        { type: "lead", text: "Hospitality OS is the eighth industry edition of the Inaya Business Workspace. It is live on inayanetwork.com and connects a restaurant's daily work to the modules a company already has, instead of being a separate restaurant app." },
+        { type: "lead", text: "Hospitality OS is the eighth industry edition of the Inaya Business OS. It is live on inayanetwork.com and connects a restaurant's daily work to the modules a company already has, instead of being a separate restaurant app." },
         {
           type: "table",
           headers: ["Item", "Status"],

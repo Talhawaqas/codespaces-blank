@@ -85,7 +85,8 @@ const PHASES = [
   { id: "operations", name: "Run the business", goal: "Daily operations, money and people in the same workspace", stages: [6, 7, 8, 9, 21, 22, 23, 25, 32] },
   { id: "industries", name: "Industries & enterprise", goal: "Ready-made workspaces for regulated and specialised sectors", stages: [10, 11, 12, 24, 31, 33] },
   { id: "infrastructure", name: "Infrastructure & trust", goal: "Storage, data access and verifiable records underneath it all", stages: [13, 14, 15, 16, 17, 18, 19, 20, 27, 30] },
-  { id: "hardening", name: "Launch & hardening", goal: "Launch readiness, quality and the next generation of security", stages: [26, 28, 29, 34] },
+  { id: "commerce", name: "Commerce & front office", goal: "Sell at the counter and online on the same stock, customers and books", stages: [37, 38, 39, 40, 41, 42, 43] },
+  { id: "hardening", name: "Launch & hardening", goal: "Launch readiness, quality and the next generation of security", stages: [26, 28, 29, 34, 35, 36, 44] },
 ];
 const shortTitle = (t) => String(t).split(" — ")[0];
 function phaseState(stages) {

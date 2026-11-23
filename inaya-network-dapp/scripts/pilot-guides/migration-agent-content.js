@@ -22,7 +22,7 @@ export const migrationAgentGuide = {
       blocks: [
         {
           type: "lead",
-          text: "The Inaya Migration Agent is a small command-line tool that runs on your own machine (or a server you control) and copies objects from an existing AWS S3, Azure Blob, or Google Cloud Storage source directly into Inaya. It streams each object through — nothing is written to a third party, and nothing is uploaded to Inaya's web application first. Source and destination credentials both stay local to the tool's own process; Business Workspace and Inaya's browser UI never see them.",
+          text: "The Inaya Migration Agent is a small command-line tool that runs on your own machine (or a server you control) and copies objects from an existing AWS S3, Azure Blob, or Google Cloud Storage source directly into Inaya. It streams each object through — nothing is written to a third party, and nothing is uploaded to Inaya's web application first. Source and destination credentials both stay local to the tool's own process; Business OS and Inaya's browser UI never see them.",
         },
         {
           type: "table",
@@ -67,7 +67,7 @@ export const migrationAgentGuide = {
         {
           type: "numbered",
           items: [
-            { heading: "1. Sign in to Business Workspace.", body: "Open the \"S3-Compatible Storage\" panel from the left navigation." },
+            { heading: "1. Sign in to Business OS.", body: "Open the \"S3-Compatible Storage\" panel from the left navigation." },
             { heading: "2. Click \"+ New S3 credential.\"", body: "Give it a label such as \"migration-agent\" so you can identify it later." },
             { heading: "3. Save the Access Key ID and Secret Access Key immediately.", body: "The secret is shown exactly once and can never be retrieved again — only reissued." },
           ],
@@ -161,7 +161,7 @@ export const migrationAgentGuide = {
           items: [
             { heading: "1. Check the terminal summary.", body: "Every run ends with a count of objects migrated, failed, and skipped. Zero failures is the goal — any failure is named individually above the summary." },
             { heading: "2. Re-run the exact same command if anything failed.", body: "Already-succeeded objects are skipped; only the real failures are retried." },
-            { heading: "3. Confirm in Business Workspace.", body: "Open the S3-Compatible Storage panel and browse the destination bucket — your migrated objects should be visible there, confirming Inaya's own storage/encryption/redundancy pipeline actually received them, not just a local acknowledgment." },
+            { heading: "3. Confirm in Business OS.", body: "Open the S3-Compatible Storage panel and browse the destination bucket — your migrated objects should be visible there, confirming Inaya's own storage/encryption/redundancy pipeline actually received them, not just a local acknowledgment." },
             { heading: "4. Spot-check a few files.", body: "Download a handful of migrated objects and confirm they open correctly and match the originals." },
           ],
         },

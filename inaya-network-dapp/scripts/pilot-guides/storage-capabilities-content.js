@@ -3,7 +3,7 @@
 // admin team: scoped credentials, versioning, locked/compliant retention,
 // legal hold, lifecycle policies, storage health, and the Windows drive
 // mount. Every button label and behavior named here matches the real,
-// shipped Business Workspace UI as of this SOW.
+// shipped Business OS UI as of this SOW.
 
 export const storageCapabilitiesGuide = {
   cover: {
@@ -22,15 +22,15 @@ export const storageCapabilitiesGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Beyond basic upload/download, Inaya's storage layer includes the controls enterprise IT and compliance teams expect: who can access what and for how long, the ability to recover an overwritten file, storage that genuinely cannot be deleted during a retention period, legal holds for litigation/investigation, automatic cleanup policies, and a real drive-letter view of your storage on Windows. This guide walks through each one, in Business Workspace, step by step.",
+          text: "Beyond basic upload/download, Inaya's storage layer includes the controls enterprise IT and compliance teams expect: who can access what and for how long, the ability to recover an overwritten file, storage that genuinely cannot be deleted during a retention period, legal holds for litigation/investigation, automatic cleanup policies, and a real drive-letter view of your storage on Windows. This guide walks through each one, in Business OS, step by step.",
         },
         {
           type: "table",
           headers: ["Capability", "Where to find it"],
           rows: [
-            ["Scoped access credentials", "Business Workspace → S3-Compatible Storage"],
-            ["Versioning, locked retention, legal hold, lifecycle, health", "Business Workspace → S3-Compatible Storage → Buckets, Versions & Object Protection"],
-            ["Desktop drive mount", "Inaya Business Workspace desktop app (Windows)"],
+            ["Scoped access credentials", "Business OS → S3-Compatible Storage"],
+            ["Versioning, locked retention, legal hold, lifecycle, health", "Business OS → S3-Compatible Storage → Buckets, Versions & Object Protection"],
+            ["Desktop drive mount", "Inaya Business OS desktop app (Windows)"],
           ],
         },
       ],
@@ -88,7 +88,7 @@ export const storageCapabilitiesGuide = {
           items: [
             { heading: "1. Enable versioning on the bucket first.", body: "Locked retention requires versioning to already be on — this is enforced, not just recommended." },
             { heading: "2. Click \"Enable Object Lock.\"", body: "Turns on locked-retention support for this bucket." },
-            { heading: "3. Open the object's version list, click \"Lock.\"", body: "Enter how many days to retain it for. The object cannot be deleted or overwritten until that date, by anyone — including through a direct API call, not just the Business Workspace interface." },
+            { heading: "3. Open the object's version list, click \"Lock.\"", body: "Enter how many days to retain it for. The object cannot be deleted or overwritten until that date, by anyone — including through a direct API call, not just Inaya Business OS interface." },
           ],
         },
         {
@@ -151,7 +151,7 @@ export const storageCapabilitiesGuide = {
       blocks: [
         {
           type: "lead",
-          text: "Inside the Inaya Business Workspace desktop app, mount your storage as an ordinary Windows drive letter — browse, open, and save files directly, the same way you would with any local or network drive.",
+          text: "Inside the Inaya Business OS desktop app, mount your storage as an ordinary Windows drive letter — browse, open, and save files directly, the same way you would with any local or network drive.",
         },
         {
           type: "numbered",
