@@ -4,7 +4,7 @@
 // and its connected Shopify / WooCommerce stores. Every action is checked again on the server (src/lib/online/*). Secrets
 // typed here (Stripe / Safepay keys, Shopify token, WooCommerce keys) are sealed on the server and never shown again.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const f = "w-full min-h-[38px] bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-lg px-2.5 text-sm text-[var(--inaya-text-primary)]";
 const pb = "min-h-[38px] px-3 rounded-lg text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] disabled:opacity-40";
@@ -19,7 +19,9 @@ async function api(path, { orgId, method = "GET", body } = {}) {
 const Msg = ({ ok, err }) => <>{ok && <p className="text-sm text-emerald-600">{ok}</p>}{err && <p className="text-sm text-red-500" role="alert">{err}</p>}</>;
 const H = ({ children }) => <h3 className="font-bold text-sm text-[var(--inaya-text-primary)] mb-2">{children}</h3>;
 const L = ({ t, children }) => <label className="block text-xs font-semibold text-[var(--inaya-text-secondary)] space-y-1"><span>{t}</span>{children}</label>;
-function useAction() { const [ok, setOk] = useState(""); const [err, setErr] = useState(""); const run = async (fn, msg) => { setOk(""); setErr(""); try { const r = await fn(); if (msg) setOk(typeof msg === "function" ? msg(r) : msg); return r; } catch (e) { setErr(e.message); return null; } }; return { ok, err, run }; }
+// One action at a time: a second click while a slow request is still running is ignored (a double click once connected the
+// same WooCommerce store twice). The server also refuses duplicate connections.
+function useAction() { const [ok, setOk] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const lock = useRef(false); const run = async (fn, msg) => { if (lock.current) return null; lock.current = true; setBusy(true); setOk(""); setErr(""); try { const r = await fn(); if (msg) setOk(typeof msg === "function" ? msg(r) : msg); return r; } catch (e) { setErr(e.message); return null; } finally { lock.current = false; setBusy(false); } }; return { ok, err, run, busy }; }
 
 export default function OnlineStoreView({ orgId }) {
   const [tab, setTab] = useState(() => (typeof window !== "undefined" && /[?&]shopify(=|_error=)/.test(window.location.search) ? "channels" : "store")); const [data, setData] = useState(null); const [err, setErr] = useState("");
@@ -296,7 +298,7 @@ function Channels({ orgId }) {
           <L t="Consumer secret (cs_…)"><input className={f} type="password" autoComplete="off" value={form.consumerSecret || ""} onChange={(e) => setForm({ ...form, consumerSecret: e.target.value })} /></L>
         </>}
         {!(form.platform === "SHOPIFY" && d.shopifyApp?.enabled && !form.manual) && <><L t="Import orders placed from (optional)"><input type="date" className={f} value={form.importOrdersFrom || ""} onChange={(e) => setForm({ ...form, importOrdersFrom: e.target.value })} /></L>
-        <div className="flex gap-2"><button className={pb} onClick={() => a.run(() => api("channels", { orgId, method: "POST", body: form }).then((r) => { setForm(null); load(); return r; }), (r) => r.warning || "Connected. Next: register webhooks and import & match products.")}>Connect</button><button className={gb} onClick={() => setForm(null)}>Cancel</button></div></>}
+        <div className="flex gap-2"><button className={pb} onClick={() => a.run(() => api("channels", { orgId, method: "POST", body: form }).then((r) => { setForm(null); load(); return r; }), (r) => r.warning || "Connected. Next: register webhooks and import & match products.")} disabled={a.busy}>{a.busy ? "Connecting… (can take up to 30 seconds)" : "Connect"}</button><button className={gb} onClick={() => setForm(null)}>Cancel</button></div></>}
       </div>}
     <Msg {...a} />
   </div>;

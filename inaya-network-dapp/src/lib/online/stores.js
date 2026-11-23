@@ -42,6 +42,8 @@ export async function ensureOnlineIndexes() {
       c.createIndex({ kind: 1, "domain.host": 1 }, { unique: true, partialFilterExpression: { kind: OK.store, "domain.host": { $type: "string" } }, name: "o_store_domain" }),
       c.createIndex({ orgId: 1, kind: 1, storeId: 1, slug: 1 }, { unique: true, partialFilterExpression: { kind: OK.listing }, name: "o_listing_slug" }),
       c.createIndex({ orgId: 1, kind: 1, idem: 1 }, { unique: true, partialFilterExpression: { kind: { $in: [OK.checkout, OK.corder] } }, name: "o_idem_unique" }),
+      // one live connection per Shopify/WooCommerce store (records made before this field existed are not covered by the index)
+      c.createIndex({ orgId: 1, kind: 1, connectKey: 1 }, { unique: true, partialFilterExpression: { kind: OK.channel, connectKey: { $exists: true } }, name: "o_channel_connect_unique" }),
       c.createIndex({ kind: 1, provider: 1, providerRef: 1 }, { unique: true, partialFilterExpression: { kind: OK.payment, providerRef: { $type: "string" } }, name: "o_payment_ref" }),
     ]);
   })().catch((e) => { ready = null; throw e; });

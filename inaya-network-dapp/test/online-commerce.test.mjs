@@ -270,7 +270,12 @@ test("WooCommerce: signed webhooks, an unmapped SKU fails visibly and recovers o
     if (u.includes("/webhooks")) return new Response(init.method === "GET" ? "[]" : "{}", { status: 200 });
     return new Response("[]", { status: 200 });
   };
-  const ch = (await CH.connectChannel({ orgId: ORG, membership: owner, actorEmail: owner.email, input: { platform: "WOOCOMMERCE", siteUrl: "https://woo.example", consumerKey: "ck_0123456789abcdef0123456789", consumerSecret: "cs_0123456789abcdef0123456789" }, fetchImpl })).channel; assert.ok(ch?.id);
+  // a double click (two connects at the same moment) must give ONE connection: found live on 22 Nov, it imported every order twice
+  const wooIn = { platform: "WOOCOMMERCE", siteUrl: "https://woo.example", consumerKey: "ck_0123456789abcdef0123456789", consumerSecret: "cs_0123456789abcdef0123456789" };
+  const both = await Promise.all([1, 2].map(() => CH.connectChannel({ orgId: ORG, membership: owner, actorEmail: owner.email, input: wooIn, fetchImpl })));
+  assert.equal(both.filter((r) => r.channel).length, 1, "exactly one connection"); assert.equal(both.find((r) => !r.channel).status, 409);
+  assert.equal((await CH.connectChannel({ orgId: ORG, membership: owner, actorEmail: owner.email, input: wooIn, fetchImpl })).status, 409, "connecting it again later is refused too");
+  const ch = both.find((r) => r.channel).channel; assert.ok(ch?.id);
   const reg = await CH.registerWebhooks({ orgId: ORG, membership: owner, actorEmail: owner.email, id: ch.id, baseUrl: "https://app.test", fetchImpl }); assert.match(reg.callbackUrl, /\/api\/shop\/channels\/woocommerce\//);
   const secret = (await import("../src/lib/online/crypto.js")).openSafe((await c.db.collection("calendar_records").findOne({ _id: new ObjectId(ch.id) })).webhookSecretSealed);
   const body = JSON.stringify({ id: 77 }); const sig = createHmac("sha256", secret).update(body).digest("base64"); const hdr = new Headers({ "x-wc-webhook-signature": sig, "x-wc-webhook-topic": "order.created" });

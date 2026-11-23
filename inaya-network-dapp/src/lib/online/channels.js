@@ -207,6 +207,8 @@ export async function connectChannel({ orgId, membership, actorEmail, input = {}
   const denied = await commerceAccess({ orgId, membership, need: "manage" }); if (denied) return denied;
   await ensureOnlineIndexes(); const c = await ccol();
   const platform = String(input.platform || "").toUpperCase(); if (!PLATFORMS.includes(platform)) return fail("Choose Shopify or WooCommerce.");
+  // the same store already connected: say so (before the plan-limit message, which would be misleading here)
+  { const k = platform === "SHOPIFY" ? { shopDomain: normShop(input.shopDomain) } : { siteUrl: normSite(input.siteUrl) }; if (Object.values(k)[0] && await c.findOne({ orgId: oid(orgId), kind: OK.channel, platform, ...k, deletedAt: null })) return fail(`That ${platform === "SHOPIFY" ? "Shopify" : "WooCommerce"} store is already connected.`, 409, "CHANNEL_EXISTS"); }
   const limited = await checkChannelLimit(orgId, platform); if (limited) return limited;
   const { warehouses, departments } = await getOrgCollections();
   const wh = input.warehouseId ? await warehouses.findOne({ _id: oid(input.warehouseId), orgId: oid(orgId) }) : await warehouses.findOne({ orgId: oid(orgId) }, { sort: { createdAt: 1 } }); if (!wh) return fail("Add a location first; channel orders are fulfilled from it.", 409);
@@ -220,6 +222,7 @@ export async function connectChannel({ orgId, membership, actorEmail, input = {}
     Object.assign(doc, { shopDomain: shop, tokenSealed: seal(token), webhookSecretSealed: seal(appSecret), credHint: last4(token), connectMethod: oauthGrant ? "inaya_app" : "custom_app", grantedScopes: oauthGrant?.scope || null });
   } else {
     const site = normSite(input.siteUrl); if (!site) return fail("Enter the shop's https web address (e.g. https://shop.example.com).");
+    if (await c.findOne({ orgId: oid(orgId), kind: OK.channel, platform: "WOOCOMMERCE", siteUrl: site, deletedAt: null })) return fail("That WooCommerce store is already connected.", 409);
     const ck = String(input.consumerKey || "").trim(), cs = String(input.consumerSecret || "").trim();
     if (!/^ck_[a-f0-9]{20,}$/i.test(ck) || !/^cs_[a-f0-9]{20,}$/i.test(cs)) return fail("Paste the WooCommerce REST API consumer key (ck_…) and secret (cs_…).");
     Object.assign(doc, { siteUrl: site, keySealed: seal(ck), secretSealed: seal(cs), webhookSecretSealed: seal(randomBytes(24).toString("base64url")), credHint: last4(ck) });
@@ -227,7 +230,9 @@ export async function connectChannel({ orgId, membership, actorEmail, input = {}
   let info; try { info = await clientFor(doc, fetchImpl).info(); } catch (e) { return fail(`Couldn't connect: ${e.message}`, 400, "CHANNEL_AUTH"); }
   const now = nowIso();
   Object.assign(doc, { name: doc.name || info.name, currency: info.currency, locations: info.locations, locationId: platform === "SHOPIFY" ? (info.locations.find((l) => l.id === input.locationId) || info.locations[0])?.id || null : null, orderSyncFrom: input.importOrdersFrom ? new Date(input.importOrdersFrom).toISOString() : now, createdByEmail: actorEmail, createdAt: now, updatedAt: now });
-  const r = await c.insertOne(doc); doc._id = r.insertedId;
+  doc.connectKey = `${platform}:${String(doc.shopDomain || doc.siteUrl).toLowerCase()}`;
+  let r; try { r = await c.insertOne(doc); } catch (e) { if (e?.code === 11000) return fail(`That ${platform === "SHOPIFY" ? "Shopify" : "WooCommerce"} store is already connected.`, 409, "CHANNEL_EXISTS"); throw e; }
+  doc._id = r.insertedId;
   await audit({ orgId, actorEmail, recordType: "SALES_CHANNEL", recordId: doc._id, action: "CHANNEL_CONNECTED", metadata: { platform, address: doc.shopDomain || doc.siteUrl } });
   const settings = await getSettings(orgId);
   return { channel: channelView(doc), warning: info.currency && info.currency !== settings.currency ? `This store sells in ${info.currency}; Inaya Commerce is set to ${settings.currency}. Orders keep the store's currency.` : null };
@@ -249,7 +254,7 @@ export async function updateChannel({ orgId, membership, actorEmail, id, input =
 export async function disconnectChannel({ orgId, membership, actorEmail, id }) {
   const denied = await commerceAccess({ orgId, membership, need: "manage" }); if (denied) return denied;
   const ch = await channelDoc(orgId, id); if (!ch) return fail("Connected store not found.", 404); const c = await ccol();
-  await c.updateOne({ _id: ch._id }, { $set: { deletedAt: nowIso(), status: "DISCONNECTED", tokenSealed: null, keySealed: null, secretSealed: null, webhookSecretSealed: null } }); // credentials destroyed
+  await c.updateOne({ _id: ch._id }, { $set: { deletedAt: nowIso(), status: "DISCONNECTED", tokenSealed: null, keySealed: null, secretSealed: null, webhookSecretSealed: null }, $unset: { connectKey: "" } }); // credentials destroyed
   await audit({ orgId, actorEmail, recordType: "SALES_CHANNEL", recordId: ch._id, action: "CHANNEL_DISCONNECTED", metadata: { platform: ch.platform } });
   return { ok: true };
 }
@@ -549,7 +554,7 @@ export async function channelWebhook({ platform, channelId, rawBody, headers, fe
     if (!ext) return { received: true, ignored: true };
     try { const r = await importOrder({ ch, externalId: ext, fetchImpl }); return { received: true, summary: r?.summary || null }; } catch (e) { return { received: true, queued: true, error: e.message }; } // logged for retry; 200 so the platform doesn't hammer
   }
-  if (topic === "app/uninstalled") { await c.updateOne({ _id: ch._id }, { $set: { deletedAt: nowIso(), status: "DISCONNECTED", tokenSealed: null, disconnectReason: "app/uninstalled" } }); await audit({ orgId: ch.orgId, actorEmail: "shopify", recordType: "SALES_CHANNEL", recordId: ch._id, action: "SHOPIFY_APP_UNINSTALLED" }); return { received: true, disconnected: true }; }
+  if (topic === "app/uninstalled") { await c.updateOne({ _id: ch._id }, { $set: { deletedAt: nowIso(), status: "DISCONNECTED", tokenSealed: null, disconnectReason: "app/uninstalled" }, $unset: { connectKey: "" } }); await audit({ orgId: ch.orgId, actorEmail: "shopify", recordType: "SALES_CHANNEL", recordId: ch._id, action: "SHOPIFY_APP_UNINSTALLED" }); return { received: true, disconnected: true }; }
   if (/^products?[./]/.test(String(topic || ""))) { await c.updateOne({ _id: ch._id }, { $set: { productsChangedAt: nowIso() } }); return { received: true, productsChanged: true }; }
   return { received: true, ignored: topic || null };
 }
