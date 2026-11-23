@@ -62,7 +62,7 @@ export default function SalesOrdersTab({ orgId, departments, openCreateSignal = 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         {["", "QUOTE", "DRAFT", "CONFIRMED", "BACKORDERED", "FULFILLED", "INVOICED", "RETURNED", "CANCELLED"].map((s) => (
-          <button key={s || "all"} onClick={() => setStatus(s)} className={`text-[11px] font-bold uppercase px-2.5 py-1.5 rounded-lg border ${status === s ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>{s ? (STATUS_LABEL[s] || s).toLowerCase() : "all"}</button>
+          <button key={s || "all"} onClick={() => setStatus(s)} className={`text-[12px] font-semibold px-3 py-1.5 rounded-full border ${status === s ? "bg-[#00f2fe]/15 text-[#00f2fe] border-[#00f2fe]/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>{s ? ((t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase())(String(STATUS_LABEL[s] || s)) : "All"}</button>
         ))}
         <button onClick={() => setShowCreate(true)} className="ml-auto text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New order</button>
       </div>

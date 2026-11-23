@@ -70,7 +70,8 @@ export default function InventoryView({ orgId }) {
 // ============================================================
 function ProductsTab({ orgId, departments }) {
   const [products, setProducts] = useState(null);
-  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [stockFilter, setStockFilter] = useState("all"); // modern look: filter chips (All / Low stock / Out of stock)
+  const lowStockOnly = stockFilter === "low";
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   useErpCreate("products", () => setShowCreate(true));
@@ -92,14 +93,18 @@ function ProductsTab({ orgId, departments }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = (products || []).filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()) || p.sku.toLowerCase().includes(search.trim().toLowerCase()) || (p.barcode || "").includes(search.trim()));
+  const filtered = (products || []).filter((p) => stockFilter !== "out" || Number(p.totalStock) <= 0).filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()) || p.sku.toLowerCase().includes(search.trim().toLowerCase()) || (p.barcode || "").includes(search.trim()));
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <input aria-label="Search products" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU or barcode…" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab] w-full sm:w-56" />
         <button onClick={() => setShowScan(true)} className="text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border bg-black/45 text-[var(--inaya-text-primary)] border-white/15">▥ Scan</button>
-        <button onClick={() => setLowStockOnly((v) => !v)} className={`text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border ${lowStockOnly ? "bg-amber-400/10 text-amber-400 border-amber-400/30" : "bg-black/45 text-[var(--inaya-text-muted)] border-white/15"}`}>Low stock only</button>
+        <div role="group" aria-label="Stock filter" className="flex items-center gap-1.5">
+          {[["all", "All"], ["low", "Low stock"], ["out", "Out of stock"]].map(([k, l]) => (
+            <button key={k} type="button" aria-pressed={stockFilter === k} onClick={() => setStockFilter(k)}
+              className={`text-[12px] font-semibold px-3 py-1.5 rounded-full border transition ${stockFilter === k ? "bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] border-transparent" : "bg-transparent text-[var(--inaya-text-muted)] border-[var(--inaya-overlay-15)] hover:text-[var(--inaya-text-primary)]"}`}>{l}</button>))}
+        </div>
         <button onClick={() => setShowTransfer(true)} className="ml-auto text-[11px] font-bold uppercase px-2.5 py-2 rounded-lg border bg-black/45 text-[var(--inaya-text-primary)] border-white/15">⇄ Transfer stock</button>
         <button onClick={() => setShowCreate(true)} className="text-[12px] font-bold uppercase text-black bg-gradient-to-r from-[#00f2fe] to-[#4facfe] px-3.5 py-2 rounded-lg">+ New product</button>
       </div>
@@ -110,20 +115,22 @@ function ProductsTab({ orgId, departments }) {
         ) : filtered.length === 0 ? (
           <p className="text-[var(--inaya-text-muted)] text-xs">No products match "{search}".</p>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((p) => (
-              <button key={p.id} onClick={() => setSelected(p)} className="w-full flex items-center justify-between gap-3 bg-black/20 border border-white/5 rounded-lg p-3 text-left hover:bg-white/5">
-                <div className="min-w-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm">{p.name}</span>
-                  <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono mt-0.5">SKU {p.sku}{p.barcode ? ` · ${p.barcode}` : ""}{p.trackLots ? " · batches" : ""}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[var(--inaya-text-primary)] text-sm font-mono tabular-nums">{p.totalStock}{p.unit && p.unit !== "each" ? ` ${p.unit}` : ""}</span>
-                  {p.lowStock && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-400/10 text-amber-400 border-amber-400/30">Low stock</span>}
-                  {p.openReorderRequestId && <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/30">Reorder drafted</span>}
-                </div>
-              </button>
-            ))}
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[560px]">
+              <thead><tr className="text-left text-[12px] text-[var(--inaya-text-muted)]"><th className="font-medium py-2 px-2">Product</th><th className="font-medium py-2 px-2 text-right">In stock</th><th className="font-medium py-2 px-2">Status</th><th className="py-2 px-2"><span className="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                {filtered.map((p) => { const out = Number(p.totalStock) <= 0; const pill = p.openReorderRequestId ? ["Reorder drafted", "bg-sky-500/10 text-sky-600 border-sky-500/30"] : out ? ["Out of stock", "bg-red-500/10 text-red-600 border-red-500/30"] : p.lowStock ? ["Low stock", "bg-amber-400/15 text-amber-600 border-amber-500/30"] : ["In stock", "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"]; return (
+                  <tr key={p.id} className="border-t border-[var(--inaya-overlay-10)] hover:bg-[var(--inaya-overlay-5)]">
+                    <td className="py-2.5 px-2"><span className="text-[var(--inaya-text-primary)] font-medium">{p.name}</span><p className="text-[var(--inaya-text-muted)] text-[12px] mt-0.5">SKU {p.sku}{p.barcode ? ` · ${p.barcode}` : ""}{p.trackLots ? " · batches" : ""}</p></td>
+                    <td className="py-2.5 px-2 text-right tabular-nums text-[var(--inaya-text-primary)]">{p.totalStock}{p.unit && p.unit !== "each" ? ` ${p.unit}` : ""}</td>
+                    <td className="py-2.5 px-2"><span className={`inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full border ${pill[1]}`}>{pill[0]}</span></td>
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap">
+                      {(p.lowStock || out) && !p.openReorderRequestId && <button type="button" onClick={() => setSelected(p)} className="text-[12px] font-semibold px-2.5 py-1 rounded-lg border border-[var(--inaya-overlay-15)] text-[var(--inaya-text-primary)] mr-1.5">Reorder</button>}
+                      <button type="button" onClick={() => setSelected(p)} className="text-[12px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)]">Open</button>
+                    </td>
+                  </tr>); })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -529,3 +529,14 @@ html[data-erp-theme] .bw main :is([class~="bg-white/5"],[class~="bg-white/10"],[
 html[data-theme="white"]:not([data-erp-theme]) .bw main :is([class~="bg-white/5"],[class~="bg-white/10"],[class~="bg-[var(--inaya-overlay-5)]"],[class~="bg-black/20"],[class~="bg-black/30"])[class*="border"]:is([class*="rounded-lg"],[class*="rounded-xl"],[class*="rounded-2xl"]) {
   background-color: #ffffff; border-color: #e4e7ec;
 }
+
+/* Modern look, step 2 (23 Nov 2026): tables everywhere get a quieter header, comfortable rows and a row hover;
+   tab bars inside screens read as a tidy segmented row. Looks only. */
+.bw main table thead th { font-weight: 500; white-space: nowrap; }
+.bw main table tbody tr { transition: background-color .12s ease; }
+.bw main table tbody tr:hover { background-color: var(--inaya-overlay-5); }
+.bw main [role="tablist"] > button[role="tab"] { border-radius: 8px; font-weight: 600; }
+/* Text that was written lowercase in the code and only ever shown in capitals (status keys such as "draft"):
+   capitalise the first letter so it reads "Draft", not "draft". */
+.bw main [class~="uppercase"]::first-letter { text-transform: uppercase; }
+.bw main span[class~="uppercase"] { display: inline-block; }
