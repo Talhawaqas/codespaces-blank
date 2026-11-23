@@ -1,6 +1,6 @@
 // src/components/business/erp/erpThemes.js
 //
-// ERP mode's two light themes (docs/erp-mode-plan.md). The shell chrome
+// ERP mode's light themes (docs/erp-mode-plan.md). The shell chrome
 // reads the --erp-* tokens (globals.css, "ERP mode" section). The existing
 // screens inside are rendered with the workspace's Light theme adapter, and
 // the --inaya-accent* tokens are re-pointed at each theme's accent so every
@@ -9,7 +9,8 @@
 
 export const ERP_THEME_TOKENS = {
   // Close to a traditional Windows ERP: charcoal title bar, white module
-  // tiles, deep-red notice bar, graphite group headers, steel-blue accent.
+  // tiles, dark navy notice/breadcrumb bar (owner, 22 Nov 2026: red is kept
+  // for real alerts only), graphite group headers, steel-blue accent.
   classic: {
     "--erp-titlebar-bg": "#2b3035",
     "--erp-titlebar-fg": "#f1f3f5",
@@ -24,9 +25,9 @@ export const ERP_THEME_TOKENS = {
     "--erp-tile-active-bg": "#dbe6f3",
     "--erp-tile-active-border": "#2f5d8a",
     "--erp-tile-active-fg": "#163556",
-    "--erp-notice-bg": "#8c1d18",
+    "--erp-notice-bg": "#0b2a4a",
     "--erp-notice-fg": "#ffffff",
-    "--erp-notice-muted": "#f3d4d2",
+    "--erp-notice-muted": "#c9d6e5",
     "--erp-panel-bg": "#f5f6f7",
     "--erp-panel-border": "#b9bec4",
     "--erp-panel-title": "#1f2328",
@@ -102,6 +103,54 @@ export const ERP_THEME_TOKENS = {
     "--erp-h-green": "#0f766e",
     "--erp-h-amber": "#9a5a12",
     "--erp-h-purple": "#4338ca",
+  },
+  // "Calm" (owner, 22 Nov 2026): light lavender-grey page, white cards, thin lavender borders,
+  // indigo/violet accent; the side menu keeps DARK section headers because they are easier to read.
+  calm: {
+    "--erp-titlebar-bg": "#1e1b3a",
+    "--erp-titlebar-fg": "#f4f4fb",
+    "--erp-titlebar-muted": "#b9b6d6",
+    "--erp-modbar-bg": "#ecebf7",
+    "--erp-modbar-border": "#d6d4ea",
+    "--erp-tile-bg": "#ffffff",
+    "--erp-tile-border": "#e2e1f0",
+    "--erp-tile-fg": "#2a2745",
+    "--erp-tile-icon": "#5f5a99",
+    "--erp-tile-hover-bg": "#f6f6fd",
+    "--erp-tile-active-bg": "#eeedfe",
+    "--erp-tile-active-border": "#534ab7",
+    "--erp-tile-active-fg": "#3c3489",
+    "--erp-notice-bg": "#3c3489",
+    "--erp-notice-fg": "#ffffff",
+    "--erp-notice-muted": "#d9d6f7",
+    "--erp-panel-bg": "#fafaff",
+    "--erp-panel-border": "#e2e1f0",
+    "--erp-panel-title": "#1e1b3a",
+    "--erp-group-bg": "#2a2745",
+    "--erp-group-fg": "#ffffff",
+    "--erp-item-fg": "#23213a",
+    "--erp-item-icon": "#5f5a99",
+    "--erp-item-hover-bg": "#f0effb",
+    "--erp-item-active-bg": "#eeedfe",
+    "--erp-item-active-fg": "#3c3489",
+    "--erp-item-active-bar": "#534ab7",
+    "--erp-workspace-bg": "#f4f4fb",
+    "--erp-page-header-bg": "#ffffff",
+    "--erp-page-header-border": "#e2e1f0",
+    "--erp-status-bg": "#1e1b3a",
+    "--erp-status-fg": "#c9c6e6",
+    "--erp-ok": "#7fd1b0",
+    "--erp-warn": "#f2c14e",
+    "--erp-accent": "#534ab7",
+    "--erp-accent-hover": "#443c9c",
+    "--erp-accent-soft": "#eeedfe",
+    "--erp-accent-soft-hover": "#e2e0fb",
+    "--erp-focus": "#534ab7",
+    "--erp-h-blue": "#3b5ea8",
+    "--erp-h-red": "#a3341f",
+    "--erp-h-green": "#0f766e",
+    "--erp-h-amber": "#9a5a12",
+    "--erp-h-purple": "#534ab7",
   },
 };
 

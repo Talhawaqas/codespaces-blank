@@ -499,3 +499,23 @@ html[data-erp-theme] :is([class~="border-[#00f2fe]/20"],[class~="border-[#00f2fe
 html[data-erp-theme] .fixed.bottom-5.right-5 { bottom: 34px; }
 /* A screen's own tab bar: in ERP mode the task panel lists those tabs instead (ErpNavContext). */
 html[data-erp-theme] [data-erp-tabs] { display: none !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Modern look (post-Commerce-SOW, owner-approved 22 Nov 2026). LOOKS ONLY, no logic.
+   Applies inside the workspace content area only (standard layout <main> and ERP mode's
+   <main class="erp-content">): the side menu, module tiles, title bar and section headers
+   are deliberately untouched. Colours stay the theme's own (no new palette here).
+   1. Sentence case: labels, tabs and buttons show the text as written instead of ALL CAPS.
+   2. Buttons: slightly rounder, semibold, no extra letter-spacing.
+   3. Small coloured status words become soft pills (same colour, tinted background).
+   ───────────────────────────────────────────────────────────────────────── */
+.bw main [class~="uppercase"] { text-transform: none; letter-spacing: 0; }
+.bw main :is(button, a)[class~="font-bold"] { font-weight: 600; }
+.bw main :is(button, a):is([class~="rounded"], [class~="rounded-md"], [class~="rounded-lg"]) { border-radius: 8px; }
+.bw main span:is([class~="text-[10px]"], [class~="text-[11px]"]):is([class*="text-emerald-"], [class*="text-green-"], [class*="text-red-"], [class*="text-rose-"], [class*="text-amber-"], [class*="text-yellow-"], [class*="text-sky-"], [class*="text-cyan-"], [class*="text-violet-"], [class*="text-slate-"]):not([class~="border"]):not([class*="px-"]) {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600;
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
+}
+/* the content's small section labels: calmer weight in sentence case */
+.bw main p[class~="text-[11px]"][class~="font-bold"][class~="uppercase"],
+.bw main p[class~="text-[10px]"][class~="font-bold"][class~="uppercase"] { font-weight: 600; }

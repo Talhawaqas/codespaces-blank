@@ -14,11 +14,12 @@
 export const ERP_PREFS_KEY = "inaya_erp_prefs";
 export const ERP_PREFS_EVENT = "inaya:erp-prefs";
 export const LAYOUTS = ["erp", "standard"];
-export const ERP_THEMES = ["classic", "brand"];
-export const ERP_THEME_LABELS = { classic: "Classic", brand: "Inaya" };
+export const ERP_THEMES = ["classic", "brand", "calm"];
+export const ERP_THEME_LABELS = { classic: "Classic", brand: "Inaya", calm: "Calm" };
 export const ERP_THEME_DESCRIPTIONS = {
-  classic: "Charcoal, graphite and deep red, like a traditional desktop ERP.",
+  classic: "Charcoal and graphite with a navy bar, like a traditional desktop ERP.",
   brand: "Navy and teal, in Inaya's own colours.",
+  calm: "Soft lavender-grey with an indigo accent; dark menu headers stay easy to read.",
 };
 // Narrower than this, ERP mode's fixed panels don't fit, so the standard
 // (responsive) layout is used whatever the setting says.
