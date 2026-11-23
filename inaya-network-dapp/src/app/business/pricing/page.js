@@ -45,7 +45,7 @@ function CommercePricing({ region, onPick }) {
             <p className="mt-2"><span className="text-3xl font-extrabold text-white">{c.price}</span></p>
             <p className="text-[#94a3b8] text-xs">{c.note}{c.price !== "Included" && !c.featured ? (pk ? " · a month" : " · a month") : ""}</p>
             <ul className="mt-4 space-y-1.5 text-[13px] text-slate-300 flex-1">{c.points.map((x) => <li key={x} className="flex gap-2"><span className="text-[#00f2fe]">✓</span>{x}</li>)}</ul>
-            <button onClick={() => onPick(c.id)} className={`mt-5 w-full py-2.5 rounded-xl text-sm font-bold ${c.featured ? "bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black" : "border border-white/15 text-white hover:border-[#00f2fe]/40"}`}>Choose {c.id === "professional" ? "Professional" : c.id === "business" ? "Business" : "Enterprise"}</button>
+            <button onClick={() => onPick(c.id, c.name)} className={`mt-5 w-full py-2.5 rounded-xl text-sm font-bold ${c.featured ? "bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black" : "border border-white/15 text-white hover:border-[#00f2fe]/40"}`}>Choose {c.id === "professional" ? "Professional" : c.id === "business" ? "Business" : "Enterprise"}</button>
           </div>
         ))}
       </div>
@@ -73,9 +73,9 @@ export default function PricingPage() {
 
   // Every package (Enterprise included) goes through the activation request form, which opens in the
   // workspace once the visitor has signed in / created their company (15 Nov 2026: no card checkout).
-  function handleSelect(plan) {
-    try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, interval: "month" })); } catch { /* storage blocked */ }
-    window.location.href = "/business";
+  function handleSelect(plan, commerce = null) {
+    try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: plan.id, planName: plan.name, commerce, interval: "month" })); } catch { /* storage blocked */ }
+    window.location.href = "/business#workspace-signin";
   }
 
   return (
@@ -121,7 +121,7 @@ export default function PricingPage() {
           </div>
         )}
 
-        {plans && <CommercePricing region={region} onPick={(id) => { const pl = plans.find((x) => x.id === id); if (pl) handleSelect(pl); }} />}
+        {plans && <CommercePricing region={region} onPick={(id, commerce) => { const pl = plans.find((x) => x.id === id); if (pl) handleSelect(pl, commerce); }} />}
 
         {region === "PK" ? (
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">

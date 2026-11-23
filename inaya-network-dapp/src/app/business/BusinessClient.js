@@ -168,7 +168,14 @@ const PENDING_PLAN_KEY = "inaya_pending_plan";
 
 // A package picked on the public pricing page or the landing page before signing in: returns its
 // planId once (and clears it), so the screen showing plans can open the activation form for it.
+/** The remembered choice without clearing it: { planId, planName, commerce } or null. */
+function readPendingChoice() {
+  try { const v = JSON.parse(localStorage.getItem(PENDING_PLAN_KEY) || "null"); return v?.planId ? v : null; } catch { return null; }
+}
+/** Commerce option picked with the package (cleared together with the package by takePendingPlanId). */
+let pendingCommerceNote = null;
 function takePendingPlanId() {
+  try { pendingCommerceNote = readPendingChoice()?.commerce || null; } catch { pendingCommerceNote = null; }
   try {
     const raw = localStorage.getItem(PENDING_PLAN_KEY);
     if (!raw) return null;
@@ -428,7 +435,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
   }, [membership.orgId]);
 
   // Every package (USD or PKR, Enterprise included) is requested through the activation form.
-  const [requestPlan, setRequestPlan] = useState(null);
+  const [requestPlan, setRequestPlan] = useState(null); const [requestCommerce, setRequestCommerce] = useState(null);
   function handleSelect(plan) {
     setError("");
     setRequestPlan(plan);
@@ -437,7 +444,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
     if (!plans) return;
     const pendingId = takePendingPlanId();
     const p = pendingId && plans.find((x) => x.id === pendingId);
-    if (p) setRequestPlan(p);
+    if (p) { setRequestCommerce(pendingCommerceNote); setRequestPlan(p); }
   }, [plans]);
 
   return (
@@ -463,7 +470,7 @@ function PlanSelectionGate({ email, membership, onLogout }) {
         </div>
 
         {requestPlan && (
-          <ActivationRequestModal orgId={membership.orgId} plan={requestPlan} pilot={region === "PK"} onClose={() => setRequestPlan(null)} onDone={(p) => setPkRequested(p)} />
+          <ActivationRequestModal orgId={membership.orgId} plan={requestPlan} initialMessage={requestCommerce ? `I would also like Inaya Commerce: ${requestCommerce}.` : ""} pilot={region === "PK"} onClose={() => setRequestPlan(null)} onDone={(p) => setPkRequested(p)} />
         )}
         {pkRequested && (
           <div className="bg-emerald-400/10 border border-emerald-400/30 rounded-xl p-4 mb-6">
@@ -536,6 +543,18 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const googleButtonRef = useRef(null);
   const signInCardRef = useRef(null);
   const [landingPlans, setLandingPlans] = useState(null); const [landingRegion, setLandingRegion] = useState("INTL");
+  // A package chosen before signing in (here or on the pricing page): say so on the sign-in box, so the visitor knows the
+  // next step is to create the company (or sign in), after which the activation request opens for that package.
+  const [pendingChoice, setPendingChoice] = useState(null); const [highlight, setHighlight] = useState(false);
+  useEffect(() => {
+    const c = readPendingChoice(); if (!c) return;
+    setPendingChoice(c); setMode("create");
+    setTimeout(() => { signInCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); setHighlight(true); setTimeout(() => setHighlight(false), 2500); }, 400);
+  }, []);
+  const choose = (planId, planName, commerce = null) => {
+    try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId, planName, commerce, interval: "month" })); } catch { /* storage blocked */ }
+    setPendingChoice({ planId, planName, commerce }); openForm("create"); setHighlight(true); setTimeout(() => setHighlight(false), 2500);
+  };
   useEffect(() => {
     fetch("/api/orgs/billing/plans").then((r) => r.json()).then((d) => { if (Array.isArray(d.plans)) setLandingPlans(d.plans); if (d.region) setLandingRegion(d.region); }).catch(() => {});
   }, []);
@@ -680,7 +699,12 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
         </div>
 
         {/* SIGN-IN CARD — unchanged behavior */}
-        <div ref={signInCardRef} id="workspace-signin" className="w-full max-w-md lg:ml-auto mx-auto bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-6 shadow-sm inaya-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div ref={signInCardRef} id="workspace-signin" className={`w-full max-w-md lg:ml-auto mx-auto bg-[var(--inaya-surface)] border rounded-2xl p-6 shadow-sm inaya-fade-in-up transition-shadow ${highlight ? "border-[var(--inaya-accent)] ring-4 ring-[var(--inaya-accent)]/30" : "border-[var(--inaya-border)]"}`} style={{ animationDelay: "0.1s" }}>
+          {pendingChoice && <div role="status" className="mb-4 rounded-xl border border-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] p-3 text-[13px] text-[var(--inaya-text-primary)]">
+            <p className="font-bold">You chose {pendingChoice.commerce && pendingChoice.planName && pendingChoice.commerce.startsWith(pendingChoice.planName) ? pendingChoice.commerce : `${pendingChoice.planName || "a package"}${pendingChoice.commerce ? ` with ${pendingChoice.commerce}` : ""}`}.</p>
+            <p className="mt-1">Next: create your company below (or sign in if you already have one). The activation request for your choice opens straight away.</p>
+            <button type="button" className="mt-1 underline text-[var(--inaya-text-muted)]" onClick={() => { try { localStorage.removeItem(PENDING_PLAN_KEY); } catch { /* */ } setPendingChoice(null); }}>Change my choice</button>
+          </div>}
           <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">{mode === "create" ? "Create your company" : "Sign in to Inaya Business OS"}</h2>
           <p className="text-[var(--inaya-text-muted)] text-xs mb-5">{mode === "create" ? "Free to start. You'll get a sign-in link by email." : "Use Google or get a sign-in link by email."}</p>
 
@@ -801,10 +825,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
               <PricingCard
                 key={p.id}
                 plan={p}
-                onSelect={() => {
-                  try { localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ planId: p.id, interval: "month" })); } catch { /* storage blocked */ }
-                  openForm("create");
-                }}
+                onSelect={() => choose(p.id, p.name)}
               />
             ))}
           </div>
@@ -823,15 +844,16 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { name: "Commerce Starter", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.starter.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.starter.usd}`, note: "a month, add-on to Professional", detail: "1 branch, 1 till, your own web store and one Shopify or WooCommerce store" },
-            { name: "Commerce add-on", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.addon.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.addon.usd}`, note: "a month, add-on to Business", detail: "2 branches, 3 tills, your own web store, one Shopify and one WooCommerce store" },
-            { name: "Enterprise", price: "Included", note: "in the Enterprise plan", detail: "Unlimited branches and tills, 3 connected stores, unlimited online orders" },
+            { planId: "professional", name: "Commerce Starter", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.starter.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.starter.usd}`, note: "a month, add-on to Professional", detail: "1 branch, 1 till, your own web store and one Shopify or WooCommerce store" },
+            { planId: "business", name: "Commerce add-on", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.addon.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.addon.usd}`, note: "a month, add-on to Business", detail: "2 branches, 3 tills, your own web store, one Shopify and one WooCommerce store" },
+            { planId: "enterprise", name: "Enterprise", price: "Included", note: "in the Enterprise plan", detail: "Unlimited branches and tills, 3 connected stores, unlimited online orders" },
           ].map((c) => (
             <div key={c.name} className="rounded-xl border border-[var(--inaya-border)] p-4">
               <p className="text-sm font-bold text-[var(--inaya-text-primary)]">{c.name}</p>
               <p className="text-xl font-black text-[var(--inaya-text-primary)] mt-1">{c.price}</p>
               <p className="text-[11px] text-[var(--inaya-text-muted)]">{c.note}</p>
               <p className="text-xs text-[var(--inaya-text-muted)] mt-2">{c.detail}</p>
+              <button type="button" onClick={() => choose(c.planId, (landingPlans || []).find((p) => p.id === c.planId)?.name || c.planId, c.name === "Enterprise" ? "Commerce (included in Enterprise)" : c.name)} className="mt-3 w-full py-2 rounded-lg text-xs font-bold border border-[var(--inaya-accent)] text-[var(--inaya-accent)] hover:bg-[var(--inaya-accent-soft)]">Request activation</button>
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-// Inaya Business Workspace desktop wrapper.
+// Inaya Business OS desktop wrapper.
 //
 // Deliberately thin: the window just renders the existing web app
 // (https://www.inayanetwork.com/business) -- no new features live here,
@@ -264,7 +264,7 @@ fn notify_pending_approvals(app: tauri::AppHandle, count: u32, filename: String,
     };
     app.notification()
         .builder()
-        .title("Inaya Business Workspace")
+        .title("Inaya Business OS")
         .body(body)
         .show()
         .map_err(|e| e.to_string())
@@ -283,7 +283,7 @@ fn chat_notification_text(count: u32) -> (String, String) {
 }
 
 fn chat_tray_tooltip(count: u32) -> String {
-    if count == 0 { "Inaya Business Workspace".to_string() } else { format!("Inaya Business Workspace ({} unread secure messages)", count) }
+    if count == 0 { "Inaya Business OS".to_string() } else { format!("Inaya Business OS ({} unread secure messages)", count) }
 }
 
 #[tauri::command]
@@ -452,7 +452,7 @@ async fn open_module_window(app: tauri::AppHandle, window: tauri::WebviewWindow,
         Err(e) => return Err(format!("{:?}", e)),
     };
     WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed_url))
-        .title("Inaya Business Workspace")
+        .title("Inaya Business OS")
         .inner_size(1000.0, 700.0)
         .resizable(true)
         .build()
@@ -484,7 +484,7 @@ fn check_for_updates(app: tauri::AppHandle, interactive: bool) {
                     app_for_dialog
                         .dialog()
                         .message(format!(
-                            "Inaya Business Workspace {} is available. Install and restart now?",
+                            "Inaya Business OS {} is available. Install and restart now?",
                             version
                         ))
                         .title("Update available")
@@ -506,7 +506,7 @@ fn check_for_updates(app: tauri::AppHandle, interactive: bool) {
                 if interactive {
                     let version = app.package_info().version.to_string();
                     app.dialog()
-                        .message(format!("You have the latest version of Inaya Business Workspace ({version})."))
+                        .message(format!("You have the latest version of Inaya Business OS ({version})."))
                         .title("No updates available")
                         .show(|_| {});
                 }
@@ -907,7 +907,7 @@ pub fn run() {
             // Back history), or shows an offline screen that retries on its own -- instead of a
             // blank white window or the webview's built-in error page.
             WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("Inaya Business Workspace")
+                .title("Inaya Business OS")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(1024.0, 640.0)
                 .background_color(tauri::window::Color(43, 48, 53, 255))
@@ -1035,7 +1035,7 @@ pub fn run() {
             let modules_menu = Submenu::with_items(app, "Modules", true, &module_refs)?;
             let help_shortcuts = MenuItem::with_id(app, "help_shortcuts", "Keyboard shortcuts", true, Some("F1"))?;
             let help_updates = MenuItem::with_id(app, "help_updates", "Check for updates...", true, None::<&str>)?;
-            let help_about = MenuItem::with_id(app, "help_about", "About Inaya Business Workspace", true, None::<&str>)?;
+            let help_about = MenuItem::with_id(app, "help_about", "About Inaya Business OS", true, None::<&str>)?;
             let help_menu = Submenu::with_items(app, "Help", true, &[&help_shortcuts, &PredefinedMenuItem::separator(app)?, &help_updates, &help_about])?;
             let app_menu = Menu::with_items(app, &[&file_menu, &edit_menu, &view_menu, &go_menu, &modules_menu, &help_menu])?;
             app.set_menu(app_menu)?;
@@ -1066,8 +1066,8 @@ pub fn run() {
                     "help_about" => {
                         let version = app.package_info().version.to_string();
                         app.dialog()
-                            .message(format!("Inaya Business Workspace\nVersion {version}\n\nEncrypted business workspace by Inaya Network.\ninayanetwork.com"))
-                            .title("About Inaya Business Workspace")
+                            .message(format!("Inaya Business OS\nVersion {version}\n\nBusiness Operations Platform by Inaya Network.\ninayanetwork.com"))
+                            .title("About Inaya Business OS")
                             .show(|_| {});
                     }
                     other => {
@@ -1116,8 +1116,8 @@ mod chat_alert_tests {
 
     #[test]
     fn tray_tooltip_reflects_the_unread_total() {
-        assert_eq!(chat_tray_tooltip(0), "Inaya Business Workspace");
-        assert_eq!(chat_tray_tooltip(4), "Inaya Business Workspace (4 unread secure messages)");
+        assert_eq!(chat_tray_tooltip(0), "Inaya Business OS");
+        assert_eq!(chat_tray_tooltip(4), "Inaya Business OS (4 unread secure messages)");
     }
 }
 

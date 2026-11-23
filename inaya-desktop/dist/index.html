@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Inaya Business Workspace</title>
+<title>Inaya Business OS</title>
 <!--
-  Inaya Business Workspace desktop app: start screen (ERP mode, Batch 6).
+  Inaya Business OS desktop app: start screen (ERP mode, Batch 6).
   Shown for the moment before the workspace loads. Checks the connection,
   then replaces itself with the workspace (location.replace, so it never
   sits in Back history). Without a connection it shows an offline screen
@@ -29,13 +29,15 @@
   button.alt { background: transparent; border: 1px solid #5b6b7c; }
   button.alt:hover { background: rgba(255,255,255,.08); }
   .note { font-size: 12px; }
+  .tagline { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #8fd3e8; margin-top: -4px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
   <div class="card" role="status" aria-live="polite">
     <div class="logo" aria-hidden="true">I</div>
-    <h1>Inaya Business Workspace</h1>
+    <h1>Inaya Business OS</h1>
+    <p class="tagline">Business Operations Platform</p>
     <p id="msg">Connecting…</p>
     <div class="bar" id="bar" aria-hidden="true"><span></span></div>
     <button id="retry" type="button" hidden>Try again</button>
@@ -63,7 +65,7 @@
     }
 
     function offline() {
-      msg.textContent = "You're offline. Inaya Business Workspace needs an internet connection. It will reconnect on its own as soon as one is available.";
+      msg.textContent = "You're offline. Inaya Business OS needs an internet connection. It will reconnect on its own as soon as one is available.";
       bar.hidden = true;
       retry.hidden = false;
       till.hidden = false; tillnote.hidden = false;

@@ -11,8 +11,8 @@ import { useState } from "react";
 
 const field = "w-full bg-[var(--inaya-input,transparent)] border border-[var(--inaya-overlay-15)] rounded-xl px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]";
 
-export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pilot = false, onClose, onDone }) {
-  const [form, setForm] = useState({ name: "", phone: "", companySize: "", preferredContact: "whatsapp", paymentMethod: "bank_transfer", message: "" });
+export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pilot = false, onClose, onDone, initialMessage = "" }) {
+  const [form, setForm] = useState({ name: "", phone: "", companySize: "", preferredContact: "whatsapp", paymentMethod: "bank_transfer", message: initialMessage || "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
