@@ -65,6 +65,7 @@ export async function GET(req, { params }) {
     if (path === "tax-categories") return json({ categories: await TAX.listTaxCategories(orgId) });
     if (path === "price-lists") return json({ priceLists: await PR.listPriceLists(orgId) });
     const qs = new URL(req.url).searchParams; const seg = params.path || [];
+    if (path === "drawer-log") return out(await SH.listDrawerOpens({ orgId, membership: c.membership, registerId: qs.get("registerId") || null }));
     if (path === "sales") return out(await SALE.listSales({ orgId, membership: c.membership, from: qs.get("from"), to: qs.get("to"), warehouseId: qs.get("warehouseId"), shiftId: qs.get("shiftId") }));
     if (seg[0] === "sales" && seg[1] === "by-number" && seg[2]) return out(await SALE.findSaleByNumber({ orgId, membership: c.membership, saleNumber: seg[2] }));
     if (seg[0] === "sales" && seg[1] && seg[2] === "receipt") return out(await SALE.receiptFor({ orgId, membership: c.membership, saleId: seg[1] }));
@@ -99,6 +100,7 @@ async function write(req, params, method) {
     { const s0 = params.path || []; // branch scoping (SOW 10.1): every branch the write touches must be one of the member's
       const bg = await branchGuard({ orgId, membership: c.membership, warehouseIds: [body.warehouseId, body.exchange?.warehouseId], registerId: body.registerId || (s0[0] === "registers" ? body.id : null), shiftId: s0[0] === "shifts" ? s0[1] : null,
         saleId: (s0[0] === "sales" && s0[1]) || body.saleId || null, saleNumber: body.saleNumber || null }); if (bg) return out(bg); }
+    if (method === "POST" && path === "drawer-log") return out(await SH.logDrawerOpen({ ...base, registerId: body.registerId, kind: body.kind, reason: body.reason, saleId: body.saleId || null }));
     if (method === "PUT" && path === "settings") return out(await S.updateSettings({ ...base, input: body }));
     if (method === "PUT" && path === "staff") return out(await S.setCommerceRole({ ...base, email: body.email, commerceRole: body.commerceRole ?? null }));
     if (method === "POST" && path === "tax-categories") return out(await TAX.saveTaxCategory({ ...base, id: body.id, code: body.code, name: body.name, rate: Number(body.rate), isDefault: body.isDefault === true, active: body.active !== false }));

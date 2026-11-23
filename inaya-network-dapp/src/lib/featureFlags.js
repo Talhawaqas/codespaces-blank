@@ -49,11 +49,13 @@ export function envFlag(name, env = process.env) {
 }
 
 /** Pure: resolve a flag given the organization's stored flags (may be undefined). */
-export function resolveFeature(name, orgFeatures, env = process.env) {
+export function resolveFeature(name, orgFeatures, env = process.env, orgPlan = null) {
   if (!FEATURES.includes(name)) return false;
   const e = envFlag(name, env);
   if (e === "off") return false;
   if (e === "on") return true;
+  // Pricing approved 23 Nov 2026: Commerce is INCLUDED in Enterprise (unless switched off for that company on purpose).
+  if (name === "FEATURE_COMMERCE" && orgPlan === "enterprise" && orgFeatures?.[name] !== false) return true;
   return orgFeatures?.[name] === true;
 }
 
@@ -65,8 +67,8 @@ export async function isFeatureEnabled(name, orgId) {
   if (!orgId) return false;
   try {
     const { orgs } = await getOrgCollections();
-    const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { features: 1 } });
-    return resolveFeature(name, org?.features);
+    const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { features: 1, plan: 1 } });
+    return resolveFeature(name, org?.features, process.env, org?.plan || null);
   } catch {
     return false; // fail closed
   }
@@ -89,6 +91,6 @@ export async function setOrgFeature({ orgId, name, enabled }) {
 
 export async function listOrgFeatures(orgId) {
   const { orgs } = await getOrgCollections();
-  const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { features: 1 } });
-  return FEATURES.map((name) => ({ name, enabled: resolveFeature(name, org?.features), source: envFlag(name) ? "platform" : org?.features?.[name] ? "organization" : "off" }));
+  const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { features: 1, plan: 1 } });
+  return FEATURES.map((name) => ({ name, enabled: resolveFeature(name, org?.features, process.env, org?.plan || null), source: envFlag(name) ? "platform" : org?.features?.[name] ? "organization" : "off" }));
 }

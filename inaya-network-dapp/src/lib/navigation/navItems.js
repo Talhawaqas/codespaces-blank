@@ -72,6 +72,7 @@ export const NAV_ITEMS = [
   { key: "workflows", label: "Automations", icon: "aiAssistant", group: "operations" },
   { key: "support", label: "Customer Support", icon: "activity", group: "operations" },
   { key: "help", label: "Help & Support", icon: "activity", group: "trust" },
+  { key: "ideas", label: "Suggest an improvement", icon: "aiAssistant", group: "trust" },
   { key: "docIntelligence", label: "Document Intelligence", icon: "insights", group: "operations" },
   { key: "databases", label: "Databases", icon: "activity", manageOnly: true, group: "enterprise" },
   { key: "mlStudio", label: "AI/ML Studio", icon: "aiAssistant", manageOnly: true, group: "enterprise" },
@@ -129,6 +130,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  ideas: "idea ideas suggestion suggest feature request improvement feedback roadmap vote",
   workforce: "time clock clock in clock out break attendance timesheet rota shifts schedule commission tips checklist incident branch location manage users roles permissions staff",
   online: "online store ecommerce e-commerce web shop website storefront shopify woocommerce woo sync channel checkout cart stripe safepay card payments cash on delivery bank transfer delivery shipping",
   growth: "customer 360 loyalty points rewards gift cards store credit promotions coupons offers membership segments win-back retention",

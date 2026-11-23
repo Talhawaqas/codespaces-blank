@@ -82,6 +82,7 @@ export async function POST(req) {
     // unrestricted access pre-existing orgs get. See business/page.js's
     // PlanSelectionGate.
     const orgResult = await orgs.insertOne({
+      commercePricingVersion: 2, // Commerce pricing approved 23 Nov 2026: plan branch/till limits apply to new companies
       name,
       ownerEmail,
       vertical,

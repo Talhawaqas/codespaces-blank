@@ -184,3 +184,16 @@ test("tenant isolation: another company cannot see, return or void this company'
   const v = await RET.voidSale({ orgId: String(other), membership: outsider, actorEmail: outsider.email, saleId: s.id, reason: "steal" }); assert.equal(v.status, 404);
   const o = await SH.openShift({ orgId: String(other), membership: outsider, actorEmail: outsider.email, registerId: register, openingFloat: 0 }); assert.equal(o.status, 404);
 });
+
+test("cash drawer openings (desktop printing): No sale needs a reason, every opening is recorded and audited, managers list them", { timeout: 60000 }, async () => {
+  assert.equal((await SH.logDrawerOpen({ orgId: ORG, membership: cashier, actorEmail: cashier.email, registerId: register, kind: "NO_SALE", reason: "" })).code, "REASON_REQUIRED");
+  const ns = await SH.logDrawerOpen({ orgId: ORG, membership: cashier, actorEmail: cashier.email, registerId: register, kind: "NO_SALE", reason: "Change for the float" });
+  assert.ok(ns.ok, ns.error);
+  assert.equal((await SH.logDrawerOpen({ orgId: ORG, membership: cashier, actorEmail: cashier.email, registerId: register, kind: "SALE", saleId: "64b000000000000000000000" })).status, 404, "a SALE opening must name a real sale");
+  assert.equal((await SH.logDrawerOpen({ orgId: ORG, membership: cashier, actorEmail: cashier.email, registerId: register, kind: "WHATEVER", reason: "x" })).error, "Unknown drawer opening.");
+  assert.equal((await SH.listDrawerOpens({ orgId: ORG, membership: cashier })).status, 403, "cashiers can't list openings");
+  const list = await SH.listDrawerOpens({ orgId: ORG, membership: owner });
+  assert.ok(list.openings.some((x) => x.type === "NO_SALE" && x.reason === "Change for the float" && x.by === cashier.email));
+  const c = await getOrgCollections();
+  assert.ok(await c.db.collection("org_activity").findOne({ orgId: new ObjectId(ORG), action: "DRAWER_OPENED_NO_SALE" }), "audited");
+});

@@ -11,7 +11,7 @@
 import { ccol, ensureCommerceIndexes, KINDS, fail, clean, nowIso, oid, sid, commerceAccess, commerceRoleOf, getSettings, nextNumber, audit, emitCommerceEvent, toMinor, fromMinor } from "./store.js";
 import { roleCovers } from "./pricing.js";
 import { getOrgCollections } from "../orgs.js";
-import { scopeFilter } from "../workforce/scope.js";
+import { scopeFilter, canAddTill } from "../workforce/scope.js";
 
 const m = (v) => fromMinor(v || 0);
 
@@ -31,6 +31,7 @@ export async function saveRegister({ orgId, membership, actorEmail, input }) {
   const wh = await warehouses.findOne({ _id: oid(input.warehouseId), orgId: o }); if (!wh) return fail("Location not found.", 404);
   await ensureCommerceIndexes(); const c = await ccol(); const now = nowIso();
   try {
+    if (!input.id) { const lim = await canAddTill(orgId, () => c.countDocuments({ orgId: o, kind: KINDS.register, active: { $ne: false } })); if (lim) return lim; } // plan tills (pricing 23 Nov 2026)
     if (input.id) {
       const before = await c.findOne({ _id: oid(input.id), orgId: o, kind: KINDS.register }); if (!before) return fail("Register not found.", 404);
       if (sid(before.warehouseId) !== sid(wh._id) && await c.findOne({ orgId: o, kind: KINDS.shift, registerId: before._id, status: "OPEN" })) return fail("Close the open shift before moving this register.", 409);
@@ -157,4 +158,28 @@ export async function correctShiftCount({ orgId, membership, actorEmail, shiftId
   if (!r) return fail("The count changed meanwhile; reload.", 409);
   await audit({ orgId, actorEmail, recordType: "COMMERCE_SHIFT", recordId: r._id, action: "SHIFT_COUNT_CORRECTED", previousState: { counted: m(corr.fromMinor) }, newState: { counted: m(to), overShort: m(variance), reason: why } });
   return { shift: await shiftView(orgId, r, true) };
+}
+
+// ---------------------------------------------------------------- cash drawer openings (desktop printing, post-SOW "Route 3")
+// Every opening is recorded BEFORE the drawer is opened: who, which till/branch/shift, when, why. A "No sale" opening needs a
+// reason. Openings after a cash sale reference the sale. Managers and supervisors can list them per till.
+export const DRAWER_KINDS = ["SALE", "NO_SALE"];
+export async function logDrawerOpen({ orgId, membership, actorEmail, registerId, kind = "NO_SALE", reason, saleId = null }) {
+  const denied = await commerceAccess({ orgId, membership }); if (denied) return denied;
+  if (!DRAWER_KINDS.includes(kind)) return fail("Unknown drawer opening.");
+  const why = clean(reason, 200); if (kind === "NO_SALE" && why.length < 3) return fail("Give a reason for opening the drawer without a sale.", 400, "REASON_REQUIRED");
+  const c = await ccol(); const o = oid(orgId);
+  const reg = await c.findOne({ _id: oid(registerId), orgId: o, kind: KINDS.register }); if (!reg) return fail("Register not found.", 404);
+  if (kind === "SALE") { const { salesOrders } = await getOrgCollections(); if (!saleId || !(await salesOrders.findOne({ _id: oid(saleId), orgId: o, channel: "POS" }, { projection: { _id: 1 } }))) return fail("Sale not found.", 404); }
+  const shift = await c.findOne({ orgId: o, kind: KINDS.shift, registerId: reg._id, status: "OPEN" }, { projection: { _id: 1, shiftNumber: 1 } });
+  const doc = { orgId: o, kind: KINDS.drawer, type: kind, registerId: reg._id, warehouseId: reg.warehouseId, shiftId: shift?._id || null, saleId: saleId ? oid(saleId) : null, reason: why || null, byEmail: actorEmail, at: nowIso() };
+  const r = await c.insertOne(doc);
+  await audit({ orgId, actorEmail, recordType: "CASH_DRAWER", recordId: r.insertedId, action: kind === "NO_SALE" ? "DRAWER_OPENED_NO_SALE" : "DRAWER_OPENED_SALE", metadata: { register: reg.code || reg.name, shift: shift?.shiftNumber || null, reason: why || null } });
+  return { ok: true, id: sid(r.insertedId) };
+}
+export async function listDrawerOpens({ orgId, membership, registerId = null, limit = 100 }) {
+  const denied = await commerceAccess({ orgId, membership, need: "supervise" }); if (denied) return denied;
+  const c = await ccol(); const q = { orgId: oid(orgId), kind: KINDS.drawer, ...scopeFilter(membership, "warehouseId"), ...(registerId ? { registerId: oid(registerId) } : {}) };
+  const rows = await c.find(q).sort({ at: -1 }).limit(Math.min(500, limit)).toArray();
+  return { openings: rows.map((x) => ({ id: sid(x._id), type: x.type, registerId: sid(x.registerId), shiftId: sid(x.shiftId), saleId: sid(x.saleId), reason: x.reason, by: x.byEmail, at: x.at })) };
 }

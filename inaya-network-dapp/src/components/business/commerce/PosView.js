@@ -7,6 +7,7 @@
 // Touch-friendly controls; keyboard: F2 search, F4 customer, F8 park, F9 pay, Esc closes dialogs.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { inDesktopApp, loadPrintSettings, savePrintSettings, listPrinters, listSerialPorts, printSaleReceipt, openDrawer, canOpenDrawer, printTest, printOn } from "../../../lib/commerce/desktopPrint";
 
 const card = "bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-xl";
 const muted = "text-[var(--inaya-text-muted)]";
@@ -289,12 +290,27 @@ function PayDialog({ orgId, settings, input, priced, onDone, onClose, customerCh
   </Modal>;
 }
 function ReceiptDialog({ orgId, saleId, onClose, giftCards = [] }) {
-  const [r, setR] = useState(null); const [err, setErr] = useState("");
+  const [r, setR] = useState(null); const [err, setErr] = useState(""); const [hw, setHw] = useState(null); const done = useRef(false);
   useEffect(() => { api(`sales/${saleId}/receipt`, { orgId }).then((d) => setR(d.receipt)).catch((e) => setErr(e.message)); }, [orgId, saleId]);
+  // Desktop printing (beta): every drawer opening is logged on the server BEFORE the drawer opens.
+  const logDrawer = () => api("drawer-log", { orgId, method: "POST", body: { registerId: savedRegister(orgId), kind: "SALE", saleId } });
+  useEffect(() => {
+    if (!r || done.current || !inDesktopApp()) return; done.current = true;
+    const ps = loadPrintSettings(); const cash = (r.tenders || []).some((t) => t.method === "CASH"); const kick = cash && canOpenDrawer(ps);
+    if (!ps.autoPrint || ps.printer.kind === "none" || ps.printer.kind === "laser") { if (kick) setHw({ ask: true }); return; }
+    (async () => { try { if (kick) await logDrawer(); const res = await printSaleReceipt(r, { cash: kick }, ps); setHw({ msg: `Receipt printed${res.drawer === "opened" ? " and drawer opened" : ""}.` }); }
+      catch (e) { // main printer failed: the sale stands; print on the backup (laser/inkjet print dialog) and say so
+        const drawerViaPrinter = kick && ps.drawer.kind === "printer";
+        setHw({ err: `${e.message || e} Printing on the backup printer instead.${drawerViaPrinter ? " The drawer is wired to that printer: open it with the key; the opening is recorded." : ""}`, ask: kick && !drawerViaPrinter });
+        if (ps.backup !== "none") setTimeout(() => printReceipt(r), 300); } })();
+  }, [r]); // eslint-disable-line react-hooks/exhaustive-deps
+  const yesOpen = async () => { try { await logDrawer(); await openDrawer(); setHw({ msg: "Drawer opened." }); } catch (e) { setHw({ err: e.message || String(e) }); } };
   return <Modal title="Sale complete" onClose={onClose}>
     {err && <p className="text-red-500">{err}</p>}
     {giftCards.length > 0 && <div className="mb-3 p-2 rounded-lg border border-emerald-500 text-sm"><p className="font-bold">New gift card code{giftCards.length > 1 ? "s" : ""}: write {giftCards.length > 1 ? "them" : "it"} on the card or print the receipt now. It is shown only once.</p>{giftCards.map((g) => <p key={g.code} className="font-mono text-lg">{g.code}</p>)}</div>}
-    {r && <><Receipt r={r} /><div className="flex flex-wrap gap-2 mt-3 print:hidden"><button className={primary} onClick={() => printReceipt(r)}>Print receipt</button><button className={btn} onClick={onClose}>New sale</button></div><ReceiptActions orgId={orgId} saleId={saleId} /></>}
+    {hw?.msg && <p className="text-sm text-emerald-600 mb-2">{hw.msg}</p>}{hw?.err && <p className="text-sm text-red-500 mb-2" role="alert">Printer: {hw.err}</p>}
+    {hw?.ask && <div className="mb-3 p-2 rounded-lg border border-amber-500 text-sm flex items-center gap-2 flex-wrap print:hidden"><span className="font-semibold">Open cash drawer?</span><button className={primary} onClick={yesOpen}>Open drawer</button><button className={btn} onClick={() => setHw(null)}>No</button></div>}
+    {r && <><Receipt r={r} /><div className="flex flex-wrap gap-2 mt-3 print:hidden"><button className={primary} onClick={() => printReceipt(r)}>Print receipt</button><PrintOnButton r={r} /><button className={btn} onClick={onClose}>New sale</button></div><ReceiptActions orgId={orgId} saleId={saleId} /></>}
   </Modal>;
 }
 export function Receipt({ r }) {
@@ -339,6 +355,7 @@ function ShiftBar({ orgId, settings, role, warehouseId, registerId, setRegisterI
       <span className="text-sm">Shift {shift.shiftNumber} · opened by {shift.openedBy} · expected cash <b>{money(shift.expected, settings.currency)}</b></span>
       <span className="ml-auto flex flex-wrap gap-2">
         {role !== "cashier" && <button className={btn} onClick={() => setDialog("cash")}>Cash in / out</button>}
+        {canOpenDrawer() && <button className={btn} onClick={async () => { const reason = (window.prompt("Reason for opening the drawer without a sale (required)") || "").trim(); if (!reason) return; try { await api("drawer-log", { orgId, method: "POST", body: { registerId, kind: "NO_SALE", reason } }); await openDrawer(); setErr(""); } catch (e) { setErr(e.message || String(e)); } }}>No sale</button>}
         <button className={btn} onClick={() => { loadShift(); setDialog("report"); }}>Shift report</button>
         <button className={btn} onClick={() => setDialog("close")}>Close shift</button>
       </span></>}
@@ -665,6 +682,40 @@ function SetPrice({ orgId, lists, run }) {
 }
 
 // ================================================================= Setup (managers)
+/** "Print on..." -- one receipt on any printer of this PC, without changing the till's settings. */
+function PrintOnButton({ r }) {
+  const [list, setList] = useState(null); const [msg, setMsg] = useState("");
+  if (!inDesktopApp()) return null;
+  return <span className="relative inline-block">
+    <button className={btn} onClick={async () => { try { setList(list ? null : await listPrinters()); } catch (e) { setMsg(String(e.message || e)); } }}>Print on…</button>
+    {list && <span className="absolute z-10 mt-1 left-0 min-w-[220px] rounded-lg border border-[var(--inaya-border)] bg-[var(--inaya-surface)] shadow p-1 flex flex-col">
+      <button className="text-left text-sm px-2 py-1.5 rounded hover:bg-[var(--inaya-overlay-5)]" onClick={() => { setList(null); printReceipt(r); }}>Laser / inkjet (print dialog)</button>
+      {list.map((p) => <button key={p} className="text-left text-sm px-2 py-1.5 rounded hover:bg-[var(--inaya-overlay-5)]" onClick={async () => { setList(null); try { await printOn(p, r, { paper: Number(loadPrintSettings().printer.paper) === 58 ? 58 : 80 }); setMsg(`Sent to ${p}.`); } catch (e) { setMsg(`${p}: ${e.message || e}`); } }}>{p} (receipt printer)</button>)}
+    </span>}
+    {msg && <span className={`ml-2 text-xs ${muted}`}>{msg}</span>}
+  </span>;
+}
+function PrinterSetup() {
+  const [ps, setPs] = useState(() => loadPrintSettings()); const [printers, setPrinters] = useState([]); const [ports, setPorts] = useState([]); const [msg, setMsg] = useState(""); const desktop = inDesktopApp();
+  useEffect(() => { if (!desktop) return; listPrinters().then(setPrinters).catch(() => {}); listSerialPorts().then(setPorts).catch(() => {}); }, [desktop]);
+  const set = (path, v) => { const n = { ...ps, printer: { ...ps.printer }, drawer: { ...ps.drawer } }; const [a, b] = path.split("."); if (b) n[a][b] = v; else n[a] = v; setPs(n); savePrintSettings(n); setMsg("Saved on this till."); };
+  if (!desktop) return <div className={`${card} p-3 text-sm`}><h3 className="font-bold">Receipt printer and cash drawer</h3><p className={muted}>Silent receipt printing and opening the cash drawer work in the Inaya desktop app (Windows / Linux). In a browser, receipts print through the normal print dialog.</p></div>;
+  return <div className={`${card} p-3 space-y-2 text-sm`}>
+    <h3 className="font-bold">This till's receipt printer and cash drawer <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-amber-500 text-amber-600 ml-1">Beta</span></h3>
+    <p className={`text-xs ${muted}`}>Saved on this computer only. Every drawer opening is recorded with who, which till and why.</p>
+    <label className="block">Receipt printer<select className={field} value={ps.printer.kind} onChange={(e) => set("printer.kind", e.target.value)}><option value="none">None</option><option value="installed">Receipt printer on this computer (USB)</option><option value="network">Network receipt printer (IP address)</option><option value="laser">Laser / A4 printer (print dialog)</option></select></label>
+    {ps.printer.kind === "installed" && <label className="block">Printer<select className={field} value={ps.printer.name} onChange={(e) => set("printer.name", e.target.value)}><option value="">Choose…</option>{printers.map((p) => <option key={p} value={p}>{p}</option>)}</select></label>}
+    {ps.printer.kind === "network" && <div className="grid grid-cols-[1fr_90px] gap-2"><input className={field} placeholder="192.168.1.50" value={ps.printer.host} onChange={(e) => set("printer.host", e.target.value.trim())} /><input className={field} inputMode="numeric" value={ps.printer.port} onChange={(e) => set("printer.port", Number(e.target.value) || 9100)} /></div>}
+    {(ps.printer.kind === "installed" || ps.printer.kind === "network") && <label className="block">Paper<select className={field} value={ps.printer.paper} onChange={(e) => set("printer.paper", Number(e.target.value))}><option value={80}>80 mm</option><option value={58}>58 mm</option></select></label>}
+    <label className="block">Cash drawer<select className={field} value={ps.drawer.kind} onChange={(e) => set("drawer.kind", e.target.value)}><option value="none">None</option><option value="printer">Connected to the receipt printer (RJ11)</option><option value="serial">USB cash drawer or trigger box (COM port)</option></select></label>
+    {ps.drawer.kind === "serial" && <div className="grid grid-cols-[1fr_110px] gap-2"><select className={field} value={ps.drawer.port} onChange={(e) => set("drawer.port", e.target.value)}><option value="">Choose port…</option>{ports.map((p) => <option key={p} value={p}>{p}</option>)}</select><input className={field} inputMode="numeric" value={ps.drawer.baud} onChange={(e) => set("drawer.baud", Number(e.target.value) || 9600)} /></div>}
+    {ps.drawer.kind === "printer" && ps.printer.kind === "laser" && <p className="text-xs text-amber-600">A laser printer can't open a drawer. Use a USB trigger box (COM port) instead.</p>}
+    <label className="flex items-center gap-2"><input type="checkbox" checked={!!ps.autoPrint} onChange={(e) => set("autoPrint", e.target.checked)} />Print the receipt automatically after each sale</label>
+    <label className="block">If the receipt printer fails<select className={field} value={ps.backup || "dialog"} onChange={(e) => set("backup", e.target.value)}><option value="dialog">Print on a laser / inkjet printer (print dialog)</option><option value="none">Do nothing (reprint later)</option></select></label>
+    {(ps.printer.kind === "installed" || ps.printer.kind === "network") && <button className={btn} onClick={async () => { try { await printTest(ps); setMsg("Test receipt sent."); } catch (e) { setMsg(`Printer: ${e.message || e}`); } }}>Print a test receipt</button>}
+    {msg && <p className={`text-xs ${muted}`}>{msg}</p>}
+  </div>;
+}
 function Setup({ orgId, settings, onSaved }) {
   const [s, setS] = useState(settings); const [taxes, setTaxes] = useState([]); const [lists, setLists] = useState([]); const [staff, setStaff] = useState([]); const [msg, setMsg] = useState(""); const [err, setErr] = useState("");
   const [regs, setRegs] = useState([]); const [whs, setWhs] = useState([]); const [reg, setReg] = useState({ code: "", name: "", warehouseId: "" });
@@ -693,6 +744,7 @@ function Setup({ orgId, settings, onSaved }) {
       <button className={primary} onClick={() => run(async () => { const d = await api("settings", { orgId, method: "PUT", body: s }); onSaved(d.settings); }, "Settings saved.")}>Save settings</button>
     </div>
     <div className="space-y-3">
+      <PrinterSetup />
       <div className={`${card} p-3 space-y-2`}><h3 className="font-bold">Tax categories</h3>
         <ul className="text-sm">{taxes.map((t) => <li key={t.id}>{t.code} · {t.name} · {t.rate}%{t.isDefault ? " (default)" : ""}{t.locationRates.length ? ` · ${t.locationRates.length} location rate(s)` : ""}</li>)}</ul>
         <div className="grid grid-cols-3 gap-2"><input className={field} placeholder="Code" value={tax.code} onChange={(e) => setTax({ ...tax, code: e.target.value })} /><input className={field} placeholder="Name" value={tax.name} onChange={(e) => setTax({ ...tax, name: e.target.value })} /><input className={field} placeholder="Rate %" inputMode="decimal" value={tax.rate} onChange={(e) => setTax({ ...tax, rate: e.target.value })} /></div>

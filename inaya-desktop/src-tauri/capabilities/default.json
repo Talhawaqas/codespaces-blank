@@ -38,6 +38,11 @@
     "allow-directsync-list-folders",
     "allow-directsync-list-queue",
     "allow-directsync-retry-failed",
+    "allow-pos-list-printers",
+    "allow-pos-print-raw",
+    "allow-pos-print-network",
+    "allow-pos-list-serial-ports",
+    "allow-pos-serial-write",
     "allow-directsync-create-secure-link",
     "allow-cleaner-scan",
     "allow-cleaner-cleanup"

@@ -103,7 +103,7 @@ export const ERP_MODULES = [
       { id: "tasks", label: "My tasks", items: ["tasks:list!new"] },
       { id: "work", label: "Work", items: ["tasks", "projects", "departments"] },
       { id: "communicate", label: "Communicate", items: ["chat", "meet"] },
-      { id: "assist", label: "Automation and help", items: ["workflows", "ai", "help"] },
+      { id: "assist", label: "Automation and help", items: ["workflows", "ai", "help", "ideas"] },
     ],
   },
   {

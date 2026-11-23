@@ -23,6 +23,37 @@ import { PricingCard } from "../PricingCard";
 
 const PENDING_PLAN_KEY = "inaya_pending_plan";
 
+import { COMMERCE_PRICING as CP } from "../../../lib/commercePricing";
+// Inaya Commerce pricing (owner approved 23 Nov 2026): back office + front office + online selling.
+function CommercePricing({ region, onPick }) {
+  const pk = region === "PK"; const m = (x) => (pk ? `PKR ${x.pkr.toLocaleString("en-US")}` : `${x.usd}`);
+  const cards = [
+    { id: "professional", name: "Commerce Starter", price: m(CP.starter), note: "add-on to Professional", points: ["1 branch and 1 till", "Your own web store", "1 connected store: Shopify or WooCommerce", "300 online orders a month"] },
+    { id: "business", name: "Commerce add-on", price: m(CP.addon), note: "add-on to Business", points: ["2 branches and 3 tills", "Your own web store", "1 Shopify + 1 WooCommerce store", "1,000 online orders a month"] },
+    { id: "business", name: "Business + Commerce", price: m(CP.bundle), note: pk ? `a month, saves PKR ${(30000 + CP.addon.pkr - CP.bundle.pkr).toLocaleString("en-US")}` : `a month, saves ${99 + CP.addon.usd - CP.bundle.usd}`, featured: true, points: ["Everything in Business, plus full Commerce", "2 branches and 3 tills", "Web store + Shopify + WooCommerce", "Point of sale, stock, orders, loyalty, staff rota"] },
+    { id: "enterprise", name: "Enterprise", price: "Included", note: "in the Enterprise plan", points: ["Unlimited branches and tills", "3 connected stores", "Unlimited online orders", "Priority onboarding"] },
+  ];
+  return (
+    <section className="mt-12" aria-label="Inaya Commerce pricing">
+      <h2 className="text-2xl font-extrabold text-white">Inaya Commerce</h2>
+      <p className="text-[#94a3b8] text-sm mt-1 mb-5">Back office, front office and online selling on the same products, stock, customers and books: point of sale, inventory across branches, your own web store, Shopify and WooCommerce sync, loyalty and gift cards, and staff time and commissions.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <div key={c.name} className={`rounded-2xl p-5 flex flex-col border ${c.featured ? "border-[#00f2fe]/50 bg-[#00f2fe]/5" : "border-white/10 bg-[#090d16]/80"}`}>
+            {c.featured && <span className="self-start text-[11px] font-bold text-black bg-[#00f2fe] rounded-full px-2.5 py-0.5 mb-2">Best value</span>}
+            <p className="text-white font-bold">{c.name}</p>
+            <p className="mt-2"><span className="text-3xl font-extrabold text-white">{c.price}</span></p>
+            <p className="text-[#94a3b8] text-xs">{c.note}{c.price !== "Included" && !c.featured ? (pk ? " · a month" : " · a month") : ""}</p>
+            <ul className="mt-4 space-y-1.5 text-[13px] text-slate-300 flex-1">{c.points.map((x) => <li key={x} className="flex gap-2"><span className="text-[#00f2fe]">✓</span>{x}</li>)}</ul>
+            <button onClick={() => onPick(c.id)} className={`mt-5 w-full py-2.5 rounded-xl text-sm font-bold ${c.featured ? "bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black" : "border border-white/15 text-white hover:border-[#00f2fe]/40"}`}>Choose {c.id === "professional" ? "Professional" : c.id === "business" ? "Business" : "Enterprise"}</button>
+          </div>
+        ))}
+      </div>
+      <p className="text-[#94a3b8] text-xs mt-4">Extra branch {m(CP.extraBranch)} a month · extra till {m(CP.extraTill)} a month. Commerce is switched on with your activation; tell us which option you want in the request. Card payments use your own Stripe or Safepay account: Inaya never holds your customers' money.</p>
+    </section>
+  );
+}
+
 export default function PricingPage() {
   const [plans, setPlans] = useState(null);
   const [error, setError] = useState("");
@@ -89,6 +120,8 @@ export default function PricingPage() {
             ))}
           </div>
         )}
+
+        {plans && <CommercePricing region={region} onPick={(id) => { const pl = plans.find((x) => x.id === id); if (pl) handleSelect(pl); }} />}
 
         {region === "PK" ? (
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#090d16]/60 border border-white/5 rounded-2xl p-5 text-xs text-[#94a3b8]">

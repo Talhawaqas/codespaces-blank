@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pos-print-raw"
+description = "Enables the pos_print_raw command without any pre-configured scope."
+commands.allow = ["pos_print_raw"]
+
+[[permission]]
+identifier = "deny-pos-print-raw"
+description = "Denies the pos_print_raw command without any pre-configured scope."
+commands.deny = ["pos_print_raw"]

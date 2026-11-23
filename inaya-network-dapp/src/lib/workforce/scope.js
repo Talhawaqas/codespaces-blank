@@ -21,7 +21,7 @@ export const ROLE_TEMPLATES = {
   staff: { label: "Staff (no special access)", role: "member", commerceRole: null, financeRole: null, hrRole: null },
 };
 const FIELDS = { role: ["member", "admin"], commerceRole: ["cashier", "supervisor", "manager"], financeRole: ["staff", "manager"], hrRole: ["staff", "manager"], supportRole: ["agent", "manager"] };
-export const BRANCH_LIMITS = { business: { branches: 2, tills: 3 }, enterprise: { branches: null, tills: null } };
+export const BRANCH_LIMITS = { professional: { branches: 1, tills: 1 }, business: { branches: 2, tills: 3 }, enterprise: { branches: null, tills: null } }; // pricing approved 23 Nov 2026 (src/lib/commercePricing.js)
 
 /** null = every branch; otherwise the list of branch ids (strings) this member may work in. */
 export function memberLocations(m) {
@@ -36,7 +36,7 @@ export const denyLocation = () => fail("You aren't assigned to that branch.", 40
 
 export async function branchLimits(orgId) {
   const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { plan: 1, commerceExtraBranches: 1, commerceExtraTills: 1 } });
-  const base = org?.plan === "enterprise" ? BRANCH_LIMITS.enterprise : BRANCH_LIMITS.business;
+  const base = BRANCH_LIMITS[org?.plan] || BRANCH_LIMITS.business;
   return { plan: org?.plan || null, branches: base.branches === null ? null : base.branches + (Number(org?.commerceExtraBranches) || 0), tills: base.tills === null ? null : base.tills + (Number(org?.commerceExtraTills) || 0) };
 }
 
@@ -92,6 +92,19 @@ export async function updateUser({ orgId, membership, actorEmail, email, input =
 /** Branch creation respects the plan's branch limit (Option A) -- ONLY when the new Commerce pricing is switched on
  *  (COMMERCE_PLAN_LIMITS=1) AND the company is on that pricing (org.commercePricingVersion >= 2). Until then it is inert,
  *  and existing companies are never blocked on warehouses they already use. */
+/** Limits apply only to companies on the 23 Nov 2026 Commerce pricing (commercePricingVersion >= 2) once COMMERCE_PLAN_LIMITS=1. */
+async function limitsApply(orgId) {
+  if (process.env.COMMERCE_PLAN_LIMITS !== "1") return false;
+  const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { commercePricingVersion: 1 } });
+  return Number(org?.commercePricingVersion) >= 2;
+}
+/** A new till (register): refused when the plan's tills are used up. */
+export async function canAddTill(orgId, countExisting) {
+  if (!(await limitsApply(orgId))) return null;
+  const lim = await branchLimits(orgId); if (lim.tills === null) return null;
+  const n = await countExisting();
+  return n >= lim.tills ? fail(`Your plan includes ${lim.tills} till${lim.tills === 1 ? "" : "s"}. Add an extra till, or move up a plan.`, 403, "TILL_LIMIT") : null;
+}
 export async function canAddBranch(orgId) {
   if (process.env.COMMERCE_PLAN_LIMITS !== "1") return null;
   const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { commercePricingVersion: 1 } });

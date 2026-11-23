@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { isAdminAuthenticated } from "../../../../../lib/admin-auth.js";
 import { getFeedbackCollections, FEEDBACK_STATUSES } from "../../../../../lib/feedback.js";
+import { notifyIdeaStatus } from "../../../../../lib/workspaceIdeas.js";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,9 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     }
 
-    const { status, adminNotes } = await req.json();
+    const { status, adminNotes, sprint, publicBoard } = await req.json();
+    // Workspace ideas (23 Nov 2026): which development sprint, and whether other companies may see/vote on it.
+    if (sprint !== undefined && sprint !== null && (typeof sprint !== "string" || sprint.length > 40)) return NextResponse.json({ error: "sprint must be a short text, e.g. \"Sprint 3\"." }, { status: 400 });
     const update = { updatedAt: new Date() };
     if (status !== undefined) {
       if (!FEEDBACK_STATUSES.includes(status)) {
@@ -36,6 +39,8 @@ export async function PATCH(req, { params }) {
       }
       update.adminNotes = adminNotes;
     }
+    if (sprint !== undefined) update.sprint = sprint ? sprint.trim() : null;
+    if (publicBoard !== undefined) update.publicBoard = publicBoard === true;
 
     const { feedback } = await getFeedbackCollections();
     const result = await feedback.findOneAndUpdate(
@@ -44,6 +49,7 @@ export async function PATCH(req, { params }) {
       { returnDocument: "after" }
     );
     if (!result) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    if (status !== undefined) await notifyIdeaStatus(result).catch(() => 0); // tells the submitter + voters when Planned / Shipped
 
     return NextResponse.json({ ...result, _id: result._id.toString() });
   } catch (err) {

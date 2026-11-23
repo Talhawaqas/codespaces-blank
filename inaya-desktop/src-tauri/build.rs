@@ -28,6 +28,11 @@ const COMMANDS: &[&str] = &[
     "directsync_create_secure_link",
     "cleaner_scan",
     "cleaner_cleanup",
+    "pos_list_printers",
+    "pos_print_raw",
+    "pos_print_network",
+    "pos_list_serial_ports",
+    "pos_serial_write",
 ];
 
 fn main() {

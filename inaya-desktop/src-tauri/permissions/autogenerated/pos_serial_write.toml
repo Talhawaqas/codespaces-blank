@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pos-serial-write"
+description = "Enables the pos_serial_write command without any pre-configured scope."
+commands.allow = ["pos_serial_write"]
+
+[[permission]]
+identifier = "deny-pos-serial-write"
+description = "Denies the pos_serial_write command without any pre-configured scope."
+commands.deny = ["pos_serial_write"]

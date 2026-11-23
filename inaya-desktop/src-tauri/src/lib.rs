@@ -18,6 +18,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::UpdaterExt;
 
+mod pos_print;
 mod directsync;
 use directsync::{DirectSyncCredential, DirectSyncState, FolderConfig, QueueEntry, SyncEngine};
 mod cleaner;
@@ -792,6 +793,16 @@ fn cleaner_cleanup(window: tauri::WebviewWindow, app: tauri::AppHandle, paths: V
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // One copy of the app at a time (owner, 23 Nov 2026): clicking the icon again brings the open window to the front
+        // instead of starting a duplicate. Must be the first plugin registered.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            use tauri::Manager;
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -831,7 +842,12 @@ pub fn run() {
             directsync_retry_failed,
             directsync_create_secure_link,
             cleaner_scan,
-            cleaner_cleanup
+            cleaner_cleanup,
+            pos_print::pos_list_printers,
+            pos_print::pos_print_raw,
+            pos_print::pos_print_network,
+            pos_print::pos_list_serial_ports,
+            pos_print::pos_serial_write
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

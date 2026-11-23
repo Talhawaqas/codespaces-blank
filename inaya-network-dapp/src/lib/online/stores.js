@@ -27,6 +27,7 @@ export const STOCK_POLICIES = ["hide_out_of_stock", "show_out_of_stock", "show_l
 export const THEMES = { classic: "Classic (light, centred)", bold: "Bold (dark header, large images)", minimal: "Minimal (clean grid)" };
 const RESERVED_SLUGS = new Set(["admin", "api", "www", "shop", "store", "inaya", "app", "mail", "support", "help", "static", "assets", "login", "checkout", "cart", "ping", "webhooks", "channels", "preview", "shopify", "_host"]);
 export const PLAN_LIMITS = {
+  professional: { connected: { SHOPIFY: 1, WOOCOMMERCE: 1 }, total: 1, monthlyOrders: 300 }, // Commerce Starter: ONE store, Shopify OR WooCommerce
   business: { connected: { SHOPIFY: 1, WOOCOMMERCE: 1 }, total: 2, monthlyOrders: 1000 },
   enterprise: { connected: null, total: 3, monthlyOrders: null },
 };
@@ -53,7 +54,7 @@ export async function ensureOnlineIndexes() {
 // ---------------------------------------------------------------- plan limits
 export async function planLimits(orgId) {
   const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { plan: 1, commerceExtraStores: 1, commerceOrderCap: 1 } });
-  const base = org?.plan === "enterprise" ? PLAN_LIMITS.enterprise : PLAN_LIMITS.business;
+  const base = PLAN_LIMITS[org?.plan] || PLAN_LIMITS.business;
   const extra = Math.max(0, Math.floor(Number(org?.commerceExtraStores) || 0));
   return { plan: org?.plan || null, connected: base.connected, total: base.total + extra, extraStores: extra, monthlyOrders: org?.commerceOrderCap === "unlimited" ? null : base.monthlyOrders };
 }

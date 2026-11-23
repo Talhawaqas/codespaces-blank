@@ -21,7 +21,7 @@ export const FEEDBACK_CATEGORIES = [
   "Other",
 ];
 export const FEEDBACK_SEVERITIES = ["Low", "Medium", "High", "Critical"];
-export const FEEDBACK_STATUSES = ["New", "Reviewing", "Confirmed", "In Progress", "Resolved", "Rejected"];
+export const FEEDBACK_STATUSES = ["New", "Reviewing", "Confirmed", "Planned", "In Progress", "Shipped", "Resolved", "Rejected"]; // Planned/Shipped: Workspace ideas (sprints), 23 Nov 2026
 
 const MAX_TITLE_LEN = 200;
 const MAX_DESCRIPTION_LEN = 5000;

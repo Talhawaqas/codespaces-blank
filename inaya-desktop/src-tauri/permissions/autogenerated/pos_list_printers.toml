@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pos-list-printers"
+description = "Enables the pos_list_printers command without any pre-configured scope."
+commands.allow = ["pos_list_printers"]
+
+[[permission]]
+identifier = "deny-pos-list-printers"
+description = "Denies the pos_list_printers command without any pre-configured scope."
+commands.deny = ["pos_list_printers"]

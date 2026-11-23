@@ -1,6 +1,6 @@
 [package]
 name = "inaya-desktop"
-version = "0.2.0"
+version = "0.3.0"
 description = "Inaya Business Workspace -- installable desktop wrapper around the existing web app. No new features: same Business Workspace (orgs, departments, projects, documents, workflow, permissions, sharing, AI Assistant), rendered from the same URL, with native OS integration (tray, notifications, menu, auto-update) around it."
 authors = ["Inaya Network"]
 license = ""
@@ -28,6 +28,8 @@ tauri-plugin-updater = "2"
 tauri-plugin-dialog = "2"
 # ERP mode (Batch 6): remembers the window size and position between sessions.
 tauri-plugin-window-state = "2"
+# One running copy at a time: a second launch focuses the open window (23 Nov 2026).
+tauri-plugin-single-instance = "2"
 keyring = "3"
 # DirectSync (Modular Enterprise Adoption Features SOW, Feature 1) --
 # inaya-drive-core is the same shared, already-tested S3 client/signer
@@ -42,7 +44,13 @@ walkdir = "2"
 # Inaya Cleaner (Internxt-inspired SOW, Workstream B) -- cross-platform OS trash/recycle-bin
 # moves, so a cleanup is never a permanent delete by default (docs/architecture/cleaner-safety-adr.md).
 trash = "5"
+# POS printing and cash drawer (Route 3, post-Commerce-SOW): base64 print jobs from the web till, serial drawer triggers.
+base64 = "0.22"
+serialport = { version = "4", default-features = false }
 
 [dev-dependencies]
 # Used only by the ignored real-server end-to-end test (the same crate inaya-drive-core already compiles).
 reqwest = { version = "0.12", features = ["blocking"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Printing"] }

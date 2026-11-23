@@ -28,7 +28,7 @@ import { isFeatureEnabled } from "../featureFlags.js";
 import { logOrgActivity } from "../org-activity-log.js";
 import { isSupportedCurrency } from "../currency.js";
 
-export const KINDS = { settings: "c_settings", taxCategory: "c_tax_category", taxRate: "c_tax_rate", priceList: "c_price_list", price: "c_price", custPrice: "c_cust_price", register: "c_register", shift: "c_shift", cashMove: "c_cash_move", counter: "c_counter" };
+export const KINDS = { settings: "c_settings", taxCategory: "c_tax_category", taxRate: "c_tax_rate", priceList: "c_price_list", price: "c_price", custPrice: "c_cust_price", register: "c_register", shift: "c_shift", cashMove: "c_cash_move", counter: "c_counter", drawer: "c_drawer" };
 export const COMMERCE_ROLES = ["manager", "supervisor", "cashier"];
 export const COMMERCE_FEATURE = "FEATURE_COMMERCE";
 
@@ -75,7 +75,7 @@ export const canManageCommerce = (m) => commerceRoleOf(m) === "manager";
 
 /** Server-side entitlement + role gate for every commerce API. */
 export async function commerceAccess({ orgId, membership, need = "sell" }) {
-  if (!(await isFeatureEnabled(COMMERCE_FEATURE, orgId))) return fail("Inaya Commerce is not enabled for this company. It is available as an add-on to the Business and Enterprise plans.", 403, "COMMERCE_NOT_ENABLED");
+  if (!(await isFeatureEnabled(COMMERCE_FEATURE, orgId))) return fail("Inaya Commerce is not enabled for this company. It is available as Commerce Starter on Professional, as an add-on to Business, and is included in Enterprise.", 403, "COMMERCE_NOT_ENABLED");
   const ok = need === "manage" ? canManageCommerce(membership) : need === "supervise" ? canSupervise(membership) : canSell(membership);
   if (!ok) return fail(need === "manage" ? "Only a commerce manager (or the owner/admin) can do that." : need === "supervise" ? "This needs a supervisor or manager." : "You don't have a commerce role in this company.", 403, "COMMERCE_ROLE");
   return null;

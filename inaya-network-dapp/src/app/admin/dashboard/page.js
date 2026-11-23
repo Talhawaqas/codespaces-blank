@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const FEEDBACK_STATUSES = ["New", "Reviewing", "Confirmed", "In Progress", "Resolved", "Rejected"];
+const FEEDBACK_STATUSES = ["New", "Reviewing", "Confirmed", "Planned", "In Progress", "Shipped", "Resolved", "Rejected"];
 
 function Bar({ value, max, color }) {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
@@ -55,7 +55,7 @@ function FilterChips({ options, value, onChange }) {
 
 function FeedbackRow({ item, onChanged }) {
   const [expanded, setExpanded] = useState(false);
-  const [notes, setNotes] = useState(item.adminNotes || "");
+  const [notes, setNotes] = useState(item.adminNotes || ""); const [sprint, setSprint] = useState(item.sprint || "");
   const [saving, setSaving] = useState(false);
 
   async function patch(body) {
@@ -133,6 +133,11 @@ function FeedbackRow({ item, onChanged }) {
             >
               {FEEDBACK_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {item.source === "business" && <>
+              <span className="text-[12px] font-bold text-[#00f2fe] border border-[#00f2fe]/30 rounded-lg px-2 py-1">Workspace · {item.orgName || "company"} · ▲ {item.voteCount || 0}{item.importance ? ` · ${item.importance}` : ""}</span>
+              <input value={sprint} onChange={(e) => setSprint(e.target.value)} onBlur={() => sprint !== (item.sprint || "") && patch({ sprint: sprint || null })} placeholder="Sprint (e.g. Sprint 3)" maxLength={40} className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-[13px] w-40" />
+              <label className="flex items-center gap-1.5 text-[12px] text-slate-300"><input type="checkbox" checked={!!item.publicBoard} onChange={(e) => patch({ publicBoard: e.target.checked })} />On public board</label>
+            </>}
             <button onClick={handleDelete} className="text-[12px] font-bold uppercase text-red-400 border border-red-400/30 bg-red-400/10 px-2.5 py-1.5 rounded-lg hover:bg-red-400/20">
               Delete
             </button>
