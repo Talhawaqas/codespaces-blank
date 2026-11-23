@@ -121,7 +121,7 @@ async function authenticateViaGoogleOAuth(idToken) {
  *  (nullish), which `??` would otherwise treat as "not provided" and
  *  incorrectly fall through to re-deriving from the URL. */
 export async function authenticateS3Request(req, bodyBuffer, routeParams) {
-  return assertCompanyLicensed(await authenticateS3RequestUnlicensed(req, bodyBuffer, routeParams), () => new S3AuthError("AccessDenied", "This company's Business Workspace license is not active, so its storage keys are paused.", 403));
+  return assertCompanyLicensed(await authenticateS3RequestUnlicensed(req, bodyBuffer, routeParams), () => new S3AuthError("AccessDenied", "This company's Business OS license is not active, so its storage keys are paused.", 403));
 }
 
 // Company license (License Manager SOW 9.3): a company whose license is suspended, cancelled or expired cannot use

@@ -2,7 +2,7 @@
 
 // src/components/business/WelcomeView.js
 //
-// Business Workspace redesign (2026-10-18) — shown once per person per
+// Business OS redesign (2026-10-18) — shown once per person per
 // company: "What will you mainly use Inaya for?" The answer only decides
 // which apps start pinned in the sidebar; everything else stays one click
 // away in All apps, and the choice can be changed there any time.
@@ -16,7 +16,7 @@ export default function WelcomeView({ onChoose, onSkip }) {
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center overflow-y-auto bg-[rgba(15,23,42,0.45)] p-4" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
       <div className="w-full max-w-2xl rounded-2xl border border-[var(--inaya-border)] bg-[var(--inaya-surface)] p-6 sm:p-9 shadow-2xl space-y-6">
         <div className="space-y-2">
-          <p className="text-[13px] font-semibold text-[var(--inaya-accent)]">Welcome to your Business Workspace</p>
+          <p className="text-[13px] font-semibold text-[var(--inaya-accent)]">Welcome to Inaya Business OS</p>
           <h1 id="welcome-title" className="text-2xl sm:text-[28px] font-bold leading-tight text-[var(--inaya-text-primary)] [text-wrap:balance]">
             What will you mainly use Inaya for?
           </h1>

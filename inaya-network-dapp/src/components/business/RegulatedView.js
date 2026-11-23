@@ -2,7 +2,7 @@
 
 // src/components/business/RegulatedView.js
 //
-// Regulated Enterprise OS tab of the Business Workspace (Financial
+// Regulated Enterprise OS tab of the Business OS (Financial
 // Services & Regulated Enterprise SOW, Phase 4) — Controls, Evidence,
 // Findings & Remediation, Policies, Risk & Exceptions, Internal Audit,
 // Examinations, and a Compliance Dashboard. Same self-contained-view
@@ -426,7 +426,7 @@ function RiskExceptionsTab({ orgId }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-[var(--inaya-text-muted)] text-xs max-w-lg">Exceptions always require an expiry date — no permanent silent exceptions. The full risk register lives alongside every other Business Workspace module's risk entries; this view shows compliance exceptions specifically.</p>
+      <p className="text-[var(--inaya-text-muted)] text-xs max-w-lg">Exceptions always require an expiry date — no permanent silent exceptions. The full risk register lives alongside every other Business OS module's risk entries; this view shows compliance exceptions specifically.</p>
       <form onSubmit={request} className="flex flex-wrap gap-2">
         <input aria-label="Justification" value={justification} onChange={(e) => setJustification(e.target.value)} placeholder="Justification" className="flex-1 min-w-[160px] bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <input value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} type="date" className="bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-xs text-[var(--inaya-text-primary)]" />

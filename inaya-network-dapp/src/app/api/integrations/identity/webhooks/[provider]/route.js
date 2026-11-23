@@ -40,7 +40,7 @@ export async function POST(req, ctx) {
     const secret = provider ? signingSecretOf(provider) : null;
     if (!provider || !secret) return UNAUTH();
     // Company license (License Manager SOW 9.3): provider events are not applied while the license is restricted.
-    { const { companyMayOperate } = await import("../../../../../../lib/licensing/gate.js"); if (!(await companyMayOperate(provider.orgId))) return NextResponse.json({ error: "This company's Business Workspace license is not active.", reasonCode: "LICENSE_RESTRICTED" }, { status: 403 }); }
+    { const { companyMayOperate } = await import("../../../../../../lib/licensing/gate.js"); if (!(await companyMayOperate(provider.orgId))) return NextResponse.json({ error: "This company's Business OS license is not active.", reasonCode: "LICENSE_RESTRICTED" }, { status: 403 }); }
     try { await checkRateLimit({ action: "identity-webhook", key: String(provider._id), max: 1200, windowMs: 60000 }); }
     catch { return json({ error: "Too many requests.", reasonCode: "RATE_LIMITED" }, 429); }
     const sig = verifySignature({ secret, timestamp: req.headers.get("x-inaya-timestamp"), signature: req.headers.get("x-inaya-signature"), rawBody: raw });

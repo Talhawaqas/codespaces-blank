@@ -102,7 +102,7 @@ async function authenticateViaSas(req, url) {
 }
 
 export async function authenticateAzureRequest(req, bodyBuffer) {
-  return assertCompanyLicensed(await authenticateAzureRequestUnlicensed(req, bodyBuffer), () => new AzureAuthError("AuthorizationFailure", "This company's Business Workspace license is not active, so its storage keys are paused.", 403));
+  return assertCompanyLicensed(await authenticateAzureRequestUnlicensed(req, bodyBuffer), () => new AzureAuthError("AuthorizationFailure", "This company's Business OS license is not active, so its storage keys are paused.", 403));
 }
 
 // Company license (License Manager SOW 9.3): a company whose license is suspended, cancelled or expired cannot use

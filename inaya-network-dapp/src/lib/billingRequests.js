@@ -66,11 +66,11 @@ async function notifyActivationRequest({ org, orgId, plan, what, actorEmail, con
     sendEmail({
       to: actorEmail,
       replyTo: ACTIVATION_INBOX,
-      subject: "Welcome to Inaya Business Workspace: we received your request",
+      subject: "Welcome to Inaya Business OS: we received your request",
       text: [
         `Hi${contact?.name ? ` ${contact.name}` : ""},`,
         "",
-        "Welcome to Inaya Business Workspace, and thank you for choosing us.",
+        "Welcome to Inaya Business OS, and thank you for choosing us.",
         "",
         `This is an automatic confirmation that we received your request for ${what}, paid by ${PAYMENT_METHODS[paymentMethod] || paymentMethod}.`,
         "",

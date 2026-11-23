@@ -3,11 +3,11 @@
 // exists.
 
 export const metadata = {
-  title: "Download Business Workspace — Inaya Network",
-  description: "Get the Inaya Business Workspace desktop app — the ERP-style workspace for documents, finance, CRM, HR and inventory, native on Windows and Linux with auto-updates.",
+  title: "Download Business OS — Inaya Network",
+  description: "Get the Inaya Business OS desktop app — the ERP-style workspace for documents, finance, CRM, HR and inventory, native on Windows and Linux with auto-updates.",
   alternates: { canonical: "/business/download" },
   openGraph: {
-    title: "Download Inaya Business Workspace for Windows and Linux",
+    title: "Download Inaya Business OS for Windows and Linux",
     description: "The ERP-style business workspace as a native desktop app, with auto-updates.",
     url: "https://www.inayanetwork.com/business/download",
     siteName: "Inaya Network",

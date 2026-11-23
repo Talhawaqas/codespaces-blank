@@ -1,6 +1,6 @@
 // src/lib/licensing/gate.js -- the central license gate (SOW section 9).
 //
-// Called from requireMembership (src/lib/orgs.js), which nearly every Business Workspace API uses, and from the
+// Called from requireMembership (src/lib/orgs.js), which nearly every Business OS API uses, and from the
 // other ways company data is reached (S3/Azure keys, share links, data rooms, the customer portal, file requests,
 // the public API, scheduled jobs): see docs/licensing/BUSINESS_WORKSPACE_LICENSE_PERMISSION_MATRIX.md for the
 // route-by-route list. It is an ADDITIONAL gate: it never grants anything the existing role, department or record
@@ -63,8 +63,8 @@ export const RESTRICTED_CODE = "LICENSE_RESTRICTED";
 function restrictedMessage(state, isManager) {
   const what = state === "cancelled" ? "cancelled" : state === "expired" ? "expired" : "suspended";
   return isManager
-    ? `Your company's Business Workspace license is ${what}. Billing, Help & Support and your company data export are still available.`
-    : `Your company's Business Workspace access is paused. Please contact your company's owner or admin.`;
+    ? `Your company's Business OS license is ${what}. Billing, Help & Support and your company data export are still available.`
+    : `Your company's Business OS access is paused. Please contact your company's owner or admin.`;
 }
 
 /**

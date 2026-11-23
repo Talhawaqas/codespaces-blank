@@ -26,6 +26,7 @@
 // shown is real data through the same permission resolution the rest of
 // the app already uses, nothing here is placeholder content.
 
+import { COMMERCE_PRICING } from "../../lib/commercePricing";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 
@@ -200,7 +201,7 @@ export default function BusinessPage({ initialSignedOut = false }) {
   // after mount, so the first client render matches the server's HTML.
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  // Business Workspace redesign: light-first for people who never picked a
+  // Business OS redesign: light-first for people who never picked a
   // theme. Not saved, so the rest of the site keeps its own default.
   const { preferDefaultTheme } = useTheme();
   useEffect(() => { preferDefaultTheme("white"); }, [preferDefaultTheme]);
@@ -244,7 +245,7 @@ export default function BusinessPage({ initialSignedOut = false }) {
 
   // DAU/WAU activity ping — fire-and-forget, once per confirmed session.
   // Identity is the session email (always authenticated here, no
-  // anonymous case for Business Workspace).
+  // anonymous case for Business OS).
   useEffect(() => {
     if (!session?.email) return;
     fetch('/api/activity/ping', {
@@ -534,9 +535,9 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const [googleError, setGoogleError] = useState("");
   const googleButtonRef = useRef(null);
   const signInCardRef = useRef(null);
-  const [landingPlans, setLandingPlans] = useState(null);
+  const [landingPlans, setLandingPlans] = useState(null); const [landingRegion, setLandingRegion] = useState("INTL");
   useEffect(() => {
-    fetch("/api/orgs/billing/plans").then((r) => r.json()).then((d) => { if (Array.isArray(d.plans)) setLandingPlans(d.plans); }).catch(() => {});
+    fetch("/api/orgs/billing/plans").then((r) => r.json()).then((d) => { if (Array.isArray(d.plans)) setLandingPlans(d.plans); if (d.region) setLandingRegion(d.region); }).catch(() => {});
   }, []);
 
   // Google Identity Services renders its own button into this ref via a
@@ -616,14 +617,19 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   }
 
   const features = [
-    { icon: "🗂️", title: "Documents & approvals", desc: "Company records organised by department and project, with built-in review and sign-off." },
-    { icon: "💰", title: "Finance", desc: "Invoices, expenses, approvals and revenue reporting for the whole company." },
-    { icon: "🤝", title: "CRM & sales", desc: "Contacts and pipeline, appointment booking and email campaigns." },
-    { icon: "👥", title: "HR", desc: "Employee records, leave management and staff documents in one place." },
-    { icon: "📦", title: "Inventory & procurement", desc: "Stock, suppliers, purchase orders and approval workflows." },
-    { icon: "✅", title: "Tasks & projects", desc: "Assign work, track progress and keep every department aligned." },
-    { icon: "📊", title: "Insights", desc: "Dashboards and reports across every part of the business." },
-    { icon: "💬", title: "Team chat", desc: "Talk to colleagues inside the workspace, right next to the work." },
+    { icon: "💰", title: "Finance & books", desc: "Invoices, expenses, approvals, bookkeeping and revenue reporting for the whole company." },
+    { icon: "🧾", title: "Point of sale", desc: "Sell at the counter with returns, shifts, cash control and receipts, even when the internet drops." },
+    { icon: "🛒", title: "Online store & sync", desc: "Your own web store plus built-in Shopify and WooCommerce sync, on the same stock and books." },
+    { icon: "📦", title: "Inventory & purchasing", desc: "Stock across branches, transfers, counts, suppliers and purchase orders." },
+    { icon: "🤝", title: "CRM, loyalty & campaigns", desc: "Customers and pipeline, appointments, loyalty, gift cards and email campaigns." },
+    { icon: "👥", title: "HR & team", desc: "Employee records, leave, staff documents, rosters and team chat." },
+    { icon: "🗂️", title: "Documents & approvals", desc: "Company records encrypted on your device, with review and sign-off." },
+    { icon: "📊", title: "Reports & insights", desc: "Dashboards and reports across sales, stock, finance and every branch." },
+  ];
+  const offices = [
+    { icon: "🏢", title: "Back office", lead: "Run the company.", items: ["Finance, invoices, expenses and books", "HR, leave and staff documents", "Inventory across branches and purchasing", "CRM, appointments and email campaigns", "Documents with approvals and sign-off"] },
+    { icon: "🧾", title: "Front office", lead: "Sell at the counter.", items: ["Point of sale with returns, shifts and cash control", "Receipt printing and cash drawers (desktop app, Beta)", "Offline selling when the internet drops (Beta)", "Barcode labels, camera and phone scanning (Beta)", "Loyalty, gift cards and promotions"] },
+    { icon: "🛒", title: "Online selling", lead: "Sell everywhere.", items: ["Your own Inaya web store", "Built-in Shopify and WooCommerce sync", "Card payments through your own Stripe or Safepay account", "Online orders in the same stock and books"] },
   ];
   const editions = ["General business", "Healthcare", "Legal", "Regulated enterprise", "Financial services", "Private capital", "Government", "Education", "Hospitality"];
 
@@ -632,26 +638,24 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
       <a href="/" className="inline-block text-[var(--inaya-text-muted)] hover:text-[var(--inaya-accent)] text-xs font-mono mb-8">← Inaya Network</a>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-14 items-center">
-        {/* HERO */}
+        {/* HERO -- rebrand 23 Nov 2026: Inaya Business OS (owner + co-founder). Name, descriptor and tagline as approved;
+            every claim is built and verified (offline selling and till hardware are labelled Beta until pilots confirm). */}
         <div className="inaya-fade-in-up">
-          {/* Hero copy: "Ransomware & Security" brief (17 Nov 2026), Option 1, worded so every claim is verified in the
-              code and tested (docs/marketing/HERO_CLAIMS_VERIFICATION.md): no "never" / "ransomware-proof" guarantees. */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="inline-block text-[12px] font-mono font-bold tracking-[0.2em] text-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] border border-[var(--inaya-border)] rounded-full px-3 py-1">
-              INAYA BUSINESS WORKSPACE
-            </span>
-            <span className="inline-block text-[11px] font-bold tracking-wide text-[#b8862f] border border-[#b8862f]/50 bg-[#b8862f]/10 rounded-full px-3 py-1">
-              NEW: TESTED IMMUTABLE SNAPSHOTS &amp; RANSOMWARE ROLLBACK
-            </span>
+          <div className="mb-5">
+            <p className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--inaya-text-primary)] leading-none">Inaya Business OS</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] uppercase text-[var(--inaya-accent)] mt-2">Business Operations Platform</p>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-[var(--inaya-text-primary)] tracking-tight leading-[1.1] mb-4">
-            Run Your Entire Business on Sovereign, Ransomware-Resilient Infrastructure.
+          <span className="inline-block text-[13px] font-extrabold tracking-wide text-[#8a5a12] border-2 border-[#b8862f] bg-[#b8862f]/15 rounded-full px-4 py-1.5 mb-4">
+            NEW: TESTED IMMUTABLE SNAPSHOTS &amp; RANSOMWARE ROLLBACK
+          </span>
+          <h1 className="text-3xl sm:text-[2.6rem] font-black text-[var(--inaya-text-primary)] tracking-tight leading-[1.08] mb-4">
+            Run your whole business on one connected system.
           </h1>
-          <p className="text-base sm:text-lg font-semibold text-[var(--inaya-text-primary)] leading-snug mb-4 max-w-xl">
-            One workspace for 77 business modules, from finance, HR and CRM to inventory and documents, with documents encrypted on your own device, immutable snapshots and tested ransomware rollback, so you can restore your data instead of paying a ransom.
+          <p className="text-base sm:text-lg font-semibold text-[var(--inaya-text-primary)] leading-snug mb-3 max-w-xl">
+            Back office, front office and online selling in one platform: finance, HR, inventory and purchasing; a point of sale that keeps selling when the internet drops; and your own web store with built-in Shopify and WooCommerce sync.
           </p>
-          <p className="text-[var(--inaya-text-muted)] text-sm leading-relaxed max-w-xl mb-6">
-            An ERP-style workspace for running your company day to day: documents, finance, CRM, HR, inventory and procurement in one place. Sign in with email, pay in USD, no wallet or token needed, and no egress fees.
+          <p className="text-[var(--inaya-text-primary)] text-[15px] leading-relaxed max-w-xl mb-6">
+            Built on ransomware-resilient infrastructure: documents encrypted on your own device, immutable snapshots and tested ransomware rollback, so you can restore your data instead of paying a ransom. 77 business modules; sign in with email and pay in USD or PKR, no wallet or token needed.
           </p>
           <div className="flex flex-wrap items-center gap-3 mb-5">
             <button type="button" onClick={() => openForm("create")} className="px-6 py-3 rounded-xl text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] hover:brightness-110 active:scale-95 transition-all">
@@ -660,17 +664,16 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
             <button type="button" onClick={() => openForm("signin")} className="px-6 py-3 rounded-xl text-sm font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] bg-[var(--inaya-surface)] hover:border-[var(--inaya-accent)] transition-all">
               Sign in
             </button>
-            <a href="/business/demo" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline px-1">▶ Watch the 4-minute demo</a>
+            <a href="/business/demo" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline px-1">▶ Watch the demo</a>
             <a href="/business/pricing" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline px-1">See pricing</a>
           </div>
-          {/* Security micro-proof strip (brief section 3.2): each item is a verified, tested capability. */}
           <ul aria-label="Data protection" className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-semibold text-[var(--inaya-text-primary)] mb-3">
             {["Encrypted chunked storage", "Immutable snapshots & point-in-time rollback", "Automated nightly backups"].map((t) => (
               <li key={t} className="flex items-center gap-1.5"><span aria-hidden="true" className="text-[#b8862f]">✓</span>{t}</li>
             ))}
           </ul>
           <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-[var(--inaya-text-muted)]">
-            {["🔒 Documents encrypted on your device", "💳 Pay in USD, no wallet", "🖥️ Web, desktop and Android"].map((t) => (
+            {["🏢 Back office", "🧾 Front office (point of sale)", "🛒 Online store + Shopify / WooCommerce", "🖥️ Web, desktop and Android"].map((t) => (
               <span key={t} className="border border-[var(--inaya-border)] bg-[var(--inaya-surface)] rounded-full px-3 py-1">{t}</span>
             ))}
           </div>
@@ -678,7 +681,7 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
 
         {/* SIGN-IN CARD — unchanged behavior */}
         <div ref={signInCardRef} id="workspace-signin" className="w-full max-w-md lg:ml-auto mx-auto bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-6 shadow-sm inaya-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">{mode === "create" ? "Create your company" : "Sign in to your workspace"}</h2>
+          <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">{mode === "create" ? "Create your company" : "Sign in to Inaya Business OS"}</h2>
           <p className="text-[var(--inaya-text-muted)] text-xs mb-5">{mode === "create" ? "Free to start. You'll get a sign-in link by email." : "Use Google or get a sign-in link by email."}</p>
 
           {notice && <div className="bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs rounded-lg p-3 mb-4">{notice}</div>}
@@ -732,10 +735,50 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
         </div>
       </div>
 
+      {/* THREE PARTS, ONE SYSTEM -- the differentiator (back + front office + online selling in one platform) */}
+      <div className="mt-14">
+        <h2 className="text-xl font-extrabold text-[var(--inaya-text-primary)] mb-1">Three parts of your business, one system</h2>
+        <p className="text-[var(--inaya-text-muted)] text-sm mb-5">The same products, stock, customers and books behind the office, the shop counter and your online store.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {offices.map((o) => (
+            <div key={o.title} className="bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5">
+              <p className="text-2xl" aria-hidden>{o.icon}</p>
+              <p className="text-[var(--inaya-text-primary)] text-base font-extrabold mt-2">{o.title}</p>
+              <p className="text-[var(--inaya-text-muted)] text-xs mt-1 mb-3">{o.lead}</p>
+              <ul className="space-y-1.5">{o.items.map((it) => <li key={it} className="text-[13px] text-[var(--inaya-text-primary)] flex gap-2"><span className="text-[var(--inaya-accent)]" aria-hidden>✓</span><span>{it}</span></li>)}</ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* OFFLINE SELLING HIGHLIGHT (Beta) */}
+      <div className="mt-6 rounded-2xl border border-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] p-5 grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 items-center">
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--inaya-accent)] mb-1">New · Beta</p>
+          <p className="text-lg font-extrabold text-[var(--inaya-text-primary)]">The till keeps selling when the internet drops</p>
+          <p className="text-[var(--inaya-text-muted)] text-sm mt-1">Cash sales carry on during an outage, even after a restart. Every offline sale is saved encrypted on the till and checked again by Inaya when the connection is back, so the books stay right.</p>
+        </div>
+        <ul className="space-y-1.5 text-[13px] text-[var(--inaya-text-primary)]">
+          {["Signed, encrypted offline sales", "Recorded exactly once when back online", "Anything that doesn't match goes to the manager, not into the books"].map((t) => <li key={t} className="flex gap-2"><span className="text-[var(--inaya-accent)]" aria-hidden>✓</span>{t}</li>)}
+        </ul>
+      </div>
+
+      {/* SECURITY (verified claims, docs/marketing/HERO_CLAIMS_VERIFICATION.md: no "never" / "ransomware-proof" guarantees) */}
+      <div className="mt-6 bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5">
+        <p className="text-[11px] font-bold tracking-[0.16em] uppercase text-[#b8862f] mb-1">Ransomware-resilient by design</p>
+        <p className="text-[var(--inaya-text-primary)] text-lg font-extrabold">If ransomware strikes, restore your business instead of paying.</p>
+        <p className="text-[var(--inaya-text-muted)] text-sm mt-1 mb-3">Your documents are encrypted on your own device before upload, and protected copies are kept that an attacker can't change, so you can roll back to a clean point in time. Rollback is tested, not just promised.</p>
+        <ul aria-label="Data protection" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[13px] font-semibold text-[var(--inaya-text-primary)]">
+          {["Documents encrypted on your device", "Encrypted chunked storage", "Immutable snapshots & tested ransomware rollback", "Automated nightly backups"].map((t) => (
+            <li key={t} className="flex items-center gap-1.5"><span aria-hidden="true" className="text-[#b8862f]">✓</span>{t}</li>
+          ))}
+        </ul>
+      </div>
+
       {/* WHAT'S INSIDE */}
       <div className="mt-14">
-        <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">Everything your company runs on</h2>
-        <p className="text-[var(--inaya-text-muted)] text-sm mb-5">One workspace instead of a stack of separate tools.</p>
+        <h2 className="text-lg font-extrabold text-[var(--inaya-text-primary)] mb-1">Every module your company runs on</h2>
+        <p className="text-[var(--inaya-text-muted)] text-sm mb-5">One connected system instead of a stack of separate tools.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {features.map((f) => (
             <div key={f.title} className="bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5 hover:border-[var(--inaya-accent)] transition-colors">
@@ -768,10 +811,36 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
         </div>
       )}
 
+      {/* INAYA COMMERCE -- the Commerce add-on, named and priced (approved prices, src/lib/commercePricing.js) */}
+      <div className="mt-6 rounded-2xl border border-[var(--inaya-border)] bg-[var(--inaya-surface)] p-5" id="commerce">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--inaya-accent)] mb-1">Inaya Commerce</p>
+            <p className="text-lg font-extrabold text-[var(--inaya-text-primary)]">Sell in store and online, on the same stock and books</p>
+            <p className="text-[var(--inaya-text-muted)] text-sm mt-1">Point of sale, inventory across branches, your own web store, built-in Shopify and WooCommerce sync, loyalty and gift cards.</p>
+          </div>
+          <a href="/business/pricing#commerce" className="text-sm font-semibold text-[var(--inaya-accent)] hover:underline">See Commerce pricing →</a>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { name: "Commerce Starter", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.starter.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.starter.usd}`, note: "a month, add-on to Professional", detail: "1 branch, 1 till, your own web store and one Shopify or WooCommerce store" },
+            { name: "Commerce add-on", price: landingRegion === "PK" ? `PKR ${COMMERCE_PRICING.addon.pkr.toLocaleString("en-US")}` : `$${COMMERCE_PRICING.addon.usd}`, note: "a month, add-on to Business", detail: "2 branches, 3 tills, your own web store, one Shopify and one WooCommerce store" },
+            { name: "Enterprise", price: "Included", note: "in the Enterprise plan", detail: "Unlimited branches and tills, 3 connected stores, unlimited online orders" },
+          ].map((c) => (
+            <div key={c.name} className="rounded-xl border border-[var(--inaya-border)] p-4">
+              <p className="text-sm font-bold text-[var(--inaya-text-primary)]">{c.name}</p>
+              <p className="text-xl font-black text-[var(--inaya-text-primary)] mt-1">{c.price}</p>
+              <p className="text-[11px] text-[var(--inaya-text-muted)]">{c.note}</p>
+              <p className="text-xs text-[var(--inaya-text-muted)] mt-2">{c.detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* INDUSTRY EDITIONS */}
       <div className="mt-6 bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-2xl p-5">
         <p className="text-[var(--inaya-text-primary)] text-sm font-bold">Set up for your industry</p>
-        <p className="text-[var(--inaya-text-muted)] text-xs mt-1 mb-3">Pick your company type when you sign up and the workspace shows the modules that fit it.</p>
+        <p className="text-[var(--inaya-text-muted)] text-xs mt-1 mb-3">Pick your company type when you sign up and Inaya Business OS shows the modules that fit it.</p>
         <div className="flex flex-wrap gap-2">
           {editions.map((e) => (
             <span key={e} className="text-[11px] font-semibold text-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] rounded-full px-3 py-1">{e}</span>
@@ -782,11 +851,11 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
       {/* RESOURCES */}
       <div className="mt-6 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <a
-          href="/docs/business-workspace-guide.md"
+          href="/docs/inaya-business-os-user-guide.pdf"
           download
           className="flex items-center justify-center gap-2 text-xs text-[var(--inaya-text-muted)] hover:text-[#00f2fe] border border-[var(--inaya-overlay-10)] hover:border-[#00f2fe]/30 rounded-xl py-2.5"
         >
-          <span aria-hidden>↓</span> Download the step-by-step setup guide
+          <span aria-hidden>↓</span> Download the user guide (PDF)
         </a>
         {!inDesktopApp && (
           <a
@@ -880,9 +949,9 @@ function CreateCompanyPrompt({ email, onCreated, onLogout }) {
 // (src/lib/search/unified.js) uses the exact same list and gating instead
 // of a hand-maintained copy that drifts (that drift -- 17 of 72 modules
 // indexed -- was the actual root cause of the palette missing most of
-// Business Workspace). Imported at the top of this file.
+// Business OS). Imported at the top of this file.
 
-// Business Workspace UX/UI Makeover SOW -- see VIEW_TITLES.browse's own
+// Business OS UX/UI Makeover SOW -- see VIEW_TITLES.browse's own
 // comment for why this exists.
 const BROWSE_SECTION_LABELS = { departments: "Departments", projects: "Projects", documents: "Documents" };
 
@@ -1054,7 +1123,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, n
             </div>
             <div className="min-w-0">
               <p className="text-[var(--inaya-text-primary)] font-extrabold text-sm leading-tight truncate">Inaya Network</p>
-              <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono uppercase tracking-wide">Business Workspace</p>
+              <p className="text-[var(--inaya-text-muted)] text-[12px] font-mono uppercase tracking-wide">Business OS</p>
             </div>
           </div>
           <div className="mt-4 bg-black/30 border border-[var(--inaya-overlay-5)] rounded-lg px-3 py-2">
@@ -1063,7 +1132,7 @@ function Sidebar({ orgName, role, activeView, onNavigate, canManage, vertical, n
           </div>
         </div>
 
-        {/* Business Workspace redesign: a short sidebar (everyday areas +
+        {/* Business OS redesign: a short sidebar (everyday areas +
             pinned apps + the current page) instead of all ~70 modules; the
             rest live in All apps (view=apps). Visibility is still decided by
             isNavItemVisible, so role and industry gating are unchanged. */}
@@ -1163,7 +1232,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     const v = new URLSearchParams(window.location.search).get("view") || "osHome";
     return ["departments", "projects", "documents"].includes(v) ? "browse" : v;
   });
-  // Business Workspace redesign: this person's pinned apps and whether they
+  // Business OS redesign: this person's pinned apps and whether they
   // have seen the first-run welcome, per company, kept in this browser.
   const [navPrefs, setNavPrefs] = useState(() => (typeof window === "undefined" ? null : readNavPrefs(window.localStorage, orgId)));
   useEffect(() => { setNavPrefs(typeof window === "undefined" ? null : readNavPrefs(window.localStorage, orgId)); }, [orgId]);
@@ -1185,7 +1254,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const [erpSections, setErpSections] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // AI-Powered Business Workspace SOW — one guided task at a time, lifted
+  // AI-Powered Business OS SOW — one guided task at a time, lifted
   // here so both the compact AIWidget dock and the full-page AI Assistant
   // tab show the same in-progress state rather than each tracking their
   // own. Fetched once on mount so reloading mid-task resumes the panel
@@ -1244,7 +1313,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
   const industryOpen = verticalLoaded && industryMatches;
   const industryBlocked = verticalLoaded && !industryMatches;
 
-  // Business Workspace UX/UI Makeover SOW -- which of Departments/
+  // Business OS UX/UI Makeover SOW -- which of Departments/
   // Projects/Documents was actually clicked, so the header can show the
   // real section name instead of always "Company Records" (see
   // BUSINESS_WORKSPACE_UX_AUDIT.md #3.2). All three still render the same
@@ -1306,7 +1375,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Business Workspace UX/UI Makeover SOW -- each entry gains a short
+  // Business OS UX/UI Makeover SOW -- each entry gains a short
   // description (SOW §9's page-standardization: title + description),
   // shown as the header's subtitle in place of the signed-in email (moved
   // to the header's right-side controls area). "dashboard" removed: the
@@ -1683,10 +1752,10 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               ? Help
             </button>
             <a
-              href="/docs/business-workspace-guide.md"
+              href="/docs/inaya-business-os-user-guide.pdf"
               download
               className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
-              title="Download the step-by-step setup guide"
+              title="Download the user guide (PDF)"
             >
               ↓ Guide
             </a>
@@ -1705,7 +1774,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
               <a
                 href="/business/download"
                 className="hidden sm:inline-block text-[12px] font-bold uppercase text-[var(--inaya-text-muted)] hover:text-slate-300 px-2 py-2"
-                title="Get the Business Workspace desktop app"
+                title="Get Inaya Business OS desktop app"
               >
                 🖥️ Desktop App
               </a>

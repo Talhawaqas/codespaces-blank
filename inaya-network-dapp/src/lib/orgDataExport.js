@@ -88,7 +88,7 @@ export async function buildOrgDataExport(orgId) {
   files.unshift({
     name: "README.txt",
     data: [
-      `Inaya Business Workspace - company data export`,
+      `Inaya Business OS - company data export`,
       `Company: ${org?.name || orgId}`,
       `Exported: ${exportedAt}`,
       ``,

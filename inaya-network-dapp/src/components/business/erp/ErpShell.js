@@ -3,7 +3,7 @@
 // src/components/business/erp/ErpShell.js
 //
 // ERP mode (docs/erp-mode-plan.md): the classic desktop-ERP frame around the
-// existing Business Workspace screens. Title bar (app, company, signed-in
+// existing Business OS screens. Title bar (app, company, signed-in
 // user), module tiles, a notice bar, a task panel of collapsible groups, the
 // page itself, and a status bar.
 //
@@ -214,7 +214,7 @@ function UserMenu({ email, role, prefs, onUpdatePrefs, onNavigate, onLogout, des
           <div className="erp-menu-sep" />
           <button type="button" role="menuitem" className="erp-menu-item erp-menu-item-plain" onClick={() => go("security")}>Account security</button>
           <button type="button" role="menuitem" className="erp-menu-item erp-menu-item-plain" onClick={() => { setOpen(false); onShowShortcuts(); }}>Keyboard shortcuts</button>
-          <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/docs/business-workspace-guide.md" download>Download the setup guide</a>
+          <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/docs/inaya-business-os-user-guide.pdf" download>Download the user guide (PDF)</a>
           {!desktop && <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/business/download">Get the desktop app</a>}
           <a role="menuitem" className="erp-menu-item erp-menu-item-plain" href="/">Inaya Network dApp</a>
           <div className="erp-menu-sep" />
@@ -316,7 +316,7 @@ export default function ErpShell({
             <img src="/inaya-logo.png" alt="" className="erp-brand-logo" width={38} height={38} />
             <span className="erp-brand-text">
               <span className="erp-brand-name">Inaya Network</span>
-              <span className="erp-brand-tagline">Business Workspace · Your encrypted business operating system</span>
+              <span className="erp-brand-tagline">Business OS · Business Operations Platform</span>
             </span>
           </button>
           <span className="erp-titlebar-divider" aria-hidden="true" />

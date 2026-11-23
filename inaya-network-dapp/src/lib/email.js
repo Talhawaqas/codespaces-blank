@@ -132,7 +132,7 @@ export async function sendMagicLinkEmail({ to, url, purpose = "login", orgName, 
 export async function sendNoPlanReminderEmail({ to, orgName, url }) {
   const subject = `Finish setting up ${orgName} on Inaya`;
   const heading = "You signed up, but haven't chosen a plan yet";
-  const body = `You created <b>${orgName}</b> on Inaya Business Workspace, but never picked a plan — so your workspace has been sitting inactive. Click below to finish setup: pick a paid plan, or continue for free on limited (Starter-equivalent) features.`;
+  const body = `You created <b>${orgName}</b> on Inaya Business OS, but never picked a plan — so your workspace has been sitting inactive. Click below to finish setup: pick a paid plan, or continue for free on limited (Starter-equivalent) features.`;
 
   const html = `
     ${BRAND_HEADER}

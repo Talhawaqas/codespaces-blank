@@ -219,7 +219,7 @@ export default function ErpHomeView({ orgId, orgName, canManage, desktop, visibl
 
         <ErpPanel title="Resources" tone="blue">
           <ul className="erp-rows">
-            <li className="erp-row"><span className="erp-row-dot" aria-hidden="true" /><a className="erp-link erp-row-text" href="/docs/business-workspace-guide.md" download>Download the setup guide</a></li>
+            <li className="erp-row"><span className="erp-row-dot" aria-hidden="true" /><a className="erp-link erp-row-text" href="/docs/inaya-business-os-user-guide.pdf" download>Download the user guide (PDF)</a></li>
             {can.has("help") && <Row label="Help and support" detail="We reply by email" action="Open" onClick={() => onNavigate("help")} />}
             <Row label="Appearance" detail="Layout and colour theme" action="Open" onClick={() => onNavigate("appearance")} />
             {!desktop && <li className="erp-row"><span className="erp-row-dot" aria-hidden="true" /><a className="erp-link erp-row-text" href="/business/download">Get the desktop app for Windows and Linux</a></li>}

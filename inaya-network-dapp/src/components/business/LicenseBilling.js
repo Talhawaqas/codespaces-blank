@@ -1,6 +1,6 @@
 "use client";
 
-// src/components/business/LicenseBilling.js -- the company side of Business Workspace licenses (License Manager SOW 7, 8.1, 18.2).
+// src/components/business/LicenseBilling.js -- the company side of Business OS licenses (License Manager SOW 7, 8.1, 18.2).
 //   <LicenseBanner>       sign-in / in-app notice while payment is overdue or the license is restricted (dismissible per session)
 //   <LicenseCard>         Billing: package, state, cycle, amount, dates, grace countdown, payment instructions,
 //                         payment history and the company data export (Owner/Admin)
@@ -51,7 +51,7 @@ export function LicenseBanner({ orgId, status, onOpenBilling }) {
       <span>
         <b>Payment overdue.</b>{" "}
         {status.isManager
-          ? <>Your license will be suspended in <b>{status.remaining}</b>, on <b>{status.deadlineText}</b>, if payment is not confirmed. You can keep using Business Workspace until then.</>
+          ? <>Your license will be suspended in <b>{status.remaining}</b>, on <b>{status.deadlineText}</b>, if payment is not confirmed. You can keep using Business OS until then.</>
           : <>Your company's subscription payment is overdue. Please let your company's owner or admin know. Everything keeps working for now.</>}
       </span>
       <span className="flex gap-2">
@@ -124,15 +124,15 @@ export function LicenseCard({ orgId }) {
         <div className={card}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className={label}>Business Workspace license</p>
+              <p className={label}>Business OS license</p>
               <p className="text-[var(--inaya-text-primary)] text-xl font-extrabold">{l.plan?.name} <span className="text-[13px] font-normal text-[var(--inaya-text-muted)]">· {l.billingCycle === "yearly" ? "Yearly" : "Monthly"} · {money(l.amount, l.currency)} per {l.billingCycle === "yearly" ? "year" : "month"}</span></p>
             </div>
             <span className={`text-[13px] font-bold ${TONE[l.state] || ""}`}>● {l.label}{l.cancelling ? " (cancelling)" : ""}</span>
           </div>
-          {l.state === "grace_period" && <p className="mt-3 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-[13px] text-[var(--inaya-text-primary)]">Your subscription payment is overdue. Your license will be suspended in <b>{l.graceRemaining}</b>, on <b>{l.graceEndsText}</b>, if payment is not confirmed. You can continue using Business Workspace during this grace period.</p>}
-          {l.state === "suspended" && <p className="mt-3 rounded-lg border border-red-400/40 bg-red-400/10 p-3 text-[13px] text-[var(--inaya-text-primary)]">Your Business Workspace license is suspended because payment was not received within the {d.policy.graceDays}-day grace period. You can use Billing, contact support and download your company data. Nothing has been deleted; access returns when payment is confirmed.</p>}
+          {l.state === "grace_period" && <p className="mt-3 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-[13px] text-[var(--inaya-text-primary)]">Your subscription payment is overdue. Your license will be suspended in <b>{l.graceRemaining}</b>, on <b>{l.graceEndsText}</b>, if payment is not confirmed. You can continue using Business OS during this grace period.</p>}
+          {l.state === "suspended" && <p className="mt-3 rounded-lg border border-red-400/40 bg-red-400/10 p-3 text-[13px] text-[var(--inaya-text-primary)]">Your Business OS license is suspended because payment was not received within the {d.policy.graceDays}-day grace period. You can use Billing, contact support and download your company data. Nothing has been deleted; access returns when payment is confirmed.</p>}
           {l.state === "pending_activation" && <p className="mt-3 text-[13px] text-[var(--inaya-text-muted)]">Your license is ready and starts as soon as your first payment is confirmed.</p>}
-          {l.state === "active" && l.nextPaymentDueText && <p className="mt-3 text-[13px] text-[var(--inaya-text-muted)]">Your Business Workspace license is active. Your next payment is due on <b className="text-[var(--inaya-text-primary)]">{l.nextPaymentDueText}</b>.</p>}
+          {l.state === "active" && l.nextPaymentDueText && <p className="mt-3 text-[13px] text-[var(--inaya-text-muted)]">Your Business OS license is active. Your next payment is due on <b className="text-[var(--inaya-text-primary)]">{l.nextPaymentDueText}</b>.</p>}
           {l.cancelling && l.cancelEffectiveText && <p className="mt-2 text-[13px] text-[var(--inaya-text-muted)]">Cancelled: access continues until {l.cancelEffectiveText}.</p>}
           <dl className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-[13px]">
             {[["Activated", l.activatedAt ? new Date(l.activatedAt).toLocaleDateString() : "—"], ["Paid until", l.paidThroughText || "—"], ["Next payment due", l.nextPaymentDueText || "—"], ["Last payment", calendarDay(l.lastPaymentAt)]].map(([k, v]) => (
@@ -194,11 +194,11 @@ export function RestrictedWorkspace({ orgId, status, orgName, onHelp }) {
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <div className={card} role="alert">
-        <p className="text-[var(--inaya-text-primary)] text-xl font-extrabold">{orgName ? `${orgName}: ` : ""}Business Workspace is {what}</p>
+        <p className="text-[var(--inaya-text-primary)] text-xl font-extrabold">{orgName ? `${orgName}: ` : ""}Business OS is {what}</p>
         {status?.isManager ? (
           <p className="text-[14px] text-[var(--inaya-text-muted)] mt-2">{what === "suspended" ? "Your license is suspended because payment was not received within the grace period." : `Your license is ${what}.`} You can still use Billing, contact support and download all your company data below. Nothing has been deleted, and access returns as soon as payment is confirmed.</p>
         ) : (
-          <p className="text-[14px] text-[var(--inaya-text-muted)] mt-2">Your company's Business Workspace access is paused. Please contact your company's owner or admin.</p>
+          <p className="text-[14px] text-[var(--inaya-text-muted)] mt-2">Your company's Business OS access is paused. Please contact your company's owner or admin.</p>
         )}
         <div className="mt-3 flex flex-wrap gap-2"><button className={ghost} onClick={onHelp}>Contact Inaya support</button></div>
       </div>

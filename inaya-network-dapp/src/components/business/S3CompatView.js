@@ -95,13 +95,13 @@ export default function S3CompatView({ orgId }) {
       <div>
         <h3 className="text-[var(--inaya-text-primary)] font-bold text-sm">S3-Compatible Storage</h3>
         <p className="text-[var(--inaya-text-muted)] text-xs mt-0.5 max-w-xl">
-          Consume this org&apos;s Business Workspace storage from any AWS S3-compatible tool — the AWS CLI, an SDK,
-          rclone — without ever leaving Business Workspace or connecting a wallet. The same endpoint and credential
+          Consume this org&apos;s Business OS storage from any AWS S3-compatible tool — the AWS CLI, an SDK,
+          rclone — without ever leaving Inaya Business OS or connecting a wallet. The same endpoint and credential
           also accept Google Cloud Storage&apos;s XML API signing conventions (both its AWS4-HMAC-SHA256
           interoperability mode and its native GOOG4-HMAC-SHA256 scheme) — one credential, no separate Google setup.
           Objects written this way are still encrypted, sharded, and redundantly pinned exactly like every other
           Inaya document, using a server-managed encryption key scoped to this org (not the zero-knowledge,
-          browser-only key model the rest of Business Workspace uses — see the SOW report for why that distinction
+          browser-only key model the rest of Inaya Business OS uses — see the SOW report for why that distinction
           is necessary for protocol compatibility, and how the key is protected).
         </p>
       </div>
@@ -299,7 +299,7 @@ function InayaDrivePanel({ endpointUrl, prefill }) {
   );
 }
 
-/** Enterprise Storage Console (SOW §10) -- Business Workspace's real,
+/** Enterprise Storage Console (SOW §10) -- Business OS's real,
  *  data-backed view of the capabilities the Storj-Inspired Storage
  *  Capability Expansion SOW added: bucket versioning, Object Lock,
  *  version history + restore, Legal Hold, Lifecycle policies, and

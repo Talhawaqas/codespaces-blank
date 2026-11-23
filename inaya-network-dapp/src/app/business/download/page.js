@@ -2,7 +2,7 @@
 
 // app/business/download/page.js
 //
-// Public download page for the Business Workspace desktop app (Windows +
+// Public download page for Inaya Business OS desktop app (Windows +
 // Linux). Files are served as static assets from public/downloads/ rather
 // than proxied through GitHub Releases, so this page keeps working even if
 // the release repo/tag layout changes later. No auth required to view it.
@@ -57,17 +57,17 @@ export default function BusinessWorkspaceDownloadPage() {
   return (
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <div className="max-w-4xl mx-auto">
-        <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business Workspace</a>
+        <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business OS</a>
         <div className="flex items-center gap-2.5 mb-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/inaya-logo.png" alt="" width={32} height={32} className="w-8 h-8 rounded-lg shrink-0" />
           <span className="text-white font-extrabold tracking-wide">INAYA</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
-          Business Workspace <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">Desktop App</span>
+          Business OS <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">Desktop App</span>
         </h1>
         <p className="text-[#94a3b8] text-sm mb-2 max-w-2xl">
-          Same Business Workspace — departments, projects, encrypted documents, approvals, AI Assistant — as a real app on your computer, laid out like a classic desktop ERP. Runs in your system tray, notifies you when something needs your approval, and updates itself.
+          Same Business OS — departments, projects, encrypted documents, approvals, AI Assistant — as a real app on your computer, laid out like a classic desktop ERP. Runs in your system tray, notifies you when something needs your approval, and updates itself.
         </p>
         <p className="text-sm mb-2">
           <span className="inline-block font-mono text-[12px] font-bold text-[#060913] bg-[#00f2fe] rounded px-2 py-0.5 mr-2">Version {VERSION}</span>
@@ -110,7 +110,7 @@ export default function BusinessWorkspaceDownloadPage() {
 
         <div className="mt-10 bg-[#090d16]/80 border border-white/5 rounded-xl p-5">
           <p className="text-white text-sm font-bold mb-1">macOS</p>
-          <p className="text-[#94a3b8] text-xs">Not available yet. Use the Business Workspace in your browser at <a href="/business" className="text-[#00f2fe] hover:underline">inayanetwork.com/business</a> in the meantime.</p>
+          <p className="text-[#94a3b8] text-xs">Not available yet. Use Inaya Business OS in your browser at <a href="/business" className="text-[#00f2fe] hover:underline">inayanetwork.com/business</a> in the meantime.</p>
         </div>
       </div>
     </div>

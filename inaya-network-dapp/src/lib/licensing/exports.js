@@ -75,7 +75,7 @@ export async function buildCompanyExportZip(orgId, { now = new Date(), fileBytes
     },
     notIncluded: {
       filesOverLimit: notIncluded,
-      encryptedDocuments: { count: encryptedDocs.length, where: "documents-encrypted.json", reason: "Documents-module files are encrypted with your company passkey on your own device; Inaya cannot read them. Download them in Business Workspace (Billing > Documents download, available even while suspended)." },
+      encryptedDocuments: { count: encryptedDocs.length, where: "documents-encrypted.json", reason: "Documents-module files are encrypted with your company passkey on your own device; Inaya cannot read them. Download them in Business OS (Billing > Documents download, available even while suspended)." },
       secrets: "Passwords, sign-in tokens, API keys, encryption keys and integration credentials are never exported.",
       internal: "Inaya's internal billing notes and audit rows are not company data and are not exported.",
     },
@@ -83,11 +83,11 @@ export async function buildCompanyExportZip(orgId, { now = new Date(), fileBytes
   files.push({ name: "export-manifest.json", data: JSON.stringify(manifest, null, 2) });
   files.push({ name: "documents-encrypted.json", data: JSON.stringify(encryptedDocs.map((d) => ({ id: String(d._id), filename: d.filename, sizeBytes: d.sizeBytes || null, departmentId: d.departmentId ? String(d.departmentId) : null, projectId: d.projectId ? String(d.projectId) : null, createdAt: d.createdAt || null })), null, 2) });
   files.unshift({ name: "README.txt", data: [
-    "Inaya Business Workspace - company data export", `Company: ${manifest.company}`, `Exported: ${manifest.exportedAt}`, "",
+    "Inaya Business OS - company data export", `Company: ${manifest.company}`, `Exported: ${manifest.exportedAt}`, "",
     "records/<name>.json   every record of one kind (contacts, invoices, employees, tasks, ...), standard JSON.",
     "files/<bucket>/<key>  the actual files from S3-compatible storage (NAS backups, S3 / Azure / GCS uploads and more).",
     "export-manifest.json  exactly what is and is not in this export, and why.",
-    "documents-encrypted.json  Documents-module files (encrypted with your passkey; download them in Business Workspace).", "",
+    "documents-encrypted.json  Documents-module files (encrypted with your passkey; download them in Business OS).", "",
     "Passwords, tokens, API keys and credentials are never included.", "Questions: contact@inayanetwork.com",
   ].join("\r\n") });
   const safeName = String(org?.name || "company").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 40) || "company";
@@ -114,7 +114,7 @@ export async function processExportJob(jobId, { now = new Date() } = {}) {
     await audit(ledger, job.orgId, "data_export_completed", "system", { exportId: String(job._id), bytes: built.buffer.length });
     import("../metrics/metrics.js").then((m) => m.metric?.("license.export_job", { orgId: String(job.orgId), label: "ready" })).catch(() => {});
     const { sendEmail } = await import("../email.js");
-    sendEmail({ to: job.requestedBy, subject: "Your company data export is ready", text: `Your company data export is ready to download from Billing in Business Workspace until ${expiresAt.slice(0, 10)}.\n\nhttps://www.inayanetwork.com/business?view=billing\n\nInaya Network` }).catch(() => {});
+    sendEmail({ to: job.requestedBy, subject: "Your company data export is ready", text: `Your company data export is ready to download from Billing in Business OS until ${expiresAt.slice(0, 10)}.\n\nhttps://www.inayanetwork.com/business?view=billing\n\nInaya Network` }).catch(() => {});
     return { ready: true };
   } catch (e) {
     const safe = /not configured|off during test runs/i.test(e.message) ? "File storage for exports is not available right now. Please try again later or contact support." : "The export could not be built. Please try again.";

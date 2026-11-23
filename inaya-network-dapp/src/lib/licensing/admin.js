@@ -133,7 +133,7 @@ export async function buildLicenseWorkbook(filters = {}, { now = new Date() } = 
       { name: "License Activity", columns: cols(eventRows, ["Event ID"]), rows: eventRows },
       { name: "Summary", columns: ["Measure", "Value"], rows: summaryRows },
     ],
-    about: { Report: "Inaya Business Workspace license report", "Exported at (UTC)": now.toISOString(), "Filters applied": Object.keys(filters).length ? filters : "none (all licenses)", "Summary scope": "Calculated from the same filtered licenses as the register", Timezone: "Dates are billing dates in PKT; timestamps are UTC" },
+    about: { Report: "Inaya Business OS license report", "Exported at (UTC)": now.toISOString(), "Filters applied": Object.keys(filters).length ? filters : "none (all licenses)", "Summary scope": "Calculated from the same filtered licenses as the register", Timezone: "Dates are billing dates in PKT; timestamps are UTC" },
   });
   return { buffer, filename: `inaya-licenses-${now.toISOString().slice(0, 10)}.xlsx`, counts: { licenses: register.length, payments: paymentRows.length, events: eventRows.length } };
 }

@@ -16,7 +16,7 @@
 //
 // Unlike the anonymous card-customer flow (settleCorporateReserve, keyed
 // by email), the org member already has a real session — success/cancel
-// both redirect back into the authenticated Business Workspace, and the
+// both redirect back into the authenticated Business OS, and the
 // existing session cookie carries across the Stripe redirect normally.
 
 import Stripe from "stripe";
@@ -29,7 +29,7 @@ const TRIAL_DAYS = 14; // matches "Start Free Trial" wording on the pricing card
 
 // Extra users are a second subscription item, recognised by its product's metadata.
 const EXTRA_USERS_KIND = "extra_users";
-const extraUsersProduct = () => ({ name: "Inaya Business Workspace — extra user", metadata: { kind: EXTRA_USERS_KIND } });
+const extraUsersProduct = () => ({ name: "Inaya Business OS — extra user", metadata: { kind: EXTRA_USERS_KIND } });
 // A year costs 10 months, like the plans' yearly prices.
 const extraUsersPrice = (product, interval) => ({
   currency: "usd",
@@ -141,7 +141,7 @@ export async function POST(req) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `Inaya Business Workspace — ${plan.name}`,
+              name: `Inaya Business OS — ${plan.name}`,
               description: plan.tagline,
             },
             unit_amount: Math.round(amount * 100),

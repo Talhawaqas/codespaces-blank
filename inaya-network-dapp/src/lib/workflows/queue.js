@@ -108,7 +108,7 @@ export async function processQueue({ workerId = `worker-${process.pid}-${Math.ra
     { const { companyMayOperate } = await import("../licensing/gate.js");
       if (!(await companyMayOperate(claim.execution.orgId))) {
         const { workflowExecutions } = await getOrgCollections();
-        await workflowExecutions.updateOne({ _id: claim.execution._id, "lease.owner": workerId }, { $set: { status: "FAILED", completedAt: new Date().toISOString(), error: "Not run: the company's Business Workspace license is not active.", lease: null } });
+        await workflowExecutions.updateOne({ _id: claim.execution._id, "lease.owner": workerId }, { $set: { status: "FAILED", completedAt: new Date().toISOString(), error: "Not run: the company's Business OS license is not active.", lease: null } });
         ran.push({ executionId: String(claim.execution._id), status: "FAILED", licenseRestricted: true }); continue;
       } }
     try {

@@ -15,13 +15,13 @@ import { Instrument_Sans } from "next/font/google";
 const workspaceFont = Instrument_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-workspace", display: "swap" });
 
 export const metadata = {
-  title: "Business Workspace — Run Your Whole Business on One Secure Workspace | Inaya Network",
-  description: "An ERP-style business workspace: documents, finance, CRM, HR, inventory and procurement in one place, with every file encrypted on your own device before upload. Sign in with email and pay in USD, no wallet needed.",
-  keywords: ["business workspace", "ERP software", "small business ERP", "encrypted document management", "CRM", "invoicing software", "HR software", "inventory management", "procurement software", "secure business software", "Inaya Network"],
+  title: "Inaya Business OS — Run Your Whole Business on One Connected System | Inaya Network",
+  description: "Inaya Business OS is a business operations platform: back office (finance, HR, inventory, purchasing, documents), front office (point of sale) and online selling (own web store with Shopify and WooCommerce sync) in one connected system, with documents encrypted on your own device. Pay in USD or PKR, no wallet needed.",
+  keywords: ["business operating system", "business operations platform", "point of sale", "POS software", "Shopify integration", "WooCommerce integration", "business workspace", "ERP software", "small business ERP", "encrypted document management", "CRM", "invoicing software", "HR software", "inventory management", "procurement software", "secure business software", "Inaya Network"],
   alternates: { canonical: "/business" },
   openGraph: {
-    title: "Inaya Business Workspace — Run Your Whole Business on One Secure Workspace",
-    description: "Documents, finance, CRM, HR, inventory and procurement in one ERP-style workspace, encrypted on your own device. Pay in USD, no wallet needed.",
+    title: "Inaya Business OS — Run Your Whole Business on One Connected System",
+    description: "Back office, front office and online selling in one connected system: finance, HR, inventory, point of sale and your own web store with Shopify and WooCommerce sync.",
     url: "https://www.inayanetwork.com/business",
     siteName: "Inaya Network",
     images: [{ url: "/og-banner.png", width: 1200, height: 630 }],
@@ -29,8 +29,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Inaya Business Workspace — Run Your Whole Business on One Secure Workspace",
-    description: "Documents, finance, CRM, HR, inventory and procurement in one ERP-style workspace, encrypted on your own device.",
+    title: "Inaya Business OS — Run Your Whole Business on One Connected System",
+    description: "Back office, front office and online selling in one connected system.",
     images: ["/og-banner.png"],
   },
 };

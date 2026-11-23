@@ -17,7 +17,7 @@ export default function PosOfflinePage() {
   const [till, setTill] = useState(undefined);
   useEffect(() => { setTill(lastTill()); }, []);
   return <main className="bw min-h-screen bg-[var(--inaya-bg,#0f1114)] text-[var(--inaya-text-primary)] p-3 md:p-5 space-y-3">
-    <header className="flex flex-wrap items-center gap-2"><h1 className="text-lg font-bold">Offline till</h1><span className={`text-sm ${muted}`}>Inaya Business Workspace</span></header>
+    <header className="flex flex-wrap items-center gap-2"><h1 className="text-lg font-bold">Offline till</h1><span className={`text-sm ${muted}`}>Inaya Business OS</span></header>
     {till === undefined ? <p className={muted}>Loading…</p> : !till ? <div className={`${card} p-4 max-w-xl`}>
       <p className="font-semibold">This computer has no offline till yet.</p>
       <p className={`text-sm ${muted} mt-1`}>Open Point of Sale once while online, with a register chosen, a shift open and offline selling switched on (Point of Sale &gt; Setup). The till then keeps itself ready.</p>

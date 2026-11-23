@@ -16,7 +16,7 @@ export default function ErpSplash({ theme = "classic", message = "Signing you in
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/inaya-logo.png" alt="" className="erp-splash-logo" width={64} height={64} />
         <p className="erp-splash-title">Inaya Network</p>
-        <p className="erp-splash-msg" style={{ color: t["--erp-titlebar-muted"] }}>Business Workspace · Your encrypted business operating system</p>
+        <p className="erp-splash-msg" style={{ color: t["--erp-titlebar-muted"] }}>Business OS · Business Operations Platform</p>
         <p className="erp-splash-msg" style={{ color: t["--erp-titlebar-muted"] }}>{message}</p>
         <div className="erp-splash-bar" aria-hidden="true"><span style={{ background: t["--erp-accent-soft"] }} /></div>
       </div>

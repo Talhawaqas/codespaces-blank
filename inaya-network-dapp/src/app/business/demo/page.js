@@ -1,6 +1,6 @@
 // app/business/demo/page.js
 //
-// Public, shareable demo page for the Business Workspace (ERP mode): the
+// Public, shareable demo page for Inaya Business OS (ERP mode): the
 // 4-minute walkthrough video, what it covers, and the next steps. This is the
 // link sent in pilot outreach emails. Visitors from Pakistan (Vercel's
 // x-vercel-ip-country) also get the PKR pilot programme PDF; everyone else is
@@ -11,10 +11,10 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Business Workspace Demo — a 4-minute walkthrough | Inaya Network",
-  description: "Watch Inaya Business Workspace in action: HR, sales and CRM, invoicing, inventory, tasks and encrypted documents in one desktop-style ERP.",
+  title: "Business OS Demo — a 4-minute walkthrough | Inaya Network",
+  description: "Watch Inaya Business OS in action: HR, sales and CRM, invoicing, inventory, tasks and encrypted documents in one desktop-style ERP.",
   openGraph: {
-    title: "Inaya Business Workspace — 4-minute demo",
+    title: "Inaya Business OS — 4-minute demo",
     description: "HR, sales, invoicing, inventory, tasks and encrypted documents in one desktop-style ERP.",
     url: "https://www.inayanetwork.com/business/demo",
     images: ["/videos/inaya-business-workspace-erp-demo-poster.jpg"],
@@ -41,8 +41,8 @@ const toSeconds = (t) => t.split(":").reduce((a, n) => a * 60 + Number(n), 0);
 const videoJsonLd = {
   "@context": "https://schema.org",
   "@type": "VideoObject",
-  name: "Inaya Business Workspace in 4 minutes",
-  description: "A walkthrough of Inaya Business Workspace, an ERP-style system for people, sales, accounting, purchasing, stock and encrypted documents.",
+  name: "Inaya Business OS in 4 minutes",
+  description: "A walkthrough of Inaya Business OS, an ERP-style system for people, sales, accounting, purchasing, stock and encrypted documents.",
   thumbnailUrl: "https://www.inayanetwork.com/videos/inaya-business-workspace-erp-demo-poster.jpg",
   contentUrl: "https://www.inayanetwork.com/videos/inaya-business-workspace-erp-demo.mp4",
   uploadDate: "2026-10-25T00:00:00Z",
@@ -67,9 +67,9 @@ export default async function BusinessDemoPage() {
     <div className="min-h-screen bg-[#060913] text-[#e2e8f0] font-sans px-4 py-10 md:px-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }} />
       <div className="max-w-5xl mx-auto">
-        <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business Workspace</a>
+        <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business OS</a>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white">
-          Inaya Business Workspace <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">in 4 minutes</span>
+          Inaya Business OS <span className="bg-gradient-to-r from-[#00f2fe] to-violet-400 bg-clip-text text-transparent">in 4 minutes</span>
         </h1>
         <p className="text-[#94a3b8] text-sm mt-2 max-w-2xl">
           One system for your people, sales, accounting, purchasing, stock and documents, laid out like a classic desktop ERP, with your files encrypted before they leave your computer.

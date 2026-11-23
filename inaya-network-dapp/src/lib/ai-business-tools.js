@@ -546,7 +546,7 @@ async function proposeTaskStatusChange(args, ctx) {
   };
 }
 
-// Business Workspace gap closure, Batch 2 — approval-gated record creation.
+// Business OS gap closure, Batch 2 — approval-gated record creation.
 // Same pipeline as every propose_* tool: nothing is created until a person
 // with the real authority approves and the 36h delay passes. The executor
 // (ai-record-creation.js) re-validates everything at execution time.
@@ -882,7 +882,7 @@ async function proposeDealTransition(args, ctx) {
 }
 
 // ============================================================
-// AI-Powered Business Workspace SOW — guided-task tools. These are the
+// AI-Powered Business OS SOW — guided-task tools. These are the
 // only tools in this file that mutate anything OUTSIDE the Guarded
 // Execution propose_* pipeline, and deliberately so: they only ever touch
 // guided-tasks.js's own bookkeeping collection (which step of a workflow
@@ -1344,7 +1344,7 @@ export const BUSINESS_TOOL_DECLARATIONS = [
   },
   {
     name: "start_guided_task",
-    description: "Start a step-by-step guided walkthrough of an existing Business Workspace screen (e.g. creating a purchase order, finding a record, reviewing an AI action). Gives ONE instruction at a time and waits for the user to complete it before giving the next -- never dump all steps at once. Use this whenever the user asks 'help me do X', 'walk me through X', or 'how do I X' for a supported workflow.",
+    description: "Start a step-by-step guided walkthrough of an existing Business OS screen (e.g. creating a purchase order, finding a record, reviewing an AI action). Gives ONE instruction at a time and waits for the user to complete it before giving the next -- never dump all steps at once. Use this whenever the user asks 'help me do X', 'walk me through X', or 'how do I X' for a supported workflow.",
     parameters: {
       type: Type.OBJECT,
       properties: {
@@ -1489,7 +1489,7 @@ export async function runBusinessTool(name, args, ctx) {
 }
 
 export function businessSystemInstruction({ orgName, role, isManager }) {
-  return `You are the Inaya AI Business Assistant, embedded in the "${orgName}" company's Business Workspace. The person you're talking to signed in as ${role}${isManager ? " (has manage/approval authority)" : " (standard member)"}.
+  return `You are the Inaya AI Business Assistant, embedded in the "${orgName}" company's Business OS. The person you're talking to signed in as ${role}${isManager ? " (has manage/approval authority)" : " (standard member)"}.
 
 You answer questions about this company's departments, projects, documents, workflow status, activity, tasks (status, priority, assignee, due dates), CRM (leads, customers, sales pipeline deals), procurement (suppliers, purchase orders and their approval status), inventory (products, real current stock levels, low-stock items), finance (invoices, expenses, their approval status and totals), HR (employees, their department/status, and their documents), appointments (calendar, bookings, booking-page enquiries) and email campaigns (results, open and click rates) by calling the provided tools — never guess or invent data. Every tool is already scoped to exactly what this person is allowed to see (finance and HR data specifically respect Finance/HR role and department-manager/self-access boundaries) — if a tool returns notFound or an empty list, that's the honest answer (either it doesn't exist or they don't have access to it) — do not speculate about which.
 

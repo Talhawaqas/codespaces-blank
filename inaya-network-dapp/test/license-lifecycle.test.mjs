@@ -138,7 +138,7 @@ test("grace period with a deterministic clock: start, a reminder every day (e-ma
     await runLicenseJob({ now: at(d, 60000), sender, exportsStep: false, orgIds: [A.orgId, B.orgId] });
     await runLicenseJob({ now: at(d, 120000), sender, exportsStep: false, orgIds: [A.orgId, B.orgId] });
   }
-  const daily = sent.filter((s) => /remaining until your Business Workspace license is suspended/.test(s.subject));
+  const daily = sent.filter((s) => /remaining until your Business OS license is suspended/.test(s.subject));
   assert.equal(daily.length, 13 * 2, "one reminder a day for days 1-13, to both billing contacts, none repeated");
   assert.ok(daily.some((s) => /: 13 days remaining/.test(s.subject)) && daily.some((s) => /: 7 days remaining/.test(s.subject)), "counts down");
   assert.equal(daily.filter((s) => /: 1 day remaining/.test(s.subject)).length, 2, "the final day says 1 day remaining");
@@ -151,7 +151,7 @@ test("grace period with a deterministic clock: start, a reminder every day (e-ma
   assert.equal(r.suspended, 1, "suspended exactly at the deadline");
   r = await runLicenseJob({ now: new Date(new Date(lic.graceEndsAt).getTime() + 3600000), sender, exportsStep: false, orgIds: [A.orgId, B.orgId] });
   assert.equal(r.suspended, 0, "no duplicate suspension");
-  assert.equal(sent.filter((s) => /Business Workspace license suspended$/.test(s.subject)).length, 2, "one suspension notice per billing contact");
+  assert.equal(sent.filter((s) => /Business OS license suspended$/.test(s.subject)).length, 2, "one suspension notice per billing contact");
   const s = await L.getLicense(A.orgId);
   assert.equal(s.licenseStatus, "suspended"); assert.equal(s.suspendedReason, "grace_ended");
   const { db } = await getOrgCollections();

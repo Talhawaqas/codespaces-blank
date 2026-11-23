@@ -2,7 +2,7 @@
 
 // app/business/pricing/page.js
 //
-// Public marketing page for the Business Workspace's 4 pricing tiers —
+// Public marketing page for Inaya Business OS's 4 pricing tiers —
 // content comes from GET /api/orgs/billing's `availablePlans` shape
 // (src/lib/orgPlans.js is the single source of truth both this page and
 // the in-app Billing switcher render from). No auth required to view it.
@@ -26,15 +26,15 @@ const PENDING_PLAN_KEY = "inaya_pending_plan";
 import { COMMERCE_PRICING as CP } from "../../../lib/commercePricing";
 // Inaya Commerce pricing (owner approved 23 Nov 2026): back office + front office + online selling.
 function CommercePricing({ region, onPick }) {
-  const pk = region === "PK"; const m = (x) => (pk ? `PKR ${x.pkr.toLocaleString("en-US")}` : `${x.usd}`);
+  const pk = region === "PK"; const m = (x) => (pk ? `PKR ${x.pkr.toLocaleString("en-US")}` : `$${x.usd}`);
   const cards = [
     { id: "professional", name: "Commerce Starter", price: m(CP.starter), note: "add-on to Professional", points: ["1 branch and 1 till", "Your own web store", "1 connected store: Shopify or WooCommerce", "300 online orders a month"] },
     { id: "business", name: "Commerce add-on", price: m(CP.addon), note: "add-on to Business", points: ["2 branches and 3 tills", "Your own web store", "1 Shopify + 1 WooCommerce store", "1,000 online orders a month"] },
-    { id: "business", name: "Business + Commerce", price: m(CP.bundle), note: pk ? `a month, saves PKR ${(30000 + CP.addon.pkr - CP.bundle.pkr).toLocaleString("en-US")}` : `a month, saves ${99 + CP.addon.usd - CP.bundle.usd}`, featured: true, points: ["Everything in Business, plus full Commerce", "2 branches and 3 tills", "Web store + Shopify + WooCommerce", "Point of sale, stock, orders, loyalty, staff rota"] },
+    { id: "business", name: "Business + Commerce", price: m(CP.bundle), note: pk ? `a month, saves PKR ${(30000 + CP.addon.pkr - CP.bundle.pkr).toLocaleString("en-US")}` : `a month, saves $${99 + CP.addon.usd - CP.bundle.usd}`, featured: true, points: ["Everything in Business, plus full Commerce", "2 branches and 3 tills", "Web store + Shopify + WooCommerce", "Point of sale, stock, orders, loyalty, staff rota"] },
     { id: "enterprise", name: "Enterprise", price: "Included", note: "in the Enterprise plan", points: ["Unlimited branches and tills", "3 connected stores", "Unlimited online orders", "Priority onboarding"] },
   ];
   return (
-    <section className="mt-12" aria-label="Inaya Commerce pricing">
+    <section className="mt-12 scroll-mt-6" id="commerce" aria-label="Inaya Commerce pricing">
       <h2 className="text-2xl font-extrabold text-white">Inaya Commerce</h2>
       <p className="text-[#94a3b8] text-sm mt-1 mb-5">Back office, front office and online selling on the same products, stock, customers and books: point of sale, inventory across branches, your own web store, Shopify and WooCommerce sync, loyalty and gift cards, and staff time and commissions.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -83,7 +83,7 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
           <div>
-            <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business Workspace</a>
+            <a href="/business" className="inline-block text-[#94a3b8] hover:text-slate-300 text-xs font-mono mb-4">← Business OS</a>
             <div className="flex items-center gap-2.5 mb-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f2fe] to-[#4facfe] flex items-center justify-center shrink-0">
                 <span className="text-black font-extrabold text-sm">I</span>

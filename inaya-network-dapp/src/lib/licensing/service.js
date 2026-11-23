@@ -1,4 +1,4 @@
-// src/lib/licensing/service.js -- Business Workspace company licenses: the ONLY code that changes a license.
+// src/lib/licensing/service.js -- Business OS company licenses: the ONLY code that changes a license.
 //
 // Storage (Atlas is at its collection limit, so no new collections):
 //   org_subscriptions  -- the license itself, one document per company (unique orgId). The older fields
@@ -70,7 +70,7 @@ const requireReason = (reason, what) => { const r = clean(reason, 500); if (r.le
 
 export function planSnapshot(planId) {
   const p = PLANS[planId];
-  if (!p || p.noBilling) fail(400, `Unknown Business Workspace package "${planId}".`, "UNKNOWN_PLAN");
+  if (!p || p.noBilling) fail(400, `Unknown Business OS package "${planId}".`, "UNKNOWN_PLAN");
   return { id: p.id, name: p.name, maxUsers: p.maxUsers, maxExtraUsers: p.maxExtraUsers ?? null, maxStorageGB: p.maxStorageGB ?? null, maxFileSizeMB: p.maxFileSizeMB ?? null, priceMonthlyUsd: p.priceMonthly, priceYearlyUsd: p.priceYearly };
 }
 

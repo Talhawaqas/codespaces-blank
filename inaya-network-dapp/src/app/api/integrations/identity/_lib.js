@@ -53,7 +53,7 @@ export async function identityRoute(req, ctx) {
       }
     }
     // Company license (License Manager SOW 9.3): the identity API pauses while the company's license is restricted.
-    { const { companyMayOperate } = await import("../../../../lib/licensing/gate.js"); if (!(await companyMayOperate(A.orgId))) return NextResponse.json({ error: "This company's Business Workspace license is not active.", reasonCode: "LICENSE_RESTRICTED" }, { status: 403, headers: H }); }
+    { const { companyMayOperate } = await import("../../../../lib/licensing/gate.js"); if (!(await companyMayOperate(A.orgId))) return NextResponse.json({ error: "This company's Business OS license is not active.", reasonCode: "LICENSE_RESTRICTED" }, { status: 403, headers: H }); }
     try { await checkRateLimit({ action: `identity-api:${mutating ? "w" : "r"}`, key: `${A.orgId}:${A.credentialId || A.email}`, max: mutating ? 120 : 600, windowMs: 60000 }); }
     catch { return NextResponse.json({ error: "Too many requests. Slow down and retry shortly.", reasonCode: "RATE_LIMITED" }, { status: 429, headers: H }); }
 

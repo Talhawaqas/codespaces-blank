@@ -21,7 +21,7 @@ import {
 } from "../../../lib/saasRoadmap.js";
 
 export const metadata = {
-  title: "Business Workspace Roadmap — Inaya Network",
+  title: "Business OS Roadmap — Inaya Network",
   description: "How Inaya is evolving from decentralized storage infrastructure into a full business SaaS platform.",
 };
 
@@ -237,14 +237,14 @@ export default function RoadmapPage() {
         {/* HEADER */}
         <div className="flex items-center justify-between mb-10 text-xs font-mono text-[#8a96ab]">
           <a href="/" className="hover:text-slate-300">← Inaya Network</a>
-          <a href="/business" className="hover:text-slate-300">Business Workspace →</a>
+          <a href="/business" className="hover:text-slate-300">Business OS →</a>
         </div>
 
         <div className="text-center mb-14">
           <span className="inline-block text-[12px] font-bold uppercase tracking-[0.2em] text-[#00f2fe] mb-3">
             Product Roadmap
           </span>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Business Workspace Roadmap</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Business OS Roadmap</h1>
           <p className="text-[#94a3b8] text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed">{POSITIONING_STATEMENT}</p>
           <p className="text-[#8a96ab] text-xs md:text-sm mt-2 max-w-xl mx-auto leading-relaxed">{POSITIONING_SUBTEXT}</p>
         </div>
@@ -307,7 +307,7 @@ export default function RoadmapPage() {
             href="/business"
             className="inline-block px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black"
           >
-            Open the Business Workspace
+            Open Inaya Business OS
           </a>
         </div>
       </div>

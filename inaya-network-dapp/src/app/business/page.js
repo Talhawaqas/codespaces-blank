@@ -12,14 +12,17 @@ const SESSION_COOKIE = "inaya_org_session";
 const softwareJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Inaya Business Workspace",
+  name: "Inaya Business OS",
+  alternateName: ["Inaya Business Operations Platform", "Inaya Business Workspace"],
   url: "https://www.inayanetwork.com/business",
   applicationCategory: "BusinessApplication",
   applicationSubCategory: "ERP",
   operatingSystem: "Web, Windows, Linux, Android",
   description:
-    "An ERP-style business workspace: documents, finance, CRM, HR, inventory and procurement in one place. Sign in with email and pay in USD, no wallet needed.",
+    "A business operations platform: back office (finance, HR, inventory, purchasing, documents), front office (point of sale) and online selling (own web store with Shopify and WooCommerce sync) in one connected system. Sign in with email and pay in USD or PKR, no wallet needed.",
   featureList: [
+    "Point of sale with returns, shifts and cash control",
+    "Own web store with Shopify and WooCommerce sync",
     "Client-side encrypted document management with approvals",
     "Finance: invoices, expenses and revenue reporting",
     "CRM, appointment booking and email campaigns",

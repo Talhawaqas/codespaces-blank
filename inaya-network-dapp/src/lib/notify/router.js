@@ -23,7 +23,7 @@ const HIGH_TRUST = new Set(["inApp", "desktop"]);
 export const EVENTS = {
   // Company license notices (License Manager SOW 14). The e-mail copy is mandatory and sent by src/lib/licensing/notices.js,
   // so this event only puts the in-app notice in front of Owners and Admins.
-  "billing.license": { label: "Billing and license notices", defaults: { inApp: true }, severity: "warning", generic: "There is a notice about your Business Workspace subscription. Open Billing for details." },
+  "billing.license": { label: "Billing and license notices", defaults: { inApp: true }, severity: "warning", generic: "There is a notice about your Business OS subscription. Open Billing for details." },
   // Sovereign Infrastructure Fabric SOW §123
   "infra.node_revoked": { label: "An infrastructure node was revoked", defaults: { inApp: true, email: true }, severity: "warning", generic: "An infrastructure node's certificate was revoked." },
   "infra.operation_failed": { label: "An infrastructure operation failed", defaults: { inApp: true }, severity: "warning", generic: "A compute/network/storage operation failed on one of your nodes." },
@@ -51,7 +51,7 @@ export const EVENTS = {
   "meeting.invitation": { label: "I'm invited to a meeting", defaults: { inApp: true, email: true }, severity: "info", generic: "You're invited to a meeting." },
   "meeting.participant_waiting": { label: "Someone is waiting to join my meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "Someone is waiting in your meeting's lobby." },
   "meeting.admitted": { label: "I was admitted to a meeting", defaults: { inApp: true, desktop: true }, severity: "info", generic: "You were admitted to a meeting." },
-  // Business Workspace gap closure, Batch 1 — Business Operations
+  // Business OS gap closure, Batch 1 — Business Operations
   "task.assigned": { label: "A task is assigned to me", defaults: { inApp: true }, severity: "info", generic: "A task was assigned to you." },
   "task.due_soon": { label: "A task of mine is due tomorrow", defaults: { inApp: true }, severity: "info", generic: "One of your tasks is due tomorrow." },
   "task.overdue": { label: "A task of mine is overdue", defaults: { inApp: true }, severity: "warning", generic: "One of your tasks is overdue." },

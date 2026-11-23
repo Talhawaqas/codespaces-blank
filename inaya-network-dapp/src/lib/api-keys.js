@@ -59,7 +59,7 @@ export async function requireApiKey(req) {
   if (!key) return { error: "Invalid or revoked API key.", status: 401 };
   // Company license (License Manager SOW 9.3): API keys stop working while the license is restricted.
   const { companyMayOperate } = await import("./licensing/gate.js");
-  if (!(await companyMayOperate(key.orgId))) return { error: "This company's Business Workspace license is not active.", status: 403, code: "LICENSE_RESTRICTED" };
+  if (!(await companyMayOperate(key.orgId))) return { error: "This company's Business OS license is not active.", status: 403, code: "LICENSE_RESTRICTED" };
 
   return { orgId: key.orgId.toString(), membership: { role: "owner" } };
 }

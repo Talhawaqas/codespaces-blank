@@ -42,7 +42,7 @@ export default function SupportFinder() {
         <input id="sf-in" value={v} onChange={(e) => setV(e.target.value)} placeholder="acme-support" autoComplete="off" />
         {err && <p role="alert" style={{ color: "#a4262c" }}>{err}</p>}
         <button type="submit">Continue</button>
-        <p className="sf-mut" style={{ marginTop: 16 }}>Companies: switch your portal on under Business Workspace → Customer Support → Portal &amp; sharing to get your address, link and QR code.</p>
+        <p className="sf-mut" style={{ marginTop: 16 }}>Companies: switch your portal on under Business OS → Customer Support → Portal &amp; sharing to get your address, link and QR code.</p>
       </form>
     </main>
   );

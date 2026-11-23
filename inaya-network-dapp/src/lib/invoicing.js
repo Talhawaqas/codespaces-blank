@@ -176,7 +176,7 @@ export async function emailInvoice({ requestId, months }) {
     text: [
       `Hello${r.contact?.name ? ` ${r.contact.name}` : ""},`,
       "",
-      `Please find attached invoice ${number} for your Inaya Business Workspace ${plan?.name || r.planId} package: ${money(currency, total)}, due by ${dueAt.slice(0, 10)}.`,
+      `Please find attached invoice ${number} for your Inaya Business OS ${plan?.name || r.planId} package: ${money(currency, total)}, due by ${dueAt.slice(0, 10)}.`,
       "",
       `Payment method: ${PAYMENT_METHODS[method]}. The payment details are on the invoice. Please use ${number} as the payment reference.`,
       "",

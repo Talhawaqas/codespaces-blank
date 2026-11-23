@@ -178,7 +178,7 @@ export function OsAssistantWidget({ orgId }) {
   );
 }
 
-// Business Workspace redesign helpers for the "today" section.
+// Business OS redesign helpers for the "today" section.
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
@@ -202,7 +202,7 @@ export default function OsHomeView({ onNavigate }) {
   const [whatChanged, setWhatChanged] = useState(null);
   const [trends, setTrends] = useState(null);
   const [error, setError] = useState("");
-  // Business Workspace UX/UI Makeover SOW -- "Attention Required" (SOW §8).
+  // Business OS UX/UI Makeover SOW -- "Attention Required" (SOW §8).
   // Each of these can legitimately fail for a member without finance/
   // inventory/task access to this scope -- silent-absent on failure,
   // exactly like the trends fetch above, never a page-level error.
@@ -262,7 +262,7 @@ export default function OsHomeView({ onNavigate }) {
           shell header the same way. */}
       {error && <p className="text-[12px] text-red-400">{error}</p>}
 
-      {/* Business Workspace redesign (2026-10-18): the first screen answers
+      {/* Business OS redesign (2026-10-18): the first screen answers
           "what needs me today" — attention first (always shown, even when
           empty), a setup checklist for new companies, then quick actions.
           The overview cards and the desktop-app promotion follow below. */}
@@ -466,7 +466,7 @@ export default function OsHomeView({ onNavigate }) {
             <span className="inline-block text-[12px] font-bold uppercase tracking-wide text-[#00f2fe] bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-full px-2.5 py-1 mb-2">
               New · Desktop App
             </span>
-            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Business Workspace, now on your desktop</h3>
+            <h3 className="text-[var(--inaya-text-primary)] font-extrabold text-base sm:text-lg">🖥️ Inaya Business OS, now on your desktop</h3>
             <p className="text-[var(--inaya-text-muted)] text-xs sm:text-sm mt-1 max-w-lg">
               Runs in your system tray, notifies you when something needs your approval, and updates itself. Available for Windows and Linux.
             </p>

@@ -9,7 +9,7 @@ export const combinedBusinessModel = {
     "classification": "CONFIDENTIAL",
     "kicker": "COMBINED BUSINESS MODEL",
     "title": "How Inaya Makes Money",
-    "subtitle": "One consolidated model for the DePIN storage network and the Business Workspace, revised for the planned international sales team and the Pakistan-based team, with five-year projections in three scenarios.",
+    "subtitle": "One consolidated model for the DePIN storage network and Inaya Business OS, revised for the planned international sales team and the Pakistan-based team, with five-year projections in three scenarios.",
     "docLine": "Document INAYA-COMBINED-BM-2026-V2 · Classification Confidential · November 2026 (revised 17 Nov: Workspace price book and extra-storage add-on)"
   },
   "docId": "INAYA-COMBINED-BM-2026-V2",
@@ -21,7 +21,7 @@ export const combinedBusinessModel = {
         {
           "type": "paragraphs",
           "text": [
-            "Inaya earns money from two products on one encrypted storage foundation, reported as one company. The DePIN storage network charges by the terabyte and through yearly Corporate Reserve contracts. The Business Workspace sells monthly or yearly subscriptions, in US dollars internationally and in rupees in Pakistan.",
+            "Inaya earns money from two products on one encrypted storage foundation, reported as one company. The DePIN storage network charges by the terabyte and through yearly Corporate Reserve contracts. Inaya Business OS sells monthly or yearly subscriptions, in US dollars internationally and in rupees in Pakistan.",
             "This revision replaces the old $2K placeholder for international Workspace revenue with a month-by-month customer forecast driven by two dedicated salespeople, adds the planned ten-person Pakistan team with founder salaries, and sets team and office at $200K in Year 1. DePIN storage revenue, node-operator payouts, the $400K–$800K storage infrastructure and the $300K of one-time Year 1 costs are unchanged.",
             "In the Base scenario the company loses $534K in Year 1, which the $2M pre-seed covers, is profitable from Year 2, and never has less than $1.47M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
           ]
@@ -71,13 +71,13 @@ export const combinedBusinessModel = {
               "Testnet; card checkout built"
             ],
             [
-              "Business Workspace (international)",
+              "Business OS (international)",
               "Companies",
               "$7.99 / $39 / $99 / $799 a month",
               "Live on the website"
             ],
             [
-              "Business Workspace (Pakistan)",
+              "Business OS (Pakistan)",
               "Companies in Pakistan",
               "PKR 8,000 / 20,000 / 30,000 / 60,000 a month",
               "Live; pilot programme open"
@@ -157,7 +157,7 @@ export const combinedBusinessModel = {
     },
     {
       "number": "04",
-      "title": "Business Workspace Unit Economics",
+      "title": "Business OS Unit Economics",
       "blocks": [
         {
           "type": "table",
@@ -214,7 +214,7 @@ export const combinedBusinessModel = {
       "blocks": [
         {
           "type": "lead",
-          "text": "Two full-time salespeople are dedicated to international Business Workspace sales: research, outbound prospecting, demos, proposals, closing and onboarding. The co-founder leads marketing for both products; paid marketing is optional, $0 in Year 1 and never more than $10K a year."
+          "text": "Two full-time salespeople are dedicated to international Business OS sales: research, outbound prospecting, demos, proposals, closing and onboarding. The co-founder leads marketing for both products; paid marketing is optional, $0 in Year 1 and never more than $10K a year."
         },
         {
           "type": "table",
@@ -470,7 +470,7 @@ export const combinedBusinessModel = {
               "15%"
             ],
             [
-              "International Business Workspace salesperson",
+              "International Business OS salesperson",
               "2",
               "PKR 150,000",
               "$536",
@@ -636,7 +636,7 @@ export const combinedBusinessModel = {
               "-"
             ],
             [
-              "Paid marketing (Business Workspace)",
+              "Paid marketing (Business OS)",
               "-",
               "-$5.0K",
               "-$7.5K",
@@ -685,7 +685,7 @@ export const combinedBusinessModel = {
               "$71.3M"
             ],
             [
-              "Business Workspace — international",
+              "Business OS — international",
               "$42K",
               "$204K",
               "$426K",
@@ -693,7 +693,7 @@ export const combinedBusinessModel = {
               "$946K"
             ],
             [
-              "Business Workspace — Pakistan (not revised)",
+              "Business OS — Pakistan (not revised)",
               "$4.4K",
               "$22K",
               "$62K",
