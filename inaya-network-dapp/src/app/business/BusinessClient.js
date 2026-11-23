@@ -1325,7 +1325,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     deviceProtection: { title: "Device Protection", description: "Backup, sync, local cleanup and device status for your computers, in one place." },
     infrastructure: { title: "Infrastructure", description: "Customer-owned bare-metal compute, block storage and networking -- clusters, nodes, VMs, volumes and networks you run yourself." },
     ransomware: { title: "Ransomware Signals", description: "Unusual file activity, automatic pauses, and rollback to earlier versions." },
-    adminDashboard: { title: "Admin Dashboard", description: "What is happening across storage, sharing, devices, backups and security, with honest NO DATA states." },
+    adminDashboard: { title: "Admin Dashboard", description: "What is happening across storage, sharing, devices, backups and security, and what you can still turn on. Nothing is estimated." },
     webhooks: { title: "Webhooks", description: "Signed events to your own systems, with retries, a dead-letter list and secret rotation." },
     governance: { title: "Governance", description: "Versioned policies, data protection rules, classification and metadata for your files." },
     shares: { title: "Shares", description: "Secure links and access you have given, with limits, an access log and instant revoke." },
@@ -1452,7 +1452,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "chat" && <ChatView orgId={orgId} email={email} canManage={canManage} />}
       {activeView === "meet" && <MeetView orgId={orgId} email={email} />}
       {activeView === "notes" && <NotesView orgId={orgId} email={email} />}
-      {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} />}
+      {activeView === "adminDashboard" && <AdminDashboardView orgId={orgId} onNavigate={navigate} />}
       {activeView === "webhooks" && <WebhooksView orgId={orgId} canManage={canManage || hasAdminRole(membership, "integrationAdmin")} />}
       {activeView === "governance" && <GovernanceView orgId={orgId} canManage={canManage || hasAdminRole(membership, ["dataGovernanceAdmin", "securityAdmin"], { read: true })} />}
       {activeView === "complianceReadiness" && <BetaGate orgId={orgId} flag="FEATURE_COMPLIANCE_READINESS" title="Compliance readiness" canManage={canManage} onSettings={() => navigate("settings")}><ComplianceReadinessView orgId={orgId} canManage={canManage || hasAdminRole(membership, "complianceAdmin")} isOwner={membership?.role === "owner"} /></BetaGate>}

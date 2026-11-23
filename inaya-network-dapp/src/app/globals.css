@@ -519,3 +519,13 @@ html[data-erp-theme] [data-erp-tabs] { display: none !important; }
 /* the content's small section labels: calmer weight in sentence case */
 .bw main p[class~="text-[11px]"][class~="font-bold"][class~="uppercase"],
 .bw main p[class~="text-[10px]"][class~="font-bold"][class~="uppercase"] { font-weight: 600; }
+
+/* Modern look, step 1b (owner, 23 Nov 2026: "every menu background is like that"): in the light looks, content boxes
+   are clean WHITE CARDS with a thin border in the theme colour, sitting on the theme page background, instead of
+   pale grey tints on grey. Applies to any bordered, rounded box drawn with the old tint classes; dark and neon unchanged. */
+html[data-erp-theme] .bw main :is([class~="bg-white/5"],[class~="bg-white/10"],[class~="bg-[var(--inaya-overlay-5)]"],[class~="bg-[var(--inaya-surface)]"],[class~="bg-black/20"],[class~="bg-black/30"],[class~="bg-[#090d16]"],[class~="bg-[#0a0f1e]"])[class*="border"]:is([class*="rounded-lg"],[class*="rounded-xl"],[class*="rounded-2xl"]) {
+  background-color: #ffffff; border-color: var(--erp-card-border, #e4e7ec);
+}
+html[data-theme="white"]:not([data-erp-theme]) .bw main :is([class~="bg-white/5"],[class~="bg-white/10"],[class~="bg-[var(--inaya-overlay-5)]"],[class~="bg-black/20"],[class~="bg-black/30"])[class*="border"]:is([class*="rounded-lg"],[class*="rounded-xl"],[class*="rounded-2xl"]) {
+  background-color: #ffffff; border-color: #e4e7ec;
+}

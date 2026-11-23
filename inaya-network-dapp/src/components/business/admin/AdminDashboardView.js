@@ -32,23 +32,80 @@ function UsageMetrics({ orgId }) {
   );
 }
 
-export default function AdminDashboardView({ orgId }) {
-  const [data, setData] = useState(null); const [err, setErr] = useState("");
+// Modern layout (owner-approved mockup, 22 Nov 2026): summary tiles that filter, live figures first, a "Turn on more protection"
+// list with a Turn on action, and a quiet list for things waiting for their first data. Same data and honest states as before.
+const GROUPS = [
+  { key: "all", label: "All", dot: "#94a3b8" },
+  { key: "OK", label: "Healthy", dot: "#10b981" },
+  { key: "ATTENTION", label: "Needs attention", dot: "#f59e0b" },
+  { key: "NO_DATA", label: "No data yet", dot: "#94a3b8" },
+  { key: "NOT_ENABLED", label: "Not turned on", dot: "#64748b" },
+  { key: "UNKNOWN", label: "Can't be measured", dot: "#38bdf8" },
+];
+const Pill = ({ state }) => <span className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 whitespace-nowrap ${STATE[state]}`}>{STATE_LABEL[state] || state}</span>;
+const SectionTitle = ({ children, count }) => <h3 className="text-[15px] font-semibold text-[var(--inaya-text-primary)] flex items-center gap-2">{children}{count != null && <span className={`text-[12px] font-normal ${muted}`}>{count}</span>}</h3>;
+
+export default function AdminDashboardView({ orgId, onNavigate }) {
+  const [data, setData] = useState(null); const [err, setErr] = useState(""); const [filter, setFilter] = useState("all");
   const load = useCallback(async () => { try { const r = await fetch(`/api/orgs/admin-dashboard?orgId=${orgId}`, { credentials: "include" }); const d = await r.json(); if (!r.ok) throw new Error(d.error || "Could not load."); setData(d); setErr(""); } catch (e) { setErr(e.message); } }, [orgId]);
   useEffect(() => { load(); }, [load]);
   if (err) return <EmptyState title="Admin dashboard" description={err} />;
   if (!data) return <p className={`text-[12px] ${muted}`}>Loading…</p>;
+  const tiles = data.tiles;
+  const count = (k) => (k === "all" ? tiles.length : tiles.filter((t) => t.state === k).length);
+  const show = (k) => filter === "all" || filter === k;
+  const live = tiles.filter((t) => (t.state === "OK" || t.state === "ATTENTION") && show(t.state)).sort((a, b) => (a.state === "ATTENTION" ? -1 : 0) - (b.state === "ATTENTION" ? -1 : 0));
+  const off = show("NOT_ENABLED") ? tiles.filter((t) => t.state === "NOT_ENABLED") : [];
+  const waiting = tiles.filter((t) => (t.state === "NO_DATA" && show("NO_DATA")) || (t.state === "UNKNOWN" && show("UNKNOWN")));
   return (
-    <div className="space-y-3">
-      <p className={`text-[12px] ${muted}`}>{data.summary.attention} need attention · {data.summary.noData} have no data yet · {data.summary.notEnabled} not enabled · {data.summary.unknown} cannot be measured. Updated {new Date(data.generatedAt).toLocaleTimeString()}. <button className="underline" onClick={load}>Refresh</button></p>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {data.tiles.map((t) => (
-          <div key={t.id} className={`${card} p-3`}>
-            <div className="flex items-start justify-between gap-2"><p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">{t.label}</p><span className={`text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 ${STATE[t.state]}`}>{STATE_LABEL[t.state] || t.state}</span></div>
-            <p className={`text-xl font-bold mt-1 ${t.value == null ? "text-[var(--inaya-text-muted)] text-sm" : ""}`}>{fmt(t)}</p>
-            {t.detail && <p className="text-[12px]">{t.detail}</p>}{t.note && <p className={`text-[11px] ${muted} mt-1`}>{t.note}</p>}
-          </div>))}
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        {GROUPS.map((g) => { const n = count(g.key); const on = filter === g.key; return (
+          <button key={g.key} type="button" aria-pressed={on} onClick={() => setFilter(g.key)} disabled={!n && g.key !== "all"}
+            className={`${card} px-3.5 py-2 text-left min-w-[118px] transition disabled:opacity-40 ${on ? "ring-2 ring-[var(--inaya-accent)] border-transparent" : "hover:border-[var(--inaya-accent)]"}`}>
+            <span className="flex items-center gap-1.5 text-[12px] text-[var(--inaya-text-muted)]"><span className="w-2 h-2 rounded-full" style={{ background: g.dot }} />{g.label}</span>
+            <span className="block text-[22px] font-semibold leading-tight text-[var(--inaya-text-primary)]">{n}</span>
+          </button>); })}
+        <span className={`ml-auto text-[12px] ${muted}`}>Updated {new Date(data.generatedAt).toLocaleTimeString()} · <button className="underline" onClick={load}>Refresh</button></span>
       </div>
+
+      {live.length > 0 && <section className="space-y-2">
+        <SectionTitle count={live.length}>Live now</SectionTitle>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {live.map((t) => (
+            <div key={t.id} className={`${card} p-4 ${t.state === "ATTENTION" ? "border-amber-400/50" : ""}`}>
+              <div className="flex items-start justify-between gap-2"><p className="text-[13px] font-medium text-[var(--inaya-text-muted)]">{t.label}</p><Pill state={t.state} /></div>
+              <p className="text-[28px] font-semibold leading-tight mt-1 text-[var(--inaya-text-primary)]">{fmt(t)}</p>
+              {t.detail && <p className="text-[13px] text-[var(--inaya-text-primary)]">{t.detail}</p>}
+              {t.note && <p className={`text-[12px] ${muted} mt-1.5`}>{t.note}</p>}
+            </div>))}
+        </div>
+      </section>}
+
+      {off.length > 0 && <section className="space-y-2">
+        <SectionTitle count={off.length}>Turn on more protection</SectionTitle>
+        <div className={`${card} divide-y divide-[var(--inaya-overlay-10)]`}>
+          {off.map((t) => (
+            <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+              <div className="min-w-0 flex-1"><p className="text-[14px] font-medium text-[var(--inaya-text-primary)]">{t.label}</p>{t.note && <p className={`text-[12px] ${muted}`}>{t.note}</p>}</div>
+              {onNavigate && <button type="button" onClick={() => onNavigate("settings")} className="shrink-0 text-[13px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)]">Turn on</button>}
+            </div>))}
+        </div>
+      </section>}
+
+      {waiting.length > 0 && <section className="space-y-2">
+        <SectionTitle count={waiting.length}>Waiting for first data</SectionTitle>
+        <div className={`${card} grid sm:grid-cols-2 gap-x-6`}>
+          {waiting.map((t) => (
+            <div key={t.id} className="flex items-start justify-between gap-3 px-4 py-2.5 border-b border-[var(--inaya-overlay-10)]">
+              <div className="min-w-0"><p className="text-[13px] font-medium text-[var(--inaya-text-primary)]">{t.label}</p>{t.note && <p className={`text-[12px] ${muted}`}>{t.note}</p>}</div>
+              <Pill state={t.state} />
+            </div>))}
+        </div>
+      </section>}
+
+      {!live.length && !off.length && !waiting.length && <p className={`text-[13px] ${muted}`}>Nothing in this group.</p>}
       <UsageMetrics orgId={orgId} />
     </div>
   );
