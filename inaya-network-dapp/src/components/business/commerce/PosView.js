@@ -39,7 +39,7 @@ export default function PosView({ orgId }) {
   if (blocked) return (
     <div className={`${card} p-6 max-w-xl`}>
       <h2 className="text-lg font-bold mb-2">Point of Sale</h2>
-      <p className={muted}>{blocked.code === "COMMERCE_NOT_ENABLED" ? "Inaya Commerce is a paid add-on for the Business and Enterprise plans. Ask Inaya to enable it for your company." : blocked.code === "COMMERCE_ROLE" ? "You don't have a commerce role in this company. A manager can make you a cashier, supervisor or manager." : blocked.message}</p>
+      <p className={muted}>{blocked.code === "COMMERCE_NOT_ENABLED" ? "Inaya Commerce is available as Commerce Starter on Professional, as an add-on to Business, and is included in Enterprise. Ask Inaya to enable it for your company." : blocked.code === "COMMERCE_ROLE" ? "You don't have a commerce role in this company. A manager can make you a cashier, supervisor or manager." : blocked.message}</p>
     </div>
   );
   if (!settings) return <p className={muted}>Loading…</p>;
