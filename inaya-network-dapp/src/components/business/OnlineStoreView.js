@@ -5,6 +5,9 @@
 // typed here (Stripe / Safepay keys, Shopify token, WooCommerce keys) are sealed on the server and never shown again.
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { COMMERCE_PRICING } from "../../lib/commercePricing.js";
+
+const ORDER_BLOCK_PRICE = `$${COMMERCE_PRICING.orderBlock.usd} (PKR ${COMMERCE_PRICING.orderBlock.pkr.toLocaleString("en-US")})`;
 
 const f = "w-full min-h-[38px] bg-[var(--inaya-surface)] border border-[var(--inaya-border)] rounded-lg px-2.5 text-sm text-[var(--inaya-text-primary)]";
 const pb = "min-h-[38px] px-3 rounded-lg text-sm font-bold bg-[var(--inaya-accent)] text-[var(--inaya-on-accent)] disabled:opacity-40";
@@ -260,7 +263,7 @@ function Channels({ orgId }) {
   const act = (id, what, body = {}, msg) => a.run(() => api(`channels/${id}/${what}`, { orgId, method: "POST", body }).then((r) => { load(); return r; }), msg);
   return <div className="space-y-3">
     {back && <Msg ok={back.ok} err={back.err} />}
-    <p className={`text-sm ${mu}`}>Sync products, prices, stock and orders with the Shopify or WooCommerce store you already run. Included in Inaya Commerce: {d.limits.plan === "enterprise" ? `${d.limits.total} connected stores` : `1 Shopify + 1 WooCommerce store`}{d.limits.extraStores ? ` + ${d.limits.extraStores} extra` : ""}. Orders synced this month: {d.usage.syncedOrdersThisMonth}{d.limits.monthlyOrders ? ` of ${d.limits.monthlyOrders}` : " (unlimited)"}.</p>
+    <p className={`text-sm ${mu}`}>Sync products, prices, stock and orders with the Shopify or WooCommerce store you already run. Included in Inaya Commerce: {d.limits.plan === "enterprise" ? `${d.limits.total} connected stores` : `1 Shopify + 1 WooCommerce store`}{d.limits.extraStores ? ` + ${d.limits.extraStores} extra` : ""}. Orders synced this month: {d.usage.syncedOrdersThisMonth}{d.limits.monthlyOrders ? ` of ${d.limits.monthlyOrders.toLocaleString()}` : " (unlimited)"}{d.limits.orderBlocks?.blocks ? ` (includes ${d.limits.orderBlocks.blocks} extra 1,000-order block${d.limits.orderBlocks.blocks > 1 ? "s" : ""})` : ""}.{d.limits.orderBlocks?.eligible && d.limits.orderBlocks.blocks < d.limits.orderBlocks.maxBlocks ? ` Need more? Extra 1,000 orders cost ${ORDER_BLOCK_PRICE} a month, as a monthly add-on or for this month only (up to ${d.limits.orderBlocks.maxBlocks} blocks). Email contact@inayanetwork.com.` : ""}</p>
     {d.channels.map((ch) => <div key={ch.id} className={`${card} space-y-2`}>
       <div className="flex flex-wrap gap-2 items-baseline"><b>{ch.platform === "SHOPIFY" ? "Shopify" : "WooCommerce"}: {ch.name}</b><span className={`text-xs ${mu}`}>{ch.address} · {ch.status} · {ch.currency || ""}</span></div>
       <p className={`text-xs ${mu}`}>Orders last synced {ch.lastOrderSyncAt ? new Date(ch.lastOrderSyncAt).toLocaleString() : "never"} · stock pushed {ch.lastStockPushAt ? new Date(ch.lastStockPushAt).toLocaleString() : "never"} · webhooks {ch.webhooksRegisteredAt ? "on" : "not registered"}{ch.lastError ? ` · last error: ${ch.lastError.message}` : ""}</p>

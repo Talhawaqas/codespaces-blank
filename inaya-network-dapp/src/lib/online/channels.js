@@ -464,7 +464,7 @@ export async function importOrder({ ch, externalId = null, order = null, fetchIm
     if (existing) return applyOrderChanges(ch, existing, o);
     if (o.cancelled) return { summary: "cancelled before import; skipped" };
     if (o.pendingPayment) throw retryable(new Error("The order is waiting for payment on the channel; it will be imported when paid or processing."));
-    const lim = await planLimits(sid(ch.orgId)); if (lim.monthlyOrders !== null && (await monthlyUsage(sid(ch.orgId))).syncedOrdersThisMonth >= lim.monthlyOrders) throw retryable(new Error(`The plan's ${lim.monthlyOrders} synced orders this month are used. Upgrade or add capacity; the order will import automatically.`));
+    const lim = await planLimits(sid(ch.orgId)); if (lim.monthlyOrders !== null && (await monthlyUsage(sid(ch.orgId))).syncedOrdersThisMonth >= lim.monthlyOrders) throw retryable(new Error(`The plan's ${lim.monthlyOrders} synced orders this month are used. Add an extra 1,000-order block (monthly or for this month only) or upgrade; the order will import automatically once there is room.`));
     const maps = await c.find({ orgId: ch.orgId, kind: OK.map, channelId: ch._id }).toArray();
     const { products } = await getOrgCollections(); const lines = []; const invoiceLines = [];
     for (const l of o.lines) {

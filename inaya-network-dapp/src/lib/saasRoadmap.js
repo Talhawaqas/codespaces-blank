@@ -1155,6 +1155,7 @@ export const ROADMAP_STAGES = [
           "Commerce Starter on Professional ($49 / PKR 8,000 a month), the Commerce add-on on Business ($79 / PKR 12,000) and a Business + Commerce bundle ($169 / PKR 40,000)",
           "Commerce included in Enterprise, with unlimited branches and tills and three connected stores",
           "Extra branches and tills when a company grows",
+          "Extra 1,000 online-order blocks ($15 / PKR 2,500), monthly or for one month only, up to three a month",
         ],
       },
       {

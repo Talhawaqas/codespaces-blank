@@ -33,6 +33,8 @@ export const CATALOG = {
   "license.entitlement_denied": { help: "Requests refused because the company license is restricted", labels: ANY }, "license.transition": { help: "License state transitions", labels: ANY },
   "license.job_run": { help: "License job runs", labels: ["ok", "failed"] }, "license.notice": { help: "License notices sent or failed", labels: ANY },
   "license.export_job": { help: "Company data export jobs", labels: ["ready", "failed", "expired"] }, "license.payment": { help: "License payment operations", labels: ANY },
+  "why_inaya.explain": { help: "Why Inaya AI explanations by wording source", labels: ["gemini", "groq", "template"] }, "why_inaya.tts": { help: "Why Inaya narration audio", labels: ["ok", "quota", "error"] },
+  "why_inaya.rate_limited": { help: "Why Inaya explainer rate-limit hits", labels: ["explain", "tts"] },
 };
 export const CLIENT_METRICS = Object.keys(CATALOG).filter((n) => CATALOG[n].client);
 const bucketFor = (ms) => { for (const b of LATENCY_BUCKETS_MS) if (ms <= b) return String(b); return "inf"; };

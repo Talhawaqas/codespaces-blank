@@ -32,3 +32,6 @@ Sell online from the same products, stock and books as your shop. You can have y
 
 > Your plan decides how many stores you can connect: Commerce Starter one (Shopify or WooCommerce), the Business add-on one of each, Enterprise three.
 
+## Monthly order limit
+
+Your plan sets how many Shopify and WooCommerce orders come in each month: 300 on Commerce Starter, 1,000 on the Commerce add-on, unlimited on Enterprise. Orders from your own Inaya web store are not counted. Need more? Extra 1,000 orders cost $15 (PKR 2,500), either every month or for one month only, up to three blocks a month: email contact@inayanetwork.com. Orders over the limit wait and come in by themselves once there is room.

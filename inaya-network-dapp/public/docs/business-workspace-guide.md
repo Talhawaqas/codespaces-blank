@@ -319,6 +319,8 @@ Sell online from the same products, stock and books as your shop. You can have y
 
 > Your plan decides how many stores you can connect: Commerce Starter one (Shopify or WooCommerce), the Business add-on one of each, Enterprise three.
 
+> Your plan also sets how many Shopify and WooCommerce orders come in each month: 300 on Commerce Starter, 1,000 on the Business add-on, unlimited on Enterprise. Need more? Extra 1,000 orders cost $15 (PKR 2,500), every month or for one month only, up to three blocks. Orders over the limit wait and come in by themselves once there is room.
+
 Part 5, IT Services: Security, ransomware protection, backups, network storage, company settings, users and help.
 
 ## 14. IT and Security (Part 5: IT Services)

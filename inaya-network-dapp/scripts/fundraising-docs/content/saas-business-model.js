@@ -175,6 +175,7 @@ export const saasBusinessModel = {
             ["Business + Commerce bundle", "$169", "PKR 40,000", "The Business package with the Commerce add-on, saving $9 / PKR 2,000 a month"],
             ["Enterprise", "Included", "Included", "Unlimited branches and tills, 3 connected stores, unlimited online orders"],
             ["Extra branch / extra till", "$19 / $12", "PKR 5,000 / 3,000", "Per month"],
+            ["Extra 1,000 online orders", "$15", "PKR 2,500", "Per block, monthly or for one month only; Commerce Starter and Commerce add-on, up to 3 blocks a month"],
           ],
         },
         { type: "bullets", items: [
@@ -195,7 +196,7 @@ export const saasBusinessModel = {
             "One-time setup fees. Charged per company in Pakistan (PKR 10,000 or 25,000) and in the Asia programme ($39 or $89; $29 or $49 for pilots), covering onboarding time.",
             "Seat and storage expansion revenue. Companies that outgrow their package's limits pay incrementally for additional users or storage rather than being forced into a full package jump.",
             "Enterprise contracts. Organizations beyond Enterprise's listed capacity are handled as direct sales engagements with custom pricing.",
-            "Inaya Commerce add-on revenue. Commerce Starter, the Commerce add-on, the Business + Commerce bundle and extra branches and tills. The Combined Financial Model's base case (take-up of 20% of Professional, 30% of Business and 50% of Enterprise customers) puts Commerce revenue at about $2.2K in year 1 rising to about $57.5K in year 5, shown separately from the package revenue above.",
+            "Inaya Commerce add-on revenue. Commerce Starter, the Commerce add-on, the Business + Commerce bundle, extra branches and tills, and extra online-order blocks ($15 / PKR 2,500 per 1,000 orders, added 24 Nov 2026 and not yet in the forecast below). The Combined Financial Model's base case (take-up of 20% of Professional, 30% of Business and 50% of Enterprise customers) puts Commerce revenue at about $2.2K in year 1 rising to about $57.5K in year 5, shown separately from the package revenue above.",
             "Shared infrastructure economics. Business OS runs on the same encrypted storage backend as Inaya's core DePIN product — SaaS subscription revenue and DePIN storage/staking revenue draw on shared infrastructure investment rather than requiring a separate cost base.",
           ],
         },

@@ -29,6 +29,7 @@ export default function sitemap() {
     { path: "/business", priority: 0.9, changeFrequency: "weekly" },
     { path: "/business/pricing", priority: 0.8, changeFrequency: "monthly" },
     { path: "/business/demo", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/business/why-inaya", priority: 0.8, changeFrequency: "monthly" },
     { path: "/business/download", priority: 0.6, changeFrequency: "monthly" },
     { path: "/business/roadmap", priority: 0.6, changeFrequency: "monthly" },
     { path: "/about", priority: 0.8, changeFrequency: "monthly" },

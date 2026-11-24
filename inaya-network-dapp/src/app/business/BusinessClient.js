@@ -654,7 +654,11 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
 
   return (
     <div className="mt-4 md:mt-8">
-      <a href="/" className="inline-block text-[var(--inaya-text-muted)] hover:text-[var(--inaya-accent)] text-xs font-mono mb-8">← Inaya Network</a>
+      {/* Top row (outside the hero, which is frozen by the Why Inaya SOW): back link + the Why Inaya page. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-8 min-h-[22px]">{/* min-h-[22px] = the old link's line height, so the hero stays at the same position */}
+        <a href="/" className="inline-block text-[var(--inaya-text-muted)] hover:text-[var(--inaya-accent)] text-xs font-mono">← Inaya Network</a>
+        <a href="/business/why-inaya" className="inline-block text-[13px] font-bold text-[var(--inaya-accent)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 rounded">Why Inaya Business OS? →</a>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-14 items-center">
         {/* HERO -- rebrand 23 Nov 2026: Inaya Business OS (owner + co-founder). Name, descriptor and tagline as approved;

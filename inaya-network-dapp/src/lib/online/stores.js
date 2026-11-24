@@ -18,6 +18,7 @@
 // org (set by Inaya admin) adds more; synced orders per month: 1,000 (Business), unlimited (Enterprise).
 import { randomBytes, createHmac } from "node:crypto";
 import { getOrgCollections } from "../orgs.js";
+import { orderBlockAllowance } from "../commercePricing.js";
 import { ccol, oid, sid, clean, fail, nowIso, toMinor, fromMinor, audit, getSettings, canManageCommerce, commerceAccess, KINDS as CK } from "../commerce/store.js";
 import { seal, last4 } from "./crypto.js";
 
@@ -53,10 +54,12 @@ export async function ensureOnlineIndexes() {
 
 // ---------------------------------------------------------------- plan limits
 export async function planLimits(orgId) {
-  const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { plan: 1, commerceExtraStores: 1, commerceOrderCap: 1 } });
+  const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { plan: 1, commerceExtraStores: 1, commerceOrderCap: 1, commerceOrderBlocks: 1, commerceOrderTopups: 1 } });
   const base = PLAN_LIMITS[org?.plan] || PLAN_LIMITS.business;
   const extra = Math.max(0, Math.floor(Number(org?.commerceExtraStores) || 0));
-  return { plan: org?.plan || null, connected: base.connected, total: base.total + extra, extraStores: extra, monthlyOrders: org?.commerceOrderCap === "unlimited" ? null : base.monthlyOrders };
+  const blocks = orderBlockAllowance(org); // extra 1,000-order blocks (recurring + this month's top-ups)
+  const unlimited = org?.commerceOrderCap === "unlimited" || base.monthlyOrders === null;
+  return { plan: org?.plan || null, connected: base.connected, total: base.total + extra, extraStores: extra, monthlyOrders: unlimited ? null : base.monthlyOrders + blocks.extraOrders, baseMonthlyOrders: unlimited ? null : base.monthlyOrders, orderBlocks: blocks };
 }
 
 // ---------------------------------------------------------------- store views

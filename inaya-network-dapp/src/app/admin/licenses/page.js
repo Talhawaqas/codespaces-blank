@@ -7,6 +7,8 @@
 // Everything is read from and written through /api/admin/licenses (src/lib/licensing/*).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { COMMERCE_PRICING } from "../../../lib/commercePricing.js";
+const OB = COMMERCE_PRICING.orderBlock;
 
 const input = "bg-black/30 border border-white/10 rounded px-2 py-1.5 text-white text-[12px] w-full";
 const btn = "px-3 py-1.5 rounded text-[12px] font-bold disabled:opacity-40";
@@ -217,6 +219,13 @@ function LicenseDetail({ orgId, plans, onClose, onChanged }) {
         <p className="text-[#94a3b8] text-[10px] uppercase">Paid add-ons</p>
         {d.company.addons.map((a) => <div key={a.key} className="flex items-center gap-2"><span className="flex-1 text-white">{a.label}: <b className={a.enabled ? "text-emerald-300" : "text-[#94a3b8]"}>{a.enabled ? "on" : "off"}</b></span>
           <button className={a.enabled ? danger : primary} disabled={busy} onClick={() => { const reason = window.prompt(a.enabled ? `Reason for switching ${a.label} off (customers keep their data):` : `Reason / invoice reference for switching ${a.label} on:`); if (reason) act({ action: "set_addon", addon: a.key, enabled: !a.enabled, reason }, `${a.enabled ? "Switch off" : "Switch on"} ${a.label} for ${d.company.name}?`); }}>{a.enabled ? "Switch off" : "Switch on"}</button></div>)}
+        {d.company.orderBlocks?.eligible && <div className="pt-2 mt-1 border-t border-white/10">
+          <p className="text-white">Extra online-order blocks (+{OB.orders.toLocaleString()} a month each, ${OB.usd} / PKR {OB.pkr.toLocaleString()}): <b className="text-emerald-300">{d.company.orderBlocks.blocks}</b> of {d.company.orderBlocks.maxBlocks} this month <span className="text-[#94a3b8]">({d.company.orderBlocks.recurring} monthly, {d.company.orderBlocks.topup} top-up for this month only)</span></p>
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            <button className={primary} disabled={busy} onClick={() => { const n = window.prompt(`Monthly order blocks billed every month (0-${d.company.orderBlocks.maxBlocks}):`, String(d.company.orderBlocks.recurring)); if (n === null) return; const reason = window.prompt("Reason / invoice reference:"); if (reason) act({ action: "set_order_blocks", recurring: Number(n), reason }, `Set ${d.company.name}'s monthly order blocks to ${n}? Their online-order limit changes at once.`); }}>Set monthly blocks</button>
+            <button className={primary} disabled={busy || d.company.orderBlocks.blocks >= d.company.orderBlocks.maxBlocks} onClick={() => { const n = window.prompt("Top-up blocks for this month only:", "1"); if (n === null) return; const reason = window.prompt("Reason / payment reference:"); if (reason) act({ action: "add_order_topup", blocks: Number(n), reason }, `Add ${n} top-up block(s) (+${Number(n) * OB.orders} orders) to ${d.company.name} for this month only?`); }}>Add top-up (this month)</button>
+          </div>
+        </div>}
       </div>}
       {!d ? <p className="text-[#94a3b8] text-sm">Loading…</p> : !lic ? (
         <p className="text-[#94a3b8] text-sm">This company has no license yet. Use "Assign a license".</p>

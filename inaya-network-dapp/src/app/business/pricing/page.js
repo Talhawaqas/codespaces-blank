@@ -49,7 +49,7 @@ function CommercePricing({ region, onPick }) {
           </div>
         ))}
       </div>
-      <p className="text-[#94a3b8] text-xs mt-4">Extra branch {m(CP.extraBranch)} a month · extra till {m(CP.extraTill)} a month. Commerce is switched on with your activation; tell us which option you want in the request. Card payments use your own Stripe or Safepay account: Inaya never holds your customers' money.</p>
+      <p className="text-[#94a3b8] text-xs mt-4">Extra branch {m(CP.extraBranch)} a month · extra till {m(CP.extraTill)} a month · extra 1,000 online orders {m(CP.orderBlock)} a month, as a monthly add-on or for one month only (Commerce Starter and Commerce add-on, up to {CP.orderBlock.maxBlocks} blocks; Enterprise is unlimited). Commerce is switched on with your activation; tell us which option you want in the request. Card payments use your own Stripe or Safepay account: Inaya never holds your customers' money.</p>
     </section>
   );
 }
