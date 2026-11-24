@@ -2092,8 +2092,8 @@ const NAV_GROUPS = [
   {
     title: 'Business Document Management SaaS',
     items: [
-      { label: 'Business Workspace', icon: '🏢', href: '/business' },
-      { label: 'Business Workspace Roadmap', icon: '🧩', href: '/business/roadmap' },
+      { label: 'Inaya Business OS', icon: '🏢', href: '/business' },
+      { label: 'Business OS Roadmap', icon: '🧩', href: '/business/roadmap' },
     ],
   },
   {
@@ -8062,7 +8062,7 @@ export default function Home() {
             </h3>
 
             <p className="text-[#94a3b8] text-sm leading-relaxed mb-6">
-              You don&apos;t need to understand wallets, tokens, or blockchain technology to get started with Inaya. Our Business Workspace gives you a familiar business environment to securely manage documents, invoices, procurement, inventory, team workflows, insights, and more — while Inaya handles the underlying infrastructure. Start with the tools your business already understands, and explore Web3 at your own pace.
+              You don&apos;t need to understand wallets, tokens, or blockchain technology to get started with Inaya. Inaya Business OS gives you a familiar business environment to run finance, sales at the counter and online, inventory, purchasing, documents, team workflows and more — while Inaya handles the underlying infrastructure. Start with the tools your business already understands, and explore Web3 at your own pace.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -8076,7 +8076,7 @@ export default function Home() {
                 }}
                 className="flex-1 text-center py-3 px-4 rounded-xl bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#060913] font-bold text-sm hover:brightness-110 transition-all"
               >
-                Explore Business Workspace
+                Explore Inaya Business OS
               </a>
               <button
                 onClick={() => dismissWeb3IntroModal('maybe_later')}
