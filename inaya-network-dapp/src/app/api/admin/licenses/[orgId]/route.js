@@ -27,7 +27,7 @@ import { rowView } from "../../../../../lib/licensing/admin.js";
 import { COMMERCE_PRICING, orderBlockAllowance, checkOrderBlockChange, orderMonthKey } from "../../../../../lib/commercePricing.js";
 
 export const dynamic = "force-dynamic";
-const ADDONS = { FEATURE_COMMERCE: "Inaya Commerce (Point of Sale, orders, reports)", FEATURE_MANAGE_ORDERS: "Manage Orders (work and repair orders, technicians, cheques)" };
+const ADDONS = { FEATURE_COMMERCE: "Inaya Commerce (Point of Sale, orders, reports)", FEATURE_MANAGE_ORDERS: "Manage Orders (work and repair orders, technicians, cheques)", FEATURE_INAYA_CONNECT: "Inaya Connect (WhatsApp Business inbox, assistants, document intake)" };
 const HIGH_IMPACT = new Set(["set_addon", "set_order_blocks", "add_order_topup", "assign", "confirm_payment", "reverse_payment", "change", "extend_grace", "suspend", "reactivate", "cancel"]);
 
 export async function GET(req, { params }) {

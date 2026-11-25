@@ -37,6 +37,8 @@ export const FEATURES = [
   "FEATURE_COMMERCE",
   // Manage Orders (Work/Repair Orders, technicians, cheques): Business + Enterprise; switched on by Inaya, never self-service.
   "FEATURE_MANAGE_ORDERS",
+  // Inaya Connect (WhatsApp Business & AI gateway): Business + Enterprise; switched on by Inaya, never self-service.
+  "FEATURE_INAYA_CONNECT",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);

@@ -9,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { entitledFromOrg } from "../../../../lib/ops/core.js";
+import { entitledFromOrg as connectEntitledFromOrg } from "../../../../lib/connect/core.js";
 import { getOrgCollections, getSession, getRawSessionToken } from "../../../../lib/orgs.js";
 
 export async function GET(req) {
@@ -44,6 +45,7 @@ export async function GET(req) {
         vertical: org?.vertical || "general",
         // Manage Orders menu entry (server re-checks every call): only when the company is entitled.
         manageOrders: entitledFromOrg(org),
+        inayaConnect: connectEntitledFromOrg(org),
         opsRole: m.opsRole || null,
       };
     }),

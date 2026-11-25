@@ -44,6 +44,7 @@ export const NAV_ITEMS = [
   { key: "appointments", label: "Appointments", icon: "tasks", group: "operations" },
   { key: "campaigns", label: "Email Campaigns", icon: "crm", group: "operations" },
   { key: "manageOrders", label: "Manage Orders", icon: "tasks", group: "operations", opsOnly: true },
+  { key: "inayaConnect", label: "Inaya Connect (WhatsApp)", icon: "crm", group: "operations", connectOnly: true },
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "pos", label: "Point of Sale", icon: "inventory", group: "operations" },
@@ -120,7 +121,8 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
   return (
     (!item.manageOnly || canManage || (item.adminRole && hasAdminRole(membership, item.adminRole, { read: true }))) &&
     (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)) &&
-    (!item.opsOnly || membership?.manageOrders === true)
+    (!item.opsOnly || membership?.manageOrders === true) &&
+    (!item.connectOnly || membership?.inayaConnect === true)
   );
 }
 
@@ -132,6 +134,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  inayaConnect: "whatsapp whats app inbox chat messages customer messages business assistant document intake bills on whatsapp",
   manageOrders: "work order work orders repair order repair orders job card technician mechanic workshop dispatch scheduler maintenance cheque cheques check checks purchase orders",
   ideas: "idea ideas suggestion suggest feature request improvement feedback roadmap vote",
   workforce: "time clock clock in clock out break attendance timesheet rota shifts schedule commission tips checklist incident branch location manage users roles permissions staff",

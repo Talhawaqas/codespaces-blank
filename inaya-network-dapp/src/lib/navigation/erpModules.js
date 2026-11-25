@@ -48,7 +48,7 @@ export const ERP_MODULES = [
       { id: "store", label: "Shop counter", items: ["pos"] },
       { id: "growth", label: "Customer growth", items: ["growth", "appointments", "campaigns"] },
       { id: "online", label: "Online store & Shopify / WooCommerce", items: ["online"] },
-      { id: "service", label: "Customer service", items: ["support", "portalRequests"] },
+      { id: "service", label: "Customer service", items: ["support", "portalRequests", "inayaConnect"] },
       { id: "jobs", label: "Work and repair orders", items: ["manageOrders"] },
     ],
   },

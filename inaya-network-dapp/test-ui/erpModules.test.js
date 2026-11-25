@@ -176,6 +176,7 @@ describe("every tabbed screen gives its tabs to the task panel", () => {
   // (data-erp-tabs) -- or, for the core modules ERP_MODULES lists itself, hide the bar in code.
   const CORE = ["FinanceView", "HRView", "InventoryView", "ProcurementView", "CRMView"];
   const REPORTED = [
+    "ConnectView",
     "admin/ComplianceReadinessView", "gateway/GatewayView", "governance/GovernanceView", "AiSecurityView", "BookkeeperView",
     "DeviceProtectionView", "DocumentAutomationView", "GrowthView", "WorkforceView", "IdeasView", "EnterpriseHardeningView", "ExecutiveDashboardView", "FinancialView",
     "GovernmentView", "HealthView", "IdentityView", "InfrastructureView", "IntegrationsView", "LegalView", "NasManagementView",

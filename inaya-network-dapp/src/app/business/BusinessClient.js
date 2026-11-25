@@ -50,6 +50,7 @@ const GrowthView = dynamic(() => import("../../components/business/GrowthView"),
 const IdeasView = dynamic(() => import("../../components/business/IdeasView"), { ssr: false, loading: ScreenLoading });
 const WorkforceView = dynamic(() => import("../../components/business/WorkforceView"), { ssr: false, loading: ScreenLoading });
 const ManageOrdersView = dynamic(() => import("../../components/business/ManageOrdersView"), { ssr: false, loading: ScreenLoading });
+const ConnectView = dynamic(() => import("../../components/business/ConnectView"), { ssr: false, loading: ScreenLoading });
 const OnlineStoreView = dynamic(() => import("../../components/business/OnlineStoreView"), { ssr: false, loading: ScreenLoading });
 const PosView = dynamic(() => import("../../components/business/commerce/PosView"), { ssr: false, loading: ScreenLoading });
 const InventoryView = dynamic(() => import("../../components/business/InventoryView"), { ssr: false, loading: ScreenLoading });
@@ -1450,6 +1451,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     education: { title: "Education OS", description: "Students, fees, attendance, exams and parent links, with student personal data encrypted." },
     growth: { title: "Customer Growth", description: "Customer 360, loyalty points and memberships, gift cards and store credit, offers, automatic emails and the growth assistant." },
     manageOrders: { title: "Manage Orders", description: "Work orders, repair orders, technician scheduling, purchase orders and cheques in one place." },
+    inayaConnect: { title: "Inaya Connect", description: "Your WhatsApp Business number: shared inbox, business and customer assistants, and documents sent on WhatsApp." },
     pos: { title: "Point of Sale", description: "Sell at the counter: scan or search, discounts with approval, split payments, receipts and parked sales." },
     hospitality: { title: "Hospitality OS", description: "Reservations, tables, guests, menu, stock, shifts and daily checklists for restaurants, cafes and caterers." },
     resilience: { title: "Security & Resilience Controls", description: "Vendors, ICT assets, privileged access, and resilience policy." },
@@ -1583,6 +1585,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "online" && <OnlineStoreView orgId={orgId} />}
       {activeView === "workforce" && <WorkforceView orgId={orgId} />}
       {activeView === "manageOrders" && <ManageOrdersView orgId={orgId} />}
+      {activeView === "inayaConnect" && <ConnectView orgId={orgId} />}
       {activeView === "ideas" && <IdeasView orgId={orgId} />}
       {activeView === "finance" && <FinanceView orgId={orgId} email={email} />}
       {activeView === "hr" && <HRView orgId={orgId} email={email} />}
