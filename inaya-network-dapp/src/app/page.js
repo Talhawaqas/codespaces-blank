@@ -7473,10 +7473,10 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-3">
 
 <a
-                    href="https://github.com/Talhawaqas/inaya-mobile/releases/download/Mobile-App-Alpha-ver1.1/app-release.apk"
+                    href="https://github.com/Talhawaqas/inaya-mobile/releases/latest/download/app-release.apk"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => track('mobile_apk_download', { version: 'alpha-1.1' })}
+                    onClick={() => track('mobile_apk_download', { version: 'latest' })}
                     className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-[#060913] font-black text-xs rounded-xl text-center shadow-[0_0_15px_rgba(52,211,153,0.2)] hover:brightness-110 active:scale-95 transition-all"
                   >
                     📱 Download Inaya Mobile App - Alpha Version 1.1 (.apk)
