@@ -92,6 +92,8 @@ export async function POST(req, { params }) {
     const orgId = body.orgId || qs.get("orgId"); const c = await ctx(req, orgId); if (c.error) return c.error;
     if (await limited(`ops:${c.actorEmail}`, 600, 3600000)) return json({ error: "Too many requests; slow down a little." }, 429);
     const b = { orgId, membership: c.membership, actorEmail: c.actorEmail };
+    if (path === "push/register") return out(await C.registerPushToken({ orgId, membership: c.membership, token: body.token, platform: body.platform }));
+    if (path === "push/unregister") return out(await C.registerPushToken({ orgId, membership: c.membership, token: body.token, unregister: true }));
     if (path === "jobs") return out(await J.createJob({ ...b, input: body }));
     if (seg[0] === "jobs" && seg[1]) {
       const jobId = seg[1]; const sub = seg.slice(2).join("/");

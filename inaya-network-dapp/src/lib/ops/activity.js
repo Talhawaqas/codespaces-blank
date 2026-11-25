@@ -78,7 +78,19 @@ export async function recordActivity({ orgId, membership, actorEmail, jobId, inp
   }
   if (TERMINAL.includes(j.status)) return fail("This job is closed.", 409);
   const w = (j.workers || []).find((x) => x.email === email) || { email, state: "NOT_STARTED" };
-  const settings = await getOpsSettings(orgId); const now = nowIso();
+  const settings = await getOpsSettings(orgId); const received = nowIso(); let now = received; let needsReview = false; let clientAt = null;
+  // Offline queue (SOW 10.6): an action done without signal arrives later with the phone's "done at" time. The server
+  // still decides: the phone's time is used only when it is plausible (not in the future, not older than 24 h, not
+  // before this person's previous event on the job); otherwise the server time is used. Either way a late or
+  // implausible queued action is flagged for a manager to review. Device time is never trusted blindly.
+  if (input.queued && input.clientAt) {
+    const t = new Date(input.clientAt); clientAt = Number.isNaN(t.getTime()) ? null : t.toISOString();
+    const last = await c.find({ orgId: oid(orgId), kind: K.act, jobId: j._id, email }).sort({ at: -1 }).limit(1).toArray();
+    const lastAt = last[0]?.at || null; const ageMin = clientAt ? minutesBetween(clientAt, received) : Infinity;
+    const plausible = clientAt && new Date(clientAt) <= new Date(Date.now() + 2 * 60000) && ageMin <= 24 * 60 && (!lastAt || clientAt >= lastAt);
+    if (plausible) now = clientAt; else needsReview = true;
+    if (ageMin > 15) needsReview = true;
+  }
   const reason = clean(input.reason, 60).toLowerCase(); const note = clean(input.note, 1000);
   const device = input.device ? { platform: clean(input.device.platform, 20), app: clean(input.device.app, 40), version: clean(input.device.version, 20) } : null;
   let verification = null;
@@ -123,7 +135,7 @@ export async function recordActivity({ orgId, membership, actorEmail, jobId, inp
   if (type === "FLAG" && !FLAG_KINDS.includes(reason)) return fail(`Choose what to flag: ${FLAG_KINDS.join(", ")}.`);
 
   // write the event (unique idempotency key), then the worker/job state
-  const ev = { orgId: oid(orgId), kind: K.act, opsDoc: true, opsKey: `act:${idem}`, jobId: j._id, email, type, reason: reason || null, note: note || null, at: now, by: actorEmail, onBehalf, verification, device, source: input.source === "mobile" ? "mobile" : "web" };
+  const ev = { orgId: oid(orgId), kind: K.act, opsDoc: true, opsKey: `act:${idem}`, jobId: j._id, email, type, reason: reason || null, note: note || null, at: now, receivedAt: received, ...(input.queued ? { queued: true, clientAt, needsReview } : {}), by: actorEmail, onBehalf, verification, device, source: input.source === "mobile" ? "mobile" : "web" };
   try { const ins = await c.insertOne(ev); ev._id = ins.insertedId; }
   catch (e) { if (e?.code === 11000) { const prior = await c.findOne({ orgId: oid(orgId), opsKey: `act:${idem}` }); return { event: actView(prior), duplicate: true }; } throw e; }
 
@@ -143,6 +155,7 @@ export async function recordActivity({ orgId, membership, actorEmail, jobId, inp
   await c.updateOne({ _id: j._id }, { $set: set, ...(nextStatus !== j.status ? { $push: { history: { from: j.status, to: nextStatus, action: type.toLowerCase(), by: actorEmail, at: now, email } } } : {}) }, { arrayFilters: [{ "w.email": email }] });
   await audit({ orgId, actorEmail, recordType: j.type === "RO" ? "REPAIR_ORDER" : "WORK_ORDER", recordId: j._id, action: `OPS_JOB_${type}`, previousState: w.state, newState: nextWorker, metadata: { email, reason: reason || null, onBehalf: onBehalf ? onBehalf.reason : null, verification: verification?.method || null } });
 
+  if (needsReview) await raise({ orgId, type: "OFFLINE_ACTION", key: idem, email, jobId: j._id, rule: `A job action recorded without signal arrived ${clientAt ? `${minutesBetween(clientAt, received)} min late` : "without a usable time"}; check the time used.`, evidence: { action: type, phoneTime: clientAt, receivedAt: received, timeUsed: now, number: j.number }, severity: "info" });
   // side effects: flags and submissions reach the manager; labour variance is a review item.
   if (type === "FLAG") { await notifyMember({ orgId, email: j.managerEmail, title: `${j.number}: ${reason.replace("_", " ")} flagged`, body: note || "The technician flagged this job.", type: "ops_flag", sourceId: j._id, dedupeKey: `ops:flag:${idem}`, severity: reason === "safety" ? "critical" : "warning" }); if (reason === "safety") await raise({ orgId, type: "SAFETY_FLAG", key: idem, email, jobId: j._id, rule: "A technician raised a safety concern.", evidence: { note, number: j.number }, severity: "critical" }); }
   if (type === "SUBMIT" && email === lead) {
@@ -150,7 +163,7 @@ export async function recordActivity({ orgId, membership, actorEmail, jobId, inp
     if (j.estMinutes) { const all = labourFromEvents(await c.find({ orgId: oid(orgId), kind: K.act, jobId: j._id }).toArray()); const total = Object.values(all).reduce((s, x) => s + x.minutes, 0); const pct = Math.round(((total - j.estMinutes) / j.estMinutes) * 100);
       if (Math.abs(pct) >= settings.labourVariancePct) await raise({ orgId, type: "LABOUR_VARIANCE", key: `${sid(j._id)}`, jobId: j._id, rule: `Actual labour ${total} min vs estimate ${j.estMinutes} min (${pct > 0 ? "+" : ""}${pct}%).`, evidence: { actualMinutes: total, estMinutes: j.estMinutes, number: j.number }, severity: "info" }); }
   }
-  return { event: actView(ev), state: nextWorker, status: nextStatus, labourMinutes: labour.minutes };
+  return { event: actView(ev), state: nextWorker, status: nextStatus, labourMinutes: labour.minutes, needsReview };
 }
 const actView = (a) => (a ? { id: sid(a._id), type: a.type, email: a.email, at: a.at, reason: a.reason || null, note: a.note || null, verification: a.verification ? { method: a.verification.method, distanceM: a.verification.distanceM ?? null } : null } : null);
 

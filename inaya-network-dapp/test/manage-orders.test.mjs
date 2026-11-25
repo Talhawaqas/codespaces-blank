@@ -253,3 +253,38 @@ test("preventive maintenance: due template creates one Work Order per due date, 
   const t = (await P.listPmTemplates(as(M.mgr))).templates[0]; assert.ok(t.nextDue > today);
   const gen = (await J.listJobs(as(M.mgr, { q: "Generator service" }))).jobs[0]; assert.equal(gen.status, "AWAITING_APPROVAL"); assert.equal(gen.checklist.length, 2);
 });
+
+test("push: device registered, lock-screen text has no customer details, dead tokens removed; integration events queued", { timeout: 120000 }, async () => {
+  const sent = []; C.__setPushTransport(async (msgs) => { sent.push(...msgs); return { data: msgs.map((m, i) => (i === 0 ? { status: "ok" } : { status: "error", details: { error: "DeviceNotRegistered" } })) }; });
+  assert.equal((await C.registerPushToken({ orgId: ORG, membership: M.tech1, token: "not-a-token" })).status, 400);
+  ok(await C.registerPushToken({ orgId: ORG, membership: M.tech1, token: "ExponentPushToken[aaaaaaaaaaaaaaaaaaaaaa]", platform: "android" }));
+  ok(await C.registerPushToken({ orgId: ORG, membership: M.tech1, token: "ExponentPushToken[bbbbbbbbbbbbbbbbbbbbbb]", platform: "android" }));
+  await c.db.collection("org_webhooks").insertOne({ orgId, url: "https://hooks.example/x", events: ["*"], active: true, deletedAt: null, createdAt: new Date().toISOString() });
+  const ro = ok(await J.createJob(as(M.adv, { input: { type: "RO", title: "Phone screen", warehouseId: String(lhr), contactId: String(contact) } }))).job;
+  ok(await J.transitionJob(as(M.adv, { jobId: ro.id, action: "check_in" }))); ok(await J.recordDiagnosis(as(M.adv, { jobId: ro.id, input: { findings: "Cracked" } })));
+  const est = ok(await J.createEstimate(as(M.adv, { jobId: ro.id, input: { lines: [{ kind: "labour", description: "Screen", quantity: 1, unitPrice: 9000 }] } }))).estimate;
+  ok(await J.decideEstimate(as(M.adv, { jobId: ro.id, estimateId: est.id, decision: "approve", customerName: "Ali Khan", method: "phone" })));
+  ok(await S.assignTechnician(as(M.mgr, { jobId: ro.id, email: M.tech1.email, start: new Date(Date.now() + 500 * 3600000).toISOString(), end: new Date(Date.now() + 501 * 3600000).toISOString() })));
+  const msg = sent.find((m) => /New job RO-/.test(m.title)); assert.ok(msg, "assignment pushed");
+  assert.ok(!JSON.stringify(sent).includes("Ali Khan"), "no customer name on the lock screen"); assert.equal(msg.data.jobId, ro.id);
+  assert.equal(await (await C.ccol()).countDocuments({ orgId, kind: C.K.push }), 1, "the dead device token was removed");
+  const evs = await c.db.collection("org_webhook_deliveries").find({ orgId }).toArray(); const types = new Set(evs.map((e) => e.event));
+  for (const t of ["repair_order.created", "repair_order.status_changed", "job.assigned"]) assert.ok(types.has(t), `event ${t}`);
+  assert.ok(!JSON.stringify(evs.map((e) => e.payload)).includes("Ali Khan"), "events carry no customer details");
+  C.__setPushTransport(null);
+});
+
+test("offline queue: plausible phone time is used, late or implausible actions are kept but flagged for review, retries record once", { timeout: 120000 }, async () => {
+  const j = ok(await J.createJob(as(M.mgr, { input: { type: "WO", title: "Offline site job", warehouseId: String(lhr) } }))).job;
+  ok(await J.transitionJob(as(M.mgr, { jobId: j.id, action: "submit" }))); ok(await J.transitionJob(as(M.mgr2, { jobId: j.id, action: "approve" })));
+  ok(await S.assignTechnician(as(M.mgr, { jobId: j.id, email: M.tech1.email, start: new Date(Date.now() + 600 * 3600000).toISOString(), end: new Date(Date.now() + 601 * 3600000).toISOString() })));
+  const t0 = new Date(Date.now() - 5 * 60000).toISOString(); const k = key();
+  const a1 = ok(await A.recordActivity(as(M.tech1, { jobId: j.id, input: { type: "START", idempotencyKey: k, queued: true, clientAt: t0 } })));
+  assert.equal(a1.needsReview, false); assert.equal((await (await C.ccol()).findOne({ orgId, opsKey: `act:${k}` })).at, t0, "phone time used when plausible");
+  assert.equal((await A.recordActivity(as(M.tech1, { jobId: j.id, input: { type: "START", idempotencyKey: k, queued: true, clientAt: t0 } }))).duplicate, true);
+  const late = ok(await A.recordActivity(as(M.tech1, { jobId: j.id, input: { type: "PAUSE", reason: "parts", idempotencyKey: key(), queued: true, clientAt: new Date(Date.now() - 3 * 3600000).toISOString() } })));
+  assert.equal(late.needsReview, true, "earlier than the previous event → server time + review");
+  const fut = ok(await A.recordActivity(as(M.tech1, { jobId: j.id, input: { type: "RESUME", idempotencyKey: key(), queued: true, clientAt: new Date(Date.now() + 3600000).toISOString() } })));
+  assert.equal(fut.needsReview, true, "future phone time is never trusted");
+  assert.ok(await (await C.ccol()).countDocuments({ orgId, kind: C.K.exc, type: "OFFLINE_ACTION" }) >= 2);
+});

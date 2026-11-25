@@ -60,6 +60,10 @@ export const EVENTS = {
   "leave.approval": { category: "approval", label: "A leave request needs my approval", defaults: { inApp: true, email: true }, severity: "info", generic: "A leave request is waiting for your approval." },
   "leave.decided": { label: "My leave request was decided", defaults: { inApp: true }, severity: "info", generic: "Your leave request was decided." },
   "inventory.reorder_drafted": { label: "A reorder request was drafted for low stock", defaults: { inApp: true }, severity: "info", generic: "A reorder purchase request was drafted for a low-stock product." },
+  // Manage Orders SOW 10.5 / 16: technicians and managers choose where job updates reach them (lock-screen push included).
+  "ops.jobs": { label: "Manage Orders: my jobs (new, changed, rework, instructions)", defaults: { inApp: true, push: true }, severity: "info", generic: "There is an update on one of your jobs." },
+  "ops.review": { label: "Manage Orders: items to review and parts requests (managers)", defaults: { inApp: true, push: true }, severity: "warning", generic: "There is a Manage Orders item to review." },
+  "ops.cheques": { label: "Manage Orders: cheque approvals", defaults: { inApp: true }, severity: "info", generic: "A cheque needs attention." },
 };
 
 let indexed = false;

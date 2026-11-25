@@ -27,7 +27,7 @@ export const OPS_ROLES = ["manager", "dispatcher", "advisor", "technician", "sto
 export const K = {
   job: "ops_job", asset: "ops_asset", estimate: "ops_estimate", act: "ops_act", tech: "ops_tech", site: "ops_site", exc: "ops_exc",
   pm: "ops_pm", file: "ops_file", settings: "ops_settings", counter: "ops_counter",
-  chqBook: "ops_chqbook", chqTpl: "ops_chqtpl", chq: "ops_chq",
+  chqBook: "ops_chqbook", chqTpl: "ops_chqtpl", chq: "ops_chq", push: "ops_push", pushSent: "ops_push_sent",
 };
 export const PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"];
 export const DEFAULT_SETTINGS = {
@@ -106,13 +106,62 @@ export async function nextRef(orgId, prefix, session = null) {
   const r = await c.findOneAndUpdate({ orgId: oid(orgId), kind: K.counter, key: prefix }, { $inc: { value: 1 }, $setOnInsert: { orgId: oid(orgId), kind: K.counter, key: prefix } }, { upsert: true, returnDocument: "after", session });
   return `${prefix}-${String(r.value).padStart(5, "0")}`;
 }
-export async function audit(a) { return baseAudit(a); }
-export async function notifyMember({ orgId, email, title, body, type, sourceId, dedupeKey, severity = "info" }) {
-  try {
+/** Audit (existing org activity log) + the matching integration event. Events carry only the action and states. */
+export async function audit(a) {
+  await baseAudit(a);
+  const kind = { WORK_ORDER: "work_order", REPAIR_ORDER: "repair_order", CHEQUE: "cheque" }[a.recordType]; if (!kind) return;
+  let type = null;
+  if (a.action === "WO_CREATED" || a.action === "RO_CREATED") type = `${kind}.created`;
+  else if (a.action === "OPS_TECHNICIAN_ASSIGNED") type = "job.assigned";
+  else if (String(a.action).startsWith("OPS_JOB_")) type = "job.activity";
+  else if (a.newState && a.newState !== a.previousState) type = kind === "cheque" ? "cheque.status_changed" : `${kind}.status_changed`;
+  if (type) await emitOps({ orgId: a.orgId, type, entityId: a.recordId, data: { action: a.action, previousState: a.previousState ?? null, newState: a.newState ?? null, number: a.metadata?.number ?? null } });
+}
+const prefEvent = (type) => (/^ops_(exception|parts_request|submitted|flag|explain)/.test(type || "") ? "ops.review" : /^ops_cheque/.test(type || "") ? "ops.cheques" : "ops.jobs");
+export async function notifyMember({ orgId, email, title, body, type, sourceId, dedupeKey, severity = "info", jobId = null }) {
+  // Each person's notification preferences (existing notify router) decide in-app and push delivery.
+  let ch = { inApp: true, push: true };
+  if (email) { try { const { getPrefs } = await import("../notify/router.js"); const p = await getPrefs({ orgId: sid(orgId), email }); ch = p.prefs?.[prefEvent(type)] || ch; } catch { /* defaults */ } }
+  if (ch.inApp !== false) try {
     const { createNotification } = await import("../notifications.js");
     // Titles/bodies never carry customer personal data (they can show on a lock screen).
     await createNotification({ scope: "org", orgId: sid(orgId), targetEmail: email || null, category: "business", severity, type, title: clean(title, 140), body: clean(body, 300), sourceModule: "manage-orders", sourceId: sid(sourceId), actionUrl: "/business?view=manageOrders", dedupeKey });
   } catch (e) { console.error("ops notify failed:", e?.message); }
+  if (email && ch.push !== false) await sendPush({ orgId, email, title, body, data: { orgId: sid(orgId), jobId: jobId ? sid(jobId) : /^ops_(exception|explain|cheque)/.test(type || "") ? null : sid(sourceId), type }, dedupeKey }).catch((e) => console.error("ops push failed:", e?.message));
+}
+
+// ------------------------------------------------------------------ lock-screen push (Expo push service -> FCM / APNs)
+// A device token is stored per (company, person, device) in kind ops_push. Pushes carry only the short title/body above
+// (job number + what happened) and ids for opening the job; never customer names, addresses or amounts.
+const EXPO_TOKEN = /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]{10,200}\]$/;
+let pushTransport = null; // tests inject a fake transport
+export function __setPushTransport(fn) { pushTransport = fn; }
+export async function registerPushToken({ orgId, membership, token, platform, unregister = false }) {
+  if (!membership?.email) return fail("Sign in to continue.", 401);
+  if (!(await opsEntitled(orgId))) return fail("Manage Orders isn't enabled for this company.", 403, "NOT_ENTITLED");
+  const t = String(token || "").trim(); if (!EXPO_TOKEN.test(t)) return fail("Invalid device token.");
+  const c = await ccol(); const key = `push:${t}`;
+  if (unregister) { await c.deleteOne({ orgId: oid(orgId), kind: K.push, opsKey: key, email: membership.email }); return { ok: true, registered: false }; }
+  const now = nowIso();
+  await c.updateOne({ orgId: oid(orgId), opsKey: key }, { $set: { kind: K.push, opsDoc: true, email: membership.email, token: t, platform: ["android", "ios"].includes(platform) ? platform : "android", lastSeenAt: now }, $setOnInsert: { orgId: oid(orgId), createdAt: now } }, { upsert: true });
+  return { ok: true, registered: true };
+}
+export async function sendPush({ orgId, email, title, body, data = {}, dedupeKey = null }) {
+  const c = await ccol(); const rows = await c.find({ orgId: oid(orgId), kind: K.push, email }).limit(10).toArray(); if (!rows.length) return { sent: 0 };
+  if (dedupeKey) { const r = await c.updateOne({ orgId: oid(orgId), opsKey: `pushsent:${dedupeKey}:${email}` }, { $setOnInsert: { orgId: oid(orgId), kind: K.pushSent, opsDoc: true, at: nowIso() } }, { upsert: true }); if (!r.upsertedCount) return { sent: 0, duplicate: true }; }
+  const messages = rows.map((r) => ({ to: r.token, title: clean(title, 80), body: clean(body, 120), data, sound: "default", channelId: "jobs", priority: "high" }));
+  const send = pushTransport || (async (msgs) => { const res = await fetch("https://exp.host/--/api/v2/push/send", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(msgs) }); return res.json(); });
+  const out = await send(messages);
+  const tickets = Array.isArray(out?.data) ? out.data : [];
+  for (let i = 0; i < tickets.length; i++) if (tickets[i]?.status === "error" && tickets[i]?.details?.error === "DeviceNotRegistered") await c.deleteOne({ orgId: oid(orgId), kind: K.push, token: rows[i].token });
+  return { sent: tickets.filter((t) => t?.status === "ok").length };
+}
+
+// ------------------------------------------------------------------ integration events (existing signed webhook registry)
+/** PII-minimised event for the company's own webhooks (ids, numbers, states; no customer details). Never blocks. */
+export async function emitOps({ orgId, type, entityId, data = {}, eventId = null }) {
+  try { const { emitWebhookEvent } = await import("../webhooks/registry.js"); await emitWebhookEvent({ orgId: sid(orgId), type, eventId, data: { version: 1, entityId: sid(entityId), occurredAt: nowIso(), ...data } }); }
+  catch (e) { console.error("ops event not queued:", type, e?.message); }
 }
 export async function membersByEmail(orgId, emails) {
   const { orgMembers } = await getOrgCollections();
