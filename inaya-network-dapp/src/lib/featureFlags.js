@@ -35,6 +35,8 @@ export const FEATURES = [
   "FEATURE_INFRASTRUCTURE",
   // Inaya Commerce (paid add-on for Business/Enterprise): enabled by Inaya with the add-on, never self-service.
   "FEATURE_COMMERCE",
+  // Manage Orders (Work/Repair Orders, technicians, cheques): Business + Enterprise; switched on by Inaya, never self-service.
+  "FEATURE_MANAGE_ORDERS",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);

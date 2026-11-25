@@ -8,6 +8,7 @@
 // this person switch between."
 
 import { NextResponse } from "next/server";
+import { entitledFromOrg } from "../../../../lib/ops/core.js";
 import { getOrgCollections, getSession, getRawSessionToken } from "../../../../lib/orgs.js";
 
 export async function GET(req) {
@@ -41,6 +42,9 @@ export async function GET(req) {
         plan: org?.plan || null,
         requiresPlanSelection: !!org?.requiresPlanSelection,
         vertical: org?.vertical || "general",
+        // Manage Orders menu entry (server re-checks every call): only when the company is entitled.
+        manageOrders: entitledFromOrg(org),
+        opsRole: m.opsRole || null,
       };
     }),
   });

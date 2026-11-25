@@ -43,6 +43,7 @@ export const NAV_ITEMS = [
   { key: "crm", label: "CRM", icon: "crm", group: "operations" },
   { key: "appointments", label: "Appointments", icon: "tasks", group: "operations" },
   { key: "campaigns", label: "Email Campaigns", icon: "crm", group: "operations" },
+  { key: "manageOrders", label: "Manage Orders", icon: "tasks", group: "operations", opsOnly: true },
   { key: "procurement", label: "Procurement", icon: "procurement", group: "operations" },
   { key: "inventory", label: "Inventory", icon: "inventory", group: "operations" },
   { key: "pos", label: "Point of Sale", icon: "inventory", group: "operations" },
@@ -118,7 +119,8 @@ export const GROUP_LABELS = {
 export function isNavItemVisible(item, { canManage, membership, vertical }) {
   return (
     (!item.manageOnly || canManage || (item.adminRole && hasAdminRole(membership, item.adminRole, { read: true }))) &&
-    (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical))
+    (!item.verticalOnly || (Array.isArray(item.verticalOnly) ? item.verticalOnly.includes(vertical) : item.verticalOnly === vertical)) &&
+    (!item.opsOnly || membership?.manageOrders === true)
   );
 }
 
@@ -130,6 +132,7 @@ export function isNavItemVisible(item, { canManage, membership, vertical }) {
 const SEARCH_SYNONYMS = {
   education: "education school college students fees attendance exams admissions results guardians parents",
   hospitality: "hospitality restaurant cafe reservations tables waitlist menu recipes wastage shifts roster checklists guests",
+  manageOrders: "work order work orders repair order repair orders job card technician mechanic workshop dispatch scheduler maintenance cheque cheques check checks purchase orders",
   ideas: "idea ideas suggestion suggest feature request improvement feedback roadmap vote",
   workforce: "time clock clock in clock out break attendance timesheet rota shifts schedule commission tips checklist incident branch location manage users roles permissions staff",
   online: "online store ecommerce e-commerce web shop website storefront shopify woocommerce woo sync channel checkout cart stripe safepay card payments cash on delivery bank transfer delivery shipping",
