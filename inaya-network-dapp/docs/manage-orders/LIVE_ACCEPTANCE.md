@@ -32,10 +32,25 @@ Run on **25 Nov 2026** against **production** (www.inayanetwork.com, commits 656
 - **#A Photo upload returned 500.** Cause: `S3_COMPAT_ENCRYPTION_KEY` was not set in any Vercel environment (it existed only locally), so the encrypted object store refused every write. This also affected customer-portal attachments and the S3-compatible storage feature in production. Fixed by adding the same key to Vercel production (owner-approved); re-tested live: upload 200, download 200, and an object stored earlier with the local key decrypts.
 - **#B Misleading message on a second RO invoice.** Refused correctly but said "Complete the repair…". Fixed in 680bf87 ("This repair order already has an invoice."); re-tested live.
 
-## Not yet verified live (needs the new APK)
+## Phone (device) test — 25 Nov 2026, app v1.3.1 (runtime 1.3.0), Android, technician = SNT Solutions account
 
-Mobile technician screens on a real phone; lock-screen push delivery (Firebase connected, key uploaded to Expo); offline queue on a phone; camera / QR / location. APK build from main is running in GitHub Actions.
+| # | Check (SOW ref) | Result |
+|---|---|---|
+| 21 | Phone registers for notifications on My jobs (10.5) | ✅ registered 21:34 |
+| 22 | Manager assigns WO-00003 from the web → lock-screen notification (10.5) | ✅ "New job WO-00003", no customer details |
+| 23 | Tap notification opens the job (10.5) | ✅ |
+| 24 | Start job from the phone (10.4) | ✅ |
+| 25 | Camera photo attached to the photo step (10.4) | ✅ after fix #C |
+| 26 | Airplane mode → Pause saved on phone → sent automatically when back online with the phone's time (10.6) | ✅ PAUSE recorded at the tap time |
+| 27 | Submit from phone → manager inspection pass → close (6.3) | ✅ WO-00003 CLOSED |
+| 28 | Business OS / Inaya Network chooser: Business OS mode shows only Business OS (co-founder request) | ✅ |
+
+### Defects found on the device and fixed
+- **#C Camera opened, then the app locked.** The biometric app lock treated the camera as leaving the app. Camera, gallery, file picker and permission dialogs now pause the lock (OTA 3b6c7e85).
+- **#D App lost its options after a restart.** The 1.3 build still reported version 1.0.0, so an older 1.0.0 OTA replaced its code. App is now version 1.3.0 with its own update channel (release v1.3.1).
+- **#E "Finish these checklist steps" after attaching the photo.** A photo step is now marked done when its photo is attached (103e3f7).
+- CI: the APK workflow had been failing (retired Android SDK package; files never committed). Fixed; public download (SDK section) now follows the latest release.
 
 ## Test data left in "Inaya Network"
 
-Branch "E2E Test Workshop", product "E2E test part" (8 in stock), WO-00001 (closed), WO-00002 (cancelled), RO-00001 (invoiced, PKR 1,700 DRAFT invoice), asset "E2E · Test · E2E-001", expense "E2E test supplier" PKR 100 (approved, unpaid), cheque book Test 900001–900003, cheque 900001 (voided), review items. All labelled E2E; can be archived on request.
+Branch "E2E Test Workshop", product "E2E test part" (8 in stock), WO-00001 (closed), WO-00002 (cancelled), WO-00003 (closed, phone test), RO-00001 (invoiced, PKR 1,700 DRAFT invoice), asset "E2E · Test · E2E-001", expense "E2E test supplier" PKR 100 (approved, unpaid), cheque book Test 900001–900003, cheque 900001 (voided), review items. All labelled E2E; can be archived on request.
