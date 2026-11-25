@@ -444,8 +444,8 @@ export async function invoiceRepair({ orgId, membership, actorEmail, jobId, depa
   if (!canAccessFinance(membership) && opsRoleOf(membership) !== "manager") return fail("Creating invoices needs finance access.", 403);
   const r = await loadJob({ orgId, membership, jobId }); if (r.error) return r; const j = r.job;
   if (j.type !== "RO") return fail("Only repair orders are invoiced here.");
-  if (j.status !== "COMPLETED") return fail("Complete the repair (customer collection or delivery) before invoicing.", 409);
   if (j.invoiceId) return fail("This repair order already has an invoice.", 409, "ALREADY_INVOICED");
+  if (j.status !== "COMPLETED") return fail("Complete the repair (customer collection or delivery) before invoicing.", 409);
   const dept = oid(departmentId) || j.departmentId; if (!dept) return fail("Choose the department the invoice belongs to.");
   if (!canAccessDepartment(membership, sid(dept))) return fail("You don't have access to that department.", 403);
   const c = await ccol(); const est = await c.findOne({ orgId: j.orgId, kind: K.estimate, jobId: j._id, version: j.approvedEstimateVersion, status: "APPROVED" });

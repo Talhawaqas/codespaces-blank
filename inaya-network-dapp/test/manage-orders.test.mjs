@@ -176,7 +176,7 @@ test("RO: intake → diagnosis → estimate must be approved before work → cha
   ok(await J.transitionJob(as(M.mgr, { jobId: ro.id, action: "qc_pass" }))); ok(await J.recordCompletion(as(M.adv, { jobId: ro.id, input: { summary: "Pads replaced, rotors skimmed", customerName: "Ali Khan", collection: "collected" } })));
   ok(await J.transitionJob(as(M.adv, { jobId: ro.id, action: "complete" })));
   const inv = ok(await J.invoiceRepair(as(M.adv, { jobId: ro.id, departmentId: String(dep) })), "invoice"); assert.equal(inv.total, 6000);
-  assert.equal((await J.invoiceRepair(as(M.adv, { jobId: ro.id, departmentId: String(dep) }))).status, 409);
+  const again = await J.invoiceRepair(as(M.adv, { jobId: ro.id, departmentId: String(dep) })); assert.equal(again.status, 409); assert.equal(again.code, "ALREADY_INVOICED");
   assert.equal(await c.invoices.countDocuments({ orgId, relatedRepairOrderId: new ObjectId(ro.id) }), 1, "exactly one invoice");
   const h = ok(await J.assetHistory(as(M.adv, { assetId: asset.id }))); assert.equal(h.jobs.length, 1);
 });
