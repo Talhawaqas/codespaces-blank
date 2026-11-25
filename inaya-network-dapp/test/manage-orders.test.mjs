@@ -86,10 +86,11 @@ test("WO lifecycle: create → approve → eligibility (skills, branch) → mobi
   assert.equal((await A.recordActivity(as(M.tech1, { jobId: wo.id, input: { type: "PAUSE", idempotencyKey: key() } }))).error.includes("pause reason"), true);
   const bad = await A.recordActivity(as(M.tech1, { jobId: wo.id, input: { type: "SUBMIT", idempotencyKey: key() } })); assert.equal(bad.code, "INCOMPLETE");
   const j0 = await job(wo.id);
-  for (const it of j0.checklist) ok(await J.tickChecklist(as(M.tech1, { jobId: wo.id, itemId: it.id, done: true })));
-  assert.equal((await A.recordActivity(as(M.tech1, { jobId: wo.id, input: { type: "SUBMIT", idempotencyKey: key() } }))).code, "INCOMPLETE", "evidence step still needs a photo");
+  ok(await J.tickChecklist(as(M.tech1, { jobId: wo.id, itemId: j0.checklist[0].id, done: true })));
+  assert.equal((await A.recordActivity(as(M.tech1, { jobId: wo.id, input: { type: "SUBMIT", idempotencyKey: key() } }))).code, "INCOMPLETE", "photo step still needs its photo");
   const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200)]);
   ok(await A.uploadEvidence(as(M.tech1, { jobId: wo.id, filename: "belt.png", buffer: png, checklistItemId: j0.checklist[1].id })), "evidence");
+  assert.equal((await job(wo.id)).checklist[1].done, true, "a photo step is done once its photo is attached");
   assert.ok((await A.uploadEvidence(as(M.tech1, { jobId: wo.id, filename: "x.png", buffer: Buffer.from("MZ\x90\x00hello") }))).error, "fake image refused");
   const sub = ok(await A.recordActivity(as(M.tech1, { jobId: wo.id, input: { type: "SUBMIT", idempotencyKey: key() } })), "submit");
   assert.equal(sub.status, "AWAITING_INSPECTION");

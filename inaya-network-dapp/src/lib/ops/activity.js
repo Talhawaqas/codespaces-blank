@@ -211,6 +211,9 @@ export async function uploadEvidence({ orgId, membership, actorEmail, jobId, fil
   const item = (j.checklist || []).find((x) => x.id === checklistItemId);
   const ev = { id: sid(id), fileId: id, name, size: buffer.length, caption: clean(caption, 200) || null, checklistItemId: item ? item.id : null, by: actorEmail, at };
   await c.updateOne({ _id: j._id }, { $push: { evidence: ev }, $set: { updatedAt: at, lastActivityAt: at } });
+  // A step whose whole job is "take a photo" is done once its photo is attached (found in the device test: technicians
+  // attached the photo and were then told the step wasn't finished).
+  if (item?.evidence && !item.done) await c.updateOne({ _id: j._id, "checklist.id": item.id }, { $set: { "checklist.$.done": true, "checklist.$.by": actorEmail, "checklist.$.at": at, "checklist.$.note": "Photo attached" } });
   await audit({ orgId, actorEmail, recordType: j.type === "RO" ? "REPAIR_ORDER" : "WORK_ORDER", recordId: j._id, action: "OPS_EVIDENCE_ADDED", metadata: { name, size: buffer.length } });
   return { evidence: { ...ev, fileId: sid(id) } };
 }
