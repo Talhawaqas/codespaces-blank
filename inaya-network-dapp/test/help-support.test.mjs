@@ -9,6 +9,7 @@ import { getSupportCollections } from "../src/lib/support/db.js";
 import { POST as ticketPost } from "../src/app/api/help/ticket/route.js";
 import { GET as configGet } from "../src/app/api/help/config/route.js";
 import clientPromise from "../src/lib/mongodb.js";
+import { runSupportTool } from "../src/lib/supportAgent.js";
 
 const RUN = randomBytes(3).toString("hex"); const created = []; const emails = [];
 const realFetch = globalThis.fetch;
@@ -99,4 +100,25 @@ test("validation and limits: short text is refused, oversized bodies are refused
   assert.equal((await ticketPost(req(JSON.stringify(valid({ description: "x".repeat(40000) })), outsiderToken))).status, 413);
   const codes = []; for (let i = 0; i < 6; i++) codes.push((await ticketPost(req(valid({ subject: `Rate limit ${i}` }), outsiderToken))).status);
   assert.equal(codes.at(-1), 429, `rate limited: ${codes}`);
+});
+
+test("the AI support agent's hand-over opens a desk ticket (once, even if repeated) with the customer's organization, and copies the support mailbox", async () => {
+  emails.length = 0;
+  const ctx = { orgId: String(memberOrgId), email: memberEmail, membership: { role: "member", orgId: memberOrgId, email: memberEmail }, isManager: false };
+  const args = { summary: "Invoice shows the wrong amount", details: "Customer says invoice INV-1 shows PKR 30,000 but they are on Professional.", urgency: "urgent" };
+  const out = await runSupportTool("escalate_to_team", args, ctx);
+  assert.equal(out.done, true); assert.match(out.ticketNumber, /-\d+$/); assert.match(out.portalUrl, new RegExp(`/portal/help${RUN}desk$`));
+  const { supportTickets } = await getSupportCollections();
+  const t = await supportTickets.findOne({ orgId: deskId, number: out.ticketNumber });
+  assert.ok(t, "ticket is on Inaya's desk"); assert.equal(t.requester.email, memberEmail); assert.match(t.subject, /^URGENT: Invoice shows the wrong amount/);
+  assert.ok(t.tags.includes(`org:help-${RUN}-customer-co`)); assert.match(t.description, /Handed over by the Inaya Support Agent/);
+  assert.equal(emails.filter((e) => /\[Support /.test(e.subject)).length, 1, "one mailbox copy, no duplicate escalation email");
+  assert.equal(emails.filter((e) => /\[Inaya support/.test(e.subject)).length, 0);
+  const again = await runSupportTool("escalate_to_team", args, ctx);
+  assert.equal(again.ticketNumber, out.ticketNumber, "a repeated hand-over does not open a second ticket");
+  const saved = process.env.INAYA_SUPPORT_ORG_ID; delete process.env.INAYA_SUPPORT_ORG_ID; emails.length = 0;
+  const fallback = await runSupportTool("escalate_to_team", { summary: "Desk down case", details: "Nothing" }, ctx);
+  process.env.INAYA_SUPPORT_ORG_ID = saved;
+  assert.equal(fallback.done, true); assert.equal(fallback.ticketNumber, undefined);
+  assert.equal(emails.filter((e) => /\[Inaya support\]/.test(e.subject)).length, 1, "without a desk the team still gets the email");
 });
