@@ -194,7 +194,7 @@ export async function board({ orgId, membership, from, to, warehouseId }) {
   const d = await opsAccess({ orgId, membership, need: "view_all" }); if (d) return d; await ensureOpsIndexes();
   if (warehouseId && !allowedLocation(membership, warehouseId)) return denyLocation();
   const start = from ? iso(from) : new Date(Date.now() - 86400000).toISOString(); const end = to ? iso(to) : new Date(Date.now() + 7 * 86400000).toISOString();
-  const c = await ccol(); const base = { orgId: oid(orgId), kind: K.job, ...scopeFilter(membership, "warehouseId"), ...(warehouseId ? { warehouseId: oid(warehouseId) } : {}) };
+  const c = await ccol(); const base = { orgId: oid(orgId), kind: K.job, archived: { $ne: true }, ...scopeFilter(membership, "warehouseId"), ...(warehouseId ? { warehouseId: oid(warehouseId) } : {}) };
   const open = await c.find({ ...base, status: { $nin: ["CLOSED", "CANCELLED", "INVOICED", "DRAFT"] } }).limit(1000).toArray();
   const techs = (await listTechnicians({ orgId, membership })).technicians || [];
   const emails = techs.map((t) => t.email); const clocks = await clockStates(orgId, emails); const now = new Date();

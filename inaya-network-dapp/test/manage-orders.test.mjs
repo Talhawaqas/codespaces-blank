@@ -289,3 +289,10 @@ test("offline queue: plausible phone time is used, late or implausible actions a
   assert.equal(fut.needsReview, true, "future phone time is never trusted");
   assert.ok(await (await C.ccol()).countDocuments({ orgId, kind: C.K.exc, type: "OFFLINE_ACTION" }) >= 2);
 });
+
+test("archived records are hidden from the registers but still open by id", { timeout: 60000 }, async () => {
+  const j = ok(await J.createJob(as(M.mgr, { input: { type: "WO", title: "Archive me", warehouseId: String(lhr) } }))).job;
+  await (await C.ccol()).updateOne({ _id: new ObjectId(j.id) }, { $set: { archived: true } });
+  assert.ok(!(await J.listJobs(as(M.mgr, { q: "Archive me" }))).jobs.length, "hidden from the register");
+  assert.equal((await J.getJob(as(M.mgr, { jobId: j.id }))).job.title, "Archive me", "history still opens");
+});

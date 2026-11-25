@@ -96,7 +96,7 @@ export async function saveBook({ orgId, membership, actorEmail, input = {} }) {
 }
 export async function listBooks({ orgId, membership }) {
   const d = await opsAccess({ orgId, membership, need: "finance" }); if (d) return d;
-  const c = await ccol(); return { books: (await c.find({ orgId: oid(orgId), kind: K.chqBook }).sort({ createdAt: -1 }).toArray()).map(bookView) };
+  const c = await ccol(); return { books: (await c.find({ orgId: oid(orgId), kind: K.chqBook, archived: { $ne: true } }).sort({ createdAt: -1 }).toArray()).map(bookView) };
 }
 async function takeNumber(c, orgId, bookId) {
   const b = await c.findOneAndUpdate({ _id: oid(bookId), orgId: oid(orgId), kind: K.chqBook, active: { $ne: false }, $expr: { $lte: ["$nextNumber", "$lastNumber"] } }, { $inc: { nextNumber: 1 } }, { returnDocument: "before" });
@@ -108,7 +108,7 @@ const chqView = (q) => ({ id: sid(q._id), number: q.number, numberText: String(q
 
 export async function listCheques({ orgId, membership, status, q, from, to, bookId }) {
   const d = await opsAccess({ orgId, membership, need: "finance" }); if (d) return d;
-  const f = { orgId: oid(orgId), kind: K.chq }; if (status) f.status = { $in: String(status).split(",") }; if (bookId) f.bookId = oid(bookId);
+  const f = { orgId: oid(orgId), kind: K.chq, archived: { $ne: true } }; if (status) f.status = { $in: String(status).split(",") }; if (bookId) f.bookId = oid(bookId);
   if (from || to) f.date = { ...(from ? { $gte: String(from).slice(0, 10) } : {}), ...(to ? { $lte: String(to).slice(0, 10) } : {}) };
   if (q) { const rx = new RegExp(String(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 60), "i"); f.$or = [{ payee: rx }, { numberText: rx }, { memo: rx }]; }
   const c = await ccol(); const rows = await c.find(f).sort({ createdAt: -1 }).limit(300).toArray();
@@ -284,7 +284,7 @@ export async function reconcileCheque({ orgId, membership, actorEmail, id, bankT
 }
 export async function chequeReport({ orgId, membership }) {
   const d = await opsAccess({ orgId, membership, need: "finance" }); if (d) return d;
-  const c = await ccol(); const rows = await c.find({ orgId: oid(orgId), kind: K.chq }).toArray();
+  const c = await ccol(); const rows = await c.find({ orgId: oid(orgId), kind: K.chq, archived: { $ne: true } }).toArray();
   const by = (k) => rows.reduce((m, q) => { const key = q[k] || "—"; m[key] = m[key] || { count: 0, amount: 0 }; m[key].count++; m[key].amount = Math.round((m[key].amount + q.amount) * 100) / 100; return m; }, {});
   return { byStatus: by("status"), byBank: by("bankName"), byPayee: by("payee"), outstanding: rows.filter((q) => q.status === "ISSUED").map(chqView), discrepancies: rows.filter((q) => q.reconciliationDifference).map(chqView), pendingApproval: rows.filter((q) => q.status === "PENDING_APPROVAL").length };
 }

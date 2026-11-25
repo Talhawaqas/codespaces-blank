@@ -248,7 +248,7 @@ export async function myDay({ orgId, membership }) {
 export const excView = (e) => ({ id: sid(e._id), type: e.type, email: e.email, jobId: sid(e.jobId), rule: e.rule, evidence: e.evidence, status: e.status, severity: e.severity, actions: e.actions || [], createdAt: e.createdAt });
 export async function listExceptions({ orgId, membership, status = "OPEN" }) {
   const d = await opsAccess({ orgId, membership, need: "exceptions" }); if (d) return d;
-  const c = await ccol(); const f = { orgId: oid(orgId), kind: K.exc, ...(status === "ALL" ? {} : { status: { $in: String(status).split(",") } }) };
+  const c = await ccol(); const f = { orgId: oid(orgId), kind: K.exc, archived: { $ne: true }, ...(status === "ALL" ? {} : { status: { $in: String(status).split(",") } }) };
   return { exceptions: (await c.find(f).sort({ createdAt: -1 }).limit(200).toArray()).map(excView) };
 }
 /** action: acknowledge | request_explanation | approve_correction | reassign | escalate | dismiss | resolve. */

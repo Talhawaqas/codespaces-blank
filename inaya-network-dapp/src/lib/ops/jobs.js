@@ -107,7 +107,7 @@ export async function getJob({ orgId, membership, jobId }) {
 /** Register list: filters q, type, status, warehouseId, assignee, priority, from, to; technicians only see their own jobs. */
 export async function listJobs({ orgId, membership, type, status, warehouseId, assignee, priority, q, from, to, sort = "updated", limit = 50, skip = 0 }) {
   const d = await opsAccess({ orgId, membership }); if (d) return d; await ensureOpsIndexes();
-  const f = { orgId: oid(orgId), kind: K.job, ...scopeFilter(membership, "warehouseId") };
+  const f = { orgId: oid(orgId), kind: K.job, archived: { $ne: true }, ...scopeFilter(membership, "warehouseId") };
   if (type) f.type = type === "RO" ? "RO" : "WO";
   if (status) f.status = { $in: String(status).split(",").filter(Boolean) };
   if (warehouseId) { if (!allowedLocation(membership, warehouseId)) return denyLocation(); f.warehouseId = oid(warehouseId); }
@@ -353,7 +353,7 @@ export async function saveAsset({ orgId, membership, actorEmail, assetId, input 
 }
 export async function listAssets({ orgId, membership, contactId, q }) {
   const d = await opsAccess({ orgId, membership, need: "view_all" }); if (d) return d;
-  const f = { orgId: oid(orgId), kind: K.asset }; if (contactId) f.contactId = oid(contactId);
+  const f = { orgId: oid(orgId), kind: K.asset, archived: { $ne: true } }; if (contactId) f.contactId = oid(contactId);
   if (q) { const rx = new RegExp(String(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 60), "i"); f.$or = [{ make: rx }, { model: rx }, { identifier: rx }, { type: rx }]; }
   const c = await ccol(); const rows = await c.find(f).sort({ updatedAt: -1 }).limit(100).toArray();
   return { assets: rows.map(assetView) };

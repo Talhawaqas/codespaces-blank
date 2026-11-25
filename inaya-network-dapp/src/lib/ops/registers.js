@@ -31,7 +31,7 @@ export async function opsDashboard({ orgId, membership, warehouseId, from, to })
   const d = await opsAccess({ orgId, membership, need: "view_all" }); if (d) return d;
   if (warehouseId && !allowedLocation(membership, warehouseId)) return denyLocation();
   const c = await ccol(); const now = new Date();
-  const base = { orgId: oid(orgId), kind: K.job, ...scopeFilter(membership, "warehouseId"), ...(warehouseId ? { warehouseId: oid(warehouseId) } : {}) };
+  const base = { orgId: oid(orgId), kind: K.job, archived: { $ne: true }, ...scopeFilter(membership, "warehouseId"), ...(warehouseId ? { warehouseId: oid(warehouseId) } : {}) };
   const jobs = await c.find(base, { projection: { history: 0, notes: 0, evidence: 0 } }).limit(5000).toArray();
   const open = jobs.filter((j) => !["CLOSED", "CANCELLED", "INVOICED", "COMPLETED"].includes(j.status));
   const today = now.toISOString().slice(0, 10);
