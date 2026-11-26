@@ -17,9 +17,10 @@ const STOP = /^\s*(stop|unsubscribe|opt[\s-]?out)\s*$/i; const START = /^\s*(sta
 // ------------------------------------------------------------------ staff linking (code from the signed-in app, sent from the phone)
 export async function createLinkCode({ orgId, membership, email }) {
   if (!(await connectEntitled(orgId))) return { error: "Inaya Connect isn't enabled for this company.", status: 403 };
+  const { getConnection } = await import("./connection.js"); const conn = await getConnection(orgId);
+  if (!conn || conn.status !== "ACTIVE") return { error: "Your company's WhatsApp number isn't connected yet. An admin connects it under Inaya Connect › Connection.", status: 409 };
   const code = String(Math.floor(100000 + Math.random() * 900000)); const c = await ccol();
   await c.updateOne({ orgId: oid(orgId), kind: K.link, email, verified: false }, { $set: { codeHash: sha256(`${orgId}:${code}`), expiresAt: new Date(Date.now() + 15 * 60000).toISOString(), opsDoc: true }, $setOnInsert: { orgId: oid(orgId), kind: K.link, email, verified: false, createdAt: nowIso() } }, { upsert: true });
-  const { getConnection } = await import("./connection.js"); const conn = await getConnection(orgId);
   void membership; return { code, sendTo: conn?.displayNumber || null, instructions: `On WhatsApp, send "LINK ${code}" to ${conn?.displayNumber || "your company's WhatsApp number"} within 15 minutes.` };
 }
 export async function listLinks({ orgId }) { const c = await ccol(); return (await c.find({ orgId: oid(orgId), kind: K.link, verified: true }).toArray()).map((l) => ({ email: l.email, number: maskPhone(l.number), linkedAt: l.linkedAt })); }

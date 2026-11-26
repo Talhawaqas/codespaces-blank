@@ -40,11 +40,16 @@ export default function ConnectView({ orgId }) {
   const api = useCallback(mkApi(orgId), [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [me, setMe] = useState(null); const [err, setErr] = useState("");
   useEffect(() => { api("me").then(setMe).catch((e) => setErr(e.message)); }, [api]);
-  const tabs = me ? [me.agent && ["inbox", "Inbox"], me.agent && ["docs", "Documents"], ["mine", "My WhatsApp"], me.admin && ["connection", "Connection"], me.admin && ["settings", "Settings"], me.agent && ["usage", "Usage & activity"]].filter(Boolean) : [["mine", "My WhatsApp"]];
-  const [tab, setTab] = useErpSection(tabs[0][0], tabs);
   if (err) return <p className="text-sm text-red-500 p-4">{err}</p>;
   if (!me) return <p className={`text-sm p-4 ${mu}`}>Loading…</p>;
   if (!me.entitled) return <div className={`${card} m-4`}><H>Inaya Connect</H><p className="text-sm">Connect your WhatsApp Business number to Inaya: a shared inbox, a business assistant for your team, a customer assistant and documents sent on WhatsApp. It is part of the Business and Enterprise plans. Ask Inaya to switch it on.</p></div>;
+  return <ConnectScreen api={api} me={me} orgId={orgId} />;
+}
+
+// Rendered only once the role is known, so the tab list (and the task panel) is right from the first paint.
+function ConnectScreen({ api, me, orgId }) {
+  const tabs = [me.agent && ["inbox", "Inbox"], me.agent && ["docs", "Documents"], ["mine", "My WhatsApp"], me.admin && ["connection", "Connection"], me.admin && ["settings", "Settings"], me.agent && ["usage", "Usage & activity"]].filter(Boolean);
+  const [tab, setTab] = useErpSection(me.admin && me.connected !== "ACTIVE" ? "connection" : tabs[0][0], tabs);
   return (
     <div className="p-3 md:p-4 space-y-3 text-[var(--inaya-text-primary)]">
       <div className="flex flex-wrap gap-2" role="tablist" data-erp-tabs>{tabs.map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? pb : gb} onClick={() => setTab(k)}>{t}</button>)}</div>

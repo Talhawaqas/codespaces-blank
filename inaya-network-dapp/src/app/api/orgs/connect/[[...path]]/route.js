@@ -31,7 +31,7 @@ export async function GET(req, { params }) {
   try {
     const qs = new URL(req.url).searchParams; const q = (k) => qs.get(k) || undefined; const orgId = qs.get("orgId"); const c = await ctx(req, orgId); if (c.error) return c.error;
     const b = { orgId, membership: c.membership };
-    if (path === "me") { const entitled = await C.connectEntitled(orgId); return json({ entitled, email: c.actorEmail, admin: canManageOrg(c.membership), agent: canManageOrg(c.membership) || ["agent", "manager"].includes(c.membership.supportRole), webhookUrl: N.webhookUrl() }); }
+    if (path === "me") { const entitled = await C.connectEntitled(orgId); return json({ entitled, email: c.actorEmail, admin: canManageOrg(c.membership), agent: canManageOrg(c.membership) || ["agent", "manager"].includes(c.membership.supportRole), webhookUrl: N.webhookUrl(), connected: entitled ? (await N.getConnection(orgId))?.status || null : null }); }
     if (path === "connection") return out(await N.connectionStatus(b));
     if (path === "settings") { const d = await C.connectAccess({ ...b, need: "agent" }); if (d) return out(d); return json({ settings: await C.getSettings(orgId) }); }
     if (path === "conversations") return out(await I.listConversations({ ...b, status: q("status"), mode: q("mode"), mine: q("mine") === "1", q: q("q") }));
