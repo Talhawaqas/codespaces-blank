@@ -6,6 +6,7 @@
 //   webhooks, quarantines, hand-overs -- without message content.
 import { ccol, oid, sid, clean, fail, nowIso, K, getSettings, audit, maskPhone, connectAccess } from "./core.js";
 import { getConnection } from "./connection.js";
+import { canManageOrg } from "../orgs.js";
 import { sendMessage, usageThisMonth } from "./messages.js";
 import { getObject } from "./intake.js";
 
@@ -72,15 +73,20 @@ async function toTicket({ orgId, membership, actorEmail, conv }) {
 }
 
 // ------------------------------------------------------------------ documents
-const docView = (x) => ({ id: sid(x._id), ref: x.ref || null, status: x.status, reason: x.reason || null, filename: x.filename || null, mime: x.mime || null, size: x.size || null, from: maskPhone(x.from), senderType: x.senderType, senderEmail: x.senderEmail || null, caption: x.caption || null, suggested: x.suggested || null, destination: x.destination || null, decidedBy: x.decidedBy || null, at: x.at });
-export async function listDocuments({ orgId, membership, status = "REVIEW" }) {
-  const d = await connectAccess({ orgId, membership, need: "agent" }); if (d) return d;
-  const c = await ccol(); const rows = await c.find({ orgId: oid(orgId), kind: K.doc, ...(status && status !== "ALL" ? { status } : {}) }).sort({ at: -1 }).limit(100).toArray();
+const docView = (x) => ({ id: sid(x._id), ref: x.ref || null, folder: x.folder || null, status: x.status, reason: x.reason || null, filename: x.filename || null, mime: x.mime || null, size: x.size || null, from: maskPhone(x.from), senderType: x.senderType, senderEmail: x.senderEmail || null, caption: x.caption || null, suggested: x.suggested || null, destination: x.destination || null, decidedBy: x.decidedBy || null, at: x.at });
+const isAgent = (m) => canManageOrg(m) || ["agent", "manager"].includes(m?.supportRole);
+/** Agents see every document; everyone else sees only the files they sent themselves. */
+export async function listDocuments({ orgId, membership, status = "ALL" }) {
+  const d = await connectAccess({ orgId, membership, need: "member" }); if (d) return d;
+  const f = { orgId: oid(orgId), kind: K.doc, ...(status && status !== "ALL" ? { status } : {}) };
+  if (!isAgent(membership)) { f.senderEmail = membership.email; if (!f.status) f.status = { $ne: "QUARANTINED" }; else if (f.status === "QUARANTINED") return { documents: [] }; }
+  const c = await ccol(); const rows = await c.find(f).sort({ at: -1 }).limit(100).toArray();
   return { documents: rows.map(docView) };
 }
 export async function documentFile({ orgId, membership, docId }) {
-  const d = await connectAccess({ orgId, membership, need: "agent" }); if (d) return d;
-  const c = await ccol(); const x = await c.findOne({ _id: oid(docId), orgId: oid(orgId), kind: K.doc }); if (!x?.storage?.key) return fail("No stored file for this document.", 404);
+  const d = await connectAccess({ orgId, membership, need: "member" }); if (d) return d;
+  const c = await ccol(); const x = await c.findOne({ _id: oid(docId), orgId: oid(orgId), kind: K.doc, status: { $ne: "QUARANTINED" } }); if (!x?.storage?.key) return fail("No stored file for this document.", 404);
+  if (!isAgent(membership) && x.senderEmail !== membership.email) return fail("Document not found.", 404);
   const body = await getObject({ orgId, key: x.storage.key, versionId: x.storage.versionId || undefined });
   const buffer = Buffer.isBuffer(body) ? body : Buffer.isBuffer(body?.buffer) ? body.buffer : body?.body ? Buffer.from(body.body) : null;
   if (!buffer) return fail("The file couldn't be read.", 502);
@@ -90,7 +96,7 @@ export async function documentFile({ orgId, membership, docId }) {
 export async function decideDocument({ orgId, membership, actorEmail, docId, action, note }) {
   const d = await connectAccess({ orgId, membership, need: "agent" }); if (d) return d;
   const c = await ccol(); const x = await c.findOne({ _id: oid(docId), orgId: oid(orgId), kind: K.doc }); if (!x) return fail("Document not found.", 404);
-  if (!["REVIEW"].includes(x.status)) return fail("This document was already handled.", 409);
+  if (!["REVIEW", "SAVED"].includes(x.status)) return fail("This document was already handled.", 409);
   const set = { decidedBy: actorEmail, decidedAt: nowIso(), note: clean(note, 500) || null };
   if (action === "bookkeeper") {
     const f = await documentFile({ orgId, membership, docId }); if (f.error) return f;

@@ -48,13 +48,13 @@ export default function ConnectView({ orgId }) {
 
 // Rendered only once the role is known, so the tab list (and the task panel) is right from the first paint.
 function ConnectScreen({ api, me, orgId }) {
-  const tabs = [me.agent && ["inbox", "Inbox"], me.agent && ["docs", "Documents"], ["mine", "My WhatsApp"], me.admin && ["connection", "Connection"], me.admin && ["settings", "Settings"], me.agent && ["usage", "Usage & activity"]].filter(Boolean);
+  const tabs = [me.agent && ["inbox", "Inbox"], ["docs", me.agent ? "Documents" : "My files"], ["mine", "My WhatsApp"], me.admin && ["connection", "Connection"], me.admin && ["settings", "Settings"], me.agent && ["usage", "Usage & activity"]].filter(Boolean);
   const [tab, setTab] = useErpSection(me.admin && me.connected !== "ACTIVE" ? "connection" : tabs[0][0], tabs);
   return (
     <div className="p-3 md:p-4 space-y-3 text-[var(--inaya-text-primary)]">
       <div className="flex flex-wrap gap-2" role="tablist" data-erp-tabs>{tabs.map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? pb : gb} onClick={() => setTab(k)}>{t}</button>)}</div>
       {tab === "inbox" && <Inbox api={api} me={me} />}
-      {tab === "docs" && <Docs api={api} orgId={orgId} />}
+      {tab === "docs" && <Docs api={api} orgId={orgId} agent={me.agent} />}
       {tab === "mine" && <Mine api={api} me={me} />}
       {tab === "connection" && <Connection api={api} />}
       {tab === "settings" && <Settings api={api} />}
@@ -123,24 +123,24 @@ function Inbox({ api, me }) {
 }
 
 // ------------------------------------------------------------------ documents
-function Docs({ api, orgId }) {
-  const [status, setStatus] = useState("REVIEW"); const [rows, setRows] = useState([]); const [notes, setNotes] = useState({}); const a = useAction();
+function Docs({ api, orgId, agent }) {
+  const [status, setStatus] = useState("ALL"); const [rows, setRows] = useState([]); const [notes, setNotes] = useState({}); const a = useAction();
   const load = useCallback(() => api("documents", { query: { status } }).then((r) => setRows(r.documents)).catch(() => {}), [api, status]);
   useEffect(() => { load(); }, [load]);
   const decide = async (id, action) => { const r = await a.run(() => api(`documents/${id}`, { method: "POST", body: { action, note: notes[id] || "" } }), action === "bookkeeper" ? "Sent to AI Bookkeeper for review." : action === "filed" ? "Marked as filed." : "Rejected."); if (!r?.__error) load(); };
   return (
     <div className={`${card} space-y-2`}>
-      <div className="flex flex-wrap gap-2 items-center justify-between"><H>Documents received on WhatsApp</H><select className={`${f} max-w-[200px]`} value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">{["REVIEW", "ROUTED", "FILED", "QUARANTINED", "REJECTED", "ALL"].map((s) => <option key={s} value={s}>{human(s)}</option>)}</select></div>
-      <p className={`text-xs ${mu}`}>Bills from linked staff or allow-listed suppliers go straight to AI Bookkeeper as drafts for review. Everything else waits here for a person. Files from unknown senders, and files that fail the safety checks, are quarantined and never opened.</p>
+      <div className="flex flex-wrap gap-2 items-center justify-between"><H>Documents received on WhatsApp</H><select className={`${f} max-w-[200px]`} value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">{["ALL", "SAVED", "ROUTED", "REVIEW", "FILED", "QUARANTINED", "REJECTED"].filter((s) => agent || s !== "QUARANTINED").map((s) => <option key={s} value={s}>{human(s)}</option>)}</select></div>
+      <p className={`text-xs ${mu}`}>Bills from linked staff or allow-listed suppliers go straight to AI Bookkeeper as drafts for review. Other files are saved in the dated Inaya Connect folder and the sender gets an email with the link. Files from unknown senders, and files that fail the safety checks, are quarantined and never opened.</p>
       <Msg ok={a.ok} err={a.err} />
       <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={th}>Ref</th><th className={th}>File</th><th className={th}>From</th><th className={th}>Received</th><th className={th}>Status</th><th className={th}></th></tr></thead><tbody>
         {!rows.length && <tr><td className={td} colSpan={6}><span className={mu}>Nothing here.</span></td></tr>}
         {rows.map((x) => (
           <tr key={x.id}><td className={td}>{x.ref || "–"}</td>
-            <td className={td}>{x.filename && x.status !== "QUARANTINED" ? <a className="underline" href={`/api/orgs/connect/documents/${x.id}/file?orgId=${orgId}`} target="_blank" rel="noreferrer">{x.filename}</a> : x.filename || "–"}{x.caption && <div className={`text-xs ${mu}`}>{x.caption}</div>}{x.suggested && <div className="text-xs">Suggested: {human(x.suggested)}</div>}</td>
+            <td className={td}>{x.filename && x.status !== "QUARANTINED" ? <a className="underline" href={`/api/orgs/connect/documents/${x.id}/file?orgId=${orgId}`} target="_blank" rel="noreferrer">{x.filename}</a> : x.filename || "–"}{x.caption && <div className={`text-xs ${mu}`}>{x.caption}</div>}{x.folder && <div className={`text-xs ${mu}`}>Folder: {x.folder}</div>}{x.suggested && <div className="text-xs">Suggested: {human(x.suggested)}</div>}</td>
             <td className={td}>{x.from}<div className={`text-xs ${mu}`}>{x.senderEmail || x.senderType}</div></td>
             <td className={td}>{dt(x.at)}</td><td className={td}><span className={chip}>{human(x.status)}</span>{x.reason && <div className={`text-xs ${mu}`}>{human(x.reason)}</div>}</td>
-            <td className={td}>{x.status === "REVIEW" && <div className="space-y-1 min-w-[200px]"><input className={f} placeholder="Note (where filed)" value={notes[x.id] || ""} onChange={(e) => setNotes({ ...notes, [x.id]: e.target.value })} /><div className="flex flex-wrap gap-1"><button className={gb} disabled={a.busy} onClick={() => decide(x.id, "bookkeeper")}>To Bookkeeper</button><button className={gb} disabled={a.busy} onClick={() => decide(x.id, "filed")}>Filed</button><button className={db} disabled={a.busy} onClick={() => decide(x.id, "reject")}>Reject</button></div></div>}</td></tr>))}
+            <td className={td}>{agent && ["REVIEW", "SAVED"].includes(x.status) && <div className="space-y-1 min-w-[200px]"><input className={f} placeholder="Note (where filed)" value={notes[x.id] || ""} onChange={(e) => setNotes({ ...notes, [x.id]: e.target.value })} /><div className="flex flex-wrap gap-1"><button className={gb} disabled={a.busy} onClick={() => decide(x.id, "bookkeeper")}>To Bookkeeper</button><button className={gb} disabled={a.busy} onClick={() => decide(x.id, "filed")}>Filed</button><button className={db} disabled={a.busy} onClick={() => decide(x.id, "reject")}>Reject</button></div></div>}</td></tr>))}
       </tbody></table></div>
     </div>
   );

@@ -164,7 +164,10 @@ test("documents: unknown sender quarantined; staff file stored for review, de-du
   await deliver(STRANGER, { type: "image", image: { id: "media-1", mime_type: "image/png" } }); await P.processPending({ orgId: ORG });
   const cc = await C.ccol(); assert.equal((await cc.findOne({ orgId, kind: C.K.doc, from: STRANGER })).status, "QUARANTINED");
   await deliver(STAFF_PHONE, { type: "image", image: { id: "media-2", mime_type: "image/png", caption: "site photo" } }); await P.processPending({ orgId: ORG });
-  const doc = await cc.findOne({ orgId, kind: C.K.doc, from: STAFF_PHONE }); assert.equal(doc.status, "REVIEW"); assert.match(lastTo(STAFF_PHONE), /reference D-/);
+  const doc = await cc.findOne({ orgId, kind: C.K.doc, from: STAFF_PHONE }); assert.equal(doc.status, "SAVED"); assert.match(doc.storage.key, /^Inaya Connect\/\d{4}-\d\d\/D-/); assert.match(lastTo(STAFF_PHONE), /saved in Inaya \(reference D-.*emailed you/);
+  const own = ok(await I.listDocuments({ orgId: ORG, membership: staff })); assert.ok(own.documents.length >= 1 && own.documents.every((x) => x.senderEmail === staff.email), "staff see only their own files");
+  ok(await I.documentFile({ orgId: ORG, membership: staff, docId: String(doc._id) }), "the sender can open their file");
+  const q = await cc.findOne({ orgId, kind: C.K.doc, from: STRANGER }); assert.ok((await I.documentFile({ orgId: ORG, membership: owner, docId: String(q._id) })).error, "quarantined files never open");
   await deliver(STAFF_PHONE, { type: "image", image: { id: "media-3", mime_type: "image/png" } }); await P.processPending({ orgId: ORG });
   assert.match(lastTo(STAFF_PHONE), /already have this document/);
   const f = ok(await I.documentFile({ orgId: ORG, membership: owner, docId: String(doc._id) })); assert.equal(f.buffer.length, PNG.length);

@@ -37,6 +37,21 @@ async function bookkeeperSource(orgId, settings) {
   const { getSource: gs } = await import("../bookkeeper/sources.js"); return gs({ orgId, sourceId: r.source.id });
 }
 
+const SITE = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://www.inayanetwork.com").replace(/\/$/, "");
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+async function emailSaved({ orgId, docId, ref, name, folder, sender }) {
+  let to = sender.email ? [sender.email] : [];
+  if (!to.length) { const { getOrgCollections } = await import("../orgs.js"); const { orgMembers } = await getOrgCollections(); to = (await orgMembers.find({ orgId: oid(orgId), status: "active", role: { $in: ["owner", "admin"] } }, { projection: { email: 1 } }).limit(5).toArray()).map((m) => m.email); }
+  if (!to.length) return;
+  const open = `${SITE()}/api/orgs/connect/documents/${docId}/file?orgId=${sid(orgId)}`; const list = `${SITE()}/business?view=inayaConnect&section=docs`;
+  const path = `Inaya Business OS › Inaya Connect › Documents › ${folder} › ${ref}-${name}`;
+  const who = sender.type === "supplier" ? " by an approved supplier" : "";
+  const { sendEmail } = await import("../email.js");
+  for (const email of to) await sendEmail({ to: email, subject: `Saved from WhatsApp: ${name} (${ref})`,
+    text: `The file "${name}" sent on WhatsApp${who} is saved in Inaya.\n\nReference: ${ref}\nWhere: ${path}\n\nOpen the file: ${open}\nAll WhatsApp documents: ${list}\n\nSign in to Inaya first if the link asks you to.`,
+    html: `<p>The file <b>${esc(name)}</b> sent on WhatsApp${who} is saved in Inaya.</p><p><b>Reference:</b> ${esc(ref)}<br><b>Where:</b> ${esc(path)}</p><p><a href="${open}">Open the file</a> &nbsp;·&nbsp; <a href="${list}">All WhatsApp documents</a></p><p style="color:#666">Sign in to Inaya first if the link asks you to.</p>` });
+}
+
 /** Returns { ack, docId, outcome } — outcome: bookkeeper | review | quarantined | duplicate */
 export async function intakeMedia({ orgId, conn, msg, sender }) {
   const s = await getSettings(orgId); const c = await ccol(); const now = nowIso();
@@ -73,8 +88,12 @@ export async function intakeMedia({ orgId, conn, msg, sender }) {
       }
     }
   }
-  const key = `${sid(orgId)}/${ref}-${name}`; const stored = await putObject({ orgId, key, buffer: m.buffer, contentType: mime });
-  const ins = await c.insertOne({ ...base, ref, hash, filename: name, mime, size: m.buffer.length, status: "REVIEW", destination: null, suggested: looksLikeBill ? "bookkeeper" : null, storage: { key, versionId: stored?.versionId || null } });
-  await audit({ orgId, action: "CONNECT_DOCUMENT_QUEUED", recordId: ins.insertedId, metadata: { ref } });
-  return { outcome: "review", docId: sid(ins.insertedId), ack: `Thanks, we received your file (reference ${ref}). A member of our team will file it.` };
+  // Everything else is saved straight into the company's "Inaya Connect" folder (dated), and the sender (or, for a
+  // supplier, the company's admins) gets an email with the folder path and a link to open it.
+  const month = now.slice(0, 7); const folder = `Inaya Connect/${month}`; const key = `${folder}/${ref}-${name}`;
+  const stored = await putObject({ orgId, key, buffer: m.buffer, contentType: mime });
+  const ins = await c.insertOne({ ...base, ref, hash, filename: name, mime, size: m.buffer.length, status: "SAVED", destination: "inaya-connect-folder", folder, suggested: looksLikeBill ? "bookkeeper" : null, storage: { key, versionId: stored?.versionId || null } });
+  await audit({ orgId, action: "CONNECT_DOCUMENT_SAVED", recordId: ins.insertedId, metadata: { ref, folder } });
+  await emailSaved({ orgId, docId: sid(ins.insertedId), ref, name, folder, sender }).catch((e) => console.error("connect saved email:", e?.message));
+  return { outcome: "saved", docId: sid(ins.insertedId), ack: `Thanks, your file is saved in Inaya (reference ${ref}).${sender.email ? " We've emailed you where to find it." : ""}` };
 }
