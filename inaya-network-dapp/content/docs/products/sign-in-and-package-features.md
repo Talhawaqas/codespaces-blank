@@ -25,17 +25,20 @@ A passkey lets you sign in with your fingerprint, your face or your device PIN i
 - It already counts as two-step verification, so you are not asked for an authenticator code as well.
 - You can add up to 10 passkeys and remove any of them in **Security**.
 - A passkey made on www.inayanetwork.com does not work on your company's custom domain. Add a separate one there.
+- **Desktop app:** "Sign in with a passkey" works through Windows Hello, or your phone (Windows shows a QR code to scan).
+- **Android app:** tap "Sign in with a passkey". A secure browser tab opens, you confirm with your passkey, and you're back in the app signed in.
 
 ## Company single sign-on (SSO): Enterprise
 
-Your staff sign in with your company's own identity provider. Microsoft Entra ID, Google Workspace, Okta, Auth0, Keycloak and any other OpenID Connect provider work.
+Your staff sign in with your company's own identity provider. Both standards are supported: **OpenID Connect** (Microsoft Entra ID, Google Workspace, Okta, Auth0, Keycloak) and **SAML 2.0** (the same providers plus ADFS and older corporate systems). Choose one in **Settings > Single sign-on (SSO)**.
 
-1. In your identity provider, create a **web application** and register the redirect URI shown in **Settings > Single sign-on (SSO)**.
-2. In Inaya, enter the **issuer URL**, the **client ID**, the **client secret** and your staff **email domains** (for example example.com).
-3. Choose **Test the provider**, then switch **SSO is on** and save. Inaya won't switch SSO on until your provider answers, so a wrong address can't lock anyone out.
+1. **OpenID Connect:** in your identity provider, create a **web application** and register both redirect URIs shown in Inaya. Then enter the **issuer URL**, **client ID** and **client secret**.
+   **SAML 2.0:** create a SAML application with the **Identifier (Entity ID)** and **Reply URLs** shown in Inaya (or import the metadata link), and send the email address as the NameID. Then enter the **SAML sign-in URL**, the **identity provider issuer** and the **signing certificate**.
+2. Enter your staff **email domains** (for example example.com).
+3. Save, choose **Test the provider** (or **Check the certificate** for SAML), then switch **SSO is on** and save. Inaya won't switch SSO on until your provider answers, so a wrong address can't lock anyone out.
 4. Optional: turn on **Require SSO for these domains**. Email links and Google sign-in then stop working for those email addresses. Passkeys keep working.
 
-Staff choose **Sign in with company SSO** on the sign-in screen and enter their work email.
+Staff choose **Sign in with company SSO** on the sign-in screen and enter their work email. This works on the website, in the desktop app and in the Android app (through a secure browser tab). Everyone comes back to the address they started from, including your custom domain.
 
 SSO only proves who someone is. That person still has to be invited to your company. If they have a pending invitation, signing in with SSO accepts it. Public email domains such as gmail.com can't be claimed, and each domain can belong to only one company.
 

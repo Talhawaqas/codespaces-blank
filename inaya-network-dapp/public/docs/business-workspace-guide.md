@@ -371,13 +371,13 @@ Admin holds the IT and security tools. Most small businesses only need a few of 
 
 1. Open Account Security: your name (top right) > Account security, or Admin > My account > Account Security.
 2. Type a name such as "Work laptop" and press "Add a passkey". Confirm with your fingerprint, face or device PIN.
-3. Next time, press "Sign in with a passkey" on the sign-in screen. It counts as two-step verification and cannot be phished. You can add up to 10 and remove any of them.
+3. Next time, press "Sign in with a passkey" on the sign-in screen: on the website, in the desktop app (Windows Hello, or your phone through a QR code) or in the Android app (a secure browser tab opens). It counts as two-step verification and cannot be phished. You can add up to 10 and remove any of them.
 
 **Company single sign-on (SSO, Enterprise)**
 
-1. In your identity provider (Microsoft Entra ID, Google Workspace, Okta or any OpenID Connect provider), create a web application and register the redirect address Inaya shows under Admin > Company setup > Settings > Single sign-on.
-2. In Inaya, enter the issuer address, client ID, client secret and your staff email domains, then press "Save" and "Test the provider".
-3. Tick "SSO is on" and save. Staff then choose "Sign in with company SSO". They still need to be invited to the company first.
+1. Open Admin > Company setup > Settings > Single sign-on and choose OpenID Connect or SAML 2.0 (Microsoft Entra ID, Google Workspace, Okta, ADFS and others support one or both).
+2. Create the matching application in your identity provider using the addresses Inaya shows (redirect URIs for OpenID Connect; Entity ID and reply URLs for SAML), then enter its details in Inaya with your staff email domains, press "Save" and test.
+3. Tick "SSO is on" and save. Staff then choose "Sign in with company SSO" on the website, in the desktop app or in the Android app. They still need to be invited to the company first.
 4. Optional: "Require SSO" turns off email links and Google sign-in for those email domains.
 
 **Admin Dashboard**
