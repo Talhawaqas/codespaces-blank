@@ -21,7 +21,9 @@ export async function createLinkCode({ orgId, membership, email }) {
   if (!conn || conn.status !== "ACTIVE") return { error: "Your company's WhatsApp number isn't connected yet. An admin connects it under Inaya Connect › Connection.", status: 409 };
   const code = String(Math.floor(100000 + Math.random() * 900000)); const c = await ccol();
   await c.updateOne({ orgId: oid(orgId), kind: K.link, email, verified: false }, { $set: { codeHash: sha256(`${orgId}:${code}`), expiresAt: new Date(Date.now() + 15 * 60000).toISOString(), opsDoc: true }, $setOnInsert: { orgId: oid(orgId), kind: K.link, email, verified: false, createdAt: nowIso() } }, { upsert: true });
-  void membership; return { code, sendTo: conn?.displayNumber || null, instructions: `On WhatsApp, send "LINK ${code}" to ${conn?.displayNumber || "your company's WhatsApp number"} within 15 minutes.` };
+  // One tap: wa.me opens WhatsApp on the company number with the message already written (QR for desktop users).
+  const waLink = conn?.displayNumber ? `https://wa.me/${digits(conn.displayNumber)}?text=${encodeURIComponent(`LINK ${code}`)}` : null;
+  void membership; return { code, waLink, sendTo: conn?.displayNumber || null, instructions: `On WhatsApp, send "LINK ${code}" to ${conn?.displayNumber || "your company's WhatsApp number"} within 15 minutes.` };
 }
 export async function listLinks({ orgId }) { const c = await ccol(); return (await c.find({ orgId: oid(orgId), kind: K.link, verified: true }).toArray()).map((l) => ({ email: l.email, number: maskPhone(l.number), linkedAt: l.linkedAt })); }
 export async function unlink({ orgId, email, actorEmail }) { const c = await ccol(); const r = await c.deleteMany({ orgId: oid(orgId), kind: K.link, email }); await audit({ orgId, actorEmail, action: "CONNECT_STAFF_UNLINKED", metadata: { email } }); return { removed: r.deletedCount }; }
@@ -99,7 +101,8 @@ async function handle(orgId, conn, msg) {
   const conv = await conversation(orgId, from, msg.profileName, sender.type);
   const c = await ccol(); await c.updateOne({ _id: msg._id }, { $set: { convId: conv._id } });
   if (msg.media) { const r = await intakeMedia({ orgId, conn, msg, sender }); if (r.ack) await reply(r.ack, { convId: conv._id }); if (conv.mode === "HUMAN") return `intake_${r.outcome}_human`; return `intake_${r.outcome}`; }
-  if (conv.mode === "HUMAN") { await event({ orgId, type: "message", outcome: "for_human", contact: from }); return "human"; }
+  // A person handling the chat pauses the CUSTOMER assistant only; linked staff always reach the business assistant.
+  if (conv.mode === "HUMAN" && sender.type !== "staff") { await event({ orgId, type: "message", outcome: "for_human", contact: from }); return "human"; }
   if (!text.trim()) return "empty";
   const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: oid(orgId) }, { projection: { name: 1 } }); const orgName = org?.name || "our company";
   const recent = await c.find({ orgId: oid(orgId), kind: K.msg, convId: conv._id, _id: { $ne: msg._id } }).sort({ at: -1 }).limit(8).toArray();

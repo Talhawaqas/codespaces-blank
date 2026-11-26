@@ -147,6 +147,20 @@ function Docs({ api, orgId, agent }) {
 }
 
 // ------------------------------------------------------------------ my WhatsApp (staff linking)
+function LinkCode({ code }) {
+  const [qr, setQr] = useState("");
+  useEffect(() => { if (code.waLink) import("qrcode").then((m) => m.default.toDataURL(code.waLink, { margin: 1, width: 200 })).then(setQr).catch(() => setQr("")); }, [code.waLink]);
+  return (
+    <div className="rounded-lg border border-[var(--inaya-border)] p-3 text-sm space-y-2">
+      {code.waLink && <>
+        <p className="font-semibold">On your phone: tap the button, then press Send in WhatsApp.</p>
+        <a className={`${pb} inline-flex items-center`} href={code.waLink} target="_blank" rel="noreferrer">Open WhatsApp</a>
+        {qr && <div><p className={`text-xs ${mu}`}>On a computer: scan this with your phone&apos;s camera, then press Send.</p>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={qr} alt="QR code to link your WhatsApp" width={200} height={200} className="rounded bg-white p-1" /></div>}
+      </>}
+      <p className={`text-xs ${mu}`}>Or type it yourself: code <b className="tracking-widest">{code.code}</b>. {code.instructions}</p>
+    </div>
+  );
+}
 function Mine({ api, me }) {
   const [code, setCode] = useState(null); const [links, setLinks] = useState(null); const a = useAction();
   const loadLinks = useCallback(() => { if (me.admin) api("links").then((r) => setLinks(r.links)).catch(() => {}); }, [api, me.admin]);
@@ -157,7 +171,7 @@ function Mine({ api, me }) {
         <H>Use the business assistant on WhatsApp</H>
         <p className="text-sm">Link your own phone, then ask on WhatsApp things like &quot;How much did we sell today?&quot;, &quot;Stock of item X at my branch&quot; or &quot;Status of WO-00012&quot;. Answers follow your permissions and branches. This channel is read-only: approvals, payments and changes stay in Inaya.</p>
         <button className={pb} disabled={a.busy} onClick={async () => { const r = await a.run(() => api("links", { method: "POST" })); if (!r?.__error) setCode(r); }}>Get my link code</button>
-        {code && <div className="rounded-lg border border-[var(--inaya-border)] p-2 text-sm"><div className="text-2xl font-bold tracking-widest">{code.code}</div><p>{code.instructions}</p></div>}
+        {code && <LinkCode code={code} />}
         <button className={gb} disabled={a.busy} onClick={() => a.run(() => api("links/remove", { method: "POST", body: { email: me.email } }), "Your phone is unlinked.")}>Unlink my phone</button>
         <Msg ok={a.ok} err={a.err} />
       </div>
@@ -171,6 +185,31 @@ function Mine({ api, me }) {
 }
 
 // ------------------------------------------------------------------ connection
+// Guided self-setup: the company does every step in ITS OWN Meta account (nobody shares a login or admin access);
+// the keys go straight from Meta into this screen. Ticks are a per-browser convenience only.
+const SETUP_STEPS = [
+  { t: "Have a Meta business portfolio", d: "Go to business.facebook.com. If your company has no business portfolio yet, click Create and follow the steps. Use your own Facebook login; never share it with anyone, including Inaya." },
+  { t: "Create a Meta app for WhatsApp", d: "Go to developers.facebook.com › My Apps › Create app. Choose the use case \"Connect with customers through WhatsApp\" and link the app to your business portfolio." },
+  { t: "Copy the two IDs", d: "In the app: Use cases › Connect with customers through WhatsApp › Customize › Step 1. Try it out. Copy the Phone number ID and the WhatsApp Business Account ID. (Meta gives you a free test number first; your own number is added in Step 2. Production setup › Add phone number. A number still used in the WhatsApp app must be removed from it first.)" },
+  { t: "Copy the App secret", d: "In the app: App settings (gear) › Basic › App secret › Show (Meta asks for your password). It is 32 letters and numbers." },
+  { t: "Create a never-expiring access key", d: "business.facebook.com › Settings › Users › System users › Add (role: Admin). Assign assets: your app (Full control) and your WhatsApp account (Full control). Then Generate token: choose your app, expiry Never, tick whatsapp_business_messaging and whatsapp_business_management. Copy it (Meta shows it once). Keys made on the app's API Setup page expire within a day — don't use those." },
+  { t: "Connect in Inaya", d: "Paste the Phone number ID, WhatsApp Business Account ID, App secret and access key in the form on this page and click Connect. Inaya checks them with Meta and stores them encrypted; nobody can see them again, including Inaya staff." },
+  { t: "Point Meta's webhook to Inaya", d: "In the app: Customize › Step 2. Production setup › Configure Webhooks. Paste the Callback URL and Verify token Inaya shows after Connect, click Verify and save, then subscribe the \"messages\" field." },
+  { t: "Check and test", d: "In Inaya › Connection, \"Linked to Meta app\" should say Yes (click Link to Meta if not). Send \"Hello\" to your number from your phone: it appears in Inaya Connect › Inbox." },
+];
+function SetupChecklist({ webhookUrl }) {
+  const [done, setDone] = useState(() => { try { return JSON.parse(localStorage.getItem("inayaConnectSetup") || "[]"); } catch { return []; } });
+  const toggle = (i) => { const n = done.includes(i) ? done.filter((x) => x !== i) : [...done, i]; setDone(n); try { localStorage.setItem("inayaConnectSetup", JSON.stringify(n)); } catch { /* private mode */ } };
+  return (
+    <div className={`${card} space-y-2`}>
+      <H>Setup checklist (about 20–30 minutes)</H>
+      <p className={`text-xs ${mu}`}>You do each step in your own Meta account; Inaya can guide you on a call. Never share your Facebook password or Meta admin access with anyone. Callback URL for step 7: <code className="break-all">{webhookUrl}</code></p>
+      <ol className="space-y-2">{SETUP_STEPS.map((s, i) => (
+        <li key={s.t} className="flex gap-2 text-sm"><input type="checkbox" className="mt-1" checked={done.includes(i)} onChange={() => toggle(i)} aria-label={`Step ${i + 1} done`} /><div><b>{i + 1}. {s.t}</b><div className={`text-xs ${mu}`}>{s.d}</div></div></li>))}</ol>
+      <p className={`text-xs ${mu}`}>Business Verification in Meta (with your company documents) is needed before a real number can message customers at scale. Adding a payment method in Meta is only needed for messages your business starts first; replying to customers who wrote to you doesn&apos;t need it.</p>
+    </div>
+  );
+}
 function Connection({ api }) {
   const [st, setSt] = useState(null); const [form, setForm] = useState({ phoneNumberId: "", wabaId: "", accessToken: "", appSecret: "" }); const [hook, setHook] = useState(null);
   const [to, setTo] = useState(""); const [newToken, setNewToken] = useState(""); const [reason, setReason] = useState(""); const a = useAction();
@@ -180,7 +219,9 @@ function Connection({ api }) {
   const Hook = () => hook && <div className="rounded-lg border border-amber-400 p-2 text-sm space-y-1"><div className="font-bold">Enter these in your Meta app: WhatsApp › Configuration › Webhook › Edit</div><div>Callback URL: <code className="break-all">{hook.callbackUrl}</code></div><div>Verify token: <code className="break-all">{hook.verifyToken}</code></div><div className={mu}>Then click &quot;Manage&quot; under Webhook fields and subscribe to <b>messages</b>. The verify token is shown only once.</div></div>;
   if (!st) return <p className={`text-sm ${mu}`}>Loading…</p>;
   if (!conn) return (
-    <div className={`${card} space-y-2 max-w-2xl`}>
+    <div className="grid lg:grid-cols-2 gap-3 items-start">
+    <SetupChecklist webhookUrl={st.webhookUrl} />
+    <div className={`${card} space-y-2`}>
       <H>Connect your WhatsApp Business number</H>
       <p className="text-sm">From your Meta app (developers.facebook.com › your app › WhatsApp › API Setup): the Phone number ID and WhatsApp Business Account ID. The App secret is under App settings › Basic. Use a permanent System User token from Meta Business Settings (temporary tokens expire in 24 hours). Inaya checks the token with Meta and stores the secrets encrypted; they are never shown again.</p>
       <div className="grid sm:grid-cols-2 gap-2">
@@ -191,6 +232,7 @@ function Connection({ api }) {
       </div>
       <button className={pb} disabled={a.busy || !form.phoneNumberId || !form.wabaId || !form.accessToken || !form.appSecret} onClick={async () => { const r = await a.run(() => api("connection", { method: "POST", body: form }), "Connected. Now set up the webhook in Meta."); if (!r?.__error) { setHook(r.webhook); setForm({ phoneNumberId: "", wabaId: "", accessToken: "", appSecret: "" }); load(); } }}>Connect</button>
       <Msg ok={a.ok} err={a.err} /><Hook />
+    </div>
     </div>
   );
   return (

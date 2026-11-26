@@ -116,8 +116,10 @@ test("opt-out: STOP suppresses replies, START restores them", async () => {
 
 test("staff linking + business assistant (read-only, scoped by membership)", async () => {
   const code = ok(await P.createLinkCode({ orgId: ORG, membership: staff, email: staff.email }));
+  assert.equal(code.waLink, `https://wa.me/923000000000?text=LINK%20${code.code}`, "one-tap link opens WhatsApp on the company number");
   await say(STAFF_PHONE, "LINK 000000"); assert.match(lastTo(STAFF_PHONE), /isn't valid/);
   await say(STAFF_PHONE, `LINK ${code.code}`); assert.match(lastTo(STAFF_PHONE), /Linked/);
+  await (await C.ccol()).updateOne({ orgId, kind: C.K.conv, number: STAFF_PHONE }, { $set: { mode: "HUMAN" } }); // an earlier customer hand-over must not silence staff
   let seen = null; __setModel(async (p) => { seen = p; return { text: "Today: 3 sales, PKR 4,500 net (Asia/Karachi).", functionCalls: [] }; });
   await say(STAFF_PHONE, "how much did we sell today?");
   assert.match(lastTo(STAFF_PHONE), /3 sales/);
