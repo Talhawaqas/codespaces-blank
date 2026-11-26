@@ -51,8 +51,8 @@ async function bookkeeperSource(orgId, settings) {
   const dep = await departments.findOne({ orgId: oid(orgId) }, { sort: { createdAt: 1 } }); if (!dep) return null;
   const r = await createSource({ orgId, type: "API", name: "Inaya Connect (WhatsApp)", departmentId: sid(dep._id), actor: "system:inaya-connect" });
   if (r.error) return null;
-  const c = await ccol(); await c.updateOne({ orgId: oid(orgId), kind: K.settings }, { $set: { "settings.bookkeeperSourceId": r.source.id }, $setOnInsert: { orgId: oid(orgId), kind: K.settings, opsDoc: true } }, { upsert: true });
-  const { getSource: gs } = await import("../bookkeeper/sources.js"); return gs({ orgId, sourceId: r.source.id });
+  const c = await ccol(); await c.updateOne({ orgId: oid(orgId), kind: K.settings }, { $set: { "settings.bookkeeperSourceId": r.source.sourceId }, $setOnInsert: { orgId: oid(orgId), kind: K.settings, opsDoc: true } }, { upsert: true });
+  const { getSource: gs } = await import("../bookkeeper/sources.js"); return gs({ orgId, sourceId: r.source.sourceId });
 }
 
 const SITE = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://www.inayanetwork.com").replace(/\/$/, "");
@@ -101,7 +101,7 @@ export async function intakeMedia({ orgId, conn, msg, sender }) {
       const { ingestDocument } = await import("../bookkeeper/documents.js");
       const r = await ingestDocument({ orgId: sid(orgId), source: src, channel: "WHATSAPP", filename: name, contentType: mime, buffer: m.buffer, externalId: msg.waMessageId, meta: { messageId: msg.waMessageId, from: `+${msg.from.slice(0, 3)}…`, via: "inaya-connect" }, actor: sender.email || "system:inaya-connect" });
       if (!r.error) {
-        const ins = await c.insertOne({ ...base, ref, hash, filename: name, mime, size: m.buffer.length, status: "ROUTED", destination: "bookkeeper", billCheck: lastBillCheck, bookkeeperDocumentId: sid(r.document?.id || r.documentId || r.id), routedAt: now });
+        const ins = await c.insertOne({ ...base, ref, hash, filename: name, mime, size: m.buffer.length, status: "ROUTED", destination: "bookkeeper", billCheck: lastBillCheck, bookkeeperDocumentId: sid(r.document?.documentId || r.document?.id || r.documentId), routedAt: now });
         await audit({ orgId, action: "CONNECT_DOCUMENT_ROUTED", recordId: ins.insertedId, metadata: { ref, destination: "bookkeeper" } });
         return { outcome: "bookkeeper", docId: sid(ins.insertedId), ack: `Thanks, we received your document (reference ${ref}). Our accounts team will review it.` };
       }

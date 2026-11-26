@@ -202,3 +202,26 @@ test("sales question without Point of Sale: answered from invoices issued, finan
   assert.equal(r.source, "invoices"); assert.equal(r.invoicesIssued, 2); assert.deepEqual(r.byCurrency.PKR, { invoices: 2, total: 1500, paid: 500, unpaid: 1000 });
   assert.ok((await runOpsTool("sales_summary", { period: "today" }, { orgId: ORG, membership: staff })).error, "plain members don't get sales figures");
 });
+
+test("a bill from linked staff reaches AI Bookkeeper as a draft (caption or content)", async () => {
+  // reconnect (the disconnect test freed the number; another company holds it now) on a fresh number for this check
+  const PN2 = `8${Date.now()}`; const cc = await C.ccol();
+  await cc.deleteMany({ orgId, kind: C.K.conn });
+  ok(await N.connect({ orgId: ORG, membership: owner, actorEmail: owner.email, input: { phoneNumberId: PN2, wabaId: "3183828638", appSecret: SECRET, accessToken: TOKEN } }), "reconnect");
+  await cc.updateOne({ orgId, kind: C.K.conn, status: { $ne: "DISCONNECTED" } }, { $set: { status: "ACTIVE" } });
+  const bill = Buffer.concat([PNG, Buffer.from(`bill ${Date.now()}`)]);
+  __setGraphTransport(async ({ url, method, body, raw }) => {
+    if (raw) return { buffer: bill, contentType: "image/png" };
+    if (method === "GET" && /\/media-/.test(url)) return { url: "https://lookaside.example/media", mime_type: "image/png", file_size: bill.length };
+    if (method === "POST" && body?.type === "text") { const id = `wamid.out.${++nextId}`; sent.push({ to: body.to, text: body.text.body, id }); return { messages: [{ id }] }; }
+    return { success: true };
+  });
+  __setBillClassifier(async () => true); // no caption: recognised from the image
+  const m = { id: `wamid.bk.${Date.now()}`, from: STAFF_PHONE, type: "image", image: { id: "media-bk", mime_type: "image/png" } };
+  const raw = JSON.stringify({ object: "whatsapp_business_account", entry: [{ changes: [{ value: { metadata: { phone_number_id: PN2 }, messages: [m] } }] }] });
+  assert.equal((await W.receiveEvents({ headers: { "x-hub-signature-256": sign(raw) }, rawBody: raw })).status, 200);
+  await P.processPending({ orgId: ORG });
+  const doc = await cc.findOne({ orgId, kind: C.K.doc, waMessageId: m.id });
+  assert.equal(doc.status, "ROUTED", `routed to Bookkeeper (got ${doc.status}, billCheck ${doc.billCheck})`); assert.ok(doc.bookkeeperDocumentId, "Bookkeeper document id recorded");
+  assert.match(lastTo(STAFF_PHONE), /accounts team will review/);
+});
