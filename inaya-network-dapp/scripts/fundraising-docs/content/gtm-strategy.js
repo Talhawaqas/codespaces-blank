@@ -128,8 +128,8 @@ export const gtmStrategy = {
         type: "table",
         headers: ["Base-case revenue (Combined Financial Model)", "Year 1", "Year 3", "Year 5", "Role"],
         rows: [
-          ["Engine 1 — DePIN storage", "$499K", "$8.65M", "$71.3M", "The main revenue and the main value: Corporate Reserve storage after mainnet"],
-          ["Engine 2 — Inaya Business OS", "$47K", "$488K", "$1.17M", "Revenue before mainnet, independent of the token; proves we can sell and brings companies onto the same infrastructure"],
+          ["Engine 1 — DePIN storage", "$499K", "$8.65M", "$71.3M", "The main revenue and the main value: Corporate Reserve storage, sold from Q3 2027 and on-chain from mainnet"],
+          ["Engine 2 — Inaya Business OS", "$47K", "$488K", "$1.17M", "Revenue independent of the token and of mainnet; proves we can sell and brings companies onto the same infrastructure"],
           ["Total", "$546K", "$9.13M", "$72.4M", "Profitable from Year 2; the $2M pre-seed covers the Year 1 loss. Year 1 = Q3 2027 to Q2 2028"],
         ],
       },
@@ -250,7 +250,7 @@ export const gtmStrategy = {
         {
           type: "note",
           label: "Two engines, two motions, one company.",
-          text: "Inaya runs two go-to-market motions in parallel. Engine 1, the DePIN storage network, is sold developer-first and through Corporate Reserve contracts; in the Base case of the Combined Financial Model it produces 91% of Year 1 revenue and 98% of Year 5 revenue (Year 1 = Q3 2027 to Q2 2028), and the company's profit. Engine 2, Inaya Business OS, is sold directly to small and mid-sized companies by a sales team; it earns before mainnet, does not depend on the token, and proves commercial execution while the storage network completes its audit. Neither engine is a side project: one carries the scale, the other carries the near-term proof.",
+          text: "Inaya runs two go-to-market motions in parallel. Engine 1, the DePIN storage network, is sold developer-first and through Corporate Reserve contracts; in the Base case of the Combined Financial Model it produces 91% of Year 1 revenue and 98% of Year 5 revenue (Year 1 = Q3 2027 to Q2 2028), and the company's profit. Engine 2, Inaya Business OS, is sold directly to small and mid-sized companies by a sales team; it does not depend on the token or on mainnet, and proves commercial execution alongside the storage network's own sales. Neither engine is a side project: one carries the scale, the other carries the near-term proof.",
         },
         {
           type: "subsection",
@@ -1227,7 +1227,7 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Engine 1 Sales Motion — Corporate Reserve",
-          body: "The storage network's revenue is concentrated in Corporate Reserve contracts (250, 500 and 1,000 TB a year). These are sold account by account to enterprises, AI teams and Web3 companies after mainnet, on top of developer adoption through the SDK and the S3, Azure and Google Cloud compatible APIs, which let a buyer test with the tools they already use. Business OS customers are a natural route in: they already trust Inaya with their files.",
+          body: "The storage network's revenue is concentrated in Corporate Reserve contracts (250, 500 and 1,000 TB a year). These are sold account by account to enterprises, AI teams and Web3 companies from Q3 2027, when the pre-seed closes: through the existing card checkout and on today's storage before mainnet, and on-chain once mainnet goes live, on top of developer adoption through the SDK and the S3, Azure and Google Cloud compatible APIs, which let a buyer test with the tools they already use. Business OS customers are a natural route in: they already trust Inaya with their files.",
         },
       ],
     },
@@ -1501,7 +1501,7 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Execution Priorities",
-          body: "Two tracks run in parallel. Track A, Inaya Business OS: public launch on 1 January 2027, convert pilots into paying companies, and prove the sales funnel; this is revenue that does not wait for mainnet. Track B, the DePIN storage network: the independent security audit, then mainnet, then Corporate Reserve contracts, which carry most of the company's revenue in the financial model. Within Track B the original sequence still applies: (1) Developer Adoption — without developers there are no applications, without applications there is no storage demand. (2) Enterprise Validation — confirms commercial viability: customer references, recurring revenue, product validation, investor confidence. (3) Infrastructure Expansion — only after commercial demand is validated should significant infrastructure expansion occur, minimizing unnecessary operational expenditure.",
+          body: "Two tracks run in parallel. Track A, Inaya Business OS: public launch on 1 January 2027, convert pilots into paying companies, and prove the sales funnel; this is revenue that does not wait for mainnet. Track B, the DePIN storage network: Corporate Reserve and pay-as-you-go sales from Q3 2027 through the card checkout, the independent security audit in Q4 2027, then mainnet in Q1 2028, which moves storage customers on-chain. Corporate Reserve carries most of the company's revenue in the financial model. Within Track B the original sequence still applies: (1) Developer Adoption — without developers there are no applications, without applications there is no storage demand. (2) Enterprise Validation — confirms commercial viability: customer references, recurring revenue, product validation, investor confidence. (3) Infrastructure Expansion — only after commercial demand is validated should significant infrastructure expansion occur, minimizing unnecessary operational expenditure.",
         },
       ],
     },
@@ -1517,15 +1517,15 @@ export const gtmStrategy = {
           rows: [
             ["Q1 2027", "Testnet: developer adoption, SDK and node-operator onboarding continue", "Public launch 1 January; first pilots convert to paid; incorporation in March unlocks Meta business verification and partner programmes"],
             ["Q2 2027", "Testnet; pre-seed conversations with investors", "First Commerce shops live on real hardware; pilots expand across Pakistan and the nine Asian countries"],
-            ["Q3 2027", "Pre-seed closes", "Two international salespeople and the Pakistan team hired; one-click WhatsApp setup once Inaya is a Meta Tech Provider"],
+            ["Q3 2027", "Pre-seed closes; Corporate Reserve and pay-as-you-go sales open through the existing card checkout, on today's storage (Year 1 of the financial model begins)", "Two international salespeople and the Pakistan team hired; one-click WhatsApp setup once Inaya is a Meta Tech Provider"],
             ["Q4 2027", "Independent security audit", "Real pipeline data replaces the model's placeholder funnel rates; first compliance certification work"],
-            ["Q1 2028", "Mainnet after a clean audit; first Corporate Reserve contracts", "Business OS customers offered Corporate Reserve and enterprise storage"],
+            ["Q1 2028", "Mainnet after a clean audit; storage customers move on-chain and node operators start earning", "Business OS customers offered Corporate Reserve and enterprise storage"],
             ["Q2 2028", "Corporate Reserve growth; storage billing at scale", "Growth in line with the financial model's sales plan"],
           ],
         },
         {
           type: "note",
-          text: "The storage track follows the funding: pre-seed in Q3 2027, the audit in Q4 2027, the first Corporate Reserve contracts in Q1 2028 and growth from Q2 2028. The Business OS track starts earning before any of that. The quarterly themes below describe the developer-ecosystem work that runs underneath Engine 1 throughout.",
+          text: "The storage track follows the funding: storage sales open with the pre-seed in Q3 2027, the audit follows in Q4 2027, mainnet in Q1 2028 moves customers on-chain, and growth continues from Q2 2028. This matches the financial model, whose Year 1 (Q3 2027 to Q2 2028) counts storage revenue from its first month. The Business OS track is already earning from January 2027. The quarterly themes below describe the developer-ecosystem work that runs underneath Engine 1 throughout.",
         },
         {
           type: "columns",

@@ -23,7 +23,7 @@ export const combinedBusinessModel = {
           "text": [
             "Inaya earns money from two products on one encrypted storage foundation, reported as one company. The DePIN storage network charges by the terabyte and through yearly Corporate Reserve contracts. Inaya Business OS sells monthly or yearly subscriptions, in US dollars internationally and in rupees in Pakistan.",
             "This revision replaces the old $2K placeholder for international Workspace revenue with a month-by-month customer forecast driven by two dedicated salespeople, adds the planned ten-person Pakistan team with founder salaries, and sets team and office at $200K in Year 1. DePIN storage revenue, node-operator payouts, the $400K–$800K storage infrastructure and the $300K of one-time Year 1 costs are unchanged.",
-            "Timeline (founder, 26 November 2026): Year 1 runs from Q3 2027, when the pre-seed closes, to Q2 2028; Year 2 from Q3 2028 to Q2 2029, and so on. In the Base scenario the company loses $534K in Year 1, which the $2M pre-seed covers, is profitable from Year 2, and never has less than $1.47M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
+            "Timeline (founder, 26 November 2026): Year 1 runs from Q3 2027, when the pre-seed closes, to Q2 2028; Year 2 from Q3 2028 to Q2 2029, and so on. In the Base scenario the company loses $534K in Year 1, which the $2M pre-seed covers, is profitable from Year 2, and never has less than $1.47M in cash. Profit comes overwhelmingly from Corporate Reserve storage, sold from Q3 2027 through the card checkout and on-chain from mainnet (planned Q1 2028, after the security audit); the Workspace is already earning from January 2027."
           ]
         },
         {
@@ -50,19 +50,19 @@ export const combinedBusinessModel = {
               "Pay-as-you-go storage",
               "Individuals, developers",
               "6.49 USDT per TB per month",
-              "Testnet; billable from mainnet"
+              "Sold from Q3 2027 by card; on-chain from mainnet"
             ],
             [
               "Upload fee",
               "Pay-as-you-go users",
               "One month of storage on new data",
-              "Testnet; billable from mainnet"
+              "Sold from Q3 2027 by card; on-chain from mainnet"
             ],
             [
               "Account fee",
               "Every storage account",
               "12 USDT per year",
-              "Testnet; billable from mainnet"
+              "Sold from Q3 2027 by card; on-chain from mainnet"
             ],
             [
               "Corporate Reserve",
@@ -1228,7 +1228,7 @@ export const combinedBusinessModel = {
         {
           "type": "bullets",
           "items": [
-            "Storage revenue depends on the mainnet launch, which depends on independent security audits.",
+            "Storage revenue before mainnet depends on selling Corporate Reserve through the card checkout on today's storage; moving it on-chain depends on the mainnet launch, which depends on independent security audits.",
             "The Workspace targets depend on Enterprise adoption; with half the assumed Enterprise share, Base Year 1 international revenue falls to about $28K.",
             "Not included: INAYA retrieval and maintenance fees, token sales, Sovereign Infrastructure fees, taxes, interest, depreciation, working-capital timing and later funding rounds.",
             "Every figure reconciles to Inaya-Combined-Financial-Model.xlsx, whose Checks sheet shows all formula and reconciliation checks passing."
