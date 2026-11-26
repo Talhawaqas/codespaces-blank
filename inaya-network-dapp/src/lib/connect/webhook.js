@@ -41,9 +41,12 @@ export async function receiveEvents({ headers, rawBody }) {
   const conns = new Map();
   for (const pnid of phoneIdsOf(body)) {
     const conn = await c.findOne({ waKey: `pnid:${pnid}` });
-    if (!conn || conn.status !== "ACTIVE") { out.rejected++; await event({ orgId: conn?.orgId || null, type: "webhook_event", outcome: conn ? "rejected_inactive" : "rejected_unknown_number", detail: { phoneNumberId: pnid } }); continue; }
+    if (!conn || !["ACTIVE", "PENDING_WEBHOOK"].includes(conn.status)) { out.rejected++; await event({ orgId: conn?.orgId || null, type: "webhook_event", outcome: conn ? "rejected_inactive" : "rejected_unknown_number", detail: { phoneNumberId: pnid } }); continue; }
     const secret = secretOf(conn.appSecretEncrypted);
     if (!platformOk && !(secret && sig && safeEqual(sig, hmac(secret, rawBody)))) { out.rejected++; await event({ orgId: conn.orgId, type: "webhook_event", outcome: "rejected_signature", connId: conn._id }); continue; }
+    // A correctly signed event proves Meta is delivering to us for this app: a reconnected number goes live without
+    // repeating the verify handshake in Meta.
+    if (conn.status === "PENDING_WEBHOOK") { await c.updateOne({ _id: conn._id }, { $set: { status: "ACTIVE", webhookVerifiedAt: nowIso(), activatedBy: "signed_event" } }); conn.status = "ACTIVE"; await event({ orgId: conn.orgId, type: "webhook_verify", outcome: "ok_signed_event", connId: conn._id }); }
     conns.set(pnid, conn);
   }
   if (!conns.size) return { status: out.rejected ? 401 : 200, body: out };

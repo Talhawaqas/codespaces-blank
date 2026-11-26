@@ -77,6 +77,8 @@ test("manual connection: validation, Meta probe, secrets encrypted, verify hands
   const taken = await N.connect({ orgId: ORGB, membership: ownerB, actorEmail: ownerB.email, input: { phoneNumberId: PNID, wabaId: "3183828638", appSecret: SECRET, accessToken: TOKEN } });
   assert.equal(taken.code, "NUMBER_TAKEN");
   assert.equal((await W.verifyChallenge({ "hub.mode": "subscribe", "hub.verify_token": "icv_wrongwrongwrongwrongwrong", "hub.challenge": "123" })).status, 403);
+  const early = await deliver(STRANGER, { type: "text", text: { body: "early" } }, "c".repeat(32));
+  assert.equal(early.status, 401, "unsigned events never activate a pending number");
   const v = await W.verifyChallenge({ "hub.mode": "subscribe", "hub.verify_token": verifyToken, "hub.challenge": "chal42" });
   assert.equal(v.status, 200); assert.equal(v.text, "chal42");
   assert.equal((await N.connectionStatus({ orgId: ORG, membership: owner })).connection.status, "ACTIVE");
