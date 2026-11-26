@@ -30,12 +30,30 @@ function bounds(period, tz) {
   const lastMonthStart = (() => { const x = local(now); x.setMonth(x.getMonth() - 1, 1); x.setHours(0, 0, 0, 0); return new Date(x.getTime() - offset); })();
   return ({ today: [today, now], yesterday: [new Date(today - day), today], this_week: [new Date(today - dow * day), now], last_week: [new Date(today - (dow + 7) * day), new Date(today - dow * day)], this_month: [monthStart, now], last_month: [lastMonthStart, monthStart] })[period] || [today, now];
 }
+/** Sales from invoices issued in the period (not drafts or cancelled), by currency; owners/admins and finance roles only. */
+async function invoiceSales({ orgId, membership, period, from, to, tz, compare }) {
+  const { canManageOrg } = await import("../orgs.js");
+  if (!canManageOrg(membership) && !membership.financeRole) return { error: "Sales figures need an owner, admin or finance role." };
+  const col = await getOrgCollections();
+  const sum = async (f, t) => {
+    const range = { $or: [{ issueDate: { $gte: f.toISOString(), $lt: t.toISOString() } }, { issueDate: { $gte: f, $lt: t } }] };
+    const rows = await col.invoices.find({ orgId: oid(orgId), deletedAt: null, status: { $in: ["SENT", "PAID", "OVERDUE"] }, ...range }, { projection: { total: 1, currency: 1, status: 1 } }).limit(5000).toArray();
+    const by = {}; for (const i of rows) { const k = i.currency || "?"; by[k] ||= { invoices: 0, total: 0, paid: 0, unpaid: 0 }; by[k].invoices++; by[k].total += Number(i.total) || 0; by[k][i.status === "PAID" ? "paid" : "unpaid"] += Number(i.total) || 0; }
+    for (const v of Object.values(by)) for (const k of ["total", "paid", "unpaid"]) v[k] = Math.round(v[k] * 100) / 100;
+    return { invoicesIssued: rows.length, byCurrency: by };
+  };
+  const out = { source: "invoices", note: "From invoices issued in the period (drafts and cancelled excluded). Point of Sale (Inaya Commerce) isn't enabled for this company.", period, from: from.toISOString(), to: to.toISOString(), timezone: tz, ...(await sum(from, to)) };
+  if (compare) { const prev = { today: "yesterday", this_week: "last_week", this_month: "last_month" }[period]; if (prev) { const [f2, t2] = bounds(prev, tz); out.previous = { period: prev, ...(await sum(f2, t2)) }; } }
+  return out;
+}
 export async function runOpsTool(name, args, ctx) {
   const { orgId, membership } = ctx; const col = await getOrgCollections();
   if (name === "sales_summary") {
     const { commerceReport, } = await import("../commerce/reports.js"); const { getSettings } = await import("../commerce/store.js");
     const tz = (await getSettings(orgId))?.timezone || "Asia/Karachi"; const [from, to] = bounds(args.period, tz);
     const r = await commerceReport({ orgId, membership, input: { from: from.toISOString(), to: to.toISOString() } });
+    // No Point of Sale (Commerce off): companies that sell by invoice still get an answer, from invoices issued.
+    if (r.error && /not enabled|isn't enabled|not available/i.test(r.error)) return invoiceSales({ orgId, membership, period: args.period, from, to, tz, compare: args.compareWithPrevious });
     if (r.error) return { error: r.error };
     const out = { period: args.period, from: r.period.from, to: r.period.to, timezone: r.period.timezone, currency: r.currency, ...r.totals, paymentMethods: r.paymentMethods, onlineOrders: r.orders, note: "Net = sales net of discounts minus returns; tax shown separately." };
     if (args.compareWithPrevious) { const prev = { today: "yesterday", this_week: "last_week", this_month: "last_month" }[args.period]; if (prev) { const [f2, t2] = bounds(prev, tz); const p = await commerceReport({ orgId, membership, input: { from: f2.toISOString(), to: t2.toISOString() } }); if (!p.error) out.previous = { period: prev, net: p.totals.net, sales: p.totals.sales, totalCollected: p.totals.totalCollected }; } }

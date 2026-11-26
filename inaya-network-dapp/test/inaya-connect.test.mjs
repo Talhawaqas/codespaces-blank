@@ -15,7 +15,8 @@ import * as P from "../src/lib/connect/process.js";
 import * as I from "../src/lib/connect/inbox.js";
 import { __setGraphTransport } from "../src/lib/connect/graph.js";
 import { __setModel } from "../src/lib/connect/assistant.js";
-import { __setDocStore } from "../src/lib/connect/intake.js";
+import { __setDocStore, __setBillClassifier } from "../src/lib/connect/intake.js";
+const classified = []; __setBillClassifier(async ({ mime }) => { classified.push(mime); return false; });
 import { runCustomerTool } from "../src/lib/connect/tools.js";
 
 delete process.env.RESEND_API_KEY; // never send real email from tests
@@ -171,6 +172,7 @@ test("documents: unknown sender quarantined; staff file stored for review, de-du
   ok(await I.documentFile({ orgId: ORG, membership: staff, docId: String(doc._id) }), "the sender can open their file");
   const q = await cc.findOne({ orgId, kind: C.K.doc, from: STRANGER }); assert.ok((await I.documentFile({ orgId: ORG, membership: owner, docId: String(q._id) })).error, "quarantined files never open");
   await deliver(STAFF_PHONE, { type: "image", image: { id: "media-3", mime_type: "image/png" } }); await P.processPending({ orgId: ORG });
+  assert.ok(classified.length >= 1, "photos without a bill caption are checked by content");
   assert.match(lastTo(STAFF_PHONE), /already have this document/);
   const f = ok(await I.documentFile({ orgId: ORG, membership: owner, docId: String(doc._id) })); assert.equal(f.buffer.length, PNG.length);
   assert.ok((await I.decideDocument({ orgId: ORG, membership: owner, actorEmail: owner.email, docId: String(doc._id), action: "filed" })).error, "filing needs a note");
@@ -186,4 +188,17 @@ test("usage, activity and disconnect (secrets wiped, events rejected afterwards)
   const raw = await (await C.ccol()).findOne({ orgId, kind: C.K.conn }); assert.ok(!raw.appSecretEncrypted && !raw.accessTokenEncrypted && !raw.waKey);
   assert.equal((await deliver(CUST_PHONE, { type: "text", text: { body: "hi" } })).status, 401);
   ok(await N.connect({ orgId: ORGB, membership: ownerB, actorEmail: ownerB.email, input: { phoneNumberId: PNID, wabaId: "3183828638", appSecret: SECRET, accessToken: TOKEN } }), "freed number can move to another company");
+});
+
+test("sales question without Point of Sale: answered from invoices issued, finance roles only", async () => {
+  const { runOpsTool } = await import("../src/lib/connect/tools.js");
+  const now = new Date();
+  await c.invoices.insertMany([
+    { orgId, invoiceNumber: "IC-1", total: 1000, currency: "PKR", status: "SENT", issueDate: now.toISOString(), deletedAt: null, createdAt: now.toISOString() },
+    { orgId, invoiceNumber: "IC-2", total: 500, currency: "PKR", status: "PAID", issueDate: now, deletedAt: null, createdAt: now.toISOString() },
+    { orgId, invoiceNumber: "IC-3", total: 999, currency: "PKR", status: "DRAFT", issueDate: now.toISOString(), deletedAt: null, createdAt: now.toISOString() },
+  ]);
+  const r = await runOpsTool("sales_summary", { period: "today" }, { orgId: ORG, membership: owner });
+  assert.equal(r.source, "invoices"); assert.equal(r.invoicesIssued, 2); assert.deepEqual(r.byCurrency.PKR, { invoices: 2, total: 1500, paid: 500, unpaid: 1000 });
+  assert.ok((await runOpsTool("sales_summary", { period: "today" }, { orgId: ORG, membership: staff })).error, "plain members don't get sales figures");
 });
