@@ -77,6 +77,8 @@
 // elsewhere. Factual only, hedged, no numbers, no superlative claims —
 // doesn't touch anything PROTECTED above.
 
+// v1.3a (26 Nov 2026): founder-set storage dates: pre-seed Q3 2027, audit Q4 2027, first Corporate
+// Reserve Q1 2028, growth Q2 2028.
 // v1.3 (26 Nov 2026): TWO-ENGINE EDITION at founder direction ("both DePIN and Business OS must receive
 // investor focus; the main revenue comes from DePIN"). Positioning, segments, competitors, sales motion,
 // funnels, KPIs, execution, 24-month roadmap, five-year vision and Why Inaya Wins now cover both engines.
@@ -1511,17 +1513,19 @@ export const gtmStrategy = {
       blocks: [
         {
           type: "table",
-          headers: ["2027", "Engine 1 — DePIN storage", "Engine 2 — Inaya Business OS"],
+          headers: ["Quarter", "Engine 1 — DePIN storage", "Engine 2 — Inaya Business OS"],
           rows: [
-            ["Q1", "Pre-seed closes; independent security audit commissioned", "Public launch 1 January; first pilots convert to paid; incorporation in March unlocks Meta business verification and partner programmes"],
-            ["Q2", "Audit findings fixed; node operator onboarding; mainnet when the audit is clean", "Two international salespeople; Pakistan team; first Commerce shops live on real hardware"],
-            ["Q3", "First Corporate Reserve contracts; storage billing live", "Pipeline data replaces the model's placeholder funnel rates; one-click WhatsApp setup once Inaya is a Meta Tech Provider"],
-            ["Q4", "Corporate Reserve expansion; enterprise storage pilots from Business OS customers", "Expansion across the nine pilot countries; first compliance certification work"],
+            ["Q1 2027", "Testnet: developer adoption, SDK and node-operator onboarding continue", "Public launch 1 January; first pilots convert to paid; incorporation in March unlocks Meta business verification and partner programmes"],
+            ["Q2 2027", "Testnet; pre-seed conversations with investors", "First Commerce shops live on real hardware; pilots expand across Pakistan and the nine Asian countries"],
+            ["Q3 2027", "Pre-seed closes", "Two international salespeople and the Pakistan team hired; one-click WhatsApp setup once Inaya is a Meta Tech Provider"],
+            ["Q4 2027", "Independent security audit", "Real pipeline data replaces the model's placeholder funnel rates; first compliance certification work"],
+            ["Q1 2028", "Mainnet after a clean audit; first Corporate Reserve contracts", "Business OS customers offered Corporate Reserve and enterprise storage"],
+            ["Q2 2028", "Corporate Reserve growth; storage billing at scale", "Growth in line with the financial model's sales plan"],
           ],
         },
         {
           type: "note",
-          text: "Dates on the storage track depend on the audit; the Business OS track does not. The quarterly themes below describe the developer-ecosystem work that runs underneath Engine 1 throughout.",
+          text: "The storage track follows the funding: pre-seed in Q3 2027, the audit in Q4 2027, the first Corporate Reserve contracts in Q1 2028 and growth from Q2 2028. The Business OS track starts earning before any of that. The quarterly themes below describe the developer-ecosystem work that runs underneath Engine 1 throughout.",
         },
         {
           type: "columns",
