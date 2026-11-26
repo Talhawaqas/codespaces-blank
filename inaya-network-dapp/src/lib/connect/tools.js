@@ -50,7 +50,10 @@ export async function runOpsTool(name, args, ctx) {
   const { orgId, membership } = ctx; const col = await getOrgCollections();
   if (name === "sales_summary") {
     const { commerceReport, } = await import("../commerce/reports.js"); const { getSettings } = await import("../commerce/store.js");
-    const tz = (await getSettings(orgId))?.timezone || "Asia/Karachi"; const [from, to] = bounds(args.period, tz);
+    // Commerce's timezone when it has one; otherwise the company's Inaya Connect business-hours timezone.
+    const { getSettings: connectSettings } = await import("./core.js");
+    const ctz = await getSettings(orgId).then((s) => s?.timezone).catch(() => null);
+    const tz = (ctz && ctz !== "UTC" ? ctz : null) || (await connectSettings(orgId)).hours?.timezone || ctz || "Asia/Karachi"; const [from, to] = bounds(args.period, tz);
     const r = await commerceReport({ orgId, membership, input: { from: from.toISOString(), to: to.toISOString() } });
     // No Point of Sale (Commerce off): companies that sell by invoice still get an answer, from invoices issued.
     if (r.error && /not enabled|isn't enabled|not available/i.test(r.error)) return invoiceSales({ orgId, membership, period: args.period, from, to, tz, compare: args.compareWithPrevious });
