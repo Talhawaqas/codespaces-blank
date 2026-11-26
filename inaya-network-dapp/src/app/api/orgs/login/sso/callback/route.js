@@ -11,9 +11,9 @@ export async function GET(req) {
   const back = (msg) => NextResponse.redirect(`${appUrl()}/business?ssoError=${encodeURIComponent(msg)}`);
   if (q.get("error")) return back(String(q.get("error_description") || "Your identity provider cancelled the sign-in.").slice(0, 200));
   try {
-    const { email, returnTo } = await finishWorkforceSso({ code: q.get("code"), state: q.get("state") });
+    const { email, returnTo, base } = await finishWorkforceSso({ code: q.get("code"), state: q.get("state") });
     const { sessionToken } = await createSession(email);
-    const res = NextResponse.redirect(`${appUrl()}${returnTo}`);
+    const res = NextResponse.redirect(`${base}${returnTo}`);
     res.cookies.set(SESSION_COOKIE, sessionToken, { httpOnly: true, secure: process.env.NODE_ENV !== "development", sameSite: "lax", maxAge: SESSION_TTL_MS / 1000, path: "/" });
     return res;
   } catch (err) {

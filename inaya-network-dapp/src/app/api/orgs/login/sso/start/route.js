@@ -16,7 +16,7 @@ export async function POST(req) {
     try { await checkRateLimit({ action: "workforce-sso-start", key: getClientIp(req), max: 20, windowMs: 10 * 60 * 1000 }); }
     catch { return json({ error: "Too many attempts. Please wait a few minutes." }, 429); }
     let body = {}; try { body = await req.json(); } catch { body = {}; }
-    return json(await startWorkforceSso({ email: body.email, returnTo: body.returnTo }));
+    return json(await startWorkforceSso({ email: body.email, returnTo: body.returnTo, origin: req.headers.get("origin") }));
   } catch (err) {
     if (err instanceof SsoError) return json({ error: err.message }, err.status);
     console.error("orgs/login/sso/start failed:", err?.name); return json({ error: "Could not start single sign-on." }, 500);

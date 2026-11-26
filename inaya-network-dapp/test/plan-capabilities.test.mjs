@@ -249,3 +249,53 @@ test("add-ons: requested with the package, charged, and applied on activation", 
   await d.collection("billing_requests").deleteMany({ orgId: { $in: [new ObjectId(usdOrg), new ObjectId(pkOrg)] } });
   await d.collection("org_subscriptions").deleteMany({ orgId: { $in: [new ObjectId(usdOrg), new ObjectId(pkOrg)] } });
 });
+
+// ------------------------------------------------------------------------------------------------ SAML, return address, app handoff
+test("SSO comes back to the address it started from; SAML config is validated and its sign-in admits only members", async () => {
+  const { allowedOrigin, validateSsoInput, setWorkforceSso, startWorkforceSso, finishWorkforceSaml, pemOf } = await import("../src/lib/workforceSso.js");
+  assert.equal(await allowedOrigin("https://www.inayanetwork.com"), "https://www.inayanetwork.com");
+  assert.equal(await allowedOrigin("https://inayanetwork.com"), "https://inayanetwork.com");
+  assert.equal(await allowedOrigin("https://files.acme.test", { isWorkspaceHost: async () => true }), "https://files.acme.test");
+  assert.notEqual(await allowedOrigin("https://evil.test", { isWorkspaceHost: async () => false }), "https://evil.test");
+  assert.match(validateSsoInput({ protocol: "saml", enabled: true, domains: ["x.test"] }).errors.join(" "), /SAML sign-in URL/);
+  assert.match(validateSsoInput({ protocol: "saml", samlIdpCert: "not a cert" }).errors.join(" "), /could not be read/);
+
+  // a real self-signed certificate, generated for the test
+  const { execFileSync } = await import("node:child_process"); const fs = await import("node:fs"); const os = await import("node:os"); const path = await import("node:path");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "saml-")); let certPem;
+  try { execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(dir, "k.pem"), "-out", path.join(dir, "c.pem"), "-days", "2", "-subj", "/CN=idp.test"], { stdio: "ignore" }); certPem = fs.readFileSync(path.join(dir, "c.pem"), "utf8"); }
+  catch { certPem = null; } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  if (!certPem) return; // openssl not available on this machine: the pure checks above still ran
+  const bare = certPem.replace(/-----[A-Z ]+-----|\s/g, "");
+  assert.equal(pemOf(bare).trim(), pemOf(certPem).trim(), "a bare Base64 certificate is accepted");
+
+  const domain = `saml-${RUN}.test`; const ent = await mkOrg("enterprise", { name: `SAML Co ${RUN}` });
+  const cfg = await setWorkforceSso({ orgId: ent, membership: owner, actorEmail: "o@x.test", input: { protocol: "saml", samlEntryPoint: "https://idp.test/saml2", samlIdpCert: bare, domains: [domain], enabled: true } });
+  assert.equal(cfg.protocol, "saml"); assert.ok(cfg.samlCert?.fingerprint256); assert.ok(cfg.saml.acsUrls.some((u) => u.startsWith("https://inayanetwork.com")));
+  const staff = `amna@${domain}`; await mkMember(ent, staff);
+  const { url } = await startWorkforceSso({ email: staff, origin: "https://inayanetwork.com" });
+  assert.match(url, /^https:\/\/idp\.test\/saml2\?SAMLRequest=/); const relay = new URL(url).searchParams.get("RelayState"); assert.ok(relay);
+  const out = await finishWorkforceSaml({ samlResponse: "x", relayState: relay, validate: async () => ({ nameID: staff }) });
+  assert.equal(out.email, staff); assert.equal(out.base, "https://inayanetwork.com", "back to where it started");
+  await assert.rejects(finishWorkforceSaml({ samlResponse: "x", relayState: relay, validate: async () => ({ nameID: staff }) }), /expired or was already used/);
+  const r2 = new URL((await startWorkforceSso({ email: staff })).url).searchParams.get("RelayState");
+  await assert.rejects(finishWorkforceSaml({ samlResponse: "x", relayState: r2, validate: async () => { throw new Error("Invalid signature"); } }), /could not verify/);
+  const r3 = new URL((await startWorkforceSso({ email: staff })).url).searchParams.get("RelayState");
+  await assert.rejects(finishWorkforceSaml({ samlResponse: "x", relayState: r3, validate: async () => ({ nameID: `zara@${domain}` }) }), /not a member/);
+  await (await db()).collection("mfa_pending").deleteMany({ purpose: { $in: ["workforce-sso", "saml-request"] }, orgId: new ObjectId(ent) });
+});
+
+test("app handoff: fresh sign-in only, single use, needs the app's verifier", async () => {
+  const { createHandoff, exchangeHandoff, challengeFor } = await import("../src/lib/appHandoff.js");
+  const email = `app-${RUN}@plancap.test`; emails.push(email);
+  const verifier = "v".repeat(20) + RUN + "w".repeat(20); const challenge = challengeFor(verifier);
+  await assert.rejects(createHandoff({ email, challenge, sessionCreatedAt: new Date(Date.now() - 11 * 60000).toISOString() }), /sign in again/);
+  await assert.rejects(createHandoff({ email, challenge: "short", sessionCreatedAt: new Date().toISOString() }), /not valid/);
+  const { code } = await createHandoff({ email, challenge, sessionCreatedAt: new Date().toISOString() });
+  await assert.rejects(exchangeHandoff({ code, verifier: "x".repeat(43) }), /different request/);
+  const { code: code2 } = await createHandoff({ email, challenge, sessionCreatedAt: new Date().toISOString() });
+  const ok = await exchangeHandoff({ code: code2, verifier });
+  assert.equal(ok.email, email); assert.equal(ok.sessionToken.length, 64);
+  await assert.rejects(exchangeHandoff({ code: code2, verifier }), /already used/);
+  const d = await db(); await d.collection("sessions").deleteMany({ email }); await d.collection("mfa_pending").deleteMany({ email, purpose: "app-handoff" });
+});
