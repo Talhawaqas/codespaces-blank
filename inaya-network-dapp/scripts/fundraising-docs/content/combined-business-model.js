@@ -23,7 +23,7 @@ export const combinedBusinessModel = {
           "text": [
             "Inaya earns money from two products on one encrypted storage foundation, reported as one company. The DePIN storage network charges by the terabyte and through yearly Corporate Reserve contracts. Inaya Business OS sells monthly or yearly subscriptions, in US dollars internationally and in rupees in Pakistan.",
             "This revision replaces the old $2K placeholder for international Workspace revenue with a month-by-month customer forecast driven by two dedicated salespeople, adds the planned ten-person Pakistan team with founder salaries, and sets team and office at $200K in Year 1. DePIN storage revenue, node-operator payouts, the $400K–$800K storage infrastructure and the $300K of one-time Year 1 costs are unchanged.",
-            "Timeline (founder, 26 November 2026): Year 1 runs from July 2027, when the $2M pre-seed closes, to June 2028. The security audit follows in Q4 2027, and mainnet with the first Corporate Reserve contracts in January 2028, month 7 of Year 1; storage is billed only from then. In the Base scenario the company loses $696K in Year 1, which the pre-seed covers, is profitable from Year 2, and never has less than $1.30M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
+            "Timeline (founder, 26 November 2026): Year 1 runs from July 2027, when the $2M pre-seed closes, to June 2028. The security audit follows in Q4 2027. Mainnet, the first Corporate Reserve contracts and the storage infrastructure cost start in January 2028, month 7 of Year 1; storage then ramps to 15 PB over 12 months and to the unchanged 60 PB target by the end of Year 2. In the Base scenario the company loses $578K in Year 1, which the pre-seed covers, is profitable from Year 2, and never has less than $1.42M in cash. Profit comes overwhelmingly from Corporate Reserve storage after mainnet; the Workspace is the revenue that can start before mainnet."
           ]
         },
         {
@@ -621,7 +621,7 @@ export const combinedBusinessModel = {
             ],
             [
               "File storage infrastructure (DePIN)",
-              "-$400K",
+              "-$200K",
               "-$500K",
               "-$600K",
               "-$700K",
@@ -645,7 +645,7 @@ export const combinedBusinessModel = {
             ],
             [
               "Total operating costs",
-              "-$900K",
+              "-$700K",
               "-$755K",
               "-$908K",
               "-$1.06M",
@@ -656,7 +656,7 @@ export const combinedBusinessModel = {
         {
           "type": "paragraphs",
           "text": [
-            "Team and office rises from $200K by $50K a year (founder planning figure). Storage infrastructure and the one-time Year 1 costs ($40K legal and compliance, $80K security audits, $180K infrastructure and launch marketing) are unchanged. Recurring Workspace paid marketing is a separate line that starts at $0 in Year 1, so it does not overlap the launch budget."
+            "Team and office rises from $200K by $50K a year (founder planning figure). Storage infrastructure (from mainnet in month 7 of Year 1, so $200K in Year 1) and the one-time Year 1 costs ($40K legal and compliance, $80K security audits, $180K infrastructure and launch marketing) are unchanged. Recurring Workspace paid marketing is a separate line that starts at $0 in Year 1, so it does not overlap the launch budget."
           ]
         }
       ]
@@ -678,8 +678,8 @@ export const combinedBusinessModel = {
           "rows": [
             [
               "DePIN storage revenue",
-              "$250K",
-              "$2.50M",
+              "$125K",
+              "$1.62M",
               "$8.65M",
               "$28.2M",
               "$71.3M"
@@ -702,16 +702,16 @@ export const combinedBusinessModel = {
             ],
             [
               "Total revenue",
-              "$297K",
-              "$2.72M",
+              "$172K",
+              "$1.85M",
               "$9.13M",
               "$29.0M",
               "$72.4M"
             ],
             [
               "Node-operator share (35% of storage)",
-              "-$87K",
-              "-$874K",
+              "-$44K",
+              "-$568K",
               "-$3.03M",
               "-$9.87M",
               "-$24.9M"
@@ -726,23 +726,23 @@ export const combinedBusinessModel = {
             ],
             [
               "Gross profit",
-              "$204K",
-              "$1.83M",
+              "$122K",
+              "$1.26M",
               "$6.07M",
               "$19.1M",
               "$47.4M"
             ],
             [
               "Gross margin",
-              "69%",
-              "67%",
+              "71%",
+              "68%",
               "66%",
               "66%",
               "65%"
             ],
             [
               "Total operating costs",
-              "-$900K",
+              "-$700K",
               "-$755K",
               "-$908K",
               "-$1.06M",
@@ -750,8 +750,8 @@ export const combinedBusinessModel = {
             ],
             [
               "Net income",
-              "-$696K",
-              "$1.08M",
+              "-$578K",
+              "$508K",
               "$5.16M",
               "$18.0M",
               "$46.2M"
@@ -766,18 +766,18 @@ export const combinedBusinessModel = {
             ],
             [
               "Cash at year-end",
-              "$1.30M",
-              "$2.38M",
-              "$7.54M",
-              "$25.6M",
-              "$71.7M"
+              "$1.42M",
+              "$1.93M",
+              "$7.09M",
+              "$25.1M",
+              "$71.3M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "Reading the table.",
-          "text": "Profitability is measured for the whole company, after DePIN infrastructure, team, office, legal, security and marketing. Inaya is profitable from Year 2; the Year 1 loss is covered by the pre-seed, which is funding, not income. DePIN storage is 84% of revenue in Year 1 (billed from mainnet in month 7) and 98% in Year 5."
+          "text": "Profitability is measured for the whole company, after DePIN infrastructure, team, office, legal, security and marketing. Inaya is profitable from Year 2; the Year 1 loss is covered by the pre-seed, which is funding, not income. DePIN storage is 73% of revenue in Year 1 (billed from mainnet in month 7) and 98% in Year 5."
         },
         {
           "type": "table",
@@ -800,7 +800,7 @@ export const combinedBusinessModel = {
             [
               "File storage infrastructure",
               "$400K",
-              "$400K (unchanged)"
+              "$200K (from mainnet, month 7)"
             ],
             [
               "One-time Year 1 costs",
@@ -810,7 +810,7 @@ export const combinedBusinessModel = {
             [
               "DePIN storage revenue",
               "$499K",
-              "$250K (billed from mainnet, month 7)"
+              "$125K (from mainnet in month 7, ramping)"
             ],
             [
               "Pakistan Workspace revenue",
@@ -820,22 +820,22 @@ export const combinedBusinessModel = {
             [
               "Total revenue",
               "$506K",
-              "$297K"
+              "$172K"
             ],
             [
               "Gross profit",
               "$327K",
-              "$204K"
+              "$122K"
             ],
             [
               "Net income",
               "-$673K",
-              "-$696K"
+              "-$578K"
             ],
             [
               "Cash at year-end",
               "$1.33M",
-              "$1.30M"
+              "$1.42M"
             ]
           ]
         },
@@ -871,19 +871,23 @@ export const combinedBusinessModel = {
               "$0 (unchanged)"
             ],
             [
-              "6. Storage billed from mainnet in month 7, net of the node-operator share (founder timeline, 26 Nov 2026)",
-              "-$162K"
+              "6. Storage billed from mainnet in month 7, ramping to 15 PB by month 18, net of the node-operator share (founder timeline, 26 Nov 2026)",
+              "-$243K"
+            ],
+            [
+              "7. Storage infrastructure from mainnet in month 7 ($400K a year, so $200K in Year 1)",
+              "+$200K"
             ],
             [
               "Revised Year 1 net income",
-              "-$696K"
+              "-$578K"
             ]
           ]
         },
         {
           "type": "note",
           "label": "What changed.",
-          "text": "Higher international Workspace revenue and the lower team-and-office figure improve Year 1, less the extra payment and hosting costs. The founder timeline then moves storage billing to mainnet in January 2028 (month 7), which halves Year 1 storage revenue; Years 2 to 5 are unchanged. None of the change comes from reducing DePIN storage infrastructure or the one-time costs."
+          "text": "Higher international Workspace revenue and the lower team-and-office figure improve Year 1, less the extra payment and hosting costs. The founder timeline then starts storage billing and the storage infrastructure cost at mainnet in January 2028 (month 7). Storage ramps to 15 PB over the following 12 months, so Year 1 storage revenue is a quarter of the earlier figure and Year 2 is lower; Years 3 to 5 are unchanged. The one-time costs are unchanged."
         }
       ]
     },
@@ -924,35 +928,35 @@ export const combinedBusinessModel = {
             ],
             [
               "Conservative — total revenue",
-              "$86K",
-              "$728K",
+              "$54K",
+              "$510K",
               "$2.39M",
               "$7.44M",
               "$18.4M"
             ],
             [
               "Conservative — gross margin",
-              "69%",
-              "68%",
+              "72%",
+              "70%",
               "67%",
               "66%",
               "66%"
             ],
             [
               "Conservative — net income",
-              "-$841K",
-              "-$257K",
+              "-$661K",
+              "-$399K",
               "$703K",
               "$3.86M",
               "$10.9M"
             ],
             [
               "Conservative — cash at year-end",
-              "$1.16M",
-              "$903K",
-              "$1.61M",
-              "$5.47M",
-              "$16.3M"
+              "$1.34M",
+              "$940K",
+              "$1.64M",
+              "$5.51M",
+              "$16.4M"
             ],
             [
               "Base — international customers at year-end",
@@ -972,35 +976,35 @@ export const combinedBusinessModel = {
             ],
             [
               "Base — total revenue",
-              "$297K",
-              "$2.72M",
+              "$172K",
+              "$1.85M",
               "$9.13M",
               "$29.0M",
               "$72.4M"
             ],
             [
               "Base — gross margin",
-              "69%",
-              "67%",
+              "71%",
+              "68%",
               "66%",
               "66%",
               "65%"
             ],
             [
               "Base — net income",
-              "-$696K",
-              "$1.08M",
+              "-$578K",
+              "$508K",
               "$5.16M",
               "$18.0M",
               "$46.2M"
             ],
             [
               "Base — cash at year-end",
-              "$1.30M",
-              "$2.38M",
-              "$7.54M",
-              "$25.6M",
-              "$71.7M"
+              "$1.42M",
+              "$1.93M",
+              "$7.09M",
+              "$25.1M",
+              "$71.3M"
             ],
             [
               "Optimistic — international customers at year-end",
@@ -1020,42 +1024,42 @@ export const combinedBusinessModel = {
             ],
             [
               "Optimistic — total revenue",
-              "$466K",
-              "$4.14M",
+              "$278K",
+              "$2.83M",
               "$13.8M",
               "$43.7M",
               "$108.9M"
             ],
             [
               "Optimistic — gross margin",
-              "70%",
-              "68%",
+              "74%",
+              "69%",
               "67%",
               "66%",
               "65%"
             ],
             [
               "Optimistic — net income",
-              "-$573K",
-              "$2.05M",
+              "-$495K",
+              "$1.20M",
               "$8.30M",
               "$27.7M",
               "$70.1M"
             ],
             [
               "Optimistic — cash at year-end",
-              "$1.43M",
-              "$3.48M",
-              "$11.8M",
-              "$39.5M",
-              "$109.6M"
+              "$1.51M",
+              "$2.71M",
+              "$11.0M",
+              "$38.7M",
+              "$108.8M"
             ]
           ]
         },
         {
           "type": "note",
           "label": "What the scenarios say.",
-          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $903K."
+          "text": "All three scenarios stay cash-positive on the $2M pre-seed alone. Base and Optimistic are profitable from Year 2; Conservative from Year 3, with cash never below $940K."
         },
         {
           "type": "table",
@@ -1071,90 +1075,90 @@ export const combinedBusinessModel = {
             [
               "Plan (Base, no levers)",
               "$42K",
-              "-$696K",
+              "-$578K",
               "$946K",
               "$46.2M",
-              "$1.30M"
+              "$1.42M"
             ],
             [
               "25% fewer new international customers",
               "$32K",
-              "-$706K",
+              "-$588K",
               "$710K",
               "$46.0M",
-              "$1.29M"
+              "$1.41M"
             ],
             [
               "Slower ramp: half the new customers in months 1-6",
               "$31K",
-              "-$707K",
+              "-$588K",
               "$937K",
               "$46.2M",
-              "$1.29M"
+              "$1.41M"
             ],
             [
               "Longer sales cycle: customers start paying 2 months later",
               "$26K",
-              "-$712K",
+              "-$593K",
               "$897K",
               "$46.1M",
-              "$1.29M"
+              "$1.41M"
             ],
             [
               "Lower average subscription value: prices 20% lower",
               "$34K",
-              "-$704K",
+              "-$586K",
               "$761K",
               "$46.0M",
-              "$1.30M"
+              "$1.41M"
             ],
             [
               "Half the Enterprise share (moves to Business)",
               "$28K",
-              "-$710K",
+              "-$591K",
               "$634K",
               "$45.9M",
-              "$1.29M"
+              "$1.41M"
             ],
             [
               "Higher churn: 2% a month instead of 1%",
               "$41K",
-              "-$697K",
+              "-$579K",
               "$788K",
               "$46.0M",
-              "$1.30M"
+              "$1.42M"
             ],
             [
               "No paid marketing",
               "$42K",
-              "-$696K",
+              "-$578K",
               "$805K",
               "$46.1M",
-              "$1.30M"
+              "$1.42M"
             ],
             [
               "Payroll and office 20% higher",
               "$42K",
-              "-$736K",
+              "-$618K",
               "$946K",
               "$46.1M",
-              "$1.26M"
+              "$1.38M"
             ],
             [
               "Hosting and platform costs 50% higher",
               "$42K",
-              "-$698K",
+              "-$580K",
               "$946K",
               "$46.2M",
-              "$1.30M"
+              "$1.42M"
             ],
             [
               "Combined downside: 25% fewer customers, half Enterprise, 2% churn",
               "$21K",
-              "-$717K",
+              "-$598K",
               "$395K",
               "$45.7M",
-              "$1.28M"
+              "$1.40M"
             ]
           ]
         },
