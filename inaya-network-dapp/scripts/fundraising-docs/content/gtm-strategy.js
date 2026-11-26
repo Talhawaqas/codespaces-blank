@@ -82,7 +82,7 @@
 // v1.3 (26 Nov 2026): TWO-ENGINE EDITION at founder direction ("both DePIN and Business OS must receive
 // investor focus; the main revenue comes from DePIN"). Positioning, segments, competitors, sales motion,
 // funnels, KPIs, execution, 24-month roadmap, five-year vision and Why Inaya Wins now cover both engines.
-// Every revenue figure is from the Combined Financial Model (Base): DePIN 73% of Year 1 (billed from mainnet in month 7) and 98% of Year 5.
+// Every revenue figure is from the Combined Financial Model (Base): DePIN 91% of Year 1 and 98% of Year 5.
 //
 // v1.2 (26 Nov 2026): factual refresh only: Inaya Commerce and its approved price table, Inaya Connect
 // (WhatsApp, Business + Enterprise only), Why Inaya page and its comparison set, roadmap counts (41 of 46),
@@ -128,9 +128,9 @@ export const gtmStrategy = {
         type: "table",
         headers: ["Base-case revenue (Combined Financial Model)", "Year 1", "Year 3", "Year 5", "Role"],
         rows: [
-          ["Engine 1 — DePIN storage", "$125K", "$8.65M", "$71.3M", "The main revenue and the main value: Corporate Reserve storage after mainnet"],
+          ["Engine 1 — DePIN storage", "$499K", "$8.65M", "$71.3M", "The main revenue and the main value: Corporate Reserve storage after mainnet"],
           ["Engine 2 — Inaya Business OS", "$47K", "$488K", "$1.17M", "Revenue before mainnet, independent of the token; proves we can sell and brings companies onto the same infrastructure"],
-          ["Total", "$172K", "$9.13M", "$72.4M", "Profitable from Year 2; the $2M pre-seed covers the Year 1 loss. Year 1 = July 2027 to June 2028; storage billed from mainnet in January 2028"],
+          ["Total", "$546K", "$9.13M", "$72.4M", "Profitable from Year 2; the $2M pre-seed covers the Year 1 loss. Year 1 = Q3 2027 to Q2 2028"],
         ],
       },
       {
@@ -250,7 +250,7 @@ export const gtmStrategy = {
         {
           type: "note",
           label: "Two engines, two motions, one company.",
-          text: "Inaya runs two go-to-market motions in parallel. Engine 1, the DePIN storage network, is sold developer-first and through Corporate Reserve contracts; in the Base case of the Combined Financial Model it produces 73% of Year 1 revenue (storage is billed from mainnet in January 2028, month 7 of Year 1) and 98% of Year 5 revenue, and the company's profit. Engine 2, Inaya Business OS, is sold directly to small and mid-sized companies by a sales team; it earns before mainnet, does not depend on the token, and proves commercial execution while the storage network completes its audit. Neither engine is a side project: one carries the scale, the other carries the near-term proof.",
+          text: "Inaya runs two go-to-market motions in parallel. Engine 1, the DePIN storage network, is sold developer-first and through Corporate Reserve contracts; in the Base case of the Combined Financial Model it produces 91% of Year 1 revenue and 98% of Year 5 revenue (Year 1 = Q3 2027 to Q2 2028), and the company's profit. Engine 2, Inaya Business OS, is sold directly to small and mid-sized companies by a sales team; it earns before mainnet, does not depend on the token, and proves commercial execution while the storage network completes its audit. Neither engine is a side project: one carries the scale, the other carries the near-term proof.",
         },
         {
           type: "subsection",
