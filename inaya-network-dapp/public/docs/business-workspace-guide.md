@@ -32,6 +32,15 @@ Inaya Business OS is one system for your whole business: the office (accounts, s
 3. Our team contacts you within one working day and emails an invoice.
 4. Pay using the invoice number as the reference. We switch your package on as soon as the payment arrives and email you.
 
+**Sign in next time**
+
+1. Go to inayanetwork.com/business and press "Sign in".
+2. Email link: type your email and press "Send sign-in link", then open the email. Or press "Continue with Google".
+3. Passkey (fastest): press "Sign in with a passkey" and confirm with your fingerprint, face or phone PIN. Add a passkey first under Account Security (see IT and Security).
+4. Company sign-in (SSO, Enterprise): type your work email and press "Sign in with company SSO". You sign in on your company's Microsoft, Google or Okta page and come straight back.
+
+> On Professional you can add single Business features as add-ons: appointments, email campaigns, Inaya Connect (WhatsApp), a client portal, a custom domain, API access or extra storage. Choose them on the request form or later in Billing. Prices are in the Billing section of this guide.
+
 > In Pakistan, packages are invoiced in PKR with a one-time setup fee (PKR 10,000 for Starter, PKR 25,000 for the others). Yearly billing costs 10 months instead of 12.
 
 > Inaya Commerce (the shop counter and online selling) is an extra: Commerce Starter on Professional ($49 / PKR 8,000 a month), the Commerce add-on on Business ($79 / PKR 12,000), and it is included in Enterprise.
@@ -55,7 +64,7 @@ The top row of big buttons takes you to each part of the business: Home, Sales, 
 2. Type what you are looking for, or browse the tiles.
 3. Press a tile to open it. Pin the ones you use most so they are always one click away.
 
-Part 2, Back Office: Run the company: customers, stock and buying, accounts, staff, documents, teamwork and reports.
+Part 2, Back Office: Run the company: customers, stock and buying, accounts, staff, documents, teamwork, WhatsApp and reports.
 
 ## 3. Sales and Customers (Part 2: Back Office)
 
@@ -151,7 +160,7 @@ Keep company documents in one safe place, organised by department and project. F
 
 1. Open Documents, choose the department and project, and press upload.
 2. Choose who can see it: only you and people you add, the department, or the project team.
-3. Set a passkey. Keep it safe: it cannot be recovered, by anyone.
+3. Set a passkey (the password that encrypts this file; it is not the same as a sign-in passkey). Keep it safe: it cannot be recovered, by anyone.
 
 **Approve and share**
 
@@ -175,7 +184,36 @@ Workplace is for day-to-day teamwork: tasks, projects, team chat and video meeti
 2. Describe what you need and how important it is, then send. Others can vote for the same idea.
 3. We plan ideas into our work and tell you when yours is planned and when it is ready.
 
-## 9. Reports (Part 2: Back Office)
+## 9. Inaya Connect: WhatsApp for Your Business (Part 2: Back Office)
+
+For: Owners, managers, support and sales staff
+
+Inaya Connect links your company's own WhatsApp Business number to Inaya. Staff ask questions on WhatsApp and get answers from your own data, bills sent on WhatsApp go to AI Bookkeeper, and every customer chat lands in one team inbox. Included in Business and Enterprise, and available as an add-on for Professional. Meta bills WhatsApp messages to your own WhatsApp Business Account.
+
+**Connect your WhatsApp number (about 20 to 30 minutes)**
+
+1. Open Sales > Customer service > Inaya Connect (an owner or admin), then the Connection tab, and follow "Connect your WhatsApp Business number".
+2. The steps on screen walk you through Meta: create a Meta app for WhatsApp, copy your phone number ID and WhatsApp Business Account ID, an access token and the app secret, and paste them into Inaya.
+3. Point Meta's webhook to Inaya using the address and verify token Inaya shows, then send "Hello" to your number from your phone: it appears in the Inbox.
+4. Inaya never asks for your Facebook password or admin access to your Meta account.
+
+**Let staff ask questions on WhatsApp**
+
+1. Each staff member opens Sales > Customer service > Inaya Connect > My WhatsApp and presses "Get my link code".
+2. They tap "Open WhatsApp" and press Send, so the code goes from their own WhatsApp to your business number (or they scan the QR code). Their phone is now linked; "Unlink my phone" removes it.
+3. They can ask in plain words, for example "How much did we sell today?" or "Stock of item X at my branch". Answers follow each person's permissions. Approvals, payments and price or stock changes stay inside Inaya.
+
+**Customer chats and documents**
+
+1. Every customer message appears in the Inbox. Reply, assign it, add a note, close it, or turn it into a Support Desk ticket.
+2. A photo of a bill, invoice or receipt goes to AI Bookkeeper as a draft for review; nothing is paid automatically. Other files are saved in the dated "Inaya Connect" folder and the sender is emailed where it is.
+3. The customer assistant is off by default. When you turn it on, it answers from your published help articles and shares a customer's own orders, repairs, appointments and invoices only after a 6-digit code sent to their email.
+
+> Customers can send STOP to stop messages and START to receive them again.
+
+> Full guide: inayanetwork.com/docs/products/inaya-connect
+
+## 10. Reports (Part 2: Back Office)
 
 For: Owners, managers
 
@@ -189,7 +227,7 @@ Reports shows how the business is doing across sales, stock, money and every bra
 
 Part 3, Front Office: Sell at the counter: the till, printing and the cash drawer, scanning and labels, and selling when the internet drops.
 
-## 10. Commerce: the Shop Counter (Front Office) (Part 3: Front Office)
+## 11. Commerce: the Shop Counter (Front Office) (Part 3: Front Office)
 
 For: Cashiers, supervisors, shop managers
 
@@ -221,7 +259,7 @@ Point of Sale is your till. It works on a normal computer, a laptop, a tablet or
 
 > Keyboard shortcuts: F2 search, F4 customer, F8 park a sale for later, F9 pay, Esc close a window.
 
-## 11. Commerce: Printing, Cash Drawer, Scanning and Labels (Part 3: Front Office)
+## 12. Commerce: Printing, Cash Drawer, Scanning and Labels (Part 3: Front Office)
 
 For: Shop managers, cashiers
 
@@ -256,7 +294,7 @@ These till extras are in Beta: they are being confirmed with our first pilot sho
 
 > Inaya does not supply hardware. You buy your own printer, cash drawer and scanner; see our Compatible Hardware guide for what works.
 
-## 12. Commerce: Selling When the Internet Drops (Beta) (Part 3: Front Office)
+## 13. Commerce: Selling When the Internet Drops (Beta) (Part 3: Front Office)
 
 For: Shop managers, cashiers
 
@@ -287,7 +325,7 @@ If the internet goes down, your till can keep selling cash sales. The sales are 
 
 Part 4, Online Selling: WooCommerce and Shopify: Your own web store, and your WooCommerce or Shopify store, on the same stock and books as your shop.
 
-## 13. Commerce: Online Selling, Shopify and WooCommerce (Part 4: Online Selling: WooCommerce and Shopify)
+## 14. Commerce: Online Selling, Shopify and WooCommerce (Part 4: Online Selling: WooCommerce and Shopify)
 
 For: Shop owners, online sales staff
 
@@ -321,25 +359,26 @@ Sell online from the same products, stock and books as your shop. You can have y
 
 > Your plan also sets how many Shopify and WooCommerce orders come in each month: 300 on Commerce Starter, 1,000 on the Business add-on, unlimited on Enterprise. Need more? Extra 1,000 orders cost $15 (PKR 2,500), every month or for one month only, up to three blocks. Orders over the limit wait and come in by themselves once there is room.
 
-Part 5, IT Services: Security, ransomware protection, backups, network storage, company settings, users and help.
+Part 5, IT Services: Sign-in and security, ransomware protection, backups, network storage, company settings, add-ons, users and help.
 
-## Inaya Connect: WhatsApp for Your Business (Business and Enterprise)
-
-Connect your company's own WhatsApp Business number to Inaya Business OS (menu: Customer service › Inaya Connect).
-
-- **Ask on WhatsApp.** Link your phone once (Inaya Connect › My WhatsApp › Get my link code, then tap Open WhatsApp and press Send). Then ask "How much did we sell today?", the stock of an item, or the status of a work order. Answers follow your own permissions; WhatsApp is read-only.
-- **Send bills and files.** Bills, invoices and receipts go to AI Bookkeeper as drafts for review. Other files are saved in the dated Inaya Connect folder, and you get an email with the path and a link. Find them under Inaya Connect › My files.
-- **One inbox for customer chats.** Reply, take over or resume the assistant, assign, add internal notes, or turn a chat into a support ticket.
-- **Optional customer assistant.** Customers get answers from your help articles, and their own orders, repairs, appointments and invoices after a 6-digit email code.
-- **Setup.** An owner or admin connects the number on Inaya Connect › Connection by following the checklist there, entirely in your own Meta account. Never share your Facebook password or Meta admin access with anyone.
-
-Full guide: inayanetwork.com/docs/products/inaya-connect
-
-## 14. IT and Security (Part 5: IT Services)
+## 15. IT and Security (Part 5: IT Services)
 
 For: IT staff, owners and admins
 
 Admin holds the IT and security tools. Most small businesses only need a few of them; your IT person or Inaya can help set up the rest. Find them under Admin.
+
+**Passkeys: sign in with your fingerprint or face (every package)**
+
+1. Open Account Security: your name (top right) > Account security, or Admin > My account > Account Security.
+2. Type a name such as "Work laptop" and press "Add a passkey". Confirm with your fingerprint, face or device PIN.
+3. Next time, press "Sign in with a passkey" on the sign-in screen. It counts as two-step verification and cannot be phished. You can add up to 10 and remove any of them.
+
+**Company single sign-on (SSO, Enterprise)**
+
+1. In your identity provider (Microsoft Entra ID, Google Workspace, Okta or any OpenID Connect provider), create a web application and register the redirect address Inaya shows under Admin > Company setup > Settings > Single sign-on.
+2. In Inaya, enter the issuer address, client ID, client secret and your staff email domains, then press "Save" and "Test the provider".
+3. Tick "SSO is on" and save. Staff then choose "Sign in with company SSO". They still need to be invited to the company first.
+4. Optional: "Require SSO" turns off email links and Google sign-in for those email domains.
 
 **Admin Dashboard**
 
@@ -376,13 +415,25 @@ Admin holds the IT and security tools. Most small businesses only need a few of 
 1. S3-Compatible Storage: press "+ New S3 credential" to use Inaya storage from tools such as the AWS command line or rclone.
 2. Databases: create a managed database for your own systems, where your Inaya setup includes it.
 
+> Some tools belong to particular packages: the Admin Dashboard, organization-wide policies, audit logs, device and session management, client portals, custom domains and API keys are in Business and Enterprise; SSO, custom retention, compliance readiness and customer-managed keys are in Enterprise. If your package does not include a tool, Inaya tells you which package does.
+
 > Integrations, Webhooks and API Keys (under Admin) connect Inaya to your other software. Only give API keys to people you trust, and cancel them when no longer needed.
 
-## 15. Company Settings, Users and Billing (Part 5: IT Services)
+## 16. Company Settings, Users and Billing (Part 5: IT Services)
 
 For: Owners and admins
 
 Set up your company once, then add your team.
+
+| Add-on for Professional | USD a month | PKR a month |
+| --- | --- | --- |
+| Inaya Connect (WhatsApp) | $35 | PKR 6,000 |
+| Extra storage, per TB (up to 4 TB) | $30 | PKR 7,500 |
+| Appointment booking & team calendars | $15 | PKR 3,000 |
+| Email campaigns (10,000 a month) | $15 | PKR 3,000 |
+| Secure client portal | $15 | PKR 3,000 |
+| API access | $15 | PKR 3,000 |
+| Custom domain | $10 | PKR 2,000 |
 
 **Set up your company**
 
@@ -395,16 +446,35 @@ Set up your company once, then add your team.
 2. To set what each person can do, open People > Time, rota and commissions > Manage users. Choose a role (for example Cashier, Store manager, Accountant), the modules they can use and the branches they work in.
 3. Only admins can change access, and every change is recorded.
 
+**Your own web address (custom domain, Business and Enterprise)**
+
+1. Open Admin > Company setup > Settings > Branding and add your logo and company name.
+2. Under Custom domain, type an address you own, for example files.yourcompany.com, and press "Request domain".
+3. At your domain provider, add the TXT record Inaya shows and a CNAME record pointing your address to cname.vercel-dns.com.
+4. Press "Check". The status goes from Pending to Attached to Live; the security certificate is issued automatically. Your team then signs in at your own address and sees your logo.
+
+**Add-ons (Professional)**
+
+1. Open Admin > Company setup > Billing and press "Choose add-ons" (or "Change add-ons").
+2. Tick the add-ons you want and choose any extra storage. The form shows the new monthly total, and tells you when Business would cost the same or less.
+3. Send the request. Add-ons switch on when the payment is confirmed, together with your package.
+
 **Billing**
 
 1. Open Admin > Company setup > Billing to see your package, add extra users or change package.
 2. Owners and admins can download all the company's data as a file from Billing at any time.
 
-## 16. Getting Help (Part 5: IT Services)
+## 17. Getting Help (Part 5: IT Services)
 
 For: Everyone
 
 Help is always one click away.
+
+| Package | First reply from Inaya support |
+| --- | --- |
+| Starter | Within 48 hours |
+| Professional and Business | Within 24 hours (priority) |
+| Enterprise | Within 8 hours, plus a named onboarding contact |
 
 **Ask for help**
 
