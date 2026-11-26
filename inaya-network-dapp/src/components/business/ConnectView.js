@@ -205,6 +205,7 @@ function Connection({ api }) {
         <div className={mu}>Last message in {dt(conn.lastInboundAt)} · out {dt(conn.lastOutboundAt)}</div>
         {conn.lastError && <p className="text-red-500">Last error: {conn.lastError.message}</p>}
         <div className={mu}>Webhook URL: <code className="break-all">{st.webhookUrl}</code></div>
+        <div>Linked to Meta app: <span className={chip}>{conn.wabaSubscribed ? "Yes" : "No"}</span> <button className={conn.wabaSubscribed ? gb : pb} disabled={a.busy} onClick={async () => { const r = await a.run(() => api("connection/link-app", { method: "POST" }), "Linked. Meta will now deliver incoming messages."); if (!r?.__error) load(); }}>Link to Meta</button></div>
         <button className={gb} disabled={a.busy} onClick={async () => { const r = await a.run(() => api("connection/rotate-verify-token", { method: "POST" }), "New verify token created."); if (!r?.__error) setHook(r.webhook); }}>New verify token</button>
         <Hook />
       </div>

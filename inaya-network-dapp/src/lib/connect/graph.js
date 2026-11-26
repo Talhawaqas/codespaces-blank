@@ -44,6 +44,8 @@ export async function fetchMedia(conn, mediaId, maxBytes) {
   if (maxBytes && r.buffer.length > maxBytes) throw Object.assign(new Error("The file is too large."), { code: "TOO_LARGE" });
   return { buffer: r.buffer, mimeType: meta.mime_type || r.contentType, sha256: meta.sha256 || null };
 }
+/** Attaches the WhatsApp Business Account to this app so Meta delivers its webhooks (required once per account). */
+export async function subscribeApp(conn) { return call(conn, `${conn.wabaId}/subscribed_apps`, { method: "POST" }); }
 export async function listTemplates(conn) {
   if (!conn.wabaId) return { data: [] };
   return call(conn, `${conn.wabaId}/message_templates?fields=name,status,language,category&limit=100`);

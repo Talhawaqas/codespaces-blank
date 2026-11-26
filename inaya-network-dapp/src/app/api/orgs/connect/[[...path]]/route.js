@@ -57,6 +57,7 @@ export async function POST(req, { params }) {
     let body = {}; try { body = await req.json(); } catch { body = {}; }
     const b = { orgId, membership: c.membership, actorEmail: c.actorEmail };
     if (path === "connection") { if (await limited(`connect:${orgId}`, 10, 3600000)) return json({ error: "Too many connection attempts. Try again later." }, 429); return out(await N.connect({ ...b, input: body })); }
+    if (path === "connection/link-app") return out(await N.relinkApp(b));
     if (path === "connection/rotate-verify-token") return out(await N.rotateVerifyToken(b));
     if (path === "connection/credentials") return out(await N.updateToken({ ...b, accessToken: body.accessToken, appSecret: body.appSecret }));
     if (path === "connection/disconnect") return out(await N.disconnect({ ...b, reason: body.reason }));

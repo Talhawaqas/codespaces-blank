@@ -3,9 +3,9 @@
 // inbound events are routed ONLY by it. Secrets (app secret, access token) are encrypted at rest and never returned.
 // The webhook verify token is shown once and stored as a hash.
 import { ccol, oid, sid, clean, fail, nowIso, K, connectAccess, ensureConnectIndexes, encryptIntegrationSecret, isIntegrationCryptoConfigured, digits, sha256, token, audit, maskPhone } from "./core.js";
-import { phoneInfo, sendText } from "./graph.js";
+import { phoneInfo, sendText, subscribeApp } from "./graph.js";
 
-const view = (c) => c && ({ id: sid(c._id), status: c.status, phoneNumberId: c.phoneNumberId, wabaId: c.wabaId, displayNumber: c.displayNumber || null, verifiedName: c.verifiedName || null, quality: c.quality || null, connectedAt: c.connectedAt, connectedBy: c.connectedBy, lastInboundAt: c.lastInboundAt || null, lastOutboundAt: c.lastOutboundAt || null, lastError: c.lastError || null, webhookVerifiedAt: c.webhookVerifiedAt || null, mode: c.mode || "manual" });
+const view = (c) => c && ({ id: sid(c._id), status: c.status, phoneNumberId: c.phoneNumberId, wabaId: c.wabaId, displayNumber: c.displayNumber || null, verifiedName: c.verifiedName || null, quality: c.quality || null, connectedAt: c.connectedAt, connectedBy: c.connectedBy, lastInboundAt: c.lastInboundAt || null, lastOutboundAt: c.lastOutboundAt || null, lastError: c.lastError || null, webhookVerifiedAt: c.webhookVerifiedAt || null, wabaSubscribed: !!c.wabaSubscribed, mode: c.mode || "manual" });
 export const webhookUrl = () => `${(process.env.NEXT_PUBLIC_SITE_URL || "https://www.inayanetwork.com").replace(/\/$/, "")}/api/connect/whatsapp`;
 
 export async function getConnection(orgId) { const c = await ccol(); return c.findOne({ orgId: oid(orgId), kind: K.conn, status: { $in: ["ACTIVE", "PENDING_WEBHOOK"] } }); }
@@ -41,8 +41,23 @@ export async function connect({ orgId, membership, actorEmail, input = {} }) {
     }
     throw e;
   }
+  doc.wabaSubscribed = await linkApp(doc);
   await audit({ orgId, actorEmail, action: "CONNECT_NUMBER_CONNECTED", recordId: doc._id, metadata: { phoneNumberId, wabaId, display: maskPhone(doc.displayNumber) } });
   return { connection: view(doc), webhook: { callbackUrl: webhookUrl(), verifyToken: verify, fields: ["messages"], note: "Enter these in your Meta app (WhatsApp › Configuration › Webhook) and subscribe to 'messages'. The verify token is shown only once." } };
+}
+async function linkApp(conn) {
+  const c = await ccol(); let ok = false, error = null;
+  try { const r = await subscribeApp(conn); ok = r?.success !== false; } catch (e) { error = String(e.message).slice(0, 200); }
+  await c.updateOne({ _id: conn._id }, { $set: { wabaSubscribed: ok, wabaSubscribedAt: ok ? nowIso() : null, ...(error ? { lastError: { at: nowIso(), message: `Couldn't link the WhatsApp account to the app: ${error}` } } : {}) } });
+  return ok;
+}
+/** "Link to Meta": (re)attaches the WhatsApp Business Account to the app so incoming messages are delivered. */
+export async function relinkApp({ orgId, membership, actorEmail }) {
+  const d = await connectAccess({ orgId, membership, need: "admin" }); if (d) return d;
+  const conn = await getConnection(orgId); if (!conn) return fail("No WhatsApp number is connected.", 404);
+  const ok = await linkApp(conn); if (!ok) return fail("Meta didn't accept the link. Check that the access token has the whatsapp_business_management permission for this WhatsApp account.", 502);
+  await audit({ orgId, actorEmail, action: "CONNECT_APP_LINKED", recordId: conn._id });
+  return { ok: true };
 }
 export async function rotateVerifyToken({ orgId, membership, actorEmail }) {
   const d = await connectAccess({ orgId, membership, need: "admin" }); if (d) return d;

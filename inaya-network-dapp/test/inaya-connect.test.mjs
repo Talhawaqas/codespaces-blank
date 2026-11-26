@@ -45,6 +45,7 @@ before(async () => {
     if (raw) return { buffer: PNG, contentType: "image/png" };
     if (method === "GET" && /fields=display_phone_number/.test(url)) return { display_phone_number: "+92 300 0000000", verified_name: "IC Traders", quality_rating: "GREEN" };
     if (method === "GET" && /\/media-/.test(url)) return { url: "https://lookaside.example/media", mime_type: "image/png", file_size: PNG.length };
+    if (method === "POST" && /subscribed_apps/.test(url)) return { success: true };
     if (method === "POST" && body?.status === "read") return { success: true };
     if (method === "POST" && body?.type === "text") { const id = `wamid.out.${++nextId}`; sent.push({ to: body.to, text: body.text.body, id }); return { messages: [{ id }] }; }
     throw new Error(`unexpected graph call ${method} ${url}`);
@@ -69,7 +70,7 @@ let verifyToken;
 test("manual connection: validation, Meta probe, secrets encrypted, verify handshake, one company per number", async () => {
   assert.ok((await N.connect({ orgId: ORG, membership: owner, actorEmail: owner.email, input: { phoneNumberId: PNID, wabaId: "3183828638", appSecret: "short", accessToken: TOKEN } })).error);
   const r = ok(await N.connect({ orgId: ORG, membership: owner, actorEmail: owner.email, input: { phoneNumberId: PNID, wabaId: "3183828638", appSecret: SECRET, accessToken: TOKEN } }), "connect");
-  verifyToken = r.webhook.verifyToken; assert.match(verifyToken, /^icv_/); assert.equal(r.connection.status, "PENDING_WEBHOOK");
+  verifyToken = r.webhook.verifyToken; assert.equal(r.connection.wabaSubscribed, true, "account linked to the app"); assert.match(verifyToken, /^icv_/); assert.equal(r.connection.status, "PENDING_WEBHOOK");
   const raw = await (await C.ccol()).findOne({ orgId, kind: C.K.conn });
   assert.ok(!JSON.stringify(raw).includes(SECRET) && !JSON.stringify(raw).includes(TOKEN), "secrets never stored in clear");
   assert.equal(JSON.stringify(await N.connectionStatus({ orgId: ORG, membership: owner })).includes("Encrypted"), false, "secrets never returned");
