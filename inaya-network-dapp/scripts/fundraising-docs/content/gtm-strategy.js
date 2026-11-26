@@ -77,6 +77,11 @@
 // elsewhere. Factual only, hedged, no numbers, no superlative claims —
 // doesn't touch anything PROTECTED above.
 
+// v1.3 (26 Nov 2026): TWO-ENGINE EDITION at founder direction ("both DePIN and Business OS must receive
+// investor focus; the main revenue comes from DePIN"). Positioning, segments, competitors, sales motion,
+// funnels, KPIs, execution, 24-month roadmap, five-year vision and Why Inaya Wins now cover both engines.
+// Every revenue figure is from the Combined Financial Model (Base): DePIN 91% of Year 1 and 98% of Year 5.
+//
 // v1.2 (26 Nov 2026): factual refresh only: Inaya Commerce and its approved price table, Inaya Connect
 // (WhatsApp, Business + Enterprise only), Why Inaya page and its comparison set, roadmap counts (41 of 46),
 // rebrand typo fixed. Strategy sections unchanged pending founder decisions.
@@ -103,9 +108,9 @@ export const gtmStrategy = {
       { value: "6.49 USDT", label: "per TB a month, storage network list price" },
       { value: "35%", label: "of storage revenue shared with node operators" },
     ],
-    docLine: "Document INAYA-GTM-2026-V1.2 · Classification Confidential · Prepared for Strategic Investors · November 2026",
+    docLine: "Document INAYA-GTM-2026-V1.3 · Classification Confidential · Prepared for Strategic Investors · November 2026",
   },
-  docId: "INAYA-GTM-2026-V1.2",
+  docId: "INAYA-GTM-2026-V1.3",
   glance: {
     title: "Two Engines, One Infrastructure",
     blocks: [
@@ -114,7 +119,16 @@ export const gtmStrategy = {
         type: "columns",
         items: [
           { heading: "Engine 1 — Storage network (DePIN)", body: "Buyer: developers, Web3 and AI teams, enterprises with storage-cost or sovereignty problems.\nProduct: encrypted, sharded storage on BNB Chain, SDKs, S3 and Azure Blob compatible APIs.\nPrice: 6.49 USDT per TB a month; Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year.\nStatus: live on testnet; mainnet follows the security audit." },
-          { heading: "Engine 2 — Business OS (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: back office (documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns), front office and online selling (Inaya Commerce) and WhatsApp (Inaya Connect), in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027. In November 2026 the Business Workspace became Inaya Business OS, a Business Operations Platform, and added Inaya Commerce: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync — back office, front office and online selling on the same stock and books — and Inaya Connect, which connects a company's own WhatsApp Business number (Business and Enterprise plans)." },
+          { heading: "Engine 2 — Business OS (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: back office (CRM, finance, HR, inventory, purchasing, documents, booking and email), front office and online selling (Inaya Commerce: point of sale, web store, Shopify and WooCommerce) and WhatsApp (Inaya Connect), in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027." },
+        ],
+      },
+      {
+        type: "table",
+        headers: ["Base-case revenue (Combined Financial Model)", "Year 1", "Year 3", "Year 5", "Role"],
+        rows: [
+          ["Engine 1 — DePIN storage", "$499K", "$8.65M", "$71.3M", "The main revenue and the main value: Corporate Reserve storage after mainnet"],
+          ["Engine 2 — Inaya Business OS", "$47K", "$488K", "$1.17M", "Revenue before mainnet, independent of the token; proves we can sell and brings companies onto the same infrastructure"],
+          ["Total", "$546K", "$9.13M", "$72.4M", "Profitable from Year 2; the $2M pre-seed covers the Year 1 loss"],
         ],
       },
       {
@@ -230,6 +244,11 @@ export const gtmStrategy = {
           heading: "Commercial Strategy",
           body:
             "Rather than relying solely on traditional enterprise sales, Inaya employs a multi-channel commercial strategy centered on product-led growth. The company believes that developer adoption represents the most scalable acquisition channel for infrastructure software. The GTM strategy therefore focuses on interconnected growth engines, starting with Developer Adoption: developers integrate the SDK into applications; applications generate storage demand; storage demand attracts enterprise customers; enterprise growth expands node participation; network quality improves; more developers adopt the platform. This self-reinforcing growth loop enables efficient customer acquisition while reducing long-term dependence on paid marketing.",
+        },
+        {
+          type: "note",
+          label: "Two engines, two motions, one company.",
+          text: "Inaya runs two go-to-market motions in parallel. Engine 1, the DePIN storage network, is sold developer-first and through Corporate Reserve contracts; in the Base case of the Combined Financial Model it produces 91% of Year 1 revenue and 98% of Year 5 revenue, and the company's profit. Engine 2, Inaya Business OS, is sold directly to small and mid-sized companies by a sales team; it earns before mainnet, does not depend on the token, and proves commercial execution while the storage network completes its audit. Neither engine is a side project: one carries the scale, the other carries the near-term proof.",
         },
         {
           type: "subsection",
@@ -662,10 +681,10 @@ export const gtmStrategy = {
           body:
             "This is a genuinely distinct segment from Phases One through Four — the buyer isn't motivated by storage economics, vendor lock-in, or DePIN at all. They're evaluating Inaya Business OS the same way they'd evaluate any B2B SaaS tool: does it solve a real operational problem for our team.",
           bullets: [
-            "Target buyers — small and mid-sized businesses and departments within larger organizations that manage documents, approvals, and team permissions through email attachments, shared drives, or spreadsheets today.",
+            "Target buyers — small and mid-sized companies that run their day on spreadsheets, separate shop and accounting tools, and WhatsApp: shops and multi-branch retailers, manufacturers and pharma, traders and distributors, schools and colleges, clinics, restaurants and service businesses with technicians in the field.",
             "Their primary pain points — document sprawl across email and shared drives; no real approval workflow (who approved what, and when, is often unclear); permission chaos (everyone has access to everything, or nobody knows who has access to what); no audit trail when something goes wrong; growing compliance pressure without the tooling to support it.",
-            "Why they adopt Inaya's Business OS — organizations, departments, projects, and documents with server-enforced approval workflows; VIEW/EDIT/MANAGE permissions and three document access levels; secure external sharing with expiring, revocable links; a full, immutable audit history; a permission-aware AI assistant that answers questions instead of requiring a search through folders; email-based sign-in, no wallet or blockchain literacy required.",
-            "What makes this different from Phase Three — a Phase Three (storage) buyer is trying to solve a cost or ownership problem with their existing infrastructure. A Phase Five buyer doesn't have an infrastructure problem in mind at all — they have a document-and-workflow problem, and the DePIN storage underneath is invisible to their buying decision.",
+            "Why they adopt Inaya Business OS (November 2026) — back office (CRM, finance, HR, inventory, purchasing, AI Bookkeeper), front office and online selling (Inaya Commerce with offline selling and Shopify / WooCommerce sync) and WhatsApp (Inaya Connect) on the same stock, customers and books; industry editions; local pricing in PKR or USD; setup done for them. The original reasons still hold: organizations, departments, projects, and documents with server-enforced approval workflows; VIEW/EDIT/MANAGE permissions and three document access levels; secure external sharing with expiring, revocable links; a full, immutable audit history; a permission-aware AI assistant that answers questions instead of requiring a search through folders; email-based sign-in, no wallet or blockchain literacy required.",
+            "What makes this different from Phase Three — a Phase Three (storage) buyer is trying to solve a cost or ownership problem with their existing infrastructure. A Phase Five buyer doesn't have an infrastructure problem in mind at all — they have an operations problem (stock, sales, staff, customers), and the DePIN storage underneath is invisible to their buying decision.",
           ],
         },
         {
@@ -745,6 +764,16 @@ export const gtmStrategy = {
           type: "note",
           label: "Positioning Statement.",
           text: "Inaya Network is the developer-first decentralized storage platform that enables organizations to achieve true digital sovereignty through client-side encryption, binary sharding, and enterprise-ready infrastructure — without sacrificing usability.",
+        },
+        {
+          type: "note",
+          label: "Positioning Statement — Inaya Business OS.",
+          text: "Inaya Business OS is the business operations platform for growing companies: back office, shop counter, online stores and WhatsApp on one connected system, with the same stock, customers and books everywhere, on encrypted infrastructure with ransomware protection on by default — priced for emerging markets.",
+        },
+        {
+          type: "note",
+          label: "Company line.",
+          text: "One encrypted infrastructure, sold two ways: as sovereign storage to developers and enterprises (Engine 1), and as everyday business software to companies that never need to know it is there (Engine 2).",
         },
         {
           type: "columns",
@@ -919,7 +948,7 @@ export const gtmStrategy = {
         {
           type: "lead",
           text:
-            "Inaya Business OS competes in an entirely different category from Inaya's storage protocol: enterprise document and workflow management, not decentralized storage. Business buyers evaluating it are not comparing it against decentralized storage providers at all — they're comparing it to the document and collaboration tools they already use day to day.",
+            "Inaya Business OS competes in an entirely different category from Inaya's storage protocol: business operations software (ERP, point of sale and workflow), not decentralized storage. Today the closest competitors are Odoo and Zoho (all-in-one business software) and Lightspeed, Shopify and Cin7 (shop and stock systems); the comparison with those is in the note at the end of this section and, with sources, on the public Why Inaya page. The document-management comparison below is where the product started. Business buyers evaluating it are not comparing it against decentralized storage providers at all — they're comparing it to the document and collaboration tools they already use day to day.",
         },
         {
           type: "columns",
@@ -1183,6 +1212,21 @@ export const gtmStrategy = {
           heading: "Inaya Business OS Sales Motion (live since November 2026)",
           body: "The Workspace is sold differently from storage: outbound and assisted rather than developer-led. A company is created self-serve; its owner requests a package inside the Workspace; the team contacts them within one working day, emails a numbered invoice, and activates the package when the NayaPay or bank transfer arrives. Onboarding is carried by a public demo video, a customer onboarding guide, and a support assistant in the Help panel that fixes common account problems. Payments are confirmed by the team, not an automatic gateway, which suits markets where bank transfer is the norm.",
         },
+        {
+          type: "bullets",
+          lead: "Business OS channels in use today (November 2026):",
+          items: [
+            "Pilot programmes by industry: Pakistan (10 places, priced in PKR), nine Asian countries (10 places each, priced in USD) and UK outreach.",
+            "Founder-approved outbound email to business leads, tracked in Inaya's own CRM, with an investor outreach track running alongside.",
+            "WhatsApp: through Inaya Connect, the product now meets owners where they already work, and our own WhatsApp support number follows Meta business verification after incorporation in March 2027.",
+            "Public proof: a demo video per area, the Why Inaya comparison page, a documentation site and customer guides.",
+          ],
+        },
+        {
+          type: "subsection",
+          heading: "Engine 1 Sales Motion — Corporate Reserve",
+          body: "The storage network's revenue is concentrated in Corporate Reserve contracts (250, 500 and 1,000 TB a year). These are sold account by account to enterprises, AI teams and Web3 companies after mainnet, on top of developer adoption through the SDK and the S3, Azure and Google Cloud compatible APIs, which let a buyer test with the tools they already use. Business OS customers are a natural route in: they already trust Inaya with their files.",
+        },
       ],
     },
     {
@@ -1346,7 +1390,11 @@ export const gtmStrategy = {
       blocks: [
         {
           type: "lead",
-          text: "The complete commercial funnel: Awareness (educational content, Knowledge Base, developer documentation) → SDK Download → Application Integration → Production Usage → Storage Growth → Enterprise Sales → Corporate Expansion → Long-Term Contract.",
+          text: "Engine 1 (DePIN storage): Awareness (educational content, Knowledge Base, developer documentation) → SDK Download or S3 / Azure / GCS-compatible test → Application Integration → Production Usage → Storage Growth → Enterprise Sales → Corporate Reserve → Long-Term Contract.",
+        },
+        {
+          type: "lead",
+          text: "Engine 2 (Inaya Business OS): Industry outreach, pilot offer or referral → demo and proposal in the buyer's currency → package requested in the workspace → invoice paid by bank transfer or NayaPay → setup and training → add-ons (Commerce, extra users) and upgrade to Business or Enterprise. The Combined Financial Model plans this funnel per salesperson (about 3.5 new customers a month each) and will replace its placeholder rates with real pipeline data after the first quarter.",
         },
         {
           type: "note",
@@ -1406,6 +1454,7 @@ export const gtmStrategy = {
           items: [
             { heading: "Network Metrics", body: "Storage Capacity\nActive Nodes\nGeo Distribution\nAvailability\nUpload / Retrieval Time" },
             { heading: "Marketing Metrics", body: "Organic Traffic\nBlog Readers\nX Engagement\nDev Referrals\nCommunity Growth\nSEO Rankings" },
+            { heading: "Business OS Metrics", body: "Pilot places filled\nDemos and proposals\nPaying companies\nMRR by package and country\nAdd-on take-up (Commerce)\nMonthly churn (model: 1%)" },
           ],
         },
         {
@@ -1450,7 +1499,7 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Execution Priorities",
-          body: "The company's priorities are deliberately sequenced: (1) Developer Adoption — without developers there are no applications, without applications there is no storage demand. (2) Enterprise Validation — confirms commercial viability: customer references, recurring revenue, product validation, investor confidence. (3) Infrastructure Expansion — only after commercial demand is validated should significant infrastructure expansion occur, minimizing unnecessary operational expenditure.",
+          body: "Two tracks run in parallel. Track A, Inaya Business OS: public launch on 1 January 2027, convert pilots into paying companies, and prove the sales funnel; this is revenue that does not wait for mainnet. Track B, the DePIN storage network: the independent security audit, then mainnet, then Corporate Reserve contracts, which carry most of the company's revenue in the financial model. Within Track B the original sequence still applies: (1) Developer Adoption — without developers there are no applications, without applications there is no storage demand. (2) Enterprise Validation — confirms commercial viability: customer references, recurring revenue, product validation, investor confidence. (3) Infrastructure Expansion — only after commercial demand is validated should significant infrastructure expansion occur, minimizing unnecessary operational expenditure.",
         },
       ],
     },
@@ -1460,6 +1509,20 @@ export const gtmStrategy = {
       part: "III",
       title: "Twenty-Four Month Roadmap",
       blocks: [
+        {
+          type: "table",
+          headers: ["2027", "Engine 1 — DePIN storage", "Engine 2 — Inaya Business OS"],
+          rows: [
+            ["Q1", "Pre-seed closes; independent security audit commissioned", "Public launch 1 January; first pilots convert to paid; incorporation in March unlocks Meta business verification and partner programmes"],
+            ["Q2", "Audit findings fixed; node operator onboarding; mainnet when the audit is clean", "Two international salespeople; Pakistan team; first Commerce shops live on real hardware"],
+            ["Q3", "First Corporate Reserve contracts; storage billing live", "Pipeline data replaces the model's placeholder funnel rates; one-click WhatsApp setup once Inaya is a Meta Tech Provider"],
+            ["Q4", "Corporate Reserve expansion; enterprise storage pilots from Business OS customers", "Expansion across the nine pilot countries; first compliance certification work"],
+          ],
+        },
+        {
+          type: "note",
+          text: "Dates on the storage track depend on the audit; the Business OS track does not. The quarterly themes below describe the developer-ecosystem work that runs underneath Engine 1 throughout.",
+        },
         {
           type: "columns",
           items: [
@@ -1645,8 +1708,8 @@ export const gtmStrategy = {
         {
           type: "subsection",
           heading: "Within Five Years",
-          body: "Inaya will become the leading developer-first sovereign storage platform.",
-          bullets: ["Global developer ecosystem", "Enterprise customer base", "Mature SDK ecosystem", "Strong recurring revenue", "Widely recognized brand", "Large-scale decentralized infrastructure"],
+          body: "Inaya will become the leading developer-first sovereign storage platform, and Inaya Business OS the everyday operations platform for growing companies across Pakistan and Asia. In the Base case of the Combined Financial Model, Year 5 revenue is $72.4M: $71.3M from DePIN storage and $1.17M from Business OS.",
+          bullets: ["Global developer ecosystem", "Enterprise customer base", "Mature SDK ecosystem", "Strong recurring revenue", "Widely recognized brand", "Large-scale decentralized infrastructure", "Thousands of companies running their operations on Inaya Business OS"],
         },
         {
           type: "note",
@@ -1696,7 +1759,7 @@ export const gtmStrategy = {
         {
           type: "bullets",
           lead: "Inaya combines:",
-          items: ["Enterprise-grade security", "Client-side encryption", "Zero-knowledge architecture", "Binary sharding", "Modern SDK ecosystem", "Mobile support", "AI-ready infrastructure", "Developer-first experience"],
+          items: ["Enterprise-grade security", "Client-side encryption", "Zero-knowledge architecture", "Binary sharding", "Modern SDK ecosystem", "Mobile support", "AI-ready infrastructure", "Developer-first experience", "A live business operations platform (back office, front office, online selling and WhatsApp) earning before mainnet", "Two revenue engines on one infrastructure, so progress in one is not hostage to the other"],
         },
         {
           type: "lead",
@@ -1706,7 +1769,7 @@ export const gtmStrategy = {
           type: "subsection",
           heading: "Final Investment Thesis",
           body:
-            "The global infrastructure landscape is entering a new phase driven by artificial intelligence, digital sovereignty, cybersecurity, and enterprise cloud optimization. While centralized cloud providers remain foundational to modern computing, growing demand for ownership, privacy, resilience, and developer-centric infrastructure creates a significant opportunity for next-generation platforms. Inaya Network addresses this opportunity through a differentiated combination of developer-first adoption, enterprise-ready architecture, zero-knowledge security, client-side encryption, Binary Midpoint Bisection sharding, a production-ready SDK ecosystem, Product-Led Growth, and scalable recurring revenue.",
+            "The global infrastructure landscape is entering a new phase driven by artificial intelligence, digital sovereignty, cybersecurity, and enterprise cloud optimization. While centralized cloud providers remain foundational to modern computing, growing demand for ownership, privacy, resilience, and developer-centric infrastructure creates a significant opportunity for next-generation platforms. Inaya Network addresses this opportunity through a differentiated combination of developer-first adoption, enterprise-ready architecture, zero-knowledge security, client-side encryption, Binary Midpoint Bisection sharding, a production-ready SDK ecosystem, Product-Led Growth, and scalable recurring revenue — with Inaya Business OS earning from companies today while the storage network moves through its audit to mainnet, where the bulk of the revenue lies.",
         },
         {
           type: "quote",
