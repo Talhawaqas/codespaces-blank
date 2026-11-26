@@ -1213,6 +1213,50 @@ export const ROADMAP_STAGES = [
     ],
     notes: "Live on inayanetwork.com/business.",
   },
+  {
+    number: 45,
+    title: "Why Inaya Business OS — Differentiators, Comparison and AI Walkthrough",
+    status: ROADMAP_STATUS.LIVE,
+    description: "One page that explains what Inaya Business OS does, what makes it different, and how it compares with the tools businesses use today.",
+    securityStatement: "The optional AI walkthrough only uses what a visitor types in; nothing is stored against a company.",
+    groups: [
+      {
+        title: "The page",
+        items: [
+          "Differentiators: back office, front office and online selling on one connected system, with ransomware resilience",
+          "A comparison with Odoo, Shopify, Lightspeed, Zoho and Cin7, with sources",
+          "An optional AI walkthrough for a visitor's own business, with a spoken explainer",
+        ],
+      },
+    ],
+    notes: "Live on inayanetwork.com/business/why-inaya.",
+  },
+  {
+    number: 46,
+    title: "Inaya Connect — WhatsApp Business & AI Gateway",
+    status: ROADMAP_STATUS.LIVE,
+    description: "A company's own WhatsApp Business number connected to the whole Business OS: one team inbox, answers about the business on WhatsApp, and bills and files sent on WhatsApp landing in the right place.",
+    securityStatement: "Official WhatsApp Cloud API only. Every message must carry a valid Meta signature for that company's number; keys are encrypted and never shown again; staff answers follow each person's permissions and WhatsApp is read-only; customers' own records are shared only after an email code.",
+    groups: [
+      {
+        title: "For the team",
+        items: [
+          "Link a phone in one tap (or by QR code), then ask about sales, stock, work and repair orders, orders waiting to go out and today's rota",
+          "Bills, invoices and receipts sent on WhatsApp go to AI Bookkeeper as drafts, recognised from the caption or by AI from the image",
+          "Other files saved in a dated Inaya Connect folder, with an email to the sender giving the path and a link",
+        ],
+      },
+      {
+        title: "For customers",
+        items: [
+          "One shared inbox: reply, take over or resume the assistant, assign, internal notes and one-click Support Desk tickets",
+          "Greeting, business hours and after-hours replies; STOP and START respected",
+          "An optional customer assistant: help-article answers, and a customer's own orders, repairs, appointments and invoices after a 6-digit email code",
+        ],
+      },
+    ],
+    notes: "Included in the Business and Enterprise plans; verified live on our own WhatsApp number on 26 November 2026. Setup is guided in the customer's own Meta account; one-click sign-up follows Meta Tech Provider status.",
+  },
 ];
 
 export const VISION = {

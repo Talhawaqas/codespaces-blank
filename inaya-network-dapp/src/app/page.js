@@ -3358,6 +3358,9 @@ export default function Home() {
         { text: "Commerce pricing live: Commerce Starter on Professional, the Commerce add-on on Business, a Business + Commerce bundle, and Commerce included in Enterprise; plus Suggest an improvement, so customers can send and vote on ideas", done: true },
         { text: "Offline selling and till hardware (Beta, with pilot shops): cash sales continue during an internet outage, even after a restart, and sync exactly once when it returns; silent receipt printing, cash drawers, A4/A5 receipts, barcode labels, and camera or phone scanning (desktop app 0.3.1)", done: true },
         { text: "The Business Workspace is now Inaya Business OS, a Business Operations Platform: a new landing page, a modern look across every screen, and an illustrated user guide; the desktop app follows in 0.3.2", done: true },
+        // Added 26 November 2026: Why Inaya page (stage 45) and Inaya Connect (stage 46) in Inaya Business OS.
+        { text: "Why Inaya Business OS: a page with the differentiators, a source-linked comparison with Odoo, Shopify, Lightspeed, Zoho and Cin7, and an optional AI walkthrough", done: true },
+        { text: "Inaya Connect (Business and Enterprise): a company's own WhatsApp Business number connected to Inaya Business OS through the official Cloud API; a shared team inbox with Support Desk tickets, a business assistant staff can ask about sales, stock and orders, an optional customer assistant with email-code verification, and bills sent on WhatsApp going to AI Bookkeeper as drafts", done: true },
       ],
     },
     {

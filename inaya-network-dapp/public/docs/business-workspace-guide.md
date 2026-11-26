@@ -323,6 +323,18 @@ Sell online from the same products, stock and books as your shop. You can have y
 
 Part 5, IT Services: Security, ransomware protection, backups, network storage, company settings, users and help.
 
+## Inaya Connect: WhatsApp for Your Business (Business and Enterprise)
+
+Connect your company's own WhatsApp Business number to Inaya Business OS (menu: Customer service › Inaya Connect).
+
+- **Ask on WhatsApp.** Link your phone once (Inaya Connect › My WhatsApp › Get my link code, then tap Open WhatsApp and press Send). Then ask "How much did we sell today?", the stock of an item, or the status of a work order. Answers follow your own permissions; WhatsApp is read-only.
+- **Send bills and files.** Bills, invoices and receipts go to AI Bookkeeper as drafts for review. Other files are saved in the dated Inaya Connect folder, and you get an email with the path and a link. Find them under Inaya Connect › My files.
+- **One inbox for customer chats.** Reply, take over or resume the assistant, assign, add internal notes, or turn a chat into a support ticket.
+- **Optional customer assistant.** Customers get answers from your help articles, and their own orders, repairs, appointments and invoices after a 6-digit email code.
+- **Setup.** An owner or admin connects the number on Inaya Connect › Connection by following the checklist there, entirely in your own Meta account. Never share your Facebook password or Meta admin access with anyone.
+
+Full guide: inayanetwork.com/docs/products/inaya-connect
+
 ## 14. IT and Security (Part 5: IT Services)
 
 For: IT staff, owners and admins

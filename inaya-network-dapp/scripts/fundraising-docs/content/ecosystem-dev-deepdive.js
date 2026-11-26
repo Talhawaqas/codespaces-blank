@@ -1334,5 +1334,13 @@ export const ecosystemDevDeepdive = {
         {"type":"note","text":"Tests: test/commerce-*.test.mjs (sale, returns, orders and reports, foundation, offline, scanner), test/growth.test.mjs, test/online-commerce.test.mjs; test-ui/barcode.test.js decodes every generated barcode with the ZXing reader."},
       ],
     },
+    {
+      number: "47",
+      title: "Inaya Connect Reference (November 2026)",
+      blocks: [
+        {"type":"table","headers":["Module / route","Purpose"],"rows":[["src/lib/connect/core.js","Feature gate (FEATURE_INAYA_CONNECT, Business and Enterprise), record kinds, settings, access levels (admin / agent / member)"],["src/lib/connect/connection.js","Connect, verify with Meta, link the WABA to the app (subscribed_apps), rotate the verify token, disconnect"],["src/lib/connect/webhook.js + /api/connect/whatsapp","Public webhook: verify handshake, signature check per company, de-duplicated storage"],["src/lib/connect/process.js + /api/cron/connect","Message pipeline: opt-out, rate limits, link codes, sender type, hand-over, assistants; leased retries"],["src/lib/connect/intake.js","Documents: safety checks, bill detection (caption, supplier or AI image check), AI Bookkeeper routing, dated folder and email"],["src/lib/connect/tools.js + assistant.js","Read-only business tools (sales, stock, orders, rota, finance) and the two assistants behind the AI security gateway"],["src/lib/connect/inbox.js + /api/orgs/connect/*","Team inbox, documents, usage and events; Support Desk tickets"]]},
+        {"type":"note","text":"Tests: test/inaya-connect.test.mjs (12 groups on the test database with a fake Meta and scripted AI), plus the UI tests in test-ui."},
+      ],
+    },
   ],
 };

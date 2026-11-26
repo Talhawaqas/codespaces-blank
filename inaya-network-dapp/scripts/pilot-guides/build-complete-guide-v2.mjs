@@ -172,6 +172,8 @@ section("Inaya Commerce — Overview", [...lead("The front office and online sel
 section("Inaya Commerce — The Shop Counter", fromMd("docs/commerce/USER_GUIDE_POS.md"));
 section("Inaya Commerce — Till Hardware and Offline Selling (Beta)", fromMd("docs/commerce/USER_GUIDE_HARDWARE_OFFLINE.md"));
 section("Inaya Commerce — Online Selling, Shopify and WooCommerce", fromMd("docs/commerce/USER_GUIDE_ONLINE.md"));
+// Inaya Connect (WhatsApp Business & AI Gateway SOW, 25-26 Nov 2026), from the public docs article
+section("Inaya Connect — WhatsApp Business and AI Gateway", fromMd("content/docs/products/inaya-connect.md"));
 for (const [t, f] of [["Health OS and Legal OS", "HEALTH_LEGAL_OS_USER_SUMMARY.md"], ["Financial Services, Private Capital and Regulated Enterprise OS", "FINANCIAL_REGULATED_SOW_USER_SUMMARY.md"], ["Government and Public Sector OS", "GOVERNMENT_OS_USER_SUMMARY.md"], ["Enterprise OS", "ENTERPRISE_OS_USER_SUMMARY.md"], ["Business OS: Four Extensions (Data Room Templates, What-If Studio and more)", "Business Workspace - Four New Features Update.md"], ["The Hackathon", "Hackathon_Announcement_Summary.md"]]) { const p = path.join(EXTRA, f); section(t, existsSync(p) ? fromMd(p) : (missing.push(f), [])); }
 {
   const b = []; for (const [t, f] of [["Cross-chain bridge", "../CROSS_CHAIN_BRIDGE_USER_SUMMARY.md"], ["Interoperability layer", "../INTEROP_LAYER_USER_SUMMARY.md"], ["Multichain update", "../MULTICHAIN_UPDATE_USER_SUMMARY.md"], ["Security layer", "../SECURITY_LAYER_USER_SUMMARY.md"], ["Node registry and daemon", "../NODE_REGISTRY_AND_DAEMON_SUMMARY.md"], ["The desktop apps", "../DAPP_DESKTOP_APP_USER_SUMMARY.md"]]) { b.push({ type: "subsection", heading: t }, ...fromMd(f)); }

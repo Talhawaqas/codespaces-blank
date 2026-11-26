@@ -67,6 +67,7 @@ export const companyProfile = {
             "Web dApp — faucet, encrypted vault upload/download, staking, referrals, and a live Corporate Reserve purchase flow.",
             "Business OS — a standalone B2B SaaS product (organizations, departments, projects, documents, workflow, permissions, billing) plus real business operations (Tasks, CRM, Procurement, Inventory) and a Finance & HR layer (invoices, expenses, employee records, leave management), web and mobile.",
             "Inaya Commerce (November 2026) — the front office and online selling on the same stock and books: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync.",
+            "Inaya Connect (November 2026) — WhatsApp Business connected to the whole back and front office (Business and Enterprise plans): a shared team inbox, a business assistant for staff, an optional customer assistant, and bills sent on WhatsApp landing in AI Bookkeeper.",
             "Security Layer (\"Inaya Firewall\") — decentralized, node-reported threat intelligence with on-chain-confirmed verdicts, surfaced publicly, on mobile, and enforced at the OS level on desktop.",
             "Inaya Learn — an educational video platform with an AI tutor, on web and mobile.",
             "Investor Data Room — access-controlled document sharing with per-visitor engagement analytics.",

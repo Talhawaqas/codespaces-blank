@@ -57,6 +57,7 @@ s.append(table([
     ["Inventory", "Products, stock levels and low-stock alerts, stock movements, warehouses"],
     ["Documents", "Encrypted files, secure sharing, e-signatures, generated invoices and documents"],
     ["Admin", "Users and roles, company settings, account security, audit trail, activity log"],
+    ["WhatsApp with Inaya Connect (Business and Enterprise)", "Your own WhatsApp Business number in one team inbox; ask \"how much did we sell today?\" on WhatsApp; bills sent on WhatsApp go to AI Bookkeeper"],
     ["Inaya Commerce (optional add-on)", "Point of sale, stock across branches, loyalty and gift cards, your own web store with Shopify and WooCommerce sync: Commerce Starter on Professional (PKR 8,000 a month), the Commerce add-on on Business (PKR 12,000), included in Enterprise"],
 ], [W * 0.30, W * 0.70]))
 s.append(Paragraph("Packages and pilot prices", H2))

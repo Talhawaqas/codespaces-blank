@@ -95,6 +95,7 @@ export const communityFaqs = {
             "Inaya Learn — browse and watch curated educational videos on Web3, AI, and programming, with a built-in AI tutor. No wallet needed.",
             "Security — check whether a domain or IP has been flagged by the network's decentralized threat-intelligence layer, right from the public website. No wallet needed.",
             "Business OS — if your company needs document management with real approval workflows and permissions, it's a separate sign-up with just an email address.",
+            "Inaya Connect — on the Business and Enterprise plans, connect your own WhatsApp Business number: one inbox for customer chats, ask \"how much did we sell today?\" on WhatsApp, and send bills to AI Bookkeeper from your phone.",
             "Inaya Commerce — if you run a shop: a till (it keeps selling cash sales when the internet drops, in Beta), stock across branches, loyalty and gift cards, and your own web store with Shopify and WooCommerce sync.",
             "OS Home — once you're signed in (either with a wallet or a Business OS account), a single home screen now shows you what actually needs your attention: real notifications, a trust/health check on your data, and one search box that finds anything across every part of the app.",
             "Trust Center — visit inayanetwork.com/trust and independently verify Inaya's own security claims yourself, right in your browser, without logging in.",

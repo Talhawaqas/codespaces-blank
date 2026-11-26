@@ -1083,5 +1083,14 @@ export const ecosystemOverview = {
         {"type":"lead","text":"The Business Workspace is now Inaya Business OS, a Business Operations Platform: run your whole business on one connected system. A new landing page, a modern look across every screen and an illustrated user guide came with the new name; companies, data and sign-in are unchanged."},
       ],
     },
+    {
+      number: "46",
+      title: "Inaya Connect: WhatsApp Business & AI Gateway (November 2026)",
+      blocks: [
+        {"type":"lead","text":"Business owners in our markets run their day on WhatsApp. Inaya Connect plugs a company's own WhatsApp Business number into Inaya Business OS, on the Business and Enterprise plans."},
+        {"type":"bullets","items":["A business assistant for staff: link a phone in one tap, then ask about sales, stock, work and repair orders, orders waiting to go out and today's rota. Answers follow each person's permissions and branches; WhatsApp is read-only.","Documents on WhatsApp: bills, invoices and receipts (recognised from the caption, or by AI from the image) go to AI Bookkeeper as drafts; other files are saved in a dated Inaya Connect folder and the sender is emailed the path.","One team inbox for customer chats: reply, take over or resume the assistant, assign, internal notes and one-click Support Desk tickets, with WhatsApp's 24-hour rule enforced.","An optional customer assistant: answers from help articles, and a customer's own orders, repairs, appointments and invoices only after a 6-digit email code."]},
+        {"type":"note","label":"What's live today vs. what's next.","text":"Built, tested and verified live on our own WhatsApp number on 26 November 2026. Setup is guided in the customer's own Meta account; one-click sign-up follows Meta Tech Provider status, which needs company verification. Proactive template alerts are not in this release."},
+      ],
+    },
   ],
 };

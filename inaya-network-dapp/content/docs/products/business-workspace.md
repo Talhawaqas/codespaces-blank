@@ -50,6 +50,7 @@ Tasks, CRM, Procurement, Inventory, Finance, and HR are real, shipped, integrate
 Alongside them:
 
 - [Appointments & Email Marketing](/docs/products/appointments-email-marketing): a public booking page, team calendars and reminders, plus approved email campaigns and follow-up sequences to CRM contacts (Business and Enterprise packages).
+- [Inaya Connect](/docs/products/inaya-connect): your own WhatsApp Business number connected to the workspace: a shared team inbox, a business assistant staff can ask about sales, stock and orders, an optional customer assistant, and bills sent on WhatsApp landing in AI Bookkeeper (Business and Enterprise packages).
 - [AI Bookkeeper](/docs/products/ai-bookkeeper), [Document & Invoice Automation](/docs/products/document-automation), [Automations](/docs/products/ai-business-operations-manager) and the [Customer Portal](/docs/products/customer-portal).
 
 ## Industry editions
@@ -70,3 +71,4 @@ See [Storage Control Plane & Terraform Provider](/docs/products/storage-control-
 - [Appointments & Email Marketing](/docs/products/appointments-email-marketing)
 - [Education OS](/docs/products/education-os)
 - [Hospitality OS](/docs/products/hospitality-os)
+- [Inaya Connect](/docs/products/inaya-connect)

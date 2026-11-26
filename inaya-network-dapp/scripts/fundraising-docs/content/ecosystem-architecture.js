@@ -2101,5 +2101,16 @@ export const ecosystemArchitecture = {
         {"type":"bullets","items":["Appointments: a public booking page with team calendars and Google/Outlook calendar sync through calendar files, without a paid API.","Hospitality OS: locations, tables and reservations that refuse double bookings, connected to the CRM and inventory.","Launch readiness: packages requested in the Workspace and paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, and daily encrypted backups.","License Manager: licences tied to packages with a 14-day grace period and automatic suspension that keeps Billing, Help and the data export available."]},
       ],
     },
+    {
+      number: "66",
+      title: "Inaya Connect Architecture (November 2026)",
+      blocks: [
+        {"type":"lead","text":"Inaya Connect uses Meta's official WhatsApp Cloud API only. Each company brings its own Meta app and number, and Meta bills the company directly. Like Commerce, it adds no new database collections: records are kind-scoped in an existing collection with one new index."},
+        {"type":"subsection","heading":"One webhook, strict tenant routing","body":"A single public webhook serves every company. The company is identified only from Meta's phone-number ID, and each event must carry a valid X-Hub-Signature-256 made with that company's App secret; unknown numbers and bad signatures are rejected and logged. Messages are stored once (de-duplicated by Meta's message ID), Meta is answered immediately, replies are produced afterwards, and a five-minute job retries anything left over."},
+        {"type":"subsection","heading":"Secrets","body":"The App secret and access key are encrypted at rest with the integration key, never returned to any screen, and wiped on disconnect. The webhook verify token is stored only as a hash."},
+        {"type":"subsection","heading":"AI safety","body":"Both assistants run through the AI security gateway (rate limits, approved model, manipulation screening, personal-data redaction in answers). WhatsApp text is untrusted input. The staff assistant's tools are read-only and scoped to the member's role and branches; the customer assistant shares a customer's own records only after a 6-digit code to the email on file."},
+        {"type":"subsection","heading":"Files","body":"Size and type limits, a content-signature check and a malware scan before storage. Files from unknown senders or that fail a check are quarantined and never opened. Bills go to AI Bookkeeper as drafts through its ingestion API; nothing is approved or paid automatically."},
+      ],
+    },
   ],
 };

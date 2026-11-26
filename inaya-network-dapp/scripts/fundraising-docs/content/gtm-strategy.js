@@ -77,6 +77,10 @@
 // elsewhere. Factual only, hedged, no numbers, no superlative claims —
 // doesn't touch anything PROTECTED above.
 
+// v1.2 (26 Nov 2026): factual refresh only: Inaya Commerce and its approved price table, Inaya Connect
+// (WhatsApp, Business + Enterprise only), Why Inaya page and its comparison set, roadmap counts (41 of 46),
+// rebrand typo fixed. Strategy sections unchanged pending founder decisions.
+//
 // NOVEMBER 2026 EDITION (v1.1, 16 Nov 2026) — redesigned layout (buildStrategyBookHTML: cover with
 // headline figures, an "at a glance" page, full-bleed Part dividers, page numbers) and a factual
 // refresh: Inaya Business OS launch on 1 January 2027, the real price books of both engines
@@ -99,9 +103,9 @@ export const gtmStrategy = {
       { value: "6.49 USDT", label: "per TB a month, storage network list price" },
       { value: "35%", label: "of storage revenue shared with node operators" },
     ],
-    docLine: "Document INAYA-GTM-2026-V1.1 · Classification Confidential · Prepared for Strategic Investors · November 2026",
+    docLine: "Document INAYA-GTM-2026-V1.2 · Classification Confidential · Prepared for Strategic Investors · November 2026",
   },
-  docId: "INAYA-GTM-2026-V1.1",
+  docId: "INAYA-GTM-2026-V1.2",
   glance: {
     title: "Two Engines, One Infrastructure",
     blocks: [
@@ -110,14 +114,14 @@ export const gtmStrategy = {
         type: "columns",
         items: [
           { heading: "Engine 1 — Storage network (DePIN)", body: "Buyer: developers, Web3 and AI teams, enterprises with storage-cost or sovereignty problems.\nProduct: encrypted, sharded storage on BNB Chain, SDKs, S3 and Azure Blob compatible APIs.\nPrice: 6.49 USDT per TB a month; Corporate Reserve 17,970 / 34,740 / 65,880 USDT a year.\nStatus: live on testnet; mainnet follows the security audit." },
-          { heading: "Engine 2 — Business OS (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns, in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027. In November 2026 Inaya Business OS became Inaya Business OS, a Business Operations Platform, and added Inaya Commerce: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync — back office, front office and online selling on the same stock and books." },
+          { heading: "Engine 2 — Business OS (SaaS)", body: "Buyer: small and mid-sized companies, by industry.\nProduct: back office (documents, approvals, CRM, finance, HR, inventory, purchasing, booking and email campaigns), front office and online selling (Inaya Commerce) and WhatsApp (Inaya Connect), in eight editions.\nPrice: $7.99 / $39 / $99 / $799 a month (PKR 8,000–60,000 in Pakistan).\nStatus: live; public launch 1 January 2027. In November 2026 the Business Workspace became Inaya Business OS, a Business Operations Platform, and added Inaya Commerce: a point of sale with offline selling (Beta), stock control across branches, loyalty and gift cards, and an Inaya web store with two-way Shopify and WooCommerce sync — back office, front office and online selling on the same stock and books — and Inaya Connect, which connects a company's own WhatsApp Business number (Business and Enterprise plans)." },
         ],
       },
       {
         type: "stats",
         items: [
           { value: "8", label: "Workspace editions: general business plus seven industries" },
-          { value: "29", label: "of 34 Business OS roadmap stages live (5 in progress)" },
+          { value: "41", label: "of 46 Business OS roadmap stages live (5 in progress)" },
           { value: "3", label: "pilot programmes: Pakistan, Asia (9 countries), UK" },
           { value: "3", label: "ways to use it: web, desktop (Windows, Linux) and Android" },
         ],
@@ -130,6 +134,7 @@ export const gtmStrategy = {
           ["Workspace packages paid by NayaPay or bank transfer, invoices, data export, daily backups, built-in support assistant", "Done (November 2026)"],
           ["Pilot outreach: Pakistan (10 places), nine Asian countries (10 places each), UK", "Running"],
           ["Storage network price book for launch (6.49 USDT/TB, 35% node share)", "Set on testnet (November 2026)"],
+          ["Inaya Commerce (point of sale, stock, web store, Shopify and WooCommerce sync) and Inaya Connect (WhatsApp)", "Live (November 2026)"],
           ["Security audit, then storage network mainnet", "Open"],
         ],
       },
@@ -194,6 +199,7 @@ export const gtmStrategy = {
             "October 2026: Sovereign Infrastructure — bring-your-own-hardware compute: real virtual machines, block storage, and private networking on a customer's own server, with a working subset of AWS CLI compatibility, a real HAProxy load balancer, and real Kubernetes (k3s)",
             "October–November 2026: an ERP-style layout for Inaya Business OS, and industry editions for Education (schools and colleges) and Hospitality (restaurants, cafes, caterers), alongside Health, Legal, Regulated Enterprise, Financial / Private Capital and Government",
             "November 2026: Appointments & Email Marketing (online booking, team calendars, email campaigns and follow-up sequences), the storage network's launch price book (6.49 USDT per TB a month, 35% node-operator share), and launch readiness for Inaya Business OS: packages paid by NayaPay or bank transfer against numbered invoices, a ZIP export of all company data, daily encrypted backups and a built-in support assistant. Public launch: 1 January 2027",
+            "Late November 2026: Inaya Business OS (the new name), Inaya Commerce (a point of sale with offline selling in Beta, stock across branches, loyalty and gift cards, an Inaya web store and two-way Shopify and WooCommerce sync), a Why Inaya page comparing Inaya with Odoo, Shopify, Lightspeed, Zoho and Cin7, and Inaya Connect: a company's own WhatsApp Business number connected to the business, with a team inbox, a business assistant staff can ask about sales and stock, and bills sent on WhatsApp going to AI Bookkeeper",
           ],
         },
         {
@@ -244,7 +250,7 @@ export const gtmStrategy = {
           heading: "Revenue Strategy",
           body: "Inaya combines multiple complementary revenue streams designed to scale with network adoption:",
           bullets: [
-            "Pay-As-You-Go storage (6.49 USDT per TB a month)", "Corporate Reserve subscriptions (17,970 / 34,740 / 65,880 USDT a year)", "Business OS packages ($7.99 to $799 a month, or PKR 8,000 to 60,000 in Pakistan)",
+            "Pay-As-You-Go storage (6.49 USDT per TB a month)", "Corporate Reserve subscriptions (17,970 / 34,740 / 65,880 USDT a year)", "Business OS packages ($7.99 to $799 a month, or PKR 8,000 to 60,000 in Pakistan)", "Inaya Commerce add-ons ($49 to $169 a month; included in Enterprise)",
             "Extra users and one-time setup fees", "Enterprise storage plans and API consumption", "Future premium enterprise services",
           ],
         },
@@ -952,6 +958,11 @@ export const gtmStrategy = {
           label: "A second comparison set, added October 2026.",
           text: "Two further SOWs drew explicitly on patterns from privacy-focused personal/enterprise cloud products — Filen and FileCloud (Secure Chat, Secure Notes, Sharing 2.0, Governance, device control, a Sovereign Gateway agent) and Internxt (a hybrid post-quantum key-establishment layer, a local-only Cleaner, and Inaya Meet private peer-to-peer video calls) — named here rather than left implicit. As with SharePoint/Box above, this is a design-pattern comparison, not a claim of feature parity: every item is off by default, the chat library has not had an independent security audit, and Meet's mesh architecture trades a scalable SFU for a stronger privacy property (media never touches an Inaya server) at a conservative default room size.",
         },
+        {
+          type: "note",
+          label: "A third comparison set, added November 2026.",
+          text: "With Inaya Commerce and the move to a Business Operations Platform, buyers also compare Inaya Business OS with all-in-one business software and shop systems: Odoo, Zoho, Shopify, Lightspeed and Cin7. The public Why Inaya page carries that comparison with a source for every line. The design-centre difference: the back office, the shop counter, online stores and WhatsApp run on the same stock, customers and books, with ransomware protection on by default. As above, this is not a claim of feature parity with those mature products.",
+        },
       ],
     },
     {
@@ -1260,6 +1271,21 @@ export const gtmStrategy = {
           ],
         },
         {
+          type: "subsection",
+          heading: "Inaya Commerce (live since 23 November 2026)",
+          body: "The front office and online selling are sold as add-ons, so the entry packages stay simple and Business stays the natural upgrade. Premium modules (Appointments & Email Marketing, Inaya Connect for WhatsApp) are included only in Business and Enterprise.",
+        },
+        {
+          type: "table",
+          headers: ["Commerce option", "USD a month", "PKR a month", "What it includes"],
+          rows: [
+            ["Commerce Starter (on Professional)", "$49", "8,000", "1 branch, 1 till, own web store, 1 Shopify or WooCommerce store, 300 online orders a month"],
+            ["Commerce add-on (on Business)", "$79", "12,000", "2 branches, 3 tills, own web store, 1 Shopify + 1 WooCommerce store, 1,000 online orders a month"],
+            ["Business + Commerce bundle", "$169", "40,000", "The Business package with the Commerce add-on"],
+            ["Enterprise", "Included", "Included", "Unlimited branches and tills, 3 connected stores"],
+          ],
+        },
+        {
           type: "note",
           text: "Pricing Principles: transparent, predictable, scalable, enterprise-friendly, and easy to understand. Complex pricing discourages adoption; simple pricing accelerates purchasing decisions. Both price books are published on the website and enforced in code, so the price a customer sees is the price the system charges.",
         },
@@ -1461,9 +1487,10 @@ export const gtmStrategy = {
         },
         {
           type: "table",
-          headers: ["Dated milestones (as of 16 November 2026)", "Status"],
+          headers: ["Dated milestones (as of 26 November 2026)", "Status"],
           rows: [
-            ["Business OS: 29 of 34 roadmap stages live, eight editions, ERP mode, desktop and Android apps", "Shipped"],
+            ["Business OS: 41 of 46 roadmap stages live, eight editions, ERP mode, desktop and Android apps", "Shipped"],
+            ["Inaya Commerce and Inaya Connect (WhatsApp)", "Shipped, November 2026"],
             ["Workspace billing, invoices, data export, daily backups, built-in support assistant", "Shipped, November 2026"],
             ["Pilot outreach in Pakistan, nine Asian countries and the UK", "Running"],
             ["Business OS public launch", "1 January 2027"],
