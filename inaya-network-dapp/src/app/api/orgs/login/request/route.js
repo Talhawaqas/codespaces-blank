@@ -29,6 +29,7 @@ import {
 import { sendMagicLinkEmail } from "../../../../../lib/email.js";
 import { assessRisk } from "../../../../../lib/fraudRisk.js";
 import { checkRateLimit, getClientIp } from "../../../../../lib/rateLimit.js";
+import { ssoRequiredFor } from "../../../../../lib/workforceSso.js";
 
 export async function POST(req) {
   try {
@@ -48,6 +49,10 @@ export async function POST(req) {
     } catch {
       return NextResponse.json({ error: "Too many login link requests — please wait a while and try again." }, { status: 429 });
     }
+
+    // Enterprise SSO enforcement (src/lib/workforceSso.js): a company that requires SSO for its email domain gets no email links.
+    const ssoOnly = await ssoRequiredFor(email);
+    if (ssoOnly) return NextResponse.json({ error: ssoOnly, code: "SSO_REQUIRED" }, { status: 403 });
 
     await ensureOrgIndexes();
     const { orgMembers, magicLinks } = await getOrgCollections();

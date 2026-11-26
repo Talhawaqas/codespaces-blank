@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { requireMembership, getOrgCollections, toObjectId } from "../../../../lib/orgs.js";
 import { generateWhatChanged } from "../../../../lib/activityCenter.js";
+import { requirePlanFeature } from "../../../../lib/planGates.js";
 
 export async function GET(req) {
   try {
@@ -17,6 +18,7 @@ export async function GET(req) {
 
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    { const g = await requirePlanFeature(orgId, "activityLogs"); if (g) return NextResponse.json(g, { status: g.status }); }
 
     const { orgs } = await getOrgCollections();
     const org = await orgs.findOne({ _id: toObjectId(orgId) });

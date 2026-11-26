@@ -73,16 +73,61 @@ export async function brandedEmail({ orgId, orgName = "Inaya", title, lines = []
 }
 
 // ----------------------------------------------------------------------------------------------------------- custom domain
+// A custom domain (Business and Enterprise, planGates.js) serves the company's own Business OS sign-in and workspace on its
+// own host name, e.g. files.example.com. Three steps, each recorded on the branding row:
+//   1. ownership: a TXT record at _inaya-verify.<domain> (status PENDING_DNS -> VERIFIED_DNS);
+//   2. hosting: once ownership is proven, the domain is attached to the Inaya hosting project through the Vercel API
+//      (routing ATTACHED) when VERCEL_API_TOKEN and VERCEL_PROJECT_ID are configured; otherwise routing stays NOT_CONFIGURED
+//      and the note says so;
+//   3. traffic: the customer points a CNAME at cname.vercel-dns.com and the platform issues the certificate. Routing becomes
+//      LIVE when the platform reports the domain verified. src/middleware.js then serves the workspace on that host.
+const CNAME_TARGET = "cname.vercel-dns.com";
+async function planGate(orgId) {
+  const { requirePlanFeature } = await import("../planGates.js");
+  const g = await requirePlanFeature(orgId, "customDomain"); if (g) fail(403, g.error);
+}
+function vercelApi(path, init = {}, env = process.env) {
+  const token = env.VERCEL_API_TOKEN; const project = env.VERCEL_PROJECT_ID; if (!token || !project) return null;
+  const team = env.VERCEL_TEAM_ID ? `${path.includes("?") ? "&" : "?"}teamId=${encodeURIComponent(env.VERCEL_TEAM_ID)}` : "";
+  return fetch(`https://api.vercel.com${path.replace("{project}", encodeURIComponent(project))}${team}`, { ...init, redirect: "error", signal: AbortSignal.timeout(10000), headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init.headers || {}) } });
+}
+/** Attaches (idempotently) and reads back the domain on the hosting project. Returns { routing, note }. `api` is injectable for tests. */
+export async function attachDomainToHosting(domain, api = vercelApi) {
+  const add = api("/v10/projects/{project}/domains", { method: "POST", body: JSON.stringify({ name: domain }) });
+  if (!add) return { routing: "NOT_CONFIGURED", note: "Ownership is verified. Inaya's hosting connection is not set up yet, so Inaya support will attach the domain for you." };
+  try {
+    const r = await add; const body = await r.json().catch(() => ({}));
+    const already = ["domain_already_in_use", "domain_already_exists"].includes(body?.error?.code);
+    if (!r.ok && !already) return { routing: "ATTACH_FAILED", note: `The hosting platform refused the domain (${String(body?.error?.message || r.status).slice(0, 160)}).` };
+    const g = await api(`/v9/projects/{project}/domains/${encodeURIComponent(domain)}`); const info = g ? await g.json().catch(() => ({})) : {};
+    if (g?.ok && info.verified === true) return { routing: "LIVE", note: `Live. Keep the CNAME record pointing ${domain} to ${CNAME_TARGET}.` };
+    return { routing: "ATTACHED", note: `Attached. Add a CNAME record for ${domain} pointing to ${CNAME_TARGET}, then check again. The certificate is issued automatically once the record is visible.` };
+  } catch { return { routing: "ATTACH_FAILED", note: "The hosting platform could not be reached. Try again in a few minutes." }; }
+}
 export async function setCustomDomain({ orgId, membership, actorEmail, domain }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can set a custom domain."); const d = String(domain || "").trim().toLowerCase().replace(/\.$/, "");
-  if (!HOST.test(d) || d.endsWith(".inaya.network") || /(^|\.)localhost$/.test(d)) fail(400, "Enter a domain you own, such as files.example.com.");
+  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can set a custom domain."); await planGate(orgId); const d = String(domain || "").trim().toLowerCase().replace(/\.$/, "");
+  if (!HOST.test(d) || d.endsWith(".inaya.network") || /(^|\.)inayanetwork\.com$/.test(d) || /(^|\.)localhost$/.test(d)) fail(400, "Enter a domain you own, such as files.example.com.");
   const b = await col(); const other = await b.findOne({ "customDomain.domain": d, orgId: { $ne: toObjectId(orgId) } }); if (other) fail(409, "That domain is already in use by another organization.");
-  const token = `inaya-verify=${randomBytes(16).toString("hex")}`; const cd = { domain: d, txtName: `_inaya-verify.${d}`, txtValue: token, status: "PENDING_DNS", routing: "NOT_CONFIGURED", requestedAt: nowIso(), note: "Add the TXT record, then check it. Routing the domain to Inaya also needs an operator to attach it to the hosting platform." };
+  const token = `inaya-verify=${randomBytes(16).toString("hex")}`;
+  const cd = { domain: d, txtName: `_inaya-verify.${d}`, txtValue: token, cnameTarget: CNAME_TARGET, status: "PENDING_DNS", routing: "NOT_CONFIGURED", requestedAt: nowIso(), note: `Add the TXT record to prove you own the domain, and a CNAME record pointing ${d} to ${CNAME_TARGET}. Then check.` };
   await b.updateOne({ orgId: toObjectId(orgId) }, { $set: { customDomain: cd, updatedAt: nowIso() } }, { upsert: true }); await logOrgActivity({ orgId, recordType: "BRANDING", recordId: new ObjectId(), actorEmail, action: "DOMAIN_REQUESTED", previousState: null, newState: null, metadata: { domain: d } }).catch(() => {}); return cd;
 }
-export async function verifyCustomDomain({ orgId, membership, actorEmail, resolver = dns.resolveTxt }) {
-  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can verify a custom domain."); const b = await col(); const row = await b.findOne({ orgId: toObjectId(orgId) }); const cd = row?.customDomain; if (!cd) fail(404, "No custom domain has been requested.");
+export async function verifyCustomDomain({ orgId, membership, actorEmail, resolver = dns.resolveTxt, attach = attachDomainToHosting }) {
+  if (!canManageOrg(membership)) fail(403, "Only an owner or admin can verify a custom domain."); await planGate(orgId); const b = await col(); const row = await b.findOne({ orgId: toObjectId(orgId) }); const cd = row?.customDomain; if (!cd) fail(404, "No custom domain has been requested.");
   let found = []; try { found = (await resolver(cd.txtName)).map((r) => r.join("")); } catch { found = []; }
-  const verified = found.includes(cd.txtValue); const next = { ...cd, status: verified ? "VERIFIED_DNS" : "PENDING_DNS", checkedAt: nowIso(), note: verified ? "DNS ownership is verified. Routing the domain to Inaya is still a platform step (NOT_CONFIGURED until an operator attaches it)." : "The TXT record was not found yet. DNS changes can take a while to appear." };
-  await b.updateOne({ orgId: toObjectId(orgId) }, { $set: { customDomain: next } }); if (verified) await logOrgActivity({ orgId, recordType: "BRANDING", recordId: new ObjectId(), actorEmail, action: "DOMAIN_VERIFIED", previousState: null, newState: null, metadata: { domain: cd.domain } }).catch(() => {}); return next;
+  const verified = found.includes(cd.txtValue);
+  let next = { ...cd, status: verified ? "VERIFIED_DNS" : "PENDING_DNS", checkedAt: nowIso(), note: verified ? cd.note : "The TXT record was not found yet. DNS changes can take a while to appear." };
+  if (verified) { const h = await attach(cd.domain); next = { ...next, routing: h.routing, note: h.note, ...(h.routing === "LIVE" && cd.routing !== "LIVE" ? { liveAt: nowIso() } : {}) }; }
+  await b.updateOne({ orgId: toObjectId(orgId) }, { $set: { customDomain: next } });
+  if (verified && cd.status !== "VERIFIED_DNS") await logOrgActivity({ orgId, recordType: "BRANDING", recordId: new ObjectId(), actorEmail, action: "DOMAIN_VERIFIED", previousState: null, newState: null, metadata: { domain: cd.domain } }).catch(() => {});
+  if (next.routing === "LIVE" && cd.routing !== "LIVE") await logOrgActivity({ orgId, recordType: "BRANDING", recordId: new ObjectId(), actorEmail, action: "DOMAIN_LIVE", previousState: null, newState: null, metadata: { domain: cd.domain } }).catch(() => {});
+  return next;
+}
+/** Public: the workspace served on a custom host, or null. Only ownership-verified domains of companies whose package includes it. */
+export async function workspaceForHost(host) {
+  const h = String(host || "").toLowerCase().split(":")[0]; if (!HOST.test(h)) return null;
+  const row = await (await col()).findOne({ "customDomain.domain": h, "customDomain.status": "VERIFIED_DNS" }); if (!row) return null;
+  const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: row.orgId }, { projection: { name: 1, plan: 1, extraUsers: 1, noPlanConfirmedAt: 1, planGrandfatheredAt: 1 } }); if (!org) return null;
+  const { planAllows } = await import("../planGates.js"); if (!planAllows(org, "customDomain")) return null;
+  return { orgId: String(row.orgId), orgName: org.name, portalTitle: row.portalTitle || null, accent: row.accent || null, logo: row.logo || null, loginBackground: row.loginBackground || null };
 }

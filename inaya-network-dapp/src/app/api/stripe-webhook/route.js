@@ -342,6 +342,7 @@ async function settleOrgSubscription(session) {
   );
 
   await db.collection("orgs").updateOne({ _id: orgObjectId }, { $set: { plan: planId, extraUsers: Number(extraUsers) || 0, planUpdatedAt: now } });
+  await import("../../../lib/help.js").then((h) => h.requestEnterpriseOnboarding({ orgId: String(orgObjectId), planId })).catch(() => {});
 
   console.log(`[OK] Org subscription activated: org ${orgId} -> ${planId}`);
   return { orgId, planId };

@@ -38,17 +38,18 @@ export function entitledFromOrg(org, env = process.env) {
   if (e === "off" || !org) return false;
   if (org.features?.[FEATURE] === true) return true;
   if (org.features?.[FEATURE] === false) return false;
+  if (e === "on" && org.plan === "professional" && org.addOns?.connect === true) return true; // Professional add-on (src/lib/addOns.js)
   return e === "on" && PLANS.includes(String(org.plan || "").toLowerCase());
 }
 export async function connectEntitled(orgId) {
   if (envFlag(FEATURE) === "off") return false;
   const { orgs } = await getOrgCollections();
-  return entitledFromOrg(await orgs.findOne({ _id: oid(orgId) }, { projection: { features: 1, plan: 1 } }));
+  return entitledFromOrg(await orgs.findOne({ _id: oid(orgId) }, { projection: { features: 1, plan: 1, addOns: 1 } }));
 }
 /** need: "admin" (owner/admin: connect, settings, rules) | "agent" (inbox: owner/admin or supportRole) | "member" */
 export async function connectAccess({ orgId, membership, need = "member" }) {
   if (!membership) return fail("Sign in to continue.", 401);
-  if (!(await connectEntitled(orgId))) return fail("Inaya Connect isn't enabled for this company. It is part of the Business and Enterprise plans.", 403, "NOT_ENTITLED");
+  if (!(await connectEntitled(orgId))) return fail("Inaya Connect isn't enabled for this company. It is part of the Business and Enterprise plans, or an add-on for Professional.", 403, "NOT_ENTITLED");
   if (need === "admin" && !canManageOrg(membership)) return fail("Only an owner or admin can change Inaya Connect.", 403);
   if (need === "agent" && !canManageOrg(membership) && !["agent", "manager"].includes(membership.supportRole)) return fail("You need a support role to use the WhatsApp inbox.", 403);
   return null;

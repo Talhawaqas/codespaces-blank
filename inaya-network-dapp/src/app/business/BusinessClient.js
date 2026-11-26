@@ -128,6 +128,8 @@ const PortalRequestsView = dynamic(() => import("../../components/business/suppo
 const OfficeIntegrationView = dynamic(() => import("../../components/business/admin/OfficeIntegrationView"), { ssr: false, loading: ScreenLoading });
 const ComplianceReadinessView = dynamic(() => import("../../components/business/admin/ComplianceReadinessView"), { ssr: false, loading: ScreenLoading });
 const BrandingPanel = dynamic(() => import("../../components/business/admin/BrandingPanel"), { ssr: false, loading: () => null });
+const SsoPanel = dynamic(() => import("../../components/business/admin/SsoPanel"), { ssr: false, loading: () => null });
+const PasskeySettings = dynamic(() => import("../../components/business/PasskeySettings"), { ssr: false, loading: () => null });
 const NotificationPrefsPanel = dynamic(() => import("../../components/business/admin/NotificationPrefsPanel"), { ssr: false, loading: () => null });
 const GovernanceView = dynamic(() => import("../../components/business/governance/GovernanceView"), { ssr: false, loading: ScreenLoading });
 import { DeviceCheckIn } from "../../components/business/endpoint/DevicesView";
@@ -544,6 +546,34 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
   const [googleError, setGoogleError] = useState("");
   const googleButtonRef = useRef(null);
   const signInCardRef = useRef(null);
+  // A company's own custom domain (Business/Enterprise): show that company's branding and only the sign-in box.
+  const [brand, setBrand] = useState(null);
+  useEffect(() => {
+    const h = window.location.hostname;
+    if (/(^|\.)inayanetwork\.com$|\.vercel\.app$|^localhost$|^127\.0\.0\.1$/.test(h)) return;
+    fetch(`/api/public/workspace-domain?host=${encodeURIComponent(h)}`).then((r) => r.json()).then((d) => { if (d.workspace) setBrand(d); }).catch(() => {});
+  }, []);
+  // Staff SSO comes back here with ?ssoError=... when the identity provider or the checks refused the sign-in.
+  useEffect(() => { const e = new URLSearchParams(window.location.search).get("ssoError"); if (e) setError(e.slice(0, 200)); }, []);
+  const [passkeyBusy, setPasskeyBusy] = useState(false); const [ssoBusy, setSsoBusy] = useState(false);
+  const passkeySupported = typeof window !== "undefined" && !!window.PublicKeyCredential;
+  async function signInWithPasskey() {
+    setPasskeyBusy(true); setError(""); setMessage("");
+    try {
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const { options, requestToken } = await api("/api/orgs/login/passkey", { method: "POST", body: JSON.stringify({ step: "start" }) });
+      const response = await startAuthentication({ optionsJSON: options });
+      await api("/api/orgs/login/passkey", { method: "POST", body: JSON.stringify({ step: "finish", requestToken, response }) });
+      onAuthed();
+    } catch (err) { setError(err?.name === "NotAllowedError" ? "The passkey request was cancelled." : err.message); } finally { setPasskeyBusy(false); }
+  }
+  async function signInWithSso() {
+    setError(""); setMessage("");
+    if (!email) { setError("Enter your work email first, then choose company SSO."); return; }
+    setSsoBusy(true);
+    try { const { url } = await api("/api/orgs/login/sso/start", { method: "POST", body: JSON.stringify({ email }) }); window.location.assign(url); }
+    catch (err) { setError(err.message); setSsoBusy(false); }
+  }
   const [landingPlans, setLandingPlans] = useState(null); const [landingRegion, setLandingRegion] = useState("INTL");
   // A package chosen before signing in (here or on the pricing page): say so on the sign-in box, so the visitor knows the
   // next step is to create the company (or sign in), after which the activation request opens for that package.
@@ -665,6 +695,14 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-14 items-center">
         {/* HERO -- rebrand 23 Nov 2026: Inaya Business OS (owner + co-founder). Name, descriptor and tagline as approved;
             every claim is built and verified (offline selling and till hardware are labelled Beta until pilots confirm). */}
+        {brand ? (
+          <div className="inaya-fade-in-up text-center lg:text-left">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {brand.logo && <img src={brand.logo} alt="" className="h-16 w-auto mb-4 mx-auto lg:mx-0" />}
+            <p className="text-3xl font-black text-[var(--inaya-text-primary)]">{brand.portalTitle || brand.orgName}</p>
+            <p className="text-[var(--inaya-text-muted)] text-sm mt-2">Sign in to your company workspace.</p>
+          </div>
+        ) : (
         <div className="inaya-fade-in-up">
           <div className="mb-5">
             <p className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--inaya-text-primary)] leading-none">Inaya Business OS</p>
@@ -703,8 +741,9 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
             ))}
           </div>
         </div>
+        )}
 
-        {/* SIGN-IN CARD — unchanged behavior */}
+        {/* SIGN-IN CARD — unchanged behavior, plus passkey and company SSO sign-in */}
         <div ref={signInCardRef} id="workspace-signin" className={`w-full max-w-md lg:ml-auto mx-auto bg-[var(--inaya-surface)] border rounded-2xl p-6 shadow-sm inaya-fade-in-up transition-shadow ${highlight ? "border-[var(--inaya-accent)] ring-4 ring-[var(--inaya-accent)]/30" : "border-[var(--inaya-border)]"}`} style={{ animationDelay: "0.1s" }}>
           {pendingChoice && <div role="status" className="mb-4 rounded-xl border border-[var(--inaya-accent)] bg-[var(--inaya-accent-soft)] p-3 text-[13px] text-[var(--inaya-text-primary)]">
             <p className="font-bold">You chose {pendingChoice.commerce && pendingChoice.planName && pendingChoice.commerce.startsWith(pendingChoice.planName) ? pendingChoice.commerce : `${pendingChoice.planName || "a package"}${pendingChoice.commerce ? ` with ${pendingChoice.commerce}` : ""}`}.</p>
@@ -731,6 +770,11 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
             </div>
           )}
 
+          {mode === "signin" && passkeySupported && (
+            <button type="button" onClick={signInWithPasskey} disabled={passkeyBusy} className="w-full mb-3 py-2.5 rounded-xl text-xs font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] bg-[var(--inaya-surface)] hover:border-[var(--inaya-accent)] disabled:opacity-40">
+              {passkeyBusy ? "Waiting for your passkey…" : "🔑 Sign in with a passkey"}
+            </button>
+          )}
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === "create" && (
               <>
@@ -752,6 +796,11 @@ function AuthScreen({ notice, onAuthed, onMfaRequired }) {
             <button disabled={submitting} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black disabled:opacity-40">
               {submitting ? "Working…" : mode === "create" ? "Create company" : "Send sign-in link"}
             </button>
+            {mode === "signin" && (
+              <button type="button" onClick={signInWithSso} disabled={ssoBusy} className="w-full py-2 rounded-xl text-xs font-bold text-[var(--inaya-accent)] hover:underline disabled:opacity-40">
+                {ssoBusy ? "Opening your company sign-in…" : "Sign in with company SSO"}
+              </button>
+            )}
           </form>
 
           {error && <p className="text-red-400 text-xs mt-4">{error}</p>}
@@ -1538,7 +1587,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "insights" && <InsightsView orgId={orgId} canManage={canManage} onNavigate={navigate} />}
       {activeView === "brief" && <BriefView orgId={orgId} />}
       {activeView === "whatChanged" && <ActivityCenterView baseUrl={`/api/orgs/activity-center?orgId=${orgId}`} />}
-      {activeView === "security" && <MfaSettings />}
+      {activeView === "security" && <div className="space-y-8"><PasskeySettings /><MfaSettings /></div>}
       {activeView === "browse" && (
         <OrgWorkspace
           key={`${browseTarget?.deptId || ""}:${browseTarget?.projectId || ""}`}
@@ -1654,6 +1703,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
           <BetaFeaturesPanel orgId={orgId} canManage={canManage} />
           <AdminRolesPanel orgId={orgId} canManage={canManage} />
           <BrandingPanel orgId={orgId} canManage={canManage} />
+          <SsoPanel orgId={orgId} canManage={canManage} />
           <NotificationPrefsPanel orgId={orgId} />
           {(canManage || hasAdminRole(membership, ["storageAdmin", "securityAdmin"], { read: true })) && <ReplicationPanel orgId={orgId} canManage={canManage || hasAdminRole(membership, "storageAdmin")} />}
           <VoiceAiSettings orgId={orgId} aiPolicy={orgAiPolicy} onChanged={setOrgAiPolicy} />
@@ -2998,6 +3048,22 @@ function BillingView({ orgId, canManage }) {
 
       {requestFor && (
         <ActivationRequestModal orgId={orgId} plan={requestFor.plan} extraUsers={requestFor.extraUsers} pilot={requestFor.pilot} onClose={() => setRequestFor(null)} onDone={() => setNotice("Request sent. Our team will contact you within one working day to arrange payment by NayaPay or bank transfer.")} />
+      )}
+
+      {canManage && plan.id === "professional" && !plan.noBilling && (
+        <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Add-ons</p>
+            <p className="text-[var(--inaya-text-secondary)] text-xs mt-1">
+              {Object.keys(plan.addOns || {}).length
+                ? `Active: ${[plan.addOns.appointments && "Appointments", plan.addOns.campaigns && "Email campaigns", plan.addOns.connect && "Inaya Connect", plan.addOns.clientPortal && "Client portal", plan.addOns.customDomain && "Custom domain", plan.addOns.apiAccess && "API access", plan.addOns.storageTB && `${plan.addOns.storageTB} TB extra storage`].filter(Boolean).join(", ")}.`
+                : "Add Business features one at a time: appointments, email campaigns, Inaya Connect, a client portal, a custom domain, API access or extra storage."}
+            </p>
+          </div>
+          <button type="button" onClick={() => { const current = data?.availablePlans?.find((p) => p.id === "professional"); if (current) setRequestFor({ plan: current, extraUsers: plan.extraUsers || 0, pilot: !!data.subscription?.pilot }); }} className="px-4 py-2 rounded-xl text-sm font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:border-[var(--inaya-accent)]">
+            {Object.keys(plan.addOns || {}).length ? "Change add-ons" : "Choose add-ons"}
+          </button>
+        </div>
       )}
 
       {canManage && plan.id && plan.maxExtraUsers > 0 && !plan.noBilling && (

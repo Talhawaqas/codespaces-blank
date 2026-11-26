@@ -76,6 +76,10 @@ export async function updateSettings({ orgId, patch, actorEmail }) {
   const top = {};
   if (p.portalSlug !== undefined) { if (p.portalSlug !== null && !SLUG_RE.test(String(p.portalSlug))) errors.push("portalSlug must be 4–40 characters: lowercase letters, numbers and hyphens."); else top.portalSlug = p.portalSlug ? String(p.portalSlug) : null; }
   if (p.portalEnabled !== undefined) top.portalEnabled = !!p.portalEnabled;
+  if (top.portalEnabled && !cur.portalEnabled) { // Secure client portals: Business and Enterprise (planGates.js)
+    const { requirePlanFeature } = await import("../planGates.js"); const g = await requirePlanFeature(orgId, "clientPortal");
+    if (g) return fail(g.error, 403, { code: g.code });
+  }
   if (p.ticketPrefix !== undefined && !/^[A-Z]{2,8}$/.test(String(p.ticketPrefix))) errors.push("ticketPrefix must be 2–8 capital letters.");
   for (const k of ["ticketTypes", "categories", "customerSelectableTypes", "customerTiers"]) if (p[k] !== undefined && !(Array.isArray(p[k]) && p[k].length && p[k].length <= 60 && p[k].every((x) => typeof x === "string" && x.length >= 1 && x.length <= 60))) errors.push(`${k} must be a list of 1–60 short names.`);
   if (p.businessHours) {
@@ -140,6 +144,7 @@ export async function orgBySlug(slug, { allowRestricted = false } = {}) {
   // Company license (License Manager SOW 9.3): a suspended company's customer portal is unavailable. Inbound email
   // passes allowRestricted so customers' emails are still received and kept (nothing is lost while suspended).
   if (!allowRestricted) { const { companyMayOperate } = await import("../licensing/gate.js"); if (!(await companyMayOperate(doc.orgId))) return null; }
+  if (!allowRestricted) { const { requirePlanFeature } = await import("../planGates.js"); if (await requirePlanFeature(String(doc.orgId), "clientPortal")) return null; }
   return { orgId: doc.orgId, settings: merge(DEFAULT_SETTINGS, doc.settings || {}), portalSlug: doc.portalSlug };
 }
 

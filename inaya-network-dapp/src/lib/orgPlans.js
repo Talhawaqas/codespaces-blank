@@ -62,6 +62,7 @@ export const PLANS = {
       "AI Document Assistant",
       "10 GB Max File Size",
       "Priority Support",
+      "Optional add-ons: Appointments, Email Campaigns, WhatsApp (Inaya Connect), Client Portal, Custom Domain, API, Extra Storage",
     ],
   },
   business: {
@@ -178,7 +179,7 @@ export function withExtraUsers(plan, extraUsers) {
  * or move down. `renewalDue` lets the same package be paid again near the end
  * of a bank-transfer period. Returns an error message, or null when allowed.
  */
-export function planChangeError({ currentPlanId, currentExtraUsers = 0, active, renewalDue = false, planId, extraUsers = 0 }) {
+export function planChangeError({ currentPlanId, currentExtraUsers = 0, active, renewalDue = false, planId, extraUsers = 0, addOnsChanged = false }) {
   const plan = PLANS[planId];
   if (!plan) return `Unknown package "${planId}".`;
   if (!Number.isInteger(extraUsers) || extraUsers < 0) return "Extra users must be a whole number, 0 or more.";
@@ -189,12 +190,17 @@ export function planChangeError({ currentPlanId, currentExtraUsers = 0, active, 
   const from = PLAN_ORDER.indexOf(currentPlanId), to = PLAN_ORDER.indexOf(planId);
   if (to > from) return null;
   if (to < from) return `Your company is on ${PLANS[currentPlanId].name}. To move to a smaller package, contact us at contact@inayanetwork.com.`;
-  if (extraUsers > currentExtraUsers || renewalDue) return null;
-  return `Your company already has the ${plan.name} package. Choose a larger package, or add extra users.`;
+  if (extraUsers > currentExtraUsers || renewalDue || addOnsChanged) return null;
+  return `Your company already has the ${plan.name} package. Choose a larger package, or add extra users${planId === "professional" ? " or add-ons" : ""}.`;
 }
 
 export function getOrgPlan(org) {
-  if (org?.plan) return withExtraUsers(PLANS[org.plan] || PLANS.starter, org.extraUsers);
+  if (org?.plan) {
+    const p = withExtraUsers(PLANS[org.plan] || PLANS.starter, org.extraUsers);
+    // Extra-storage add-on (src/lib/addOns.js): Professional only, up to 4 TB.
+    const tb = org.plan === "professional" ? Math.min(Math.max(0, Math.floor(Number(org.addOns?.storageTB) || 0)), 4) : 0;
+    return tb ? { ...p, includedStorageGB: p.maxStorageGB, extraStorageTB: tb, maxStorageGB: p.maxStorageGB + tb * 1000 } : p;
+  }
   if (org?.noPlanConfirmedAt) return NO_PLAN_LIMITED;
   return LEGACY_UNLIMITED;
 }

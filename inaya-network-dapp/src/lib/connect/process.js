@@ -136,6 +136,13 @@ export async function processPending({ orgId = null, limit = 20 } = {}) {
     const conn = await c.findOne({ _id: msg.connId, kind: K.conn });
     try {
       if (!conn || conn.status !== "ACTIVE") throw Object.assign(new Error("connection not active"), { permanent: true });
+      // Company license (License Manager SOW 9.3): while a company is restricted, incoming messages are kept (nothing is lost)
+      // but nothing is answered, routed or filed, so no company data leaves through WhatsApp. Same rule as support email.
+      const { companyMayOperate } = await import("../licensing/gate.js");
+      if (!(await companyMayOperate(msg.orgId))) {
+        await c.updateOne({ _id: msg._id }, { $set: { processing: "DONE", outcome: "license_restricted", processedAt: nowIso() }, $unset: { leaseUntil: "" } }); done++;
+        continue;
+      }
       const outcome = await handle(sid(msg.orgId), conn, msg);
       await c.updateOne({ _id: msg._id }, { $set: { processing: "DONE", outcome, processedAt: nowIso() }, $unset: { leaseUntil: "" } }); done++;
     } catch (e) {

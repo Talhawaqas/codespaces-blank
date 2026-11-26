@@ -8,6 +8,9 @@ import { requireFeature } from "../../../../lib/featureFlags.js";
 import { GovError } from "../../../../lib/governance/policies.js";
 
 export const json = (data, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
+import { requirePlanFeature } from "../../../../lib/planGates.js";
+/** Throws a 403 GovError when the company's package does not include the capability (planGates.js). */
+export async function planCheck(orgId, key) { const g = await requirePlanFeature(orgId, key); if (g) throw new GovError(403, g.error, { code: g.code }); }
 export const flagForType = (type) => (type === "dlp" ? "FEATURE_DLP" : type === "classification" ? "FEATURE_SMART_CLASSIFICATION" : "FEATURE_FILE_GOVERNANCE");
 
 export async function govRoute(req, routeCtx, flag, handler) {

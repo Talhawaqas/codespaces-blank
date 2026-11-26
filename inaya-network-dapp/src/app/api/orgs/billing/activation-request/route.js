@@ -19,7 +19,7 @@ export async function POST(req) {
   try {
     let body = {};
     try { body = await req.json(); } catch { body = {}; }
-    const { orgId, planId, interval = "month", pilot = false, extraUsers = 0, paymentMethod } = body;
+    const { orgId, planId, interval = "month", pilot = false, extraUsers = 0, addOns = {}, paymentMethod } = body;
     if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     if (!PAYMENT_METHODS[paymentMethod]) return NextResponse.json({ error: "Choose NayaPay or bank transfer." }, { status: 400 });
     const { contact, error } = cleanActivationContact(body.contact);
@@ -32,7 +32,7 @@ export async function POST(req) {
     const { orgs } = await getOrgCollections();
     const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { billingRegion: 1 } });
     const region = pricingRegion({ country: req.headers.get("x-vercel-ip-country"), orgRegion: org?.billingRegion });
-    const args = { orgId, planId, interval, extraUsers: Number(extraUsers) || 0, actorEmail: auth.session.email, membership: auth.membership, contact, paymentMethod };
+    const args = { orgId, planId, interval, extraUsers: Number(extraUsers) || 0, addOns, actorEmail: auth.session.email, membership: auth.membership, contact, paymentMethod };
     const result = region === "PK" ? await requestPkPlan({ ...args, pilot: !!pilot }) : await requestUsdPlan(args);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 

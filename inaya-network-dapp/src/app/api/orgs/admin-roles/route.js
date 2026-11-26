@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership, getOrgCollections, toObjectId } fr
 import { ADMIN_ROLES, canManageOrg } from "../../../../lib/orgGates.js";
 import { logOrgActivity } from "../../../../lib/org-activity-log.js";
 import { ObjectId } from "mongodb";
+import { requirePlanFeature } from "../../../../lib/planGates.js";
 export const dynamic = "force-dynamic";
 const json = (d, s = 200) => NextResponse.json(d, { status: s, headers: { "Cache-Control": "no-store" } });
 
@@ -20,6 +21,7 @@ export async function GET(req) {
 export async function PUT(req) {
   let body = {}; try { body = await req.json(); } catch { body = {}; } const { orgId, email } = body; if (!orgId || !email) return json({ error: "orgId and email are required." }, 400);
   await ensureOrgIndexes(); const auth = await requireMembership(req, orgId); if (auth.error) return json({ error: auth.error }, auth.status);
+    { const g = await requirePlanFeature(orgId, "rolePermissions"); if (g) return json(g, g.status); }
   if (!canManageOrg(auth.membership)) return json({ error: "Only an owner or admin can manage administrator roles." }, 403);
   const list = Array.isArray(body.adminRoles) ? [...new Set(body.adminRoles)] : null; if (!list || list.some((r) => !ADMIN_ROLES[r])) return json({ error: `adminRoles must be drawn from: ${Object.keys(ADMIN_ROLES).join(", ")}.` }, 400);
   const { orgMembers } = await getOrgCollections(); const em = String(email).trim().toLowerCase();

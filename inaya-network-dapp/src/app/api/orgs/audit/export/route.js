@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { requireMembership, canManageOrg, ensureOrgIndexes, getOrgCollections, toObjectId } from "../../../../../lib/orgs.js";
+import { requirePlanFeature } from "../../../../../lib/planGates.js";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export async function GET(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    { const g = await requirePlanFeature(orgId, "auditLogs"); if (g) return NextResponse.json(g, { status: g.status }); }
     if (!canManageOrg(auth.membership)) {
       return NextResponse.json({ error: "Only the owner or an admin can export the audit trail." }, { status: 403 });
     }

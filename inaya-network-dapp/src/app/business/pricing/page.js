@@ -59,6 +59,7 @@ export default function PricingPage() {
   const [error, setError] = useState("");
   // "PK" for visitors in Pakistan (PKR packages, bank transfer), otherwise "INTL" (USD).
   const [region, setRegion] = useState(null);
+  const [addOns, setAddOns] = useState(null); // Professional-only add-ons (src/lib/addOns.js)
 
   useEffect(() => {
     fetch("/api/orgs/billing/plans")
@@ -67,6 +68,7 @@ export default function PricingPage() {
         if (data.error) throw new Error(data.error);
         setPlans(data.plans);
         setRegion(data.region || "INTL");
+        setAddOns(data.addOns?.items || null);
       })
       .catch((err) => setError(err.message));
   }, []);
@@ -119,6 +121,21 @@ export default function PricingPage() {
               <PricingCard key={plan.id} plan={plan} onSelect={() => handleSelect(plan)} />
             ))}
           </div>
+        )}
+
+        {plans && addOns && addOns.length > 0 && (
+          <section className="mt-12" id="add-ons" aria-label="Add-ons for Professional">
+            <h2 className="text-2xl font-extrabold text-white">Add-ons for Professional</h2>
+            <p className="text-[#94a3b8] text-sm mt-1 mb-5">Need one Business feature, not all of them? Add it to Professional. Choose add-ons when you request your package, or later in Billing. If you need several, Business usually costs less and includes them all.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {addOns.map((a) => (
+                <div key={a.id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4">
+                  <p className="text-white text-sm font-bold">{a.name}</p>
+                  <p className="text-[#00f2fe] text-lg font-extrabold mt-1">{region === "PK" ? `PKR ${a.priceMonthly.toLocaleString("en-US")}` : `$${a.priceMonthly}`}<span className="text-[#94a3b8] text-xs font-normal"> {a.perUnit ? "per TB / month (up to 4 TB)" : "/ month"}</span></p>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {plans && <CommercePricing region={region} onPick={(id, commerce) => { const pl = plans.find((x) => x.id === id); if (pl) handleSelect(pl, commerce); }} />}

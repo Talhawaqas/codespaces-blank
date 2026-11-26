@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { PLANS, PLAN_ORDER } from "../../../../../lib/orgPlans.js";
 import { pricingRegion, toPkPlan } from "../../../../../lib/pkPricing.js";
+import { addOnCatalogue, ADD_ON_PLAN } from "../../../../../lib/addOns.js";
 import { getOrgCollections, requireMembership, toObjectId } from "../../../../../lib/orgs.js";
 
 // Plans for the visitor's region (src/lib/pkPricing.js): PKR packages paid by
@@ -63,5 +64,7 @@ export async function GET(req) {
   const plans = region === "PK"
     ? base.map(toPkPlan).filter(Boolean)
     : base.map((p) => ({ ...p, currency: "USD", paymentMethod: "request" }));
-  return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans, pendingRequest }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
+  // Professional-only add-ons (src/lib/addOns.js), priced in the region's currency.
+  const addOns = { plan: ADD_ON_PLAN, items: addOnCatalogue().map((a) => ({ id: a.id, name: a.name, perUnit: a.perUnit, max: a.max, priceMonthly: region === "PK" ? a.pkr : a.usd })) };
+  return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans, addOns, pendingRequest }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
 }

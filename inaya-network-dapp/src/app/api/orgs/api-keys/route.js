@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership, canManageOrg } from "../../../../lib/orgs.js";
 import { createApiKey, listApiKeys } from "../../../../lib/api-keys.js";
+import { requirePlanFeature } from "../../../../lib/planGates.js";
 
 export async function POST(req) {
   try {
@@ -23,6 +24,7 @@ export async function POST(req) {
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId);
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    { const g = await requirePlanFeature(orgId, "apiAccess"); if (g) return NextResponse.json(g, { status: g.status }); }
     if (!canManageOrg(auth.membership)) return NextResponse.json({ error: "Only the owner or an admin can create an API key." }, { status: 403 });
 
     const result = await createApiKey({ orgId, label, actorEmail: auth.session.email });

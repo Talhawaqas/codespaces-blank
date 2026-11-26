@@ -12,6 +12,9 @@ import { PK_PACKAGES, PK_EXTRA_USER_MONTHLY, PK_PILOT, formatPkr, pkPilotPrice, 
 import { PLANS, planChangeError, EXTRA_USER_MONTHLY_USD } from "./orgPlans.js";
 import { sendEmail } from "./email.js";
 import { logOrgActivity } from "./org-activity-log.js";
+import { cleanAddOns, addOnsPrice, describeAddOns } from "./addOns.js";
+
+const sameAddOns = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
 
 // Activation requests (founder decision, 15 Nov 2026): no self-serve card checkout. Every package,
 // USD or PKR, is requested through a form; the team contacts the company and activates it on
@@ -91,7 +94,7 @@ async function notifyActivationRequest({ org, orgId, plan, what, actorEmail, con
 }
 
 /** Records a USD package request (paid by NayaPay or bank transfer). Same one-package rules as PKR. */
-export async function requestUsdPlan({ orgId, planId, interval = "month", extraUsers = 0, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
+export async function requestUsdPlan({ orgId, planId, interval = "month", extraUsers = 0, addOns: addOnsInput = {}, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
   if (!canManageOrg(membership)) return { error: "Only the owner or an admin can choose the company's package.", status: 403 };
   const plan = PLANS[planId];
   if (!plan || plan.noBilling) return { error: `Unknown package "${planId}".`, status: 400 };
@@ -104,17 +107,19 @@ export async function requestUsdPlan({ orgId, planId, interval = "month", extraU
   const periodEnd = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() : 0;
   const active = !!org.plan && ["active", "trialing", "past_due"].includes(sub?.status) && periodEnd > Date.now();
   const extra = Number(extraUsers) || 0;
+  const ao = cleanAddOns(addOnsInput, planId); if (ao.error) return { error: ao.error, status: 400 };
   const blocked = planChangeError({
     currentPlanId: org.plan, currentExtraUsers: org.extraUsers || 0, active,
     renewalDue: active && periodEnd - Date.now() <= RENEWAL_WINDOW_DAYS * 86400000, planId, extraUsers: extra,
+    addOnsChanged: org.plan === planId && !sameAddOns(org.addOns, ao.addOns),
   });
   if (blocked) return { error: blocked, status: 409 };
 
   const method = PAYMENT_METHODS[paymentMethod] ? paymentMethod : "bank_transfer";
-  const amountUsd = interval === "year" ? plan.priceYearly + extra * EXTRA_USER_MONTHLY_USD * 10 : plan.priceMonthly + extra * EXTRA_USER_MONTHLY_USD;
+  const amountUsd = (interval === "year" ? plan.priceYearly + extra * EXTRA_USER_MONTHLY_USD * 10 : plan.priceMonthly + extra * EXTRA_USER_MONTHLY_USD) + addOnsPrice(ao.addOns, { currency: "USD", interval });
   const now = new Date().toISOString();
   const doc = {
-    orgId: toObjectId(orgId), orgName: org.name || null, planId, interval, pilot: false, extraUsers: extra,
+    orgId: toObjectId(orgId), orgName: org.name || null, planId, interval, pilot: false, extraUsers: extra, addOns: ao.addOns,
     currency: "USD", amountUsd: Math.round(amountUsd * 100) / 100, paymentMethod: method, contact,
     status: "pending", requestedByEmail: actorEmail, requestedAt: now,
   };
@@ -126,9 +131,10 @@ export async function requestUsdPlan({ orgId, planId, interval = "month", extraU
   await logOrgActivity({ orgId, recordType: "ORGANIZATION", recordId: orgId, actorEmail, action: "PLAN_ACTIVATION_REQUESTED", previousState: org.plan || null, newState: planId, metadata: { interval, amountUsd: doc.amountUsd, paymentMethod: method } }).catch(() => {});
 
   const users = extra ? `${plan.maxUsers} users + ${extra} extra` : `up to ${plan.maxUsers} users`;
-  const what = `${plan.name} (${users}), $${doc.amountUsd.toLocaleString("en-US")} per ${interval}`;
+  const extras = describeAddOns(ao.addOns);
+  const what = `${plan.name} (${users})${extras ? ` with add-ons: ${extras}` : ""}, $${doc.amountUsd.toLocaleString("en-US")} per ${interval}`;
   await notifyActivationRequest({ org, orgId, plan, what, actorEmail, contact, paymentMethod: method, currency: "USD" });
-  return { request: { planId, interval, extraUsers: extra, amountUsd: doc.amountUsd, paymentMethod: method, status: "pending" } };
+  return { request: { planId, interval, extraUsers: extra, addOns: ao.addOns, amountUsd: doc.amountUsd, paymentMethod: method, status: "pending" } };
 }
 
 const INTERVALS = ["month", "year"];
@@ -160,7 +166,7 @@ async function setupPromisedTo(emails) {
 }
 
 /** Records a PKR package request for a company. One pending request per company; a new one replaces it. */
-export async function requestPkPlan({ orgId, planId, interval = "month", pilot = false, extraUsers = 0, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
+export async function requestPkPlan({ orgId, planId, interval = "month", pilot = false, extraUsers = 0, addOns: addOnsInput = {}, actorEmail, membership, contact = null, paymentMethod = "bank_transfer" }) {
   if (!canManageOrg(membership)) return { error: "Only the owner or an admin can choose the company's package.", status: 403 };
   if (!PK_PACKAGES[planId]) return { error: `Unknown package "${planId}".`, status: 400 };
   if (!INTERVALS.includes(interval)) return { error: "interval must be 'month' or 'year'.", status: 400 };
@@ -175,9 +181,11 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
   const periodEnd = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() : 0;
   const active = !!org.plan && ["active", "trialing", "past_due"].includes(sub?.status) && periodEnd > Date.now();
   const extra = Number(extraUsers);
+  const ao = cleanAddOns(addOnsInput, planId); if (ao.error) return { error: ao.error, status: 400 };
   const blocked = planChangeError({
     currentPlanId: org.plan, currentExtraUsers: org.extraUsers || 0, active,
     renewalDue: active && periodEnd - Date.now() <= RENEWAL_WINDOW_DAYS * 86400000, planId, extraUsers: extra,
+    addOnsChanged: org.plan === planId && !sameAddOns(org.addOns, ao.addOns),
   });
   if (blocked) return { error: blocked, status: 409 };
 
@@ -199,10 +207,11 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
     setupFeeReason = promised ? "promised_in_outreach" : !isPilot ? "standard" : setupFeePkr ? "pilot_fee" : "first_five";
   }
   const now = new Date().toISOString();
-  const amount = pkAmountFor(planId, interval, isPilot, extra);
+  // Add-ons are charged at the standard PKR price, never pilot-discounted (src/lib/addOns.js).
+  const amount = pkAmountFor(planId, interval, isPilot, extra) + addOnsPrice(ao.addOns, { currency: "PKR", interval });
   const doc = {
     orgId: toObjectId(orgId), orgName: org.name || null, planId, interval, pilot: isPilot,
-    extraUsers: extra, amountPkr: amount, setupFeePkr, setupFeeReason, status: "pending", requestedByEmail: actorEmail, requestedAt: now,
+    extraUsers: extra, addOns: ao.addOns, amountPkr: amount, setupFeePkr, setupFeeReason, status: "pending", requestedByEmail: actorEmail, requestedAt: now,
     currency: "PKR", paymentMethod: PAYMENT_METHODS[paymentMethod] ? paymentMethod : "bank_transfer", contact,
   };
   await col.updateOne({ orgId: doc.orgId, status: "pending" }, { $set: doc }, { upsert: true });
@@ -215,10 +224,11 @@ export async function requestPkPlan({ orgId, planId, interval = "month", pilot =
 
   const plan = PLANS[planId];
   const users = extra ? `${plan.maxUsers} users + ${extra} extra` : `up to ${plan.maxUsers} users`;
-  const what = `${plan.name} (${users}), ${formatPkr(amount)} per ${interval}${doc.pilot ? " (pilot price, 30% off)" : ""}${setupFeePkr ? `, plus a one-time setup fee of ${formatPkr(setupFeePkr)}` : ""}`;
+  const extrasPk = describeAddOns(ao.addOns);
+  const what = `${plan.name} (${users})${extrasPk ? ` with add-ons: ${extrasPk}` : ""}, ${formatPkr(amount)} per ${interval}${doc.pilot ? " (pilot price, 30% off)" : ""}${setupFeePkr ? `, plus a one-time setup fee of ${formatPkr(setupFeePkr)}` : ""}`;
   await notifyActivationRequest({ org, orgId, plan, what, actorEmail, contact, paymentMethod: doc.paymentMethod, currency: "PKR" });
 
-  return { request: { planId, interval, extraUsers: extra, amountPkr: amount, setupFeePkr, pilot: doc.pilot, pilotFull: !!pilot && pilotFull, status: "pending" } };
+  return { request: { planId, interval, extraUsers: extra, addOns: ao.addOns, amountPkr: amount, setupFeePkr, pilot: doc.pilot, pilotFull: !!pilot && pilotFull, status: "pending" } };
 }
 
 /** Pending and recent requests for the admin page, newest first. */
@@ -228,7 +238,7 @@ export async function listBillingRequests({ limit = 100 } = {}) {
   const rows = await col.find({ kind: { $exists: false } }).sort({ requestedAt: -1 }).limit(limit).toArray();
   return rows.map((r) => ({
     id: String(r._id), orgId: String(r.orgId), orgName: r.orgName, planId: r.planId, interval: r.interval, pilot: !!r.pilot,
-    extraUsers: r.extraUsers || 0, amountPkr: r.amountPkr, setupFeePkr: r.setupFeePkr || 0, setupFeeReason: r.setupFeeReason || null, status: r.status, requestedByEmail: r.requestedByEmail, requestedAt: r.requestedAt,
+    extraUsers: r.extraUsers || 0, addOns: r.addOns || {}, amountPkr: r.amountPkr, setupFeePkr: r.setupFeePkr || 0, setupFeeReason: r.setupFeeReason || null, status: r.status, requestedByEmail: r.requestedByEmail, requestedAt: r.requestedAt,
     activatedAt: r.activatedAt || null, paidUntil: r.paidUntil || null, paymentReference: r.paymentReference || null,
     currency: r.currency || "PKR", amountUsd: r.amountUsd ?? null, paymentMethod: r.paymentMethod || "bank_transfer", contact: r.contact || null,
     invoices: (r.invoices || []).map((i) => ({ number: i.number, issuedAt: i.issuedAt, total: i.total, currency: i.currency, months: i.months })),
@@ -271,7 +281,8 @@ export async function activatePkRequest({ requestId, months, paymentReference, a
   const now = new Date();
   const paidUntil = new Date(license.paymentDueAt);
   const { orgs } = await getOrgCollections();
-  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { extraUsers: reqDoc.extraUsers || 0 } });
+  // Add-ons only exist on Professional; moving to another package clears them (a larger one includes them).
+  await orgs.updateOne({ _id: reqDoc.orgId }, { $set: { extraUsers: reqDoc.extraUsers || 0, addOns: reqDoc.planId === "professional" ? reqDoc.addOns || {} : {} } });
   await col.updateOne({ _id: reqDoc._id }, { $set: { status: "active", activatedAt: now.toISOString(), paidUntil: paidUntil.toISOString(), paymentReference: String(paymentReference || "").slice(0, 120) || null, activatedBy: adminLabel, licenseId: license.licenseId } });
   await logOrgActivity({ orgId: String(reqDoc.orgId), recordType: "ORGANIZATION", recordId: String(reqDoc.orgId), actorEmail: adminLabel, action: "PK_PLAN_ACTIVATED", previousState: null, newState: reqDoc.planId, metadata: { months: m, paidUntil: paidUntil.toISOString(), licenseId: license.licenseId } }).catch(() => {});
 

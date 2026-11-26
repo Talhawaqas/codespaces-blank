@@ -29,6 +29,8 @@ export const JUSTIFIED = {
   "orgs/pending-approvals": "The signed-in person's own pending join requests (no company data).",
   "orgs/create": "Creating a new company (its own license starts unassigned).",
   "stripe-webhook": "Provider webhook (card checkout is retired); writes billing state only.",
+  "connect/whatsapp": "Meta's signed WhatsApp webhook: messages are stored while restricted so none are lost; processPending (src/lib/connect/process.js) checks companyMayOperate and answers nothing for a restricted company.",
+  "public/workspace-domain": "Custom-domain lookup for the sign-in page: only the company's public branding (name, logo, colours), never company data.",
   "feedback/upload": "Product feedback to Inaya, not company data.",
   "support/inbound-email/[slug]": "Customers' emails are received and kept while restricted, so no company data is lost; nothing is served.",
   "wallet/s3-compat/credentials": "dApp wallet storage keys: not Business Workspace (SOW 2.1).",

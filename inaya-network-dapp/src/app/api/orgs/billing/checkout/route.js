@@ -110,6 +110,7 @@ export async function POST(req) {
       const now = new Date().toISOString();
       await subscriptions.updateOne({ orgId: orgObjectId }, { $set: { plan: planId, updatedAt: now } });
       await orgs.updateOne({ _id: orgObjectId }, { $set: { plan: planId, extraUsers, planUpdatedAt: now } });
+      await import("../../../../../lib/help.js").then((h) => h.requestEnterpriseOnboarding({ orgId: String(orgId), planId })).catch(() => {});
       return NextResponse.json({ upgraded: true, planId, extraUsers });
     }
 

@@ -28,6 +28,8 @@
     "@inaya-network/custody-sdk": "^1.0.13-beta",
     "@inaya-network/migration-agent": "file:../inaya-migration-agent",
     "@peculiar/x509": "^2.1.0",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
     "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-phantom": "^0.9.29",

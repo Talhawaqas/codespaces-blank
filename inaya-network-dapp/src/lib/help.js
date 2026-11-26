@@ -82,3 +82,27 @@ export async function notifySupportMailbox({ number, subject, description, email
     });
   } catch (err) { console.error("help: support mailbox notification failed:", err?.message || err); return { sent: false, reason: "error" }; }
 }
+
+/**
+ * Dedicated onboarding (Enterprise package, pricing card in orgPlans.js). When a company moves to Enterprise, one onboarding
+ * ticket opens on Inaya's own desk for the company owner (idempotent per company: a repeat call finds the same ticket), so a
+ * named person on the Inaya team picks it up and books the onboarding. Best effort: a missing desk never fails the plan change.
+ */
+export async function requestEnterpriseOnboarding({ orgId, planId }) {
+  if (planId !== "enterprise") return { skipped: true };
+  try {
+    const desk = await getSupportDesk(); if (!desk) return { skipped: true, reason: "no_desk" };
+    const { orgs } = await getOrgCollections(); const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { name: 1, ownerEmail: 1 } });
+    if (!org?.ownerEmail) return { skipped: true, reason: "no_owner" };
+    const r = await submitTicket({
+      orgId: desk.orgId, settings: desk.settings, actor: { type: "api", email: "onboarding@inayanetwork.com", staff: true }, requester: { email: org.ownerEmail },
+      subject: `Dedicated onboarding: ${String(org.name || "Enterprise company").slice(0, 120)}`,
+      description: `${org.name || "This company"} moved to the Enterprise package. Assign a named onboarding contact, agree the onboarding plan with the owner (${org.ownerEmail}) and book the first session. Enterprise first-reply target: 8 business hours.`,
+      type: desk.settings.ticketTypes?.includes("Onboarding") ? "Onboarding" : "Other", category: "Account", priority: "HIGH", channel: "API",
+      idempotencyKey: `enterprise-onboarding:${String(orgId)}`, customFields: {}, tags: ["enterprise-onboarding", `org:${String(org.name || "").slice(0, 50)}`],
+    });
+    if (r.error) return { error: r.error };
+    if (!r.duplicate) await notifySupportMailbox({ number: r.ticket.number, subject: `Dedicated onboarding: ${org.name}`, description: "A company moved to Enterprise. See the ticket.", email: org.ownerEmail, customerOrganization: { name: org.name } });
+    return { ticketNumber: r.ticket.number, duplicate: !!r.duplicate };
+  } catch (err) { console.error("enterprise onboarding ticket failed:", err?.name); return { error: "failed" }; }
+}

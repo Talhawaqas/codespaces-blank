@@ -60,6 +60,10 @@ export async function requireApiKey(req) {
   // Company license (License Manager SOW 9.3): API keys stop working while the license is restricted.
   const { companyMayOperate } = await import("./licensing/gate.js");
   if (!(await companyMayOperate(key.orgId))) return { error: "This company's Business OS license is not active.", status: 403, code: "LICENSE_RESTRICTED" };
+  // API access is a Business and Enterprise feature (planGates.js).
+  const { requirePlanFeature } = await import("./planGates.js");
+  const gate = await requirePlanFeature(key.orgId.toString(), "apiAccess");
+  if (gate) return gate;
 
   return { orgId: key.orgId.toString(), membership: { role: "owner" } };
 }

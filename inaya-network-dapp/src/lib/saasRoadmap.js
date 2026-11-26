@@ -663,7 +663,7 @@ export const ROADMAP_STAGES = [
     title: "Secure Collaboration & Enterprise Governance — Competitive Expansion",
     status: ROADMAP_STATUS.IN_PROGRESS,
     description:
-      "A competitive-expansion layer inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration (chat, notes, sharing), and the controls a large organization needs (governance, classification, device management, compliance readiness) — built inside Inaya's existing encrypted storage and permission model rather than as a separate product. Every capability here is off by default; an organization turns it on for itself.",
+      "A competitive-expansion layer inspired by the strongest patterns of two well-known products — private end-to-end encrypted collaboration (chat, notes, sharing), and the controls a large organization needs (governance, classification, device management, compliance readiness) — built inside Inaya's existing encrypted storage and permission model rather than as a separate product. Each capability is switched on per organization, within the package that includes it (device inventory is on by default for Business and Enterprise).",
     securityStatement:
       "Chat and notes are end-to-end encrypted on the device; an administrator cannot read them. Nothing here is claimed as a government certification or an independently audited cryptographic protocol unless it actually is one.",
     groups: [
@@ -705,7 +705,7 @@ export const ROADMAP_STAGES = [
       },
     ],
     notes:
-      "Built across 26 workstreams and deployed to the live website behind off-by-default feature flags, 3–5 October 2026. Honest ledger of 114 tracked deliverables: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built (mobile chat and push notifications — left for later by deliberate choice, not an oversight). The Sovereign Gateway, NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant. The chat protocol's open-source library implementation has not had an independent security audit. The project's own final verification report states plainly that the SOW is not yet complete — this stage stays IN_PROGRESS until it is.",
+      "Built across 26 workstreams and deployed to the live website behind feature flags, 3–5 October 2026 (from 26 November 2026 several are limited to the packages that include them). Honest ledger of 114 tracked deliverables: 49 finished and independently checked against the real database and, where there's a screen, a real browser; 35 built and tested in code but not yet proven against a real outside system; 27 partly built; 3 not built (mobile chat and push notifications — left for later by deliberate choice, not an oversight). The Sovereign Gateway, NTFS/Active-Directory folder-permission bridge, high-availability site replication, and Microsoft 365/Outlook integration are built and tested but not yet proven against a real company file server or a real Microsoft 365 tenant. The chat protocol's open-source library implementation has not had an independent security audit. The project's own final verification report states plainly that the SOW is not yet complete — this stage stays IN_PROGRESS until it is.",
   },
   {
     number: 29,

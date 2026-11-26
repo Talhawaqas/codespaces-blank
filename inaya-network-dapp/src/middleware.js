@@ -37,7 +37,7 @@ const VALID_BUCKET_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 // Only that exact leading shape is rewritten, back to the normal path; the Azure routes and SAS verification are untouched.
 const AZCOPY_ENCODED_BASE = /^\/api(\/|%2F)azure%2F/i;
 
-export function middleware(req) {
+export async function middleware(req) {
   const rawPath = new URL(req.url).pathname;
   if (AZCOPY_ENCODED_BASE.test(rawPath)) {
     const url = req.nextUrl.clone();
@@ -56,6 +56,10 @@ export function middleware(req) {
   // Online stores (Commerce Phase 5): "<slug>.<STORE_HOST_BASE>" and, when ONLINE_STORE_CUSTOM_DOMAINS=1, a shop's own verified
   // domain are served by the storefront pages. Inert unless the operator sets them; Inaya's own hosts are never rewritten, and
   // /api and /_next pass through untouched (the storefront calls /api/shop/<slug>/... on the same origin).
+  // Business OS custom domains (Business and Enterprise; src/lib/branding/branding.js): on a company's verified host the whole app is
+  // served as-is and "/" opens the company's sign-in. Only unknown hosts are looked up (cached), never Inaya's own hosts.
+  const ws = await workspaceHostRewrite(req, rawPath, azureBase);
+  if (ws) return ws;
   const storeRewrite = storefrontRewrite(req, rawPath);
   if (storeRewrite) return storeRewrite;
   if (!BASE_HOST) return NextResponse.next();
@@ -89,6 +93,24 @@ export function middleware(req) {
 
 const STORE_SLUG = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
 const OWN_HOST = /(^|\.)inayanetwork\.com$|\.vercel\.app$|^localhost$|^127\.0\.0\.1$|^\[::1\]$/;
+const wsCache = new Map();
+async function workspaceHostRewrite(req, rawPath, azureBase) {
+  if (rawPath.startsWith("/api/") || rawPath.startsWith("/_next/")) return null;
+  const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
+  if (!host || OWN_HOST.test(host) || host === azureBase || !/^[a-z0-9.-]+$/.test(host)) return null;
+  const s3 = BASE_HOST.toLowerCase().split(":")[0]; const store = (process.env.STORE_HOST_BASE || "").toLowerCase().split(":")[0];
+  if ((s3 && host.endsWith("." + s3)) || (store && (host === store || host.endsWith("." + store)))) return null;
+  let hit = wsCache.get(host);
+  if (!hit || Date.now() - hit.at > 5 * 60 * 1000) {
+    let workspace = false;
+    try { const r = await fetch(new URL(`/api/public/workspace-domain?host=${encodeURIComponent(host)}`, req.url), { signal: AbortSignal.timeout(3000) }); if (r.ok) workspace = (await r.json()).workspace === true; } catch { workspace = false; }
+    hit = { at: Date.now(), workspace }; wsCache.set(host, hit);
+  }
+  if (!hit.workspace) return null;
+  if (rawPath === "/") { const url = req.nextUrl.clone(); url.pathname = "/business"; return NextResponse.rewrite(url); }
+  return NextResponse.next();
+}
+
 function storefrontRewrite(req, rawPath) {
   const seo = rawPath.match(/^\/shop\/([a-z0-9-]+)\/(sitemap\.xml|robots\.txt)$/);
   if (seo && STORE_SLUG.test(seo[1])) { const u = req.nextUrl.clone(); u.pathname = `/api/shop/${seo[1]}/${seo[2]}`; return NextResponse.rewrite(u); }

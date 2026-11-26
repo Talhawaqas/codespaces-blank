@@ -40,7 +40,7 @@ async function getJson(url, init = {}) {
 }
 
 const discoveryCache = new Map(); const jwksCache = new Map();
-async function discover(issuer) {
+export async function discover(issuer) {
   const hit = discoveryCache.get(issuer); if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.doc;
   const doc = await getJson(`${issuer.replace(/\/$/, "")}/.well-known/openid-configuration`);
   if (String(doc.issuer || "").replace(/\/$/, "") !== issuer.replace(/\/$/, "")) throw new Error("The provider's issuer does not match the configured issuer.");

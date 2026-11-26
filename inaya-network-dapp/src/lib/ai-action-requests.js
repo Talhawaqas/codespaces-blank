@@ -250,6 +250,10 @@ export async function proposeAiAction({
 }) {
   const gate = requireAiActionAllowed({ allowed: canPropose, reason: "You don't have permission to propose this action." });
   if (gate.error) return gate;
+  // The assistant preparing actions for approval is the advanced AI assistant: Business and Enterprise (planGates.js).
+  const { requirePlanFeature } = await import("./planGates.js");
+  const planGate = await requirePlanFeature(orgId, "advancedAi");
+  if (planGate) return { error: planGate.error, status: 403, code: planGate.code };
 
   const { aiActionRequests } = await getOrgCollections();
   const orgObjectId = toObjectId(orgId);

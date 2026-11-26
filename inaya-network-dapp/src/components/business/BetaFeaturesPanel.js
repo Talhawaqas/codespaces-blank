@@ -70,8 +70,8 @@ export default function BetaFeaturesPanel({ orgId, canManage }) {
       {err && <p className="text-red-400 text-[12px] mb-2" role="alert">{err}</p>}
       {rows === null ? <p className="text-[12px] text-[var(--inaya-text-muted)]">Loading…</p> : rows.map((f) => (
         <label key={f.name} className="flex items-start gap-3 py-2 border-t border-[var(--inaya-overlay-10)] first:border-0">
-          <input type="checkbox" className="mt-1" checked={f.enabled} disabled={!canManage || busy === f.name || f.source === "platform"} onChange={(e) => toggle(f.name, e.target.checked)} aria-label={OFFERED[f.name].title} />
-          <span className="text-[12px]"><b>{OFFERED[f.name].title}</b>{f.source === "platform" ? <span className="text-[var(--inaya-text-muted)]"> (on for everyone)</span> : null}<br /><span className="text-[var(--inaya-text-muted)]">{OFFERED[f.name].text}</span></span>
+          <input type="checkbox" className="mt-1" checked={f.enabled} disabled={!canManage || busy === f.name || f.source === "platform" || f.planLocked} onChange={(e) => toggle(f.name, e.target.checked)} aria-label={OFFERED[f.name].title} />
+          <span className="text-[12px]"><b>{OFFERED[f.name].title}</b>{f.source === "platform" ? <span className="text-[var(--inaya-text-muted)]"> (on for everyone)</span> : f.planLocked ? <span className="text-amber-400"> (needs a larger package; upgrade in Billing)</span> : f.source === "package" ? <span className="text-[var(--inaya-text-muted)]"> (included in your package)</span> : null}<br /><span className="text-[var(--inaya-text-muted)]">{OFFERED[f.name].text}</span></span>
         </label>))}
     </div>
   );

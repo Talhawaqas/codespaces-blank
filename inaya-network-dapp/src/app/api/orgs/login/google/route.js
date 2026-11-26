@@ -20,11 +20,15 @@ import { NextResponse } from "next/server";
 import { createSession, SESSION_TTL_MS, SESSION_COOKIE } from "../../../../../lib/orgs.js";
 import { verifyGoogleIdToken } from "../../../../../lib/googleAuth.js";
 import { isMfaEnrolled, issueMfaPendingToken } from "../../../../../lib/mfa.js";
+import { ssoRequiredFor } from "../../../../../lib/workforceSso.js";
 
 export async function POST(req) {
   try {
     const { idToken } = await req.json();
     const { email } = await verifyGoogleIdToken(idToken);
+    // Enterprise SSO enforcement (src/lib/workforceSso.js).
+    const ssoOnly = await ssoRequiredFor(email);
+    if (ssoOnly) return NextResponse.json({ error: ssoOnly, code: "SSO_REQUIRED" }, { status: 403 });
 
     // MFA gate — additive, same as the magic-link routes: an unenrolled
     // email falls straight through to createSession() exactly as before.

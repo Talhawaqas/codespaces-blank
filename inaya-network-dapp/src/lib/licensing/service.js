@@ -270,6 +270,7 @@ export async function confirmPayment({ orgId, paymentId, actor = adminActorName(
   // Outside the transaction: the plan in force for the existing entitlement checks, and the company's activity feed.
   const { orgs } = await getOrgCollections();
   await orgs.updateOne({ _id: out.license.orgId }, { $set: { plan: out.license.planId, planUpdatedAt: nowIso(), billingRegion: out.license.currency === "PKR" ? "PK" : "INTL", requiresPlanSelection: false } });
+  await import("../help.js").then((h) => h.requestEnterpriseOnboarding({ orgId: String(out.license.orgId), planId: out.license.planId })).catch(() => {});
   activityLog(orgId, "LICENSE_PAYMENT_CONFIRMED", { paidThroughDate: out.license.paidThroughDate });
   const { notifyLicenseEvent } = await import("./notices.js");
   notifyLicenseEvent({ orgId, type: out.prevState === "suspended" ? "reactivated" : "payment_confirmed", license: out.license }).catch((e) => console.error("license notice failed:", e.message));
@@ -355,6 +356,7 @@ export async function changeSubscription({ orgId, planId = null, billingCycle = 
   if (applyAt === "now" && nextPlan !== lic.planId) {
     const { orgs } = await getOrgCollections();
     await orgs.updateOne({ _id: lic.orgId }, { $set: { plan: nextPlan, planUpdatedAt: nowIso() } });
+    await import("../help.js").then((h) => h.requestEnterpriseOnboarding({ orgId: String(lic.orgId), planId: nextPlan })).catch(() => {});
     activityLog(orgId, "LICENSE_PLAN_CHANGED", { plan: snapshot.name });
     const { notifyLicenseEvent } = await import("./notices.js");
     notifyLicenseEvent({ orgId, type: "plan_changed", license: await getLicense(orgId) }).catch(() => {});

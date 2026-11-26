@@ -22,10 +22,11 @@ import { getOrgCollections, toObjectId } from "../orgs.js";
 import { canManageOrg, canManageCalendar, canManageMarketing, canEditCampaigns, canApproveCampaigns, canViewCampaigns, CALENDAR_ROLES, MARKETING_ROLES } from "../orgGates.js";
 export { canManageCalendar, canManageMarketing, canEditCampaigns, canApproveCampaigns, canViewCampaigns, CALENDAR_ROLES, MARKETING_ROLES };
 import { getOrgPlan } from "../orgPlans.js";
+import { hasAddOn } from "../addOns.js";
 
 
-// Monthly marketing-email allowance per plan (founder decision: Business 50k, Enterprise 250k).
-export const MARKETING_MONTHLY_LIMITS = { business: 50000, enterprise: 250000, legacy: 50000 };
+// Monthly marketing-email allowance per plan (founder decision: Business 50k, Enterprise 250k; the Professional add-on 10k).
+export const MARKETING_MONTHLY_LIMITS = { business: 50000, enterprise: 250000, legacy: 50000, professional: 10000 };
 
 let indexesReady = null;
 
@@ -68,13 +69,14 @@ export const clean = (s, max = 500) => (s === null || s === undefined ? "" : Str
 /** Plan gate. Returns null when allowed, or a { error, status } to return. */
 export async function engagementAccess(orgId, module = "appointments") {
   const { orgs } = await getOrgCollections();
-  const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { plan: 1, extraUsers: 1, noPlanConfirmedAt: 1, name: 1 } });
+  const org = await orgs.findOne({ _id: toObjectId(orgId) }, { projection: { plan: 1, extraUsers: 1, noPlanConfirmedAt: 1, name: 1, addOns: 1 } });
   if (!org) return fail("Company not found.", 404);
   const plan = getOrgPlan(org);
   if (plan.id === null) return null; // legacy, unrestricted
   if (plan.id === "business" || plan.id === "enterprise") return null;
+  if (hasAddOn(org, module === "campaigns" ? "campaigns" : "appointments")) return null; // Professional add-on (src/lib/addOns.js)
   const name = module === "campaigns" ? "Email campaigns" : "Appointments";
-  return fail(`${name} are part of the Business and Enterprise packages. Upgrade in Settings â†’ Billing to turn them on.`, 402);
+  return fail(`${name} are part of the Business and Enterprise packages${plan.id === "professional" ? ", or an add-on for Professional" : ""}. See Settings → Billing.`, 402);
 }
 
 export async function orgPlanKey(orgId) {

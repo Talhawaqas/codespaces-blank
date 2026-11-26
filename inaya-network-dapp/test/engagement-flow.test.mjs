@@ -169,7 +169,10 @@ test("calendar feed (ICS out) and team/department visibility", async () => {
   assert.ok(team.appointments.length >= 2);
   const dept = await A.listAppointments({ orgId: String(orgId), membership: owner, scope: "department", departmentId: String(deptId) });
   assert.ok(dept.appointments.length >= 2);
-  const dash = await ST.appointmentDashboard({ orgId: String(orgId), membership: owner, scope: "team" });
+  // Anchor the dashboard's 30-day window (which ends tomorrow) to the latest booking: slots are booked up to 7 days ahead, so
+  // run late in the day they fall after tomorrow and the count depended on the time the test ran.
+  const latest = new Date(Math.max(...team.appointments.map((a) => new Date(a.start).getTime())));
+  const dash = await ST.appointmentDashboard({ orgId: String(orgId), membership: owner, scope: "team", now: latest });
   assert.ok(dash.cards.total.value >= 2); assert.equal(dash.cards.completed.value, 1);
   assert.equal(dash.rates.bookingCompletion, null, "no starts recorded via API in this test");
 });

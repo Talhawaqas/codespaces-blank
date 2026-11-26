@@ -3,11 +3,13 @@
 import { NextResponse } from "next/server";
 import { ensureOrgIndexes, requireMembership } from "../../../../lib/orgs.js";
 import { buildDashboard, DashError } from "../../../../lib/admin/dashboard.js";
+import { requirePlanFeature } from "../../../../lib/planGates.js";
 export const dynamic = "force-dynamic";
 export async function GET(req) {
   try {
     const orgId = new URL(req.url).searchParams.get("orgId"); if (!orgId) return NextResponse.json({ error: "orgId is required." }, { status: 400 });
     await ensureOrgIndexes(); const auth = await requireMembership(req, orgId); if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    { const g = await requirePlanFeature(orgId, "adminDashboard"); if (g) return NextResponse.json(g, { status: g.status }); }
     return NextResponse.json(await buildDashboard({ orgId, membership: auth.membership }), { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     if (err instanceof DashError) return NextResponse.json({ error: err.message }, { status: err.status });

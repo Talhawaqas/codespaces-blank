@@ -16,6 +16,7 @@ import { makeCalendar, selectPolicy, startSla, onStatusChange, onFirstResponse, 
 import { findContactByEmail, getProfile, invoicesForContact, invoiceView, customerContext } from "./customers.js";
 import { audit, emit, link } from "./record.js";
 import { notifyStaff, notifyCustomer, portalUrl, emailBody } from "./notify.js";
+import { packageTier } from "./packageTier.js";
 
 const MAX_SUBJECT = 200; const MAX_BODY = 20000;
 
@@ -104,7 +105,7 @@ export async function createTicket({ orgId, settings, actor, requester, subject,
 
   const contact = unverified ? null : await findContactByEmail(orgId, reqEmail);
   const profile = await getProfile(orgId, reqEmail);
-  const tier = profile?.tier || null;
+  const tier = profile?.tier || (await packageTier(orgId, reqEmail));
   const pr = computePriority({ channel, type: t, tier, requested: priority, actorIsStaff: !!actor?.staff });
   const routeInput = { type: t, category: cat, priority: pr.priority, channel, tier, subject: subj, text: desc };
   let queue; let routeReason = "explicit";
@@ -252,7 +253,7 @@ export async function setPriority({ orgId, settings, ticketId, priority, actor }
   const res = await mutate({ orgId, ticketId, fn: async (t) => {
     if (t.priority === priority) return null;
     const profile = await getProfile(orgId, t.requester.email);
-    const policy = selectPolicy(policies, { type: t.type, priority, tier: profile?.tier || null, queueId: t.queueId });
+    const policy = selectPolicy(policies, { type: t.type, priority, tier: profile?.tier || (await packageTier(orgId, t.requester.email)), queueId: t.queueId });
     const set = { priority, priorityRank: PRIORITY_RANK[priority], prioritySource: "AGENT" };
     if (t.sla && policy) { const sla = JSON.parse(JSON.stringify(t.sla)); sla.targets = { firstResponseMin: policy.firstResponseMin, resolutionMin: policy.resolutionMin }; sla.policyId = String(policy._id); sla.policyName = policy.name; sla.escalations = policy.escalations || sla.escalations; set.sla = sla; set.slaState = evaluateSla(sla, { cal: calOf(t, settings), settings }).state; }
     return { set };

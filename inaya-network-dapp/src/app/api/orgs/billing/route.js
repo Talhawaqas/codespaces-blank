@@ -48,6 +48,7 @@ export async function GET(req) {
         noBilling: !!plan.noBilling,
         maxStorageGB: plan.maxStorageGB === Infinity ? null : plan.maxStorageGB,
         maxFileSizeMB: plan.maxFileSizeMB === Infinity ? null : plan.maxFileSizeMB,
+        addOns: plan.id === "professional" ? org.addOns || {} : {},
       },
       usage: {
         users: { used: usage.activeUsers, max: plan.maxUsers === Infinity ? null : plan.maxUsers },

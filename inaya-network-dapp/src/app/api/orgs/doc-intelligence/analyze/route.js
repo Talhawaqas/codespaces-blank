@@ -7,6 +7,7 @@ import { ensureOrgIndexes, requireMembership } from "../../../../../lib/orgs.js"
 import { checkRateLimit } from "../../../../../lib/rateLimit.js";
 import { analyzeDocument } from "../../../../../lib/docIntelligence/analyze.js";
 import { MAX_DOC_BYTES } from "../../../../../lib/docIntelligence/common.js";
+import { requirePlanFeature } from "../../../../../lib/planGates.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,6 +20,7 @@ export async function POST(req) {
     if (Number(req.headers.get("content-length") || 0) > MAX_DOC_BYTES + 4096) return NextResponse.json({ error: "The file is too large." }, { status: 413 });
     await ensureOrgIndexes();
     const auth = await requireMembership(req, orgId); if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    { const g = await requirePlanFeature(orgId, "documentAi"); if (g) return NextResponse.json(g, { status: g.status }); }
     try { await checkRateLimit({ action: "doc-intelligence:analyze", key: auth.session.email, max: 30, windowMs: 15 * 60 * 1000 }); } catch { return NextResponse.json({ error: "Too many submissions. Please wait a moment." }, { status: 429 }); }
     const form = await req.formData();
     const f = form.get("file");
