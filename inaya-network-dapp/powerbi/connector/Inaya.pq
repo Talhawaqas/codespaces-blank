@@ -53,7 +53,21 @@ GetJson = (relativePath as text, optional query as nullable record) as record =>
     in
         Result;
 
-Catalogue = () as record => GetJson("api/analytics/v1/datasets");
+SignInAgain = "Inaya: this Power BI connection was disconnected in Inaya or has expired. Sign in again: File > Options and settings > Data source settings > Inaya Business OS > Edit Permissions > Sign in.";
+
+// The dataset list for the signed-in person. If Inaya refused the connection (disconnected, removed from the company,
+// package or licence changed), say so plainly instead of failing later with a confusing type error.
+Catalogue = () as record =>
+    let
+        Attempt = try GetJson("api/analytics/v1/datasets"),
+        Why = if Attempt[HasError] then Text.Combine({Attempt[Error][Reason]?, Attempt[Error][Message]?}, " ") else "",
+        IsSignIn = List.AnyTrue(List.Transform({"redential", "401", "invalid_grant", "invalid_token", "revoked", "Access to the resource is forbidden"}, (k) => Text.Contains(Why, k))),
+        Cat = if Attempt[HasError] then null else Attempt[Value],
+        Ok = Cat <> null and Record.HasFields(Cat, "datasets") and Value.Is(Cat[datasets], type list)
+    in
+        if Ok then Cat
+        else if Attempt[HasError] and not IsSignIn then error Attempt[Error]
+        else error Error.Record("Inaya.SignInRequired", SignInAgain);
 
 IsoText = (d as any) as text =>
     let dt = if Value.Is(d, type date) then DateTime.From(d) else if Value.Is(d, type datetimezone) then DateTimeZone.RemoveZone(DateTimeZone.ToUtc(d)) else DateTime.From(d)
@@ -116,7 +130,8 @@ DatasetTable = (Name as text, From as datetime, To as datetime) as table =>
         Matches = List.Select(Cat[datasets], each _[name] = Name),
         Ds = if List.IsEmpty(Matches) then error Error.Record("Inaya: unknown dataset " & Name) else Matches{0},
         // A dataset this person's role can't read loads empty (same columns), so one locked table never fails a whole report refresh.
-        Result = if not Ds[allowed] then ToTable({}, Ds[fields]) else LoadDataset(Ds, From, To)
+        Allowed = Record.FieldOrDefault(Ds, "allowed", null),
+        Result = if Allowed = null then error Error.Record("Inaya.SignInRequired", SignInAgain) else if not Allowed then ToTable({}, Ds[fields]) else LoadDataset(Ds, From, To)
     in
         Result;
 
@@ -126,7 +141,7 @@ NavigationTable = (optional From as nullable date, optional To as nullable date)
         Today = DateTime.Date(DateTime.FixedLocalNow()),
         FromDt = DateTime.From(if From = null then Date.AddYears(Today, -2) else From),
         ToDt = DateTime.From(Date.AddDays(if To = null then Today else To, 1)),
-        Allowed = List.Select(Cat[datasets], each _[allowed]),
+        Allowed = List.Select(Cat[datasets], each Record.FieldOrDefault(_, "allowed", false) = true),
         Rows = List.Transform(Allowed, (ds) => {ds[title], ds[name], LoadDataset(ds, FromDt, ToDt), "Table", "Table", true}),
         Source = #table({"Name", "Key", "Data", "ItemKind", "ItemName", "IsLeaf"}, Rows),
         Nav = Table.ToNavigationTable(Source, {"Key"}, "Name", "Data", "ItemKind", "ItemName", "IsLeaf")

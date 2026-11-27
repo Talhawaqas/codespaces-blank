@@ -84,7 +84,7 @@ Sales measures use the same rules as Inaya's own Commerce reports, and the autom
 | Measure | Definition |
 |---|---|
 | Gross Sales | Net sales plus discounts, excluding tax. Voided sales are excluded. |
-| Discounts | Line and whole-sale discounts given. |
+| Discounts Given | Line and whole-sale discounts given. |
 | Net Sales | Sales after discounts and before returns, excluding tax. |
 | Returns | Refunds made in the period, excluding tax, counted on the refund date. |
 | Net Sales After Returns | Net Sales minus Returns. |
@@ -94,7 +94,7 @@ Sales measures use the same rules as Inaya's own Commerce reports, and the autom
 | Invoiced | Invoice totals. Deleted invoices are excluded. |
 | Cash Received / Cash Paid Out | Payments in and out. |
 | Invoiced Less Received | Invoiced minus received in the selected period. This is **not** an aged receivables balance. |
-| Expenses | Expenses recorded. Deleted expenses are excluded. |
+| Total Expenses | Expenses recorded. Deleted expenses are excluded. |
 | Stock On Hand | Units on hand now. It isn't filtered by date. |
 | Units In / Units Out | Stock added or removed by movements in the period. |
 | Jobs / Jobs Completed | Work and repair orders created, and those that reached completed, closed or delivered. |

@@ -26,7 +26,7 @@ DAY_COLUMNS = {"Sales Lines": ("Sale Date", "completedAt"), "Sales Refunds": ("R
 MEASURES = {
     "Sales Lines": [
         ("Gross Sales", "CALCULATE(SUM('Sales Lines'[grossSales]), 'Sales Lines'[isVoided] = FALSE())", "#,0.00", "Net sales plus discounts, excluding tax. Voided sales excluded."),
-        ("Discounts", "CALCULATE(SUM('Sales Lines'[discounts]), 'Sales Lines'[isVoided] = FALSE())", "#,0.00", "Line and whole-sale discounts given."),
+        ("Discounts Given", "CALCULATE(SUM('Sales Lines'[discounts]), 'Sales Lines'[isVoided] = FALSE())", "#,0.00", "Line and whole-sale discounts given."),
         ("Net Sales", "CALCULATE(SUM('Sales Lines'[netSales]), 'Sales Lines'[isVoided] = FALSE())", "#,0.00", "Sales after discounts, before returns, excluding tax."),
         ("Tax Collected", "CALCULATE(SUM('Sales Lines'[tax]), 'Sales Lines'[isVoided] = FALSE())", "#,0.00", "Tax on point-of-sale sales."),
         ("Transactions", "CALCULATE(DISTINCTCOUNT('Sales Lines'[saleId]), 'Sales Lines'[isVoided] = FALSE())", "#,0", "Completed sales (receipts), voids excluded."),
@@ -42,7 +42,7 @@ MEASURES = {
         ("Cash Paid Out", "CALCULATE(SUM(Payments[amount]), Payments[direction] = \"OUT\", Payments[isDeleted] = FALSE())", "#,0.00", "Payments made."),
         ("Invoiced Less Received", "[Invoiced] - [Cash Received]", "#,0.00", "Invoiced minus received in the selected period. Not an aged receivables balance."),
     ],
-    "Expenses": [("Expenses", "CALCULATE(SUM(Expenses[amount]), Expenses[isDeleted] = FALSE())", "#,0.00", "Expenses recorded (deleted excluded).")],
+    "Expenses": [("Total Expenses", "CALCULATE(SUM(Expenses[amount]), Expenses[isDeleted] = FALSE())", "#,0.00", "Expenses recorded (deleted excluded).")],
     "Stock Balances": [("Stock On Hand", "SUM('Stock Balances'[quantity])", "#,0", "Units on hand now (not filtered by date).")],
     "Stock Movements": [("Units In", "CALCULATE(SUM('Stock Movements'[quantityChange]), 'Stock Movements'[quantityChange] > 0)", "#,0", "Units added."),
                         ("Units Out", "-CALCULATE(SUM('Stock Movements'[quantityChange]), 'Stock Movements'[quantityChange] < 0)", "#,0", "Units removed.")],
@@ -58,6 +58,16 @@ RELATIONSHIPS = [("Sales Lines", "productId", "Products", "id"), ("Sales Lines",
     ("Stock Movements", "productId", "Products", "id"), ("Stock Movements", "branchId", "Branches", "id"), ("Work Orders", "branchId", "Branches", "id"),
     ("Invoices", "customerId", "Customers", "id"), ("Sales Orders", "customerId", "Customers", "id"), ("Purchase Order Lines", "supplierId", "Suppliers", "id"),
     ("Purchase Order Lines", "productId", "Products", "id"), ("Leave", "employeeId", "Employees", "id")]
+
+# Power BI: a measure can't share its name (case-insensitive) with any column in its table or any other measure or table.
+_all_measures = [m[0].lower() for v in MEASURES.values() for m in v]
+assert len(_all_measures) == len(set(_all_measures)), "duplicate measure names"
+for _t, _ms in MEASURES.items():
+    _key = [k for k, v in TABLE_NAMES.items() if v == _t][0]
+    _cols = {f["name"].lower() for f in DS[_key]["fields"]} | ({DAY_COLUMNS[_t][0].lower()} if _t in DAY_COLUMNS else set())
+    for _m in _ms:
+        assert _m[0].lower() not in _cols, f"measure {_m[0]} clashes with a column in {_t}"
+        assert _m[0].lower() not in {x.lower() for x in TABLE_NAMES.values()} | {"date"}, f"measure {_m[0]} clashes with a table name"
 
 q = lambda n: f"'{n}'" if (" " in n or not n.isidentifier()) else n
 def w(path, text): open(path, "w", encoding="utf-8", newline="\n").write(text)
@@ -125,17 +135,17 @@ def card(vid, x, y, entity, measure): return visual(vid, "card", x, y, 230, 110,
 def slicer(vid, x, y, entity, col, title): return visual(vid, "slicer", x, y, 230, 110, {"Values": [(entity, col, "c")]}, title)
 M, C = "m", "c"
 PAGES = [
-    ("Executive Overview", [card("e1", 20, 20, "Sales Lines", "Net Sales"), card("e2", 260, 20, "Sales Refunds", "Returns"), card("e3", 500, 20, "Expenses", "Expenses"), card("e4", 740, 20, "Sales Lines", "Transactions"),
+    ("Executive Overview", [card("e1", 20, 20, "Sales Lines", "Net Sales"), card("e2", 260, 20, "Sales Refunds", "Returns"), card("e3", 500, 20, "Expenses", "Total Expenses"), card("e4", 740, 20, "Sales Lines", "Transactions"),
         slicer("e5", 1000, 20, "Sales Lines", "currency", "Currency"),
-        visual("e6", "lineChart", 20, 150, 760, 300, {"Category": [("Date", "Month", C)], "Y": [("Sales Lines", "Net Sales", M), ("Expenses", "Expenses", M)]}, "Net sales and expenses by month"),
+        visual("e6", "lineChart", 20, 150, 760, 300, {"Category": [("Date", "Month", C)], "Y": [("Sales Lines", "Net Sales", M), ("Expenses", "Total Expenses", M)]}, "Net sales and expenses by month"),
         visual("e7", "clusteredBarChart", 800, 150, 460, 300, {"Category": [("Branches", "name", C)], "Y": [("Sales Lines", "Net Sales", M)]}, "Net sales by branch"),
-        visual("e8", "tableEx", 20, 470, 1240, 230, {"Values": [("Date", "Month", C), ("Sales Lines", "Gross Sales", M), ("Sales Lines", "Discounts", M), ("Sales Lines", "Net Sales", M), ("Sales Refunds", "Returns", M), ("Sales Lines", "Net Sales After Returns", M), ("Sales Lines", "Tax Collected", M)]}, "Period summary")]),
+        visual("e8", "tableEx", 20, 470, 1240, 230, {"Values": [("Date", "Month", C), ("Sales Lines", "Gross Sales", M), ("Sales Lines", "Discounts Given", M), ("Sales Lines", "Net Sales", M), ("Sales Refunds", "Returns", M), ("Sales Lines", "Net Sales After Returns", M), ("Sales Lines", "Tax Collected", M)]}, "Period summary")]),
     ("Finance and Cash", [card("f1", 20, 20, "Invoices", "Invoiced"), card("f2", 260, 20, "Payments", "Cash Received"), card("f3", 500, 20, "Payments", "Cash Paid Out"), card("f4", 740, 20, "Payments", "Invoiced Less Received"),
         slicer("f5", 1000, 20, "Invoices", "currency", "Currency"),
         visual("f6", "clusteredColumnChart", 20, 150, 760, 300, {"Category": [("Date", "Month", C)], "Y": [("Invoices", "Invoiced", M), ("Payments", "Cash Received", M)]}, "Invoiced vs received by month"),
-        visual("f7", "clusteredBarChart", 800, 150, 460, 300, {"Category": [("Expenses", "category", C)], "Y": [("Expenses", "Expenses", M)]}, "Expenses by category"),
+        visual("f7", "clusteredBarChart", 800, 150, 460, 300, {"Category": [("Expenses", "category", C)], "Y": [("Expenses", "Total Expenses", M)]}, "Expenses by category"),
         visual("f8", "tableEx", 20, 470, 1240, 230, {"Values": [("Invoices", "invoiceNumber", C), ("Customers", "name", C), ("Invoices", "status", C), ("Invoices", "issueDate", C), ("Invoices", "dueDate", C), ("Invoices", "Invoiced", M)]}, "Invoices")]),
-    ("Sales and Commerce", [card("s1", 20, 20, "Sales Lines", "Gross Sales"), card("s2", 260, 20, "Sales Lines", "Discounts"), card("s3", 500, 20, "Sales Lines", "Average Sale"), card("s4", 740, 20, "Sales Lines", "Units Sold"),
+    ("Sales and Commerce", [card("s1", 20, 20, "Sales Lines", "Gross Sales"), card("s2", 260, 20, "Sales Lines", "Discounts Given"), card("s3", 500, 20, "Sales Lines", "Average Sale"), card("s4", 740, 20, "Sales Lines", "Units Sold"),
         slicer("s5", 1000, 20, "Branches", "name", "Branch"),
         visual("s6", "clusteredBarChart", 20, 150, 620, 300, {"Category": [("Products", "category", C)], "Y": [("Sales Lines", "Net Sales", M)]}, "Net sales by category"),
         visual("s7", "clusteredColumnChart", 660, 150, 600, 300, {"Category": [("Sales Orders", "channel", C)], "Y": [("Sales Orders", "Order Value", M)]}, "Orders by channel"),

@@ -1,7 +1,7 @@
 table Expenses
 
 	/// Expenses recorded (deleted excluded).
-	measure Expenses = CALCULATE(SUM(Expenses[amount]), Expenses[isDeleted] = FALSE())
+	measure 'Total Expenses' = CALCULATE(SUM(Expenses[amount]), Expenses[isDeleted] = FALSE())
 		formatString: #,0.00
 
 	/// Expense ID

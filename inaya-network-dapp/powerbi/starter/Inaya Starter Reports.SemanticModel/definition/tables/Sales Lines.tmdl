@@ -5,7 +5,7 @@ table 'Sales Lines'
 		formatString: #,0.00
 
 	/// Line and whole-sale discounts given.
-	measure Discounts = CALCULATE(SUM('Sales Lines'[discounts]), 'Sales Lines'[isVoided] = FALSE())
+	measure 'Discounts Given' = CALCULATE(SUM('Sales Lines'[discounts]), 'Sales Lines'[isVoided] = FALSE())
 		formatString: #,0.00
 
 	/// Sales after discounts, before returns, excluding tax.
