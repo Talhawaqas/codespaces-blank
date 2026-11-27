@@ -164,6 +164,11 @@ const nextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
+      // Power BI Service (and the gateway admin portal) open our authorise page in a popup and wait for
+      // their own redirect page to message the opener. Any page in that popup chain with a same-origin*
+      // COOP severs window.opener for good (seen live 27 Nov 2026: blank OAuthRedirect, code never
+      // redeemed), so these pages and the sign-in hops they pass through opt out. The later entry wins.
+      ...["/business/powerbi-authorize", "/api/orgs/login/:path*"].map((source) => ({ source, headers: [{ key: "Cross-Origin-Opener-Policy", value: "unsafe-none" }] })),
       {
         // The Outlook add-in task pane (public/outlook) is shown by Outlook inside an iframe, so it may be framed by Microsoft's own Office hosts and nobody else.
         source: "/outlook/:path*",
