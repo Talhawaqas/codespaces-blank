@@ -20,7 +20,10 @@ export default function PowerBiAuthorize() {
   const [email, setEmail] = useState(""); const [codeSent, setCodeSent] = useState(false); const [code, setCode] = useState(""); const [mfa, setMfa] = useState(null); const [mfaCode, setMfaCode] = useState("");
   const load = useCallback(async () => { try { setMe(await api("/api/analytics/oauth/companies")); } catch (e) { if (e.status === 401) setMe(null); else setErr(e.message); } }, []);
   useEffect(() => {
-    const q = Object.fromEntries(new URLSearchParams(window.location.search).entries()); setParams(q);
+    // First non-empty value of each parameter: the Power BI Service can append an empty duplicate (seen live: "&code_challenge").
+    const sp = new URLSearchParams(window.location.search); const q = {};
+    for (const k of new Set(sp.keys())) q[k] = sp.getAll(k).find((v) => v !== "") ?? "";
+    setParams(q);
     if (q.ssoError) setErr(q.ssoError.slice(0, 200));
     load();
   }, [load]);

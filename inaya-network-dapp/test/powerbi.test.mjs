@@ -55,6 +55,7 @@ test("access tokens: signed, expiring, tamper-proof", () => {
   assert.throws(() => O.validateAuthorizeParams({ response_type: "code", client_id: "evil", redirect_uri: REDIRECT, state: "x", code_challenge: "a".repeat(43), code_challenge_method: "S256" }), /Unknown client/);
   assert.throws(() => O.validateAuthorizeParams({ response_type: "code", client_id: O.CLIENT_ID, redirect_uri: "https://evil.test/cb", state: "x", code_challenge: "a".repeat(43), code_challenge_method: "S256" }), /redirect/);
   assert.throws(() => O.validateAuthorizeParams({ response_type: "code", client_id: O.CLIENT_ID, redirect_uri: REDIRECT, state: "x", code_challenge: "a".repeat(43), code_challenge_method: "plain" }), /PKCE/);
+  assert.equal(O.validateAuthorizeParams({ response_type: "code", client_id: O.CLIENT_ID, redirect_uri: REDIRECT, state: "x", code_challenge: "a".repeat(43) }).codeChallenge, "a".repeat(43), "a missing method (dropped by the Power BI Service) means S256");
 });
 
 test("who may connect: Enterprise only, pilot switch, owners/admins unless members are allowed", async () => {

@@ -97,7 +97,10 @@ export function validateAuthorizeParams(q) {
   if (q.response_type !== "code") fail(400, "unsupported_response_type", "Only response_type=code is supported.");
   if (q.client_id !== CLIENT_ID) fail(400, "invalid_client", "Unknown client.");
   if (!REDIRECT_URIS.includes(q.redirect_uri)) fail(400, "invalid_request", "This redirect address is not allowed.");
-  if (q.code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43}$/.test(String(q.code_challenge || ""))) fail(400, "invalid_request", "A PKCE S256 code challenge is required.");
+  // S256 is the only method supported. The Power BI Service has been seen dropping the trailing code_challenge_method from the
+  // sign-in address, so a missing method means S256; "plain" or anything else is refused. The verifier must still hash to it.
+  const method = q.code_challenge_method || "S256";
+  if (method !== "S256" || !/^[A-Za-z0-9_-]{43}$/.test(String(q.code_challenge || ""))) fail(400, "invalid_request", "A PKCE S256 code challenge is required.");
   if (typeof q.state !== "string" || !q.state || q.state.length > 500) fail(400, "invalid_request", "state is required.");
   return { clientId: q.client_id, redirectUri: q.redirect_uri, codeChallenge: q.code_challenge, state: q.state };
 }
