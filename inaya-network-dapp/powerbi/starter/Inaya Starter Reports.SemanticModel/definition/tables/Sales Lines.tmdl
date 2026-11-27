@@ -1,0 +1,179 @@
+table 'Sales Lines'
+
+	/// Net sales plus discounts, excluding tax. Voided sales excluded.
+	measure 'Gross Sales' = CALCULATE(SUM('Sales Lines'[grossSales]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0.00
+
+	/// Line and whole-sale discounts given.
+	measure Discounts = CALCULATE(SUM('Sales Lines'[discounts]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0.00
+
+	/// Sales after discounts, before returns, excluding tax.
+	measure 'Net Sales' = CALCULATE(SUM('Sales Lines'[netSales]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0.00
+
+	/// Tax on point-of-sale sales.
+	measure 'Tax Collected' = CALCULATE(SUM('Sales Lines'[tax]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0.00
+
+	/// Completed sales (receipts), voids excluded.
+	measure Transactions = CALCULATE(DISTINCTCOUNT('Sales Lines'[saleId]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0
+
+	/// Units sold.
+	measure 'Units Sold' = CALCULATE(SUM('Sales Lines'[quantity]), 'Sales Lines'[isVoided] = FALSE())
+		formatString: #,0
+
+	/// Net sales per transaction.
+	measure 'Average Sale' = DIVIDE([Net Sales], [Transactions])
+		formatString: #,0.00
+
+	/// Net sales less refunds made in the same period, excluding tax (as Inaya's Commerce report).
+	measure 'Net Sales After Returns' = [Net Sales] - [Returns]
+		formatString: #,0.00
+
+	/// Sale ID and line number
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Sale ID
+	column saleId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: saleId
+
+	/// Receipt number
+	column saleNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: saleNumber
+
+	/// When the sale was completed
+	column completedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: completedAt
+
+	/// Branch
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Till
+	column registerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: registerId
+
+	/// Cashier
+	column cashierEmail
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cashierEmail
+
+	/// Customer (if given)
+	column customerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: customerId
+
+	/// Product
+	column productId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productId
+
+	/// SKU
+	column sku
+		dataType: string
+		summarizeBy: none
+		sourceColumn: sku
+
+	/// Product name
+	column productName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productName
+
+	/// Product type
+	column productType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productType
+
+	/// Units
+	column quantity
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantity
+
+	/// Gross sales: net plus discounts, excluding tax
+	column grossSales
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: grossSales
+
+	/// Line and whole-sale discounts
+	column discounts
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: discounts
+
+	/// Net sales after discounts, excluding tax
+	column netSales
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: netSales
+
+	/// Tax
+	column tax
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: tax
+
+	/// Net sales plus tax
+	column total
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: total
+
+	/// Cost of goods at sale time (blank when unknown)
+	column cost
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: cost
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// The sale was voided (exclude from totals)
+	column isVoided
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isVoided
+
+	column 'Sale Date' = IF(ISBLANK('Sales Lines'[completedAt]), BLANK(), DATE(YEAR('Sales Lines'[completedAt]), MONTH('Sales Lines'[completedAt]), DAY('Sales Lines'[completedAt])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Sales Lines' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("sales_lines", RangeStart, RangeEnd)
+				in
+				    Source

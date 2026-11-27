@@ -1,0 +1,45 @@
+table Employees
+
+	/// Employee ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Name
+	column name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: name
+
+	/// Work email
+	column email
+		dataType: string
+		summarizeBy: none
+		sourceColumn: email
+
+	/// Department
+	column departmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: departmentId
+
+	/// Job title
+	column jobTitle
+		dataType: string
+		summarizeBy: none
+		sourceColumn: jobTitle
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	partition Employees = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("employees", RangeStart, RangeEnd)
+				in
+				    Source

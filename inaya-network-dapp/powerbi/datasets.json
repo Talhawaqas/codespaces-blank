@@ -1,0 +1,1064 @@
+{
+ "branches": {
+  "title": "Branches",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Branch ID"
+   },
+   {
+    "name": "name",
+    "type": "text",
+    "description": "Branch name"
+   },
+   {
+    "name": "city",
+    "type": "text",
+    "description": "City"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   }
+  ]
+ },
+ "sales_lines": {
+  "title": "Shop sales lines (point of sale)",
+  "window": "completedAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Sale ID and line number"
+   },
+   {
+    "name": "saleId",
+    "type": "id",
+    "description": "Sale ID"
+   },
+   {
+    "name": "saleNumber",
+    "type": "text",
+    "description": "Receipt number"
+   },
+   {
+    "name": "completedAt",
+    "type": "datetime",
+    "description": "When the sale was completed"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch"
+   },
+   {
+    "name": "registerId",
+    "type": "id",
+    "description": "Till"
+   },
+   {
+    "name": "cashierEmail",
+    "type": "text",
+    "description": "Cashier"
+   },
+   {
+    "name": "customerId",
+    "type": "id",
+    "description": "Customer (if given)"
+   },
+   {
+    "name": "productId",
+    "type": "id",
+    "description": "Product"
+   },
+   {
+    "name": "sku",
+    "type": "text",
+    "description": "SKU"
+   },
+   {
+    "name": "productName",
+    "type": "text",
+    "description": "Product name"
+   },
+   {
+    "name": "productType",
+    "type": "text",
+    "description": "Product type"
+   },
+   {
+    "name": "quantity",
+    "type": "number",
+    "description": "Units"
+   },
+   {
+    "name": "grossSales",
+    "type": "money",
+    "description": "Gross sales: net plus discounts, excluding tax"
+   },
+   {
+    "name": "discounts",
+    "type": "money",
+    "description": "Line and whole-sale discounts"
+   },
+   {
+    "name": "netSales",
+    "type": "money",
+    "description": "Net sales after discounts, excluding tax"
+   },
+   {
+    "name": "tax",
+    "type": "money",
+    "description": "Tax"
+   },
+   {
+    "name": "total",
+    "type": "money",
+    "description": "Net sales plus tax"
+   },
+   {
+    "name": "cost",
+    "type": "money",
+    "description": "Cost of goods at sale time (blank when unknown)"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "isVoided",
+    "type": "boolean",
+    "description": "The sale was voided (exclude from totals)"
+   }
+  ]
+ },
+ "sales_refunds": {
+  "title": "Shop refunds (point of sale)",
+  "window": "refunds.createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Refund number and line"
+   },
+   {
+    "name": "saleId",
+    "type": "id",
+    "description": "Original sale"
+   },
+   {
+    "name": "refundNumber",
+    "type": "text",
+    "description": "Refund number"
+   },
+   {
+    "name": "refundedAt",
+    "type": "datetime",
+    "description": "When refunded"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch"
+   },
+   {
+    "name": "processedBy",
+    "type": "text",
+    "description": "Who processed it"
+   },
+   {
+    "name": "productId",
+    "type": "id",
+    "description": "Product"
+   },
+   {
+    "name": "sku",
+    "type": "text",
+    "description": "SKU"
+   },
+   {
+    "name": "productName",
+    "type": "text",
+    "description": "Product"
+   },
+   {
+    "name": "quantity",
+    "type": "number",
+    "description": "Units returned"
+   },
+   {
+    "name": "netRefund",
+    "type": "money",
+    "description": "Refund excluding tax"
+   },
+   {
+    "name": "tax",
+    "type": "money",
+    "description": "Tax refunded"
+   },
+   {
+    "name": "total",
+    "type": "money",
+    "description": "Total refunded"
+   },
+   {
+    "name": "disposition",
+    "type": "text",
+    "description": "Restocked, quarantined or written off"
+   },
+   {
+    "name": "reason",
+    "type": "text",
+    "description": "Reason"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   }
+  ]
+ },
+ "sales_orders": {
+  "title": "Sales orders (online and office)",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Order ID"
+   },
+   {
+    "name": "orderNumber",
+    "type": "text",
+    "description": "Order number"
+   },
+   {
+    "name": "channel",
+    "type": "text",
+    "description": "Channel (office, online store, Shopify, WooCommerce)"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "stage",
+    "type": "text",
+    "description": "Stage"
+   },
+   {
+    "name": "customerId",
+    "type": "id",
+    "description": "Customer"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch / warehouse"
+   },
+   {
+    "name": "orderDate",
+    "type": "date",
+    "description": "Order date"
+   },
+   {
+    "name": "subtotal",
+    "type": "money",
+    "description": "Subtotal"
+   },
+   {
+    "name": "tax",
+    "type": "money",
+    "description": "Tax"
+   },
+   {
+    "name": "total",
+    "type": "money",
+    "description": "Total"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "fulfilmentMethod",
+    "type": "text",
+    "description": "Fulfilment"
+   },
+   {
+    "name": "invoiceId",
+    "type": "id",
+    "description": "Invoice"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "invoices": {
+  "title": "Invoices",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Invoice ID"
+   },
+   {
+    "name": "invoiceNumber",
+    "type": "text",
+    "description": "Invoice number"
+   },
+   {
+    "name": "customerId",
+    "type": "id",
+    "description": "Customer"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "issueDate",
+    "type": "date",
+    "description": "Issue date"
+   },
+   {
+    "name": "dueDate",
+    "type": "date",
+    "description": "Due date"
+   },
+   {
+    "name": "total",
+    "type": "money",
+    "description": "Total"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "departmentId",
+    "type": "id",
+    "description": "Department"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "payments": {
+  "title": "Payments",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Payment ID"
+   },
+   {
+    "name": "paymentDate",
+    "type": "date",
+    "description": "Payment date"
+   },
+   {
+    "name": "direction",
+    "type": "text",
+    "description": "IN (received) or OUT (paid)"
+   },
+   {
+    "name": "amount",
+    "type": "money",
+    "description": "Amount"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "method",
+    "type": "text",
+    "description": "Method"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "invoiceId",
+    "type": "id",
+    "description": "Invoice paid"
+   },
+   {
+    "name": "expenseId",
+    "type": "id",
+    "description": "Expense paid"
+   },
+   {
+    "name": "purchaseOrderId",
+    "type": "id",
+    "description": "Purchase order paid"
+   },
+   {
+    "name": "departmentId",
+    "type": "id",
+    "description": "Department"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "expenses": {
+  "title": "Expenses",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Expense ID"
+   },
+   {
+    "name": "expenseDate",
+    "type": "date",
+    "description": "Expense date"
+   },
+   {
+    "name": "vendor",
+    "type": "text",
+    "description": "Vendor"
+   },
+   {
+    "name": "category",
+    "type": "text",
+    "description": "Category"
+   },
+   {
+    "name": "description",
+    "type": "text",
+    "description": "Description"
+   },
+   {
+    "name": "amount",
+    "type": "money",
+    "description": "Amount"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "departmentId",
+    "type": "id",
+    "description": "Department"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "products": {
+  "title": "Products",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Product ID"
+   },
+   {
+    "name": "sku",
+    "type": "text",
+    "description": "SKU"
+   },
+   {
+    "name": "name",
+    "type": "text",
+    "description": "Name"
+   },
+   {
+    "name": "category",
+    "type": "text",
+    "description": "Category"
+   },
+   {
+    "name": "productType",
+    "type": "text",
+    "description": "Type"
+   },
+   {
+    "name": "unit",
+    "type": "text",
+    "description": "Unit"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "unitPrice",
+    "type": "money",
+    "description": "Selling price"
+   },
+   {
+    "name": "averageCost",
+    "type": "money",
+    "description": "Average cost"
+   },
+   {
+    "name": "reorderAt",
+    "type": "number",
+    "description": "Reorder level"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "stock_balances": {
+  "title": "Stock on hand",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Product and branch"
+   },
+   {
+    "name": "productId",
+    "type": "id",
+    "description": "Product"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch / warehouse"
+   },
+   {
+    "name": "quantity",
+    "type": "number",
+    "description": "Units on hand now"
+   }
+  ]
+ },
+ "stock_movements": {
+  "title": "Stock movements",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Movement ID"
+   },
+   {
+    "name": "at",
+    "type": "datetime",
+    "description": "When"
+   },
+   {
+    "name": "productId",
+    "type": "id",
+    "description": "Product"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch / warehouse"
+   },
+   {
+    "name": "type",
+    "type": "text",
+    "description": "Movement type (sale, receipt, transfer, count, adjustment...)"
+   },
+   {
+    "name": "quantityChange",
+    "type": "number",
+    "description": "Units added (+) or removed (-)"
+   },
+   {
+    "name": "balanceAfter",
+    "type": "number",
+    "description": "Units on hand after"
+   },
+   {
+    "name": "unitCost",
+    "type": "money",
+    "description": "Unit cost"
+   },
+   {
+    "name": "purchaseOrderId",
+    "type": "id",
+    "description": "Purchase order"
+   },
+   {
+    "name": "saleId",
+    "type": "id",
+    "description": "Sale"
+   }
+  ]
+ },
+ "purchase_order_lines": {
+  "title": "Purchase order lines",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Purchase order and line"
+   },
+   {
+    "name": "purchaseOrderId",
+    "type": "id",
+    "description": "Purchase order"
+   },
+   {
+    "name": "poNumber",
+    "type": "text",
+    "description": "PO number"
+   },
+   {
+    "name": "supplierId",
+    "type": "id",
+    "description": "Supplier"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Receiving branch"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "productId",
+    "type": "id",
+    "description": "Product"
+   },
+   {
+    "name": "sku",
+    "type": "text",
+    "description": "SKU"
+   },
+   {
+    "name": "quantityOrdered",
+    "type": "number",
+    "description": "Ordered"
+   },
+   {
+    "name": "quantityReceived",
+    "type": "number",
+    "description": "Received"
+   },
+   {
+    "name": "unitPrice",
+    "type": "money",
+    "description": "Unit price"
+   },
+   {
+    "name": "lineTotal",
+    "type": "money",
+    "description": "Ordered x price"
+   },
+   {
+    "name": "currency",
+    "type": "text",
+    "description": "Currency"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "suppliers": {
+  "title": "Suppliers",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Supplier ID"
+   },
+   {
+    "name": "name",
+    "type": "text",
+    "description": "Name"
+   },
+   {
+    "name": "email",
+    "type": "text",
+    "description": "Email"
+   },
+   {
+    "name": "phone",
+    "type": "text",
+    "description": "Phone"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "customers": {
+  "title": "Customers",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Customer ID"
+   },
+   {
+    "name": "name",
+    "type": "text",
+    "description": "Name"
+   },
+   {
+    "name": "company",
+    "type": "text",
+    "description": "Company"
+   },
+   {
+    "name": "type",
+    "type": "text",
+    "description": "Type (customer, lead...)"
+   },
+   {
+    "name": "email",
+    "type": "text",
+    "description": "Email"
+   },
+   {
+    "name": "phone",
+    "type": "text",
+    "description": "Phone"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "isDeleted",
+    "type": "boolean",
+    "description": "Deleted in Inaya"
+   }
+  ]
+ },
+ "work_orders": {
+  "title": "Work and repair orders",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Job ID"
+   },
+   {
+    "name": "number",
+    "type": "text",
+    "description": "WO / RO number"
+   },
+   {
+    "name": "type",
+    "type": "text",
+    "description": "WO (work order) or RO (repair order)"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "priority",
+    "type": "text",
+    "description": "Priority"
+   },
+   {
+    "name": "category",
+    "type": "text",
+    "description": "Category"
+   },
+   {
+    "name": "branchId",
+    "type": "id",
+    "description": "Branch"
+   },
+   {
+    "name": "customerId",
+    "type": "id",
+    "description": "Customer"
+   },
+   {
+    "name": "managerEmail",
+    "type": "text",
+    "description": "Manager"
+   },
+   {
+    "name": "assignees",
+    "type": "text",
+    "description": "Assigned technicians (comma separated)"
+   },
+   {
+    "name": "plannedStart",
+    "type": "datetime",
+    "description": "Planned start"
+   },
+   {
+    "name": "dueAt",
+    "type": "datetime",
+    "description": "Due"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   },
+   {
+    "name": "completedAt",
+    "type": "datetime",
+    "description": "Completed (first time it reached a done state)"
+   },
+   {
+    "name": "turnaroundHours",
+    "type": "number",
+    "description": "Created to completed, hours"
+   },
+   {
+    "name": "estimatedCost",
+    "type": "money",
+    "description": "Estimated cost"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   },
+   {
+    "name": "isArchived",
+    "type": "boolean",
+    "description": "Archived"
+   }
+  ]
+ },
+ "employees": {
+  "title": "Employees",
+  "window": null,
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Employee ID"
+   },
+   {
+    "name": "name",
+    "type": "text",
+    "description": "Name"
+   },
+   {
+    "name": "email",
+    "type": "text",
+    "description": "Work email"
+   },
+   {
+    "name": "departmentId",
+    "type": "id",
+    "description": "Department"
+   },
+   {
+    "name": "jobTitle",
+    "type": "text",
+    "description": "Job title"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Created"
+   }
+  ]
+ },
+ "leave": {
+  "title": "Leave",
+  "window": "createdAt",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Leave request ID"
+   },
+   {
+    "name": "employeeId",
+    "type": "id",
+    "description": "Employee"
+   },
+   {
+    "name": "leaveType",
+    "type": "text",
+    "description": "Leave type"
+   },
+   {
+    "name": "startDate",
+    "type": "date",
+    "description": "From"
+   },
+   {
+    "name": "endDate",
+    "type": "date",
+    "description": "To"
+   },
+   {
+    "name": "days",
+    "type": "number",
+    "description": "Calendar days"
+   },
+   {
+    "name": "status",
+    "type": "text",
+    "description": "Status"
+   },
+   {
+    "name": "createdAt",
+    "type": "datetime",
+    "description": "Requested"
+   },
+   {
+    "name": "updatedAt",
+    "type": "datetime",
+    "description": "Last changed"
+   }
+  ]
+ },
+ "workforce_hours": {
+  "title": "Hours worked per person per day",
+  "window": "at",
+  "fields": [
+   {
+    "name": "id",
+    "type": "id",
+    "description": "Person and day"
+   },
+   {
+    "name": "email",
+    "type": "text",
+    "description": "Staff member"
+   },
+   {
+    "name": "date",
+    "type": "date",
+    "description": "Day"
+   },
+   {
+    "name": "workedHours",
+    "type": "number",
+    "description": "Hours worked (breaks excluded)"
+   },
+   {
+    "name": "breakHours",
+    "type": "number",
+    "description": "Break hours"
+   },
+   {
+    "name": "late",
+    "type": "boolean",
+    "description": "Arrived late for a scheduled shift"
+   },
+   {
+    "name": "lateMinutes",
+    "type": "number",
+    "description": "Minutes late"
+   },
+   {
+    "name": "leftEarly",
+    "type": "boolean",
+    "description": "Left before the shift ended"
+   }
+  ]
+ }
+}

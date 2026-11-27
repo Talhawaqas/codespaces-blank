@@ -1,0 +1,5 @@
+/// Start of the data loaded (and of each incremental-refresh partition). Change it in Transform data > Manage parameters.
+expression RangeStart = #datetime(2025, 1, 1, 0, 0, 0) meta [IsParameterQuery=true, Type="DateTime", IsParameterQueryRequired=true]
+
+/// End of the data loaded.
+expression RangeEnd = DateTime.From(Date.AddDays(DateTime.Date(DateTime.LocalNow()), 1)) meta [IsParameterQuery=true, Type="DateTime", IsParameterQueryRequired=true]

@@ -1,0 +1,136 @@
+table 'Work Orders'
+
+	/// Work and repair orders created.
+	measure Jobs = CALCULATE(COUNTROWS('Work Orders'), 'Work Orders'[isArchived] = FALSE())
+		formatString: #,0
+
+	/// Jobs that reached completed, closed or delivered.
+	measure 'Jobs Completed' = CALCULATE(COUNTROWS('Work Orders'), NOT ISBLANK('Work Orders'[completedAt]))
+		formatString: #,0
+
+	/// Created to completed, hours.
+	measure 'Average Turnaround Hours' = AVERAGE('Work Orders'[turnaroundHours])
+		formatString: #,0.0
+
+	/// Job ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// WO / RO number
+	column number
+		dataType: string
+		summarizeBy: none
+		sourceColumn: number
+
+	/// WO (work order) or RO (repair order)
+	column type
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Priority
+	column priority
+		dataType: string
+		summarizeBy: none
+		sourceColumn: priority
+
+	/// Category
+	column category
+		dataType: string
+		summarizeBy: none
+		sourceColumn: category
+
+	/// Branch
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Customer
+	column customerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: customerId
+
+	/// Manager
+	column managerEmail
+		dataType: string
+		summarizeBy: none
+		sourceColumn: managerEmail
+
+	/// Assigned technicians (comma separated)
+	column assignees
+		dataType: string
+		summarizeBy: none
+		sourceColumn: assignees
+
+	/// Planned start
+	column plannedStart
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: plannedStart
+
+	/// Due
+	column dueAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: dueAt
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Completed (first time it reached a done state)
+	column completedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: completedAt
+
+	/// Created to completed, hours
+	column turnaroundHours
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: turnaroundHours
+
+	/// Estimated cost
+	column estimatedCost
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: estimatedCost
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	/// Archived
+	column isArchived
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isArchived
+
+	column 'Created Day' = IF(ISBLANK('Work Orders'[createdAt]), BLANK(), DATE(YEAR('Work Orders'[createdAt]), MONTH('Work Orders'[createdAt]), DAY('Work Orders'[createdAt])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Work Orders' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("work_orders", RangeStart, RangeEnd)
+				in
+				    Source

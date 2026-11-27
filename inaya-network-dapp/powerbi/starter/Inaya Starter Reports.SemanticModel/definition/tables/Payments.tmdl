@@ -1,0 +1,106 @@
+table Payments
+
+	/// Payments received.
+	measure 'Cash Received' = CALCULATE(SUM(Payments[amount]), Payments[direction] = "IN", Payments[isDeleted] = FALSE())
+		formatString: #,0.00
+
+	/// Payments made.
+	measure 'Cash Paid Out' = CALCULATE(SUM(Payments[amount]), Payments[direction] = "OUT", Payments[isDeleted] = FALSE())
+		formatString: #,0.00
+
+	/// Invoiced minus received in the selected period. Not an aged receivables balance.
+	measure 'Invoiced Less Received' = [Invoiced] - [Cash Received]
+		formatString: #,0.00
+
+	/// Payment ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Payment date
+	column paymentDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: paymentDate
+
+	/// IN (received) or OUT (paid)
+	column direction
+		dataType: string
+		summarizeBy: none
+		sourceColumn: direction
+
+	/// Amount
+	column amount
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: amount
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// Method
+	column method
+		dataType: string
+		summarizeBy: none
+		sourceColumn: method
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Invoice paid
+	column invoiceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoiceId
+
+	/// Expense paid
+	column expenseId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: expenseId
+
+	/// Purchase order paid
+	column purchaseOrderId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: purchaseOrderId
+
+	/// Department
+	column departmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: departmentId
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	column 'Payment Day' = IF(ISBLANK(Payments[paymentDate]), BLANK(), DATE(YEAR(Payments[paymentDate]), MONTH(Payments[paymentDate]), DAY(Payments[paymentDate])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition Payments = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("payments", RangeStart, RangeEnd)
+				in
+				    Source

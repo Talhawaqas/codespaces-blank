@@ -128,6 +128,7 @@ const PortalRequestsView = dynamic(() => import("../../components/business/suppo
 const OfficeIntegrationView = dynamic(() => import("../../components/business/admin/OfficeIntegrationView"), { ssr: false, loading: ScreenLoading });
 const ComplianceReadinessView = dynamic(() => import("../../components/business/admin/ComplianceReadinessView"), { ssr: false, loading: ScreenLoading });
 const BrandingPanel = dynamic(() => import("../../components/business/admin/BrandingPanel"), { ssr: false, loading: () => null });
+const PowerBiView = dynamic(() => import("../../components/business/PowerBiView"), { ssr: false, loading: () => null });
 const SsoPanel = dynamic(() => import("../../components/business/admin/SsoPanel"), { ssr: false, loading: () => null });
 const PasskeySettings = dynamic(() => import("../../components/business/PasskeySettings"), { ssr: false, loading: () => null });
 const NotificationPrefsPanel = dynamic(() => import("../../components/business/admin/NotificationPrefsPanel"), { ssr: false, loading: () => null });
@@ -1506,6 +1507,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     resilience: { title: "Security & Resilience Controls", description: "Vendors, ICT assets, privileged access, and resilience policy." },
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
+    powerBi: { title: "Microsoft Power BI", description: "Read-only Power BI reports on your Inaya data (Enterprise)." },
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
@@ -1657,6 +1659,7 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "resilience" && <SecurityResilienceView orgId={orgId} email={email} />}
       {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
       {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
+      {activeView === "powerBi" && <PowerBiView orgId={orgId} />}
       {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
       {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
       {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}

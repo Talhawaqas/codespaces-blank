@@ -1,0 +1,92 @@
+table Expenses
+
+	/// Expenses recorded (deleted excluded).
+	measure Expenses = CALCULATE(SUM(Expenses[amount]), Expenses[isDeleted] = FALSE())
+		formatString: #,0.00
+
+	/// Expense ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Expense date
+	column expenseDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: expenseDate
+
+	/// Vendor
+	column vendor
+		dataType: string
+		summarizeBy: none
+		sourceColumn: vendor
+
+	/// Category
+	column category
+		dataType: string
+		summarizeBy: none
+		sourceColumn: category
+
+	/// Description
+	column description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: description
+
+	/// Amount
+	column amount
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: amount
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Department
+	column departmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: departmentId
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	column 'Expense Day' = IF(ISBLANK(Expenses[expenseDate]), BLANK(), DATE(YEAR(Expenses[expenseDate]), MONTH(Expenses[expenseDate]), DAY(Expenses[expenseDate])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition Expenses = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("expenses", RangeStart, RangeEnd)
+				in
+				    Source

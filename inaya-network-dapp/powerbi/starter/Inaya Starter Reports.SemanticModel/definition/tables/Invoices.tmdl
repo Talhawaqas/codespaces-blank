@@ -1,0 +1,93 @@
+table Invoices
+
+	/// Invoice totals issued (deleted invoices excluded).
+	measure Invoiced = CALCULATE(SUM(Invoices[total]), Invoices[isDeleted] = FALSE())
+		formatString: #,0.00
+
+	/// Invoice ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Invoice number
+	column invoiceNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoiceNumber
+
+	/// Customer
+	column customerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: customerId
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Issue date
+	column issueDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: issueDate
+
+	/// Due date
+	column dueDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: dueDate
+
+	/// Total
+	column total
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: total
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// Department
+	column departmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: departmentId
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	column 'Issue Day' = IF(ISBLANK(Invoices[issueDate]), BLANK(), DATE(YEAR(Invoices[issueDate]), MONTH(Invoices[issueDate]), DAY(Invoices[issueDate])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition Invoices = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("invoices", RangeStart, RangeEnd)
+				in
+				    Source

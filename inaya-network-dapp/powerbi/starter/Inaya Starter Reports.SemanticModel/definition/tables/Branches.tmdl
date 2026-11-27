@@ -1,0 +1,33 @@
+table Branches
+
+	/// Branch ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Branch name
+	column name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: name
+
+	/// City
+	column city
+		dataType: string
+		summarizeBy: none
+		sourceColumn: city
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	partition Branches = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("branches", RangeStart, RangeEnd)
+				in
+				    Source

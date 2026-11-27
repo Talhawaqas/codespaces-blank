@@ -1,0 +1,74 @@
+table 'Workforce Hours'
+
+	/// Hours worked, breaks excluded.
+	measure 'Hours Worked' = SUM('Workforce Hours'[workedHours])
+		formatString: #,0.0
+
+	/// Days someone arrived late for a scheduled shift.
+	measure 'Late Days' = CALCULATE(COUNTROWS('Workforce Hours'), 'Workforce Hours'[late] = TRUE())
+		formatString: #,0
+
+	/// Person and day
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Staff member
+	column email
+		dataType: string
+		summarizeBy: none
+		sourceColumn: email
+
+	/// Day
+	column date
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: date
+
+	/// Hours worked (breaks excluded)
+	column workedHours
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: workedHours
+
+	/// Break hours
+	column breakHours
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: breakHours
+
+	/// Arrived late for a scheduled shift
+	column late
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: late
+
+	/// Minutes late
+	column lateMinutes
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: lateMinutes
+
+	/// Left before the shift ended
+	column leftEarly
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: leftEarly
+
+	column 'Work Day' = IF(ISBLANK('Workforce Hours'[date]), BLANK(), DATE(YEAR('Workforce Hours'[date]), MONTH('Workforce Hours'[date]), DAY('Workforce Hours'[date])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Workforce Hours' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("workforce_hours", RangeStart, RangeEnd)
+				in
+				    Source

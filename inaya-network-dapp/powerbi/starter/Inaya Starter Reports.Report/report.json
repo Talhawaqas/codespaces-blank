@@ -1,0 +1,418 @@
+{
+ "config": "{\"version\": \"5.43\", \"themeCollection\": {\"baseTheme\": {\"name\": \"CY24SU10\", \"version\": \"5.61\", \"type\": 2}}}",
+ "layoutOptimization": 0,
+ "sections": [
+  {
+   "name": "Section0",
+   "displayName": "Executive Overview",
+   "displayOption": 1,
+   "width": 1280,
+   "height": 720,
+   "filters": "[]",
+   "config": "{}",
+   "visualContainers": [
+    {
+     "x": 20,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"e1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Net Sales\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Net Sales'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 260,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"e2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 260, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Refunds.Returns\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Refunds\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Returns\"}, \"Name\": \"Sales Refunds.Returns\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Returns'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 500,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"e3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 500, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Expenses.Expenses\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Expenses\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Expenses\"}, \"Name\": \"Expenses.Expenses\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Expenses'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 740,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"e4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 740, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Transactions\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Transactions\"}, \"Name\": \"Sales Lines.Transactions\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Transactions'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 1000,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"e5\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1000, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"slicer\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.currency\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"currency\"}, \"Name\": \"Sales Lines.currency\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Currency'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 150,
+     "z": 0,
+     "width": 760,
+     "height": 300,
+     "config": "{\"name\": \"e6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 150, \"z\": 0, \"width\": 760, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"lineChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Date.Month\", \"active\": true}], \"Y\": [{\"queryRef\": \"Sales Lines.Net Sales\"}, {\"queryRef\": \"Expenses.Expenses\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Date\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Sales Lines\", \"Type\": 0}, {\"Name\": \"t2\", \"Entity\": \"Expenses\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Month\"}, \"Name\": \"Date.Month\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t2\"}}, \"Property\": \"Expenses\"}, \"Name\": \"Expenses.Expenses\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Net sales and expenses by month'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 800,
+     "y": 150,
+     "z": 0,
+     "width": 460,
+     "height": 300,
+     "config": "{\"name\": \"e7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 800, \"y\": 150, \"z\": 0, \"width\": 460, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Branches.name\", \"active\": true}], \"Y\": [{\"queryRef\": \"Sales Lines.Net Sales\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Branches\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Branches.name\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Net sales by branch'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 470,
+     "z": 0,
+     "width": 1240,
+     "height": 230,
+     "config": "{\"name\": \"e8\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 470, \"z\": 0, \"width\": 1240, \"height\": 230}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"Date.Month\"}, {\"queryRef\": \"Sales Lines.Gross Sales\"}, {\"queryRef\": \"Sales Lines.Discounts\"}, {\"queryRef\": \"Sales Lines.Net Sales\"}, {\"queryRef\": \"Sales Refunds.Returns\"}, {\"queryRef\": \"Sales Lines.Net Sales After Returns\"}, {\"queryRef\": \"Sales Lines.Tax Collected\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Date\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Sales Lines\", \"Type\": 0}, {\"Name\": \"t2\", \"Entity\": \"Sales Refunds\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Month\"}, \"Name\": \"Date.Month\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Gross Sales\"}, \"Name\": \"Sales Lines.Gross Sales\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Discounts\"}, \"Name\": \"Sales Lines.Discounts\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t2\"}}, \"Property\": \"Returns\"}, \"Name\": \"Sales Refunds.Returns\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales After Returns\"}, \"Name\": \"Sales Lines.Net Sales After Returns\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Tax Collected\"}, \"Name\": \"Sales Lines.Tax Collected\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Period summary'\"}}}}}]}}}",
+     "filters": "[]"
+    }
+   ],
+   "ordinal": 0
+  },
+  {
+   "name": "Section1",
+   "displayName": "Finance and Cash",
+   "displayOption": 1,
+   "width": 1280,
+   "height": 720,
+   "filters": "[]",
+   "config": "{}",
+   "visualContainers": [
+    {
+     "x": 20,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"f1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Invoices.Invoiced\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Invoices\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Invoiced\"}, \"Name\": \"Invoices.Invoiced\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Invoiced'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 260,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"f2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 260, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Payments.Cash Received\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Payments\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Cash Received\"}, \"Name\": \"Payments.Cash Received\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Cash Received'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 500,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"f3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 500, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Payments.Cash Paid Out\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Payments\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Cash Paid Out\"}, \"Name\": \"Payments.Cash Paid Out\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Cash Paid Out'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 740,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"f4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 740, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Payments.Invoiced Less Received\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Payments\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Invoiced Less Received\"}, \"Name\": \"Payments.Invoiced Less Received\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Invoiced Less Received'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 1000,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"f5\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1000, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"slicer\", \"projections\": {\"Values\": [{\"queryRef\": \"Invoices.currency\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Invoices\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"currency\"}, \"Name\": \"Invoices.currency\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Currency'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 150,
+     "z": 0,
+     "width": 760,
+     "height": 300,
+     "config": "{\"name\": \"f6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 150, \"z\": 0, \"width\": 760, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredColumnChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Date.Month\", \"active\": true}], \"Y\": [{\"queryRef\": \"Invoices.Invoiced\"}, {\"queryRef\": \"Payments.Cash Received\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Date\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Invoices\", \"Type\": 0}, {\"Name\": \"t2\", \"Entity\": \"Payments\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Month\"}, \"Name\": \"Date.Month\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Invoiced\"}, \"Name\": \"Invoices.Invoiced\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t2\"}}, \"Property\": \"Cash Received\"}, \"Name\": \"Payments.Cash Received\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Invoiced vs received by month'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 800,
+     "y": 150,
+     "z": 0,
+     "width": 460,
+     "height": 300,
+     "config": "{\"name\": \"f7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 800, \"y\": 150, \"z\": 0, \"width\": 460, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Expenses.category\", \"active\": true}], \"Y\": [{\"queryRef\": \"Expenses.Expenses\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Expenses\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"category\"}, \"Name\": \"Expenses.category\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Expenses\"}, \"Name\": \"Expenses.Expenses\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Expenses by category'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 470,
+     "z": 0,
+     "width": 1240,
+     "height": 230,
+     "config": "{\"name\": \"f8\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 470, \"z\": 0, \"width\": 1240, \"height\": 230}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"Invoices.invoiceNumber\"}, {\"queryRef\": \"Customers.name\"}, {\"queryRef\": \"Invoices.status\"}, {\"queryRef\": \"Invoices.issueDate\"}, {\"queryRef\": \"Invoices.dueDate\"}, {\"queryRef\": \"Invoices.Invoiced\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Invoices\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Customers\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"invoiceNumber\"}, \"Name\": \"Invoices.invoiceNumber\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"name\"}, \"Name\": \"Customers.name\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"status\"}, \"Name\": \"Invoices.status\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"issueDate\"}, \"Name\": \"Invoices.issueDate\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"dueDate\"}, \"Name\": \"Invoices.dueDate\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Invoiced\"}, \"Name\": \"Invoices.Invoiced\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Invoices'\"}}}}}]}}}",
+     "filters": "[]"
+    }
+   ],
+   "ordinal": 1
+  },
+  {
+   "name": "Section2",
+   "displayName": "Sales and Commerce",
+   "displayOption": 1,
+   "width": 1280,
+   "height": 720,
+   "filters": "[]",
+   "config": "{}",
+   "visualContainers": [
+    {
+     "x": 20,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"s1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Gross Sales\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Gross Sales\"}, \"Name\": \"Sales Lines.Gross Sales\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Gross Sales'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 260,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"s2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 260, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Discounts\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Discounts\"}, \"Name\": \"Sales Lines.Discounts\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Discounts'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 500,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"s3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 500, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Average Sale\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Average Sale\"}, \"Name\": \"Sales Lines.Average Sale\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Average Sale'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 740,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"s4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 740, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Sales Lines.Units Sold\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Units Sold\"}, \"Name\": \"Sales Lines.Units Sold\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Units Sold'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 1000,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"s5\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1000, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"slicer\", \"projections\": {\"Values\": [{\"queryRef\": \"Branches.name\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Branches\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Branches.name\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Branch'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 150,
+     "z": 0,
+     "width": 620,
+     "height": 300,
+     "config": "{\"name\": \"s6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 150, \"z\": 0, \"width\": 620, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Products.category\", \"active\": true}], \"Y\": [{\"queryRef\": \"Sales Lines.Net Sales\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Products\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Sales Lines\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"category\"}, \"Name\": \"Products.category\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Net sales by category'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 660,
+     "y": 150,
+     "z": 0,
+     "width": 600,
+     "height": 300,
+     "config": "{\"name\": \"s7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 660, \"y\": 150, \"z\": 0, \"width\": 600, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredColumnChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Sales Orders.channel\", \"active\": true}], \"Y\": [{\"queryRef\": \"Sales Orders.Order Value\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Sales Orders\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"channel\"}, \"Name\": \"Sales Orders.channel\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Order Value\"}, \"Name\": \"Sales Orders.Order Value\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Orders by channel'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 470,
+     "z": 0,
+     "width": 1240,
+     "height": 230,
+     "config": "{\"name\": \"s8\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 470, \"z\": 0, \"width\": 1240, \"height\": 230}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"Products.name\"}, {\"queryRef\": \"Products.sku\"}, {\"queryRef\": \"Sales Lines.Units Sold\"}, {\"queryRef\": \"Sales Lines.Net Sales\"}, {\"queryRef\": \"Sales Refunds.Returns\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Products\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Sales Lines\", \"Type\": 0}, {\"Name\": \"t2\", \"Entity\": \"Sales Refunds\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Products.name\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"sku\"}, \"Name\": \"Products.sku\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Units Sold\"}, \"Name\": \"Sales Lines.Units Sold\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Net Sales\"}, \"Name\": \"Sales Lines.Net Sales\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t2\"}}, \"Property\": \"Returns\"}, \"Name\": \"Sales Refunds.Returns\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Top products'\"}}}}}]}}}",
+     "filters": "[]"
+    }
+   ],
+   "ordinal": 2
+  },
+  {
+   "name": "Section3",
+   "displayName": "Inventory",
+   "displayOption": 1,
+   "width": 1280,
+   "height": 720,
+   "filters": "[]",
+   "config": "{}",
+   "visualContainers": [
+    {
+     "x": 20,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"i1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Stock Balances.Stock On Hand\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Stock Balances\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Stock On Hand\"}, \"Name\": \"Stock Balances.Stock On Hand\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Stock On Hand'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 260,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"i2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 260, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Stock Movements.Units In\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Stock Movements\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Units In\"}, \"Name\": \"Stock Movements.Units In\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Units In'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 500,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"i3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 500, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Stock Movements.Units Out\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Stock Movements\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Units Out\"}, \"Name\": \"Stock Movements.Units Out\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Units Out'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 1000,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"i4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1000, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"slicer\", \"projections\": {\"Values\": [{\"queryRef\": \"Branches.name\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Branches\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Branches.name\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Branch'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 150,
+     "z": 0,
+     "width": 620,
+     "height": 300,
+     "config": "{\"name\": \"i5\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 150, \"z\": 0, \"width\": 620, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Branches.name\", \"active\": true}], \"Y\": [{\"queryRef\": \"Stock Balances.Stock On Hand\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Branches\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Stock Balances\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Branches.name\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Stock On Hand\"}, \"Name\": \"Stock Balances.Stock On Hand\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Stock on hand by branch'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 660,
+     "y": 150,
+     "z": 0,
+     "width": 600,
+     "height": 300,
+     "config": "{\"name\": \"i6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 660, \"y\": 150, \"z\": 0, \"width\": 600, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"lineChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Date.Month\", \"active\": true}], \"Y\": [{\"queryRef\": \"Stock Movements.Units In\"}, {\"queryRef\": \"Stock Movements.Units Out\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Date\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Stock Movements\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Month\"}, \"Name\": \"Date.Month\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Units In\"}, \"Name\": \"Stock Movements.Units In\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Units Out\"}, \"Name\": \"Stock Movements.Units Out\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Stock movement by month'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 470,
+     "z": 0,
+     "width": 1240,
+     "height": 230,
+     "config": "{\"name\": \"i7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 470, \"z\": 0, \"width\": 1240, \"height\": 230}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"Products.name\"}, {\"queryRef\": \"Products.sku\"}, {\"queryRef\": \"Products.reorderAt\"}, {\"queryRef\": \"Stock Balances.Stock On Hand\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Products\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Stock Balances\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Products.name\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"sku\"}, \"Name\": \"Products.sku\"}, {\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"reorderAt\"}, \"Name\": \"Products.reorderAt\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Stock On Hand\"}, \"Name\": \"Stock Balances.Stock On Hand\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Stock by product (compare with reorder level)'\"}}}}}]}}}",
+     "filters": "[]"
+    }
+   ],
+   "ordinal": 3
+  },
+  {
+   "name": "Section4",
+   "displayName": "Operations",
+   "displayOption": 1,
+   "width": 1280,
+   "height": 720,
+   "filters": "[]",
+   "config": "{}",
+   "visualContainers": [
+    {
+     "x": 20,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"o1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Work Orders.Jobs\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Jobs\"}, \"Name\": \"Work Orders.Jobs\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Jobs'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 260,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"o2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 260, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Work Orders.Jobs Completed\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Jobs Completed\"}, \"Name\": \"Work Orders.Jobs Completed\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Jobs Completed'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 500,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"o3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 500, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Work Orders.Average Turnaround Hours\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Average Turnaround Hours\"}, \"Name\": \"Work Orders.Average Turnaround Hours\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Average Turnaround Hours'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 740,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"o4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 740, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"Workforce Hours.Hours Worked\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Workforce Hours\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Hours Worked\"}, \"Name\": \"Workforce Hours.Hours Worked\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Hours Worked'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 1000,
+     "y": 20,
+     "z": 0,
+     "width": 230,
+     "height": 110,
+     "config": "{\"name\": \"o5\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1000, \"y\": 20, \"z\": 0, \"width\": 230, \"height\": 110}}], \"singleVisual\": {\"visualType\": \"slicer\", \"projections\": {\"Values\": [{\"queryRef\": \"Branches.name\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Branches\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"name\"}, \"Name\": \"Branches.name\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Branch'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 150,
+     "z": 0,
+     "width": 620,
+     "height": 300,
+     "config": "{\"name\": \"o6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 150, \"z\": 0, \"width\": 620, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredColumnChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Work Orders.status\", \"active\": true}], \"Y\": [{\"queryRef\": \"Work Orders.Jobs\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"status\"}, \"Name\": \"Work Orders.status\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Jobs\"}, \"Name\": \"Work Orders.Jobs\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Jobs by status'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 660,
+     "y": 150,
+     "z": 0,
+     "width": 600,
+     "height": 300,
+     "config": "{\"name\": \"o7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 660, \"y\": 150, \"z\": 0, \"width\": 600, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"lineChart\", \"projections\": {\"Category\": [{\"queryRef\": \"Date.Month\", \"active\": true}], \"Y\": [{\"queryRef\": \"Work Orders.Average Turnaround Hours\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Date\", \"Type\": 0}, {\"Name\": \"t1\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Month\"}, \"Name\": \"Date.Month\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t1\"}}, \"Property\": \"Average Turnaround Hours\"}, \"Name\": \"Work Orders.Average Turnaround Hours\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Turnaround trend (hours)'\"}}}}}]}}}",
+     "filters": "[]"
+    },
+    {
+     "x": 20,
+     "y": 470,
+     "z": 0,
+     "width": 1240,
+     "height": 230,
+     "config": "{\"name\": \"o8\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 470, \"z\": 0, \"width\": 1240, \"height\": 230}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"Work Orders.assignees\"}, {\"queryRef\": \"Work Orders.Jobs\"}, {\"queryRef\": \"Work Orders.Jobs Completed\"}, {\"queryRef\": \"Work Orders.Average Turnaround Hours\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"t0\", \"Entity\": \"Work Orders\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"assignees\"}, \"Name\": \"Work Orders.assignees\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Jobs\"}, \"Name\": \"Work Orders.Jobs\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Jobs Completed\"}, \"Name\": \"Work Orders.Jobs Completed\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"t0\"}}, \"Property\": \"Average Turnaround Hours\"}, \"Name\": \"Work Orders.Average Turnaround Hours\"}]}, \"vcObjects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Technician workload'\"}}}}}]}}}",
+     "filters": "[]"
+    }
+   ],
+   "ordinal": 4
+  }
+ ],
+ "filters": "[]"
+}

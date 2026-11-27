@@ -31,6 +31,7 @@ export const PLAN_FEATURES = {
   retentionPolicies: { min: "enterprise", label: "Custom retention policies" },
   advancedCompliance: { min: "enterprise", label: "Advanced security and compliance" },
   enterpriseSecurity: { min: "enterprise", label: "Enterprise security configuration" },
+  powerBi: { min: "enterprise", label: "Microsoft Power BI integration", isNew: true }, // owner decision 27 Nov 2026: Enterprise only
 };
 
 /** Beta switches that are also package features: the switch only works on the right package. */

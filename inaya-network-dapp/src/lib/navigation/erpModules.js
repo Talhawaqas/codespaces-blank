@@ -127,7 +127,7 @@ export const ERP_MODULES = [
       { id: "security", label: "Security", items: ["adminDashboard", "identity", "deviceProtection", "ransomware", "aiSecurity", "resilience", "resilienceTesting"] },
       { id: "compliance", label: "Compliance", items: ["governance", "complianceReadiness", "complianceEvidence", "auditTrail", "trustRelationships"] },
       { id: "it", label: "Storage and IT", items: ["storageManager", "storageControlPlane", "nas", "gateway", "infrastructure", "cloudBackup", "s3Compat", "dataSources", "databases", "sqlConsole", "mlStudio", "enterpriseHardening"] },
-      { id: "integrations", label: "Integrations", items: ["integrations", "webhooks", "apiKeys"] },
+      { id: "integrations", label: "Integrations", items: ["integrations", "powerBi", "webhooks", "apiKeys"] },
       { id: "company", label: "Company setup", items: ["settings", "billing"] },
     ],
   },

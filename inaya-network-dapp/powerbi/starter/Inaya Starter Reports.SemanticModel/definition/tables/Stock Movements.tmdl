@@ -1,0 +1,85 @@
+table 'Stock Movements'
+
+	/// Units added.
+	measure 'Units In' = CALCULATE(SUM('Stock Movements'[quantityChange]), 'Stock Movements'[quantityChange] > 0)
+		formatString: #,0
+
+	/// Units removed.
+	measure 'Units Out' = -CALCULATE(SUM('Stock Movements'[quantityChange]), 'Stock Movements'[quantityChange] < 0)
+		formatString: #,0
+
+	/// Movement ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// When
+	column at
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: at
+
+	/// Product
+	column productId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productId
+
+	/// Branch / warehouse
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Movement type (sale, receipt, transfer, count, adjustment...)
+	column type
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type
+
+	/// Units added (+) or removed (-)
+	column quantityChange
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantityChange
+
+	/// Units on hand after
+	column balanceAfter
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: balanceAfter
+
+	/// Unit cost
+	column unitCost
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: unitCost
+
+	/// Purchase order
+	column purchaseOrderId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: purchaseOrderId
+
+	/// Sale
+	column saleId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: saleId
+
+	column 'Movement Day' = IF(ISBLANK('Stock Movements'[at]), BLANK(), DATE(YEAR('Stock Movements'[at]), MONTH('Stock Movements'[at]), DAY('Stock Movements'[at])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Stock Movements' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("stock_movements", RangeStart, RangeEnd)
+				in
+				    Source

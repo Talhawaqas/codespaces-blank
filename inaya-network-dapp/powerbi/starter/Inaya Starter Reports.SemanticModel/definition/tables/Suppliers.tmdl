@@ -1,0 +1,45 @@
+table Suppliers
+
+	/// Supplier ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Name
+	column name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: name
+
+	/// Email
+	column email
+		dataType: string
+		summarizeBy: none
+		sourceColumn: email
+
+	/// Phone
+	column phone
+		dataType: string
+		summarizeBy: none
+		sourceColumn: phone
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	partition Suppliers = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("suppliers", RangeStart, RangeEnd)
+				in
+				    Source

@@ -1,0 +1,66 @@
+table Leave
+
+	/// Leave request ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Employee
+	column employeeId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: employeeId
+
+	/// Leave type
+	column leaveType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: leaveType
+
+	/// From
+	column startDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: startDate
+
+	/// To
+	column endDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: endDate
+
+	/// Calendar days
+	column days
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: days
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Requested
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	partition Leave = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("leave", RangeStart, RangeEnd)
+				in
+				    Source

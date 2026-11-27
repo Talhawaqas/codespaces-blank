@@ -87,6 +87,7 @@ export const NAV_ITEMS = [
   { key: "activity", label: "Activity", icon: "activity", group: "trust" },
   { key: "integrations", label: "Integrations", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "apiKeys", label: "API Keys", icon: "integrations", manageOnly: true, group: "enterprise" },
+  { key: "powerBi", label: "Microsoft Power BI", icon: "integrations", group: "enterprise" },
   { key: "storageControlPlane", label: "Storage Control Plane", icon: "health", manageOnly: true, group: "enterprise" },
   { key: "dataSources", label: "Data Sources", icon: "integrations", manageOnly: true, group: "enterprise" },
   { key: "nas", label: "Sovereign NAS", icon: "integrations", manageOnly: true, group: "enterprise" },

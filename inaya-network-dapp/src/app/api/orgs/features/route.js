@@ -12,7 +12,7 @@ import { FEATURES, listOrgFeatures, setOrgFeature } from "../../../../lib/featur
 import { logOrgActivity } from "../../../../lib/org-activity-log.js";
 
 export const dynamic = "force-dynamic";
-const PAID_ADDONS = new Set(["FEATURE_COMMERCE", "FEATURE_MANAGE_ORDERS", "FEATURE_INAYA_CONNECT"]);
+const PAID_ADDONS = new Set(["FEATURE_COMMERCE", "FEATURE_MANAGE_ORDERS", "FEATURE_INAYA_CONNECT", "FEATURE_POWER_BI"]);
 const json = (d, s = 200) => NextResponse.json(d, { status: s, headers: { "Cache-Control": "no-store" } });
 
 export async function GET(req) {

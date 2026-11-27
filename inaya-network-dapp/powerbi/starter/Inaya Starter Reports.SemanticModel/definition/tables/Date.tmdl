@@ -1,0 +1,26 @@
+table Date
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		isKey
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+	column Year = YEAR('Date'[Date])
+		dataType: int64
+		summarizeBy: none
+
+	column Month = FORMAT('Date'[Date], "yyyy-mm")
+		dataType: string
+		summarizeBy: none
+
+	column Weekday = FORMAT('Date'[Date], "ddd")
+		dataType: string
+		summarizeBy: none
+
+	partition Date = calculated
+		mode: import
+		source = CALENDARAUTO()

@@ -1,0 +1,38 @@
+table 'Stock Balances'
+
+	/// Units on hand now (not filtered by date).
+	measure 'Stock On Hand' = SUM('Stock Balances'[quantity])
+		formatString: #,0
+
+	/// Product and branch
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Product
+	column productId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productId
+
+	/// Branch / warehouse
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Units on hand now
+	column quantity
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantity
+
+	partition 'Stock Balances' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("stock_balances", RangeStart, RangeEnd)
+				in
+				    Source

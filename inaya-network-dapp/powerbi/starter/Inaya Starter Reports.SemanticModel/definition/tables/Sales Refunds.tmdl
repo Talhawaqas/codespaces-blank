@@ -1,0 +1,118 @@
+table 'Sales Refunds'
+
+	/// Refunds made in the period, excluding tax, by refund date.
+	measure Returns = SUM('Sales Refunds'[netRefund])
+		formatString: #,0.00
+
+	/// Refund number and line
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Original sale
+	column saleId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: saleId
+
+	/// Refund number
+	column refundNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: refundNumber
+
+	/// When refunded
+	column refundedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: refundedAt
+
+	/// Branch
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Who processed it
+	column processedBy
+		dataType: string
+		summarizeBy: none
+		sourceColumn: processedBy
+
+	/// Product
+	column productId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productId
+
+	/// SKU
+	column sku
+		dataType: string
+		summarizeBy: none
+		sourceColumn: sku
+
+	/// Product
+	column productName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productName
+
+	/// Units returned
+	column quantity
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantity
+
+	/// Refund excluding tax
+	column netRefund
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: netRefund
+
+	/// Tax refunded
+	column tax
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: tax
+
+	/// Total refunded
+	column total
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: total
+
+	/// Restocked, quarantined or written off
+	column disposition
+		dataType: string
+		summarizeBy: none
+		sourceColumn: disposition
+
+	/// Reason
+	column reason
+		dataType: string
+		summarizeBy: none
+		sourceColumn: reason
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	column 'Refund Date' = IF(ISBLANK('Sales Refunds'[refundedAt]), BLANK(), DATE(YEAR('Sales Refunds'[refundedAt]), MONTH('Sales Refunds'[refundedAt]), DAY('Sales Refunds'[refundedAt])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Sales Refunds' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("sales_refunds", RangeStart, RangeEnd)
+				in
+				    Source

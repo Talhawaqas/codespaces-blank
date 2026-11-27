@@ -1,0 +1,84 @@
+table Products
+
+	/// Product ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// SKU
+	column sku
+		dataType: string
+		summarizeBy: none
+		sourceColumn: sku
+
+	/// Name
+	column name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: name
+
+	/// Category
+	column category
+		dataType: string
+		summarizeBy: none
+		sourceColumn: category
+
+	/// Type
+	column productType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productType
+
+	/// Unit
+	column unit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unit
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Selling price
+	column unitPrice
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: unitPrice
+
+	/// Average cost
+	column averageCost
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: averageCost
+
+	/// Reorder level
+	column reorderAt
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: reorderAt
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	partition Products = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("products", RangeStart, RangeEnd)
+				in
+				    Source

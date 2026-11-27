@@ -40,6 +40,8 @@ export const FEATURES = [
   "FEATURE_MANAGE_ORDERS",
   // Inaya Connect (WhatsApp Business & AI gateway): Business + Enterprise; switched on by Inaya, never self-service.
   "FEATURE_INAYA_CONNECT",
+  // Microsoft Power BI integration (Enterprise): pilot-first rollout, switched on by Inaya, never self-service.
+  "FEATURE_POWER_BI",
 ];
 
 const ON = new Set(["1", "on", "true", "yes"]);

@@ -1,0 +1,114 @@
+table 'Purchase Order Lines'
+
+	/// Purchase order and line
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Purchase order
+	column purchaseOrderId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: purchaseOrderId
+
+	/// PO number
+	column poNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: poNumber
+
+	/// Supplier
+	column supplierId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: supplierId
+
+	/// Receiving branch
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Product
+	column productId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: productId
+
+	/// SKU
+	column sku
+		dataType: string
+		summarizeBy: none
+		sourceColumn: sku
+
+	/// Ordered
+	column quantityOrdered
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantityOrdered
+
+	/// Received
+	column quantityReceived
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: quantityReceived
+
+	/// Unit price
+	column unitPrice
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: unitPrice
+
+	/// Ordered x price
+	column lineTotal
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: lineTotal
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	column 'Order Day' = IF(ISBLANK('Purchase Order Lines'[createdAt]), BLANK(), DATE(YEAR('Purchase Order Lines'[createdAt]), MONTH('Purchase Order Lines'[createdAt]), DAY('Purchase Order Lines'[createdAt])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Purchase Order Lines' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("purchase_order_lines", RangeStart, RangeEnd)
+				in
+				    Source

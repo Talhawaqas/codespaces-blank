@@ -1,0 +1,124 @@
+table 'Sales Orders'
+
+	/// Online and office order totals (deleted excluded).
+	measure 'Order Value' = CALCULATE(SUM('Sales Orders'[total]), 'Sales Orders'[isDeleted] = FALSE())
+		formatString: #,0.00
+
+	/// Order ID
+	column id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: id
+
+	/// Order number
+	column orderNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: orderNumber
+
+	/// Channel (office, online store, Shopify, WooCommerce)
+	column channel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: channel
+
+	/// Status
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Stage
+	column stage
+		dataType: string
+		summarizeBy: none
+		sourceColumn: stage
+
+	/// Customer
+	column customerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: customerId
+
+	/// Branch / warehouse
+	column branchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branchId
+
+	/// Order date
+	column orderDate
+		dataType: dateTime
+		summarizeBy: none
+		formatString: yyyy-mm-dd
+		sourceColumn: orderDate
+
+	/// Subtotal
+	column subtotal
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: subtotal
+
+	/// Tax
+	column tax
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: tax
+
+	/// Total
+	column total
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: sum
+		sourceColumn: total
+
+	/// Currency
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	/// Fulfilment
+	column fulfilmentMethod
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fulfilmentMethod
+
+	/// Invoice
+	column invoiceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoiceId
+
+	/// Created
+	column createdAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: createdAt
+
+	/// Last changed
+	column updatedAt
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: updatedAt
+
+	/// Deleted in Inaya
+	column isDeleted
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: isDeleted
+
+	column 'Order Day' = IF(ISBLANK('Sales Orders'[orderDate]), BLANK(), DATE(YEAR('Sales Orders'[orderDate]), MONTH('Sales Orders'[orderDate]), DAY('Sales Orders'[orderDate])))
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+
+	partition 'Sales Orders' = m
+		mode: import
+		source =
+				let
+				    Source = Inaya.Dataset("sales_orders", RangeStart, RangeEnd)
+				in
+				    Source

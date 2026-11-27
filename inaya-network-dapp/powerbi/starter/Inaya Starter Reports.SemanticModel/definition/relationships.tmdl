@@ -1,0 +1,95 @@
+relationship r1
+	fromColumn: 'Sales Lines'.productId
+	toColumn: Products.id
+
+relationship r2
+	fromColumn: 'Sales Lines'.branchId
+	toColumn: Branches.id
+
+relationship r3
+	fromColumn: 'Sales Refunds'.productId
+	toColumn: Products.id
+
+relationship r4
+	fromColumn: 'Sales Refunds'.branchId
+	toColumn: Branches.id
+
+relationship r5
+	fromColumn: 'Stock Balances'.productId
+	toColumn: Products.id
+
+relationship r6
+	fromColumn: 'Stock Balances'.branchId
+	toColumn: Branches.id
+
+relationship r7
+	fromColumn: 'Stock Movements'.productId
+	toColumn: Products.id
+
+relationship r8
+	fromColumn: 'Stock Movements'.branchId
+	toColumn: Branches.id
+
+relationship r9
+	fromColumn: 'Work Orders'.branchId
+	toColumn: Branches.id
+
+relationship r10
+	fromColumn: Invoices.customerId
+	toColumn: Customers.id
+
+relationship r11
+	fromColumn: 'Sales Orders'.customerId
+	toColumn: Customers.id
+
+relationship r12
+	fromColumn: 'Purchase Order Lines'.supplierId
+	toColumn: Suppliers.id
+
+relationship r13
+	fromColumn: 'Purchase Order Lines'.productId
+	toColumn: Products.id
+
+relationship r14
+	fromColumn: Leave.employeeId
+	toColumn: Employees.id
+
+relationship d1
+	fromColumn: 'Sales Lines'.'Sale Date'
+	toColumn: Date.Date
+
+relationship d2
+	fromColumn: 'Sales Refunds'.'Refund Date'
+	toColumn: Date.Date
+
+relationship d3
+	fromColumn: 'Sales Orders'.'Order Day'
+	toColumn: Date.Date
+
+relationship d4
+	fromColumn: Invoices.'Issue Day'
+	toColumn: Date.Date
+
+relationship d5
+	fromColumn: Payments.'Payment Day'
+	toColumn: Date.Date
+
+relationship d6
+	fromColumn: Expenses.'Expense Day'
+	toColumn: Date.Date
+
+relationship d7
+	fromColumn: 'Stock Movements'.'Movement Day'
+	toColumn: Date.Date
+
+relationship d8
+	fromColumn: 'Purchase Order Lines'.'Order Day'
+	toColumn: Date.Date
+
+relationship d9
+	fromColumn: 'Work Orders'.'Created Day'
+	toColumn: Date.Date
+
+relationship d10
+	fromColumn: 'Workforce Hours'.'Work Day'
+	toColumn: Date.Date

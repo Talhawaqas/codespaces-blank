@@ -42,7 +42,7 @@ export const LAUNCHER_GROUPS = [
   { id: "people", name: "People & insight", blurb: "Team, reports and automation", keys: ["hr", "workforce", "insights", "brief", "whatChanged", "activity", "workflows", "whatIf", "executive", "docIntelligence"] },
   { id: "industry", name: "Your industry", blurb: "Built for your kind of organization", keys: ["health", "legal", "regulated", "financial", "government", "education", "hospitality"] },
   { id: "security", name: "Security & compliance", blurb: "Mostly for admins", keys: ["security", "aiActions", "adminDashboard", "governance", "complianceReadiness", "ransomware", "resilience", "resilienceTesting", "evidence", "auditTrail", "complianceEvidence", "trustRelationships", "aiSecurity", "identity"] },
-  { id: "it", name: "Storage & IT", blurb: "For IT and admins", keys: ["deviceProtection", "gateway", "infrastructure", "storageManager", "nas", "cloudBackup", "storageControlPlane", "s3Compat", "dataSources", "databases", "sqlConsole", "mlStudio", "dataRooms", "integrations", "webhooks", "apiKeys", "enterpriseHardening"] },
+  { id: "it", name: "Storage & IT", blurb: "For IT and admins", keys: ["deviceProtection", "gateway", "infrastructure", "storageManager", "nas", "cloudBackup", "storageControlPlane", "s3Compat", "dataSources", "databases", "sqlConsole", "mlStudio", "dataRooms", "integrations", "webhooks", "apiKeys", "powerBi", "enterpriseHardening"] },
   { id: "settings", name: "Account & settings", blurb: "Your company’s setup", keys: ["billing", "settings", "appearance"] },
 ];
 
