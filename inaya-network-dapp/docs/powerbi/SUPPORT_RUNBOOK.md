@@ -20,6 +20,8 @@ SOW INAYA-BOS-POWERBI-SOW-2026-V1 Â· Customer guide: `/docs/products/power-bi` Â
 - **"Only owners and admins can connect":** an admin enables *Let members connect Power BI*.
 - **Empty table:** the person's role can't read that dataset (by design: it loads empty, so the rest of the refresh still works), or there's no data in RangeStart/RangeEnd.
 - **Service refresh fails:** almost always the gateway. Check it's online, has Inaya.mez in its custom connectors folder with custom connectors enabled, and has a signed-in "Inaya Business OS" connection.
+- **"The remote name could not be resolved: 'www.inayanetwork.com'" (DM_GWPipeline_Gateway_MashupDataAccessError):** the gateway machine's DNS failed, not Inaya (seen live 27 Nov 2026 on a VMware NAT VM). On the gateway machine: set reliable DNS servers, `ipconfig /flushdns`, check `Resolve-DnsName www.inayanetwork.com`, `Restart-Service PBIEgwService`, then refresh again.
+- **Service sign-in window stays blank (gatewayadminportal.azure.com/OAuthRedirect):** the popup lost its opener. `/business/powerbi-authorize` and `/api/orgs/login/*` must keep `Cross-Origin-Opener-Policy: unsafe-none` (next.config.mjs); check with `curl -sI`.
 - **Numbers differ from Inaya screens:** check the currency slicer, the date basis (sales by completion, refunds by refund date, invoices by issue date) and voided or deleted rows. The sales definitions are covered by `test/powerbi.test.mjs` (reconciliation with the Commerce report).
 
 ## Rebuilding the deliverables
