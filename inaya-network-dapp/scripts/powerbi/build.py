@@ -30,7 +30,7 @@ def build_mez():
     path = os.path.join(OUT, "Inaya.mez")
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", CONTENT_TYPES)
-        z.write(os.path.join(SRC, "connector", "Inaya.pq"), "Inaya.pq")
+        z.write(os.path.join(SRC, "connector", "Inaya.pq"), "Inaya.m")  # the M document inside a .mez is <Name>.m (Power Query SDK layout)
         z.writestr("resources.resx", RESX)
         for s in (16, 20, 24, 32, 40, 48, 64): z.writestr(f"Inaya{s}.png", icon(s))
     print("built", path, os.path.getsize(path), "bytes")

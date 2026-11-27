@@ -6,6 +6,8 @@
 //   Inaya.Dataset(name, From, To)           one dataset for a date range: use it with RangeStart/RangeEnd for incremental refresh
 //
 // Build: node scripts/powerbi/build.mjs  ->  public/downloads/powerbi/Inaya.mez
+// Parameters are marked DataSource.Path = false: one Inaya sign-in covers every dataset and date range, and date/time values
+// are not allowed in a data source path (Power BI silently drops a connector whose data source function breaks that rule).
 section Inaya;
 
 BaseUrl = "https://www.inayanetwork.com";
@@ -21,17 +23,17 @@ shared Inaya.Contents = Value.ReplaceType(NavigationTable, ContentsType);
 shared Inaya.Dataset = Value.ReplaceType(DatasetTable, DatasetType);
 
 ContentsType = type function (
-    optional From as (type nullable date meta [Documentation.FieldCaption = "From date", Documentation.FieldDescription = "Earliest date to load for dated datasets. Default: two years ago.", Documentation.SampleValues = {"2025-01-01"}]),
-    optional To as (type nullable date meta [Documentation.FieldCaption = "To date", Documentation.FieldDescription = "Latest date to load. Default: today."])
+    optional From as (type nullable date meta [DataSource.Path = false, Documentation.FieldCaption = "From date", Documentation.FieldDescription = "Earliest date to load for dated datasets. Default: two years ago.", Documentation.SampleValues = {"2025-01-01"}]),
+    optional To as (type nullable date meta [DataSource.Path = false, Documentation.FieldCaption = "To date", Documentation.FieldDescription = "Latest date to load. Default: today."])
   ) as table meta [
     Documentation.Name = "Inaya Business OS",
     Documentation.LongDescription = "Read-only access to your company's Inaya Business OS data for Power BI reports. You only see what your role, departments and branches allow in Inaya."
   ];
 
 DatasetType = type function (
-    Name as (type text meta [Documentation.FieldCaption = "Dataset", Documentation.SampleValues = {"sales_lines", "invoices"}]),
-    From as (type datetime meta [Documentation.FieldCaption = "From (RangeStart)"]),
-    To as (type datetime meta [Documentation.FieldCaption = "To (RangeEnd)"])
+    Name as (type text meta [DataSource.Path = false, Documentation.FieldCaption = "Dataset", Documentation.SampleValues = {"sales_lines", "invoices"}]),
+    From as (type datetime meta [DataSource.Path = false, Documentation.FieldCaption = "From (RangeStart)"]),
+    To as (type datetime meta [DataSource.Path = false, Documentation.FieldCaption = "To (RangeEnd)"])
   ) as table meta [Documentation.Name = "Inaya dataset for a date range (incremental refresh)"];
 
 // ---------------------------------------------------------------------------------------------- API calls
