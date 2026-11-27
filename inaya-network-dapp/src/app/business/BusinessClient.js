@@ -129,6 +129,8 @@ const OfficeIntegrationView = dynamic(() => import("../../components/business/ad
 const ComplianceReadinessView = dynamic(() => import("../../components/business/admin/ComplianceReadinessView"), { ssr: false, loading: ScreenLoading });
 const BrandingPanel = dynamic(() => import("../../components/business/admin/BrandingPanel"), { ssr: false, loading: () => null });
 const PowerBiView = dynamic(() => import("../../components/business/PowerBiView"), { ssr: false, loading: () => null });
+const PayrollView = dynamic(() => import("../../components/business/PayrollView"), { ssr: false, loading: () => null });
+const MyPayslipsView = dynamic(() => import("../../components/business/PayrollView").then((m) => m.MyPayslips), { ssr: false, loading: () => null });
 const SsoPanel = dynamic(() => import("../../components/business/admin/SsoPanel"), { ssr: false, loading: () => null });
 const PasskeySettings = dynamic(() => import("../../components/business/PasskeySettings"), { ssr: false, loading: () => null });
 const NotificationPrefsPanel = dynamic(() => import("../../components/business/admin/NotificationPrefsPanel"), { ssr: false, loading: () => null });
@@ -1508,6 +1510,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
     resilienceTesting: { title: "Resilience Testing", description: "Disaster-recovery test results, RTO/RPO compliance, and test history." },
     integrations: { title: "Integrations", description: "Connect external identity, productivity, and financial systems." },
     powerBi: { title: "Microsoft Power BI", description: "Read-only Power BI reports on your Inaya data (Enterprise)." },
+    payroll: { title: "Payroll", description: "Monthly payroll with tax, contributions, loans, approval, payslips and bank files." },
+    myPayslips: { title: "My payslips", description: "Your payslips: view, download, and how you receive them." },
     apiKeys: { title: "API Keys", description: "Programmatic access to this company's data." },
     storageControlPlane: { title: "Storage Control Plane", description: "Volumes, file shares, snapshots, and tag-driven backup policies over your organization's storage." },
     dataSources: { title: "Data Sources", description: "Connect legacy/relational data sources and expose them as live, permission-scoped virtual SQL tables." },
@@ -1660,6 +1664,8 @@ function Workspace({ email, membership, orgs, selectedOrgId, onSwitchOrg, onLogo
       {activeView === "resilienceTesting" && <ResilienceView orgId={orgId} />}
       {activeView === "integrations" && <IntegrationsView orgId={orgId} email={email} />}
       {activeView === "powerBi" && <PowerBiView orgId={orgId} />}
+      {activeView === "payroll" && <PayrollView orgId={orgId} />}
+      {activeView === "myPayslips" && <MyPayslipsView orgId={orgId} />}
       {activeView === "apiKeys" && <ApiKeysView orgId={orgId} />}
       {activeView === "storageControlPlane" && <StorageControlPlaneView orgId={orgId} />}
       {activeView === "dataSources" && <DataSourcesView orgId={orgId} />}
@@ -3059,8 +3065,8 @@ function BillingView({ orgId, canManage }) {
             <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Add-ons</p>
             <p className="text-[var(--inaya-text-secondary)] text-xs mt-1">
               {Object.keys(plan.addOns || {}).length
-                ? `Active: ${[plan.addOns.appointments && "Appointments", plan.addOns.campaigns && "Email campaigns", plan.addOns.connect && "Inaya Connect", plan.addOns.clientPortal && "Client portal", plan.addOns.customDomain && "Custom domain", plan.addOns.apiAccess && "API access", plan.addOns.storageTB && `${plan.addOns.storageTB} TB extra storage`, plan.addOns.powerBi && "Microsoft Power BI"].filter(Boolean).join(", ")}.`
-                : plan.id === "business" ? "Add Microsoft Power BI reporting (otherwise included in Enterprise)." : "Add Business features one at a time: appointments, email campaigns, Inaya Connect, a client portal, a custom domain, API access or extra storage."}
+                ? `Active: ${[plan.addOns.appointments && "Appointments", plan.addOns.campaigns && "Email campaigns", plan.addOns.connect && "Inaya Connect", plan.addOns.clientPortal && "Client portal", plan.addOns.customDomain && "Custom domain", plan.addOns.apiAccess && "API access", plan.addOns.storageTB && `${plan.addOns.storageTB} TB extra storage`, plan.addOns.powerBi && "Microsoft Power BI", plan.addOns.payroll && "Payroll"].filter(Boolean).join(", ")}.`
+                : plan.id === "business" ? "Add Microsoft Power BI reporting (otherwise included in Enterprise)." : "Add Business features one at a time: payroll, appointments, email campaigns, Inaya Connect, a client portal, a custom domain, API access or extra storage."}
             </p>
           </div>
           <button type="button" onClick={() => { const current = data?.availablePlans?.find((p) => p.id === plan.id); if (current) setRequestFor({ plan: current, extraUsers: plan.extraUsers || 0, pilot: !!data.subscription?.pilot }); }} className="px-4 py-2 rounded-xl text-sm font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:border-[var(--inaya-accent)]">

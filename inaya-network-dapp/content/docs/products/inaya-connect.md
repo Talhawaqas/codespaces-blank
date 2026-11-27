@@ -8,8 +8,8 @@ contentType: Product Guide
 audience: [business-admin, operations, finance, support]
 status: live
 version: current
-tags: [whatsapp, whatsapp business, inbox, chat, messages, business assistant, customer assistant, bills, receipts, ai bookkeeper, documents, meta, cloud api]
-lastVerifiedAt: "2026-11-26"
+tags: [whatsapp, whatsapp business, payslips, payroll, inbox, chat, messages, business assistant, customer assistant, bills, receipts, ai bookkeeper, documents, meta, cloud api]
+lastVerifiedAt: "2026-11-27"
 relatedDocs: [business-workspace, ai-bookkeeper, customer-portal]
 ---
 
@@ -54,6 +54,17 @@ On **Inaya Connect › My WhatsApp**, click **Get my link code**. On a phone, ta
 | A file from an unknown number, or one that fails the virus check | Quarantined and never opened |
 
 Find files under **Inaya Connect › My files**. Admins see every file under **Documents**, where they can also send a file to Bookkeeper, mark it as filed, or reject it. Sending the same file twice is recognised and it's stored only once.
+
+## Payslips on WhatsApp
+
+With Payroll (Business and Enterprise, or the Professional add-on), each employee's payslip can be sent on WhatsApp as the actual PDF:
+
+1. In Meta, create a message template in the **Utility** category with a **Document** header and a body with two variables: the employee's name and the month. For example: "Hello {{1}}, your payslip for {{2}} is attached. Open it with your payslip password." Wait for Meta to approve it.
+2. In Inaya, go to **People › Payroll › Settings** and enter the template's name and language.
+3. Each employee adds their WhatsApp number and chooses a **payslip password** under **My payslips**.
+4. After a payroll is marked paid, choose **Send on WhatsApp**. Every PDF is locked with that employee's own payslip password, so someone else holding the phone can't open it.
+
+Employees without a number or a payslip password are skipped and told in the app. Each payslip counts as one template message on your Meta bill.
 
 ## Settings and costs
 

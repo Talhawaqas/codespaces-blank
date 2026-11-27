@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -116,7 +117,7 @@ function CreateAttestationModal({ orgId, onClose, onCreated }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input aria-label="Threshold" value={threshold} onChange={(e) => setThreshold(e.target.value)} type="number" min="0" required placeholder="Threshold" className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]" />
           <select value={displayCurrency} onChange={(e) => setDisplayCurrency(e.target.value)} className="bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-            {["USD", "EUR", "GBP", "AED", "PKR"].map((c) => <option key={c} value={c}>{c}</option>)}
+            {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         {error && <p className="text-red-400 text-xs">{error}</p>}

@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EmptyState from "../EmptyState";
+import { SUPPORTED_CURRENCIES } from "../../lib/currency.js";
 
 async function api(path, options) {
   const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
@@ -105,7 +106,7 @@ function CreateEscrowModal({ orgId, onClose, onCreated }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         <input aria-label="Purchase Order ID" value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)} required placeholder="Purchase Order ID" className="w-full bg-black/45 border border-white/15 rounded-lg px-3 py-2 text-sm text-[var(--inaya-text-primary)] placeholder-[#8a96ab]" />
         <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full bg-black/45 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-[var(--inaya-text-primary)]">
-          {["USD", "EUR", "GBP", "AED", "PKR"].map((c) => <option key={c} value={c}>{c}</option>)}
+          {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="space-y-2">
           <p className="text-[11px] font-bold uppercase text-[var(--inaya-text-muted)]">Milestones</p>

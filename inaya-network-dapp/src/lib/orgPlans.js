@@ -62,7 +62,7 @@ export const PLANS = {
       "AI Document Assistant",
       "10 GB Max File Size",
       "Priority Support",
-      "Optional add-ons: Appointments, Email Campaigns, WhatsApp (Inaya Connect), Client Portal, Custom Domain, API, Extra Storage",
+      "Optional add-ons: Payroll, Appointments, Email Campaigns, WhatsApp (Inaya Connect), Client Portal, Custom Domain, API, Extra Storage",
     ],
   },
   business: {
@@ -87,6 +87,7 @@ export const PLANS = {
       "Secure Client Portals",
       "Custom Domain",
       "Advanced AI Assistant",
+      "Payroll: Payslips, Tax & Bank Files",
       "Appointment Booking & Team Calendars",
       "Email Campaigns (50,000 emails/month)",
       "API Access",

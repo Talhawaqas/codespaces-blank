@@ -89,6 +89,7 @@ export const ERP_MODULES = [
       { id: "tasks", label: "My tasks", items: ["hr:employees!new", "hr:leave!new"] },
       { id: "staff", label: "Staff", items: ["hr:employees", "hr:leave", "hr:managers", "hr:orgChart", "hr:onboarding"] },
       { id: "workforce", label: "Time, rota and commissions", items: ["workforce"] },
+      { id: "payroll", label: "Payroll", items: ["payroll", "myPayslips"] },
     ],
   },
   {

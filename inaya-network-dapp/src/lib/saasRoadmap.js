@@ -1255,7 +1255,20 @@ export const ROADMAP_STAGES = [
         ],
       },
     ],
-    notes: "Included in the Business and Enterprise plans; verified live on our own WhatsApp number on 26 November 2026. Setup is guided in the customer's own Meta account; one-click sign-up follows Meta Tech Provider status.",
+    notes: "Payslips on WhatsApp (27 Nov 2026): Payroll sends each employee's password-locked payslip PDF through the company's own approved document template. Included in the Business and Enterprise plans; verified live on our own WhatsApp number on 26 November 2026. Setup is guided in the customer's own Meta account; one-click sign-up follows Meta Tech Provider status.",
+  },
+  {
+    number: 47,
+    title: "Payroll and Local Currencies: Payslips, Tax, Loans, Bank Files and 22 Currencies",
+    status: ROADMAP_STATUS.LIVE,
+    description: "Monthly payroll on top of HR, clock-in and leave: salary structures, allowances and deductions, overtime from clock-ins, unpaid leave, loans and advances, country tax and contribution rules the company reviews and confirms, a second-person approval, payslips employees view and download, password-locked PDFs by email and WhatsApp, bank files and the ledger entry. Books and payroll in 22 currencies, including the Gulf, South-East Asia and Central Asia.",
+    securityStatement: "Salary, bank and tax details are encrypted field by field; whoever prepares a payroll can't approve it; an employee sees only their own payslips; emailed and WhatsApp payslips open only with the employee's own payslip password, which HR never sees. Inaya calculates from confirmed rules and never files taxes.",
+    groups: [
+      { title: "Country rules", items: ["Pakistan: tax year 2027 salaried slabs, EOBI, provident fund, provincial social security", "UAE: end-of-service gratuity, GPSSA for nationals, WPS salary file (SIF)", "United States: federal withholding (Publication 15-T 2026), social security, Medicare, FUTA, your state rate", "Kazakhstan, Uzbekistan and Azerbaijan 2026 rules; any other country with your own rates"] },
+      { title: "Running payroll", items: ["Prepare, recalculate, submit, approve by a second person, mark paid", "Loans and advances repaid by instalments", "Bank transfer file (CSV) and the ledger entry posted automatically"] },
+      { title: "Payslips", items: ["My payslips with Download PDF on web, desktop and Android", "Password-locked PDF by email and on WhatsApp through Inaya Connect"] },
+    ],
+    notes: "Included in Business and Enterprise; a $35 / PKR 7,500 a month add-on for Professional (owner decision 27 Nov 2026). Tested end to end on the test database; the first live WhatsApp payslip needs a company's approved Meta template.",
   },
 ];
 

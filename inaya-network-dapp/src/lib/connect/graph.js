@@ -50,3 +50,26 @@ export async function listTemplates(conn) {
   if (!conn.wabaId) return { data: [] };
   return call(conn, `${conn.wabaId}/message_templates?fields=name,status,language,category&limit=100`);
 }
+
+/** Uploads a file to Meta (POST /{phone-number-id}/media, multipart) and returns its media id. Used for payslip PDFs. */
+export async function uploadMedia(conn, buffer, mimeType, filename) {
+  const tok = secretOf(conn.accessTokenEncrypted); if (!tok) throw Object.assign(new Error("The WhatsApp access token is missing or can't be read."), { code: "NO_TOKEN" });
+  const url = `${BASE()}/${VERSION()}/${conn.phoneNumberId}/media`;
+  if (transport) return transport({ url, method: "POST", body: { messaging_product: "whatsapp", type: mimeType, filename, bytes: buffer.length }, token: tok, upload: true });
+  const form = new FormData(); form.append("messaging_product", "whatsapp"); form.append("type", mimeType); form.append("file", new Blob([buffer], { type: mimeType }), filename);
+  const res = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${tok}` }, body: form, signal: AbortSignal.timeout(30000) });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = d?.error || {}; throw Object.assign(new Error(e.message || `WhatsApp media upload failed (${res.status}).`), { status: res.status, code: e.code }); }
+  return { mediaId: d.id };
+}
+/** A document (inside the 24-hour customer-service window). */
+export async function sendDocument(conn, to, mediaId, filename, caption = "") {
+  const d = await call(conn, `${conn.phoneNumberId}/messages`, { method: "POST", body: { messaging_product: "whatsapp", recipient_type: "individual", to: digits(to), type: "document", document: { id: mediaId, filename, ...(caption ? { caption: String(caption).slice(0, 1024) } : {}) } } });
+  return { waMessageId: d?.messages?.[0]?.id || null };
+}
+/** An approved template whose header is a DOCUMENT (e.g. the company's "payslip" template), with body parameters. */
+export async function sendDocumentTemplate(conn, to, name, language, mediaId, filename, bodyParams = []) {
+  const components = [{ type: "header", parameters: [{ type: "document", document: { id: mediaId, filename } }] }];
+  if (bodyParams.length) components.push({ type: "body", parameters: bodyParams.map((t) => ({ type: "text", text: String(t).slice(0, 200) })) });
+  return sendTemplate(conn, to, name, language || "en_US", components);
+}

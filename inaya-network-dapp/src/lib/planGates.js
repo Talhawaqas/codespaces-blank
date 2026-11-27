@@ -31,6 +31,7 @@ export const PLAN_FEATURES = {
   retentionPolicies: { min: "enterprise", label: "Custom retention policies" },
   advancedCompliance: { min: "enterprise", label: "Advanced security and compliance" },
   enterpriseSecurity: { min: "enterprise", label: "Enterprise security configuration" },
+  payroll: { min: "business", label: "Payroll", isNew: true }, // owner decision 27 Nov 2026: Business + Enterprise; Professional add-on $35 / PKR 7,500
   powerBi: { min: "enterprise", label: "Microsoft Power BI integration", isNew: true }, // owner decisions 27 Nov 2026: Enterprise, or Business with the $79 / PKR 10,000 add-on (addOns.js)
 };
 

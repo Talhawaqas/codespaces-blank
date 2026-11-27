@@ -8,6 +8,7 @@
 // per-TB rate on purpose (Filebase costs ~$15/TB): a small top-up pays well, and heavy users are better off on Business.
 // Add-ons are not discounted in the PKR pilot.
 //
+// Payroll (owner decision 27 Nov 2026): Professional add-on $35 / PKR 7,500 (Business and Enterprise include it).
 // Business add-on (owner decision 27 Nov 2026): Microsoft Power BI ($79 / PKR 10,000), which is otherwise Enterprise only.
 // Each add-on names the package(s) it is sold on (`plans`); it only counts while the company is on one of them.
 //
@@ -29,6 +30,7 @@ export const ADD_ONS = {
   customDomain: { name: "Custom domain", usd: 10, pkr: 2000, planFeature: "customDomain" },
   apiAccess: { name: "API access", usd: 15, pkr: 3000, planFeature: "apiAccess" },
   storageTB: { name: "Extra storage (per TB)", usd: 30, pkr: 7500, perUnit: true, max: MAX_STORAGE_TB },
+  payroll: { name: "Payroll (payslips, tax, bank files)", usd: 35, pkr: 7500, planFeature: "payroll" },
   powerBi: { name: "Microsoft Power BI integration", usd: 79, pkr: 10000, planFeature: "powerBi", plans: ["business"] },
 };
 for (const a of Object.values(ADD_ONS)) a.plans ||= [ADD_ON_PLAN];
