@@ -61,7 +61,12 @@ test("access tokens: signed, expiring, tamper-proof", () => {
 test("who may connect: Enterprise only, pilot switch, owners/admins unless members are allowed", async () => {
   const biz = await mkOrg("business"); await mkMember(biz, `own-biz-${RUN}@pbi.test`, { role: "owner" });
   assert.match((await O.connectEligibility(biz, `own-biz-${RUN}@pbi.test`)).reason, /Enterprise/);
-  const off = await mkOrg("enterprise", { features: {} }); await mkMember(off, `own-off-${RUN}@pbi.test`, { role: "owner" });
+  // Owner approval 27 Nov 2026: on by default for Enterprise and for Business with the add-on; Inaya can still switch it off.
+  const bizAdd = await mkOrg("business", { features: {}, addOns: { powerBi: true } }); await mkMember(bizAdd, `own-bizadd-${RUN}@pbi.test`, { role: "owner" });
+  assert.equal((await O.connectEligibility(bizAdd, `own-bizadd-${RUN}@pbi.test`)).ok, true);
+  const dflt = await mkOrg("enterprise", { features: {} }); await mkMember(dflt, `own-dflt-${RUN}@pbi.test`, { role: "owner" });
+  assert.equal((await O.connectEligibility(dflt, `own-dflt-${RUN}@pbi.test`)).ok, true);
+  const off = await mkOrg("enterprise", { features: { FEATURE_POWER_BI: false } }); await mkMember(off, `own-off-${RUN}@pbi.test`, { role: "owner" });
   assert.match((await O.connectEligibility(off, `own-off-${RUN}@pbi.test`)).reason, /not switched on/);
   const ent = await mkOrg("enterprise"); await mkMember(ent, `own-${RUN}@pbi.test`, { role: "owner" }); await mkMember(ent, `mem-${RUN}@pbi.test`);
   assert.equal((await O.connectEligibility(ent, `own-${RUN}@pbi.test`)).ok, true);

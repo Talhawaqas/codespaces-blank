@@ -22,20 +22,20 @@ export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pi
     ? `PKR ${Math.round(pilot && plan.pilotMonthly ? plan.pilotMonthly : plan.priceMonthly).toLocaleString("en-US")} / month`
     : `$${plan.priceMonthly} / month`;
 
-  // Professional-only add-ons (src/lib/addOns.js): catalogue in the company's currency, pre-filled with what it already has.
+  // Add-ons sold on this package (src/lib/addOns.js: Professional, and Power BI on Business): catalogue in the company's currency, pre-filled with what it already has.
   const [catalogue, setCatalogue] = useState(null); const [businessMonthly, setBusinessMonthly] = useState(null); const [addOns, setAddOns] = useState({});
   useEffect(() => {
-    if (plan.id !== "professional") return;
+    if (!["professional", "business"].includes(plan.id)) return;
     fetch(`/api/orgs/billing/plans${orgId ? `?orgId=${orgId}` : ""}`, { credentials: "include" }).then((r) => r.json()).then((d) => {
-      setCatalogue(d.addOns?.items || []); setBusinessMonthly(d.plans?.find((p) => p.id === "business")?.priceMonthly ?? null);
+      setCatalogue((d.addOns?.items || []).filter((a) => (a.plans || ["professional"]).includes(plan.id))); setBusinessMonthly(d.plans?.find((p) => p.id === "business")?.priceMonthly ?? null);
     }).catch(() => setCatalogue([]));
-    if (orgId) fetch(`/api/orgs/billing?orgId=${orgId}`, { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.plan?.id === "professional" && d.plan.addOns) setAddOns(d.plan.addOns); }).catch(() => {});
+    if (orgId) fetch(`/api/orgs/billing?orgId=${orgId}`, { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.plan?.id === plan.id && d.plan.addOns) setAddOns(d.plan.addOns); }).catch(() => {});
   }, [plan.id, orgId]);
   const money = (n) => (isPkr ? `PKR ${Math.round(n).toLocaleString("en-US")}` : `$${n}`);
   const addOnTotal = (catalogue || []).reduce((sum, a) => sum + (a.perUnit ? Number(addOns[a.id] || 0) : addOns[a.id] ? 1 : 0) * a.priceMonthly, 0);
   const baseMonthly = pilot && isPkr && plan.pilotMonthly ? plan.pilotMonthly : plan.priceMonthly;
   const total = baseMonthly + addOnTotal;
-  const showUpgrade = businessMonthly && addOnTotal > 0 && total >= businessMonthly * 0.85;
+  const showUpgrade = plan.id === "professional" && businessMonthly && addOnTotal > 0 && total >= businessMonthly * 0.85;
 
   async function submit(e) {
     e.preventDefault();
@@ -46,7 +46,7 @@ export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pi
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orgId, planId: plan.id, interval: "month", extraUsers, pilot, paymentMethod: form.paymentMethod, addOns: plan.id === "professional" ? addOns : {},
+          orgId, planId: plan.id, interval: "month", extraUsers, pilot, paymentMethod: form.paymentMethod, addOns: ["professional", "business"].includes(plan.id) ? addOns : {},
           contact: { name: form.name, phone: form.phone, companySize: form.companySize || null, preferredContact: form.preferredContact, message: form.message },
         }),
       });
@@ -84,7 +84,7 @@ export default function ActivationRequestModal({ orgId, plan, extraUsers = 0, pi
             </div>
             <p className="text-[var(--inaya-text-muted)] text-xs">Fill in your details and our team will contact you to complete the payment. No card needed.</p>
 
-            {plan.id === "professional" && catalogue && catalogue.length > 0 && (
+            {catalogue && catalogue.length > 0 && (
               <fieldset className="border border-[var(--inaya-overlay-15)] rounded-xl p-3 space-y-1.5">
                 <legend className="text-[var(--inaya-text-muted)] text-[11px] font-bold uppercase tracking-wide px-1">Add-ons (optional)</legend>
                 {catalogue.map((a) => a.perUnit ? (

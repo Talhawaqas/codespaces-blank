@@ -1,6 +1,6 @@
 // src/lib/analytics/oauth.js
 //
-// Microsoft Power BI integration (SOW INAYA-BOS-POWERBI-SOW-2026-V1, Enterprise only): the OAuth 2.0 authorisation server
+// Microsoft Power BI integration (SOW INAYA-BOS-POWERBI-SOW-2026-V1; Enterprise, or the Business add-on): the OAuth 2.0 authorisation server
 // that lets the Inaya Power BI connector read the Analytics API without any shared or long-lived secret (SOW 8.1).
 //
 //   authorise   /business/powerbi-authorize: the person signs in (passkey, company SSO or an emailed code), picks the company

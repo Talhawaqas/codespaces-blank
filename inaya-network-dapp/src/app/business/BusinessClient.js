@@ -3053,17 +3053,17 @@ function BillingView({ orgId, canManage }) {
         <ActivationRequestModal orgId={orgId} plan={requestFor.plan} extraUsers={requestFor.extraUsers} pilot={requestFor.pilot} onClose={() => setRequestFor(null)} onDone={() => setNotice("Request sent. Our team will contact you within one working day to arrange payment by NayaPay or bank transfer.")} />
       )}
 
-      {canManage && plan.id === "professional" && !plan.noBilling && (
+      {canManage && ["professional", "business"].includes(plan.id) && !plan.noBilling && (
         <div className="bg-[var(--inaya-surface)] border border-[var(--inaya-overlay-5)] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex-1 min-w-[220px]">
             <p className="text-[var(--inaya-text-muted)] text-[12px] font-bold uppercase tracking-wide">Add-ons</p>
             <p className="text-[var(--inaya-text-secondary)] text-xs mt-1">
               {Object.keys(plan.addOns || {}).length
-                ? `Active: ${[plan.addOns.appointments && "Appointments", plan.addOns.campaigns && "Email campaigns", plan.addOns.connect && "Inaya Connect", plan.addOns.clientPortal && "Client portal", plan.addOns.customDomain && "Custom domain", plan.addOns.apiAccess && "API access", plan.addOns.storageTB && `${plan.addOns.storageTB} TB extra storage`].filter(Boolean).join(", ")}.`
-                : "Add Business features one at a time: appointments, email campaigns, Inaya Connect, a client portal, a custom domain, API access or extra storage."}
+                ? `Active: ${[plan.addOns.appointments && "Appointments", plan.addOns.campaigns && "Email campaigns", plan.addOns.connect && "Inaya Connect", plan.addOns.clientPortal && "Client portal", plan.addOns.customDomain && "Custom domain", plan.addOns.apiAccess && "API access", plan.addOns.storageTB && `${plan.addOns.storageTB} TB extra storage`, plan.addOns.powerBi && "Microsoft Power BI"].filter(Boolean).join(", ")}.`
+                : plan.id === "business" ? "Add Microsoft Power BI reporting (otherwise included in Enterprise)." : "Add Business features one at a time: appointments, email campaigns, Inaya Connect, a client portal, a custom domain, API access or extra storage."}
             </p>
           </div>
-          <button type="button" onClick={() => { const current = data?.availablePlans?.find((p) => p.id === "professional"); if (current) setRequestFor({ plan: current, extraUsers: plan.extraUsers || 0, pilot: !!data.subscription?.pilot }); }} className="px-4 py-2 rounded-xl text-sm font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:border-[var(--inaya-accent)]">
+          <button type="button" onClick={() => { const current = data?.availablePlans?.find((p) => p.id === plan.id); if (current) setRequestFor({ plan: current, extraUsers: plan.extraUsers || 0, pilot: !!data.subscription?.pilot }); }} className="px-4 py-2 rounded-xl text-sm font-bold border border-[var(--inaya-border)] text-[var(--inaya-text-primary)] hover:border-[var(--inaya-accent)]">
             {Object.keys(plan.addOns || {}).length ? "Change add-ons" : "Choose add-ons"}
           </button>
         </div>

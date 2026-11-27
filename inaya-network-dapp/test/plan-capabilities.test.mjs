@@ -50,6 +50,11 @@ test("planAllows: package order, legacy unrestricted, grandfathered", () => {
   assert.equal(planAllows({ plan: "business" }, "apiAccess"), true);
   assert.equal(planAllows({ plan: "business" }, "sso"), false);
   assert.equal(planAllows({ plan: "enterprise" }, "sso"), true);
+  // Power BI: Enterprise, or Business with the add-on (not Professional, even with the add-on stored).
+  assert.equal(planAllows({ plan: "enterprise" }, "powerBi"), true);
+  assert.equal(planAllows({ plan: "business" }, "powerBi"), false);
+  assert.equal(planAllows({ plan: "business", addOns: { powerBi: true } }, "powerBi"), true);
+  assert.equal(planAllows({ plan: "professional", addOns: { powerBi: true } }, "powerBi"), false);
   assert.equal(planAllows({ plan: "business" }, "retentionPolicies"), false);
   assert.equal(planAllows({}, "sso"), true, "no package = legacy, unrestricted");
   assert.equal(planAllows({ noPlanConfirmedAt: "x" }, "documentAi"), false, "no-billing Starter is limited");
@@ -200,6 +205,13 @@ test("add-ons: catalogue, validation, prices, upgrade hint", async () => {
   assert.equal(ADD_ONS.storageTB.usd, 30); assert.equal(ADD_ONS.connect.usd, 35); assert.equal(ADD_ONS.storageTB.pkr, 7500); assert.equal(ADD_ONS.connect.pkr, 6000);
   assert.deepEqual(cleanAddOns({ connect: true, storageTB: 2, junk: true }, "professional").addOns, { connect: true, storageTB: 2 });
   assert.match(cleanAddOns({ connect: true }, "business").error, /already includes/);
+  // Power BI: a Business add-on ($79 / PKR 10,000); Enterprise includes it; never on Professional.
+  assert.deepEqual(cleanAddOns({ powerBi: true }, "business").addOns, { powerBi: true });
+  assert.match(cleanAddOns({ powerBi: true }, "enterprise").error, /already includes/);
+  assert.match(cleanAddOns({ powerBi: true }, "professional").error, /choose Business/);
+  assert.match(cleanAddOns({ connect: true, powerBi: true }, "business").error, /Professional/);
+  assert.equal(addOnsPrice({ powerBi: true }), 79); assert.equal(addOnsPrice({ powerBi: true }, { currency: "PKR" }), 10000);
+  assert.equal(upgradeHint({ powerBi: true }), null);
   assert.match(cleanAddOns({ connect: true }, "starter").error, /choose Professional/);
   assert.deepEqual(cleanAddOns({}, "starter").addOns, {});
   assert.match(cleanAddOns({ storageTB: 5 }, "professional").error, /0 to 4 TB/);

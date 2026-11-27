@@ -12,7 +12,7 @@
 
 import { PLANS, PLAN_ORDER, getOrgPlan } from "./orgPlans.js";
 import { getOrgCollections, toObjectId } from "./orgs.js";
-import { FEATURE_ADD_ON, hasAddOn } from "./addOns.js";
+import { FEATURE_ADD_ON, hasAddOn, addOnForPlan } from "./addOns.js";
 
 export const PLAN_FEATURES = {
   advancedSharing: { min: "professional", label: "Advanced file sharing" },
@@ -31,7 +31,7 @@ export const PLAN_FEATURES = {
   retentionPolicies: { min: "enterprise", label: "Custom retention policies" },
   advancedCompliance: { min: "enterprise", label: "Advanced security and compliance" },
   enterpriseSecurity: { min: "enterprise", label: "Enterprise security configuration" },
-  powerBi: { min: "enterprise", label: "Microsoft Power BI integration", isNew: true }, // owner decision 27 Nov 2026: Enterprise only
+  powerBi: { min: "enterprise", label: "Microsoft Power BI integration", isNew: true }, // owner decisions 27 Nov 2026: Enterprise, or Business with the $79 / PKR 10,000 add-on (addOns.js)
 };
 
 /** Beta switches that are also package features: the switch only works on the right package. */
@@ -41,9 +41,11 @@ export const FLAG_PLAN_FEATURE = {
   FEATURE_COMPLIANCE_READINESS: "advancedCompliance",
   FEATURE_GOVERNMENT_SECURITY_PROFILE: "enterpriseSecurity",
   FEATURE_CUSTOMER_MANAGED_KEYS: "enterpriseSecurity",
+  FEATURE_POWER_BI: "powerBi",
 };
 /** Package switches that are on by default once the package includes them (a company can still switch them off). */
-export const DEFAULT_ON_FLAGS = new Set(["FEATURE_DEVICE_CONTROL"]);
+// Power BI (owner approval 27 Nov 2026): on for Enterprise, and for Business once the add-on is bought.
+export const DEFAULT_ON_FLAGS = new Set(["FEATURE_DEVICE_CONTROL", "FEATURE_POWER_BI"]);
 
 /** Pure: may this organization use the capability? `org` needs plan, extraUsers, noPlanConfirmedAt, planGrandfatheredAt. */
 export function planAllows(org, key) {
@@ -60,7 +62,8 @@ export function planAllows(org, key) {
 export function planGateMessage(org, key) {
   const f = PLAN_FEATURES[key]; const plan = getOrgPlan(org);
   const target = PLANS[f.min].name;
-  return `${f.label} is included in the ${target}${f.min === "enterprise" ? "" : " and Enterprise"} package${f.min === "enterprise" ? "" : "s"}. Your company is on ${plan.name}. Upgrade in Billing to use it.`;
+  const addOn = FEATURE_ADD_ON[key] && addOnForPlan(FEATURE_ADD_ON[key], plan.id);
+  return `${f.label} is included in the ${target}${f.min === "enterprise" ? "" : " and Enterprise"} package${f.min === "enterprise" ? "" : "s"}. Your company is on ${plan.name}. ${addOn ? "Add it in Billing > Add-ons, or upgrade" : "Upgrade in Billing"} to use it.`;
 }
 
 export const PLAN_GATE_PROJECTION = { plan: 1, extraUsers: 1, noPlanConfirmedAt: 1, planGrandfatheredAt: 1, addOns: 1 };

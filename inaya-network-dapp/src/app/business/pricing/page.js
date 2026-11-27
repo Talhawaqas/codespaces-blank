@@ -59,7 +59,7 @@ export default function PricingPage() {
   const [error, setError] = useState("");
   // "PK" for visitors in Pakistan (PKR packages, bank transfer), otherwise "INTL" (USD).
   const [region, setRegion] = useState(null);
-  const [addOns, setAddOns] = useState(null); // Professional-only add-ons (src/lib/addOns.js)
+  const [addOns, setAddOns] = useState(null); // add-ons per package (src/lib/addOns.js)
 
   useEffect(() => {
     fetch("/api/orgs/billing/plans")
@@ -123,12 +123,15 @@ export default function PricingPage() {
           </div>
         )}
 
-        {plans && addOns && addOns.length > 0 && (
-          <section className="mt-12" id="add-ons" aria-label="Add-ons for Professional">
-            <h2 className="text-2xl font-extrabold text-white">Add-ons for Professional</h2>
-            <p className="text-[#94a3b8] text-sm mt-1 mb-5">Need one Business feature, not all of them? Add it to Professional. Choose add-ons when you request your package, or later in Billing. If you need several, Business usually costs less and includes them all.</p>
+        {plans && addOns && [["professional", "Add-ons for Professional", "Need one Business feature, not all of them? Add it to Professional. Choose add-ons when you request your package, or later in Billing. If you need several, Business usually costs less and includes them all."],
+          ["business", "Add-on for Business", "Microsoft Power BI is included in Enterprise. Business companies can add it on its own."]].map(([pid, title, blurb]) => {
+          const items = addOns.filter((a) => (a.plans || ["professional"]).includes(pid));
+          return items.length > 0 && (
+          <section className="mt-12" id={pid === "professional" ? "add-ons" : "business-add-ons"} aria-label={title} key={pid}>
+            <h2 className="text-2xl font-extrabold text-white">{title}</h2>
+            <p className="text-[#94a3b8] text-sm mt-1 mb-5">{blurb}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {addOns.map((a) => (
+              {items.map((a) => (
                 <div key={a.id} className="bg-[#090d16]/80 border border-white/5 rounded-xl p-4">
                   <p className="text-white text-sm font-bold">{a.name}</p>
                   <p className="text-[#00f2fe] text-lg font-extrabold mt-1">{region === "PK" ? `PKR ${a.priceMonthly.toLocaleString("en-US")}` : `$${a.priceMonthly}`}<span className="text-[#94a3b8] text-xs font-normal"> {a.perUnit ? "per TB / month (up to 4 TB)" : "/ month"}</span></p>
@@ -136,7 +139,8 @@ export default function PricingPage() {
               ))}
             </div>
           </section>
-        )}
+          );
+        })}
 
         {plans && <CommercePricing region={region} onPick={(id, commerce) => { const pl = plans.find((x) => x.id === id); if (pl) handleSelect(pl, commerce); }} />}
 

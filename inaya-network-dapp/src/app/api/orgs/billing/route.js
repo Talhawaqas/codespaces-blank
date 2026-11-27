@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { getOrgCollections, ensureOrgIndexes, requireMembership, canManageOrg, toObjectId } from "../../../../lib/orgs.js";
 import { getOrgPlan, getOrgUsage, PLANS, PLAN_ORDER } from "../../../../lib/orgPlans.js";
 import { pricingRegion, toPkPlan } from "../../../../lib/pkPricing.js";
+import { ADD_ON_PLANS, addOnForPlan } from "../../../../lib/addOns.js";
 
 const BYTES_PER_GB = 1073741824;
 
@@ -48,7 +49,7 @@ export async function GET(req) {
         noBilling: !!plan.noBilling,
         maxStorageGB: plan.maxStorageGB === Infinity ? null : plan.maxStorageGB,
         maxFileSizeMB: plan.maxFileSizeMB === Infinity ? null : plan.maxFileSizeMB,
-        addOns: plan.id === "professional" ? org.addOns || {} : {},
+        addOns: ADD_ON_PLANS.includes(plan.id) ? Object.fromEntries(Object.entries(org.addOns || {}).filter(([k]) => addOnForPlan(k, plan.id))) : {},
       },
       usage: {
         users: { used: usage.activeUsers, max: plan.maxUsers === Infinity ? null : plan.maxUsers },

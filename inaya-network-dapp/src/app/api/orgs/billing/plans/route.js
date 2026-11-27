@@ -64,7 +64,7 @@ export async function GET(req) {
   const plans = region === "PK"
     ? base.map(toPkPlan).filter(Boolean)
     : base.map((p) => ({ ...p, currency: "USD", paymentMethod: "request" }));
-  // Professional-only add-ons (src/lib/addOns.js), priced in the region's currency.
-  const addOns = { plan: ADD_ON_PLAN, items: addOnCatalogue().map((a) => ({ id: a.id, name: a.name, perUnit: a.perUnit, max: a.max, priceMonthly: region === "PK" ? a.pkr : a.usd })) };
+  // Add-ons (src/lib/addOns.js), each with the package(s) it is sold on, priced in the region's currency.
+  const addOns = { plan: ADD_ON_PLAN, items: addOnCatalogue().map((a) => ({ id: a.id, name: a.name, perUnit: a.perUnit, max: a.max, plans: a.plans, priceMonthly: region === "PK" ? a.pkr : a.usd })) };
   return NextResponse.json({ region, currency: region === "PK" ? "PKR" : "USD", plans, addOns, pendingRequest }, { headers: { "Cache-Control": "private, no-store", Vary: "x-vercel-ip-country" } });
 }

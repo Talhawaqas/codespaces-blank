@@ -11,14 +11,14 @@ PERM = {"branches": "Any connected member", "sales_lines": "Shop supervisors/man
 head = """---
 slug: power-bi
 title: "Microsoft Power BI: Connect, Refresh and Data Dictionary"
-description: "Build your own Power BI dashboards on Inaya Business OS data: install the Inaya connector, sign in securely, load the starter reports, set up scheduled refresh, and look up every dataset, field and metric. Enterprise package."
+description: "Build your own Power BI dashboards on Inaya Business OS data: install the Inaya connector, sign in securely, load the starter reports, set up scheduled refresh, and look up every dataset, field and metric. Enterprise package, or an add-on for Business."
 product: Business Workspace
 category: guide
 contentType: Product Guide
 audience: [business-admin, finance, operations, it-admin, analyst]
 status: beta
 version: current
-tags: [power bi, microsoft, analytics, reports, dashboards, connector, data dictionary, metrics, refresh, gateway, enterprise]
+tags: [power bi, microsoft, analytics, reports, dashboards, connector, data dictionary, metrics, refresh, gateway, enterprise, add-on]
 lastVerifiedAt: "2026-11-27"
 relatedDocs: [sign-in-and-package-features, business-workspace]
 ---
@@ -27,7 +27,7 @@ relatedDocs: [sign-in-and-package-features, business-workspace]
 
 Inaya Business OS stays where you run the business. **Microsoft Power BI** becomes an optional place to analyse it: your own dashboards on sales, refunds, invoices, payments, expenses, stock, purchasing, customers, suppliers, work and repair orders, staff hours and leave.
 
-- **Enterprise package.** During the pilot, Inaya switches it on per company.
+- **Enterprise package**, where it is included and on by default. **Business** companies can add it for $79 a month (PKR 10,000 in Pakistan) in Billing > Add-ons.
 - **Read-only.** Power BI can't create, change or delete anything in Inaya.
 - **Your permissions apply.** Each person sees only what their role, departments and branches allow in Inaya, and this is checked on every request.
 - **No shared passwords or keys.** Each person signs in to Inaya from Power BI. Access tokens last 60 minutes, and you can disconnect anyone at any time.
@@ -108,7 +108,7 @@ These are management figures. They are not audited financial statements.
 | Message | What to do |
 |---|---|
 | Inaya Business OS isn't listed in Get data | Check the .mez is in `Documents\\Power BI Desktop\\Custom Connectors` and the Data Extensions setting is changed, then restart Power BI Desktop. |
-| "Power BI is included in the Enterprise package" or "not switched on yet" | Ask your Inaya admin or Inaya support. |
+| "Power BI is included in the Enterprise package" or "not switched on yet" | Business companies: add Power BI in Billing > Add-ons. Otherwise ask your Inaya admin or Inaya support. |
 | "Only owners and admins can connect" | An admin can allow members on the Power BI admin page. |
 | A table is empty | Your role can't read that dataset, or there's no data in the date range. Check RangeStart and RangeEnd. |
 | "This Power BI connection was revoked" | Sign in again: Data source settings > Inaya Business OS > Edit permissions > Sign in. |

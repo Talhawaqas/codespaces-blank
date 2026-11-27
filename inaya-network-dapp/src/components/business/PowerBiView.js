@@ -1,6 +1,6 @@
 "use client";
 
-// src/components/business/PowerBiView.js -- Admin > Integrations > Microsoft Power BI (Enterprise; src/lib/analytics/oauth.js).
+// src/components/business/PowerBiView.js -- Admin > Integrations > Microsoft Power BI (Enterprise, or the Business add-on; src/lib/analytics/oauth.js).
 // What Power BI can read, what the customer needs from Microsoft, the connector download, who is connected, and Revoke.
 
 import { useCallback, useEffect, useState } from "react";
@@ -31,7 +31,7 @@ export default function PowerBiView({ orgId }) {
       <div className={card}>
         <p className="text-[var(--inaya-text-primary)] text-lg font-extrabold">Microsoft Power BI</p>
         <p className="text-[var(--inaya-text-muted)] text-sm mt-1">Build your own dashboards in Power BI from your Inaya data: sales, refunds, invoices, payments, expenses, stock, purchasing, customers, suppliers, work and repair orders, staff hours and leave. Power BI can only <b>read</b>, and each person sees only what their role, departments and branches allow in Inaya.</p>
-        {!d.entitled ? <p className="mt-3 text-sm text-amber-500">Power BI is included in the Enterprise package. Upgrade in Billing to use it.</p>
+        {!d.entitled ? <p className="mt-3 text-sm text-amber-500">Power BI is included in the Enterprise package. Business companies can add it in Billing &gt; Add-ons.</p>
           : !d.switchedOn ? <p className="mt-3 text-sm text-amber-500">Power BI is in pilot. Ask Inaya support to switch it on for your company.</p>
           : <p className="mt-3 text-sm text-emerald-500">Power BI is available for your company.</p>}
       </div>

@@ -92,6 +92,7 @@ export const PLANS = {
       "API Access",
       "25 GB Max File Size",
       "Priority Support",
+      "Optional add-on: Microsoft Power BI integration",
     ],
   },
   enterprise: {
@@ -116,6 +117,7 @@ export const PLANS = {
       "Custom Retention Policies",
       "Email Campaigns (250,000 emails/month)",
       "API Access & Integrations",
+      "Microsoft Power BI Integration",
       "Dedicated Onboarding",
       "SLA & Priority Support",
       "Enterprise Security Configuration",
