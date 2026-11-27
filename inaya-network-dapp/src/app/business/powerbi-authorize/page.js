@@ -86,6 +86,10 @@ export default function PowerBiAuthorize() {
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-[var(--inaya-text-muted)]">Signed in as <b className="text-[var(--inaya-text-primary)]">{me.email}</b>. Choose the company to connect:</p>
+            <button type="button" disabled={!!busy} className="text-xs font-bold text-[var(--inaya-accent)] hover:underline disabled:opacity-40"
+              onClick={async () => { setBusy("switch"); try { await fetch("/api/orgs/logout", { method: "POST", credentials: "include" }); } catch { /* signed out anyway below */ } setMe(null); setCodeSent(false); setCode(""); setEmail(""); setErr(""); setBusy(""); }}>
+              Not you? Use a different account
+            </button>
             {me.companies.length === 0 && <p className="text-sm text-[var(--inaya-text-muted)]">You are not a member of any company.</p>}
             {me.companies.map((c) => (
               <div key={c.orgId} className="border border-[var(--inaya-overlay-10)] rounded-xl p-3">
